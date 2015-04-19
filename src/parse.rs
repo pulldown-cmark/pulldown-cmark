@@ -1,3 +1,6 @@
+use entities::is_valid_entity;
+
+const ESCAPE_CHARS: &'static [u8] = b"!\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~";
 
 pub struct Parser<'a> {
 	text: &'a str,
@@ -18,6 +21,8 @@ pub enum Event<'a> {
 	Start(Tag),
 	End(Tag),
 	Text(&'a str),  // should probably be a Cow
+	Entity(&'a str),
+	LineBreak,
 }
 
 fn scan_blank_line(text: &str) -> usize {
@@ -83,6 +88,58 @@ fn scan_hrule(data: &str) -> usize {
 	if n >= 3 { i } else { 0 }
 }
 
+fn is_ascii_alphanumeric(c: u8) -> bool {
+	match c {
+		b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
+		_ => false
+	}
+}
+
+fn is_hexdigit(c: u8) -> bool {
+	match c {
+		b'0' ... b'9' | b'a' ... b'f' | b'A' ... b'F' => true,
+		_ => false
+	}
+}
+
+fn is_digit(c: u8) -> bool {
+	b'0' <= c && c <= b'9'
+}
+
+// doesn't bother to check data[0] == '&'
+fn scan_entity(data: &str) -> usize {
+	let size = data.len();
+	let bytes = data.as_bytes();
+	let mut end = 1;
+	if end < size && bytes[end] == b'#' {
+		end += 1;
+		if end < size && (bytes[end] == b'x' || bytes[end] == b'X') {
+			end += 1;
+			while end < size && is_hexdigit(bytes[end]) {
+				end += 1;
+			}
+			if end < size && end > 3 && end < 12 && bytes[end] == b';' {
+				return end + 1;
+			}
+		} else {
+			while end < size && is_digit(bytes[end]) {
+				end += 1;
+			}
+			if end < size && end > 2 && end < 11 && bytes[end] == b';' {
+				return end + 1;
+			}
+		}
+		return 0;
+	}
+	while end < size && is_ascii_alphanumeric(data.as_bytes()[end]) {
+		end += 1;
+	}
+	if end < size && bytes[end] == b';' && is_valid_entity(&data[1..end]) {
+		return end + 1;  // real entity
+	}
+	return 0;
+}
+
 impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
 		Parser {
@@ -146,6 +203,9 @@ impl<'a> Parser<'a> {
 			}
 			i += scan_newline(&self.text[i..]);
 		}
+		if self.text.as_bytes()[i - 1] == b'\n' {
+			i -= 1;
+		}
 		self.limit = i;
 		self.start(Tag::Paragraph)
 	}
@@ -156,14 +216,100 @@ impl<'a> Parser<'a> {
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
-		if self.off < self.limit {
-			let beg = self.off;
-			self.off = self.limit;
-			Event::Text(&self.text[beg .. self.limit])
+		let beg = self.off;
+		let mut i = beg;
+		while i < self.limit {
+			let c = self.text.as_bytes()[i];
+			if self.is_active_char(c) {
+				if i > beg {
+					self.off = i;
+					return Event::Text(&self.text[beg..i]);
+				}
+				if let Some(event) = self.active_char(c) {
+					return event;
+				}
+			}
+			i += 1;
+		}
+		if i > beg {
+			self.off = i;
+			Event::Text(&self.text[beg..i])
 		} else {
 			self.end()
 		}
 	}
+
+	fn is_active_char(&self, c: u8) -> bool {
+		c == b'\t' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&'
+	}
+
+	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
+		match c {
+			b'\t' => self.char_tab(),
+			b'\r' => self.char_return(),
+			b'\\' => self.char_backslash(),
+			b'&' => self.char_entity(),
+			_ => None
+		}
+	}
+
+	// expand tab in inline content
+	// scan backward to find offset, counting unicode code points
+	fn char_tab(&mut self) -> Option<Event<'a>> {
+		let mut count = 0;
+		let mut i = self.off;
+		while i > 0 {
+			i -= 1;
+			let c = self.text.as_bytes()[i];
+			if c == b'\t' || c == b'\n' {
+				break;
+			} else if (c & 0xc0) != 0x80 {
+				count += 1;
+			}
+		}
+		self.off += 1;
+		Some(Event::Text(&"    "[(count % 4) ..]))
+	}
+
+	fn char_return(&mut self) -> Option<Event<'a>> {
+		if self.text[self.off + 1..].starts_with('\n') {
+			self.off += 1;
+			Some(Event::Text(""))
+		} else {
+			None
+		}
+	}
+
+	fn char_backslash(&mut self) -> Option<Event<'a>> {
+		if self.off + 1 < self.limit {
+			let c = self.text.as_bytes()[self.off + 1];
+			if c == b'\n' {
+				// TODO: make sure backslash at end of para is handled ok
+				self.off += 2;
+				return Some(Event::LineBreak);
+			} else if c == b'\r' && self.text[self.off + 2..].starts_with('\n') {
+				self.off += 3;
+				return Some(Event::LineBreak);
+			}
+			if ESCAPE_CHARS.binary_search(&c).is_ok() {
+				self.off += 2;
+				return Some(Event::Text(&self.text[self.off - 1 .. self.off]));
+			}
+		}
+		None
+	}
+
+	fn char_entity(&mut self) -> Option<Event<'a>> {
+		let beg = self.off;
+		let ret = scan_entity(&self.text[beg..]);
+		if ret != 0 {
+			self.off += ret;
+			Some(Event::Entity(&self.text[beg .. self.off]))
+		} else {
+			None
+		}
+	}
+
 }
 
 impl<'a> Iterator for Parser<'a> {

@@ -1,5 +1,6 @@
 use entities::is_valid_entity;
 
+// sorted for binary_search
 const ESCAPE_CHARS: &'static [u8] = b"!\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~";
 
 pub struct Parser<'a> {

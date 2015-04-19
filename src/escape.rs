@@ -47,15 +47,11 @@ pub fn escape_href(ob: &mut String, s: &str) {
 	}
 }
 
-static HTML_ESCAPE_TABLE: [u8; 128] = [
+static HTML_ESCAPE_TABLE: [u8; 64] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 1, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 6, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	];
 
 static HTML_ESCAPES: [&'static str; 7] = [
@@ -72,7 +68,7 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
 	let mut mark = 0;
 	for i in 0..s.len() {
 		let c = s.as_bytes()[i];
-		if c < 0x80 {
+		if c < 0x40 {
 			let escape = HTML_ESCAPE_TABLE[c as usize];
 			if escape != 0 && (secure || c != b'/') {
 				if mark < i {

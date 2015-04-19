@@ -1,21 +1,17 @@
 use entities::is_valid_entity;
 
-// sorted for binary_search
-const ESCAPE_CHARS: &'static [u8] = b"!\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~";
-
 pub struct Parser<'a> {
 	text: &'a str,
 	off: usize,
-	limit: usize,  // limit of the current block
 
-	// perhaps the limit should be stored on the stack with the tag
-	stack: Vec<Tag>,
+	stack: Vec<(Tag, usize, usize)>,
 }
 
 #[derive(Copy, Debug)]
 pub enum Tag {
 	Paragraph,
-	Rule
+	Rule,
+	Header(i32),
 }
 
 pub enum Event<'a> {
@@ -25,6 +21,9 @@ pub enum Event<'a> {
 	Entity(&'a str),
 	LineBreak,
 }
+
+// sorted for binary_search
+const ESCAPE_CHARS: &'static [u8] = b"!\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~";
 
 fn scan_blank_line(text: &str) -> usize {
 	let mut i = 0;
@@ -89,6 +88,59 @@ fn scan_hrule(data: &str) -> usize {
 	if n >= 3 { i } else { 0 }
 }
 
+// returns number of bytes in prefix and level
+fn scan_atx_header(data: &str) -> (usize, i32) {
+	let size = data.len();
+	let (start, _) = calc_indent(data, 3);
+	let data = data.as_bytes();
+	let mut i = start;
+	while i < size {
+		if data[i] != b'#' {
+			break;
+		}
+		i += 1;
+	}
+	let level = i - start;
+	if level >= 1 && level <= 6 {
+		if i <size {
+			match data[i] {
+				b' ' | b'\t' => i += 1,
+				b'\n' ... b'\r' => (),
+				_ => return (0, 0)
+			}
+		}
+		(i, level as i32)
+	} else {
+		(0, 0)
+	}
+}
+
+// returns number of bytes in line and level
+fn scan_setext_header(data: &str) -> (usize, i32) {
+	let size = data.len();
+	let (mut i, _) = calc_indent(data, 3);
+	if i == size { return (0, 0); }
+	let c = data.as_bytes()[i];
+	if !(c == b'-' || c == b'=') { return (0, 0); }
+	i += 1;
+	while i < size && data.as_bytes()[i] == c {
+		i += 1;
+	}
+	while i < size {
+		match data.as_bytes()[i] {
+			b'\n' => break,
+			b' ' | b'\t' ... b'\r' => i += 1,
+			_ => return (0, 0)
+		}
+	}
+	let level = if c == b'=' { 1 } else { 2 };
+	(i, level)
+}
+
+fn is_ascii_whitespace(c: u8) -> bool {
+	(c >= 0x09 && c <= 0x0d) || c == b' '
+}
+
 fn is_ascii_alphanumeric(c: u8) -> bool {
 	match c {
 		b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
@@ -145,10 +197,10 @@ impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
 		Parser {
 			text: text,
-			off: 0,
-			limit: 0,
+			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			stack: Vec::new(),
 		}
+		// TODO: skip initial blank lines
 	}
 
 	// offset into text representing current parse position, hopefully
@@ -157,13 +209,21 @@ impl<'a> Parser<'a> {
 		self.off
 	}
 
-	fn start(&mut self, tag: Tag) -> Event<'a> {
-		self.stack.push(tag);
+	fn limit(&self) -> usize {
+		match self.stack.last() {
+			Some(&(_, limit, _)) => limit,
+			None => self.text.len()
+		}
+	}
+
+	fn start(&mut self, tag: Tag, limit: usize, next: usize) -> Event<'a> {
+		self.stack.push((tag, limit, next));
 		Event::Start(tag)
 	}
 
 	fn end(&mut self) -> Event<'a> {
-		let ret = Event::End(self.stack.pop().unwrap());
+		let (tag, _, next) = self.stack.pop().unwrap();
+		self.off = next;
 		if self.stack.is_empty() {
 			// skip blank lines
 			loop {
@@ -174,19 +234,35 @@ impl<'a> Parser<'a> {
 				self.off += ret;
 			}
 		}
-		ret
+		Event::End(tag)
+	}
+
+	fn skip_leading_whitespace(&mut self) {
+		let limit = self.limit();
+		while self.off < limit {
+			match self.text.as_bytes()[self.off] {
+				b' ' | b'\t' | b'\x0b' ... b'\r' => self.off += 1,
+				_ => break
+			}
+		}
 	}
 
 	fn next_block(&mut self) -> Option<Event<'a>> {
 		if self.off < self.text.len() {
 			// each branch here starts a block by:
-			// 1. scanning for the end of the block and setting limit
+			// 1. scanning for the end of the block and computing limit
 			// 2. pushing a block tag on the stack and returning its start event
 
-			let ret = scan_hrule(&self.text[self.off..]);
-			if ret != 0 {
-				self.off += ret;
+			let n = scan_hrule(&self.text[self.off..]);
+			if n != 0 {
+				self.off += n;
 				return Some(self.start_hrule())
+			}
+
+			let (n, level) = scan_atx_header(&self.text[self.off..]);
+			if n != 0 {
+				self.off += n;
+				return Some(self.start_atx_header(level))
 			}
 
 			Some(self.start_paragraph())
@@ -195,31 +271,69 @@ impl<'a> Parser<'a> {
 		}
 	}
 
+	// can start a paragraph or a setext header, as they start similarly
 	fn start_paragraph(&mut self) -> Event<'a> {
-		let mut i = self.off;
+		self.skip_leading_whitespace();
+
+		// don't need to scan for paragraph interrupts on first line
+		let mut i = self.off + scan_newline(&self.text[self.off..]);
+
+		let (n, level) = scan_setext_header(&self.text[i..]);
+		if n != 0 {
+			let next = i + n;
+			while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
+				i -= 1;
+			}
+			return self.start(Tag::Header(level), i, next);
+		}
+
 		while i < self.text.len() {
+			// things that can interrupt a paragraph
 			if scan_blank_line(&self.text[i..]) != 0 ||
-					scan_hrule(&self.text[i..]) != 0 {
+					scan_hrule(&self.text[i..]) != 0 ||
+					scan_atx_header(&self.text[i..]).0 != 0 {
 				break;
 			}
 			i += scan_newline(&self.text[i..]);
 		}
+		let next = i;
 		if self.text.as_bytes()[i - 1] == b'\n' {
 			i -= 1;
 		}
-		self.limit = i;
-		self.start(Tag::Paragraph)
+		self.start(Tag::Paragraph, i, next)
 	}
 
 	fn start_hrule(&mut self) -> Event<'a> {
-		self.limit = self.off;  // body of rule is empty
-		self.start(Tag::Rule)
+		let limit = self.off;  // body of hrule is empty
+		self.start(Tag::Rule, limit, limit)
+	}
+
+	fn start_atx_header(&mut self, level: i32) -> Event<'a> {
+		self.skip_leading_whitespace();
+
+		let tail = &self.text[self.off..];
+		let next = scan_newline(tail);
+		let mut limit = next;
+		while limit > 0 && is_ascii_whitespace(tail.as_bytes()[limit - 1]) {
+			limit -= 1;
+		}
+		let mut end = limit;
+		while end > 0 && tail.as_bytes()[end - 1] == b'#' {
+			end -= 1;
+		}
+		if end > 0 && is_ascii_whitespace(tail.as_bytes()[end - 1]) {
+			limit = end - 1;
+		}
+		let limit = limit + self.off;
+		let next = next + self.off;
+		self.start(Tag::Header(level), limit, next)
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
 		let beg = self.off;
 		let mut i = beg;
-		while i < self.limit {
+		let limit = self.limit();
+		while i < limit {
 			let c = self.text.as_bytes()[i];
 			if self.is_active_char(c) {
 				if i > beg {
@@ -282,7 +396,7 @@ impl<'a> Parser<'a> {
 	}
 
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
-		if self.off + 1 < self.limit {
+		if self.off + 1 < self.limit() {
 			let c = self.text.as_bytes()[self.off + 1];
 			if c == b'\n' {
 				// TODO: make sure backslash at end of para is handled ok
@@ -327,7 +441,7 @@ impl<'a> Iterator for Parser<'a> {
 			}
 		}
 		match self.stack.pop() {
-			Some(tag) => Some(Event::End(tag)),
+			Some((tag, _, _)) => Some(Event::End(tag)),
 			None => None
 		}
 	}

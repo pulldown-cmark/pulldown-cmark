@@ -7,8 +7,11 @@ use parse::Parser;
 use parse::Event;
 
 pub fn main() {
-	let source = "a b\r\nc &aring; &#x3d; d\n---\n\ne f\n1\t12\t123\t1234\t.";
+	//let source = "a b\r\nc &aring; &#x3d; d\n---\n\ne f\n1\t12\t123\t1234\t.";
 	//let source = "\\\\\\&aring; break:\\\nbreak (\\\\r\\\\n):\\\r\n\\A\\B";
+	//let source = "line\n   ######    h1&aring;   \npara";
+	//let source = "  para\n\n  header\\\n   ===";
+	let source = "---\nFoo\n---\nBar\n---\nBaz";
 	let mut p = Parser::new(&source);
 	loop {
 		print!("{}: ", p.get_offset());

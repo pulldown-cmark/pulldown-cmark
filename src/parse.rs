@@ -7,7 +7,7 @@ pub struct Parser<'a> {
 	stack: Vec<(Tag, usize, usize)>,
 }
 
-#[derive(Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Tag {
 	Paragraph,
 	Rule,
@@ -104,8 +104,7 @@ fn scan_atx_header(data: &str) -> (usize, i32) {
 	if level >= 1 && level <= 6 {
 		if i <size {
 			match data[i] {
-				b' ' | b'\t' => i += 1,
-				b'\n' ... b'\r' => (),
+				b' ' | b'\t' ... b'\r' => (),
 				_ => return (0, 0)
 			}
 		}
@@ -195,12 +194,13 @@ fn scan_entity(data: &str) -> usize {
 
 impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
-		Parser {
+		let mut ret = Parser {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			stack: Vec::new(),
-		}
-		// TODO: skip initial blank lines
+		};
+		ret.skip_blank_lines();
+		ret
 	}
 
 	// offset into text representing current parse position, hopefully
@@ -225,14 +225,7 @@ impl<'a> Parser<'a> {
 		let (tag, _, next) = self.stack.pop().unwrap();
 		self.off = next;
 		if self.stack.is_empty() {
-			// skip blank lines
-			loop {
-				let ret = scan_blank_line(&self.text[self.off..]);
-				if ret == 0 {
-					break;
-				}
-				self.off += ret;
-			}
+			self.skip_blank_lines();
 		}
 		Event::End(tag)
 	}
@@ -244,6 +237,16 @@ impl<'a> Parser<'a> {
 				b' ' | b'\t' | b'\x0b' ... b'\r' => self.off += 1,
 				_ => break
 			}
+		}
+	}
+
+	fn skip_blank_lines(&mut self) {
+		loop {
+			let ret = scan_blank_line(&self.text[self.off..]);
+			if ret == 0 {
+				break;
+			}
+			self.off += ret;
 		}
 	}
 
@@ -321,7 +324,9 @@ impl<'a> Parser<'a> {
 		while end > 0 && tail.as_bytes()[end - 1] == b'#' {
 			end -= 1;
 		}
-		if end > 0 && is_ascii_whitespace(tail.as_bytes()[end - 1]) {
+		if end == 0 {
+			limit = end;
+		} else if is_ascii_whitespace(tail.as_bytes()[end - 1]) {
 			limit = end - 1;
 		}
 		let limit = limit + self.off;

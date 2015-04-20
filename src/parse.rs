@@ -141,8 +141,8 @@ fn scan_setext_header(data: &str) -> (usize, i32) {
 	(i, level)
 }
 
-// return whether delimeter run is left and/or right flanking
-fn compute_flanking(data: &str, loc: usize) -> (usize, bool, bool) {
+// return whether delimeter run can open or close
+fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
 	// TODO: handle Unicode, not just ASCII
 	let size = data.len();
 	let c = data.as_bytes()[loc];
@@ -150,10 +150,14 @@ fn compute_flanking(data: &str, loc: usize) -> (usize, bool, bool) {
 	while end < size && data.as_bytes()[end] == c {
 		end += 1;
 	}
-	let (white_before, punc_before) = if loc == 0 {
+	let mut beg = loc;
+	while beg > 0 && data.as_bytes()[beg - 1] == c {
+		beg -= 1;
+	}
+	let (white_before, punc_before) = if beg == 0 {
 		(true, false)
 	} else {
-		let c = data.as_bytes()[loc - 1];
+		let c = data.as_bytes()[beg - 1];
 		(is_ascii_whitespace(c), is_ascii_punctuation(c))
 	};
 	let (white_after, punc_after) = if end == size {
@@ -164,7 +168,12 @@ fn compute_flanking(data: &str, loc: usize) -> (usize, bool, bool) {
 	};
 	let left_flanking = !white_after && (!punc_after || white_before || punc_before);
 	let right_flanking = !white_before && (!punc_before || white_after || punc_after);
-	(end - loc, left_flanking, right_flanking)
+	let (can_open, can_close) = match c {
+		b'*' => (left_flanking, right_flanking),
+		b'_' => (left_flanking && !right_flanking, right_flanking && !left_flanking),
+		_ => (false, false)
+	};
+	(end - loc, can_open, can_close)
 }
 
 fn is_ascii_whitespace(c: u8) -> bool {
@@ -476,41 +485,49 @@ impl<'a> Parser<'a> {
 		}
 	}
 
-	// return size of close delimeter, loc of start of close delimeter
-	fn find_emph_closing(&self, data: &str, loc: usize, c: u8) -> (usize, usize) {
-		let mut i = loc;
-		while i < data.len() {
-			let c2 = data.as_bytes()[i];
-			if c2 == c && !is_escaped(data, i) {
-				let (n, left_flanking, right_flanking) = compute_flanking(data, i);
-				if right_flanking && (c == b'*' || !left_flanking) {
-					return (n, i)
-				}
-				i += n;
-			} else {
-				i += 1;
-			}
-		}
-		(0, 0)
-	}
-
 	fn char_emphasis(&mut self) -> Option<Event<'a>> {
 		// can see to left for flanking info, but not past limit
 		let data = &self.text[.. self.limit()];
 
 		let c = data.as_bytes()[self.off];
-		let (n, left_flanking, right_flanking) = compute_flanking(data, self.off);
-		if !(left_flanking && (c == b'*' || !right_flanking)) {
+		let (n, can_open, can_close) = compute_open_close(data, self.off, c);
+		if !can_open {
 			return None;
 		}
-		let (nclose, limit) = self.find_emph_closing(data, self.off + n, c);
-		if n == nclose {
-			if n == 1 {
-				self.off += 1;
-				return Some(self.start(Tag::Emphasis, limit, limit + nclose));
+		let mut stack = vec![n];  // TODO performance: don't allocate
+		let mut i = self.off + n;
+		while i < data.len() {
+			let c2 = data.as_bytes()[i];
+			if c2 == c && !is_escaped(data, i) {
+				let (mut n2, can_open, can_close) = compute_open_close(data, i, c);
+				if can_close {
+					loop {
+						let ntos = stack.pop().unwrap();
+						if ntos > n2 {
+							stack.push(ntos - n2);
+							break;
+						}
+						if stack.is_empty() {
+							let npop = if ntos < n2 { ntos } else { n2 };
+							if npop == 1 {
+								self.off += 1;
+								return Some(self.start(Tag::Emphasis, i, i + 1));
+							} else {
+								self.off += 2;
+								let next = i + npop;
+								return Some(self.start(Tag::Strong, next - 2, next));
+							}
+						} else {
+							i += ntos;
+							n2 -= ntos;
+						}
+					}
+				} else if can_open {
+					stack.push(n2);
+				}
+				i += n2;
 			} else {
-				self.off += 2;
-				return Some(self.start(Tag::Strong, limit + nclose - 2, limit + nclose));
+				i += 1;
 			}
 		}
 		None

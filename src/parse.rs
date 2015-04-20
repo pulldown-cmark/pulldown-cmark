@@ -9,9 +9,14 @@ pub struct Parser<'a> {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Tag {
+	// block-level tags
 	Paragraph,
 	Rule,
 	Header(i32),
+
+	// span-level tags
+	Emphasis,
+	Strong,
 }
 
 pub enum Event<'a> {
@@ -23,7 +28,7 @@ pub enum Event<'a> {
 }
 
 // sorted for binary_search
-const ESCAPE_CHARS: &'static [u8] = b"!\"#$%&'()*+-./:;<=>?@[\\]^_`{|}~";
+const ASCII_PUNCTUATION: &'static [u8] = b"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 fn scan_blank_line(text: &str) -> usize {
 	let mut i = 0;
@@ -136,6 +141,32 @@ fn scan_setext_header(data: &str) -> (usize, i32) {
 	(i, level)
 }
 
+// return whether delimeter run is left and/or right flanking
+fn compute_flanking(data: &str, loc: usize) -> (usize, bool, bool) {
+	// TODO: handle Unicode, not just ASCII
+	let size = data.len();
+	let c = data.as_bytes()[loc];
+	let mut end = loc + 1;
+	while end < size && data.as_bytes()[end] == c {
+		end += 1;
+	}
+	let (white_before, punc_before) = if loc == 0 {
+		(true, false)
+	} else {
+		let c = data.as_bytes()[loc - 1];
+		(is_ascii_whitespace(c), is_ascii_punctuation(c))
+	};
+	let (white_after, punc_after) = if end == size {
+		(true, false)
+	} else {
+		let c = data.as_bytes()[end];
+		(is_ascii_whitespace(c), is_ascii_punctuation(c))
+	};
+	let left_flanking = !white_after && (!punc_after || white_before || punc_before);
+	let right_flanking = !white_before && (!punc_before || white_after || punc_after);
+	(end - loc, left_flanking, right_flanking)
+}
+
 fn is_ascii_whitespace(c: u8) -> bool {
 	(c >= 0x09 && c <= 0x0d) || c == b' '
 }
@@ -156,6 +187,10 @@ fn is_hexdigit(c: u8) -> bool {
 
 fn is_digit(c: u8) -> bool {
 	b'0' <= c && c <= b'9'
+}
+
+fn is_ascii_punctuation(c: u8) -> bool {
+	ASCII_PUNCTUATION.binary_search(&c).is_ok()
 }
 
 // doesn't bother to check data[0] == '&'
@@ -190,6 +225,14 @@ fn scan_entity(data: &str) -> usize {
 		return end + 1;  // real entity
 	}
 	return 0;
+}
+
+fn is_escaped(data: &str, loc: usize) -> bool {
+	let mut i = loc;
+	while i >= 1 && data.as_bytes()[i - 1] == b'\\' {
+		i -= 1;
+	}
+	((loc - i) & 1) != 0
 }
 
 impl<'a> Parser<'a> {
@@ -360,7 +403,8 @@ impl<'a> Parser<'a> {
 	}
 
 	fn is_active_char(&self, c: u8) -> bool {
-		c == b'\t' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&'
+		c == b'\t' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' || c == b'_' ||
+		c == b'*'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
@@ -369,6 +413,8 @@ impl<'a> Parser<'a> {
 			b'\r' => self.char_return(),
 			b'\\' => self.char_backslash(),
 			b'&' => self.char_entity(),
+			b'_' => self.char_emphasis(),
+			b'*' => self.char_emphasis(),
 			_ => None
 		}
 	}
@@ -411,7 +457,7 @@ impl<'a> Parser<'a> {
 				self.off += 3;
 				return Some(Event::LineBreak);
 			}
-			if ESCAPE_CHARS.binary_search(&c).is_ok() {
+			if is_ascii_punctuation(c) {
 				self.off += 2;
 				return Some(Event::Text(&self.text[self.off - 1 .. self.off]));
 			}
@@ -430,6 +476,45 @@ impl<'a> Parser<'a> {
 		}
 	}
 
+	// return size of close delimeter, loc of start of close delimeter
+	fn find_emph_closing(&self, data: &str, loc: usize, c: u8) -> (usize, usize) {
+		let mut i = loc;
+		while i < data.len() {
+			let c2 = data.as_bytes()[i];
+			if c2 == c && !is_escaped(data, i) {
+				let (n, left_flanking, right_flanking) = compute_flanking(data, i);
+				if right_flanking && (c == b'*' || !left_flanking) {
+					return (n, i)
+				}
+				i += n;
+			} else {
+				i += 1;
+			}
+		}
+		(0, 0)
+	}
+
+	fn char_emphasis(&mut self) -> Option<Event<'a>> {
+		// can see to left for flanking info, but not past limit
+		let data = &self.text[.. self.limit()];
+
+		let c = data.as_bytes()[self.off];
+		let (n, left_flanking, right_flanking) = compute_flanking(data, self.off);
+		if !(left_flanking && (c == b'*' || !right_flanking)) {
+			return None;
+		}
+		let (nclose, limit) = self.find_emph_closing(data, self.off + n, c);
+		if n == nclose {
+			if n == 1 {
+				self.off += 1;
+				return Some(self.start(Tag::Emphasis, limit, limit + nclose));
+			} else {
+				self.off += 2;
+				return Some(self.start(Tag::Strong, limit + nclose - 2, limit + nclose));
+			}
+		}
+		None
+	}
 }
 
 impl<'a> Iterator for Parser<'a> {

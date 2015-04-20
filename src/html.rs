@@ -23,6 +23,8 @@ fn start_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push('>');
 		}
+		Tag::Emphasis => buf.push_str("<em>"),
+		Tag::Strong => buf.push_str("<strong>")
 	}
 }
 
@@ -35,5 +37,7 @@ fn end_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push_str(">\n");
 		}
+		Tag::Emphasis => buf.push_str("</em>"),
+		Tag::Strong => buf.push_str("</strong>")
 	}
 }

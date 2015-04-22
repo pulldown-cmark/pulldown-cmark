@@ -1,5 +1,4 @@
 [package]
-
 name = "pulldown-cmark"
 version = "0.0.1"
 authors = [ "Raph Levien <raph@google.com>" ]

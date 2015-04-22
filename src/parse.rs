@@ -40,7 +40,8 @@ pub enum Event<'a> {
 	End(Tag),
 	Text(&'a str),  // should probably be a Cow
 	Entity(&'a str),
-	LineBreak,
+	SoftBreak,
+	HardBreak,
 }
 
 // sorted for binary_search
@@ -293,6 +294,7 @@ impl<'a> Parser<'a> {
 		let (tag, _, next) = self.stack.pop().unwrap();
 		self.off = next;
 		if self.stack.is_empty() {
+			// TODO maybe: make block ends do this
 			self.skip_blank_lines();
 		}
 		Event::End(tag)
@@ -358,20 +360,9 @@ impl<'a> Parser<'a> {
 			return self.start(Tag::Header(level), i, next);
 		}
 
-		while i < self.text.len() {
-			// things that can interrupt a paragraph
-			if scan_blank_line(&self.text[i..]) != 0 ||
-					scan_hrule(&self.text[i..]) != 0 ||
-					scan_atx_header(&self.text[i..]).0 != 0 {
-				break;
-			}
-			i += scan_newline(&self.text[i..]);
-		}
-		let next = i;
-		if self.text.as_bytes()[i - 1] == b'\n' {
-			i -= 1;
-		}
-		self.start(Tag::Paragraph, i, next)
+		let size = self.text.len();
+		// let the block closing logic in char_newline take care of computing the end
+		self.start(Tag::Paragraph, size, size)
 	}
 
 	fn start_hrule(&mut self) -> Event<'a> {
@@ -402,6 +393,15 @@ impl<'a> Parser<'a> {
 		self.start(Tag::Header(level), limit, next)
 	}
 
+	// determine whether the given ends the block
+	fn is_block_end(&self, loc: usize) -> bool {
+		let tail = &self.text[loc..];
+		tail.is_empty() ||
+				scan_blank_line(tail) != 0 ||
+				scan_hrule(tail) != 0 ||
+				scan_atx_header(tail).0 != 0
+	}
+
 	fn next_inline(&mut self) -> Event<'a> {
 		let beg = self.off;
 		let mut i = beg;
@@ -428,13 +428,14 @@ impl<'a> Parser<'a> {
 	}
 
 	fn is_active_char(&self, c: u8) -> bool {
-		c == b'\t' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' || c == b'_' ||
-		c == b'*'
+		c == b'\t' || c == b'\n' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' ||
+				c == b'_' || c == b'*'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
 		match c {
 			b'\t' => self.char_tab(),
+			b'\n' => self.char_newline(),
 			b'\r' => self.char_return(),
 			b'\\' => self.char_backslash(),
 			b'&' => self.char_entity(),
@@ -462,6 +463,20 @@ impl<'a> Parser<'a> {
 		Some(Event::Text(&"    "[(count % 4) ..]))
 	}
 
+	// newline can be a bunch of cases, including closing a block
+	fn char_newline(&mut self) -> Option<Event<'a>> {
+		let next_off = self.off + 1;
+		if self.is_block_end(next_off) {
+			let (tag, limit, next) = self.stack.pop().unwrap();
+			self.off = next_off;
+			self.skip_blank_lines();
+			Some(Event::End(tag))
+		} else {
+			self.off += 1;
+			Some(Event::SoftBreak)
+		}
+	}
+
 	fn char_return(&mut self) -> Option<Event<'a>> {
 		if self.text[self.off + 1..].starts_with('\n') {
 			self.off += 1;
@@ -472,15 +487,18 @@ impl<'a> Parser<'a> {
 	}
 
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
-		if self.off + 1 < self.limit() {
+		let limit = self.limit();
+		if self.off + 1 < limit {
 			let c = self.text.as_bytes()[self.off + 1];
 			if c == b'\n' {
 				// TODO: make sure backslash at end of para is handled ok
+				if self.is_block_end(self.off + 2) { return None }
 				self.off += 2;
-				return Some(Event::LineBreak);
-			} else if c == b'\r' && self.text[self.off + 2..].starts_with('\n') {
+				return Some(Event::HardBreak);
+			} else if c == b'\r' && self.text[self.off + 2..limit].starts_with('\n') {
+				if self.is_block_end(self.off + 3) { return None }
 				self.off += 3;
-				return Some(Event::LineBreak);
+				return Some(Event::HardBreak);
 			}
 			if is_ascii_punctuation(c) {
 				self.off += 2;
@@ -514,7 +532,13 @@ impl<'a> Parser<'a> {
 		let mut i = self.off + n;
 		while i < data.len() {
 			let c2 = data.as_bytes()[i];
-			if c2 == c && !is_escaped(data, i) {
+			if c2 == b'\n' && !is_escaped(data, i) {
+				if self.is_block_end(i + 1) {
+					return None
+				} else {
+					i += 1;
+				}
+			} else if c2 == c && !is_escaped(data, i) {
 				let (mut n2, can_open, can_close) = compute_open_close(data, i, c);
 				if can_close {
 					loop {

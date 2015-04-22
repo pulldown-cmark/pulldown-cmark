@@ -1,3 +1,4 @@
+
 // Copyright 2015 Google Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +26,8 @@ pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
 			Event::End(tag) => end_tag(buf, tag),
 			Event::Text(text) => escape_html(buf, text, false),
 			Event::Entity(text) => buf.push_str(text),
-			Event::LineBreak => buf.push_str("<br />\n")
+			Event::SoftBreak => buf.push('\n'),
+			Event::HardBreak => buf.push_str("<br />\n")
 		}
 	}
 }

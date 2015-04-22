@@ -45,7 +45,8 @@ fn print_events(text: &str) {
 				Event::End(tag) => println!("end {:?}", tag),
 				Event::Text(text) => println!("text: [{}]", text),
 				Event::Entity(text) => println!("entity: [{}]", text),
-				Event::LineBreak => println!("line break")
+				Event::SoftBreak => println!("soft break"),
+				Event::HardBreak => println!("hard break")
 			}
 		} else {
 			break;

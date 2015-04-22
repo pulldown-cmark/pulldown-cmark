@@ -20,15 +20,16 @@ pub struct Parser<'a> {
 	text: &'a str,
 	off: usize,
 
-	stack: Vec<(Tag, usize, usize)>,
+	stack: Vec<(Tag<'a>, usize, usize)>,
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum Tag {
+pub enum Tag<'a> {
 	// block-level tags
 	Paragraph,
 	Rule,
 	Header(i32),
+	CodeBlock(&'a str),
 
 	// span-level tags
 	Emphasis,
@@ -36,8 +37,8 @@ pub enum Tag {
 }
 
 pub enum Event<'a> {
-	Start(Tag),
-	End(Tag),
+	Start(Tag<'a>),
+	End(Tag<'a>),
 	Text(&'a str),  // should probably be a Cow
 	Entity(&'a str),
 	SoftBreak,
@@ -285,7 +286,7 @@ impl<'a> Parser<'a> {
 		}
 	}
 
-	fn start(&mut self, tag: Tag, limit: usize, next: usize) -> Event<'a> {
+	fn start(&mut self, tag: Tag<'a>, limit: usize, next: usize) -> Event<'a> {
 		self.stack.push((tag, limit, next));
 		Event::Start(tag)
 	}
@@ -310,6 +311,21 @@ impl<'a> Parser<'a> {
 		}
 	}
 
+	// Skips the formatting characters at the start of a line. The pattern
+	// matched depends on the current block.
+	fn skip_linestart(&mut self) {
+		match self.stack[0] {
+			(Tag::Paragraph, _, _) => self.skip_leading_whitespace(),
+			(Tag::CodeBlock(_), _, _) => {
+				let (n, _) = calc_indent(&self.text[self.off ..], 4);
+				self.off += n;
+			}
+			(tag, _, _) => {
+				println!("strange state at skip_linestart: {:?}", tag)
+			}
+		}
+	}
+
 	fn skip_blank_lines(&mut self) {
 		loop {
 			let ret = scan_blank_line(&self.text[self.off..]);
@@ -320,22 +336,23 @@ impl<'a> Parser<'a> {
 		}
 	}
 
-	fn next_block(&mut self) -> Option<Event<'a>> {
+	fn start_block(&mut self) -> Option<Event<'a>> {
 		if self.off < self.text.len() {
-			// each branch here starts a block by:
-			// 1. scanning for the end of the block and computing limit
-			// 2. pushing a block tag on the stack and returning its start event
 
 			let n = scan_hrule(&self.text[self.off..]);
 			if n != 0 {
 				self.off += n;
-				return Some(self.start_hrule())
+				return Some(self.start_hrule());
 			}
 
-			let (n, level) = scan_atx_header(&self.text[self.off..]);
+			let (n, level) = scan_atx_header(&self.text[self.off ..]);
 			if n != 0 {
 				self.off += n;
-				return Some(self.start_atx_header(level))
+				return Some(self.start_atx_header(level));
+			}
+
+			if calc_indent(&self.text[self.off ..], 4).1 == 4 {
+				return Some(self.start_indented_code());
 			}
 
 			Some(self.start_paragraph())
@@ -348,7 +365,6 @@ impl<'a> Parser<'a> {
 	fn start_paragraph(&mut self) -> Event<'a> {
 		self.skip_leading_whitespace();
 
-		// don't need to scan for paragraph interrupts on first line
 		let mut i = self.off + scan_newline(&self.text[self.off..]);
 
 		let (n, level) = scan_setext_header(&self.text[i..]);
@@ -393,13 +409,33 @@ impl<'a> Parser<'a> {
 		self.start(Tag::Header(level), limit, next)
 	}
 
+	fn start_indented_code(&mut self) -> Event<'a> {
+		let size = self.text.len();
+		let ret = self.start(Tag::CodeBlock(""), size, size);
+		self.skip_linestart();
+		ret
+	}
+
 	// determine whether the given ends the block
 	fn is_block_end(&self, loc: usize) -> bool {
 		let tail = &self.text[loc..];
-		tail.is_empty() ||
-				scan_blank_line(tail) != 0 ||
-				scan_hrule(tail) != 0 ||
-				scan_atx_header(tail).0 != 0
+		match self.stack[0] {
+			(Tag::Paragraph, _, _) => {
+				tail.is_empty() ||
+						scan_blank_line(tail) != 0 ||
+						scan_hrule(tail) != 0 ||
+						scan_atx_header(tail).0 != 0
+			}
+			(Tag::CodeBlock(_), _, _) => {
+				let (_, spaces) = calc_indent(tail, 4);
+				spaces < 4
+				// TODO: handle blank lines specially
+			}
+			(tag, _, _) => {
+				println!("strange state at is_block_end: {:?}", tag);
+				false
+			}
+		}
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
@@ -466,14 +502,25 @@ impl<'a> Parser<'a> {
 	// newline can be a bunch of cases, including closing a block
 	fn char_newline(&mut self) -> Option<Event<'a>> {
 		let next_off = self.off + 1;
-		if self.is_block_end(next_off) {
-			let (tag, limit, next) = self.stack.pop().unwrap();
+		if let (Tag::CodeBlock(lang), _, _) = self.stack[0] {
 			self.off = next_off;
-			self.skip_blank_lines();
-			Some(Event::End(tag))
+			if self.is_block_end(next_off) {
+				self.stack[0] = (Tag::CodeBlock(lang), next_off, next_off);
+			} else {
+				self.skip_linestart();
+			}
+			Some(Event::Text("\n"))
 		} else {
-			self.off += 1;
-			Some(Event::SoftBreak)
+			if self.is_block_end(next_off) {
+				let (tag, limit, next) = self.stack.pop().unwrap();
+				self.off = next_off;
+				self.skip_blank_lines();
+				Some(Event::End(tag))
+			} else {
+				self.off += 1;
+				self.skip_linestart();
+				Some(Event::SoftBreak)
+			}
 		}
 	}
 
@@ -582,7 +629,7 @@ impl<'a> Iterator for Parser<'a> {
 			match self.stack.last() {
 				Some(_) => return Some(self.next_inline()),
 				None => {
-					let ret = self.next_block();
+					let ret = self.start_block();
 					if ret.is_some() { return ret; }
 				}
 			}

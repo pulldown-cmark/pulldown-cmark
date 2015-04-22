@@ -41,6 +41,15 @@ fn start_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push('>');
 		}
+		Tag::CodeBlock(lang) => {
+			if lang.is_empty() {
+				buf.push_str("<pre><code>");
+			} else {
+				buf.push_str("<pre><code class=\"language-");
+				escape_html(buf, lang, false);
+				buf.push_str("\">");
+			}
+		}
 		Tag::Emphasis => buf.push_str("<em>"),
 		Tag::Strong => buf.push_str("<strong>")
 	}
@@ -55,6 +64,7 @@ fn end_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push_str(">\n");
 		}
+		Tag::CodeBlock(_) => buf.push_str("</code></pre>\n"),
 		Tag::Emphasis => buf.push_str("</em>"),
 		Tag::Strong => buf.push_str("</strong>")
 	}

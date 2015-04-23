@@ -41,7 +41,8 @@ fn start_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push('>');
 		}
-		Tag::CodeBlock(lang) => {
+		Tag::CodeBlock(info) => {
+			let lang = info.split(' ').next().unwrap();
 			if lang.is_empty() {
 				buf.push_str("<pre><code>");
 			} else {

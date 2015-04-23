@@ -21,6 +21,11 @@ pub struct Parser<'a> {
 	off: usize,
 
 	stack: Vec<(Tag<'a>, usize, usize)>,
+
+	// state for code fences
+	fence_char: u8,
+	fence_count: usize,
+	fence_indent: usize,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -159,6 +164,29 @@ fn scan_setext_header(data: &str) -> (usize, i32) {
 	(i, level)
 }
 
+// returns: number of bytes scanned, char, count, indent
+// Note: somewhat redundant, as bytes scanned = count + indent
+fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
+	let (beg, _) = calc_indent(data, 3);
+	if beg == data.len() { return (0, 0, 0, 0); }
+	let c = data.as_bytes()[beg];
+	if !(c == b'`' || c == b'~') { return (0, 0, 0, 0); }
+	let mut i = beg + 1;
+	while i < data.len() && data.as_bytes()[i] == c {
+		i += 1;
+	}
+	if (i - beg) >= 3 {
+		if c == b'`' {
+			let next_line = i + scan_newline(&data[i..]);
+			if data[i..next_line].find('`').is_some() {
+				return (0, 0, 0, 0);
+			}
+		}
+		return (i, c, i - beg, beg);
+	}
+	(0, 0, 0, 0)
+}
+
 // return whether delimeter run can open or close
 fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
 	// TODO: handle Unicode, not just ASCII
@@ -268,6 +296,10 @@ impl<'a> Parser<'a> {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			stack: Vec::new(),
+
+			fence_char: 0,
+			fence_count: 0,
+			fence_indent: 0,
 		};
 		ret.skip_blank_lines();
 		ret
@@ -317,7 +349,8 @@ impl<'a> Parser<'a> {
 		match self.stack[0] {
 			(Tag::Paragraph, _, _) => self.skip_leading_whitespace(),
 			(Tag::CodeBlock(_), _, _) => {
-				let (n, _) = calc_indent(&self.text[self.off ..], 4);
+				let (n, _) = calc_indent(&self.text[self.off ..], self.fence_indent);
+				// TODO: handle case where tab character takes us past fence indent
 				self.off += n;
 			}
 			(tag, _, _) => {
@@ -349,6 +382,11 @@ impl<'a> Parser<'a> {
 			if n != 0 {
 				self.off += n;
 				return Some(self.start_atx_header(level));
+			}
+
+			let (n, ch, count, indent) = scan_code_fence(&self.text[self.off ..]);
+			if n != 0 {
+				return Some(self.start_code_fence(n, ch, count, indent));
 			}
 
 			if calc_indent(&self.text[self.off ..], 4).1 == 4 {
@@ -410,9 +448,30 @@ impl<'a> Parser<'a> {
 	}
 
 	fn start_indented_code(&mut self) -> Event<'a> {
+		self.fence_char = b'\0';
+		self.fence_indent = 4;
 		let size = self.text.len();
 		let ret = self.start(Tag::CodeBlock(""), size, size);
 		self.skip_linestart();
+		ret
+	}
+
+	fn start_code_fence(&mut self, n: usize, ch: u8, count: usize, indent: usize) -> Event<'a> {
+		self.fence_char = ch;
+		self.fence_count = count;
+		self.fence_indent = indent;
+		let beg_info = self.off + n;
+		let next_line = beg_info + scan_newline(&self.text[beg_info..]);
+		self.off = next_line;
+		let info = &self.text[beg_info..next_line].trim();
+		let size = self.text.len();
+		let ret = self.start(Tag::CodeBlock(info), size, size);
+		if self.is_block_end(next_line) {
+			let following_line = next_line + scan_newline(&self.text[next_line..]);
+			*self.stack.last_mut().unwrap() = (Tag::CodeBlock(info), next_line, following_line);
+		} else {
+			self.skip_linestart();
+		}
 		ret
 	}
 
@@ -424,12 +483,26 @@ impl<'a> Parser<'a> {
 				tail.is_empty() ||
 						scan_blank_line(tail) != 0 ||
 						scan_hrule(tail) != 0 ||
-						scan_atx_header(tail).0 != 0
+						scan_atx_header(tail).0 != 0 ||
+						scan_code_fence(tail).0 != 0
 			}
 			(Tag::CodeBlock(_), _, _) => {
-				let (_, spaces) = calc_indent(tail, 4);
-				spaces < 4
-				// TODO: handle blank lines specially
+				if self.fence_char == b'\0' {
+					// indented code block
+					let (_, spaces) = calc_indent(tail, 4);
+					spaces < 4
+					// TODO: handle blank lines specially
+				} else {
+					let (n, c, count, _) = scan_code_fence(tail);
+					if c != self.fence_char || count < self.fence_count {
+						return false;
+					}
+					if n + loc < self.text.len() && scan_blank_line(&self.text[n + loc ..]) == 0 {
+						// Closing code fences cannot have info strings
+						return false;
+					}
+					return true;
+				}
 			}
 			(tag, _, _) => {
 				println!("strange state at is_block_end: {:?}", tag);
@@ -501,19 +574,26 @@ impl<'a> Parser<'a> {
 
 	// newline can be a bunch of cases, including closing a block
 	fn char_newline(&mut self) -> Option<Event<'a>> {
-		let next_off = self.off + 1;
+		let off = self.off + 1;
 		if let (Tag::CodeBlock(lang), _, _) = self.stack[0] {
-			self.off = next_off;
-			if self.is_block_end(next_off) {
-				self.stack[0] = (Tag::CodeBlock(lang), next_off, next_off);
+			self.off = off;
+			if self.is_block_end(off) {
+				// TODO: generalize to situations where there's more than one tag on
+				// the stack (maybe can't happen in indented code)
+				let next = if self.fence_char != b'\0' {
+					off + scan_newline(&self.text[off..])
+				} else {
+					off
+				};
+				self.stack[0] = (Tag::CodeBlock(lang), off, next);
 			} else {
 				self.skip_linestart();
 			}
 			Some(Event::Text("\n"))
 		} else {
-			if self.is_block_end(next_off) {
+			if self.is_block_end(off) {
 				let (tag, limit, next) = self.stack.pop().unwrap();
-				self.off = next_off;
+				self.off = off;
 				self.skip_blank_lines();
 				Some(Event::End(tag))
 			} else {

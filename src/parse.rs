@@ -24,12 +24,25 @@ enum State {
 	Code,
 }
 
+enum StackDelta<T> {
+	Push(T),
+	Pop(T),
+	Nop
+}
+
+#[derive(Copy, Clone, Debug)]
+enum Container {
+	BlockQuote,
+}
+
 pub struct Parser<'a> {
 	text: &'a str,
 	off: usize,
 
 	state: State,
 	stack: Vec<(Tag<'a>, usize, usize)>,
+
+	containers: Vec<Container>,
 
 	// state for code fences
 	fence_char: u8,
@@ -43,6 +56,7 @@ pub enum Tag<'a> {
 	Paragraph,
 	Rule,
 	Header(i32),
+	BlockQuote,
 	CodeBlock(&'a str),
 
 	// span-level tags
@@ -151,7 +165,7 @@ fn scan_atx_header(data: &str) -> (usize, i32) {
 	}
 }
 
-// returns number of bytes in line and level
+// returns number of bytes in line (including trailing newline) and level
 fn scan_setext_header(data: &str) -> (usize, i32) {
 	let size = data.len();
 	let (mut i, _) = calc_indent(data, 3);
@@ -164,7 +178,10 @@ fn scan_setext_header(data: &str) -> (usize, i32) {
 	}
 	while i < size {
 		match data.as_bytes()[i] {
-			b'\n' => break,
+			b'\n' => {
+				i += 1;
+				break;
+			}
 			b' ' | b'\t' ... b'\r' => i += 1,
 			_ => return (0, 0)
 		}
@@ -299,6 +316,12 @@ fn is_escaped(data: &str, loc: usize) -> bool {
 	((loc - i) & 1) != 0
 }
 
+fn tag_for_container<'a>(container: Container) -> Tag<'a> {
+	match container {
+		Container::BlockQuote => Tag::BlockQuote
+	}
+}
+
 impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
 		let mut ret = Parser {
@@ -306,6 +329,7 @@ impl<'a> Parser<'a> {
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			state: State::StartBlock,
 			stack: Vec::new(),
+			containers: Vec::new(),
 
 			fence_char: 0,
 			fence_count: 0,
@@ -328,6 +352,7 @@ impl<'a> Parser<'a> {
 		}
 	}
 
+	// if end is not known, limit should be text.len(), next should be 0
 	fn start(&mut self, tag: Tag<'a>, limit: usize, next: usize) -> Event<'a> {
 		self.stack.push((tag, limit, next));
 		Event::Start(tag)
@@ -335,12 +360,28 @@ impl<'a> Parser<'a> {
 
 	fn end(&mut self) -> Event<'a> {
 		let (tag, _, next) = self.stack.pop().unwrap();
-		self.off = next;
+		match tag {
+			// containers
+			Tag::BlockQuote => { let _ = self.containers.pop(); }
+
+			// block level tags
+			Tag::Paragraph | Tag::Header(_) | Tag::Rule | Tag::CodeBlock(_) => {
+				self.state = State::StartBlock;
+				// TODO: skip blank lines (probably needs to be in start_block)
+			}
+
+			// inline
+			_ => ()
+		}
+		if next != 0 { self.off = next; }
+
+		/*
 		if self.stack.is_empty() {
 			// TODO maybe: make block ends do this
 			self.state = State::StartBlock;
 			self.skip_blank_lines();
 		}
+		*/
 		Event::End(tag)
 	}
 
@@ -374,8 +415,55 @@ impl<'a> Parser<'a> {
 		}
 	}
 
+	// Push or pop containers until stack matches container markers
+	// In push case, number of characters returned goes up to current stack
+	fn scan_containers(&mut self, lazy: bool) -> (usize, StackDelta<Container>) {
+		let tail = &self.text[self.off ..];
+		let mut i = 0;
+		let mut container_count = 0;
+		loop {
+			let mut n = i + calc_indent(&tail[i..], 3).0;
+			if tail[n..].starts_with('>') {
+				n += 1;
+				if tail[n..].starts_with(' ') { n += 1; }
+				// TODO: check for mismatch
+				if self.containers.len() == container_count {
+					return (i, StackDelta::Push(Container::BlockQuote));
+				}
+				i = n;
+				container_count += 1;
+			} else {
+				break;
+			}
+		}
+		if !lazy && self.containers.len() > container_count {
+			(i, StackDelta::Pop(*self.containers.last().unwrap()))
+		} else {
+			(i, StackDelta::Nop)
+		}
+	}
+
 	fn start_block(&mut self) -> Option<Event<'a>> {
-		if self.off < self.text.len() {
+		let size = self.text.len();
+		while self.off < size {
+
+			let (n, result) = self.scan_containers(false);
+			match result {
+				StackDelta::Push(container) => {
+					self.containers.push(container);
+					return Some(self.start(tag_for_container(container), size, 0));
+				}
+				StackDelta::Pop(container) => {
+					return Some(self.end());
+				}
+				StackDelta::Nop => self.off += n
+			}
+
+			let n = scan_blank_line(&self.text[self.off..]);
+			if n != 0 {
+				self.off += n;
+				continue;
+			}
 
 			let n = scan_hrule(&self.text[self.off..]);
 			if n != 0 {
@@ -398,10 +486,9 @@ impl<'a> Parser<'a> {
 				return Some(self.start_indented_code());
 			}
 
-			Some(self.start_paragraph())
-		} else {
-			None
+			return Some(self.start_paragraph());
 		}
+		None
 	}
 
 	// can start a paragraph or a setext header, as they start similarly
@@ -410,20 +497,23 @@ impl<'a> Parser<'a> {
 
 		let mut i = self.off + scan_newline(&self.text[self.off..]);
 
-		let (n, level) = scan_setext_header(&self.text[i..]);
-		if n != 0 {
-			let next = i + n;
-			while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
-				i -= 1;
+		if let (n, StackDelta::Nop) = self.scan_containers(false) {
+			i += n;
+			let (n, level) = scan_setext_header(&self.text[i..]);
+			if n != 0 {
+				let next = i + n;
+				while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
+					i -= 1;
+				}
+				self.state = State::Inline;
+				return self.start(Tag::Header(level), i, next);
 			}
-			self.state = State::Inline;
-			return self.start(Tag::Header(level), i, next);
 		}
 
 		let size = self.text.len();
 		// let the block closing logic in char_newline take care of computing the end
 		self.state = State::Inline;
-		self.start(Tag::Paragraph, size, size)
+		self.start(Tag::Paragraph, size, 0)
 	}
 
 	fn start_hrule(&mut self) -> Event<'a> {
@@ -462,7 +552,7 @@ impl<'a> Parser<'a> {
 		let size = self.text.len();
 		self.state = State::Code;
 		self.skip_code_linestart();
-		self.start(Tag::CodeBlock(""), size, size)
+		self.start(Tag::CodeBlock(""), size, 0)
 	}
 
 	fn start_code_fence(&mut self, n: usize, ch: u8, count: usize, indent: usize) -> Event<'a> {
@@ -475,21 +565,24 @@ impl<'a> Parser<'a> {
 		let info = &self.text[beg_info..next_line].trim();
 		let size = self.text.len();
 		self.state = State::CodeLineStart;
-		self.start(Tag::CodeBlock(info), size, size)
+		self.start(Tag::CodeBlock(info), size, 0)
 	}
 
 	fn next_code_line_start(&mut self) -> Event<'a> {
-		let off = self.off;
+		let off = match self.scan_containers(false) {
+			(_, StackDelta::Pop(_)) => {
+				return self.end();
+			}
+			(n, _) => self.off + n
+		};
 		if self.is_code_block_end(off) {
 			let ret = self.end();
-			self.off = off;
 			if self.fence_char != b'\0' {
 				self.off = off + scan_newline(&self.text[off..]);
 			}
-			self.skip_blank_lines();
-			self.state = State::StartBlock;
 			ret
 		} else {
+			self.off = off;
 			self.skip_code_linestart();
 			self.state = State::Code;
 			self.next_code()
@@ -617,12 +710,16 @@ impl<'a> Parser<'a> {
 	// newline can be a bunch of cases, including closing a block
 	fn char_newline(&mut self) -> Option<Event<'a>> {
 		self.off += 1;
-		if self.is_inline_block_end(self.off) {
-			let (tag, limit, next) = self.stack.pop().unwrap();
-			self.skip_blank_lines();
-			self.state = State::StartBlock;
-			Some(Event::End(tag))
+		let start = if let (n, StackDelta::Nop) = self.scan_containers(true) {
+			self.off + n
 		} else {
+			return Some(self.end());
+		};
+		if self.is_inline_block_end(start) {
+			//println!("off {} stack {:?} containers {:?}", self.off, self.stack, self.containers);
+			Some(self.end())
+		} else {
+			self.off = start;
 			self.skip_inline_linestart();
 			Some(Event::SoftBreak)
 		}

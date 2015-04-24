@@ -41,6 +41,7 @@ fn start_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push('>');
 		}
+		Tag::BlockQuote => buf.push_str("<blockquote>\n"),
 		Tag::CodeBlock(info) => {
 			let lang = info.split(' ').next().unwrap();
 			if lang.is_empty() {
@@ -65,6 +66,7 @@ fn end_tag(buf: &mut String, tag: Tag) {
 			buf.push((b'0' + level as u8) as char);
 			buf.push_str(">\n");
 		}
+		Tag::BlockQuote => buf.push_str("</blockquote>\n"),
 		Tag::CodeBlock(_) => buf.push_str("</code></pre>\n"),
 		Tag::Emphasis => buf.push_str("</em>"),
 		Tag::Strong => buf.push_str("</strong>")

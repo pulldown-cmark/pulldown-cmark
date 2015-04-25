@@ -14,7 +14,10 @@
 
 //! Main pull parser object.
 
-use entities::is_valid_entity;
+use entities;
+use std::borrow::Cow;
+use std::borrow::Cow::{Borrowed, Owned};
+use std::char;
 
 #[derive(Debug)]
 enum State {
@@ -50,7 +53,7 @@ pub struct Parser<'a> {
 	fence_indent: usize,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Tag<'a> {
 	// block-level tags
 	Paragraph,
@@ -62,13 +65,14 @@ pub enum Tag<'a> {
 	// span-level tags
 	Emphasis,
 	Strong,
+	Link(Cow<'a, str>, Cow<'a, str>),
+	Image(Cow<'a, str>, Cow<'a, str>),
 }
 
 pub enum Event<'a> {
 	Start(Tag<'a>),
 	End(Tag<'a>),
-	Text(&'a str),  // should probably be a Cow
-	Entity(&'a str),
+	Text(Cow<'a, str>),
 	SoftBreak,
 	HardBreak,
 }
@@ -217,7 +221,6 @@ fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
 fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
 	// TODO: handle Unicode, not just ASCII
 	let size = data.len();
-	let c = data.as_bytes()[loc];
 	let mut end = loc + 1;
 	while end < size && data.as_bytes()[end] == c {
 		end += 1;
@@ -274,8 +277,13 @@ fn is_ascii_punctuation(c: u8) -> bool {
 	ASCII_PUNCTUATION.binary_search(&c).is_ok()
 }
 
+fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
+	let codepoint = u32::from_str_radix(s, radix).unwrap();
+	Owned(char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string())
+}
+
 // doesn't bother to check data[0] == '&'
-fn scan_entity(data: &str) -> usize {
+fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
 	let size = data.len();
 	let bytes = data.as_bytes();
 	let mut end = 1;
@@ -287,25 +295,27 @@ fn scan_entity(data: &str) -> usize {
 				end += 1;
 			}
 			if end < size && end > 3 && end < 12 && bytes[end] == b';' {
-				return end + 1;
+				return (end + 1, Some(cow_from_codepoint_str(&data[3..end], 16)));
 			}
 		} else {
 			while end < size && is_digit(bytes[end]) {
 				end += 1;
 			}
 			if end < size && end > 2 && end < 11 && bytes[end] == b';' {
-				return end + 1;
+				return (end + 1, Some(cow_from_codepoint_str(&data[2..end], 10)));
 			}
 		}
-		return 0;
+		return (0, None);
 	}
 	while end < size && is_ascii_alphanumeric(data.as_bytes()[end]) {
 		end += 1;
 	}
-	if end < size && bytes[end] == b';' && is_valid_entity(&data[1..end]) {
-		return end + 1;  // real entity
+	if end < size && bytes[end] == b';' {
+		if let Some(value) = entities::get_entity(&data[1..end]) {
+			return (end + 1, Some(Borrowed(value)));
+		}
 	}
-	return 0;
+	return (0, None);
 }
 
 fn is_escaped(data: &str, loc: usize) -> bool {
@@ -319,6 +329,40 @@ fn is_escaped(data: &str, loc: usize) -> bool {
 fn tag_for_container<'a>(container: Container) -> Tag<'a> {
 	match container {
 		Container::BlockQuote => Tag::BlockQuote
+	}
+}
+
+// Remove backslash escapes and resolve entities
+fn unescape<'a>(input: &'a str) -> Cow<'a, str> {
+	if input.find(|c| c == '\\' || c == '&').is_none() {
+		Borrowed(input)
+	} else {
+		let mut result = String::new();
+		let mut mark = 0;
+		let mut i = 0;
+		while i < input.len() {
+			match input.as_bytes()[i] {
+				b'\\' => {
+					result.push_str(&input[mark..i]);
+					i += 1;
+					mark = i;
+				}
+				b'&' => {
+					match scan_entity(&input[i..]) {
+						(n, Some(value)) => {
+							result.push_str(&input[mark..i]);
+							result.push_str(&value);
+							i += n;
+							mark = i;
+						}
+						_ => i += 1
+					}
+				}
+				_ => i += 1
+			}
+		}
+		result.push_str(&input[mark..]);
+		Owned(result)
 	}
 }
 
@@ -354,7 +398,7 @@ impl<'a> Parser<'a> {
 
 	// if end is not known, limit should be text.len(), next should be 0
 	fn start(&mut self, tag: Tag<'a>, limit: usize, next: usize) -> Event<'a> {
-		self.stack.push((tag, limit, next));
+		self.stack.push((tag.clone(), limit, next));
 		Event::Start(tag)
 	}
 
@@ -367,7 +411,7 @@ impl<'a> Parser<'a> {
 			// block level tags
 			Tag::Paragraph | Tag::Header(_) | Tag::Rule | Tag::CodeBlock(_) => {
 				self.state = State::StartBlock;
-				// TODO: skip blank lines (probably needs to be in start_block)
+				// TODO: skip blank lines (for cleaner source maps)
 			}
 
 			// inline
@@ -453,7 +497,7 @@ impl<'a> Parser<'a> {
 					self.containers.push(container);
 					return Some(self.start(tag_for_container(container), size, 0));
 				}
-				StackDelta::Pop(container) => {
+				StackDelta::Pop(_) => {
 					return Some(self.end());
 				}
 				StackDelta::Nop => self.off += n
@@ -613,7 +657,7 @@ impl<'a> Parser<'a> {
 			i += 1;
 		}
 		self.off = i;
-		Event::Text(&self.text[beg..i])
+		Event::Text(Borrowed(&self.text[beg..i]))
 	}
 
 	fn is_code_block_end(&self, loc: usize) -> bool {
@@ -655,7 +699,7 @@ impl<'a> Parser<'a> {
 			if self.is_active_char(c) {
 				if i > beg {
 					self.off = i;
-					return Event::Text(&self.text[beg..i]);
+					return Event::Text(Borrowed(&self.text[beg..i]));
 				}
 				if let Some(event) = self.active_char(c) {
 					return event;
@@ -665,7 +709,7 @@ impl<'a> Parser<'a> {
 		}
 		if i > beg {
 			self.off = i;
-			Event::Text(&self.text[beg..i])
+			Event::Text(Borrowed(&self.text[beg..i]))
 		} else {
 			self.end()
 		}
@@ -673,7 +717,7 @@ impl<'a> Parser<'a> {
 
 	fn is_active_char(&self, c: u8) -> bool {
 		c == b'\t' || c == b'\n' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' ||
-				c == b'_' || c == b'*'
+				c == b'_' || c == b'*' || c == b'[' || c == b'!'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
@@ -685,6 +729,7 @@ impl<'a> Parser<'a> {
 			b'&' => self.char_entity(),
 			b'_' => self.char_emphasis(),
 			b'*' => self.char_emphasis(),
+			b'[' | b'!' => self.char_link(),
 			_ => None
 		}
 	}
@@ -704,7 +749,7 @@ impl<'a> Parser<'a> {
 			}
 		}
 		self.off += 1;
-		Event::Text(&"    "[(count % 4) ..])
+		Event::Text(Borrowed(&"    "[(count % 4) ..]))
 	}
 
 	// newline can be a bunch of cases, including closing a block
@@ -728,7 +773,7 @@ impl<'a> Parser<'a> {
 	fn char_return(&mut self) -> Option<Event<'a>> {
 		if self.text[self.off + 1..].starts_with('\n') {
 			self.off += 1;
-			Some(Event::Text(""))
+			Some(Event::Text(Borrowed("")))
 		} else {
 			None
 		}
@@ -749,20 +794,19 @@ impl<'a> Parser<'a> {
 			}
 			if is_ascii_punctuation(c) {
 				self.off += 2;
-				return Some(Event::Text(&self.text[self.off - 1 .. self.off]));
+				return Some(Event::Text(Borrowed(&self.text[self.off - 1 .. self.off])));
 			}
 		}
 		None
 	}
 
 	fn char_entity(&mut self) -> Option<Event<'a>> {
-		let beg = self.off;
-		let ret = scan_entity(&self.text[beg..]);
-		if ret != 0 {
-			self.off += ret;
-			Some(Event::Entity(&self.text[beg .. self.off]))
-		} else {
-			None
+		match scan_entity(&self.text[self.off ..]) {
+			(n, Some(value)) => {
+				self.off += n;
+				Some(Event::Text(value))
+			}
+			_ => None
 		}
 	}
 
@@ -771,7 +815,7 @@ impl<'a> Parser<'a> {
 		let data = &self.text[.. self.limit()];
 
 		let c = data.as_bytes()[self.off];
-		let (n, can_open, can_close) = compute_open_close(data, self.off, c);
+		let (n, can_open, _can_close) = compute_open_close(data, self.off, c);
 		if !can_open {
 			return None;
 		}
@@ -819,12 +863,139 @@ impl<'a> Parser<'a> {
 		}
 		None
 	}
+
+	fn char_link(&mut self) -> Option<Event<'a>> {
+		let beg = self.off;
+		let tail = &self.text[beg .. self.limit()];
+		let size = tail.len();
+
+		// scan link text
+		let (mut i, is_image) = if tail.as_bytes()[0] == b'!' {
+			if size < 2 || tail.as_bytes()[1] != b'[' { return None; }
+			(2, true)
+		} else {
+			(1, false)
+		};
+		let text_beg = i;
+		let mut nest = 1;
+		while i < size {
+			match tail.as_bytes()[i] {
+				b'\n' => { return None; }  // TODO: handle multiline (check block boundary)
+				b'[' => nest += 1,
+				b']' => {
+					nest -= 1;
+					if nest == 0 {
+						break;
+					}
+				}
+				b'\\' => i += 1,
+				// TODO: ` etc
+				_ => ()
+			}
+			i += 1;
+		}
+		if i >= size { return None; }
+		let text_end = i;
+		i += 1;  // skip closing ]
+
+		// scan dest
+		if !tail[i..].starts_with("(") { return None; }
+		i += 1;
+		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
+			// todo: check block boundary on newline
+			i += 1;
+		}
+		if i >= size { return None; }
+
+		let pointy = tail.as_bytes()[i] == b'<';
+		if pointy { i += 1; }
+		let dest_beg = i;
+		let mut in_parens = false;
+		while i < size {
+			match tail.as_bytes()[i] {
+				b'\n' => break,
+				b' ' => {
+					if !pointy && !in_parens { break; }
+				}
+				b'(' => {
+					if !pointy {
+						if in_parens { return None; }
+						in_parens = true;
+					}
+				}
+				b')' => {
+					if !pointy {
+						if !in_parens { break; }
+						in_parens = false;
+					}
+				}
+				b'>' => {
+					if pointy { break; }
+				}
+				b'\\' => i += 1,
+				_ => ()
+			}
+			i += 1;
+		}
+		let dest_end = i;
+		if pointy {
+			if i >= size || tail.as_bytes()[i] != b'>' { return None; }
+			i += 1;
+		}
+		let dest = unescape(&tail[dest_beg..dest_end]);
+		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
+			// todo: check block boundary on newline
+			i += 1;
+		}
+		if i == size { return None; }
+
+		// scan title
+		let title = if tail.as_bytes()[i] == b')' {
+			Borrowed("")
+		} else {
+			let titleclose = match tail.as_bytes()[i] {
+				b'(' => b')',
+				b'\'' => b'\'',
+				b'\"' => b'\"',
+				_ => return None
+			};
+			i += 1;
+			let title_beg = i;
+			while i < size {
+				let c = tail.as_bytes()[i];
+				if c == titleclose {
+					break;
+				} else if c == b'\\' {
+					i += 2;  // may be > size
+				} else {
+					i += 1;
+				}
+			}
+			if i >= size { return None; }
+			let title_end = i;
+			i += 1;
+			unescape(tail[title_beg..title_end].trim_right())
+		};
+		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
+			// todo: check block boundary on newline
+			i += 1;
+		}
+		if i == size || tail.as_bytes()[i] != b')' { return None; }
+		i += 1;
+		self.off = beg + text_beg;
+		if is_image {
+			Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
+		} else {
+			Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+		}
+	}
 }
 
 impl<'a> Iterator for Parser<'a> {
 	type Item = Event<'a>;
 
 	fn next(&mut self) -> Option<Event<'a>> {
+		//println!("off {}, stack {:?}", self.off, self.stack);
 		if self.off < self.text.len() {
 			match self.state {
 				State::StartBlock => {

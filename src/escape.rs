@@ -33,7 +33,7 @@ pub fn escape_href(ob: &mut String, s: &str) {
 	let mut mark = 0;
 	for i in 0..s.len() {
 		let c = s.as_bytes()[i];
-		if c < 0x80 && HREF_SAFE[c as usize] == 0 {
+		if c >= 0x80 || HREF_SAFE[c as usize] == 0 {
 			// character needing escape
 
 			// write partial substring up to mark
@@ -58,9 +58,7 @@ pub fn escape_href(ob: &mut String, s: &str) {
 			mark = i + 1;  // all escaped characters are ASCII
 		}
 	}
-	if mark < s.len() {
-		ob.push_str(&s[mark..]);
-	}
+	ob.push_str(&s[mark..]);
 }
 
 static HTML_ESCAPE_TABLE: [u8; 64] = [
@@ -86,15 +84,11 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
 		if c < 0x40 {
 			let escape = HTML_ESCAPE_TABLE[c as usize];
 			if escape != 0 && (secure || c != b'/') {
-				if mark < i {
-					ob.push_str(&s[mark..i]);
-				}
+				ob.push_str(&s[mark..i]);
 				ob.push_str(HTML_ESCAPES[escape as usize]);
 				mark = i + 1;  // all escaped characters are ASCII
 			}
 		}
 	}
-	if mark < s.len() {
-		ob.push_str(&s[mark..]);
-	}	
+	ob.push_str(&s[mark..]);
 }

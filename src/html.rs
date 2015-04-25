@@ -15,19 +15,18 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
-use std::fmt::Write;
 use parse::{Event, Tag};
-use escape::escape_html;
+use parse::Event::{Start, End, Text, SoftBreak, HardBreak};
+use escape::{escape_html, escape_href};
 
 pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
 	for event in iter {
 		match event {
-			Event::Start(tag) => start_tag(buf, tag),
-			Event::End(tag) => end_tag(buf, tag),
-			Event::Text(text) => escape_html(buf, text, false),
-			Event::Entity(text) => buf.push_str(text),
-			Event::SoftBreak => buf.push('\n'),
-			Event::HardBreak => buf.push_str("<br />\n")
+			Start(tag) => start_tag(buf, tag),
+			End(tag) => end_tag(buf, tag),
+			Text(text) => escape_html(buf, &text, false),
+			SoftBreak => buf.push('\n'),
+			HardBreak => buf.push_str("<br />\n")
 		}
 	}
 }
@@ -53,7 +52,22 @@ fn start_tag(buf: &mut String, tag: Tag) {
 			}
 		}
 		Tag::Emphasis => buf.push_str("<em>"),
-		Tag::Strong => buf.push_str("<strong>")
+		Tag::Strong => buf.push_str("<strong>"),
+		Tag::Link(dest, title) => {
+			buf.push_str("<a href=\"");
+			escape_href(buf, &dest);
+			if !title.is_empty() {
+				buf.push_str("\" title=\"");
+				escape_html(buf, &title, false);
+			}
+			buf.push_str("\">");
+		}
+		Tag::Image(dest, _) => {
+			buf.push_str("<img src=\"");
+			escape_href(buf, &dest);
+			buf.push_str("\" alt=\"");
+			// TODO: suppress markup for alt text
+		}
 	}
 }
 
@@ -69,6 +83,14 @@ fn end_tag(buf: &mut String, tag: Tag) {
 		Tag::BlockQuote => buf.push_str("</blockquote>\n"),
 		Tag::CodeBlock(_) => buf.push_str("</code></pre>\n"),
 		Tag::Emphasis => buf.push_str("</em>"),
-		Tag::Strong => buf.push_str("</strong>")
+		Tag::Strong => buf.push_str("</strong>"),
+		Tag::Link(_, _) => buf.push_str("</a>"),
+		Tag::Image(_, title) => {
+			if !title.is_empty() {
+				buf.push_str("\" title=\"");
+				escape_html(buf, &title, false);
+			}
+			buf.push_str("\" />")
+		}
 	}
 }

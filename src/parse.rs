@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Main pull parser object.
+//! Raw parser, for doing a single pass over input.
 
 use scanners::*;
 use std::borrow::Cow;
@@ -34,7 +34,7 @@ enum Container {
 	ListItem(usize),
 }
 
-pub struct Parser<'a> {
+pub struct RawParser<'a> {
 	text: &'a str,
 	off: usize,
 
@@ -75,9 +75,9 @@ pub enum Event<'a> {
 	HardBreak,
 }
 
-impl<'a> Parser<'a> {
-	pub fn new(text: &'a str) -> Parser<'a> {
-		let mut ret = Parser {
+impl<'a> RawParser<'a> {
+	pub fn new(text: &'a str) -> RawParser<'a> {
+		let mut ret = RawParser {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			state: State::StartBlock,
@@ -757,7 +757,7 @@ impl<'a> Parser<'a> {
 	}
 }
 
-impl<'a> Iterator for Parser<'a> {
+impl<'a> Iterator for RawParser<'a> {
 	type Item = Event<'a>;
 
 	fn next(&mut self) -> Option<Event<'a>> {

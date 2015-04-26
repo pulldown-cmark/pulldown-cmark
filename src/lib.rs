@@ -14,12 +14,13 @@
 
 //! Pull parser for commonmark.
 
-pub mod parse;
 pub mod html;
 
+mod passes;
+mod parse;
 mod scanners;
 mod entities;
 mod escape;
 
-pub use parse::Parser;
-pub use parse::Event;
+pub use passes::Parser;
+pub use parse::{Event, Tag};

@@ -29,10 +29,20 @@ use std::path::Path;
 use std::fs::File;
 
 fn render_html(text: &str) -> String {
-	let mut s = String::new();
+	let mut s = String::with_capacity(text.len() * 3 / 2);
 	let p = Parser::new(&text);
 	html::push_html(&mut s, p);
 	s
+}
+
+fn dry_run(text:&str) {
+	let p = Parser::new(&text);
+	/*
+	let events = p.collect::<Vec<_>>();
+	let count = events.len();
+	*/
+	let count = p.count();
+	println!("{} events", count);
 }
 
 fn print_events(text: &str) {
@@ -142,6 +152,7 @@ fn run_spec(spec_text: &str, args: &[String]) {
 pub fn main() {
 	let args: Vec<_> = env::args().collect();
 	let mut opts = getopts::Options::new();
+	opts.optflag("d", "dry-run", "dry run, produce no output");
 	opts.optflag("e", "events", "print event sequence instead of rendering");
 	opts.optopt("s", "spec", "run tests from spec file", "FILE");
 	let matches = match opts.parse(&args[1..]) {
@@ -158,6 +169,8 @@ pub fn main() {
 		}
 		if matches.opt_present("events") {
 			print_events(&input);		
+		} else if matches.opt_present("dry-run") {
+			dry_run(&input);
 		} else {
 			print!("{}", render_html(&input));
 		}

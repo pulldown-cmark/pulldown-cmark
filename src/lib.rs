@@ -17,6 +17,7 @@
 pub mod parse;
 pub mod html;
 
+mod scanners;
 mod entities;
 mod escape;
 

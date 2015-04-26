@@ -15,6 +15,8 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
+use std::fmt::Write;
+
 use parse::{Event, Tag};
 use parse::Event::{Start, End, Text, SoftBreak, HardBreak};
 use escape::{escape_html, escape_href};
@@ -51,6 +53,12 @@ fn start_tag(buf: &mut String, tag: Tag) {
 				buf.push_str("\">");
 			}
 		}
+		Tag::List(Some(1)) => buf.push_str("<ol>\n"),
+		Tag::List(Some(start)) => {
+			let _ = write!(buf, "<ol start=\"{}>\"\n", start);
+		}
+		Tag::List(None) => buf.push_str("<ul>\n"),
+		Tag::Item => buf.push_str("<li>"),
 		Tag::Emphasis => buf.push_str("<em>"),
 		Tag::Strong => buf.push_str("<strong>"),
 		Tag::Link(dest, title) => {
@@ -82,6 +90,9 @@ fn end_tag(buf: &mut String, tag: Tag) {
 		}
 		Tag::BlockQuote => buf.push_str("</blockquote>\n"),
 		Tag::CodeBlock(_) => buf.push_str("</code></pre>\n"),
+		Tag::List(Some(_)) => buf.push_str("</ol>\n"),
+		Tag::List(None) => buf.push_str("</ul>\n"),
+		Tag::Item => buf.push_str("</li>\n"),
 		Tag::Emphasis => buf.push_str("</em>"),
 		Tag::Strong => buf.push_str("</strong>"),
 		Tag::Link(_, _) => buf.push_str("</a>"),

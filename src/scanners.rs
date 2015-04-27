@@ -200,10 +200,13 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
 		}
 		_ => { return (0, 0, 0, 0); }
 	};
-	let (postn, mut postindent) = calc_indent(&data[n + w .. ], 3);
+	let (mut postn, mut postindent) = calc_indent(&data[n + w .. ], 5);
 	if postindent == 0 {
 		if !scan_eol(&data[n + w ..]).1 { return (0, 0, 0, 0); }
 		postindent += 1;
+	} else if postindent > 4 {
+		postn = 1;
+		postindent = 1;
 	}
 	(n + w + postn, c, start, indent + w + postindent)
 }

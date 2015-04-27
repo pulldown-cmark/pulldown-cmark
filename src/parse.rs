@@ -16,7 +16,8 @@
 
 use scanners::*;
 use std::borrow::Cow;
-use std::borrow::Cow::Borrowed;
+use std::borrow::Cow::{Borrowed};
+use std::collections::HashSet;
 
 #[derive(PartialEq, Debug)]
 enum State {
@@ -30,7 +31,7 @@ enum State {
 #[derive(Copy, Clone, Debug)]
 enum Container {
 	BlockQuote,
-	List(u8),
+	List(usize, u8),
 	ListItem(usize),
 }
 
@@ -42,11 +43,18 @@ pub struct RawParser<'a> {
 	stack: Vec<(Tag<'a>, usize, usize)>,
 
 	containers: Vec<Container>,
+	loose_lists: HashSet<usize>,  // offset is at list marker
+	last_line_was_empty: bool,
 
 	// state for code fences
 	fence_char: u8,
 	fence_count: usize,
 	fence_indent: usize,
+}
+
+pub struct ParseInfo {
+	pub loose_lists: HashSet<usize>,
+	// TODO: link references
 }
 
 #[derive(Clone, Debug)]
@@ -83,6 +91,8 @@ impl<'a> RawParser<'a> {
 			state: State::StartBlock,
 			stack: Vec::new(),
 			containers: Vec::new(),
+			loose_lists: HashSet::new(),
+			last_line_was_empty: false,
 
 			fence_char: 0,
 			fence_count: 0,
@@ -96,6 +106,13 @@ impl<'a> RawParser<'a> {
 	// useful for building source maps
 	pub fn get_offset(&self) -> usize {
 		self.off
+	}
+
+	// extract info from parser on finish
+	pub fn get_info(self) -> ParseInfo {
+		ParseInfo {
+			loose_lists: self.loose_lists,
+		}
 	}
 
 	fn limit(&self) -> usize {
@@ -160,6 +177,7 @@ impl<'a> RawParser<'a> {
 		self.off += n;
 	}
 
+	// TODO: this function doesn't respect containers
 	fn skip_blank_lines(&mut self) {
 		loop {
 			let ret = scan_blank_line(&self.text[self.off..]);
@@ -171,24 +189,23 @@ impl<'a> RawParser<'a> {
 	}
 
 	// Scan markers and indentation for current container stack
-	fn scan_containers(&mut self, lazy: bool) -> (usize, bool) {
-		let tail = &self.text[self.off ..];
+	fn scan_containers(&self, text: &str, lazy: bool) -> (usize, bool) {
 		let mut i = 0;
 		for container in self.containers.iter() {
 			match *container {
 				Container::BlockQuote => {
-					let n = scan_blockquote_start(&tail[i..]);
+					let n = scan_blockquote_start(&text[i..]);
 					if n == 0 {
 						return (i, lazy);
 					} else {
 						i += n;
 					}
 				}
-				Container::List(_) => (),
+				Container::List(_, _) => (),
 				Container::ListItem(indent) => {
-					let (n, actual) = calc_indent(&tail[i..], indent);
-					if actual < indent {
-						return (i, lazy || scan_eol(&tail[i + n .. ]).1);
+					let (n, actual) = calc_indent(&text[i..], indent);
+					if actual < indent && !scan_eol(&text[i + n .. ]).1 {
+						return (i, lazy);
 					} else {
 						i += n;
 					}
@@ -198,11 +215,73 @@ impl<'a> RawParser<'a> {
 		(i, true)
 	}
 
+	// scans empty lines with current container stack
+	// returns number of bytes scanned, number of empty lines
+	// note: EOF counts as a line ending for counting lines
+	fn scan_empty_lines(&self, text: &str) -> (usize, usize) {
+		let mut i = 0;
+		let mut lines = 0;
+		loop {
+			let (n, scanned) = self.scan_containers(&text[i..], false);
+			if !scanned {
+				return (i, lines);
+			}
+			if i == text.len() {
+				return (i, lines + 1);
+			}
+			let n_blank = scan_blank_line(&text[i + n ..]);
+			if n_blank == 0 {
+				return (i, lines);
+			}
+			i += n + n_blank;
+			lines += 1;
+		}
+	}
+
+	fn at_list(&self, level: usize) -> Option<usize> {
+		let len = self.containers.len();
+		if len >= level {
+			if let Container::List(offset, _) = self.containers[len - level] {
+				return Some(offset);
+			}
+		}
+		None
+	}
+
+	// n is number of bytes (in blank lines) to skip
+	fn end_containing_lists(&mut self, n: usize) -> Event<'a> {
+		let mut i = self.stack.len();
+		while i >= 2 {
+			if let (Tag::List(_), _, _) = self.stack[i - 2] {
+				i -= 2;
+			} else {
+				break;
+			}
+		}
+		let mut next = self.off + n;
+		while i < self.stack.len() {
+			if let (Tag::List(start), _, _) = self.stack[i] {
+				self.stack[i] = (Tag::List(start), self.off, next);
+			}
+			if let (Tag::Item, _, _) = self.stack[i + 1] {
+				self.stack[i + 1] = (Tag::Item, self.off, self.off);
+			}
+			next = self.off;
+			i += 2;
+		}
+		self.end()
+	}
+
 	fn start_block(&mut self) -> Option<Event<'a>> {
 		let size = self.text.len();
+		//println!("start_block {}", self.off);
 		while self.off < size {
+			//println!("start_block loop {} {}", self.off, self.last_line_was_empty);
+			if self.off >= self.limit() {
+				return Some(self.end());
+			}
 			if self.state != State::InContainers {
-				let (n, scanned) = self.scan_containers(false);
+				let (n, scanned) = self.scan_containers(&self.text[self.off ..], false);
 				if !scanned {
 					return Some(self.end());
 				}
@@ -214,27 +293,31 @@ impl<'a> RawParser<'a> {
 			if n != 0 {
 				self.off += n;
 				self.state = State::StartBlock;
-				// two blank lines close a list
-				if let Some(&Container::List(_)) = self.containers.last() {
-					let (n_containers, scanned) = self.scan_containers(false);
-					if scanned {
-						let n_line2 = scan_blank_line(&self.text[self.off + n_containers ..]);
-						if n_line2 != 0 {
-							let off = self.off + n_containers + n_line2;
-							let ret = Some(self.end());
-							self.off = off;
-							return ret;
-						}
-					}
+				// two empty lines close a list
+				let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
+				//println!("{} empty lines (n = {})", empty_lines, n);
+				if empty_lines >= 1 && self.at_list(2).is_some() {
+					return Some(self.end_containing_lists(n));
 				}
+				self.off += n;
+				self.last_line_was_empty = true;
 				continue;
+			}
+
+			//println!("checking loose {} {:?}", self.last_line_was_empty, self.at_list(2));
+			if self.last_line_was_empty {
+				if let Some(offset) = self.at_list(2) {
+					// list item contains two blocks separated by empty line
+					self.loose_lists.insert(offset);
+				}
 			}
 
 			// must be before list item because ambiguous
 			let n = scan_hrule(&self.text[self.off..]);
 			if n != 0 {
+				self.last_line_was_empty = false;
 				// see below
-				if let Some(&Container::List(_)) = self.containers.last() {
+				if let Some(&Container::List(_, _)) = self.containers.last() {
 					return Some(self.end());
 				}
 				self.off += n;
@@ -243,11 +326,19 @@ impl<'a> RawParser<'a> {
 
 			let (n, c, start, indent) = scan_listitem(&self.text[self.off ..]);
 			if n != 0 {
+				if self.last_line_was_empty {
+					if let Some(offset) = self.at_list(1) {
+						// two list items separated by empty line
+						self.loose_lists.insert(offset);
+					}
+				}
+				self.last_line_was_empty = false;
 				return Some(self.start_listitem(n, c, start, indent));
 			}
+			self.last_line_was_empty = false;
 
 			// not a list item, so if we're in a list, close it
-			if let Some(&Container::List(_)) = self.containers.last() {
+			if let Some(&Container::List(_, _)) = self.containers.last() {
 				return Some(self.end());
 			}
 
@@ -284,7 +375,7 @@ impl<'a> RawParser<'a> {
 
 		let mut i = self.off + scan_nextline(&self.text[self.off..]);
 
-		if let (n, true) = self.scan_containers(false) {
+		if let (n, true) = self.scan_containers(&self.text[i..], false) {
 			i += n;
 			let (n, level) = scan_setext_header(&self.text[i..]);
 			if n != 0 {
@@ -298,7 +389,6 @@ impl<'a> RawParser<'a> {
 		}
 
 		let size = self.text.len();
-		// let the block closing logic in char_newline take care of computing the end
 		self.state = State::Inline;
 		self.start(Tag::Paragraph, size, 0)
 	}
@@ -327,6 +417,9 @@ impl<'a> RawParser<'a> {
 		} else if is_ascii_whitespace(tail.as_bytes()[end - 1]) {
 			limit = end - 1;
 		}
+		while limit > 0 && is_ascii_whitespace(tail.as_bytes()[limit - 1]) {
+			limit -= 1;
+		}
 		let limit = limit + self.off;
 		let next = next + self.off;
 		self.state = State::Inline;
@@ -344,19 +437,23 @@ impl<'a> RawParser<'a> {
 
 	fn start_listitem(&mut self, n: usize, c: u8, start: usize, indent: usize) -> Event<'a> {
 		match self.containers.last() {
-			Some(&Container::List(c2)) => {
+			Some(&Container::List(_, c2)) => {
 				if c != c2 {
 					// mismatched list type or delimeter
 					return self.end();
 				}
 				self.off += n;
-				//self.state = State::Inline;  // TODO: don't do this if loose
+				let n_blank = scan_blank_line(&self.text[self.off ..]);
+				if n_blank != 0 {
+					self.off += n_blank;
+					self.state = State::StartBlock;
+				}
 				self.containers.push(Container::ListItem(indent));
 				self.start(Tag::Item, self.text.len(), 0)
 			}
 			_ => {
-				self.containers.push(Container::List(c));
-				// arguably this should be done in the scanner, pass the option
+				self.containers.push(Container::List(self.off, c));
+				// arguably this should be done in the scanner, it should return option
 				let startopt = if c == b'.' || c == b')' { Some(start) } else { None };
 				self.start(Tag::List(startopt), self.text.len(), 0)
 			}
@@ -377,12 +474,30 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn next_code_line_start(&mut self) -> Event<'a> {
-		let off = match self.scan_containers(false) {
+		let off = match self.scan_containers(&self.text[self.off  ..], false) {
 			(_, false) => {
 				return self.end();
 			}
 			(n, _) => self.off + n
 		};
+
+		if self.fence_char == b'\0' {
+			let n = scan_blank_line(&self.text[off..]);
+			if n != 0 {
+				// TODO performance: this scanning is O(n^2) in the number of empty lines
+				let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
+				let next = off + n + n_empty;
+				let (n_containers, scanned) = self.scan_containers(&self.text[next..], false);
+				if !scanned || self.is_code_block_end(next + n_containers) {
+					return self.end();
+				} else {
+					self.off = off;
+					self.skip_code_linestart();
+					return self.next_code();
+				}
+			}
+		}
+
 		if self.is_code_block_end(off) {
 			let ret = self.end();
 			if self.fence_char != b'\0' {
@@ -521,7 +636,7 @@ impl<'a> RawParser<'a> {
 	// newline can be a bunch of cases, including closing a block
 	fn char_newline(&mut self) -> Option<Event<'a>> {
 		self.off += 1;
-		let start = if let (n, true) = self.scan_containers(true) {
+		let start = if let (n, true) = self.scan_containers(&self.text[self.off ..], true) {
 			self.off + n
 		} else {
 			return Some(self.end());

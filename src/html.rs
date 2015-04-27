@@ -21,6 +21,12 @@ use parse::{Event, Tag};
 use parse::Event::{Start, End, Text, SoftBreak, HardBreak};
 use escape::{escape_html, escape_href};
 
+fn fresh_line(buf: &mut String) {
+	if !(buf.is_empty() || buf.ends_with('\n')) {
+		buf.push('\n');
+	}
+}
+
 pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
 	for event in iter {
 		match event {
@@ -35,15 +41,26 @@ pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
 
 fn start_tag(buf: &mut String, tag: Tag) {
 	match tag {
-		Tag::Paragraph => buf.push_str("<p>"),
-		Tag::Rule => buf.push_str("<hr />\n"),
+		Tag::Paragraph =>  {
+			fresh_line(buf);
+			buf.push_str("<p>");
+		}
+		Tag::Rule => {
+			fresh_line(buf);
+			buf.push_str("<hr />\n")
+		}
 		Tag::Header(level) => {
+			fresh_line(buf);
 			buf.push_str("<h");
 			buf.push((b'0' + level as u8) as char);
 			buf.push('>');
 		}
-		Tag::BlockQuote => buf.push_str("<blockquote>\n"),
+		Tag::BlockQuote => {
+			fresh_line(buf);
+			buf.push_str("<blockquote>\n");
+		}
 		Tag::CodeBlock(info) => {
+			fresh_line(buf);
 			let lang = info.split(' ').next().unwrap();
 			if lang.is_empty() {
 				buf.push_str("<pre><code>");
@@ -53,12 +70,22 @@ fn start_tag(buf: &mut String, tag: Tag) {
 				buf.push_str("\">");
 			}
 		}
-		Tag::List(Some(1)) => buf.push_str("<ol>\n"),
-		Tag::List(Some(start)) => {
-			let _ = write!(buf, "<ol start=\"{}>\"\n", start);
+		Tag::List(Some(1)) => {
+			fresh_line(buf);
+			buf.push_str("<ol>\n");
 		}
-		Tag::List(None) => buf.push_str("<ul>\n"),
-		Tag::Item => buf.push_str("<li>"),
+		Tag::List(Some(start)) => {
+			fresh_line(buf);
+			let _ = write!(buf, "<ol start=\"{}\">\n", start);
+		}
+		Tag::List(None) => {
+			fresh_line(buf);
+			buf.push_str("<ul>\n");
+		}
+		Tag::Item => {
+			fresh_line(buf);
+			buf.push_str("<li>");
+		}
 		Tag::Emphasis => buf.push_str("<em>"),
 		Tag::Strong => buf.push_str("<strong>"),
 		Tag::Link(dest, title) => {

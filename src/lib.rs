@@ -21,6 +21,7 @@ mod parse;
 mod scanners;
 mod entities;
 mod escape;
+mod utils;
 
 pub use passes::Parser;
 pub use parse::{Event, Tag};

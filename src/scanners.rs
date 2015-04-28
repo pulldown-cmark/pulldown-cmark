@@ -15,6 +15,7 @@
 //! Scanners for fragments of CommonMark syntax
 
 use entities;
+use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
@@ -22,23 +23,66 @@ use std::char;
 // sorted for binary_search
 const ASCII_PUNCTUATION: &'static [u8] = b"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
-pub fn scan_blank_line(text: &str) -> usize {
-	let mut i = 0;
-	while i < text.len() {
-		match text.as_bytes()[i] {
-			b'\n' => return i + 1,
-			b' ' | b'\t' | b'\r' => i += 1,
-			_ => return 0
-		}
-	}
-	i
+// sorted for binary_search
+const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
+	"body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
+	"dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
+	"h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
+	"li", "map", "object", "ol", "output", "p", "pre", "progress", "script",
+	"section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
+	"thead", "tr", "ul", "video"];
+
+pub fn is_ascii_whitespace(c: u8) -> bool {
+	(c >= 0x09 && c <= 0x0d) || c == b' '
 }
 
-pub fn scan_nextline(s: &str) -> usize {
-	match s.find('\n') {
-		Some(x) => x + 1,
-		None => s.len()
+pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
+	c == b'\t' || (c >= 0x0b && c <= 0x0d) || c == b' '
+}
+
+pub fn is_ascii_alphanumeric(c: u8) -> bool {
+	match c {
+		b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
+		_ => false
 	}
+}
+
+fn is_hexdigit(c: u8) -> bool {
+	match c {
+		b'0' ... b'9' | b'a' ... b'f' | b'A' ... b'F' => true,
+		_ => false
+	}
+}
+
+fn is_digit(c: u8) -> bool {
+	b'0' <= c && c <= b'9'
+}
+
+pub fn is_ascii_punctuation(c: u8) -> bool {
+	ASCII_PUNCTUATION.binary_search(&c).is_ok()
+}
+
+// scan a single character
+pub fn scan_ch(data: &str, c: u8) -> usize {
+	if !data.is_empty() && data.as_bytes()[0] == c { 1 } else { 0 }
+}
+
+pub fn scan_while<F>(data: &str, f: F) -> usize 
+	where F: Fn(u8) -> bool {
+	let mut i = 0;
+	while i < data.len() && f(data.as_bytes()[i]) {
+		i += 1;
+	}
+	i	
+}
+
+pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
+	scan_while(data, |x| x == c)
+}
+
+// TODO: maybe should scan unicode whitespace too
+pub fn scan_whitespace_no_nl(data: &str) -> usize {
+	scan_while(data, is_ascii_whitespace_no_nl)
 }
 
 // Maybe returning Option<usize> would be more Rustic?
@@ -48,6 +92,23 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
 		b'\n' => (1, true),
 		b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
 		_ => (0, false)
+	}
+}
+
+// Maybe Option, size of 0 makes sense at EOF
+pub fn scan_blank_line(text: &str) -> usize {
+	let i = scan_whitespace_no_nl(text);
+	if let (n, true) = scan_eol(&text[i..]) {
+		i + n
+	} else {
+		0
+	}
+}
+
+pub fn scan_nextline(s: &str) -> usize {
+	match s.find('\n') {
+		Some(x) => x + 1,
+		None => s.len()
 	}
 }
 
@@ -81,16 +142,16 @@ pub fn scan_hrule(data: &str) -> usize {
 	if !(c == b'*' || c == b'-' || c == b'_') { return 0; }
 	let mut n = 0;
 	while i < size {
-		let c2 = data.as_bytes()[i];
-		if c2 == b'\n' {
-			i += 1;
-			break;
-		} else if c2 == c {
-			n += 1;
-		} else if c2 != b' ' {
-			return 0;
+		match data.as_bytes()[i] {
+			b'\n' => {
+				i += 1;
+				break;
+			}
+			c2 if c2 == c => n += 1,
+			b' ' => (),
+			_ => return 0
 		}
-		i += 1;  // all possible characters at this point are ASCII
+		i += 1;
 	}
 	if n >= 3 { i } else { 0 }
 }
@@ -99,18 +160,11 @@ pub fn scan_hrule(data: &str) -> usize {
 pub fn scan_atx_header(data: &str) -> (usize, i32) {
 	let size = data.len();
 	let (start, _) = calc_indent(data, 3);
-	let data = data.as_bytes();
-	let mut i = start;
-	while i < size {
-		if data[i] != b'#' {
-			break;
-		}
-		i += 1;
-	}
-	let level = i - start;
+	let level = scan_ch_repeat(&data[start..], b'#');
+	let i = start + level;
 	if level >= 1 && level <= 6 {
-		if i <size {
-			match data[i] {
+		if i < size {
+			match data.as_bytes()[i] {
 				b' ' | b'\t' ... b'\r' => (),
 				_ => return (0, 0)
 			}
@@ -128,20 +182,10 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
 	if i == size { return (0, 0); }
 	let c = data.as_bytes()[i];
 	if !(c == b'-' || c == b'=') { return (0, 0); }
-	i += 1;
-	while i < size && data.as_bytes()[i] == c {
-		i += 1;
-	}
-	while i < size {
-		match data.as_bytes()[i] {
-			b'\n' => {
-				i += 1;
-				break;
-			}
-			b' ' | b'\t' ... b'\r' => i += 1,
-			_ => return (0, 0)
-		}
-	}
+	i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
+	let n = scan_blank_line(&data[i..]);
+	if n == 0 { return (0, 0); }
+	i += n;
 	let level = if c == b'=' { 1 } else { 2 };
 	(i, level)
 }
@@ -153,10 +197,7 @@ pub fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
 	if beg == data.len() { return (0, 0, 0, 0); }
 	let c = data.as_bytes()[beg];
 	if !(c == b'`' || c == b'~') { return (0, 0, 0, 0); }
-	let mut i = beg + 1;
-	while i < data.len() && data.as_bytes()[i] == c {
-		i += 1;
-	}
+	let i = beg + 1 + scan_ch_repeat(&data[beg + 1 ..], c);
 	if (i - beg) >= 3 {
 		if c == b'`' {
 			let next_line = i + scan_nextline(&data[i..]);
@@ -170,19 +211,14 @@ pub fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
 }
 
 pub fn scan_backticks(data: &str) -> usize {
-	let mut i = 0;
-	while i < data.len() && data.as_bytes()[i] == b'`' {
-		i += 1;
-	}
-	i
+	scan_ch_repeat(data, b'`')
 }
 
 pub fn scan_blockquote_start(data: &str) -> usize {
 	let n = calc_indent(data, 3).0;
 	if data[n..].starts_with('>') {
-		let mut n = n + 1;
-		if data[n..].starts_with(' ') { n += 1; }
-		n
+		let n = n + 1;
+		n + scan_ch(&data[n..], b' ')
 	} else {
 		0
 	}
@@ -198,9 +234,7 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
 		b'-' | b'+' | b'*' => 1,
 		b'0' ... b'9' => {
 			let mut i = n + 1;
-			while i < data.len() && is_digit(data.as_bytes()[i]) {
-				i += 1;
-			}
+			i += scan_while(&data[i..], is_digit);
 			start = data[n..i].parse().unwrap();
 			if i >= data.len() { return (0, 0, 0, 0); }
 			c = data.as_bytes()[i];
@@ -254,45 +288,6 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
 	(end - loc, can_open, can_close)
 }
 
-// TODO: maybe should scan unicode whitespace too
-pub fn scan_whitespace_no_nl(data: &str) -> usize {
-	let mut i = 0;
-	while i < data.len() && is_ascii_whitespace_no_nl(data.as_bytes()[i]) {
-		i += 1;
-	}
-	i
-}
-
-pub fn is_ascii_whitespace(c: u8) -> bool {
-	(c >= 0x09 && c <= 0x0d) || c == b' '
-}
-
-pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
-	c == b'\t' || (c >= 0x0b && c <= 0x0d) || c == b' '
-}
-
-fn is_ascii_alphanumeric(c: u8) -> bool {
-	match c {
-		b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
-		_ => false
-	}
-}
-
-fn is_hexdigit(c: u8) -> bool {
-	match c {
-		b'0' ... b'9' | b'a' ... b'f' | b'A' ... b'F' => true,
-		_ => false
-	}
-}
-
-fn is_digit(c: u8) -> bool {
-	b'0' <= c && c <= b'9'
-}
-
-pub fn is_ascii_punctuation(c: u8) -> bool {
-	ASCII_PUNCTUATION.binary_search(&c).is_ok()
-}
-
 fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
 	let codepoint = u32::from_str_radix(s, radix).unwrap();
 	Owned(char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string())
@@ -301,32 +296,25 @@ fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
 // doesn't bother to check data[0] == '&'
 pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
 	let size = data.len();
-	let bytes = data.as_bytes();
 	let mut end = 1;
-	if end < size && bytes[end] == b'#' {
+	if scan_ch(&data[end..], b'#') == 1 {
 		end += 1;
-		if end < size && (bytes[end] == b'x' || bytes[end] == b'X') {
+		if end < size && (data.as_bytes()[end] == b'x' || data.as_bytes()[end] == b'X') {
 			end += 1;
-			while end < size && is_hexdigit(bytes[end]) {
-				end += 1;
-			}
-			if end < size && end > 3 && end < 12 && bytes[end] == b';' {
+			end += scan_while(&data[end..], is_hexdigit);
+			if end > 3 && end < 12 && scan_ch(&data[end..], b';') == 1 {
 				return (end + 1, Some(cow_from_codepoint_str(&data[3..end], 16)));
 			}
 		} else {
-			while end < size && is_digit(bytes[end]) {
-				end += 1;
-			}
-			if end < size && end > 2 && end < 11 && bytes[end] == b';' {
+			end += scan_while(&data[end..], is_digit);
+			if end > 2 && end < 11 && scan_ch(&data[end..], b';') == 1 {
 				return (end + 1, Some(cow_from_codepoint_str(&data[2..end], 10)));
 			}
 		}
 		return (0, None);
 	}
-	while end < size && is_ascii_alphanumeric(data.as_bytes()[end]) {
-		end += 1;
-	}
-	if end < size && bytes[end] == b';' {
+	end += scan_while(&data[end..], is_ascii_alphanumeric);
+	if scan_ch(&data[end..], b';') == 1 {
 		if let Some(value) = entities::get_entity(&data[1..end]) {
 			return (end + 1, Some(Borrowed(value)));
 		}
@@ -375,3 +363,8 @@ pub fn unescape<'a>(input: &'a str) -> Cow<'a, str> {
 		Owned(result)
 	}
 }
+
+pub fn is_html_tag(tag: &str) -> bool {
+	HTML_TAGS.binary_search_by(|probe| utils::strcasecmp(probe, tag)).is_ok()
+}
+

@@ -15,6 +15,7 @@
 //! Raw parser, for doing a single pass over input.
 
 use scanners::*;
+use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed};
 use std::collections::HashSet;
@@ -81,6 +82,7 @@ pub enum Event<'a> {
 	Start(Tag<'a>),
 	End(Tag<'a>),
 	Text(Cow<'a, str>),
+	Html(Cow<'a, str>),
 	SoftBreak,
 	HardBreak,
 }
@@ -235,6 +237,17 @@ impl<'a> RawParser<'a> {
 		}
 	}
 
+	// scans whitespace, skipping past containers on newline
+	fn scan_whitespace_inline(&self, text: &str) -> usize {
+		let mut i = scan_whitespace_no_nl(text);
+		if let (n, true) = scan_eol(&text[i..]) {
+			i += n;
+			i += self.scan_containers(&text[i..]).0;
+			i += scan_whitespace_no_nl(&text[i..]);
+		}
+		i
+	}
+
 	fn at_list(&self, level: usize) -> Option<usize> {
 		let len = self.containers.len();
 		if len >= level {
@@ -359,6 +372,10 @@ impl<'a> RawParser<'a> {
 				self.off += n;
 				self.containers.push(Container::BlockQuote);
 				return Some(self.start(Tag::BlockQuote, self.text.len(), 0));
+			}
+
+			if self.is_html_block(&self.text[self.off ..]) {
+				return Some(self.do_html_block());
 			}
 
 			return Some(self.start_paragraph());
@@ -556,6 +573,45 @@ impl<'a> RawParser<'a> {
 		}
 	}
 
+	// # HTML blocks
+	fn scan_html_tag(&self, data: &'a str) -> (usize, &'a str) {
+		let mut i = scan_ch(data, b'<');
+		if i == 0 { return (0, "") }
+		i += scan_ch(&data[i..], b'/');
+		let n = scan_while(&data[i..], is_ascii_alphanumeric);
+		// TODO: scan attributes and >
+		(i + n, &data[i .. i + n])
+	}
+
+	fn is_html_block(&self, data: &str) -> bool {
+		let n = calc_indent(data, 3).0;
+		let (n_tag, tag) = self.scan_html_tag(&data[n..]);
+		(n_tag > 0 && is_html_tag(tag)) ||
+				data[n..].starts_with("<?") ||
+				data[n..].starts_with("<!")
+	}
+
+	fn do_html_block(&mut self) -> Event<'a> {
+		let size = self.text.len();
+		let mut out = Borrowed("");
+		let mut i = self.off;
+		let mut mark = i;
+		loop {
+			i += scan_nextline(&self.text[i..]);
+			let (n, scanned) = self.scan_containers(&self.text[i..]);
+			let n_blank = scan_blank_line(&self.text[i + n ..]);
+			if n != 0 || !scanned || i + n == size || n_blank != 0 {
+				out = utils::cow_append(out, Borrowed(&self.text[mark..i]));
+				mark = i + n;
+			}
+			if !scanned || i + n == size || n_blank != 0{
+				self.off = i;  // TODO: skip blank lines (cleaner source maps)
+				self.state = State::StartBlock;
+				return Event::Html(out)
+			}
+		}
+	}
+
 	// determine whether the line starting at loc ends the block
 	fn is_inline_block_end(&self, data: &str) -> bool {
 		data.is_empty() ||
@@ -564,7 +620,8 @@ impl<'a> RawParser<'a> {
 				scan_atx_header(data).0 != 0 ||
 				scan_code_fence(data).0 != 0 ||
 				scan_blockquote_start(data) != 0 ||
-				scan_listitem(data).0 != 0
+				scan_listitem(data).0 != 0 ||
+				self.is_html_block(data)
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
@@ -903,12 +960,7 @@ impl<'a> RawParser<'a> {
 		if n == 0 { return None; }
 		let mut end = i + n;
 		let next = i + n + backtick_len;
-		i += scan_whitespace_no_nl(&self.text[i..]);
-		if let (n, true) = scan_eol(&self.text[i..]) {
-			i += n;
-			i += self.scan_containers(&self.text[i..limit]).0;
-			i += scan_whitespace_no_nl(&self.text[i..]);
-		}
+		i += self.scan_whitespace_inline(&self.text[i..limit]);
 		while end > i && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
 			end -= 1;
 		}
@@ -932,9 +984,7 @@ impl<'a> RawParser<'a> {
 						self.off = i;
 						return Event::Text(Borrowed(&self.text[beg..end]))
 					}
-					i += 1;
-					i += self.scan_containers(&self.text[i..limit]).0;
-					i += scan_whitespace_no_nl(&self.text[i..limit]);
+					i += self.scan_whitespace_inline(&self.text[i..limit]);
 					if i < limit {
 						self.off = i;
 						return Event::Text(Borrowed(" "));
@@ -943,7 +993,6 @@ impl<'a> RawParser<'a> {
 					}
 				}
 				_ => i += 1
-				// TODO: '&'
 			}
 		}
 		if i > beg {

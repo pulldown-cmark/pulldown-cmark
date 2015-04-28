@@ -88,6 +88,7 @@ fn start_tag(buf: &mut String, tag: Tag) {
 		}
 		Tag::Emphasis => buf.push_str("<em>"),
 		Tag::Strong => buf.push_str("<strong>"),
+		Tag::Code => buf.push_str("<code>"),
 		Tag::Link(dest, title) => {
 			buf.push_str("<a href=\"");
 			escape_href(buf, &dest);
@@ -122,6 +123,7 @@ fn end_tag(buf: &mut String, tag: Tag) {
 		Tag::Item => buf.push_str("</li>\n"),
 		Tag::Emphasis => buf.push_str("</em>"),
 		Tag::Strong => buf.push_str("</strong>"),
+		Tag::Code => buf.push_str("</code>"),
 		Tag::Link(_, _) => buf.push_str("</a>"),
 		Tag::Image(_, title) => {
 			if !title.is_empty() {

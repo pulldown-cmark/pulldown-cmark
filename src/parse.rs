@@ -26,6 +26,7 @@ enum State {
 	Inline,
 	CodeLineStart,
 	Code,
+	InlineCode,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -71,6 +72,7 @@ pub enum Tag<'a> {
 	// span-level tags
 	Emphasis,
 	Strong,
+	Code,
 	Link(Cow<'a, str>, Cow<'a, str>),
 	Image(Cow<'a, str>, Cow<'a, str>),
 }
@@ -143,6 +145,7 @@ impl<'a> RawParser<'a> {
 			}
 
 			// inline
+			Tag::Code => self.state = State::Inline,
 			_ => ()
 		}
 		if next != 0 { self.off = next; }
@@ -158,13 +161,7 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn skip_leading_whitespace(&mut self) {
-		let limit = self.limit();
-		while self.off < limit {
-			match self.text.as_bytes()[self.off] {
-				b' ' | b'\t' | b'\x0b' ... b'\r' => self.off += 1,
-				_ => break
-			}
-		}
+		self.off += scan_whitespace_no_nl(&self.text[self.off .. self.limit()]);
 	}
 
 	fn skip_inline_linestart(&mut self) {
@@ -189,14 +186,14 @@ impl<'a> RawParser<'a> {
 	}
 
 	// Scan markers and indentation for current container stack
-	fn scan_containers(&self, text: &str, lazy: bool) -> (usize, bool) {
+	fn scan_containers(&self, text: &str) -> (usize, bool) {
 		let mut i = 0;
 		for container in self.containers.iter() {
 			match *container {
 				Container::BlockQuote => {
 					let n = scan_blockquote_start(&text[i..]);
 					if n == 0 {
-						return (i, lazy);
+						return (i, false);
 					} else {
 						i += n;
 					}
@@ -205,7 +202,7 @@ impl<'a> RawParser<'a> {
 				Container::ListItem(indent) => {
 					let (n, actual) = calc_indent(&text[i..], indent);
 					if actual < indent && !scan_eol(&text[i + n .. ]).1 {
-						return (i, lazy);
+						return (i, false);
 					} else {
 						i += n;
 					}
@@ -222,7 +219,7 @@ impl<'a> RawParser<'a> {
 		let mut i = 0;
 		let mut lines = 0;
 		loop {
-			let (n, scanned) = self.scan_containers(&text[i..], false);
+			let (n, scanned) = self.scan_containers(&text[i..]);
 			if !scanned {
 				return (i, lines);
 			}
@@ -281,7 +278,7 @@ impl<'a> RawParser<'a> {
 				return Some(self.end());
 			}
 			if self.state != State::InContainers {
-				let (n, scanned) = self.scan_containers(&self.text[self.off ..], false);
+				let (n, scanned) = self.scan_containers(&self.text[self.off ..]);
 				if !scanned {
 					return Some(self.end());
 				}
@@ -375,7 +372,7 @@ impl<'a> RawParser<'a> {
 
 		let mut i = self.off + scan_nextline(&self.text[self.off..]);
 
-		if let (n, true) = self.scan_containers(&self.text[i..], false) {
+		if let (n, true) = self.scan_containers(&self.text[i..]) {
 			i += n;
 			let (n, level) = scan_setext_header(&self.text[i..]);
 			if n != 0 {
@@ -474,7 +471,7 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn next_code_line_start(&mut self) -> Event<'a> {
-		let off = match self.scan_containers(&self.text[self.off  ..], false) {
+		let off = match self.scan_containers(&self.text[self.off  ..]) {
 			(_, false) => {
 				return self.end();
 			}
@@ -487,7 +484,7 @@ impl<'a> RawParser<'a> {
 				// TODO performance: this scanning is O(n^2) in the number of empty lines
 				let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
 				let next = off + n + n_empty;
-				let (n_containers, scanned) = self.scan_containers(&self.text[next..], false);
+				let (n_containers, scanned) = self.scan_containers(&self.text[next..]);
 				if !scanned || self.is_code_block_end(next + n_containers) {
 					return self.end();
 				} else {
@@ -560,15 +557,14 @@ impl<'a> RawParser<'a> {
 	}
 
 	// determine whether the line starting at loc ends the block
-	fn is_inline_block_end(&self, loc: usize) -> bool {
-		let tail = &self.text[loc..];
-		tail.is_empty() ||
-				scan_blank_line(tail) != 0 ||
-				scan_hrule(tail) != 0 ||
-				scan_atx_header(tail).0 != 0 ||
-				scan_code_fence(tail).0 != 0 ||
-				scan_blockquote_start(tail) != 0 ||
-				scan_listitem(tail).0 != 0
+	fn is_inline_block_end(&self, data: &str) -> bool {
+		data.is_empty() ||
+				scan_blank_line(data) != 0 ||
+				scan_hrule(data) != 0 ||
+				scan_atx_header(data).0 != 0 ||
+				scan_code_fence(data).0 != 0 ||
+				scan_blockquote_start(data) != 0 ||
+				scan_listitem(data).0 != 0
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
@@ -598,7 +594,7 @@ impl<'a> RawParser<'a> {
 
 	fn is_active_char(&self, c: u8) -> bool {
 		c == b'\t' || c == b'\n' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' ||
-				c == b'_' || c == b'*' || c == b'[' || c == b'!'
+				c == b'_' || c == b'*' || c == b'[' || c == b'!' || c == b'`'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
@@ -611,6 +607,7 @@ impl<'a> RawParser<'a> {
 			b'_' => self.char_emphasis(),
 			b'*' => self.char_emphasis(),
 			b'[' | b'!' => self.char_link(),
+			b'`' => self.char_backtick(),
 			_ => None
 		}
 	}
@@ -636,12 +633,8 @@ impl<'a> RawParser<'a> {
 	// newline can be a bunch of cases, including closing a block
 	fn char_newline(&mut self) -> Option<Event<'a>> {
 		self.off += 1;
-		let start = if let (n, true) = self.scan_containers(&self.text[self.off ..], true) {
-			self.off + n
-		} else {
-			return Some(self.end());
-		};
-		if self.is_inline_block_end(start) {
+		let start = self.off + self.scan_containers(&self.text[self.off ..]).0;
+		if self.is_inline_block_end(&self.text[start..]) {
 			//println!("off {} stack {:?} containers {:?}", self.off, self.stack, self.containers);
 			Some(self.end())
 		} else {
@@ -654,7 +647,7 @@ impl<'a> RawParser<'a> {
 	fn char_return(&mut self) -> Option<Event<'a>> {
 		if self.text[self.off + 1..].starts_with('\n') {
 			self.off += 1;
-			Some(Event::Text(Borrowed("")))
+			self.char_newline()
 		} else {
 			None
 		}
@@ -663,16 +656,11 @@ impl<'a> RawParser<'a> {
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
 		let limit = self.limit();
 		if self.off + 1 < limit {
-			let c = self.text.as_bytes()[self.off + 1];
-			if c == b'\n' {
-				if self.is_inline_block_end(self.off + 2) { return None; }
-				self.off += 2;
-				return Some(Event::HardBreak);
-			} else if c == b'\r' && self.text[self.off + 2..limit].starts_with('\n') {
-				if self.is_inline_block_end(self.off + 3) { return None; }
-				self.off += 3;
+			if let (n, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
+				self.off += 1 + n;
 				return Some(Event::HardBreak);
 			}
+			let c = self.text.as_bytes()[self.off + 1];
 			if is_ascii_punctuation(c) {
 				self.off += 2;
 				return Some(Event::Text(Borrowed(&self.text[self.off - 1 .. self.off])));
@@ -693,7 +681,8 @@ impl<'a> RawParser<'a> {
 
 	fn char_emphasis(&mut self) -> Option<Event<'a>> {
 		// can see to left for flanking info, but not past limit
-		let data = &self.text[.. self.limit()];
+		let limit = self.limit();
+		let data = &self.text[..limit];
 
 		let c = data.as_bytes()[self.off];
 		let (n, can_open, _can_close) = compute_open_close(data, self.off, c);
@@ -702,10 +691,10 @@ impl<'a> RawParser<'a> {
 		}
 		let mut stack = vec![n];  // TODO performance: don't allocate
 		let mut i = self.off + n;
-		while i < data.len() {
+		while i < limit {
 			let c2 = data.as_bytes()[i];
 			if c2 == b'\n' && !is_escaped(data, i) {
-				if self.is_inline_block_end(i + 1) {
+				if self.is_inline_block_end(&self.text[i + 1 .. limit]) {
 					return None
 				} else {
 					i += 1;
@@ -738,6 +727,13 @@ impl<'a> RawParser<'a> {
 					stack.push(n2);
 				}
 				i += n2;
+			} else if c2 == b'`' {
+				let backtick_len = scan_backticks(&self.text[i..limit]);
+				i += backtick_len;
+				let n = self.scan_closing_backtick(&self.text[i..limit], backtick_len);
+				if n != 0 {
+					i += n + backtick_len;
+				}
 			} else {
 				i += 1;
 			}
@@ -870,6 +866,93 @@ impl<'a> RawParser<'a> {
 			Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
 		}
 	}
+
+	// maybe move scan of opening backticks in here, as both callers do the same thing
+	fn scan_closing_backtick(&self, data: &str, len: usize) -> usize {
+		let size = data.len();
+		let mut i = 0;
+		while i < size {
+			match data.as_bytes()[i] {
+				b'`' => {
+					let close_len = scan_backticks(&data[i..]);
+					if close_len == len {
+						return i;
+					} else {
+						i += close_len;
+					}
+				}
+				b'\n' => {
+					i += 1;
+					i += self.scan_containers(&data[i..]).0;
+					if self.is_inline_block_end(&data[i..]) { return 0; }
+				}
+				// TODO: '<'
+				_ => i += 1
+			}
+		}
+		0
+	}
+
+	fn char_backtick(&mut self) -> Option<Event<'a>> {
+		let beg = self.off;
+		let limit = self.limit();
+		let mut i = beg;
+		let backtick_len = scan_backticks(&self.text[i..limit]);
+		i += backtick_len;
+		let n = self.scan_closing_backtick(&self.text[i..limit], backtick_len);
+		if n == 0 { return None; }
+		let mut end = i + n;
+		let next = i + n + backtick_len;
+		i += scan_whitespace_no_nl(&self.text[i..]);
+		if let (n, true) = scan_eol(&self.text[i..]) {
+			i += n;
+			i += self.scan_containers(&self.text[i..limit]).0;
+			i += scan_whitespace_no_nl(&self.text[i..]);
+		}
+		while end > i && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
+			end -= 1;
+		}
+		self.off = i;
+		self.state = State::InlineCode;
+		Some(self.start(Tag::Code, end, next))
+	}
+
+	fn next_inline_code(&mut self) -> Event<'a> {
+		let beg = self.off;
+		let mut i = beg;
+		let limit = self.limit();
+		while i < limit {
+			match self.text.as_bytes()[i] {
+				b'\n' => {
+					let mut end = i;
+					while end > beg && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
+						end -= 1;
+					}
+					if end > beg {
+						self.off = i;
+						return Event::Text(Borrowed(&self.text[beg..end]))
+					}
+					i += 1;
+					i += self.scan_containers(&self.text[i..limit]).0;
+					i += scan_whitespace_no_nl(&self.text[i..limit]);
+					if i < limit {
+						self.off = i;
+						return Event::Text(Borrowed(" "));
+					} else {
+						return self.end();
+					}
+				}
+				_ => i += 1
+				// TODO: '&'
+			}
+		}
+		if i > beg {
+			self.off = i;
+			Event::Text(Borrowed(&self.text[beg..i]))
+		} else {
+			self.end()
+		}
+	}
 }
 
 impl<'a> Iterator for RawParser<'a> {
@@ -888,7 +971,8 @@ impl<'a> Iterator for RawParser<'a> {
 				}
 				State::Inline => return Some(self.next_inline()),
 				State::CodeLineStart => return Some(self.next_code_line_start()),
-				State::Code => return Some(self.next_code())
+				State::Code => return Some(self.next_code()),
+				State::InlineCode => return Some(self.next_inline_code()),
 			}
 		}
 		match self.stack.pop() {

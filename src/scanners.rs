@@ -41,6 +41,7 @@ pub fn scan_nextline(s: &str) -> usize {
 	}
 }
 
+// Maybe returning Option<usize> would be more Rustic?
 pub fn scan_eol(s: &str) -> (usize, bool) {
 	if s.is_empty() { return (0, true); }
 	match s.as_bytes()[0] {
@@ -168,6 +169,14 @@ pub fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
 	(0, 0, 0, 0)
 }
 
+pub fn scan_backticks(data: &str) -> usize {
+	let mut i = 0;
+	while i < data.len() && data.as_bytes()[i] == b'`' {
+		i += 1;
+	}
+	i
+}
+
 pub fn scan_blockquote_start(data: &str) -> usize {
 	let n = calc_indent(data, 3).0;
 	if data[n..].starts_with('>') {
@@ -245,8 +254,21 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
 	(end - loc, can_open, can_close)
 }
 
+// TODO: maybe should scan unicode whitespace too
+pub fn scan_whitespace_no_nl(data: &str) -> usize {
+	let mut i = 0;
+	while i < data.len() && is_ascii_whitespace_no_nl(data.as_bytes()[i]) {
+		i += 1;
+	}
+	i
+}
+
 pub fn is_ascii_whitespace(c: u8) -> bool {
 	(c >= 0x09 && c <= 0x0d) || c == b' '
+}
+
+pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
+	c == b'\t' || (c >= 0x0b && c <= 0x0d) || c == b' '
 }
 
 fn is_ascii_alphanumeric(c: u8) -> bool {

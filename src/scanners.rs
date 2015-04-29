@@ -282,7 +282,8 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
 	let right_flanking = !white_before && (!punc_before || white_after || punc_after);
 	let (can_open, can_close) = match c {
 		b'*' => (left_flanking, right_flanking),
-		b'_' => (left_flanking && !right_flanking, right_flanking && !left_flanking),
+		b'_' => (left_flanking && (!right_flanking || punc_before),
+				right_flanking && (!left_flanking || punc_after)),
 		_ => (false, false)
 	};
 	(end - loc, can_open, can_close)
@@ -320,6 +321,50 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
 		}
 	}
 	return (0, None);
+}
+
+// note: dest returned is raw, still needs to be unescaped
+pub fn scan_link_dest<'a>(data: &'a str) -> Option<(usize, &'a str)> {
+	let size = data.len();
+	let mut i = 0;
+	let pointy_n = scan_ch(data, b'<');
+	let pointy = pointy_n != 0;
+	i += pointy_n;
+	let dest_beg = i;
+	let mut in_parens = false;
+	while i < size {
+		match data.as_bytes()[i] {
+			b'\n' => break,
+			b' ' => {
+				if !pointy && !in_parens { break; }
+			}
+			b'(' => {
+				if !pointy {
+					if in_parens { return None; }
+					in_parens = true;
+				}
+			}
+			b')' => {
+				if !pointy {
+					if !in_parens { break; }
+					in_parens = false;
+				}
+			}
+			b'>' => {
+				if pointy { break; }
+			}
+			b'\\' => i += 1,
+			_ => ()
+		}
+		i += 1;
+	}
+	let dest_end = i;
+	if pointy {
+		let n = scan_ch(&data[i..], b'>');
+		if n == 0 { return None; }
+		i += n;
+	}
+	Some((i, &data[dest_beg..dest_end]))
 }
 
 pub fn is_escaped(data: &str, loc: usize) -> bool {

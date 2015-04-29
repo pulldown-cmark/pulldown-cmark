@@ -841,42 +841,12 @@ impl<'a> RawParser<'a> {
 		}
 		if i >= size { return None; }
 
-		let pointy = tail.as_bytes()[i] == b'<';
-		if pointy { i += 1; }
-		let dest_beg = i;
-		let mut in_parens = false;
-		while i < size {
-			match tail.as_bytes()[i] {
-				b'\n' => break,
-				b' ' => {
-					if !pointy && !in_parens { break; }
-				}
-				b'(' => {
-					if !pointy {
-						if in_parens { return None; }
-						in_parens = true;
-					}
-				}
-				b')' => {
-					if !pointy {
-						if !in_parens { break; }
-						in_parens = false;
-					}
-				}
-				b'>' => {
-					if pointy { break; }
-				}
-				b'\\' => i += 1,
-				_ => ()
-			}
-			i += 1;
-		}
-		let dest_end = i;
-		if pointy {
-			if i >= size || tail.as_bytes()[i] != b'>' { return None; }
-			i += 1;
-		}
-		let dest = unescape(&tail[dest_beg..dest_end]);
+		let linkdest = scan_link_dest(&tail[i..]);
+		if linkdest.is_none() { return None; }
+		let (n, raw_dest) = linkdest.unwrap();
+		let dest = unescape(raw_dest);
+		i += n;
+
 		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
 			// todo: check block boundary on newline
 			i += 1;

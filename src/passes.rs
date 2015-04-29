@@ -14,43 +14,36 @@
 
 //! Main public pull parse interface, running two passes over input.
 
-use parse::{RawParser, Event, Tag, ParseInfo};
-use std::vec;
-use std::iter::IntoIterator;
+use parse::{RawParser, Event, Tag};
+use std::collections::HashSet;
 
 pub struct Parser<'a> {
-	events: vec::IntoIter<(Event<'a>, usize)>,
-	offset: usize,
-	info: ParseInfo,
+	inner: RawParser<'a>,
+	loose_lists: HashSet<usize>,
 	loose_stack: Vec<bool>,
 }
 
 impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
 		// first pass, collecting info
-		let mut inner = RawParser::new(text);
-		let mut event_vec = Vec::new();
-		loop {
-			match inner.next() {
-				Some(event) => event_vec.push((event, inner.get_offset())),
-				None => break
-			}
-		}
+		let mut first = RawParser::new(text);
+		while first.next().is_some() { }
+		let info = first.get_info();
 
-		// second pass runs in iterator
-		let events = event_vec.into_iter();
-		let info = inner.get_info();
+		// second pass
+		let loose_lists = info.loose_lists;
+		let second = RawParser::new_with_links(text, info.links);
+
 		//println!("loose lists: {:?}", info.loose_lists);
 		Parser {
-			events: events,
-			offset: 0,
-			info: info,
+			inner: second,
+			loose_lists: loose_lists,
 			loose_stack: Vec::new(),
 		}
 	}
 
 	pub fn get_offset(&self) -> usize {
-		self.offset
+		self.inner.get_offset()
 	}
 }
 
@@ -59,12 +52,12 @@ impl<'a> Iterator for Parser<'a> {
 
 	fn next(&mut self) -> Option<Event<'a>> {
 		loop {
-			match self.events.next() {
-				Some((event, offset)) => {
-					self.offset = offset;
+			match self.inner.next() {
+				Some(event) => {
 					match event {
 						Event::Start(Tag::List(_)) => {
-							let is_loose = self.info.loose_lists.contains(&offset);
+							let offset = self.inner.get_offset();
+							let is_loose = self.loose_lists.contains(&offset);
 							self.loose_stack.push(is_loose);
 						}
 						Event::Start(Tag::BlockQuote) => {

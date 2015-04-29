@@ -18,7 +18,7 @@ use scanners::*;
 use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(PartialEq, Debug)]
 enum State {
@@ -45,18 +45,21 @@ pub struct RawParser<'a> {
 	stack: Vec<(Tag<'a>, usize, usize)>,
 
 	containers: Vec<Container>,
-	loose_lists: HashSet<usize>,  // offset is at list marker
 	last_line_was_empty: bool,
 
 	// state for code fences
 	fence_char: u8,
 	fence_count: usize,
 	fence_indent: usize,
+
+	// info, used in second pass
+	loose_lists: HashSet<usize>,  // offset is at list marker
+	links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
-pub struct ParseInfo {
+pub struct ParseInfo<'a> {
 	pub loose_lists: HashSet<usize>,
-	// TODO: link references
+	pub links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
 #[derive(Clone, Debug)]
@@ -88,22 +91,30 @@ pub enum Event<'a> {
 }
 
 impl<'a> RawParser<'a> {
-	pub fn new(text: &'a str) -> RawParser<'a> {
+	pub fn new_with_links(text: &'a str, links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>)
+			-> RawParser<'a> {
 		let mut ret = RawParser {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			state: State::StartBlock,
 			stack: Vec::new(),
 			containers: Vec::new(),
-			loose_lists: HashSet::new(),
 			last_line_was_empty: false,
 
 			fence_char: 0,
 			fence_count: 0,
 			fence_indent: 0,
+
+			// info, used in second pass
+			loose_lists: HashSet::new(),
+			links: links,
 		};
 		ret.skip_blank_lines();
 		ret
+	}
+
+	pub fn new(text: &'a str) -> RawParser<'a> {
+		RawParser::new_with_links(text, HashMap::new())
 	}
 
 	// offset into text representing current parse position, hopefully
@@ -113,9 +124,10 @@ impl<'a> RawParser<'a> {
 	}
 
 	// extract info from parser on finish
-	pub fn get_info(self) -> ParseInfo {
+	pub fn get_info(self) -> ParseInfo<'a> {
 		ParseInfo {
 			loose_lists: self.loose_lists,
+			links: self.links,
 		}
 	}
 
@@ -239,11 +251,12 @@ impl<'a> RawParser<'a> {
 
 	// scans whitespace, skipping past containers on newline
 	fn scan_whitespace_inline(&self, text: &str) -> usize {
-		let mut i = scan_whitespace_no_nl(text);
+		let i = scan_whitespace_no_nl(text);
 		if let (n, true) = scan_eol(&text[i..]) {
-			i += n;
-			i += self.scan_containers(&text[i..]).0;
-			i += scan_whitespace_no_nl(&text[i..]);
+			let j = i + n + self.scan_containers(&text[i + n ..]).0;
+			if !self.is_inline_block_end(&text[j..]) {
+				return j + scan_whitespace_no_nl(&text[j..]);
+			}
 		}
 		i
 	}
@@ -299,7 +312,7 @@ impl<'a> RawParser<'a> {
 				self.state = State::InContainers;
 			}
 
-			let n = scan_blank_line(&self.text[self.off..]);
+			let n = scan_blank_line(&self.text[self.off ..]);
 			if n != 0 {
 				self.off += n;
 				self.state = State::StartBlock;
@@ -314,6 +327,8 @@ impl<'a> RawParser<'a> {
 				continue;
 			}
 
+			let tail = &self.text[self.off ..];
+
 			//println!("checking loose {} {:?}", self.last_line_was_empty, self.at_list(2));
 			if self.last_line_was_empty {
 				if let Some(offset) = self.at_list(2) {
@@ -323,7 +338,7 @@ impl<'a> RawParser<'a> {
 			}
 
 			// must be before list item because ambiguous
-			let n = scan_hrule(&self.text[self.off..]);
+			let n = scan_hrule(tail);
 			if n != 0 {
 				self.last_line_was_empty = false;
 				// see below
@@ -334,7 +349,7 @@ impl<'a> RawParser<'a> {
 				return Some(self.start_hrule());
 			}
 
-			let (n, c, start, indent) = scan_listitem(&self.text[self.off ..]);
+			let (n, c, start, indent) = scan_listitem(tail);
 			if n != 0 {
 				if self.last_line_was_empty {
 					if let Some(offset) = self.at_list(1) {
@@ -352,13 +367,13 @@ impl<'a> RawParser<'a> {
 				return Some(self.end());
 			}
 
-			let (n, level) = scan_atx_header(&self.text[self.off ..]);
+			let (n, level) = scan_atx_header(tail);
 			if n != 0 {
 				self.off += n;
 				return Some(self.start_atx_header(level));
 			}
 
-			let (n, ch, count, indent) = scan_code_fence(&self.text[self.off ..]);
+			let (n, ch, count, indent) = scan_code_fence(tail);
 			if n != 0 {
 				return Some(self.start_code_fence(n, ch, count, indent));
 			}
@@ -367,15 +382,19 @@ impl<'a> RawParser<'a> {
 				return Some(self.start_indented_code());
 			}
 
-			let n = scan_blockquote_start(&self.text[self.off ..]);
+			let n = scan_blockquote_start(tail);
 			if n != 0 {
 				self.off += n;
 				self.containers.push(Container::BlockQuote);
 				return Some(self.start(Tag::BlockQuote, self.text.len(), 0));
 			}
 
-			if self.is_html_block(&self.text[self.off ..]) {
+			if self.is_html_block(tail) {
 				return Some(self.do_html_block());
+			}
+
+			if self.try_link_reference_definition(tail) {
+				continue;
 			}
 
 			return Some(self.start_paragraph());
@@ -574,6 +593,7 @@ impl<'a> RawParser<'a> {
 	}
 
 	// # HTML blocks
+
 	fn scan_html_tag(&self, data: &'a str) -> (usize, &'a str) {
 		let mut i = scan_ch(data, b'<');
 		if i == 0 { return (0, "") }
@@ -610,6 +630,76 @@ impl<'a> RawParser<'a> {
 				return Event::Html(out)
 			}
 		}
+	}
+
+	// # Link reference definitions
+
+	fn try_link_reference_definition(&mut self, data: &'a str) -> bool {
+		let n = calc_indent(data, 3).0;
+		let (n_link, text_beg, text_end) = self.scan_link(&data[n..]);
+		if n_link == 0 { return false; }
+		let (text_beg, text_end) = (text_beg + n, text_end + n);
+		let n_colon = scan_ch(&data[n + n_link ..], b':');
+		if n_colon == 0 { return false; }
+		let mut i = n + n_link + n_colon;
+		i += self.scan_whitespace_inline(&data[i..]);
+		let linkdest = scan_link_dest(&data[i..]);
+		if linkdest.is_none() { return false; }
+		let (n_dest, raw_dest) = linkdest.unwrap();
+		if n_dest == 0 { return false; }
+		i += n_dest;
+		i += scan_whitespace_no_nl(&data[i..]);
+		let n_nl = self.scan_whitespace_inline(&data[i..]);
+		let (n_title, title_beg, title_end) = self.scan_link_title(&data[i + n_nl ..]);
+		let title = if n_title == 0 {
+			Borrowed("")
+		} else {
+			let (title_beg, title_end) = (i + n_nl + title_beg, i + n_nl + title_end);
+			i += n_nl + n_title;
+			unescape(&data[title_beg..title_end])
+		};
+		i += scan_whitespace_no_nl(&data[i..]);
+		if let (n_eol, true) = scan_eol(&data[i..]) {
+			i += n_eol;
+		} else {
+			return false;
+		}
+
+		let linktext = self.normalize_link_ref(&data[text_beg..text_end]);
+		if !self.links.contains_key(&linktext) {
+			let dest = unescape(raw_dest);
+			self.links.insert(linktext, (dest, title));
+		}
+		self.state = State::StartBlock;
+		self.off += i;
+		true
+	}
+
+	// normalize whitespace and case-fold
+	fn normalize_link_ref(&self, raw: &str) -> String {
+		let mut need_space = false;
+		let mut result = String::new();
+		let mut i = 0;
+		while i < raw.len() {
+			let n = scan_nextline(&raw[i..]);
+			for c in raw[i.. i + n].chars() {
+				if c.is_whitespace() {
+					need_space = true;
+				} else {
+					if need_space && !result.is_empty() {
+						result.push(' ');
+					}
+					// TODO: Unicode case folding can differ from lowercase (ß)
+					result.extend(c.to_lowercase());
+					need_space = false;
+				}
+			}
+			i += n;
+			if i == raw.len() { break; }
+			i += self.scan_containers(&raw[i..]).0;
+			need_space = true;
+		}
+		result
 	}
 
 	// determine whether the line starting at loc ends the block
@@ -798,23 +888,24 @@ impl<'a> RawParser<'a> {
 		None
 	}
 
-	fn char_link(&mut self) -> Option<Event<'a>> {
-		let beg = self.off;
-		let tail = &self.text[beg .. self.limit()];
-		let size = tail.len();
+	// # Links
 
-		// scan link text
-		let (mut i, is_image) = if tail.as_bytes()[0] == b'!' {
-			if size < 2 || tail.as_bytes()[1] != b'[' { return None; }
-			(2, true)
-		} else {
-			(1, false)
-		};
+	// scans a link, example [link]
+	// return value is: total bytes, start of text, end of text
+	fn scan_link(&self, data: &str) -> (usize, usize, usize) {
+		let mut i = scan_ch(data, b'[');
+		if i == 0 { return (0, 0, 0); }
 		let text_beg = i;
 		let mut nest = 1;
-		while i < size {
-			match tail.as_bytes()[i] {
-				b'\n' => { return None; }  // TODO: handle multiline (check block boundary)
+		loop {
+			if i >= data.len() { return (0, 0, 0); }
+			match data.as_bytes()[i] {
+				b'\n' => {
+					let n = self.scan_whitespace_inline(&data[i..]);
+					if n == 0 { return (0, 0, 0); }
+					i += n;
+					continue;
+				}
 				b'[' => nest += 1,
 				b']' => {
 					nest -= 1;
@@ -828,70 +919,116 @@ impl<'a> RawParser<'a> {
 			}
 			i += 1;
 		}
-		if i >= size { return None; }
 		let text_end = i;
 		i += 1;  // skip closing ]
+		(i, text_beg, text_end)
+	}
+
+	fn scan_link_title(&self, data: &str) -> (usize, usize, usize) {
+		let size = data.len();
+		if size == 0 { return (0, 0, 0); }
+		let mut i = 0;
+		let titleclose = match data.as_bytes()[i] {
+			b'(' => b')',
+			b'\'' => b'\'',
+			b'\"' => b'\"',
+			_ => return (0, 0, 0)
+		};
+		i += 1;
+		let title_beg = i;
+		while i < size {
+			match data.as_bytes()[i] {
+				x if x == titleclose => break,
+				b'\\' => i += 2,  // may be > size
+				b'\n' => {
+					let n = self.scan_whitespace_inline(&data[i..]);
+					if n == 0 { return (0, 0, 0); }
+					i += n;
+				}
+				_ => i += 1
+			}
+		}
+		if i >= size { return (0, 0, 0); }
+		let title_end = i;
+		i += 1;
+		(i, title_beg, title_end)
+	}
+
+	fn char_link(&mut self) -> Option<Event<'a>> {
+		let beg = self.off;
+		let tail = &self.text[beg .. self.limit()];
+		let size = tail.len();
+
+		// scan link text
+		let i = scan_ch(tail, b'!');
+		let is_image = i == 1;
+		let (n, text_beg, text_end) = self.scan_link(&tail[i..]);
+		if n == 0 { return None; }
+		let (text_beg, text_end) = (text_beg + i, text_end + i);
+		let mut i = i + n;
 
 		// scan dest
-		if !tail[i..].starts_with("(") { return None; }
-		i += 1;
-		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
-			// todo: check block boundary on newline
+		if tail[i..].starts_with("(") {
 			i += 1;
-		}
-		if i >= size { return None; }
-
-		let linkdest = scan_link_dest(&tail[i..]);
-		if linkdest.is_none() { return None; }
-		let (n, raw_dest) = linkdest.unwrap();
-		let dest = unescape(raw_dest);
-		i += n;
-
-		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
-			// todo: check block boundary on newline
-			i += 1;
-		}
-		if i == size { return None; }
-
-		// scan title
-		let title = if tail.as_bytes()[i] == b')' {
-			Borrowed("")
-		} else {
-			let titleclose = match tail.as_bytes()[i] {
-				b'(' => b')',
-				b'\'' => b'\'',
-				b'\"' => b'\"',
-				_ => return None
-			};
-			i += 1;
-			let title_beg = i;
-			while i < size {
-				let c = tail.as_bytes()[i];
-				if c == titleclose {
-					break;
-				} else if c == b'\\' {
-					i += 2;  // may be > size
-				} else {
-					i += 1;
-				}
-			}
+			i += self.scan_whitespace_inline(&tail[i..]);
 			if i >= size { return None; }
-			let title_end = i;
+
+			let linkdest = scan_link_dest(&tail[i..]);
+			if linkdest.is_none() { return None; }
+			let (n, raw_dest) = linkdest.unwrap();
+			let dest = unescape(raw_dest);
+			i += n;
+
+			i += self.scan_whitespace_inline(&tail[i..]);
+			if i == size { return None; }
+
+			// scan title
+			let (n_title, title_beg, title_end) = self.scan_link_title(&tail[i..]);
+			let title = if n_title == 0 {
+				Borrowed("")
+			} else {
+				let (title_beg, title_end) = (i + title_beg, i + title_end);
+				i += n_title;
+				// TODO: not just unescape, remove containers from newlines
+				unescape(&tail[title_beg..title_end])
+			};
+			i += self.scan_whitespace_inline(&tail[i..]);
+			if i == size || tail.as_bytes()[i] != b')' { return None; }
 			i += 1;
-			unescape(tail[title_beg..title_end].trim_right())
-		};
-		while i < size && is_ascii_whitespace(tail.as_bytes()[i]) {
-			// todo: check block boundary on newline
-			i += 1;
-		}
-		if i == size || tail.as_bytes()[i] != b')' { return None; }
-		i += 1;
-		self.off = beg + text_beg;
-		if is_image {
-			Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
+			self.off = beg + text_beg;
+			if is_image {
+				Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
+			} else {
+				Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+			}
+		} else if !is_image {
+			// try link reference
+			let j = i + self.scan_whitespace_inline(&tail[i..]);
+			let (n_ref, ref_beg, ref_end) = self.scan_link(&tail[j..]);
+			let (ref_beg, ref_end) = if n_ref == 0 || ref_beg == ref_end {
+				(text_beg, text_end)
+			} else {
+				(j + ref_beg, j + ref_end)
+			};
+			if n_ref != 0 {
+				i = j + n_ref;
+			}
+			let reference = self.normalize_link_ref(&tail[ref_beg..ref_end]);
+			let result = match self.links.get(&reference) {
+				Some(&(ref dest, ref title)) => Some((dest.clone(), title.clone())),
+				None => None
+			};
+			match result {
+				Some((dest, title)) => {
+					self.off = beg + text_beg;
+					Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+				}
+				None => None
+			}
 		} else {
-			Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+			None
 		}
+
 	}
 
 	// maybe move scan of opening backticks in here, as both callers do the same thing
@@ -954,8 +1091,9 @@ impl<'a> RawParser<'a> {
 						self.off = i;
 						return Event::Text(Borrowed(&self.text[beg..end]))
 					}
-					i += self.scan_whitespace_inline(&self.text[i..limit]);
-					if i < limit {
+					let n = self.scan_whitespace_inline(&self.text[i..limit]);
+					i += n;
+					if i < limit && n > 0 {
 						self.off = i;
 						return Event::Text(Borrowed(" "));
 					} else {

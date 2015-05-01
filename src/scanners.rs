@@ -32,6 +32,29 @@ const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
 	"section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
 	"thead", "tr", "ul", "video"];
 
+const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
+	"adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
+	"bitcoin", "bolo", "callto", "cap", "chrome", "chrome-extension", "cid",
+	"coap", "com-eventbrite-attendee", "content", "crid", "cvs", "data", "dav",
+	"dict", "dlna-playcontainer", "dlna-playsingle", "dns", "doi", "dtn",
+	"dvb", "ed2k", "facetime", "feed", "file", "finger", "fish", "ftp", "geo",
+	"gg", "git", "gizmoproject", "go", "gopher", "gtalk", "h323", "hcp",
+	"http", "https", "iax", "icap", "icon", "im", "imap", "info", "ipn", "ipp",
+	"irc", "irc6", "ircs", "iris", "iris.beep", "iris.lwz", "iris.xpc",
+	"iris.xpcs", "itms", "jar", "javascript", "jms", "keyparc", "lastfm",
+	"ldap", "ldaps", "magnet", "mailto", "maps", "market", "message", "mid",
+	"mms", "ms-help", "msnim", "msrp", "msrps", "mtqp", "mumble", "mupdate",
+	"mvn", "news", "nfs", "ni", "nih", "nntp", "notes", "oid",
+	"opaquelocktoken", "palm", "paparazzi", "platform", "pop", "pres", "proxy",
+	"psyc", "query", "res", "resource", "rmi", "rsync", "rtmp", "rtsp",
+	"secondlife", "service", "session", "sftp", "sgn", "shttp", "sieve", "sip",
+	"sips", "skype", "smb", "sms", "snmp", "soap.beep", "soap.beeps", "soldat",
+	"spotify", "ssh", "steam", "svn", "tag", "teamspeak", "tel", "telnet",
+	"tftp", "things", "thismessage", "tip", "tn3270", "tv", "udp", "unreal",
+	"urn", "ut2004", "vemmi", "ventrilo", "view-source", "webcal", "ws", "wss",
+	"wtai", "wyciwyg", "xcon", "xcon-userid", "xfire", "xmlrpc.beep",
+	"xmlrpc.beeps", "xmpp", "xri", "ymsgr", "z39.50r", "z39.50s"];
+
 pub fn is_ascii_whitespace(c: u8) -> bool {
 	(c >= 0x09 && c <= 0x0d) || c == b' '
 }
@@ -365,6 +388,83 @@ pub fn scan_link_dest<'a>(data: &'a str) -> Option<(usize, &'a str)> {
 		i += n;
 	}
 	Some((i, &data[dest_beg..dest_end]))
+}
+
+// return value is: total bytes, link uri
+pub fn scan_autolink<'a>(data: &'a str) -> Option<(usize, Cow<'a, str>)> {
+	let mut i = 0;
+	let n = scan_ch(data, b'<');
+	if n == 0 { return None; }
+	i += n;
+	let link_beg = i;
+	let n_uri = scan_uri(&data[i..]);
+	let (n_link, link) = if n_uri != 0 {
+		(n_uri, Borrowed(&data[link_beg .. i + n_uri]))
+	} else {
+		let n_email = scan_email(&data[i..]);
+		if n_email == 0 { return None; }
+		(n_email, Owned("mailto:".to_string() + &data[link_beg.. i + n_email]))
+	};
+	i += n_link;
+	if scan_ch(&data[i..], b'>') == 0 { return None; }
+	Some((i + 1, link))
+}
+
+fn scan_uri(data: &str) -> usize {
+	let mut i = 0;
+	while i < data.len() {
+		match data.as_bytes()[i] {
+			c if is_ascii_alphanumeric(c)  => i += 1,
+			b'.' | b'-' => i += 1,
+			b':' => break,
+			_ => return 0
+		}
+	}
+	if i == data.len() { return 0; }
+	let scheme = &data[..i];
+	if !URI_SCHEMES.binary_search_by(|probe| utils::strcasecmp(probe, scheme)).is_ok() {
+		return 0;
+	}
+	i += 1;  // scan the :
+	while i < data.len() {
+		match data.as_bytes()[i] {
+			b'\0' ... b' ' | b'<' | b'>' => break,
+			_ => i += 1
+		}
+	}
+	if i == data.len() { return 0; }
+	i
+}
+
+fn scan_email(data:&str) -> usize {
+	// using a regex library would be convenient, but doing it by hand is not too bad
+	let size = data.len();
+	let mut i = 0;
+	while i < size {
+		match data.as_bytes()[i] {
+			c if is_ascii_alphanumeric(c) => i += 1,
+			b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
+			b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => i += 1,
+			_ => break
+		}
+	}
+	if scan_ch(&data[i..], b'@') == 0 { return 0; }
+	i += 1;
+	loop {
+		let label_beg = i;
+		while i < size {
+			match data.as_bytes()[i] {
+				c if is_ascii_alphanumeric(c) => i += 1,
+				b'-' => i += 1,
+				_ => break,
+			}
+		}
+		if i == label_beg || i - label_beg > 63 ||
+				data.as_bytes()[label_beg] == b'-' || data.as_bytes()[i - 1] == b'-' { return 0; }
+		if scan_ch(&data[i..], b'.') == 0 { break; }
+		i += 1
+	}
+	i
 }
 
 pub fn is_escaped(data: &str, loc: usize) -> bool {

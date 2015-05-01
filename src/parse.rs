@@ -28,6 +28,7 @@ enum State {
 	CodeLineStart,
 	Code,
 	InlineCode,
+	Literal,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -741,7 +742,7 @@ impl<'a> RawParser<'a> {
 
 	fn is_active_char(&self, c: u8) -> bool {
 		c == b'\t' || c == b'\n' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' ||
-				c == b'_' || c == b'*' || c == b'[' || c == b'!' || c == b'`'
+				c == b'_' || c == b'*' || c == b'[' || c == b'!' || c == b'`' || c == b'<'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
@@ -755,6 +756,7 @@ impl<'a> RawParser<'a> {
 			b'*' => self.char_emphasis(),
 			b'[' | b'!' => self.char_link(),
 			b'`' => self.char_backtick(),
+			b'<' => self.char_lt(),
 			_ => None
 		}
 	}
@@ -1028,7 +1030,28 @@ impl<'a> RawParser<'a> {
 		} else {
 			None
 		}
+	}
 
+	// # Autolinks and inline HTML
+
+	fn char_lt(&mut self) -> Option<Event<'a>> {
+		if let Some((n, link)) = scan_autolink(&self.text[self.off ..]) {
+			let next = self.off + n;
+			self.off += 1;
+			self.state = State::Literal;
+			Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
+		} else {
+			None
+		}
+	}
+
+	// link text is literal, with no processing of markup
+	fn next_literal(&mut self) -> Event<'a> {
+		self.state = State::Inline;
+		let beg = self.off;
+		let end = self.limit();
+		self.off = end;
+		Event::Text(Borrowed(&self.text[beg..end]))
 	}
 
 	// maybe move scan of opening backticks in here, as both callers do the same thing
@@ -1130,6 +1153,7 @@ impl<'a> Iterator for RawParser<'a> {
 				State::CodeLineStart => return Some(self.next_code_line_start()),
 				State::Code => return Some(self.next_code()),
 				State::InlineCode => return Some(self.next_inline_code()),
+				State::Literal => return Some(self.next_literal()),
 			}
 		}
 		match self.stack.pop() {
@@ -1138,3 +1162,4 @@ impl<'a> Iterator for RawParser<'a> {
 		}
 	}
 }
+

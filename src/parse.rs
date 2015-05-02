@@ -87,6 +87,7 @@ pub enum Event<'a> {
 	End(Tag<'a>),
 	Text(Cow<'a, str>),
 	Html(Cow<'a, str>),
+	InlineHtml(Cow<'a, str>),
 	SoftBreak,
 	HardBreak,
 }
@@ -595,7 +596,7 @@ impl<'a> RawParser<'a> {
 
 	// # HTML blocks
 
-	fn scan_html_tag(&self, data: &'a str) -> (usize, &'a str) {
+	fn scan_html_block_tag(&self, data: &'a str) -> (usize, &'a str) {
 		let mut i = scan_ch(data, b'<');
 		if i == 0 { return (0, "") }
 		i += scan_ch(&data[i..], b'/');
@@ -606,7 +607,7 @@ impl<'a> RawParser<'a> {
 
 	fn is_html_block(&self, data: &str) -> bool {
 		let n = calc_indent(data, 3).0;
-		let (n_tag, tag) = self.scan_html_tag(&data[n..]);
+		let (n_tag, tag) = self.scan_html_block_tag(&data[n..]);
 		(n_tag > 0 && is_html_tag(tag)) ||
 				data[n..].starts_with("<?") ||
 				data[n..].starts_with("<!")
@@ -625,7 +626,7 @@ impl<'a> RawParser<'a> {
 				out = utils::cow_append(out, Borrowed(&self.text[mark..i]));
 				mark = i + n;
 			}
-			if !scanned || i + n == size || n_blank != 0{
+			if !scanned || i + n == size || n_blank != 0 {
 				self.off = i;  // TODO: skip blank lines (cleaner source maps)
 				self.state = State::StartBlock;
 				return Event::Html(out)
@@ -1003,7 +1004,7 @@ impl<'a> RawParser<'a> {
 			} else {
 				Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
 			}
-		} else if !is_image {
+		} else {
 			// try link reference
 			let j = i + self.scan_whitespace_inline(&tail[i..]);
 			let (n_ref, ref_beg, ref_end) = self.scan_link(&tail[j..]);
@@ -1023,7 +1024,11 @@ impl<'a> RawParser<'a> {
 			match result {
 				Some((dest, title)) => {
 					self.off = beg + text_beg;
-					Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+					if is_image {
+						Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
+					} else {
+						Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
+					}
 				}
 				None => None
 			}
@@ -1035,14 +1040,165 @@ impl<'a> RawParser<'a> {
 	// # Autolinks and inline HTML
 
 	fn char_lt(&mut self) -> Option<Event<'a>> {
-		if let Some((n, link)) = scan_autolink(&self.text[self.off ..]) {
+		let tail = &self.text[self.off .. self.limit()];
+		if let Some((n, link)) = scan_autolink(tail) {
 			let next = self.off + n;
 			self.off += 1;
 			self.state = State::Literal;
-			Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
-		} else {
-			None
+			return Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
 		}
+		let n = self.scan_inline_html(tail);
+		if n != 0 {
+			return Some(self.inline_html_event(n))
+		}
+		None
+	}
+
+	fn scan_inline_html(&self, data: &str) -> usize {
+		let n = self.scan_html_tag(data);
+		if n != 0 { return n; }
+		let n = self.scan_html_comment(data);
+		if n != 0 { return n; }
+		let n = self.scan_processing_instruction(data);
+		if n != 0 { return n; }
+		let n = self.scan_declaration(data);
+		if n != 0 { return n; }
+		let n = self.scan_cdata(data);
+		if n != 0 { return n; }
+		0
+	}
+
+	fn scan_html_tag(&self, data: &str) -> usize {
+		let size = data.len();
+		let mut i = 0;
+		if scan_ch(data, b'<') == 0 { return 0; }
+		i += 1;
+		let n_slash = scan_ch(&data[i..], b'/');
+		i += n_slash;
+		if i == size || !is_ascii_alpha(data.as_bytes()[i]) { return 0; }
+		i += 1;
+		i += scan_while(&data[i..], is_ascii_alphanumeric);
+		if n_slash == 0 {
+			loop {
+				let n = self.scan_whitespace_inline(&data[i..]);
+				if n == 0 { break; }
+				i += n;
+				let n = scan_attribute_name(&data[i..]);
+				if n == 0 { break; }
+				i += n;
+				let n = self.scan_whitespace_inline(&data[i..]);
+				if scan_ch(&data[i + n ..], b'=') != 0 {
+					i += n + 1;
+					i += self.scan_whitespace_inline(&data[i..]);
+					let n_attr = self.scan_attribute_value(&data[i..]);
+					if n_attr == 0 { return 0; }
+					i += n_attr;
+				}
+			}
+			i += self.scan_whitespace_inline(&data[i..]);
+			i += scan_ch(&data[i..], b'/');
+		} else {
+			i += self.scan_whitespace_inline(&data[i..]);
+		}
+		if scan_ch(&data[i..], b'>') == 0 { return 0; }
+		i += 1;
+		i
+	}
+
+	fn scan_attribute_value(&self, data: &str) -> usize {
+		let size = data.len();
+		if size == 0 { return 0; }
+		let open = data.as_bytes()[0];
+		let quoted = open == b'\'' || open == b'"';
+		let mut i = if quoted { 1 } else { 0 };
+		while i < size {
+			let c = data.as_bytes()[i];
+			match c {
+				b'\n' => {
+					if !quoted { break; }
+					let n = self.scan_whitespace_inline(&data[i..]);
+					if n == 0 { return 0; }
+					i += n;
+				}
+				b'\'' | b'"' | b'=' | b'<' | b'>' | b'`' | b'\t' ... b' ' => {
+					if !quoted || c == open { break; }
+					i += 1;
+				}
+				_ => i += 1
+			}
+		}
+		if quoted {
+			if i == size || data.as_bytes()[i] != open { return 0; }
+			i += 1;
+		}
+		i
+	}
+
+	fn scan_html_comment(&self, data: &str) -> usize {
+		if !data.starts_with("<!--") { return 0; }
+		if let Some(n) = data[4..].find("--") {
+			let text = &data[4..4 + n];
+			if !text.starts_with('>') && !text.starts_with("->") &&
+					data[n + 6 ..].starts_with('>') {
+				return n + 7;
+			}
+		}
+		0
+	}
+
+	fn scan_processing_instruction(&self, data: &str) -> usize {
+		if !data.starts_with("<?") { return 0; }
+		if let Some(n) = data[2..].find("?>") {
+			return n + 4;
+		}
+		0
+	}
+
+	fn scan_declaration(&self, data: &str) -> usize {
+		if !data.starts_with("<!") { return 0; }
+		let n = scan_while(&data[2..], is_ascii_upper);
+		if n == 0 { return 0; }
+		let i = n + 2;
+		let n = self.scan_whitespace_inline(&data[i..]);
+		if n == 0 { return 0; }
+		let mut i = i + n;
+		while i < data.len() {
+			match data.as_bytes()[i] {
+				b'>' => return i + 1,
+				b'\n' => i += self.scan_whitespace_inline(&data[i..]),
+				_ => i += 1
+			}
+		}
+		0
+	}
+
+	fn scan_cdata(&self, data: &str) -> usize {
+		if !data.starts_with("<![CDATA[") { return 0; }
+		if let Some(n) = data[9..].find("]]>") {
+			return n + 12;
+		}
+		0
+	}
+
+	fn inline_html_event(&mut self, n: usize) -> Event<'a> {
+		let data = &self.text[self.off .. self.off + n];
+		let size = data.len();
+		let mut out = Borrowed("");
+		let mut i = 0;
+		let mut mark = 0;
+		while i < size {
+			i += scan_nextline(&data[i..]);
+			if i < size {
+				let (n, _) = self.scan_containers(&data[i..]);
+				if n != 0 {
+					out = utils::cow_append(out, Borrowed(&data[mark..i]));
+					mark = i + n;
+				}
+			}
+		}
+		out = utils::cow_append(out, Borrowed(&data[mark..n]));
+		self.off += n;
+		Event::InlineHtml(out)
 	}
 
 	// link text is literal, with no processing of markup

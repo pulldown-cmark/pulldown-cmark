@@ -18,7 +18,7 @@
 use std::fmt::Write;
 
 use parse::{Event, Tag};
-use parse::Event::{Start, End, Text, Html, SoftBreak, HardBreak};
+use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak};
 use escape::{escape_html, escape_href};
 
 fn fresh_line(buf: &mut String) {
@@ -34,6 +34,7 @@ pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
 			End(tag) => end_tag(buf, tag),
 			Text(text) => escape_html(buf, &text, false),
 			Html(html) => buf.push_str(&html),
+			InlineHtml(html) => buf.push_str(&html),
 			SoftBreak => buf.push('\n'),
 			HardBreak => buf.push_str("<br />\n")
 		}

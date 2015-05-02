@@ -63,6 +63,20 @@ pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
 	c == b'\t' || (c >= 0x0b && c <= 0x0d) || c == b' '
 }
 
+pub fn is_ascii_alpha(c: u8) -> bool {
+	match c {
+		b'a' ... b'z' | b'A' ... b'Z' => true,
+		_ => false
+	}
+}
+
+pub fn is_ascii_upper(c: u8) -> bool {
+	match c {
+		b'A' ... b'Z' => true,
+		_ => false
+	}
+}
+
 pub fn is_ascii_alphanumeric(c: u8) -> bool {
 	match c {
 		b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
@@ -436,7 +450,7 @@ fn scan_uri(data: &str) -> usize {
 	i
 }
 
-fn scan_email(data:&str) -> usize {
+fn scan_email(data: &str) -> usize {
 	// using a regex library would be convenient, but doing it by hand is not too bad
 	let size = data.len();
 	let mut i = 0;
@@ -463,6 +477,25 @@ fn scan_email(data:&str) -> usize {
 				data.as_bytes()[label_beg] == b'-' || data.as_bytes()[i - 1] == b'-' { return 0; }
 		if scan_ch(&data[i..], b'.') == 0 { break; }
 		i += 1
+	}
+	i
+}
+
+pub fn scan_attribute_name(data: &str) -> usize {
+	let size = data.len();
+	if size == 0 { return 0; }
+	match data.as_bytes()[0] {
+		c if is_ascii_alpha(c) => (),
+		b'_' | b':' => (),
+		_ => return 0
+	}
+	let mut i = 1;
+	while i < size {
+		match data.as_bytes()[i] {
+			c if is_ascii_alphanumeric(c) => i += 1,
+			b'_' | b'.' | b':' | b'-' => i += 1,
+			_ => break
+		}
 	}
 	i
 }

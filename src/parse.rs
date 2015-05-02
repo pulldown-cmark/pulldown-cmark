@@ -971,7 +971,7 @@ impl<'a> RawParser<'a> {
 		let mut i = i + n;
 
 		// scan dest
-		if tail[i..].starts_with("(") {
+		let (dest, title, beg, end, next) = if tail[i..].starts_with("(") {
 			i += 1;
 			i += self.scan_whitespace_inline(&tail[i..]);
 			if i >= size { return None; }
@@ -998,12 +998,7 @@ impl<'a> RawParser<'a> {
 			i += self.scan_whitespace_inline(&tail[i..]);
 			if i == size || tail.as_bytes()[i] != b')' { return None; }
 			i += 1;
-			self.off = beg + text_beg;
-			if is_image {
-				Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
-			} else {
-				Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
-			}
+			(dest, title, beg + text_beg, beg + text_end, beg + i)
 		} else {
 			// try link reference
 			let j = i + self.scan_whitespace_inline(&tail[i..]);
@@ -1017,23 +1012,17 @@ impl<'a> RawParser<'a> {
 				i = j + n_ref;
 			}
 			let reference = self.normalize_link_ref(&tail[ref_beg..ref_end]);
-			let result = match self.links.get(&reference) {
-				Some(&(ref dest, ref title)) => Some((dest.clone(), title.clone())),
-				None => None
+			let (dest, title) = match self.links.get(&reference) {
+				Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
+				None => return None
 			};
-			match result {
-				Some((dest, title)) => {
-					self.off = beg + text_beg;
-					if is_image {
-						Some(self.start(Tag::Image(dest, title), beg + text_end, beg + i))
-					} else {
-						Some(self.start(Tag::Link(dest, title), beg + text_end, beg + i))
-					}
-				}
-				None => None
-			}
+			(dest, title, beg + text_beg, beg + text_end, beg + i)
+		};
+		self.off = beg;
+		if is_image {
+			Some(self.start(Tag::Image(dest, title), end, next))
 		} else {
-			None
+			Some(self.start(Tag::Link(dest, title), end, next))
 		}
 	}
 

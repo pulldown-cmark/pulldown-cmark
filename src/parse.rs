@@ -878,11 +878,11 @@ impl<'a> RawParser<'a> {
 				}
 				i += n2;
 			} else if c2 == b'`' {
-				let backtick_len = scan_backticks(&self.text[i..limit]);
-				i += backtick_len;
-				let n = self.scan_closing_backtick(&self.text[i..limit], backtick_len);
+				let (n, beg, _) = self.scan_inline_code(&self.text[i..limit]);
 				if n != 0 {
-					i += n + backtick_len;
+					i += n;
+				} else {
+					i += beg;
 				}
 			} else {
 				i += 1;
@@ -917,6 +917,26 @@ impl<'a> RawParser<'a> {
 					}
 				}
 				b'\\' => i += 1,
+				b'<' => {
+					if let Some((n, _)) = scan_autolink(&data[i..]) {
+						i += n;
+					} else {
+						let n = self.scan_inline_html(&data[i..]);
+						if n != 0 {
+							i += n;
+						} else {
+							i += 1;
+						}
+					}
+				}
+				b'`' => {
+					let (n, beg, _) = self.scan_inline_code(&data[i..]);
+					if n != 0 {
+						i += n;
+					} else {
+						i += beg;
+					}
+				}
 				// TODO: ` etc
 				_ => ()
 			}
@@ -1199,16 +1219,17 @@ impl<'a> RawParser<'a> {
 		Event::Text(Borrowed(&self.text[beg..end]))
 	}
 
-	// maybe move scan of opening backticks in here, as both callers do the same thing
-	fn scan_closing_backtick(&self, data: &str, len: usize) -> usize {
+	// second return value is number of backticks even if not closed
+	fn scan_inline_code(&self, data: &str) -> (usize, usize, usize) {
 		let size = data.len();
-		let mut i = 0;
+		let backtick_len = scan_backticks(data);
+		let mut i = backtick_len;
 		while i < size {
 			match data.as_bytes()[i] {
 				b'`' => {
 					let close_len = scan_backticks(&data[i..]);
-					if close_len == len {
-						return i;
+					if close_len == backtick_len {
+						return (i + backtick_len, backtick_len, i);
 					} else {
 						i += close_len;
 					}
@@ -1216,25 +1237,24 @@ impl<'a> RawParser<'a> {
 				b'\n' => {
 					i += 1;
 					i += self.scan_containers(&data[i..]).0;
-					if self.is_inline_block_end(&data[i..]) { return 0; }
+					if self.is_inline_block_end(&data[i..]) { return (0, backtick_len, 0); }
 				}
 				// TODO: '<'
 				_ => i += 1
 			}
 		}
-		0
+		(0, backtick_len, 0)
 	}
 
 	fn char_backtick(&mut self) -> Option<Event<'a>> {
 		let beg = self.off;
 		let limit = self.limit();
 		let mut i = beg;
-		let backtick_len = scan_backticks(&self.text[i..limit]);
-		i += backtick_len;
-		let n = self.scan_closing_backtick(&self.text[i..limit], backtick_len);
+		let (n, code_beg, code_end) = self.scan_inline_code(&self.text[i..limit]);
 		if n == 0 { return None; }
-		let mut end = i + n;
-		let next = i + n + backtick_len;
+		i += code_beg;
+		let mut end = beg + code_end;
+		let next = beg + n;
 		i += self.scan_whitespace_inline(&self.text[i..limit]);
 		while end > i && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
 			end -= 1;

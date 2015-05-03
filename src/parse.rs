@@ -800,7 +800,7 @@ impl<'a> RawParser<'a> {
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
 		let limit = self.limit();
 		if self.off + 1 < limit {
-			if let (n, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
+			if let (_, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
 				let n_white = self.scan_whitespace_inline(&self.text[self.off + 1 .. limit]);
 				if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit]) {
 					self.off += 1 + n_white;

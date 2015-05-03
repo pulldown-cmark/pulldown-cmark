@@ -15,8 +15,6 @@
 # get https://html.spec.whatwg.org/multipage/entities.json
 # Usage: python tools/mk_entities.py entities.json > src/entities.rs
 
-# Could easily extend this to look up entity values
-
 import json
 import sys
 

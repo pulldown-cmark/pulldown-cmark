@@ -21,6 +21,7 @@ mod parse;
 mod scanners;
 mod entities;
 mod escape;
+mod puncttable;
 mod utils;
 
 pub use passes::Parser;

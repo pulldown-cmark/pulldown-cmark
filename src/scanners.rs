@@ -20,8 +20,7 @@ use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
 
-// sorted for binary_search
-const ASCII_PUNCTUATION: &'static [u8] = b"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+pub use puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
 const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
@@ -95,10 +94,6 @@ fn is_digit(c: u8) -> bool {
 	b'0' <= c && c <= b'9'
 }
 
-pub fn is_ascii_punctuation(c: u8) -> bool {
-	ASCII_PUNCTUATION.binary_search(&c).is_ok()
-}
-
 // scan a single character
 pub fn scan_ch(data: &str, c: u8) -> usize {
 	if !data.is_empty() && data.as_bytes()[0] == c { 1 } else { 0 }
@@ -140,6 +135,30 @@ pub fn scan_trailing_whitespace(data: &str) -> usize {
 		end -= 1;
 	}
 	data.len() - end
+}
+
+fn scan_codepoint(data: &str) -> Option<char> {
+	data.chars().next()
+}
+
+// get last codepoint in string
+fn scan_trailing_codepoint(data: &str) -> Option<char> {
+	// would just data.chars.next_back() be better?
+	let size = data.len();
+	if size == 0 {
+		None
+	} else {
+		let c = data.as_bytes()[size - 1];
+		if c < 0x80 {
+			Some(c as char)
+		} else {
+			let mut i = size - 2;
+			while (data.as_bytes()[i] & 0xc0) == 0x80 {
+				i -= 1;
+			}
+			data[i..].chars().next()
+		}
+	}
 }
 
 // Maybe Option, size of 0 makes sense at EOF
@@ -313,17 +332,13 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
 	while beg > 0 && data.as_bytes()[beg - 1] == c {
 		beg -= 1;
 	}
-	let (white_before, punc_before) = if beg == 0 {
-		(true, false)
-	} else {
-		let c = data.as_bytes()[beg - 1];
-		(is_ascii_whitespace(c), is_ascii_punctuation(c))
+	let (white_before, punc_before) = match scan_trailing_codepoint(&data[..beg]) {
+		None => (true, false),
+		Some(c) => (c.is_whitespace(), is_punctuation(c))
 	};
-	let (white_after, punc_after) = if end == size {
-		(true, false)
-	} else {
-		let c = data.as_bytes()[end];
-		(is_ascii_whitespace(c), is_ascii_punctuation(c))
+	let (white_after, punc_after) = match scan_codepoint(&data[end..]) {
+		None => (true, false),
+		Some(c) => (c.is_whitespace(), is_punctuation(c))
 	};
 	let left_flanking = !white_after && (!punc_after || white_before || punc_before);
 	let right_flanking = !white_before && (!punc_before || white_after || punc_after);

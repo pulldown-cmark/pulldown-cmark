@@ -322,7 +322,9 @@ impl<'a> RawParser<'a> {
 					return Some(self.end_containing_lists(n));
 				}
 				self.off += n;
-				self.last_line_was_empty = true;
+				if let Some(_) = self.at_list(2) {
+					self.last_line_was_empty = true;
+				}
 				continue;
 			}
 
@@ -359,12 +361,12 @@ impl<'a> RawParser<'a> {
 				self.last_line_was_empty = false;
 				return Some(self.start_listitem(n, c, start, indent));
 			}
-			self.last_line_was_empty = false;
 
 			// not a list item, so if we're in a list, close it
 			if let Some(&Container::List(_, _)) = self.containers.last() {
 				return Some(self.end());
 			}
+			self.last_line_was_empty = false;
 
 			let (n, level) = scan_atx_header(tail);
 			if n != 0 {

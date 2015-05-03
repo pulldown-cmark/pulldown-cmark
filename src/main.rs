@@ -119,7 +119,7 @@ fn run_spec(spec_text: &str, args: &[String]) {
 		if first.map(|fst| fst <= test_number).unwrap_or(true) &&
 				last.map(|lst| test_number <= lst).unwrap_or(true) {
 			if tests_run == 0 || line_count == 0 || (test_number % 10 == 0) {
-				if line_count >= 40 {
+				if line_count > 30 {
 					println!("");
 					line_count = 0;
 				} else if line_count > 0 {

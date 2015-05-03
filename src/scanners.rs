@@ -132,6 +132,16 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
 	}
 }
 
+// unusual among "scan" functions in that it scans from the _back_ of the string
+// TODO: should also scan unicode whitespace?
+pub fn scan_trailing_whitespace(data: &str) -> usize {
+	let mut end = data.len();
+	while end > 0 && is_ascii_whitespace_no_nl(data.as_bytes()[end - 1]) {
+		end -= 1;
+	}
+	data.len() - end
+}
+
 // Maybe Option, size of 0 makes sense at EOF
 pub fn scan_blank_line(text: &str) -> usize {
 	let i = scan_whitespace_no_nl(text);

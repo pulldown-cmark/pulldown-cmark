@@ -181,10 +181,6 @@ impl<'a> RawParser<'a> {
 		self.off += scan_whitespace_no_nl(&self.text[self.off .. self.limit()]);
 	}
 
-	fn skip_inline_linestart(&mut self) {
-		self.skip_leading_whitespace();
-	}
-
 	fn skip_code_linestart(&mut self) {
 		let (n, _) = calc_indent(&self.text[self.off ..], self.fence_indent);
 		// TODO: handle case where tab character takes us past fence indent
@@ -724,6 +720,27 @@ impl<'a> RawParser<'a> {
 		while i < limit {
 			let c = self.text.as_bytes()[i];
 			if self.is_active_char(c) {
+				if c == b'\n' || c == b'\r' {
+					let n = scan_trailing_whitespace(&self.text[beg..i]);
+					let end = i - n;
+					if end > beg {
+						self.off = end;
+						return Event::Text(Borrowed(&self.text[beg..end]));
+					}
+					if c == b'\r' && i < limit && self.text.as_bytes()[i] == b'\n' {
+						i += 1;
+					}
+					i += 1;
+					let next = i;
+					i += self.scan_containers(&self.text[i..limit]).0;
+					if self.is_inline_block_end(&self.text[i..limit]) {
+						self.off = next;
+						return self.end();
+					}
+					i += scan_whitespace_no_nl(&self.text[i..limit]);
+					self.off = i;
+					return if n >= 2 { Event::HardBreak } else { Event::SoftBreak };
+				}
 				self.off = i;
 				if i > beg {
 					return Event::Text(Borrowed(&self.text[beg..i]));
@@ -751,8 +768,6 @@ impl<'a> RawParser<'a> {
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
 		match c {
 			b'\t' => Some(self.char_tab()),
-			b'\n' => self.char_newline(),
-			b'\r' => self.char_return(),
 			b'\\' => self.char_backslash(),
 			b'&' => self.char_entity(),
 			b'_' => self.char_emphasis(),
@@ -782,36 +797,13 @@ impl<'a> RawParser<'a> {
 		Event::Text(Borrowed(&"    "[(count % 4) ..]))
 	}
 
-	// newline can be a bunch of cases, including closing a block
-	fn char_newline(&mut self) -> Option<Event<'a>> {
-		self.off += 1;
-		let start = self.off + self.scan_containers(&self.text[self.off ..]).0;
-		if self.is_inline_block_end(&self.text[start..]) {
-			//println!("off {} stack {:?} containers {:?}", self.off, self.stack, self.containers);
-			Some(self.end())
-		} else {
-			self.off = start;
-			self.skip_inline_linestart();
-			Some(Event::SoftBreak)
-		}
-	}
-
-	fn char_return(&mut self) -> Option<Event<'a>> {
-		if self.text[self.off + 1..].starts_with('\n') {
-			self.off += 1;
-			self.char_newline()
-		} else {
-			None
-		}
-	}
-
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
 		let limit = self.limit();
 		if self.off + 1 < limit {
 			if let (n, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
 				let n_white = self.scan_whitespace_inline(&self.text[self.off + 1 .. limit]);
 				if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit]) {
-					self.off += 1 + n;
+					self.off += 1 + n_white;
 					return Some(Event::HardBreak);
 				}
 			}

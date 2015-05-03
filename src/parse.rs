@@ -19,6 +19,7 @@ use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed};
 use std::collections::{HashMap, HashSet};
+use std::cmp;
 
 #[derive(PartialEq, Debug)]
 enum State {
@@ -70,7 +71,7 @@ pub enum Tag<'a> {
 	Rule,
 	Header(i32),
 	BlockQuote,
-	CodeBlock(&'a str),
+	CodeBlock(Cow<'a, str>),
 	List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
 	Item,
 
@@ -467,7 +468,7 @@ impl<'a> RawParser<'a> {
 		let size = self.text.len();
 		self.state = State::Code;
 		self.skip_code_linestart();
-		self.start(Tag::CodeBlock(""), size, 0)
+		self.start(Tag::CodeBlock(Borrowed("")), size, 0)
 	}
 
 	fn start_listitem(&mut self, n: usize, c: u8, start: usize, indent: usize) -> Event<'a> {
@@ -502,7 +503,7 @@ impl<'a> RawParser<'a> {
 		let beg_info = self.off + n;
 		let next_line = beg_info + scan_nextline(&self.text[beg_info..]);
 		self.off = next_line;
-		let info = &self.text[beg_info..next_line].trim();
+		let info = unescape(&self.text[beg_info..next_line].trim());
 		let size = self.text.len();
 		self.state = State::CodeLineStart;
 		self.start(Tag::CodeBlock(info), size, 0)
@@ -638,8 +639,8 @@ impl<'a> RawParser<'a> {
 
 	fn try_link_reference_definition(&mut self, data: &'a str) -> bool {
 		let n = calc_indent(data, 3).0;
-		let (n_link, text_beg, text_end) = self.scan_link(&data[n..]);
-		if n_link == 0 { return false; }
+		let (n_link, text_beg, text_end, max_nest) = self.scan_link(&data[n..]);
+		if n_link == 0 || max_nest > 1 { return false; }
 		let (text_beg, text_end) = (text_beg + n, text_end + n);
 		let n_colon = scan_ch(&data[n + n_link ..], b':');
 		if n_colon == 0 { return false; }
@@ -723,13 +724,14 @@ impl<'a> RawParser<'a> {
 		while i < limit {
 			let c = self.text.as_bytes()[i];
 			if self.is_active_char(c) {
+				self.off = i;
 				if i > beg {
-					self.off = i;
 					return Event::Text(Borrowed(&self.text[beg..i]));
 				}
 				if let Some(event) = self.active_char(c) {
 					return event;
 				}
+				i = self.off;  // let handler advance offset even on None
 			}
 			i += 1;
 		}
@@ -807,8 +809,11 @@ impl<'a> RawParser<'a> {
 		let limit = self.limit();
 		if self.off + 1 < limit {
 			if let (n, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
-				self.off += 1 + n;
-				return Some(Event::HardBreak);
+				let n_white = self.scan_whitespace_inline(&self.text[self.off + 1 .. limit]);
+				if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit]) {
+					self.off += 1 + n;
+					return Some(Event::HardBreak);
+				}
 			}
 			let c = self.text.as_bytes()[self.off + 1];
 			if is_ascii_punctuation(c) {
@@ -884,6 +889,25 @@ impl<'a> RawParser<'a> {
 				} else {
 					i += beg;
 				}
+			} else if c2 == b'<' {
+				if let Some((n, _)) = scan_autolink(&self.text[i..limit]) {
+					i += n;
+				} else {
+					let n = self.scan_inline_html(&self.text[i..limit]);
+					if n != 0 {
+						i += n;
+					} else {
+						i += 1;
+					}
+				}
+			} else if c2 == b'[' {
+				let (n, _, _, _) = self.scan_link(&self.text[i..limit]);
+				// TODO: need to figure out whether it was actually a link
+				if n != 0 {
+					i += n;
+				} else {
+					i += 1;
+				}
 			} else {
 				i += 1;
 			}
@@ -894,22 +918,26 @@ impl<'a> RawParser<'a> {
 	// # Links
 
 	// scans a link, example [link]
-	// return value is: total bytes, start of text, end of text
-	fn scan_link(&self, data: &str) -> (usize, usize, usize) {
+	// return value is: total bytes, start of text, end of text, max nesting
+	fn scan_link(&self, data: &str) -> (usize, usize, usize, usize) {
 		let mut i = scan_ch(data, b'[');
-		if i == 0 { return (0, 0, 0); }
+		if i == 0 { return (0, 0, 0, 0); }
 		let text_beg = i;
+		let mut max_nest = 1;
 		let mut nest = 1;
 		loop {
-			if i >= data.len() { return (0, 0, 0); }
+			if i >= data.len() { return (0, 0, 0, 0); }
 			match data.as_bytes()[i] {
 				b'\n' => {
 					let n = self.scan_whitespace_inline(&data[i..]);
-					if n == 0 { return (0, 0, 0); }
+					if n == 0 { return (0, 0, 0, 0); }
 					i += n;
 					continue;
 				}
-				b'[' => nest += 1,
+				b'[' => {
+					nest += 1;
+					max_nest = cmp::max(max_nest, nest)
+				}
 				b']' => {
 					nest -= 1;
 					if nest == 0 {
@@ -944,7 +972,7 @@ impl<'a> RawParser<'a> {
 		}
 		let text_end = i;
 		i += 1;  // skip closing ]
-		(i, text_beg, text_end)
+		(i, text_beg, text_end, max_nest)
 	}
 
 	fn scan_link_title(&self, data: &str) -> (usize, usize, usize) {
@@ -985,7 +1013,7 @@ impl<'a> RawParser<'a> {
 		// scan link text
 		let i = scan_ch(tail, b'!');
 		let is_image = i == 1;
-		let (n, text_beg, text_end) = self.scan_link(&tail[i..]);
+		let (n, text_beg, text_end, _) = self.scan_link(&tail[i..]);
 		if n == 0 { return None; }
 		let (text_beg, text_end) = (text_beg + i, text_end + i);
 		let mut i = i + n;
@@ -1022,7 +1050,7 @@ impl<'a> RawParser<'a> {
 		} else {
 			// try link reference
 			let j = i + self.scan_whitespace_inline(&tail[i..]);
-			let (n_ref, ref_beg, ref_end) = self.scan_link(&tail[j..]);
+			let (n_ref, ref_beg, ref_end, _) = self.scan_link(&tail[j..]);
 			let (ref_beg, ref_end) = if n_ref == 0 || ref_beg == ref_end {
 				(text_beg, text_end)
 			} else {
@@ -1251,14 +1279,14 @@ impl<'a> RawParser<'a> {
 		let limit = self.limit();
 		let mut i = beg;
 		let (n, code_beg, code_end) = self.scan_inline_code(&self.text[i..limit]);
-		if n == 0 { return None; }
+		if n == 0 {
+			self.off += code_beg - 1;
+			return None;
+		}
 		i += code_beg;
-		let mut end = beg + code_end;
+		let end = beg + code_end;
 		let next = beg + n;
 		i += self.scan_whitespace_inline(&self.text[i..limit]);
-		while end > i && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
-			end -= 1;
-		}
 		self.off = i;
 		self.state = State::InlineCode;
 		Some(self.start(Tag::Code, end, next))
@@ -1269,26 +1297,29 @@ impl<'a> RawParser<'a> {
 		let mut i = beg;
 		let limit = self.limit();
 		while i < limit {
-			match self.text.as_bytes()[i] {
-				b'\n' => {
-					let mut end = i;
-					while end > beg && is_ascii_whitespace_no_nl(self.text.as_bytes()[end - 1]) {
-						end -= 1;
-					}
-					if end > beg {
-						self.off = i;
-						return Event::Text(Borrowed(&self.text[beg..end]))
-					}
-					let n = self.scan_whitespace_inline(&self.text[i..limit]);
-					i += n;
-					if i < limit && n > 0 {
-						self.off = i;
-						return Event::Text(Borrowed(" "));
+			let c = self.text.as_bytes()[i];
+			if is_ascii_whitespace(c) {
+				let n = self.scan_whitespace_inline(&self.text[i..limit]);
+				if i + n == limit || n == 0 {
+					if i > beg {
+						break;
 					} else {
 						return self.end();
 					}
 				}
-				_ => i += 1
+				if c == b' ' && n == 1 {
+					// optimization to reduce number of text blocks produced
+					i += 1;
+				} else {
+					if i > beg {
+						break;
+					}
+					i += n;
+					self.off = i;
+					return Event::Text(Borrowed(" "));
+				}
+			} else {
+				i += 1;
 			}
 		}
 		if i > beg {

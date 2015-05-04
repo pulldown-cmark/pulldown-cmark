@@ -637,7 +637,7 @@ impl<'a> RawParser<'a> {
 
 	fn try_link_reference_definition(&mut self, data: &'a str) -> bool {
 		let n = calc_indent(data, 3).0;
-		let (n_link, text_beg, text_end, max_nest) = self.scan_link(&data[n..]);
+		let (n_link, text_beg, text_end, max_nest) = self.scan_link_label(&data[n..]);
 		if n_link == 0 || max_nest > 1 { return false; }
 		let (text_beg, text_end) = (text_beg + n, text_end + n);
 		let n_colon = scan_ch(&data[n + n_link ..], b':');
@@ -884,20 +884,14 @@ impl<'a> RawParser<'a> {
 					i += beg;
 				}
 			} else if c2 == b'<' {
-				if let Some((n, _)) = scan_autolink(&self.text[i..limit]) {
+				let n = self.scan_autolink_or_html(&self.text[i..limit]);
+				if n != 0 {
 					i += n;
 				} else {
-					let n = self.scan_inline_html(&self.text[i..limit]);
-					if n != 0 {
-						i += n;
-					} else {
-						i += 1;
-					}
+					i += 1;
 				}
 			} else if c2 == b'[' {
-				let (n, _, _, _) = self.scan_link(&self.text[i..limit]);
-				// TODO: need to figure out whether it was actually a link
-				if n != 0 {
+				if let Some((_, _, _, n)) = self.parse_link(&self.text[i..limit]) {
 					i += n;
 				} else {
 					i += 1;
@@ -911,9 +905,9 @@ impl<'a> RawParser<'a> {
 
 	// # Links
 
-	// scans a link, example [link]
+	// scans a link label, example [link]
 	// return value is: total bytes, start of text, end of text, max nesting
-	fn scan_link(&self, data: &str) -> (usize, usize, usize, usize) {
+	fn scan_link_label(&self, data: &str) -> (usize, usize, usize, usize) {
 		let mut i = scan_ch(data, b'[');
 		if i == 0 { return (0, 0, 0, 0); }
 		let text_beg = i;
@@ -940,15 +934,11 @@ impl<'a> RawParser<'a> {
 				}
 				b'\\' => i += 1,
 				b'<' => {
-					if let Some((n, _)) = scan_autolink(&data[i..]) {
+					let n = self.scan_autolink_or_html(&data[i..]);
+					if n != 0 {
 						i += n;
 					} else {
-						let n = self.scan_inline_html(&data[i..]);
-						if n != 0 {
-							i += n;
-						} else {
-							i += 1;
-						}
+						i += 1;
 					}
 				}
 				b'`' => {
@@ -959,7 +949,6 @@ impl<'a> RawParser<'a> {
 						i += beg;
 					}
 				}
-				// TODO: ` etc
 				_ => ()
 			}
 			i += 1;
@@ -1000,51 +989,62 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn char_link(&mut self) -> Option<Event<'a>> {
-		let beg = self.off;
-		let tail = &self.text[beg .. self.limit()];
-		let size = tail.len();
+		self.parse_link(&self.text[self.off .. self.limit()]).map(|(tag, beg, end, n)| {
+			let off = self.off;
+			self.off += beg;
+			self.start(tag, off + end, off + n)
+		})
+	}
+
+	// return: tag, begin, end, total size
+	fn parse_link(&self, data: &'a str) -> Option<(Tag<'a>, usize, usize, usize)> {
+		let size = data.len();
 
 		// scan link text
-		let i = scan_ch(tail, b'!');
+		let i = scan_ch(data, b'!');
 		let is_image = i == 1;
-		let (n, text_beg, text_end, _) = self.scan_link(&tail[i..]);
+		let (n, text_beg, text_end, max_nest) = self.scan_link_label(&data[i..]);
 		if n == 0 { return None; }
 		let (text_beg, text_end) = (text_beg + i, text_end + i);
+		if !is_image && max_nest > 1 && self.contains_link(&data[text_beg..text_end]) {
+			// disallow nested links in links (but ok in images)
+			return None;
+		}
 		let mut i = i + n;
 
 		// scan dest
-		let (dest, title, beg, end, next) = if tail[i..].starts_with("(") {
+		let (dest, title, beg, end, next) = if data[i..].starts_with("(") {
 			i += 1;
-			i += self.scan_whitespace_inline(&tail[i..]);
+			i += self.scan_whitespace_inline(&data[i..]);
 			if i >= size { return None; }
 
-			let linkdest = scan_link_dest(&tail[i..]);
+			let linkdest = scan_link_dest(&data[i..]);
 			if linkdest.is_none() { return None; }
 			let (n, raw_dest) = linkdest.unwrap();
 			let dest = unescape(raw_dest);
 			i += n;
 
-			i += self.scan_whitespace_inline(&tail[i..]);
+			i += self.scan_whitespace_inline(&data[i..]);
 			if i == size { return None; }
 
 			// scan title
-			let (n_title, title_beg, title_end) = self.scan_link_title(&tail[i..]);
+			let (n_title, title_beg, title_end) = self.scan_link_title(&data[i..]);
 			let title = if n_title == 0 {
 				Borrowed("")
 			} else {
 				let (title_beg, title_end) = (i + title_beg, i + title_end);
 				i += n_title;
 				// TODO: not just unescape, remove containers from newlines
-				unescape(&tail[title_beg..title_end])
+				unescape(&data[title_beg..title_end])
 			};
-			i += self.scan_whitespace_inline(&tail[i..]);
-			if i == size || tail.as_bytes()[i] != b')' { return None; }
+			i += self.scan_whitespace_inline(&data[i..]);
+			if i == size || data.as_bytes()[i] != b')' { return None; }
 			i += 1;
-			(dest, title, beg + text_beg, beg + text_end, beg + i)
+			(dest, title, text_beg, text_end, i)
 		} else {
 			// try link reference
-			let j = i + self.scan_whitespace_inline(&tail[i..]);
-			let (n_ref, ref_beg, ref_end, _) = self.scan_link(&tail[j..]);
+			let j = i + self.scan_whitespace_inline(&data[i..]);
+			let (n_ref, ref_beg, ref_end, _) = self.scan_link_label(&data[j..]);
 			let (ref_beg, ref_end) = if n_ref == 0 || ref_beg == ref_end {
 				(text_beg, text_end)
 			} else {
@@ -1053,19 +1053,64 @@ impl<'a> RawParser<'a> {
 			if n_ref != 0 {
 				i = j + n_ref;
 			}
-			let reference = self.normalize_link_ref(&tail[ref_beg..ref_end]);
+			let reference = self.normalize_link_ref(&data[ref_beg..ref_end]);
 			let (dest, title) = match self.links.get(&reference) {
 				Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
 				None => return None
 			};
-			(dest, title, beg + text_beg, beg + text_end, beg + i)
+			(dest, title, text_beg, text_end, i)
 		};
-		self.off = beg;
 		if is_image {
-			Some(self.start(Tag::Image(dest, title), end, next))
+			Some((Tag::Image(dest, title), beg, end, next))
 		} else {
-			Some(self.start(Tag::Link(dest, title), end, next))
+			Some((Tag::Link(dest, title), beg, end, next))
 		}
+	}
+
+	// determine whether there's a link anywhere in the text
+	// TODO: code duplication with scan_link_label is unpleasant
+	// TODO: limit recursion
+	fn contains_link(&self, data: &str) -> bool {
+		let mut i = 0;
+		while i < data.len() {
+			match data.as_bytes()[i] {
+				b'\n' => {
+					let n = self.scan_whitespace_inline(&data[i..]);
+					if n == 0 { return false; }
+					i += n;
+					continue;
+				}
+				b'!' => {
+					if scan_ch(&data[i + 1 ..], b'[') != 0 {
+						// ok to contain image, skip over opening bracket
+						i += 1;
+					}
+				}
+				b'[' => {
+					if self.parse_link(&data[i..]).is_some() { return true; }
+				}
+				b'\\' => i += 1,
+				b'<' => {
+					let n = self.scan_autolink_or_html(&data[i..]);
+					if n != 0 {
+						i += n;
+					} else {
+						i += 1;
+					}
+				}
+				b'`' => {
+					let (n, beg, _) = self.scan_inline_code(&data[i..]);
+					if n != 0 {
+						i += n;
+					} else {
+						i += beg;
+					}
+				}
+				_ => ()
+			}
+			i += 1;
+		}
+		false
 	}
 
 	// # Autolinks and inline HTML
@@ -1083,6 +1128,14 @@ impl<'a> RawParser<'a> {
 			return Some(self.inline_html_event(n))
 		}
 		None
+	}
+
+	fn scan_autolink_or_html(&self, data: &str) -> usize {
+		if let Some((n, _)) = scan_autolink(data) {
+			n
+		} else {
+			self.scan_inline_html(data)
+		}
 	}
 
 	fn scan_inline_html(&self, data: &str) -> usize {

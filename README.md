@@ -11,7 +11,6 @@ It is designed to be:
 * Safe; written in pure Rust with no unsafe blocks
 * Versatile; in particular source-maps are supported
 * Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
-  (note: this last is far from true yet)
 
 ## Why a pull parser?
 

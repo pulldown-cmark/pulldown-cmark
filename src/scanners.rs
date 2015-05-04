@@ -59,7 +59,7 @@ pub fn is_ascii_whitespace(c: u8) -> bool {
 }
 
 pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
-	c == b'\t' || (c >= 0x0b && c <= 0x0d) || c == b' '
+	c == b'\t' || c == 0x0b || c == 0x0c || c == b' '
 }
 
 pub fn is_ascii_alpha(c: u8) -> bool {
@@ -209,8 +209,8 @@ pub fn scan_hrule(data: &str) -> usize {
 	let mut n = 0;
 	while i < size {
 		match data.as_bytes()[i] {
-			b'\n' => {
-				i += 1;
+			b'\n' | b'\r' => {
+				i += scan_eol(&data[i..]).0;
 				break;
 			}
 			c2 if c2 == c => n += 1,
@@ -396,7 +396,7 @@ pub fn scan_link_dest<'a>(data: &'a str) -> Option<(usize, &'a str)> {
 	let mut in_parens = false;
 	while i < size {
 		match data.as_bytes()[i] {
-			b'\n' => break,
+			b'\n' | b'\r' => break,
 			b' ' => {
 				if !pointy && !in_parens { break; }
 			}
@@ -535,7 +535,7 @@ pub fn is_escaped(data: &str, loc: usize) -> bool {
 
 // Remove backslash escapes and resolve entities
 pub fn unescape<'a>(input: &'a str) -> Cow<'a, str> {
-	if input.find(|c| c == '\\' || c == '&').is_none() {
+	if input.find(|c| c == '\\' || c == '&' || c == '\r').is_none() {
 		Borrowed(input)
 	} else {
 		let mut result = String::new();
@@ -558,6 +558,11 @@ pub fn unescape<'a>(input: &'a str) -> Cow<'a, str> {
 						}
 						_ => i += 1
 					}
+				}
+				b'\r' => {
+					result.push_str(&input[mark..i]);
+					i += 1;
+					mark = i;
 				}
 				_ => i += 1
 			}

@@ -548,7 +548,7 @@ impl<'a> RawParser<'a> {
 
 	fn next_code(&mut self) -> Event<'a> {
 		let size = self.text.len();
-		let beg = self.off;
+		let mut beg = self.off;
 		let mut i = beg;
 		while i < size {
 			let c = self.text.as_bytes()[i];
@@ -562,6 +562,11 @@ impl<'a> RawParser<'a> {
 					b'\t' => {
 						if i > beg { break; }
 						return self.char_tab();
+					}
+					b'\r' => {
+						// just skip it (does not support '\r' only line break)
+						if i > beg { break; }
+						beg += 1;
 					}
 					// TODO: \r
 					_ => ()
@@ -618,7 +623,12 @@ impl<'a> RawParser<'a> {
 		let mut i = self.off;
 		let mut mark = i;
 		loop {
-			i += scan_nextline(&self.text[i..]);
+			let n = scan_nextline(&self.text[i..]);
+			i += n;
+			if n >= 2 && self.text.as_bytes()[i - 2] == b'\r' {
+				out = utils::cow_append(out, Borrowed(&self.text[mark .. i - 2]));
+				mark = i - 1;
+			}
 			let (n, scanned) = self.scan_containers(&self.text[i..]);
 			let n_blank = scan_blank_line(&self.text[i + n ..]);
 			if n != 0 || !scanned || i + n == size || n_blank != 0 {
@@ -729,7 +739,7 @@ impl<'a> RawParser<'a> {
 						self.off = end;
 						return Event::Text(Borrowed(&self.text[beg..end]));
 					}
-					if c == b'\r' && i < limit && self.text.as_bytes()[i] == b'\n' {
+					if c == b'\r' && i + 1 < limit && self.text.as_bytes()[i + 1] == b'\n' {
 						i += 1;
 					}
 					i += 1;
@@ -1271,7 +1281,12 @@ impl<'a> RawParser<'a> {
 		let mut i = 0;
 		let mut mark = 0;
 		while i < size {
-			i += scan_nextline(&data[i..]);
+			let n = scan_nextline(&data[i..]);
+			i += n;
+			if n >= 2 && data.as_bytes()[i - 2] == b'\r' {
+				out = utils::cow_append(out, Borrowed(&data[mark .. i - 2]));
+				mark = i - 1;
+			}
 			if i < size {
 				let (n, _) = self.scan_containers(&data[i..]);
 				if n != 0 {

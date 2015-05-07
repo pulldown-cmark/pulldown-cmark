@@ -157,12 +157,18 @@ pub fn main() {
 	opts.optflag("d", "dry-run", "dry run, produce no output");
 	opts.optflag("e", "events", "print event sequence instead of rendering");
 	opts.optopt("s", "spec", "run tests from spec file", "FILE");
+	opts.optopt("b", "bench", "run benchmark", "FILE");
 	let matches = match opts.parse(&args[1..]) {
 		Ok(m) => m,
 		Err(f) => panic!(f.to_string())
 	};
 	if let Some(filename) = matches.opt_str("spec") {
 		run_spec(&read_file(&filename), &matches.free);
+	} else if let Some(filename) = matches.opt_str("bench") {
+		let inp = read_file(&filename);
+		for _ in 0..1000 {
+			let _ = render_html(&inp);
+		}
 	} else {
 		let mut input = String::new();
 		match io::stdin().read_to_string(&mut input) {

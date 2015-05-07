@@ -43,6 +43,8 @@ pub struct RawParser<'a> {
 	text: &'a str,
 	off: usize,
 
+	active_tab: [u8; 256],
+
 	state: State,
 	stack: Vec<(Tag<'a>, usize, usize)>,
 
@@ -99,6 +101,7 @@ impl<'a> RawParser<'a> {
 		let mut ret = RawParser {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
+			active_tab: [0; 256],
 			state: State::StartBlock,
 			stack: Vec::new(),
 			containers: Vec::new(),
@@ -112,6 +115,7 @@ impl<'a> RawParser<'a> {
 			loose_lists: HashSet::new(),
 			links: links,
 		};
+		ret.init_active();
 		ret.skip_blank_lines();
 		ret
 	}
@@ -131,6 +135,12 @@ impl<'a> RawParser<'a> {
 		ParseInfo {
 			loose_lists: self.loose_lists,
 			links: self.links,
+		}
+	}
+
+	fn init_active(&mut self) {
+		for &c in b"\t\n\r_\\&*[!`<" {
+			self.active_tab[c as usize] = 1;
 		}
 	}
 
@@ -547,11 +557,12 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn next_code(&mut self) -> Event<'a> {
+		let bytes = self.text.as_bytes();
 		let size = self.text.len();
 		let mut beg = self.off;
 		let mut i = beg;
 		while i < size {
-			let c = self.text.as_bytes()[i];
+			let c = bytes[i];
 			if c < b' ' {
 				match c {
 					b'\n' => {
@@ -726,42 +737,46 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
+		let bytes = self.text.as_bytes();
 		let beg = self.off;
 		let mut i = beg;
 		let limit = self.limit();
 		while i < limit {
-			let c = self.text.as_bytes()[i];
-			if self.is_active_char(c) {
-				if c == b'\n' || c == b'\r' {
-					let n = scan_trailing_whitespace(&self.text[beg..i]);
-					let end = i - n;
-					if end > beg {
-						self.off = end;
-						return Event::Text(Borrowed(&self.text[beg..end]));
-					}
-					if c == b'\r' && i + 1 < limit && self.text.as_bytes()[i + 1] == b'\n' {
-						i += 1;
-					}
-					i += 1;
-					let next = i;
-					i += self.scan_containers(&self.text[i..limit]).0;
-					if self.is_inline_block_end(&self.text[i..limit]) {
-						self.off = next;
-						return self.end();
-					}
-					i += scan_whitespace_no_nl(&self.text[i..limit]);
-					self.off = i;
-					return if n >= 2 { Event::HardBreak } else { Event::SoftBreak };
-				}
-				self.off = i;
-				if i > beg {
-					return Event::Text(Borrowed(&self.text[beg..i]));
-				}
-				if let Some(event) = self.active_char(c) {
-					return event;
-				}
-				i = self.off;  // let handler advance offset even on None
+			for &c in bytes[i..limit].iter() {
+				if self.active_tab[c as usize] != 0 { break; }
+				i += 1;
 			}
+			if i == limit { break; }
+			let c = bytes[i];
+			if c == b'\n' || c == b'\r' {
+				let n = scan_trailing_whitespace(&self.text[beg..i]);
+				let end = i - n;
+				if end > beg {
+					self.off = end;
+					return Event::Text(Borrowed(&self.text[beg..end]));
+				}
+				if c == b'\r' && i + 1 < limit && self.text.as_bytes()[i + 1] == b'\n' {
+					i += 1;
+				}
+				i += 1;
+				let next = i;
+				i += self.scan_containers(&self.text[i..limit]).0;
+				if self.is_inline_block_end(&self.text[i..limit]) {
+					self.off = next;
+					return self.end();
+				}
+				i += scan_whitespace_no_nl(&self.text[i..limit]);
+				self.off = i;
+				return if n >= 2 { Event::HardBreak } else { Event::SoftBreak };
+			}
+			self.off = i;
+			if i > beg {
+				return Event::Text(Borrowed(&self.text[beg..i]));
+			}
+			if let Some(event) = self.active_char(c) {
+				return event;
+			}
+			i = self.off;  // let handler advance offset even on None
 			i += 1;
 		}
 		if i > beg {
@@ -770,11 +785,6 @@ impl<'a> RawParser<'a> {
 		} else {
 			self.end()
 		}
-	}
-
-	fn is_active_char(&self, c: u8) -> bool {
-		c == b'\t' || c == b'\n' || c == b'\r' || c == b'_' || c == b'\\' || c == b'&' ||
-				c == b'_' || c == b'*' || c == b'[' || c == b'!' || c == b'`' || c == b'<'
 	}
 
 	fn active_char(&mut self, c: u8) -> Option<Event<'a>> {

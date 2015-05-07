@@ -180,10 +180,11 @@ pub fn scan_nextline(s: &str) -> usize {
 
 // returned pair is (number of bytes, number of spaces)
 pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
+	let bytes = text.as_bytes();
 	let mut i = 0;
 	let mut spaces = 0;
 	while i < text.len() && spaces < max {
-		match text.as_bytes()[i] {
+		match bytes[i] {
 			b' ' => spaces += 1,
 			b'\t' => {
 				let new_spaces = spaces + 4 - (spaces & 3);

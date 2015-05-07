@@ -129,7 +129,7 @@ fn run_spec(spec_text: &str, args: &[String]) {
 			} else if line_count > 0 && (test_number % 10) == 5 {
 				print!(" ");
 			}
-			let our_html = render_html(&source.replace("→", "\t"));
+			let our_html = render_html(&source.replace("→", "\t").replace("\n", "\r\n"));
 			if our_html == html {
 				print!(".");
 			} else {

@@ -178,6 +178,35 @@ pub fn scan_nextline(s: &str) -> usize {
 	}
 }
 
+pub fn count_tab(bytes: &[u8]) -> usize {
+	let mut count = 0;
+	for &c in bytes.iter().rev() {
+		match c {
+			b'\t' | b'\n' => break,
+			x if (x & 0xc0) != 0x80 => count += 1,
+			_ => ()
+		}
+	}
+	4 - count % 4
+}
+
+// takes a loc because tabs might require left context
+// return: number of bytes, number of spaces
+pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
+	let bytes = text.as_bytes();
+	let mut i = 0;
+	let mut spaces = 0;
+	for &c in &bytes[loc..] {
+		match c {
+			b' ' => spaces += 1,
+			b'\t' => spaces += count_tab(&bytes[.. loc + i]),
+			_ => break
+		}
+		i += 1
+	}
+	(i, spaces)
+}
+
 // returned pair is (number of bytes, number of spaces)
 pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 	let bytes = text.as_bytes();
@@ -203,7 +232,7 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 // return size of line containing hrule, including trailing newline, or 0
 pub fn scan_hrule(data: &str) -> usize {
 	let size = data.len();
-	let mut i = calc_indent(data, 3).0;
+	let mut i = 0;
 	if i + 2 >= size { return 0; }
 	let c = data.as_bytes()[i];
 	if !(c == b'*' || c == b'-' || c == b'_') { return 0; }
@@ -226,9 +255,8 @@ pub fn scan_hrule(data: &str) -> usize {
 // returns number of bytes in prefix and level
 pub fn scan_atx_header(data: &str) -> (usize, i32) {
 	let size = data.len();
-	let (start, _) = calc_indent(data, 3);
-	let level = scan_ch_repeat(&data[start..], b'#');
-	let i = start + level;
+	let level = scan_ch_repeat(data, b'#');
+	let i = level;
 	if level >= 1 && level <= 6 {
 		if i < size {
 			match data.as_bytes()[i] {
@@ -245,7 +273,7 @@ pub fn scan_atx_header(data: &str) -> (usize, i32) {
 // returns number of bytes in line (including trailing newline) and level
 pub fn scan_setext_header(data: &str) -> (usize, i32) {
 	let size = data.len();
-	let (mut i, _) = calc_indent(data, 3);
+	let mut i = 0;
 	if i == size { return (0, 0); }
 	let c = data.as_bytes()[i];
 	if !(c == b'-' || c == b'=') { return (0, 0); }
@@ -257,24 +285,21 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
 	(i, level)
 }
 
-// returns: number of bytes scanned, char, count, indent
-// Note: somewhat redundant, as bytes scanned = count + indent
-pub fn scan_code_fence(data: &str) -> (usize, u8, usize, usize) {
-	let (beg, _) = calc_indent(data, 3);
-	if beg == data.len() { return (0, 0, 0, 0); }
-	let c = data.as_bytes()[beg];
-	if !(c == b'`' || c == b'~') { return (0, 0, 0, 0); }
-	let i = beg + 1 + scan_ch_repeat(&data[beg + 1 ..], c);
-	if (i - beg) >= 3 {
+// returns: number of bytes scanned, char
+pub fn scan_code_fence(data: &str) -> (usize, u8) {
+	let c = data.as_bytes()[0];
+	if !(c == b'`' || c == b'~') { return (0, 0); }
+	let i = 1 + scan_ch_repeat(&data[1 ..], c);
+	if i >= 3 {
 		if c == b'`' {
 			let next_line = i + scan_nextline(&data[i..]);
 			if data[i..next_line].find('`').is_some() {
-				return (0, 0, 0, 0);
+				return (0, 0);
 			}
 		}
-		return (i, c, i - beg, beg);
+		return (i, c);
 	}
-	(0, 0, 0, 0)
+	(0, 0)
 }
 
 pub fn scan_backticks(data: &str) -> usize {
@@ -282,9 +307,8 @@ pub fn scan_backticks(data: &str) -> usize {
 }
 
 pub fn scan_blockquote_start(data: &str) -> usize {
-	let n = calc_indent(data, 3).0;
-	if data[n..].starts_with('>') {
-		let n = n + 1;
+	if data.starts_with('>') {
+		let n = 1;
 		n + scan_ch(&data[n..], b' ')
 	} else {
 		0
@@ -293,32 +317,32 @@ pub fn scan_blockquote_start(data: &str) -> usize {
 
 // return number of bytes scanned, delimeter, start index, and indent
 pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
-	let (n, indent) = calc_indent(data, 3);
-	if n == data.len() { return (0, 0, 0, 0); }
-	let mut c = data.as_bytes()[n];
+	if data.is_empty() { return (0, 0, 0, 0); }
+	let mut c = data.as_bytes()[0];
 	let mut start = 0;
 	let w = match c {
 		b'-' | b'+' | b'*' => 1,
 		b'0' ... b'9' => {
-			let mut i = n + 1;
+			let mut i = 1;
 			i += scan_while(&data[i..], is_digit);
-			start = data[n..i].parse().unwrap();
+			start = data[..i].parse().unwrap();
 			if i >= data.len() { return (0, 0, 0, 0); }
 			c = data.as_bytes()[i];
 			if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
-			i + 1 - n
+			i + 1
 		}
 		_ => { return (0, 0, 0, 0); }
 	};
-	let (mut postn, mut postindent) = calc_indent(&data[n + w .. ], 5);
+	// TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
+	let (mut postn, mut postindent) = calc_indent(&data[w.. ], 5);
 	if postindent == 0 {
-		if !scan_eol(&data[n + w ..]).1 { return (0, 0, 0, 0); }
+		if !scan_eol(&data[w..]).1 { return (0, 0, 0, 0); }
 		postindent += 1;
 	} else if postindent > 4 {
 		postn = 1;
 		postindent = 1;
 	}
-	(n + w + postn, c, start, indent + w + postindent)
+	(w + postn, c, start, w + postindent)
 }
 
 // return whether delimeter run can open or close
@@ -577,3 +601,15 @@ pub fn is_html_tag(tag: &str) -> bool {
 	HTML_TAGS.binary_search_by(|probe| utils::strcasecmp(probe, tag)).is_ok()
 }
 
+pub fn spaces(n: usize) -> Cow<'static, str> {
+	let a_bunch_of_spaces = "                                ";
+	if n <= a_bunch_of_spaces.len() {
+		Borrowed(&a_bunch_of_spaces[..n])
+	} else {
+		let mut result = String::new();
+		for _ in 0..n {
+			result.push(' ');
+		}
+		Owned(result)
+	}
+}

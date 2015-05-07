@@ -47,6 +47,7 @@ pub struct RawParser<'a> {
 
 	state: State,
 	stack: Vec<(Tag<'a>, usize, usize)>,
+	leading_space: usize,
 
 	containers: Vec<Container>,
 	last_line_was_empty: bool,
@@ -103,6 +104,7 @@ impl<'a> RawParser<'a> {
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
 			active_tab: [0; 256],
 			state: State::StartBlock,
+			leading_space: 0,
 			stack: Vec::new(),
 			containers: Vec::new(),
 			last_line_was_empty: false,
@@ -191,12 +193,6 @@ impl<'a> RawParser<'a> {
 		self.off += scan_whitespace_no_nl(&self.text[self.off .. self.limit()]);
 	}
 
-	fn skip_code_linestart(&mut self) {
-		let (n, _) = calc_indent(&self.text[self.off ..], self.fence_indent);
-		// TODO: handle case where tab character takes us past fence indent
-		self.off += n;
-	}
-
 	// TODO: this function doesn't respect containers
 	fn skip_blank_lines(&mut self) {
 		loop {
@@ -209,30 +205,38 @@ impl<'a> RawParser<'a> {
 	}
 
 	// Scan markers and indentation for current container stack
-	fn scan_containers(&self, text: &str) -> (usize, bool) {
-		let mut i = 0;
+	// Return: bytes scanned, whether containers are complete, and remaining space
+	fn scan_containers(&self, text: &str) -> (usize, bool, usize) {
+		let (mut i, mut space) = scan_leading_space(text, 0);
 		for container in self.containers.iter() {
 			match *container {
 				Container::BlockQuote => {
-					let n = scan_blockquote_start(&text[i..]);
-					if n == 0 {
-						return (i, false);
+					if space <= 3 {
+						let n = scan_blockquote_start(&text[i..]);
+						if n > 0 {
+							let (n_sp, next_space) = scan_leading_space(text, i + n);
+							i += n + n_sp;
+							space = next_space;
+						} else {
+							return (i, false, space);
+						}
 					} else {
-						i += n;
+						return (i, false, space);
 					}
 				}
 				Container::List(_, _) => (),
 				Container::ListItem(indent) => {
-					let (n, actual) = calc_indent(&text[i..], indent);
-					if actual < indent && !scan_eol(&text[i + n .. ]).1 {
-						return (i, false);
+					if space >= indent {
+						space -= indent;
+					} else if scan_eol(&text[i..]).1 {
+						space = 0;
 					} else {
-						i += n;
+						return (i, false, 0);
 					}
 				}
 			}
 		}
-		(i, true)
+		(i, true, space)
 	}
 
 	// scans empty lines with current container stack
@@ -242,14 +246,14 @@ impl<'a> RawParser<'a> {
 		let mut i = 0;
 		let mut lines = 0;
 		loop {
-			let (n, scanned) = self.scan_containers(&text[i..]);
+			let (n, scanned, _) = self.scan_containers(&text[i..]);
 			if !scanned {
 				return (i, lines);
 			}
 			if i == text.len() {
 				return (i, lines + 1);
 			}
-			let n_blank = scan_blank_line(&text[i + n ..]);
+			let n_blank = scan_eol(&text[i + n ..]).0;
 			if n_blank == 0 {
 				return (i, lines);
 			}
@@ -262,9 +266,10 @@ impl<'a> RawParser<'a> {
 	fn scan_whitespace_inline(&self, text: &str) -> usize {
 		let i = scan_whitespace_no_nl(text);
 		if let (n, true) = scan_eol(&text[i..]) {
-			let j = i + n + self.scan_containers(&text[i + n ..]).0;
-			if !self.is_inline_block_end(&text[j..]) {
-				return j + scan_whitespace_no_nl(&text[j..]);
+			let (n_containers, _, space) = self.scan_containers(&text[i + n ..]);
+			let j = i + n + n_containers;
+			if !self.is_inline_block_end(&text[j..], space) {
+				return j;
 			}
 		}
 		i
@@ -313,16 +318,17 @@ impl<'a> RawParser<'a> {
 				return Some(self.end());
 			}
 			if self.state != State::InContainers {
-				let (n, scanned) = self.scan_containers(&self.text[self.off ..]);
+				let (n, scanned, space) = self.scan_containers(&self.text[self.off ..]);
 				if !scanned {
 					return Some(self.end());
 				}
+				self.leading_space = space;
 				self.off += n;
 				self.state = State::InContainers;
 			}
 
-			let n = scan_blank_line(&self.text[self.off ..]);
-			if n != 0 {
+			let (n, at_eol) = scan_eol(&self.text[self.off ..]);
+			if at_eol {
 				self.off += n;
 				self.state = State::StartBlock;
 				// two empty lines close a list
@@ -338,8 +344,6 @@ impl<'a> RawParser<'a> {
 				continue;
 			}
 
-			let tail = &self.text[self.off ..];
-
 			//println!("checking loose {} {:?}", self.last_line_was_empty, self.at_list(2));
 			if self.last_line_was_empty {
 				if let Some(offset) = self.at_list(2) {
@@ -347,6 +351,16 @@ impl<'a> RawParser<'a> {
 					self.loose_lists.insert(offset);
 				}
 			}
+
+			if self.leading_space >= 4 {
+				// see below
+				if let Some(&Container::List(_, _)) = self.containers.last() {
+					return Some(self.end());
+				}
+				return Some(self.start_indented_code());
+			}
+
+			let tail = &self.text[self.off ..];
 
 			// must be before list item because ambiguous
 			let n = scan_hrule(tail);
@@ -378,36 +392,44 @@ impl<'a> RawParser<'a> {
 			}
 			self.last_line_was_empty = false;
 
-			let (n, level) = scan_atx_header(tail);
-			if n != 0 {
-				self.off += n;
-				return Some(self.start_atx_header(level));
+			let c = tail.as_bytes()[0];
+			match c {
+				b'#' => {
+					let (n, level) = scan_atx_header(tail);
+					if n != 0 {
+						self.off += n;
+						return Some(self.start_atx_header(level));
+					}
+				}
+				b'`' | b'~' => {
+					let (n, ch) = scan_code_fence(tail);
+					if n != 0 {
+						return Some(self.start_code_fence(n, ch, n));
+					}
+				}
+				b'>' => {
+					let n = scan_blockquote_start(tail);
+					if n != 0 {
+						self.off += n;
+						let (n, space) = scan_leading_space(self.text, self.off);
+						self.off += n;
+						self.leading_space = space;
+						self.containers.push(Container::BlockQuote);
+						return Some(self.start(Tag::BlockQuote, self.text.len(), 0));
+					}
+				}
+				b'<' => {
+					if self.is_html_block(tail) {
+						return Some(self.do_html_block());
+					}
+				}
+				b'[' => {
+					if self.try_link_reference_definition(tail) {
+						continue;
+					}
+				}
+				_ => ()
 			}
-
-			let (n, ch, count, indent) = scan_code_fence(tail);
-			if n != 0 {
-				return Some(self.start_code_fence(n, ch, count, indent));
-			}
-
-			if calc_indent(&self.text[self.off ..], 4).1 == 4 {
-				return Some(self.start_indented_code());
-			}
-
-			let n = scan_blockquote_start(tail);
-			if n != 0 {
-				self.off += n;
-				self.containers.push(Container::BlockQuote);
-				return Some(self.start(Tag::BlockQuote, self.text.len(), 0));
-			}
-
-			if self.is_html_block(tail) {
-				return Some(self.do_html_block());
-			}
-
-			if self.try_link_reference_definition(tail) {
-				continue;
-			}
-
 			return Some(self.start_paragraph());
 		}
 		None
@@ -415,14 +437,12 @@ impl<'a> RawParser<'a> {
 
 	// can start a paragraph or a setext header, as they start similarly
 	fn start_paragraph(&mut self) -> Event<'a> {
-		self.skip_leading_whitespace();
-
 		let mut i = self.off + scan_nextline(&self.text[self.off..]);
 
-		if let (n, true) = self.scan_containers(&self.text[i..]) {
+		if let (n, true, space) = self.scan_containers(&self.text[i..]) {
 			i += n;
 			let (n, level) = scan_setext_header(&self.text[i..]);
-			if n != 0 {
+			if space <= 3 && n != 0 {
 				let next = i + n;
 				while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
 					i -= 1;
@@ -445,7 +465,6 @@ impl<'a> RawParser<'a> {
 
 	fn start_atx_header(&mut self, level: i32) -> Event<'a> {
 		self.skip_leading_whitespace();
-
 		let tail = &self.text[self.off..];
 		let next = scan_nextline(tail);
 		let mut limit = next;
@@ -475,11 +494,11 @@ impl<'a> RawParser<'a> {
 		self.fence_indent = 4;
 		let size = self.text.len();
 		self.state = State::Code;
-		self.skip_code_linestart();
 		self.start(Tag::CodeBlock(Borrowed("")), size, 0)
 	}
 
 	fn start_listitem(&mut self, n: usize, c: u8, start: usize, indent: usize) -> Event<'a> {
+		let indent = self.leading_space + indent;
 		match self.containers.last() {
 			Some(&Container::List(_, c2)) => {
 				if c != c2 {
@@ -491,6 +510,11 @@ impl<'a> RawParser<'a> {
 				if n_blank != 0 {
 					self.off += n_blank;
 					self.state = State::StartBlock;
+				} else {
+					// TODO: deal with tab
+					let (n, space) = scan_leading_space(self.text, self.off);
+					self.off += n;
+					self.leading_space = space;
 				}
 				self.containers.push(Container::ListItem(indent));
 				self.start(Tag::Item, self.text.len(), 0)
@@ -504,10 +528,10 @@ impl<'a> RawParser<'a> {
 		}
 	}
 
-	fn start_code_fence(&mut self, n: usize, ch: u8, count: usize, indent: usize) -> Event<'a> {
+	fn start_code_fence(&mut self, n: usize, ch: u8, count: usize) -> Event<'a> {
 		self.fence_char = ch;
 		self.fence_count = count;
-		self.fence_indent = indent;
+		self.fence_indent = self.leading_space;
 		let beg_info = self.off + n;
 		let next_line = beg_info + scan_nextline(&self.text[beg_info..]);
 		self.off = next_line;
@@ -518,11 +542,11 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn next_code_line_start(&mut self) -> Event<'a> {
-		let off = match self.scan_containers(&self.text[self.off  ..]) {
-			(_, false) => {
+		let (off, space) = match self.scan_containers(&self.text[self.off ..]) {
+			(n, true, space) => (self.off + n, space),
+			_ => {
 				return self.end();
 			}
-			(n, _) => self.off + n
 		};
 
 		if self.fence_char == b'\0' {
@@ -531,18 +555,21 @@ impl<'a> RawParser<'a> {
 				// TODO performance: this scanning is O(n^2) in the number of empty lines
 				let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
 				let next = off + n + n_empty;
-				let (n_containers, scanned) = self.scan_containers(&self.text[next..]);
-				if !scanned || self.is_code_block_end(next + n_containers) {
+				let (n_containers, scanned, nspace) = self.scan_containers(&self.text[next..]);
+				// TODO; handle space
+				if !scanned || self.is_code_block_end(next + n_containers, nspace) {
+					//println!("was end: {}", next + n_containers);
 					return self.end();
 				} else {
 					self.off = off;
-					self.skip_code_linestart();
+					//println!("code line start space={}, off={}", space, off);
+					self.leading_space = space;
 					return self.next_code();
 				}
 			}
 		}
 
-		if self.is_code_block_end(off) {
+		if self.is_code_block_end(off, space) {
 			let ret = self.end();
 			if self.fence_char != b'\0' {
 				self.off = off + scan_nextline(&self.text[off..]);
@@ -550,13 +577,19 @@ impl<'a> RawParser<'a> {
 			ret
 		} else {
 			self.off = off;
-			self.skip_code_linestart();
 			self.state = State::Code;
+			self.leading_space = space;
 			self.next_code()
 		}
 	}
 
 	fn next_code(&mut self) -> Event<'a> {
+		if self.leading_space > self.fence_indent {
+			// TODO: might try to combine spaces in text, for fewer events
+			let space = self.leading_space;
+			self.leading_space = 0;
+			return Event::Text(spaces(space - self.fence_indent));
+		}
 		let bytes = self.text.as_bytes();
 		let size = self.text.len();
 		let mut beg = self.off;
@@ -589,16 +622,14 @@ impl<'a> RawParser<'a> {
 		Event::Text(Borrowed(&self.text[beg..i]))
 	}
 
-	fn is_code_block_end(&self, loc: usize) -> bool {
+	fn is_code_block_end(&self, loc: usize, space: usize) -> bool {
 		let tail = &self.text[loc..];
 		if self.fence_char == b'\0' {
 			// indented code block
-			let (_, spaces) = calc_indent(tail, 4);
-			// TODO: handle blank lines specially
-			spaces < 4
-		} else {
-			let (n, c, count, _) = scan_code_fence(tail);
-			if c != self.fence_char || count < self.fence_count {
+			space < 4
+		} else if space <= 3 {
+			let (n, c) = scan_code_fence(tail);
+			if c != self.fence_char || n < self.fence_count {
 				return false;
 			}
 			if n < tail.len() && scan_blank_line(&tail[n..]) == 0 {
@@ -606,6 +637,8 @@ impl<'a> RawParser<'a> {
 				return false;
 			}
 			return true;
+		} else {
+			false
 		}
 	}
 
@@ -621,11 +654,10 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn is_html_block(&self, data: &str) -> bool {
-		let n = calc_indent(data, 3).0;
-		let (n_tag, tag) = self.scan_html_block_tag(&data[n..]);
+		let (n_tag, tag) = self.scan_html_block_tag(data);
 		(n_tag > 0 && is_html_tag(tag)) ||
-				data[n..].starts_with("<?") ||
-				data[n..].starts_with("<!")
+				data.starts_with("<?") ||
+				data.starts_with("<!")
 	}
 
 	fn do_html_block(&mut self) -> Event<'a> {
@@ -637,12 +669,20 @@ impl<'a> RawParser<'a> {
 			let n = scan_nextline(&self.text[i..]);
 			i += n;
 			if n >= 2 && self.text.as_bytes()[i - 2] == b'\r' {
+				if self.leading_space > 0 {
+					out = utils::cow_append(out, spaces(self.leading_space));
+					self.leading_space = 0;
+				}
 				out = utils::cow_append(out, Borrowed(&self.text[mark .. i - 2]));
 				mark = i - 1;
 			}
-			let (n, scanned) = self.scan_containers(&self.text[i..]);
+			let (n, scanned, space) = self.scan_containers(&self.text[i..]);
 			let n_blank = scan_blank_line(&self.text[i + n ..]);
 			if n != 0 || !scanned || i + n == size || n_blank != 0 {
+				if self.leading_space > 0 {
+					out = utils::cow_append(out, spaces(self.leading_space));
+				}
+				self.leading_space = space;
 				out = utils::cow_append(out, Borrowed(&self.text[mark..i]));
 				mark = i + n;
 			}
@@ -657,13 +697,11 @@ impl<'a> RawParser<'a> {
 	// # Link reference definitions
 
 	fn try_link_reference_definition(&mut self, data: &'a str) -> bool {
-		let n = calc_indent(data, 3).0;
-		let (n_link, text_beg, text_end, max_nest) = self.scan_link_label(&data[n..]);
+		let (n_link, text_beg, text_end, max_nest) = self.scan_link_label(data);
 		if n_link == 0 || max_nest > 1 { return false; }
-		let (text_beg, text_end) = (text_beg + n, text_end + n);
-		let n_colon = scan_ch(&data[n + n_link ..], b':');
+		let n_colon = scan_ch(&data[n_link ..], b':');
 		if n_colon == 0 { return false; }
-		let mut i = n + n_link + n_colon;
+		let mut i = n_link + n_colon;
 		i += self.scan_whitespace_inline(&data[i..]);
 		let linkdest = scan_link_dest(&data[i..]);
 		if linkdest.is_none() { return false; }
@@ -725,15 +763,15 @@ impl<'a> RawParser<'a> {
 	}
 
 	// determine whether the line starting at loc ends the block
-	fn is_inline_block_end(&self, data: &str) -> bool {
+	fn is_inline_block_end(&self, data: &str, space: usize) -> bool {
 		data.is_empty() ||
 				scan_blank_line(data) != 0 ||
-				scan_hrule(data) != 0 ||
-				scan_atx_header(data).0 != 0 ||
-				scan_code_fence(data).0 != 0 ||
-				scan_blockquote_start(data) != 0 ||
-				scan_listitem(data).0 != 0 ||
-				self.is_html_block(data)
+				space <= 3 && (scan_hrule(data) != 0 ||
+					scan_atx_header(data).0 != 0 ||
+					scan_code_fence(data).0 != 0 ||
+					scan_blockquote_start(data) != 0 ||
+					scan_listitem(data).0 != 0 ||
+					self.is_html_block(data))
 	}
 
 	fn next_inline(&mut self) -> Event<'a> {
@@ -760,8 +798,9 @@ impl<'a> RawParser<'a> {
 				}
 				i += 1;
 				let next = i;
-				i += self.scan_containers(&self.text[i..limit]).0;
-				if self.is_inline_block_end(&self.text[i..limit]) {
+				let (n_containers, _, space) = self.scan_containers(&self.text[i..limit]);
+				i += n_containers;
+				if self.is_inline_block_end(&self.text[i..limit], space) {
 					self.off = next;
 					return self.end();
 				}
@@ -804,19 +843,9 @@ impl<'a> RawParser<'a> {
 	// expand tab in content (used for code and inline)
 	// scan backward to find offset, counting unicode code points
 	fn char_tab(&mut self) -> Event<'a> {
-		let mut count = 0;
-		let mut i = self.off;
-		while i > 0 {
-			i -= 1;
-			let c = self.text.as_bytes()[i];
-			if c == b'\t' || c == b'\n' {
-				break;
-			} else if (c & 0xc0) != 0x80 {
-				count += 1;
-			}
-		}
+		let count = count_tab(&self.text.as_bytes()[.. self.off]);
 		self.off += 1;
-		Event::Text(Borrowed(&"    "[(count % 4) ..]))
+		Event::Text(Borrowed(&"    "[..count]))
 	}
 
 	fn char_backslash(&mut self) -> Option<Event<'a>> {
@@ -824,7 +853,8 @@ impl<'a> RawParser<'a> {
 		if self.off + 1 < limit {
 			if let (_, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
 				let n_white = self.scan_whitespace_inline(&self.text[self.off + 1 .. limit]);
-				if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit]) {
+				let space = 0;  // TODO: figure this out
+				if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit], space) {
 					self.off += 1 + n_white;
 					return Some(Event::HardBreak);
 				}
@@ -863,7 +893,8 @@ impl<'a> RawParser<'a> {
 		while i < limit {
 			let c2 = data.as_bytes()[i];
 			if c2 == b'\n' && !is_escaped(data, i) {
-				if self.is_inline_block_end(&self.text[i + 1 .. limit]) {
+				let space = 0;  // TODO: scan containers
+				if self.is_inline_block_end(&self.text[i + 1 .. limit], space) {
 					return None
 				} else {
 					i += 1;
@@ -1298,7 +1329,7 @@ impl<'a> RawParser<'a> {
 				mark = i - 1;
 			}
 			if i < size {
-				let (n, _) = self.scan_containers(&data[i..]);
+				let (n, _, _) = self.scan_containers(&data[i..]);
 				if n != 0 {
 					out = utils::cow_append(out, Borrowed(&data[mark..i]));
 					mark = i + n;
@@ -1336,8 +1367,11 @@ impl<'a> RawParser<'a> {
 				}
 				b'\n' => {
 					i += 1;
-					i += self.scan_containers(&data[i..]).0;
-					if self.is_inline_block_end(&data[i..]) { return (0, backtick_len, 0); }
+					let (n, _, space) = self.scan_containers(&data[i..]);
+					i += n;
+					if self.is_inline_block_end(&data[i..], space) {
+						return (0, backtick_len, 0);
+					}
 				}
 				// TODO: '<'
 				_ => i += 1

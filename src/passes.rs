@@ -14,7 +14,7 @@
 
 //! Main public pull parse interface, running two passes over input.
 
-use parse::{RawParser, Event, Tag};
+use parse::{RawParser, Event, Tag, Options};
 use std::collections::HashSet;
 
 pub struct Parser<'a> {
@@ -26,13 +26,16 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
 	pub fn new(text: &'a str) -> Parser<'a> {
 		// first pass, collecting info
-		let mut first = RawParser::new(text);
+		let mut opts = Options::new();
+		opts.set_first_pass();
+		let mut first = RawParser::new(text, opts);
 		while first.next().is_some() { }
 		let info = first.get_info();
 
 		// second pass
 		let loose_lists = info.loose_lists;
-		let second = RawParser::new_with_links(text, info.links);
+		let opts = Options::new();
+		let second = RawParser::new_with_links(text, opts, info.links);
 
 		//println!("loose lists: {:?}", info.loose_lists);
 		Parser {

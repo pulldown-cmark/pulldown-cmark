@@ -43,6 +43,7 @@ pub struct RawParser<'a> {
 	text: &'a str,
 	off: usize,
 
+	opts: Options,
 	active_tab: [u8; 256],
 
 	state: State,
@@ -96,12 +97,29 @@ pub enum Event<'a> {
 	HardBreak,
 }
 
+pub struct Options(u32);
+
+const OPTION_FIRST_PASS: u32 = 1 << 0;
+
+impl Options {
+	pub fn new() -> Options {
+		Options(0)
+	}
+	pub fn set_first_pass(&mut self) {
+		self.0 |= OPTION_FIRST_PASS;
+	}
+	pub fn is_first_pass(&self) -> bool {
+		(self.0 & OPTION_FIRST_PASS) != 0
+	}
+}
+
 impl<'a> RawParser<'a> {
-	pub fn new_with_links(text: &'a str, links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>)
-			-> RawParser<'a> {
+	pub fn new_with_links(text: &'a str, opts: Options,
+			links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
 		let mut ret = RawParser {
 			text: text,
 			off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
+			opts: opts,
 			active_tab: [0; 256],
 			state: State::StartBlock,
 			leading_space: 0,
@@ -122,8 +140,8 @@ impl<'a> RawParser<'a> {
 		ret
 	}
 
-	pub fn new(text: &'a str) -> RawParser<'a> {
-		RawParser::new_with_links(text, HashMap::new())
+	pub fn new(text: &'a str, opts: Options) -> RawParser<'a> {
+		RawParser::new_with_links(text, opts, HashMap::new())
 	}
 
 	// offset into text representing current parse position, hopefully
@@ -141,8 +159,12 @@ impl<'a> RawParser<'a> {
 	}
 
 	fn init_active(&mut self) {
-		for &c in b"\t\n\r_\\&*[!`<" {
-			self.active_tab[c as usize] = 1;
+		if self.opts.is_first_pass() {
+			self.active_tab[b'\n' as usize] = 1
+		} else {
+			for &c in b"\t\n\r_\\&*[!`<" {
+				self.active_tab[c as usize] = 1;
+			}
 		}
 	}
 

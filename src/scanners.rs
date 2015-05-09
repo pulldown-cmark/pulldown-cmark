@@ -172,7 +172,7 @@ pub fn scan_blank_line(text: &str) -> usize {
 }
 
 pub fn scan_nextline(s: &str) -> usize {
-	match s.find('\n') {
+	match s.as_bytes().iter().position(|&c| c == b'\n') {
 		Some(x) => x + 1,
 		None => s.len()
 	}

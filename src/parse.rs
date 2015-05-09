@@ -634,7 +634,6 @@ impl<'a> RawParser<'a> {
 						if i > beg { break; }
 						beg += 1;
 					}
-					// TODO: \r
 					_ => ()
 				}
 			}
@@ -802,11 +801,10 @@ impl<'a> RawParser<'a> {
 		let mut i = beg;
 		let limit = self.limit();
 		while i < limit {
-			for &c in bytes[i..limit].iter() {
-				if self.active_tab[c as usize] != 0 { break; }
-				i += 1;
+			match bytes[i..limit].iter().position(|&c| self.active_tab[c as usize] != 0) {
+				Some(pos) => i += pos,
+				None => { i = limit; break; }
 			}
-			if i == limit { break; }
 			let c = bytes[i];
 			if c == b'\n' || c == b'\r' {
 				let n = scan_trailing_whitespace(&self.text[beg..i]);

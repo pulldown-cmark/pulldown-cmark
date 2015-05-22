@@ -100,12 +100,11 @@ pub fn scan_ch(data: &str, c: u8) -> usize {
 }
 
 pub fn scan_while<F>(data: &str, f: F) -> usize
-    where F: Fn(u8) -> bool {
-    let mut i = 0;
-    while i < data.len() && f(data.as_bytes()[i]) {
-        i += 1;
+        where F: Fn(u8) -> bool {
+    match data.as_bytes().iter().position(|&c| !f(c)) {
+        Some(i) => i,
+        None => data.len()
     }
-    i
 }
 
 pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
@@ -130,11 +129,10 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
 // unusual among "scan" functions in that it scans from the _back_ of the string
 // TODO: should also scan unicode whitespace?
 pub fn scan_trailing_whitespace(data: &str) -> usize {
-    let mut end = data.len();
-    while end > 0 && is_ascii_whitespace_no_nl(data.as_bytes()[end - 1]) {
-        end -= 1;
+    match data.as_bytes().iter().rev().position(|&c| !is_ascii_whitespace_no_nl(c)) {
+        Some(i) => i,
+        None => data.len()
     }
-    data.len() - end
 }
 
 fn scan_codepoint(data: &str) -> Option<char> {
@@ -231,14 +229,15 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 
 // return size of line containing hrule, including trailing newline, or 0
 pub fn scan_hrule(data: &str) -> usize {
+    let bytes = data.as_bytes();
     let size = data.len();
     let mut i = 0;
     if i + 2 >= size { return 0; }
-    let c = data.as_bytes()[i];
+    let c = bytes[i];
     if !(c == b'*' || c == b'-' || c == b'_') { return 0; }
     let mut n = 0;
     while i < size {
-        match data.as_bytes()[i] {
+        match bytes[i] {
             b'\n' | b'\r' => {
                 i += scan_eol(&data[i..]).0;
                 break;

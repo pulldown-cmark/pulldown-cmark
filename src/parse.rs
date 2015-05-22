@@ -613,29 +613,32 @@ impl<'a> RawParser<'a> {
             return Event::Text(spaces(space - self.fence_indent));
         }
         let bytes = self.text.as_bytes();
-        let size = self.text.len();
         let mut beg = self.off;
         let mut i = beg;
-        while i < size {
-            let c = bytes[i];
-            if c < b' ' {
-                match c {
-                    b'\n' => {
-                        i += 1;
-                        self.state = State::CodeLineStart;
-                        break;
-                    }
-                    b'\t' => {
-                        if i > beg { break; }
-                        return self.char_tab();
-                    }
-                    b'\r' => {
-                        // just skip it (does not support '\r' only line break)
-                        if i > beg { break; }
-                        beg += 1;
-                    }
-                    _ => ()
+        loop {
+        	match bytes[i..].iter().position(|&c| c < b' ') {
+        		Some(j) => i += j,
+        		None => {
+        			i += bytes[i..].len();
+        			break;
+        		}
+        	}
+            match bytes[i] {
+                b'\n' => {
+                    i += 1;
+                    self.state = State::CodeLineStart;
+                    break;
                 }
+                b'\t' => {
+                    if i > beg { break; }
+                    return self.char_tab();
+                }
+                b'\r' => {
+                    // just skip it (does not support '\r' only line break)
+                    if i > beg { break; }
+                    beg += 1;
+                }
+                _ => ()
             }
             i += 1;
         }

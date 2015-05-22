@@ -298,45 +298,45 @@ const PUNCT_MASKS: [u16; 132] = [
     ];
 
 pub fn is_ascii_punctuation(c: u8) -> bool {
-	c < 128 && (PUNCT_MASKS_ASCII[(c / 16) as usize] & (1 << (c & 15))) != 0
+    c < 128 && (PUNCT_MASKS_ASCII[(c / 16) as usize] & (1 << (c & 15))) != 0
 }
 
 pub fn is_punctuation(c: char) -> bool {
-	let cp = c as u32;
-	if cp < 128 {return is_ascii_punctuation(cp as u8); }
-	if cp > 0x1BC9F { return false; }
-	let high = (cp / 16) as u16;
-	match PUNCT_TAB.binary_search(&high) {
-		Ok(index) => (PUNCT_MASKS[index] & (1 << (cp & 15))) != 0,
-		_ => false
-	}
+    let cp = c as u32;
+    if cp < 128 {return is_ascii_punctuation(cp as u8); }
+    if cp > 0x1BC9F { return false; }
+    let high = (cp / 16) as u16;
+    match PUNCT_TAB.binary_search(&high) {
+        Ok(index) => (PUNCT_MASKS[index] & (1 << (cp & 15))) != 0,
+        _ => false
+    }
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{is_ascii_punctuation, is_punctuation};
+    use super::{is_ascii_punctuation, is_punctuation};
 
-	#[test]
-	fn test_ascii() {
-		assert!(is_ascii_punctuation(b'!'));
-		assert!(is_ascii_punctuation(b'@'));
-		assert!(is_ascii_punctuation(b'~'));
-		assert!(!is_ascii_punctuation(b' '));
-		assert!(!is_ascii_punctuation(b'0'));
-		assert!(!is_ascii_punctuation(b'A'));
-		assert!(!is_ascii_punctuation(0xA1));
-	}
+    #[test]
+    fn test_ascii() {
+        assert!(is_ascii_punctuation(b'!'));
+        assert!(is_ascii_punctuation(b'@'));
+        assert!(is_ascii_punctuation(b'~'));
+        assert!(!is_ascii_punctuation(b' '));
+        assert!(!is_ascii_punctuation(b'0'));
+        assert!(!is_ascii_punctuation(b'A'));
+        assert!(!is_ascii_punctuation(0xA1));
+    }
 
-	#[test]
-	fn test_unicode() {
-		assert!(is_punctuation('~'));
-		assert!(!is_punctuation(' '));
+    #[test]
+    fn test_unicode() {
+        assert!(is_punctuation('~'));
+        assert!(!is_punctuation(' '));
 
-		assert!(is_punctuation('\u{00A1}'));
-		assert!(is_punctuation('\u{060C}'));
-		assert!(is_punctuation('\u{FF65}'));
-		assert!(is_punctuation('\u{1BC9F}'));
-		assert!(!is_punctuation('\u{1BCA0}'));
-	}
+        assert!(is_punctuation('\u{00A1}'));
+        assert!(is_punctuation('\u{060C}'));
+        assert!(is_punctuation('\u{FF65}'));
+        assert!(is_punctuation('\u{1BC9F}'));
+        assert!(!is_punctuation('\u{1BCA0}'));
+    }
 }
 

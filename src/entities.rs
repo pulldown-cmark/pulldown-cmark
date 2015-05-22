@@ -4273,6 +4273,6 @@ const ENTITY_VALUES: [&'static str; 2125] = [
     ];
 
 pub fn get_entity(name: &str) -> Option<&'static str> {
-	ENTITIES.binary_search(&name).ok().map(|i| ENTITY_VALUES[i])
+    ENTITIES.binary_search(&name).ok().map(|i| ENTITY_VALUES[i])
 }
 

@@ -19,29 +19,29 @@ use std::borrow::Cow;
 use std::borrow::Cow::Owned;
 
 fn ascii_tolower(c: u8) -> u8 {
-	match c {
-		b'A' ... b'Z' => c + b'a' - b'A',
-		_ => c
-	}
+    match c {
+        b'A' ... b'Z' => c + b'a' - b'A',
+        _ => c
+    }
 }
 
 // Compare two strings, with case folding for ASCII
 pub fn strcasecmp(a: &str, b: &str) -> cmp::Ordering {
-	for i in 0..cmp::min(a.len(), b.len()) {
-		match ascii_tolower(a.as_bytes()[i]).cmp(&ascii_tolower(b.as_bytes()[i])) {
-			cmp::Ordering::Equal => (),
-			ordering => return ordering			
-		}
-	}
-	a.len().cmp(&b.len())
+    for i in 0..cmp::min(a.len(), b.len()) {
+        match ascii_tolower(a.as_bytes()[i]).cmp(&ascii_tolower(b.as_bytes()[i])) {
+            cmp::Ordering::Equal => (),
+            ordering => return ordering
+        }
+    }
+    a.len().cmp(&b.len())
 }
 
 pub fn cow_append<'a>(a: Cow<'a, str>, b: Cow<'a, str>) -> Cow<'a, str> {
-	if a.is_empty() {
-		b
-	} else if b.is_empty() {
-		a
-	} else {
-		Owned(a.into_owned() + &b)
-	}
+    if a.is_empty() {
+        b
+    } else if b.is_empty() {
+        a
+    } else {
+        Owned(a.into_owned() + &b)
+    }
 }

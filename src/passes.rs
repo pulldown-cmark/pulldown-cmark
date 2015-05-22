@@ -18,68 +18,68 @@ use parse::{RawParser, Event, Tag, Options};
 use std::collections::HashSet;
 
 pub struct Parser<'a> {
-	inner: RawParser<'a>,
-	loose_lists: HashSet<usize>,
-	loose_stack: Vec<bool>,
+    inner: RawParser<'a>,
+    loose_lists: HashSet<usize>,
+    loose_stack: Vec<bool>,
 }
 
 impl<'a> Parser<'a> {
-	pub fn new(text: &'a str) -> Parser<'a> {
-		// first pass, collecting info
-		let mut opts = Options::new();
-		opts.set_first_pass();
-		let mut first = RawParser::new(text, opts);
-		while first.next().is_some() { }
-		let info = first.get_info();
+    pub fn new(text: &'a str) -> Parser<'a> {
+        // first pass, collecting info
+        let mut opts = Options::new();
+        opts.set_first_pass();
+        let mut first = RawParser::new(text, opts);
+        while first.next().is_some() { }
+        let info = first.get_info();
 
-		// second pass
-		let loose_lists = info.loose_lists;
-		let opts = Options::new();
-		let second = RawParser::new_with_links(text, opts, info.links);
+        // second pass
+        let loose_lists = info.loose_lists;
+        let opts = Options::new();
+        let second = RawParser::new_with_links(text, opts, info.links);
 
-		//println!("loose lists: {:?}", info.loose_lists);
-		Parser {
-			inner: second,
-			loose_lists: loose_lists,
-			loose_stack: Vec::new(),
-		}
-	}
+        //println!("loose lists: {:?}", info.loose_lists);
+        Parser {
+            inner: second,
+            loose_lists: loose_lists,
+            loose_stack: Vec::new(),
+        }
+    }
 
-	pub fn get_offset(&self) -> usize {
-		self.inner.get_offset()
-	}
+    pub fn get_offset(&self) -> usize {
+        self.inner.get_offset()
+    }
 }
 
 impl<'a> Iterator for Parser<'a> {
-	type Item = Event<'a>;
+    type Item = Event<'a>;
 
-	fn next(&mut self) -> Option<Event<'a>> {
-		loop {
-			match self.inner.next() {
-				Some(event) => {
-					match event {
-						Event::Start(Tag::List(_)) => {
-							let offset = self.inner.get_offset();
-							let is_loose = self.loose_lists.contains(&offset);
-							self.loose_stack.push(is_loose);
-						}
-						Event::Start(Tag::BlockQuote) => {
-							self.loose_stack.push(true);
-						}
-						Event::Start(Tag::Paragraph) | Event::End(Tag::Paragraph) => {
-							if let Some(&false) = self.loose_stack.last() {
-								continue;
-							}
-						}
-						Event::End(Tag::List(_)) | Event::End(Tag::BlockQuote) => {
-							let _ = self.loose_stack.pop();
-						}
-						_ => ()
-					}
-					return Some(event)
-				}
-				None => return None
-			}
-		}
-	}
+    fn next(&mut self) -> Option<Event<'a>> {
+        loop {
+            match self.inner.next() {
+                Some(event) => {
+                    match event {
+                        Event::Start(Tag::List(_)) => {
+                            let offset = self.inner.get_offset();
+                            let is_loose = self.loose_lists.contains(&offset);
+                            self.loose_stack.push(is_loose);
+                        }
+                        Event::Start(Tag::BlockQuote) => {
+                            self.loose_stack.push(true);
+                        }
+                        Event::Start(Tag::Paragraph) | Event::End(Tag::Paragraph) => {
+                            if let Some(&false) = self.loose_stack.last() {
+                                continue;
+                            }
+                        }
+                        Event::End(Tag::List(_)) | Event::End(Tag::BlockQuote) => {
+                            let _ = self.loose_stack.pop();
+                        }
+                        _ => ()
+                    }
+                    return Some(event)
+                }
+                None => return None
+            }
+        }
+    }
 }

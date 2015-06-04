@@ -87,7 +87,7 @@ a vector (for recording, playback, and manipulation), and more.
 Further, the Str event (representing text) is a copy-on-write string (note:
 this isn't quite true yet). The vast majority of text fragments are just
 slices of the source document. For these, copy-on-write gives a convenient
-respresentation that requires no allocation or copying, but allocated
+representation that requires no allocation or copying, but allocated
 strings are available when they're needed. Thus, when rendering text to
 HTML, most text is copied just once, from the source document to the
 HTML buffer.
@@ -99,7 +99,7 @@ The main author is Raph Levien.
 ## Contributions
 
 We gladly accept contributions via GitHub pull requests, as long as the author
-has signed the Google Contributor Licnense. Please see CONTRIBUTIONS.md for
+has signed the Google Contributor License. Please see CONTRIBUTIONS.md for
 more details.
 
 ### Disclaimer

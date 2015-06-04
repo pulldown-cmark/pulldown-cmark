@@ -15,6 +15,7 @@
 //! Utility functions for HTML escaping
 
 use std::str::from_utf8;
+use std::fmt::{self, Write};
 
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -29,7 +30,7 @@ static HREF_SAFE: [u8; 128] = [
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
 
-pub fn escape_href(ob: &mut String, s: &str) {
+pub fn escape_href<W: Write>(ob: &mut W, s: &str) -> fmt::Result {
     let mut mark = 0;
     for i in 0..s.len() {
         let c = s.as_bytes()[i];
@@ -38,27 +39,27 @@ pub fn escape_href(ob: &mut String, s: &str) {
 
             // write partial substring up to mark
             if mark < i {
-                ob.push_str(&s[mark..i]);
+                try!(ob.write_str(&s[mark..i]));
             }
-            match c {
+            try!(match c {
                 b'&' => {
-                    ob.push_str("&amp;");
+                    ob.write_str("&amp;")
                 },
                 b'\'' => {
-                    ob.push_str("&#x27;");
+                    ob.write_str("&#x27;")
                 },
                 _ => {
                     let mut buf = [0u8; 3];
                     buf[0] = b'%';
                     buf[1] = HEX_CHARS[((c as usize) >> 4) & 0xF];
                     buf[2] = HEX_CHARS[(c as usize) & 0xF];
-                    ob.push_str(from_utf8(&buf).unwrap());
+                    ob.write_str(from_utf8(&buf).unwrap())
                 }
-            }
+            });
             mark = i + 1;  // all escaped characters are ASCII
         }
     }
-    ob.push_str(&s[mark..]);
+    ob.write_str(&s[mark..])
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -89,7 +90,7 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&gt;"
     ];
 
-pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
+pub fn escape_html<W: Write>(ob: &mut W, s: &str, secure: bool) -> fmt::Result {
     let size = s.len();
     let bytes = s.as_bytes();
     let mut mark = 0;
@@ -104,11 +105,11 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 && (secure || c != b'/') {
-            ob.push_str(&s[mark..i]);
-            ob.push_str(HTML_ESCAPES[escape as usize]);
+            try!(ob.write_str(&s[mark..i]));
+            try!(ob.write_str(HTML_ESCAPES[escape as usize]));
             mark = i + 1;  // all escaped characters are ASCII
         }
         i += 1;
     }
-    ob.push_str(&s[mark..]);
+    ob.write_str(&s[mark..])
 }

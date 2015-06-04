@@ -3,6 +3,8 @@ name = "pulldown-cmark"
 version = "0.0.1"
 authors = [ "Raph Levien <raph@google.com>" ]
 license = "Apache-2.0"
+description = "A pull parser for CommonMark"
+repository = "https://github.com/google/pulldown-cmark"
 
 [dependencies]
 getopts = "*"

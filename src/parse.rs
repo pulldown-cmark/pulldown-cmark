@@ -751,6 +751,9 @@ impl<'a> RawParser<'a> {
         }
 
         let linktext = self.normalize_link_ref(&data[text_beg..text_end]);
+        if linktext.is_empty() {
+        	return false;
+        }
         if !self.links.contains_key(&linktext) {
             let dest = unescape(raw_dest);
             self.links.insert(linktext, (dest, title));
@@ -1488,4 +1491,3 @@ impl<'a> Iterator for RawParser<'a> {
         }
     }
 }
-

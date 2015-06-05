@@ -376,7 +376,10 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
 }
 
 fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
-    let codepoint = u32::from_str_radix(s, radix).unwrap();
+    let mut codepoint = u32::from_str_radix(s, radix).unwrap();
+    if codepoint == 0 {
+        codepoint = 0xFFFD;
+    }
     Owned(char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string())
 }
 
@@ -466,7 +469,7 @@ pub fn scan_autolink<'a>(data: &'a str) -> Option<(usize, Cow<'a, str>)> {
     } else {
         let n_email = scan_email(&data[i..]);
         if n_email == 0 { return None; }
-        (n_email, Owned("mailto:".to_string() + &data[link_beg.. i + n_email]))
+        (n_email, Owned("mailto:".to_owned() + &data[link_beg.. i + n_email]))
     };
     i += n_link;
     if scan_ch(&data[i..], b'>') == 0 { return None; }

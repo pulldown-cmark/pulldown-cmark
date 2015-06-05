@@ -87,6 +87,7 @@ pub enum Tag<'a> {
     Image(Cow<'a, str>, Cow<'a, str>),
 }
 
+#[derive(Debug)]
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),

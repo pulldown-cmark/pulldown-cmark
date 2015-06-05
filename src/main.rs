@@ -19,7 +19,6 @@ extern crate getopts;
 extern crate pulldown_cmark;
 
 use pulldown_cmark::Parser;
-use pulldown_cmark::Event;
 use pulldown_cmark::html;
 
 use std::env;
@@ -50,15 +49,7 @@ fn print_events(text: &str) {
     loop {
         print!("{}: ", p.get_offset());
         if let Some(event) = p.next() {
-            match event {
-                Event::Start(tag) => println!("start {:?}", tag),
-                Event::End(tag) => println!("end {:?}", tag),
-                Event::Text(text) => println!("text: [{}]", text),
-                Event::Html(html) => println!("html: [{}]", html),
-                Event::InlineHtml(html) => println!("inline html: [{}]", html),
-                Event::SoftBreak => println!("soft break"),
-                Event::HardBreak => println!("hard break")
-            }
+            println!("{:?}", event);
         } else {
             break;
         }

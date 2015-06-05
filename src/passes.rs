@@ -84,11 +84,11 @@ impl<'a> Iterator for Parser<'a> {
     }
 }
 
-# Note: there are currently no tests here, because so far there's been adequate coverage
-# using the test cases from the CommonMark spec. Those can be run using:
-#
-#     cargo run -- -s spec.text
-#
-# where spec.txt is from <https://github.com/jgm/cmark/blob/master/test/spec.txt>.
-#
-# There are more cases that should be tested beyond that spec, and those should be added here.
+// Note: there are currently no tests here, because so far there's been adequate coverage
+// using the test cases from the CommonMark spec. Those can be run using:
+//
+//     cargo run -- -s spec.text
+//
+// where spec.txt is from <https://github.com/jgm/cmark/blob/master/test/spec.txt>.
+//
+// There are more cases that should be tested beyond that spec, and those should be added here.

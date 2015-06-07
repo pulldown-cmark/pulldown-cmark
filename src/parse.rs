@@ -163,7 +163,7 @@ impl<'a> RawParser<'a> {
         if self.opts.is_first_pass() {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\t\n\r_\\&*[!`<" {
+            for &c in b"\x00\t\n\r_\\&*[!`<" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -617,13 +617,13 @@ impl<'a> RawParser<'a> {
         let mut beg = self.off;
         let mut i = beg;
         loop {
-        	match bytes[i..].iter().position(|&c| c < b' ') {
-        		Some(j) => i += j,
-        		None => {
-        			i += bytes[i..].len();
-        			break;
-        		}
-        	}
+            match bytes[i..].iter().position(|&c| c < b' ') {
+                Some(j) => i += j,
+                None => {
+                    i += bytes[i..].len();
+                    break;
+                }
+            }
             match bytes[i] {
                 b'\n' => {
                     i += 1;
@@ -752,7 +752,7 @@ impl<'a> RawParser<'a> {
 
         let linktext = self.normalize_link_ref(&data[text_beg..text_end]);
         if linktext.is_empty() {
-        	return false;
+            return false;
         }
         if !self.links.contains_key(&linktext) {
             let dest = unescape(raw_dest);
@@ -855,6 +855,7 @@ impl<'a> RawParser<'a> {
 
     fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
         match c {
+            b'\x00' => Some(self.char_null()),
             b'\t' => Some(self.char_tab()),
             b'\\' => self.char_backslash(),
             b'&' => self.char_entity(),
@@ -865,6 +866,11 @@ impl<'a> RawParser<'a> {
             b'<' => self.char_lt(),
             _ => None
         }
+    }
+
+    fn char_null(&mut self) -> Event<'a> {
+        self.off += 1;
+        Event::Text(Borrowed(&"\u{fffd}"))
     }
 
     // expand tab in content (used for code and inline)
@@ -969,7 +975,7 @@ impl<'a> RawParser<'a> {
                     i += 1;
                 }
             } else if c2 == b'[' {
-                if let Some((_, _, _, n)) = self.parse_link(&self.text[i..limit]) {
+                if let Some((_, _, _, n)) = self.parse_link(&self.text[i..limit], false) {
                     i += n;
                 } else {
                     i += 1;
@@ -1067,7 +1073,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn char_link(&mut self) -> Option<Event<'a>> {
-        self.parse_link(&self.text[self.off .. self.limit()]).map(|(tag, beg, end, n)| {
+        self.parse_link(&self.text[self.off .. self.limit()], false).map(|(tag, beg, end, n)| {
             let off = self.off;
             self.off += beg;
             self.start(tag, off + end, off + n)
@@ -1075,7 +1081,7 @@ impl<'a> RawParser<'a> {
     }
 
     // return: tag, begin, end, total size
-    fn parse_link(&self, data: &'a str) -> Option<(Tag<'a>, usize, usize, usize)> {
+    fn parse_link(&self, data: &'a str, recur: bool) -> Option<(Tag<'a>, usize, usize, usize)> {
         let size = data.len();
 
         // scan link text
@@ -1084,7 +1090,7 @@ impl<'a> RawParser<'a> {
         let (n, text_beg, text_end, max_nest) = self.scan_link_label(&data[i..]);
         if n == 0 { return None; }
         let (text_beg, text_end) = (text_beg + i, text_end + i);
-        if !is_image && max_nest > 1 && self.contains_link(&data[text_beg..text_end]) {
+        if !is_image && !recur && max_nest > 1 && self.contains_link(&data[text_beg..text_end]) {
             // disallow nested links in links (but ok in images)
             return None;
         }
@@ -1147,7 +1153,6 @@ impl<'a> RawParser<'a> {
 
     // determine whether there's a link anywhere in the text
     // TODO: code duplication with scan_link_label is unpleasant
-    // TODO: limit recursion
     fn contains_link(&self, data: &str) -> bool {
         let mut i = 0;
         while i < data.len() {
@@ -1165,7 +1170,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
-                    if self.parse_link(&data[i..]).is_some() { return true; }
+                    if self.parse_link(&data[i..], true).is_some() { return true; }
                 }
                 b'\\' => i += 1,
                 b'<' => {

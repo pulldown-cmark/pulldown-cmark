@@ -102,6 +102,8 @@ pub struct Options(u32);
 
 const OPTION_FIRST_PASS: u32 = 1 << 0;
 
+const MAX_LINK_NEST: usize = 10;
+
 impl Options {
     pub fn new() -> Options {
         Options(0)
@@ -375,7 +377,7 @@ impl<'a> RawParser<'a> {
                 }
             }
 
-            if self.leading_space >= 4 {
+            if self.leading_space >= 4 && !self.at_list(1).is_some() {
                 // see below
                 if let Some(&Container::List(_, _)) = self.containers.last() {
                     return Some(self.end());
@@ -1008,6 +1010,7 @@ impl<'a> RawParser<'a> {
                 }
                 b'[' => {
                     nest += 1;
+                    if nest == MAX_LINK_NEST { return (0, 0, 0, 0); }
                     max_nest = cmp::max(max_nest, nest)
                 }
                 b']' => {

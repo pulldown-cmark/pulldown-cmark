@@ -1,0 +1,105 @@
+False match
+===========
+
+.
+Test header
+-----------
+.
+<h2>Test header</h2>
+.
+
+
+True match
+==========
+
+.
+Test|Table
+----|-----
+.
+<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
+</table>
+.
+
+
+Actual rows in it
+=================
+
+.
+Test|Table
+----|-----
+Test row
+Test|2
+
+Test ending
+.
+<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
+<tr><td>Test row</td></tr>
+<tr><td>Test</td><td>2</td></tr>
+</table>
+<p>Test ending</p>
+.
+
+
+Test with quote
+===============
+
+.
+> Test  | Table
+> ------|------
+> Row 1 | Every
+> Row 2 | Day
+>
+> Paragraph
+.
+<blockquote>
+<table><thead><tr><td>Test  </td><td> Table</td></tr></thead>
+<tr><td>Row 1 </td><td> Every</td></tr>
+<tr><td>Row 2 </td><td> Day</td></tr>
+</table>
+<p>Paragraph</p>
+</blockquote>
+.
+
+
+Test with list
+==============
+
+.
+ 1. First entry
+ 2. Second entry
+
+    Col 1|Col 2
+    -|-
+    Row 1|Part 2
+    Row 2|Part 2
+.
+<ol>
+<li>
+<p>First entry</p>
+</li>
+<li>
+<p>Second entry</p>
+<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<tr><td>Row 1</td><td>Part 2</td></tr>
+<tr><td>Row 2</td><td>Part 2</td></tr>
+</table>
+</li>
+</ol>
+.
+
+
+Test with border
+================
+
+.
+|Col 1|Col 2|
+|-----|-----|
+|R1C1 |R1C2 |
+|R2C1 |R2C2 |
+.
+<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<tr><td>R1C1 </td><td>R1C2 </td></tr>
+<tr><td>R2C1 </td><td>R2C2 </td></tr>
+</table>
+.
+

@@ -73,6 +73,18 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push((b'0' + level as u8) as char);
                 self.buf.push('>');
             }
+            Tag::Table(_) => {
+                self.buf.push_str("<table>");
+            }
+            Tag::TableHead => {
+                self.buf.push_str("<thead><tr>");
+            }
+            Tag::TableRow => {
+                self.buf.push_str("<tr>");
+            }
+            Tag::TableCell => {
+                self.buf.push_str("<td>");
+            }
             Tag::BlockQuote => {
                 self.fresh_line();
                 self.buf.push_str("<blockquote>\n");
@@ -138,6 +150,18 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push_str("</h");
                 self.buf.push((b'0' + level as u8) as char);
                 self.buf.push_str(">\n");
+            }
+            Tag::Table(_) => {
+                self.buf.push_str("</table>\n");
+            }
+            Tag::TableHead => {
+                self.buf.push_str("</tr></thead>\n");
+            }
+            Tag::TableRow => {
+                self.buf.push_str("</tr>\n");
+            }
+            Tag::TableCell => {
+                self.buf.push_str("</td>");
             }
             Tag::BlockQuote => self.buf.push_str("</blockquote>\n"),
             Tag::CodeBlock(_) => self.buf.push_str("</code></pre>\n"),

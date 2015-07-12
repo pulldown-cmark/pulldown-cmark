@@ -32,6 +32,9 @@ enum State {
     StartBlock,
     InContainers,
     Inline,
+    TableHead(usize, usize), // limit, next
+    TableBody,
+    TableRow,
     CodeLineStart,
     Code,
     InlineCode,
@@ -84,6 +87,12 @@ pub enum Tag<'a> {
     CodeBlock(Cow<'a, str>),
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
+
+    // tables
+    Table(i32),
+    TableHead,
+    TableRow,
+    TableCell,
 
     // span-level tags
     Emphasis,
@@ -199,14 +208,18 @@ impl<'a> RawParser<'a> {
             }
 
             // block level tags
-            Tag::Paragraph | Tag::Header(_) | Tag::Rule | Tag::CodeBlock(_) => {
+            Tag::Paragraph | Tag::Header(_) | Tag::Rule | Tag::CodeBlock(_) | Tag::Table(_) => {
                 self.state = State::StartBlock;
                 // TODO: skip blank lines (for cleaner source maps)
             }
 
+            // tables
+            Tag::TableCell => self.state = State::TableRow,
+            Tag::TableRow | Tag::TableHead => self.state = State::TableBody,
+
             // inline
             Tag::Code => self.state = State::Inline,
-            _ => ()
+            _ => (),
         }
         if next != 0 { self.off = next; }
 
@@ -466,26 +479,63 @@ impl<'a> RawParser<'a> {
         None
     }
 
-    // can start a paragraph or a setext header, as they start similarly
+    // can start a paragraph, a setext header, or a table, as they start similarly
     fn start_paragraph(&mut self) -> Event<'a> {
         let mut i = self.off + scan_nextline(&self.text[self.off..]);
 
         if let (n, true, space) = self.scan_containers(&self.text[i..]) {
             i += n;
-            let (n, level) = scan_setext_header(&self.text[i..]);
-            if space <= 3 && n != 0 {
-                let next = i + n;
-                while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
-                    i -= 1;
+            if space <= 3 {
+                let (n, level) = scan_setext_header(&self.text[i..]);
+                if n != 0 {
+                    let next = i + n;
+                    while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
+                        i -= 1;
+                    }
+                    self.state = State::Inline;
+                    return self.start(Tag::Header(level), i, next);
                 }
-                self.state = State::Inline;
-                return self.start(Tag::Header(level), i, next);
+                let (n, cols) = scan_table_head(&self.text[i..]);
+                if n != 0 {
+                    let next = i + n;
+                    while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
+                        i -= 1;
+                    }
+                    self.state = State::TableHead(i, next);
+                    return self.start(Tag::Table(cols), self.text.len(), 0);
+                }
             }
         }
 
         let size = self.text.len();
         self.state = State::Inline;
         self.start(Tag::Paragraph, size, 0)
+    }
+
+    fn start_table_head(&mut self) -> Event<'a> {
+        if let State::TableHead(limit, next) = self.state {
+            self.state = State::TableRow;
+            return self.start(Tag::TableHead, limit, next);
+        } else {
+            panic!();
+        }
+    }
+
+    fn start_table_body(&mut self) -> Event<'a> {
+        let (off, _) = match self.scan_containers(&self.text[self.off ..]) {
+            (n, true, space) => (self.off + n, space),
+            _ => {
+                return self.end();
+            }
+        };
+        let n = scan_blank_line(&self.text[off..]);
+        if n != 0 {
+            self.off = off + n;
+            return self.end();
+        }
+        self.state = State::TableRow;
+        self.off = off;
+        return self.start(Tag::TableRow, self.text.len(), 0);
     }
 
     fn start_hrule(&mut self) -> Event<'a> {
@@ -808,6 +858,48 @@ impl<'a> RawParser<'a> {
                     scan_blockquote_start(data) != 0 ||
                     scan_listitem(data).0 != 0 ||
                     self.is_html_block(data))
+    }
+
+    fn next_table_cell(&mut self) -> Event<'a> {
+        let bytes   = self.text.as_bytes();
+        let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off ..]);
+        let mut i   = beg;
+        let limit   = self.limit();
+        if i < limit && bytes[i] == b'|' {
+            i   += 1;
+            beg += 1;
+            self.off += 1;
+        }
+        if i >= limit {
+            self.off = limit;
+            return self.end();
+        }
+        let mut n = 0;
+        while i < limit {
+            let c = bytes[i];
+            if c == b'\\' && i + 1 < limit && bytes[i + 1] == b'|' {
+                i += 2;
+                continue;
+            } else if c == b'|' {
+                n = 1;
+                break;
+            }
+            n = scan_blank_line(&self.text[i..]);
+            if n != 0 {
+                if i > beg {
+                    n = 0;
+                }
+                break;
+            }
+            i += 1;
+        }
+        if i > beg {
+            self.state = State::Inline;
+            self.start(Tag::TableCell, i, i + n)
+        } else {
+            self.off = i + n;
+            self.end()
+        }
     }
 
     fn next_inline(&mut self) -> Event<'a> {
@@ -1493,6 +1585,9 @@ impl<'a> Iterator for RawParser<'a> {
                     }
                 }
                 State::Inline => return Some(self.next_inline()),
+                State::TableHead(_, _) => return Some(self.start_table_head()),
+                State::TableBody => return Some(self.start_table_body()),
+                State::TableRow => return Some(self.next_table_cell()),
                 State::CodeLineStart => return Some(self.next_code_line_start()),
                 State::Code => return Some(self.next_code()),
                 State::InlineCode => return Some(self.next_inline_code()),

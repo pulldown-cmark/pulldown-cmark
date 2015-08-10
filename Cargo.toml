@@ -2,7 +2,7 @@
 name = "pulldown-cmark"
 version = "0.0.3"
 authors = [ "Raph Levien <raph@google.com>" ]
-license = "Apache-2.0"
+license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/google/pulldown-cmark"
 

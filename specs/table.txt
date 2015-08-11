@@ -1,3 +1,5 @@
+Run this with `cargo run -- -T -s specs/table.txt`.
+
 False match
 ===========
 

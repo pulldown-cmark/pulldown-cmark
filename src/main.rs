@@ -36,7 +36,7 @@ use std::fs::File;
 fn render_html(text: &str) -> String {
     let mut s = String::with_capacity(text.len() * 3 / 2);
     let p = Parser::new(&text);
-    html::push_html(&mut s, p);
+    html::push_html(&mut s, p).unwrap();
     s
 }
 

@@ -8,3 +8,4 @@ repository = "https://github.com/google/pulldown-cmark"
 
 [dependencies]
 getopts = "*"
+bitflags = "0.3"

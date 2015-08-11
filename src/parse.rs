@@ -113,23 +113,14 @@ pub enum Event<'a> {
     HardBreak,
 }
 
-pub struct Options(u32);
-
-const OPTION_FIRST_PASS: u32 = 1 << 0;
-
-const MAX_LINK_NEST: usize = 10;
-
-impl Options {
-    pub fn new() -> Options {
-        Options(0)
-    }
-    pub fn set_first_pass(&mut self) {
-        self.0 |= OPTION_FIRST_PASS;
-    }
-    pub fn is_first_pass(&self) -> bool {
-        (self.0 & OPTION_FIRST_PASS) != 0
+bitflags! {
+    flags Options: u32 {
+        const OPTION_FIRST_PASS = 1 << 0,
+        const OPTION_ENABLE_TABLES = 1 << 1,
     }
 }
+
+const MAX_LINK_NEST: usize = 10;
 
 impl<'a> RawParser<'a> {
     pub fn new_with_links(text: &'a str, opts: Options,
@@ -177,7 +168,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn init_active(&mut self) {
-        if self.opts.is_first_pass() {
+        if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
             for &c in b"\x00\t\n\r_\\&*[!`<" {
@@ -495,14 +486,16 @@ impl<'a> RawParser<'a> {
                     self.state = State::Inline;
                     return self.start(Tag::Header(level), i, next);
                 }
-                let (n, cols) = scan_table_head(&self.text[i..]);
-                if n != 0 {
-                    let next = i + n;
-                    while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
-                        i -= 1;
+                if self.opts.contains(OPTION_ENABLE_TABLES) {
+                    let (n, cols) = scan_table_head(&self.text[i..]);
+                    if n != 0 {
+                        let next = i + n;
+                        while i > self.off && is_ascii_whitespace(self.text.as_bytes()[i - 1]) {
+                            i -= 1;
+                        }
+                        self.state = State::TableHead(i, next);
+                        return self.start(Tag::Table(cols), self.text.len(), 0);
                     }
-                    self.state = State::TableHead(i, next);
-                    return self.start(Tag::Table(cols), self.text.len(), 0);
                 }
             }
         }
@@ -513,6 +506,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_head(&mut self) -> Event<'a> {
+        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
         if let State::TableHead(limit, next) = self.state {
             self.state = State::TableRow;
             return self.start(Tag::TableHead, limit, next);
@@ -522,6 +516,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_body(&mut self) -> Event<'a> {
+        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
         let (off, _) = match self.scan_containers(&self.text[self.off ..]) {
             (n, true, space) => (self.off + n, space),
             _ => {
@@ -861,6 +856,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn next_table_cell(&mut self) -> Event<'a> {
+        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
         let bytes   = self.text.as_bytes();
         let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off ..]);
         let mut i   = beg;

@@ -25,6 +25,7 @@ extern crate getopts;
 extern crate pulldown_cmark;
 
 use pulldown_cmark::Parser;
+use pulldown_cmark::{Options, OPTION_ENABLE_TABLES};
 use pulldown_cmark::html;
 
 use std::env;
@@ -33,15 +34,15 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::fs::File;
 
-fn render_html(text: &str) -> String {
+fn render_html(text: &str, opts: Options) -> String {
     let mut s = String::with_capacity(text.len() * 3 / 2);
-    let p = Parser::new(&text);
+    let p = Parser::new_ext(&text, opts);
     html::push_html(&mut s, p);
     s
 }
 
-fn dry_run(text:&str) {
-    let p = Parser::new(&text);
+fn dry_run(text:&str, opts: Options) {
+    let p = Parser::new_ext(&text, opts);
     /*
     let events = p.collect::<Vec<_>>();
     let count = events.len();
@@ -50,8 +51,8 @@ fn dry_run(text:&str) {
     println!("{} events", count);
 }
 
-fn print_events(text: &str) {
-    let mut p = Parser::new(&text);
+fn print_events(text: &str, opts: Options) {
+    let mut p = Parser::new_ext(&text, opts);
     loop {
         print!("{}: ", p.get_offset());
         if let Some(event) = p.next() {
@@ -81,7 +82,7 @@ fn find_test_delim(text: &str) -> Option<usize> {
     else { text.find("\n.\n").map(|pos| pos + 1) }
 }
 
-fn run_spec(spec_text: &str, args: &[String]) {
+fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     //println!("spec length={}, args={:?}", spec_text.len(), args);
     let (first, last) = if args.is_empty() {
         (None, None)
@@ -126,7 +127,7 @@ fn run_spec(spec_text: &str, args: &[String]) {
             } else if line_count > 0 && (test_number % 10) == 5 {
                 print!(" ");
             }
-            let our_html = render_html(&source.replace("→", "\t").replace("\n", "\r\n"));
+            let our_html = render_html(&source.replace("→", "\t").replace("\n", "\r\n"), opts);
             if our_html == html {
                 print!(".");
             } else {
@@ -153,18 +154,23 @@ pub fn main() {
     let mut opts = getopts::Options::new();
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
+    opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optopt("s", "spec", "run tests from spec file", "FILE");
     opts.optopt("b", "bench", "run benchmark", "FILE");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => panic!(f.to_string())
     };
+    let mut opts = Options::empty();
+    if matches.opt_present("enable-tables") {
+        opts.insert(OPTION_ENABLE_TABLES);
+    }
     if let Some(filename) = matches.opt_str("spec") {
-        run_spec(&read_file(&filename), &matches.free);
+        run_spec(&read_file(&filename), &matches.free, opts);
     } else if let Some(filename) = matches.opt_str("bench") {
         let inp = read_file(&filename);
         for _ in 0..1000 {
-            let _ = render_html(&inp);
+            let _ = render_html(&inp, opts);
         }
     } else {
         let mut input = String::new();
@@ -173,11 +179,11 @@ pub fn main() {
             Ok(_) => ()
         }
         if matches.opt_present("events") {
-            print_events(&input);
+            print_events(&input, opts);
         } else if matches.opt_present("dry-run") {
-            dry_run(&input);
+            dry_run(&input, opts);
         } else {
-            print!("{}", render_html(&input));
+            print!("{}", render_html(&input, opts));
         }
     }
 }

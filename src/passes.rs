@@ -33,8 +33,8 @@ impl<'a> Parser<'a> {
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
-    pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
-        assert!(!opts.contains(OPTION_FIRST_PASS));
+    pub fn new_ext(text: &'a str, mut opts: Options) -> Parser<'a> {
+        opts.remove(OPTION_FIRST_PASS);
         // first pass, collecting info
         let first_opts = opts | OPTION_FIRST_PASS;
         let mut first = RawParser::new(text, first_opts);

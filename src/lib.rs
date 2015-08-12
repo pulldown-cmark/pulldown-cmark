@@ -22,6 +22,9 @@
 
 pub mod html;
 
+#[macro_use]
+extern crate bitflags;
+
 mod passes;
 mod parse;
 mod scanners;
@@ -31,4 +34,4 @@ mod puncttable;
 mod utils;
 
 pub use passes::Parser;
-pub use parse::{Event, Tag};
+pub use parse::{Event, Tag, Options, OPTION_ENABLE_TABLES};

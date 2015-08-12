@@ -6,5 +6,10 @@ license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/google/pulldown-cmark"
 
+[[bin]]
+name = "pulldown-cmark"
+doc = false
+
 [dependencies]
 getopts = "*"
+bitflags = "0.3"

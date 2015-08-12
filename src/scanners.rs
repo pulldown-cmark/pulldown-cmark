@@ -290,6 +290,49 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
     (i, level)
 }
 
+// returns number of bytes in line (including trailing newline) and column count
+// TODO: alignment
+pub fn scan_table_head(data: &str) -> (usize, i32) {
+    let (mut i, spaces) = calc_indent(data, 4);
+    if spaces > 3 || i == data.len() {
+        return (0, 0);
+    }
+    let mut cols = 0;
+    let mut start_col = true;
+    if data.as_bytes()[i] == b'|' {
+        i += 1;
+    }
+    for c in data.as_bytes()[i..].iter() {
+        let eol = scan_eol(&data[i..]);
+        if eol.1 {
+            i += eol.0;
+            break;
+        }
+        match *c {
+            b' ' | b':' => (),
+            b'-' => {
+                if start_col {
+                    cols += 1;
+                    start_col = false;
+                }
+            },
+            b'|' => {
+                start_col = true;
+            },
+            _ => {
+                cols = 0;
+                break;
+            },
+        }
+        i += 1;
+    }
+    if cols < 2 {
+        (0, 0)
+    } else {
+        (i, cols)
+    }
+}
+
 // returns: number of bytes scanned, char
 pub fn scan_code_fence(data: &str) -> (usize, u8) {
     let c = data.as_bytes()[0];

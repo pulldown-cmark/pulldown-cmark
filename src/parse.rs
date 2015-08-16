@@ -41,11 +41,12 @@ enum State {
     Literal,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum Container {
     BlockQuote,
     List(usize, u8),
     ListItem(usize),
+    FootnoteDefinition,
 }
 
 pub struct RawParser<'a> {
@@ -87,6 +88,7 @@ pub enum Tag<'a> {
     CodeBlock(Cow<'a, str>),
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
+    FootnoteDefinition(Cow<'a, str>),
 
     // tables
     Table(i32),
@@ -109,6 +111,7 @@ pub enum Event<'a> {
     Text(Cow<'a, str>),
     Html(Cow<'a, str>),
     InlineHtml(Cow<'a, str>),
+    FootnoteReference(Cow<'a, str>),
     SoftBreak,
     HardBreak,
 }
@@ -117,6 +120,7 @@ bitflags! {
     flags Options: u32 {
         const OPTION_FIRST_PASS = 1 << 0,
         const OPTION_ENABLE_TABLES = 1 << 1,
+        const OPTION_ENABLE_FOOTNOTES = 1 << 1,
     }
 }
 
@@ -194,7 +198,7 @@ impl<'a> RawParser<'a> {
         let (tag, _, next) = self.stack.pop().unwrap();
         match tag {
             // containers
-            Tag::BlockQuote | Tag::List(_) | Tag::Item => {
+            Tag::BlockQuote | Tag::List(_) | Tag::Item | Tag::FootnoteDefinition(_) => {
                 let _ = self.containers.pop();
             }
 
@@ -259,6 +263,7 @@ impl<'a> RawParser<'a> {
                         return (i, false, space);
                     }
                 }
+                Container::FootnoteDefinition => (),
                 Container::List(_, _) => (),
                 Container::ListItem(indent) => {
                     if space >= indent {
@@ -320,30 +325,6 @@ impl<'a> RawParser<'a> {
         None
     }
 
-    // n is number of bytes (in blank lines) to skip
-    fn end_containing_lists(&mut self, n: usize) -> Event<'a> {
-        let mut i = self.stack.len();
-        while i >= 2 {
-            if let (Tag::List(_), _, _) = self.stack[i - 2] {
-                i -= 2;
-            } else {
-                break;
-            }
-        }
-        let mut next = self.off + n;
-        while i < self.stack.len() {
-            if let (Tag::List(start), _, _) = self.stack[i] {
-                self.stack[i] = (Tag::List(start), self.off, next);
-            }
-            if let (Tag::Item, _, _) = self.stack[i + 1] {
-                self.stack[i + 1] = (Tag::Item, self.off, self.off);
-            }
-            next = self.off;
-            i += 2;
-        }
-        self.end()
-    }
-
     fn start_block(&mut self) -> Option<Event<'a>> {
         let size = self.text.len();
         //println!("start_block {}", self.off);
@@ -366,11 +347,28 @@ impl<'a> RawParser<'a> {
             if at_eol {
                 self.off += n;
                 self.state = State::StartBlock;
-                // two empty lines close a list
+                // two empty lines closes lists and footnotes
                 let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
                 //println!("{} empty lines (n = {})", empty_lines, n);
-                if empty_lines >= 1 && self.at_list(2).is_some() {
-                    return Some(self.end_containing_lists(n));
+                let mut closed = false;
+                if empty_lines >= 1 {
+                    let mut close_tags: Vec<&mut (Tag<'a>, usize, usize)> = self.stack.iter_mut().skip_while(|tag| {
+                        match tag.0 {
+                            Tag::List(_) | Tag::FootnoteDefinition(_) => false,
+                            _ => true,
+                        }
+                    }).collect();
+                    if close_tags.len() != 0 {
+                        for tag in &mut close_tags {
+                            tag.1 = self.off; // limit
+                            tag.2 = self.off; // next
+                        }
+                        close_tags[0].2 = self.off + n; // next
+                        closed = true;
+                    }
+                }
+                if closed {
+                    return Some(self.end());
                 }
                 self.off += n;
                 if let Some(_) = self.at_list(2) {
@@ -459,6 +457,16 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
+                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                        if let Some((name, n)) = self.parse_footnote_definition(tail) {
+                            if self.containers.last() == Some(&Container::FootnoteDefinition) {
+                                return Some(self.end());
+                            }
+                            self.off += n;
+                            self.containers.push(Container::FootnoteDefinition);
+                            return Some(self.start(Tag::FootnoteDefinition(Cow::Borrowed(name)), self.text.len(), 0));
+                        }
+                    }
                     if self.try_link_reference_definition(tail) {
                         continue;
                     }
@@ -957,6 +965,7 @@ impl<'a> RawParser<'a> {
             b'&' => self.char_entity(),
             b'_' => self.char_emphasis(),
             b'*' => self.char_emphasis(),
+            b'[' if self.opts.contains(OPTION_ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
@@ -1071,6 +1080,12 @@ impl<'a> RawParser<'a> {
                     i += 1;
                 }
             } else if c2 == b'[' {
+                if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                    if let Some((_, n)) = self.parse_footnote(&self.text[i..limit]) {
+                        i += n;
+                        continue;
+                    }
+                }
                 if let Some((_, _, _, n)) = self.parse_link(&self.text[i..limit], false) {
                     i += n;
                 } else {
@@ -1267,6 +1282,9 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
+                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
+                        return false;
+                    }
                     if self.parse_link(&data[i..], true).is_some() { return true; }
                 }
                 b'\\' => i += 1,
@@ -1291,6 +1309,65 @@ impl<'a> RawParser<'a> {
             i += 1;
         }
         false
+    }
+
+    // # Footnotes
+
+    fn parse_footnote_definition<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
+        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        self.parse_footnote(data).and_then(|(name, len)| {
+            let n_colon = scan_ch(&data[len ..], b':');
+            if n_colon == 0 {
+                None
+            } else {
+                let space = scan_whitespace_no_nl(&data[len + n_colon..]);
+                Some((name, len + n_colon + space))
+            }
+        })
+    }
+
+    fn char_link_footnote(&mut self) -> Option<Event<'a>> {
+        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        if let Some((name, end)) = self.parse_footnote(&self.text[self.off .. self.limit()]) {
+            self.off += end;
+            Some(Event::FootnoteReference(Cow::Borrowed(name)))
+        } else {
+            self.char_link()
+        }
+    }
+
+    fn parse_footnote<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
+        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        let (n_footnote, text_beg, text_end) = self.scan_footnote_label(data);
+        if n_footnote == 0 { return None; }
+        return Some((&data[text_beg..text_end], n_footnote));
+    }
+
+    fn scan_footnote_label(&self, data: &str) -> (usize, usize, usize) {
+        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        let mut i = scan_ch(data, b'[');
+        if i == 0 { return (0, 0, 0); }
+        if i >= data.len() || data.as_bytes()[i] != b'^' { return (0, 0, 0); }
+        i += 1;
+        let text_beg = i;
+        loop {
+            if i >= data.len() { return (0, 0, 0); }
+            match data.as_bytes()[i] {
+                b'\n' => {
+                    let n = self.scan_whitespace_inline(&data[i..]);
+                    if n == 0 { return (0, 0, 0); }
+                    i += n;
+                    continue;
+                }
+                b']' => break,
+                b'\\' => i += 1,
+                _ => ()
+            }
+            i += 1;
+        }
+        let text_end = i;
+        i += 1;  // skip closing ]
+        (i, text_beg, text_end)
     }
 
     // # Autolinks and inline HTML

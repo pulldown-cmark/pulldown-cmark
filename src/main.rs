@@ -25,7 +25,7 @@ extern crate getopts;
 extern crate pulldown_cmark;
 
 use pulldown_cmark::Parser;
-use pulldown_cmark::{Options, OPTION_ENABLE_TABLES};
+use pulldown_cmark::{Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
 use pulldown_cmark::html;
 
 use std::env;
@@ -155,6 +155,7 @@ pub fn main() {
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
+    opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
     opts.optopt("s", "spec", "run tests from spec file", "FILE");
     opts.optopt("b", "bench", "run benchmark", "FILE");
     let matches = match opts.parse(&args[1..]) {
@@ -164,6 +165,9 @@ pub fn main() {
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
         opts.insert(OPTION_ENABLE_TABLES);
+    }
+    if matches.opt_present("enable-footnotes") {
+        opts.insert(OPTION_ENABLE_FOOTNOTES);
     }
     if let Some(filename) = matches.opt_str("spec") {
         run_spec(&read_file(&filename), &matches.free, opts);

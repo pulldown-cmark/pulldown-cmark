@@ -34,4 +34,4 @@ mod puncttable;
 mod utils;
 
 pub use passes::Parser;
-pub use parse::{Event, Tag, Options, OPTION_ENABLE_TABLES};
+pub use parse::{Event, Tag, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};

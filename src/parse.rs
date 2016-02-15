@@ -885,10 +885,10 @@ impl<'a> RawParser<'a> {
                 i += 2;
                 continue;
             } else if c == b'|' {
-                n = 1;
+                n = 0;
                 break;
             }
-            n = scan_blank_line(&self.text[i..]);
+            n = if is_ascii_whitespace(bytes[i]) { scan_blank_line(&self.text[i..]) } else { 0 };
             if n != 0 {
                 if i > beg {
                     n = 0;

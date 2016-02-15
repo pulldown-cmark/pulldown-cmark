@@ -105,3 +105,111 @@ Test with border
 </table>
 .
 
+
+Test with empty cells
+=====================
+
+Empty cells should work.
+
+.
+| Col 1 | Col 2 |
+|-------|-------|
+|       |       |
+|       |       |
+.
+<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
+<tr><td>       </td><td>       </td></tr>
+<tr><td>       </td><td>       </td></tr>
+</table>
+.
+
+... and properly mix with filled cells.
+
+.
+| Col 1 | Col 2 |
+|-------|-------|
+|   x   |       |
+|       |    x  |
+.
+<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
+<tr><td>   x   </td><td>       </td></tr>
+<tr><td>       </td><td>    x  </td></tr>
+</table>
+.
+
+
+Table with UTF-8
+================
+
+Basic example.
+
+.
+|Col 1|Col 2|
+|-----|-----|
+|✓    |✓    |
+|✓    |✓    |
+.
+<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<tr><td>✓    </td><td>✓    </td></tr>
+<tr><td>✓    </td><td>✓    </td></tr>
+</table>
+.
+
+More advanced example.
+
+.
+|  Target                       | std |rustc|cargo| notes                      |
+|-------------------------------|-----|-----|-----|----------------------------|
+| `x86_64-unknown-linux-musl`   |  ✓  |     |     | 64-bit Linux with MUSL     |
+| `arm-linux-androideabi`       |  ✓  |     |     | ARM Android                |
+| `arm-unknown-linux-gnueabi`   |  ✓  |  ✓  |     | ARM Linux (2.6.18+)        |
+| `arm-unknown-linux-gnueabihf` |  ✓  |  ✓  |     | ARM Linux (2.6.18+)        |
+| `aarch64-unknown-linux-gnu`   |  ✓  |     |     | ARM64 Linux (2.6.18+)      |
+| `mips-unknown-linux-gnu`      |  ✓  |     |     | MIPS Linux (2.6.18+)       |
+| `mipsel-unknown-linux-gnu`    |  ✓  |     |     | MIPS (LE) Linux (2.6.18+)  |
+.
+<table><thead><tr><td>  Target                       </td><td> std </td><td>rustc</td><td>cargo</td><td> notes                      </td></tr></thead>
+<tr><td> <code>x86_64-unknown-linux-musl</code>   </td><td>  ✓  </td><td>     </td><td>     </td><td> 64-bit Linux with MUSL     </td></tr>
+<tr><td> <code>arm-linux-androideabi</code>       </td><td>  ✓  </td><td>     </td><td>     </td><td> ARM Android                </td></tr>
+<tr><td> <code>arm-unknown-linux-gnueabi</code>   </td><td>  ✓  </td><td>  ✓  </td><td>     </td><td> ARM Linux (2.6.18+)        </td></tr>
+<tr><td> <code>arm-unknown-linux-gnueabihf</code> </td><td>  ✓  </td><td>  ✓  </td><td>     </td><td> ARM Linux (2.6.18+)        </td></tr>
+<tr><td> <code>aarch64-unknown-linux-gnu</code>   </td><td>  ✓  </td><td>     </td><td>     </td><td> ARM64 Linux (2.6.18+)      </td></tr>
+<tr><td> <code>mips-unknown-linux-gnu</code>      </td><td>  ✓  </td><td>     </td><td>     </td><td> MIPS Linux (2.6.18+)       </td></tr>
+<tr><td> <code>mipsel-unknown-linux-gnu</code>    </td><td>  ✓  </td><td>     </td><td>     </td><td> MIPS (LE) Linux (2.6.18+)  </td></tr>
+</table>
+.
+
+Hiragana-containing pseudo-table.
+
+.
+|-|-|
+|ぃ|い|
+.
+<p>|-|-|
+|ぃ|い|</p>
+.
+
+Hiragana-containing actual table.
+
+.
+|ぁ|ぃ|
+|-|-|
+|ぃ|ぃ|
+.
+<table><thead><tr><td>ぁ</td><td>ぃ</td></tr></thead>
+<tr><td>ぃ</td><td>ぃ</td></tr>
+</table>
+.
+
+Test russian symbols.
+
+.
+|Колонка 1|Колонка 2|
+|---------|---------|
+|Ячейка 1 |Ячейка 2 |
+.
+<table><thead><tr><td>Колонка 1</td><td>Колонка 2</td></tr></thead>
+<tr><td>Ячейка 1 </td><td>Ячейка 2 </td></tr>
+</table>
+.
+

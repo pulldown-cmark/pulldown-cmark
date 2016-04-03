@@ -117,7 +117,7 @@ pub enum Event<'a> {
 }
 
 bitflags! {
-    flags Options: u32 {
+    pub flags Options: u32 {
         const OPTION_FIRST_PASS = 1 << 0,
         const OPTION_ENABLE_TABLES = 1 << 1,
         const OPTION_ENABLE_FOOTNOTES = 1 << 2,
@@ -1115,18 +1115,19 @@ impl<'a> RawParser<'a> {
                     let n = self.scan_whitespace_inline(&data[i..]);
                     if n == 0 { return (0, 0, 0, 0); }
                     i += n;
-                    continue;
                 }
                 b'[' => {
                     nest += 1;
                     if nest == MAX_LINK_NEST { return (0, 0, 0, 0); }
-                    max_nest = cmp::max(max_nest, nest)
+                    max_nest = cmp::max(max_nest, nest);
+                    i += 1;
                 }
                 b']' => {
                     nest -= 1;
                     if nest == 0 {
                         break;
                     }
+                    i += 1;
                 }
                 b'\\' => i += 1,
                 b'<' => {
@@ -1145,9 +1146,8 @@ impl<'a> RawParser<'a> {
                         i += beg;
                     }
                 }
-                _ => ()
+                _ => i += 1
             }
-            i += 1;
         }
         let text_end = i;
         i += 1;  // skip closing ]

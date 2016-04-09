@@ -35,6 +35,7 @@ pub struct Info<'a> {
     pub min_size: usize,
     pub const_size: bool,
     pub hard: bool,
+    pub looks_left: bool,
 }
 
 #[derive(Debug)]
@@ -65,10 +66,12 @@ impl<'a> Analysis<'a> {
             min_size: 0,
             const_size: false,
             hard: false,
+            looks_left: false,
         });
         let mut min_size = 0;
         let mut const_size = false;
         let mut hard = false;
+        let mut looks_left = false;
         match *expr {
             Expr::Empty => {
                 const_size = true;
@@ -91,6 +94,7 @@ impl<'a> Analysis<'a> {
                     if last_ix != usize::MAX {
                         self.infos[last_ix].next_sibling = ix;
                     }
+                    looks_left |= self.infos[ix].looks_left && min_size == 0;
                     min_size += self.infos[ix].min_size;
                     const_size &= self.infos[ix].const_size;
                     hard |= self.infos[ix].hard;
@@ -111,6 +115,7 @@ impl<'a> Analysis<'a> {
                     const_size &= self.infos[ix].const_size && min_size == self.infos[ix].min_size;
                     min_size = min(min_size, self.infos[ix].min_size);
                     hard |= self.infos[ix].hard;
+                    looks_left |= self.infos[ix].looks_left;
                     last_ix = ix;
                 }
             }
@@ -122,6 +127,7 @@ impl<'a> Analysis<'a> {
                 let child_info = &self.infos[ix];
                 min_size = child_info.min_size;
                 const_size = child_info.const_size;
+                looks_left = child_info.looks_left;
                 hard = child_info.hard | self.backrefs.contains(group);
             }
             Expr::LookAround(ref child, _) => {
@@ -129,6 +135,7 @@ impl<'a> Analysis<'a> {
                 // min_size = 0
                 const_size = true;
                 hard = true;
+                looks_left = self.infos[ix].looks_left;
             }
             Expr::Repeat { ref child, lo, hi, .. } => {
                 let ix = self.infos.len();
@@ -137,11 +144,13 @@ impl<'a> Analysis<'a> {
                 min_size = child_info.min_size * lo;
                 const_size = child_info.const_size && lo == hi;
                 hard = child_info.hard;
+                looks_left = child_info.looks_left;
             }
             Expr::Delegate { size, .. } => {
                 // currently only used for empty and single-char matches
                 min_size = size;
                 const_size = true;
+                looks_left = size == 0;  // TODO: conservative for $ and \z
             }
             Expr::Backref(_) => {
                 hard = true;
@@ -151,5 +160,6 @@ impl<'a> Analysis<'a> {
         self.infos[ix].min_size = min_size;
         self.infos[ix].const_size = const_size;
         self.infos[ix].hard = hard;
+        self.infos[ix].looks_left = looks_left;
     }
 }

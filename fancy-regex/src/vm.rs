@@ -44,7 +44,7 @@ pub enum Insn {
     DoubleFail,
     Backref(usize),
     DelegateSized(Box<Regex>, usize),
-    Delegate(Box<Regex>),
+    Delegate(Box<Regex>, Option<Box<Regex>>),
 }
 
 #[derive(Debug)]
@@ -119,6 +119,19 @@ impl State {
 
 fn codepoint_len_at(s: &str, ix: usize) -> usize {
     codepoint_len(s.as_bytes()[ix])
+}
+
+// precondition: ix > 0
+fn prev_codepoint_ix(s: &str, mut ix: usize) -> usize {
+    let bytes = s.as_bytes();
+    loop {
+        ix -= 1;
+        // fancy bit magic for ranges 0..0x80 + 0xc0..
+        if (bytes[ix] as i8) >= -0x40 {
+            break;
+        }
+    }
+    ix
 }
 
 pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
@@ -242,7 +255,20 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                         break;
                     }
                 }
-                Insn::Delegate(ref inner) => {
+                Insn::Delegate(ref inner, ref inner1) => {
+                    if ix > 0 {
+                        if let &Some(ref inner1) = inner1 {
+                            ix = prev_codepoint_ix(s, ix);
+                            match inner1.find(&s[ix..]) {
+                                Some((_, end)) => {
+                                    ix += end;
+                                    pc += 1;
+                                    continue;
+                                }
+                                _ => break
+                            }
+                        }
+                    }
                     match inner.find(&s[ix..]) {
                         Some((_, end)) => ix += end,
                         _ => break

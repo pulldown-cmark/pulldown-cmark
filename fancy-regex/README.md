@@ -3,8 +3,8 @@
 This module contains a hybrid regex implementation, designed to
 support a relatively rich set of features. In particular, this
 implementation uses backtracking to implement "fancy" features such as
-look-around and backtracking, which are not supported in purely NFA-
-based implementations (exemplified by
+look-around and backtracking, which are not supported in purely
+NFA-based implementations (exemplified by
 [RE2](https://github.com/google/re2), and implemented in Rust in the
 [regex](https://crates.io/crates/regex) crate).
 
@@ -20,15 +20,15 @@ import re
 re.compile('(a|b|ab)*bc').match('ab' * 28 + 'ac')
 ```
 
-In Python 2.7, this match takes 91s, and doubles for each additional
+In Python (tested on both 2.7 and 3.5, this match takes 91s, and doubles for each additional
 repeat of 'ab'.
 
 Thus, many proponents
 [advocate](https://swtch.com/~rsc/regexp/regexp1.html) a purely NFA
-based approach. Even so, backreferences and look-around do add
-richness to regexes, and they are commonly used in applications such
-as syntax highlighting for text editors. In particular, TextMate's
-[syntax
+(nondeterministic finite automaton) based approach. Even so,
+backreferences and look-around do add richness to regexes, and they
+are commonly used in applications such as syntax highlighting for text
+editors. In particular, TextMate's [syntax
 definitions](https://manual.macromates.com/en/language_grammars),
 based on the [Oniguruma](https://github.com/kkos/oniguruma)
 backtracking engine, are now used in a number of other popular
@@ -84,7 +84,7 @@ TODO: write this
 Still in development, though the basic ideas are in place. Currently,
 the following features are missing:
 
-* A proper API for actually using the engien.
+* A proper API for actually using the engine.
 
 * Correct handling of zero-width matchers such as `\b` that require
 one character of look-behind.

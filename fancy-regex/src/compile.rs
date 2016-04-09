@@ -172,8 +172,8 @@ impl<'a> Compiler<'a> {
             Expr::Backref(group) => {
                 self.b.add(Insn::Backref(group * 2));
             }
-            Expr::Delegate { ref inner, .. } => {
-                self.compile_delegate(ix, inner);
+            Expr::Delegate { .. } => {
+                self.compile_delegates(&[ix]);
             }
             _ => ()
         }
@@ -287,18 +287,8 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    // single delegate node
-    fn compile_delegate(&mut self, ix: usize, inner: &str) {
-        // TODO: deal with 1-character left lookbehind
-        // TODO: plumb capture groups
-        let info = &self.a.infos[ix];
-        let mut annotated = String::new();
-        annotated.push('^');
-        annotated.push_str(inner);
-        self.make_delegate(&annotated, info.min_size, info.const_size);
-    }
-
     fn compile_delegates(&mut self, ixs: &[usize]) {
+        // TODO: plumb capture groups
         if ixs.is_empty() {
             return;
         }
@@ -306,25 +296,39 @@ impl<'a> Compiler<'a> {
         annotated.push('^');
         let mut min_size = 0;
         let mut const_size = true;
+        let mut looks_left = false;
         for &ix in ixs {
             let info = &self.a.infos[ix];
             let expr = info.expr;
+            looks_left |= info.looks_left && min_size == 0;
             min_size += info.min_size;
             const_size &= info.const_size;
             expr.to_str(&mut annotated);
         }
-        self.make_delegate(&annotated, min_size, const_size);
+        self.make_delegate(&annotated, min_size, const_size, looks_left);
     }
 
     fn make_delegate(&mut self, inner_re: &str,
-            min_size: usize, const_size: bool) {
+            min_size: usize, const_size: bool, looks_left: bool) {
         match Regex::new(&inner_re) {
             Ok(compiled) => {
-                if const_size {
+                if looks_left {
+                    let mut inner1 = String::with_capacity(inner_re.len() + 5);
+                    inner1.push_str("^.(?:");
+                    inner1.push_str(&inner_re[1..]);
+                    inner1.push(')');
+                    match Regex::new(&inner1) {
+                        Ok(compiled1) => {
+                            self.b.add(Insn::Delegate(Box::new(compiled),
+                                Some(Box::new(compiled1))));
+                        }
+                        Err(e) => panic!("inner compilation error {:?}", e)
+                    }
+                } else if const_size {
                     let size = min_size;
                     self.b.add(Insn::DelegateSized(Box::new(compiled), size));
                 } else {
-                    self.b.add(Insn::Delegate(Box::new(compiled)));
+                    self.b.add(Insn::Delegate(Box::new(compiled), None));
                 }
             }
             // TODO: bubble up Result

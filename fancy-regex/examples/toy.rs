@@ -35,6 +35,12 @@ fn main() {
                 let e = Expr::parse(&re);
                 println!("{:?}", e);
             }
+        } else if cmd == "analyze" {
+            if let Some(re) = args.next() {
+                let (e, backrefs) = Expr::parse(&re).unwrap();
+                let a = Analysis::analyze(&e, &backrefs);
+                println!("{:?}", a);
+            }
         } else if cmd == "compile" {
             if let Some(re) = args.next() {
                 let (e, backrefs) = Expr::parse(&re).unwrap();

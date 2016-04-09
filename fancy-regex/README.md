@@ -15,7 +15,9 @@ exponential blowup. A an example given in [Static Analysis for Regular
 Expression Exponential Runtime via Substructural
 Logics](https://www.cs.bham.ac.uk/~hxt/research/redos_full.pdf) is:
 
-```python import re re.compile('(a|b|ab)*bc').match('ab' * 28 + 'ac')
+```python
+import re
+re.compile('(a|b|ab)*bc').match('ab' * 28 + 'ac')
 ```
 
 In Python 2.7, this match takes 91s, and doubles for each additional
@@ -34,7 +36,9 @@ editors, including Sublime Text and Atom. These syntax definitions
 routinely use backreferences and look-around. For example, the
 following regex captures a single-line Rust raw string:
 
-``` r(#*)".*?"\1 ```
+```
+r(#*)".*?"\1
+```
 
 There is no NFA that can express this simple and useful pattern. Yet,
 a backtracking implementation handles it efficiently.

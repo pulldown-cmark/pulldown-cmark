@@ -192,6 +192,9 @@ impl<'a> Parser<'a> {
             (Some(LookBehind), 3)
         } else if self.re[ix..].starts_with("?<!") {
             (Some(LookBehindNeg), 3)
+        } else if self.re[ix..].starts_with("?:") {
+            // TODO: shy group is just a special case of flag parsing
+            (None, 2)
         } else {
             (None, 0)
         };
@@ -202,10 +205,12 @@ impl<'a> Parser<'a> {
         } else if self.re.as_bytes()[ix] != b')' {
             return Err(Error::ParseError);
         };
-        match la {
-            Some(la) => Ok((ix + 1, Expr::LookAround(Box::new(child), la))),
-            None => Ok((ix + 1, Expr::Group(Box::new(child))))
-        }
+        let result = match la {
+            Some(la) => Expr::LookAround(Box::new(child), la),
+            None if skip == 0 => Expr::Group(Box::new(child)),
+            None => child
+        };
+        Ok((ix + 1, result))
     }
 }
 

@@ -303,7 +303,7 @@ impl<'a> Compiler<'a> {
             looks_left |= info.looks_left && min_size == 0;
             min_size += info.min_size;
             const_size &= info.const_size;
-            expr.to_str(&mut annotated);
+            expr.to_str(&mut annotated, 0);
         }
         self.make_delegate(&annotated, min_size, const_size, looks_left);
     }

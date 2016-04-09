@@ -98,32 +98,45 @@ impl Expr {
         Parser::parse(re)
     }
 
-
-    // TODO: precedence, for examples like concat(alt, alt)
-    pub fn to_str(&self, buf: &mut String) {
+    pub fn to_str(&self, buf: &mut String, precedence: u8) {
         match *self {
             Expr::Empty => (),
             Expr::Any => buf.push('.'),
             Expr::Literal{ ref val } => buf.push_str(val),  // TODO:  quoting?
             Expr::Concat(ref children) => {
+                if precedence > 1 {
+                    buf.push_str("(?:");
+                }
                 for child in children {
-                    child.to_str(buf);
+                    child.to_str(buf, 2);
+                }
+                if precedence > 1 {
+                    buf.push(')')
                 }
             }
             Expr::Alt(ref children) => {
-                children[0].to_str(buf);
+                if precedence > 0 {
+                    buf.push_str("(?:");
+                }
+                children[0].to_str(buf, 1);
                 for child in &children[1..] {
                     buf.push('|');
-                    child.to_str(buf);
+                    child.to_str(buf, 1);
+                }
+                if precedence > 0 {
+                    buf.push(')');
                 }
             }
             Expr::Group(ref child) => {
                 buf.push('(');
-                child.to_str(buf);
+                child.to_str(buf, 0);
                 buf.push(')');
             }
             Expr::Repeat{ ref child, lo, hi, greedy } => {
-                child.to_str(buf);
+                if precedence > 2 {
+                    buf.push_str("(?:");
+                }
+                child.to_str(buf, 3);
                 buf.push('{');
                 push_usize(buf, lo);
                 buf.push(',');
@@ -134,8 +147,12 @@ impl Expr {
                 if !greedy {
                     buf.push('?');
                 }
+                if precedence > 2 {
+                    buf.push(')');
+                }
             }
             Expr::Delegate{ ref inner, .. } => {
+                // at the moment, delegate nodes are just atoms
                 buf.push_str(inner);
             }
             _ => panic!("attempting to format hard expr")
@@ -286,6 +303,17 @@ mod tests {
     }
 
     #[test]
+    fn shy_group() {
+        assert_eq!(p("(?:ab)c"), Expr::Concat(vec![
+            Expr::Concat(vec![
+                Expr::Literal { val: String::from("a") },
+                Expr::Literal { val: String::from("b") },
+            ]),
+            Expr::Literal { val: String::from("c") },
+        ]));
+    }
+
+    #[test]
     fn lifetime() {
         assert_eq!(p("\\'[a-zA-Z_][a-zA-Z0-9_]*(?!\\')\\b"),
 
@@ -300,6 +328,49 @@ mod tests {
                 ), LookAheadNeg),
                 Expr::Delegate { inner: String::from("\\b"), size: 0 }]));
 
+    }
+
+    // tests for to_str
+
+    #[test]
+    fn to_str_concat_alt() {
+        let mut s = String::new();
+        let e = Expr::Concat(vec![
+            Expr::Alt(vec![
+                Expr::Literal { val: String::from("a") },
+                Expr::Literal { val: String::from("b") },
+            ]),
+            Expr::Literal { val: String::from("c") },
+        ]);
+        e.to_str(&mut s, 0);
+        assert_eq!(s, "(?:a|b)c");
+    }
+
+    #[test]
+    fn to_str_rep_concat() {
+        let mut s = String::new();
+        let e = Expr::Repeat{ child: Box::new(
+            Expr::Concat(vec![
+                Expr::Literal { val: String::from("a") },
+                Expr::Literal { val: String::from("b") },
+            ])),
+            lo: 2, hi: 3, greedy: true
+        };
+        e.to_str(&mut s, 0);
+        assert_eq!(s, "(?:ab){2,3}");
+    }
+
+    #[test]
+    fn to_str_group_alt() {
+        let mut s = String::new();
+        let e = Expr::Group(Box::new(
+            Expr::Alt(vec![
+                Expr::Literal { val: String::from("a") },
+                Expr::Literal { val: String::from("b") },
+            ])
+        ));
+        e.to_str(&mut s, 0);
+        assert_eq!(s, "(a|b)");
     }
 
     #[test]

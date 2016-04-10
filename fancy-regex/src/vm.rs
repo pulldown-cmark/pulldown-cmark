@@ -37,14 +37,19 @@ pub enum Insn {
     Save(usize),
     Save0(usize),
     Restore(usize),
-    RepeatGr{ lo: usize, hi: usize, next: usize, repeat: usize },
-    RepeatNg{ lo: usize, hi: usize, next: usize, repeat: usize },
-    RepeatEpsilonGr{ lo: usize, next: usize, repeat: usize, check: usize },
-    RepeatEpsilonNg{ lo: usize, next: usize, repeat: usize, check: usize },
+    RepeatGr { lo: usize, hi: usize, next: usize, repeat: usize },
+    RepeatNg { lo: usize, hi: usize, next: usize, repeat: usize },
+    RepeatEpsilonGr { lo: usize, next: usize, repeat: usize, check: usize },
+    RepeatEpsilonNg { lo: usize, next: usize, repeat: usize, check: usize },
     DoubleFail,
     Backref(usize),
     DelegateSized(Box<Regex>, usize),
-    Delegate(Box<Regex>, Option<Box<Regex>>),
+    Delegate {
+        inner: Box<Regex>,
+        inner1: Option<Box<Regex>>,  // regex with 1-char look-behind
+        start_group: usize,
+        end_group: usize,
+    },
 }
 
 #[derive(Debug)]
@@ -71,6 +76,14 @@ struct State {
     oldsave: Vec<(usize, usize)>,
     nsave: usize,
 }
+
+// Each element in the stack conceptually represents the entire state
+// of the machine: the pc (index into prog), the index into the
+// string, and the entire vector of saves. However, copying the save
+// vector on every push/pop would be inefficient, so instead we use a
+// copy-on-write approach for each slot within the save vector. The
+// top `nsave` elements in `oldsave` represent the delta from the
+// current machine state to the top of stack.
 
 impl State {
     fn new(n_saves: usize) -> State {
@@ -180,7 +193,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                 Insn::Save(slot) => state.save(slot, ix),
                 Insn::Save0(slot) => state.save(slot, 0),
                 Insn::Restore(slot) => ix = state.get(slot),
-                Insn::RepeatGr{ lo, hi, next, repeat } => {
+                Insn::RepeatGr { lo, hi, next, repeat } => {
                     let repcount = state.get(repeat);
                     if repcount == hi {
                         pc = next;
@@ -191,7 +204,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                         state.push(next, ix);
                     }
                 }
-                Insn::RepeatNg{ lo, hi, next, repeat } => {
+                Insn::RepeatNg { lo, hi, next, repeat } => {
                     let repcount = state.get(repeat);
                     if repcount == hi {
                         pc = next;
@@ -204,7 +217,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                         continue;
                     }
                 }
-                Insn::RepeatEpsilonGr{ lo, next, repeat, check } => {
+                Insn::RepeatEpsilonGr { lo, next, repeat, check } => {
                     let repcount = state.get(repeat);
                     if repcount > lo && state.get(check) == ix {
                         // prevent zero-length match on repeat
@@ -216,7 +229,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                         state.push(next, ix);
                     }
                 }
-                Insn::RepeatEpsilonNg{ lo, next, repeat, check } => {
+                Insn::RepeatEpsilonNg { lo, next, repeat, check } => {
                     let repcount = state.get(repeat);
                     if repcount > lo && state.get(check) == ix {
                         // prevent zero-length match on repeat
@@ -255,23 +268,36 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
                         break;
                     }
                 }
-                Insn::Delegate(ref inner, ref inner1) => {
-                    if ix > 0 {
-                        if let &Some(ref inner1) = inner1 {
+                Insn::Delegate { ref inner, ref inner1, start_group, end_group } => {
+                    let re = match inner1 {
+                        &Some(ref inner1) if ix > 0 => {
                             ix = prev_codepoint_ix(s, ix);
-                            match inner1.find(&s[ix..]) {
-                                Some((_, end)) => {
-                                    ix += end;
-                                    pc += 1;
-                                    continue;
-                                }
-                                _ => break
-                            }
+                            inner1
                         }
-                    }
-                    match inner.find(&s[ix..]) {
-                        Some((_, end)) => ix += end,
-                        _ => break
+                        _ => inner,
+                    };
+                    if start_group == end_group {
+                        match re.find(&s[ix..]) {
+                            Some((_, end)) => ix += end,
+                            _ => break
+                        }
+                    } else {
+                        if let Some(caps) = re.captures(&s[ix..]) {
+                            let mut slot = start_group * 2;
+                            for i in 0..(end_group - start_group) {
+                                if let Some((beg, end)) = caps.pos(i + 1) {
+                                    state.save(slot, beg);
+                                    state.save(slot + 1, end);
+                                } else {
+                                    state.save(slot, usize::MAX);
+                                    state.save(slot + 1, usize::MAX);
+                                }
+                                slot += 2;
+                            }
+                            ix += caps.pos(0).unwrap().1;
+                        } else {
+                            break;
+                        }
                     }
                 }
             }

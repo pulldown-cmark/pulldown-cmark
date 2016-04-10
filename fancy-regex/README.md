@@ -86,8 +86,6 @@ the following features are missing:
 
 * A proper API for actually using the engine.
 
-* Plumbing of captures from the NFA inner matcher to the client.
-
 * The following regex language features not yet implemented:
 
      * Look-behind

@@ -71,13 +71,8 @@ impl VMBuilder {
 
     fn set_split_target(&mut self, jmp_pc: usize, target: usize, second: bool) {
         match self.prog[jmp_pc] {
-            Insn::Split(ref mut x, ref mut y) => {
-                if second {
-                    *y = target;
-                } else {
-                    *x = target;
-                }
-            }
+            Insn::Split(_, ref mut y) if second => *y = target,
+            Insn::Split(ref mut x, _) => *x = target,
             _ => panic!("mutating instruction other than Split")
         }
     }
@@ -305,11 +300,15 @@ impl<'a> Compiler<'a> {
             const_size &= info.const_size;
             expr.to_str(&mut annotated, 0);
         }
-        self.make_delegate(&annotated, min_size, const_size, looks_left);
+        let start_group = self.a.infos[ixs[0]].start_group;
+        let end_group = self.a.infos[ixs[ixs.len() - 1]].end_group;
+        self.make_delegate(&annotated, min_size, const_size, looks_left,
+            start_group, end_group);
     }
 
     fn make_delegate(&mut self, inner_re: &str,
-            min_size: usize, const_size: bool, looks_left: bool) {
+            min_size: usize, const_size: bool, looks_left: bool,
+            start_group: usize, end_group: usize) {
         match Regex::new(&inner_re) {
             Ok(compiled) => {
                 if looks_left {
@@ -319,16 +318,25 @@ impl<'a> Compiler<'a> {
                     inner1.push(')');
                     match Regex::new(&inner1) {
                         Ok(compiled1) => {
-                            self.b.add(Insn::Delegate(Box::new(compiled),
-                                Some(Box::new(compiled1))));
+                            self.b.add(Insn::Delegate {
+                                inner: Box::new(compiled),
+                                inner1: Some(Box::new(compiled1)),
+                                start_group: start_group,
+                                end_group: end_group,
+                            });
                         }
                         Err(e) => panic!("inner compilation error {:?}", e)
                     }
-                } else if const_size {
+                } else if const_size && start_group == end_group {
                     let size = min_size;
                     self.b.add(Insn::DelegateSized(Box::new(compiled), size));
                 } else {
-                    self.b.add(Insn::Delegate(Box::new(compiled), None));
+                    self.b.add(Insn::Delegate {
+                        inner: Box::new(compiled),
+                        inner1: None,
+                        start_group: start_group,
+                        end_group: end_group,
+                    });
                 }
             }
             // TODO: bubble up Result

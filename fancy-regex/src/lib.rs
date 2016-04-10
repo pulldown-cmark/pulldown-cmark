@@ -46,6 +46,16 @@ const MAX_RECURSION: usize = 64;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+#[derive(Debug)]
+pub enum Error {
+    ParseError,
+    UnclosedOpenParen,
+    InvalidRepeat,
+    RecursionExceeded,
+    InnerError(regex::Error),
+}
+
+
 pub enum Regex {
     // Do we want to box this? It's pretty big...
     Wrap(regex::Regex),
@@ -97,7 +107,7 @@ impl Regex {
         ]);
 
         let a = Analysis::analyze(&e, &backrefs);
-        let p = compile(&a);
+        let p = try!(compile(&a));
         Ok(Regex::Impl {
             prog: p,
             n_groups: a.n_groups(),
@@ -201,14 +211,6 @@ impl<'t> Iterator for SubCaptures<'t> {
 }
 
 // TODO: might be nice to implement ExactSizeIterator etc for SubCaptures
-
-#[derive(Debug)]
-pub enum Error {
-    ParseError,
-    UnclosedOpenParen,
-    InvalidRepeat,
-    RecursionExceeded,
-}
 
 // impl error traits (::std::error::Error, fmt::Display)
 

@@ -69,7 +69,7 @@ fn main() {
             if let Some(re) = args.next() {
                 let (e, backrefs) = Expr::parse(&re).unwrap();
                 let a = Analysis::analyze(&e, &backrefs);
-                let p = compile(&a);
+                let p = compile(&a).unwrap();
                 if let Some(s) = args.next() {
                     vm::run(&p, &s, 0, vm::OPTION_TRACE);
                 }

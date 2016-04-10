@@ -42,6 +42,7 @@ pub enum Insn {
     RepeatEpsilonGr { lo: usize, next: usize, repeat: usize, check: usize },
     RepeatEpsilonNg { lo: usize, next: usize, repeat: usize, check: usize },
     DoubleFail,
+    GoBack(usize),
     Backref(usize),
     DelegateSized(Box<Regex>, usize),
     Delegate {
@@ -159,7 +160,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
     let mut ix = pos;
     loop {
         // break from this loop to fail, causes stack to pop
-        loop {
+        'fail: loop {
             if options & OPTION_TRACE != 0 {
                 println!("{} {} {:?} {}",
                     state.stack.len(), pc, prog.body[pc], ix);
@@ -179,13 +180,13 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     if ix < s.len() {
                         ix += codepoint_len_at(s, ix)
                     } else {
-                        break;
+                        break 'fail;
                     }
                 }
                 Insn::Lit(ref val) => {
                     let end = ix + val.len();
                     if end > s.len() || &s[ix..end] != val {
-                        break;
+                        break 'fail;
                     }
                     ix = end;
                 }
@@ -229,7 +230,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     let repcount = state.get(repeat);
                     if repcount > lo && state.get(check) == ix {
                         // prevent zero-length match on repeat
-                        break;
+                        break 'fail;
                     }
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
@@ -241,7 +242,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     let repcount = state.get(repeat);
                     if repcount > lo && state.get(check) == ix {
                         // prevent zero-length match on repeat
-                        break;
+                        break 'fail;
                     }
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
@@ -251,17 +252,25 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                         continue;
                     }
                 }
+                Insn::GoBack(count) => {
+                    for _ in 0..count {
+                        if ix == 0 {
+                            break 'fail;
+                        }
+                        ix = prev_codepoint_ix(s, ix);
+                    }
+                }
                 Insn::DoubleFail => {
                     // negative lookaround
                     let _ = state.pop();
-                    break;
+                    break 'fail;
                 }
                 Insn::Backref(slot) => {
                     let lo = state.get(slot);
                     let hi = state.get(slot + 1);
                     let ix_end = ix + (hi - lo);
                     if ix_end > s.len() || s[ix..ix_end] != s[lo..hi] {
-                        break;
+                        break 'fail;
                     }
                     ix = ix_end;
                 }
@@ -273,7 +282,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                             ix += codepoint_len_at(s, ix);
                         }
                     } else {
-                        break;
+                        break 'fail;
                     }
                 }
                 Insn::Delegate { ref inner, ref inner1, start_group, end_group } => {
@@ -287,7 +296,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     if start_group == end_group {
                         match re.find(&s[ix..]) {
                             Some((_, end)) => ix += end,
-                            _ => break
+                            _ => break 'fail
                         }
                     } else {
                         if let Some(caps) = re.captures(&s[ix..]) {
@@ -304,13 +313,14 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                             }
                             ix += caps.pos(0).unwrap().1;
                         } else {
-                            break;
+                            break 'fail;
                         }
                     }
                 }
             }
             pc += 1;
         }
+        // "break 'fail" goes here
         if state.stack.is_empty() {
             return None;
         }

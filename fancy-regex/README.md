@@ -88,8 +88,6 @@ the following features are missing:
 
 * The following regex language features not yet implemented:
 
-     * Look-behind
-
      * Atomic groups
 
      * Procedure calls and recursive expressions

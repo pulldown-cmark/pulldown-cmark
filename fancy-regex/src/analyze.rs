@@ -166,4 +166,35 @@ impl<'a> Analysis<'a> {
     pub fn n_groups(&self) -> usize {
         self.infos[0].end_group
     }
+
+    pub fn is_literal(&self, ix: usize) -> bool {
+        match *self.infos[ix].expr {
+            Expr::Literal{..} => true,
+            Expr::Concat(_) => {
+                let mut child = ix + 1;
+                loop {
+                    if !self.is_literal(child) { return false; }
+                    child = self.infos[child].next_sibling;
+                    if child == 0 { break; }
+                }
+                true
+            }
+            _ => false
+        }
+    }
+
+    pub fn push_literal(&self, ix: usize, buf: &mut String) {
+        match *self.infos[ix].expr {
+            Expr::Literal{ref val} => buf.push_str(&val),
+            Expr::Concat(_) => {
+                let mut child = ix + 1;
+                loop {
+                    self.push_literal(child, buf);
+                    child = self.infos[child].next_sibling;
+                    if child == 0 { break; }
+                }
+            }
+            _ => panic!("push_literal called on non-literal")
+        }
+    }
 }

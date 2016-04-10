@@ -52,6 +52,7 @@ pub enum Error {
     UnclosedOpenParen,
     InvalidRepeat,
     RecursionExceeded,
+    LookBehindNotConst,
     InnerError(regex::Error),
 }
 
@@ -241,7 +242,7 @@ pub enum Expr {
     Backref(usize),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LookAround {
     LookAhead,
     LookAheadNeg,

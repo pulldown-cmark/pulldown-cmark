@@ -26,6 +26,7 @@ use regex;
 use Expr;
 use Result;
 use Error;
+use LookAround;
 use LookAround::*;
 use analyze::Analysis;
 use vm::{Insn,Prog};
@@ -151,16 +152,16 @@ impl<'a> Compiler<'a> {
             Expr::Repeat { lo, hi, greedy, .. } => {
                 try!(self.compile_repeat(lo, hi, greedy, ix, hard));
             }
-            Expr::LookAround(_, LookAhead) => {
+            Expr::LookAround(_, la) if la == LookAhead || la == LookBehind => {
                 let save = self.b.newsave();
                 self.b.add(Insn::Save(save));
-                try!(self.visit(ix + 1, false));
+                try!(self.compile_lookaround(ix + 1, la));
                 self.b.add(Insn::Restore(save));
             }
-            Expr::LookAround(_, LookAheadNeg) => {
+            Expr::LookAround(_, la) => {  // negative look-around
                 let pc = self.b.pc();
                 self.b.add(Insn::Split(pc + 1, usize::MAX));
-                try!(self.visit(ix + 1, false));
+                try!(self.compile_lookaround(ix + 1, la));
                 self.b.add(Insn::DoubleFail);
                 let next_pc = self.b.pc();
                 self.b.set_split_target(pc, next_pc, true);
@@ -171,7 +172,6 @@ impl<'a> Compiler<'a> {
             Expr::Delegate { .. } => {
                 try!(self.compile_delegates(&[ix]));
             }
-            _ => ()  // TODO: should be NYI error
         }
         Ok(())
     }
@@ -212,8 +212,11 @@ impl<'a> Compiler<'a> {
 
         try!(self.compile_delegates(&children[..prefix_end]));
 
-        for &child_ix in &children[prefix_end..suffix_begin] {
-            try!(self.visit(child_ix, true));
+        if prefix_end < suffix_begin {
+            for &child_ix in &children[prefix_end..suffix_begin - 1] {
+                try!(self.visit(child_ix, true));
+            }
+            try!(self.visit(children[suffix_begin - 1], hard));
         }
 
         self.compile_delegates(&children[suffix_begin..])
@@ -285,9 +288,30 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    fn compile_lookaround(&mut self, ix: usize, la: LookAround) -> Result<()> {
+        if la == LookBehind || la == LookBehindNeg {
+            let child_info = &self.a.infos[ix];
+            if !child_info.const_size {
+                // TODO: should be able to handle an Alt of const-size subexprs
+                return Err(Error::LookBehindNotConst);
+            }
+            self.b.add(Insn::GoBack(child_info.min_size));
+        }
+        self.visit(ix, false)
+    }
+
     fn compile_delegates(&mut self, ixs: &[usize]) -> Result<()> {
-        // TODO: plumb capture groups
         if ixs.is_empty() {
+            return Ok(());
+        }
+        // TODO: might want to detect case of a group with no captures
+        // inside, so we can run find() instead of captures()
+        if ixs.iter().all(|&ix| self.a.is_literal(ix)) {
+            let mut val = String::new();
+            for &ix in ixs {
+                self.a.push_literal(ix, &mut val);
+            }
+            self.b.add(Insn::Lit(val));
             return Ok(());
         }
         let mut annotated = String::new();

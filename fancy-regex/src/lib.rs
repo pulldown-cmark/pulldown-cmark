@@ -28,16 +28,117 @@ extern crate memchr;
 use std::usize;
 use bit_set::BitSet;
 
+// These modules are pub so examples/toy.rs can access them,
+// but we'll want to revisit that.
 pub mod parse;
 pub mod analyze;
 pub mod compile;
 pub mod vm;
 
 use parse::Parser;
+use analyze::Analysis;
+use compile::compile;
+use vm::Prog;
 
 const MAX_RECURSION: usize = 64;
 
+// the public API
+
 pub type Result<T> = ::std::result::Result<T, Error>;
+
+pub struct Regex {
+    // TODO: may want make this an enum with an option to be a
+    // thin wrapper around regex::Regex, in the non-fancy case.
+    prog: Prog,
+    // TODO: might have separate prog for supporting starting pos
+    n_groups: usize,
+}
+
+pub struct Captures<'t> {
+    text: &'t str,
+    saves: Vec<usize>,
+}
+
+impl Regex {
+    pub fn new(re: &str) -> Result<Regex> {
+        let (raw_e, backrefs) = try!(Expr::parse(re));
+
+        // wrapper to search for re at arbitrary start position,
+        // and to capture the match bounds
+        let e = Expr::Concat(vec![
+            Expr::Repeat {
+                child: Box::new(Expr::Any),
+                lo: 0, hi: usize::MAX, greedy: false
+            },
+            Expr::Group(Box::new(
+                raw_e
+            ))
+        ]);
+
+        let a = Analysis::analyze(&e, &backrefs);
+        let p = compile(&a);
+        Ok(Regex {
+            prog: p,
+            n_groups: a.n_groups(),
+        })
+    }
+
+    pub fn is_match(&self, text: &str) -> bool {
+        vm::run(&self.prog, text, 0, 0).is_some()
+    }
+
+    pub fn find(&self, text: &str) -> Option<(usize, usize)> {
+        vm::run(&self.prog, text, 0, 0).map(|saves|
+            (saves[0], saves[1])
+        )
+    }
+
+    pub fn captures<'t>(&self, text: &'t str) -> Option<Captures<'t>> {
+        vm::run(&self.prog, text, 0, 0).map(|mut saves| {
+            saves.truncate(self.n_groups * 2);
+            Captures {
+                text: text,
+                saves: saves
+            }
+        })
+    }
+
+    // for debugging only
+    pub fn debug_print(&self) {
+        self.prog.debug_print();
+    }
+}
+
+impl<'t> Captures<'t> {
+    pub fn pos(&self, i: usize) -> Option<(usize, usize)> {
+        if i >= self.saves.len() {
+            return None;
+        }
+        let lo = self.saves[i * 2];
+        if lo == std::usize::MAX {
+            return None;
+        }
+        let hi = self.saves[i * 2 + 1];
+        Some((lo, hi))
+    }
+
+    pub fn at(&self, i: usize) -> Option<&'t str> {
+        self.pos(i).map(|(lo, hi)|
+            &self.text[lo..hi]
+        )
+    }
+
+    // TODO: I don't think this matches regex-rs semantics; verify
+    pub fn len(&self) -> usize {
+        self.saves.len() / 2
+    }
+
+    // TODO: as above
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -48,6 +149,8 @@ pub enum Error {
 }
 
 // impl error traits (::std::error::Error, fmt::Display)
+
+// Access to the AST. This is public for now but may change.
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {

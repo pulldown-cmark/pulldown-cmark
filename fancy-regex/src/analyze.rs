@@ -50,7 +50,7 @@ impl<'a> Analysis<'a> {
         let mut analysis = Analysis {
             infos: Vec::new(),
             backrefs: backrefs,
-            group_ix: 1,
+            group_ix: 0,
         };
         analysis.visit(expr);
         analysis
@@ -161,5 +161,9 @@ impl<'a> Analysis<'a> {
         self.infos[ix].const_size = const_size;
         self.infos[ix].hard = hard;
         self.infos[ix].looks_left = looks_left;
+    }
+
+    pub fn n_groups(&self) -> usize {
+        self.infos[0].end_group
     }
 }

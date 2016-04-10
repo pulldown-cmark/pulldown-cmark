@@ -43,12 +43,26 @@ fn main() {
             }
         } else if cmd == "compile" {
             if let Some(re) = args.next() {
-                let (e, backrefs) = Expr::parse(&re).unwrap();
-                let a = Analysis::analyze(&e, &backrefs);
-                let p = compile(&a);
-                println!("{:?}", p);
+                let r = Regex::new(&re).unwrap();
+                r.debug_print();
             }
         } else if cmd == "run" {
+            let re = args.next().expect("expected regexp argument");
+            let r = Regex::new(&re).unwrap();
+            let text = args.next().expect("expected text argument");
+            if let Some(caps) = r.captures(&text) {
+                print!("captures:");
+                for i in 0..caps.len() {
+                    print!(" {}:", i);
+                    if let Some((lo, hi)) = caps.pos(i) {
+                        print!("[{}..{}] \"{}\"", lo, hi, caps.at(i).unwrap());
+                    } else {
+                        print!("_");
+                    }
+                }
+                println!("");
+            }
+        } else if cmd == "trace" {
             if let Some(re) = args.next() {
                 let (e, backrefs) = Expr::parse(&re).unwrap();
                 let a = Analysis::analyze(&e, &backrefs);

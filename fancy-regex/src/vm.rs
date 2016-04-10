@@ -65,6 +65,12 @@ impl Prog {
             n_saves: n_saves,
         }
     }
+
+    pub fn debug_print(&self) {
+        for (i, insn) in self.body.iter().enumerate() {
+            println!("{:3}: {:?}", i, insn);
+        }
+    }
 }
 
 struct State {
@@ -147,9 +153,8 @@ fn prev_codepoint_ix(s: &str, mut ix: usize) -> usize {
     ix
 }
 
-pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
+pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>> {
     let mut state = State::new(prog.n_saves);
-    state.saves[0] = pos;  // TODO: "find" semantics
     let mut pc = 0;
     let mut ix = pos;
     loop {
@@ -161,11 +166,14 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
             }
             match prog.body[pc] {
                 Insn::End => {
-                    state.saves[1] = ix;
+                    // save of end position into slot 1 is now done
+                    // with an explicit group; we might want to
+                    // optimize that.
+                    //state.saves[1] = ix;
                     if options & OPTION_TRACE != 0 {
                         println!("{:?}", state.saves);
                     }
-                    return true
+                    return Some(state.saves);
                 }
                 Insn::Any => {
                     if ix < s.len() {
@@ -304,7 +312,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> bool {
             pc += 1;
         }
         if state.stack.is_empty() {
-            return false;
+            return None;
         }
         let (newpc, newix) = state.pop();
         pc = newpc;

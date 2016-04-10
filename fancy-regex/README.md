@@ -84,7 +84,7 @@ TODO: write this
 Still in development, though the basic ideas are in place. Currently,
 the following features are missing:
 
-* A proper API for actually using the engine.
+* Support for named captures (including in the API)
 
 * The following regex language features not yet implemented:
 

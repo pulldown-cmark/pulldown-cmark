@@ -46,22 +46,43 @@ const MAX_RECURSION: usize = 64;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
-pub struct Regex {
-    // TODO: may want make this an enum with an option to be a
-    // thin wrapper around regex::Regex, in the non-fancy case.
-    prog: Prog,
-    // TODO: might have separate prog for supporting starting pos
-    n_groups: usize,
+pub enum Regex {
+    // Do we want to box this? It's pretty big...
+    Wrap(regex::Regex),
+    Impl {
+        prog: Prog,
+        n_groups: usize,
+    }
 }
 
-pub struct Captures<'t> {
-    text: &'t str,
-    saves: Vec<usize>,
+pub enum Captures<'t> {
+    Wrap(regex::Captures<'t>),
+    Impl {
+        text: &'t str,
+        saves: Vec<usize>,
+    }
+}
+
+pub struct SubCaptures<'t> {
+    caps: &'t Captures<'t>,
+    i: usize,
 }
 
 impl Regex {
     pub fn new(re: &str) -> Result<Regex> {
+        let maybe_backref = detect_possible_backref(&re);
+        if !maybe_backref {
+            if let Ok(result) = regex::Regex::new(re) {
+                return Ok(Regex::Wrap(result))
+            }
+        }
         let (raw_e, backrefs) = try!(Expr::parse(re));
+        if maybe_backref && backrefs.is_empty() {
+            // initial backref detection was a false positive
+            if let Ok(result) = regex::Regex::new(re) {
+                return Ok(Regex::Wrap(result))
+            }
+        }
 
         // wrapper to search for re at arbitrary start position,
         // and to capture the match bounds
@@ -77,68 +98,109 @@ impl Regex {
 
         let a = Analysis::analyze(&e, &backrefs);
         let p = compile(&a);
-        Ok(Regex {
+        Ok(Regex::Impl {
             prog: p,
             n_groups: a.n_groups(),
         })
     }
 
     pub fn is_match(&self, text: &str) -> bool {
-        vm::run(&self.prog, text, 0, 0).is_some()
+        match *self {
+            Regex::Wrap(ref inner) => inner.is_match(text),
+            Regex::Impl { ref prog, .. } =>  vm::run(prog, text, 0, 0).is_some()
+        }
     }
 
     pub fn find(&self, text: &str) -> Option<(usize, usize)> {
-        vm::run(&self.prog, text, 0, 0).map(|saves|
-            (saves[0], saves[1])
-        )
+        match *self {
+            Regex::Wrap(ref inner) => inner.find(text),
+            Regex::Impl { ref prog, .. } =>
+                vm::run(prog, text, 0, 0).map(|saves| (saves[0], saves[1]))
+        }
     }
 
     pub fn captures<'t>(&self, text: &'t str) -> Option<Captures<'t>> {
-        vm::run(&self.prog, text, 0, 0).map(|mut saves| {
-            saves.truncate(self.n_groups * 2);
-            Captures {
-                text: text,
-                saves: saves
+        match *self {
+            Regex::Wrap(ref inner) =>
+                inner.captures(text).map(|caps| Captures::Wrap(caps)),
+            Regex::Impl { ref prog, n_groups } => {
+                return vm::run(prog, text, 0, 0).map(|mut saves| {
+                    saves.truncate(n_groups * 2);
+                    Captures::Impl {
+                        text: text,
+                        saves: saves
+                    }
+                });
             }
-        })
+        }
     }
 
     // for debugging only
     pub fn debug_print(&self) {
-        self.prog.debug_print();
+        match *self {
+            Regex::Wrap(ref inner) => println!("wrapped {:?}", inner),
+            Regex::Impl { ref prog, .. } => prog.debug_print()
+        }
     }
 }
 
 impl<'t> Captures<'t> {
     pub fn pos(&self, i: usize) -> Option<(usize, usize)> {
-        if i >= self.saves.len() {
-            return None;
+        match *self {
+            Captures::Wrap(ref inner) => inner.pos(i),
+            Captures::Impl { ref saves, .. } => {
+                if i >= saves.len() {
+                    return None;
+                }
+                let lo = saves[i * 2];
+                if lo == std::usize::MAX {
+                    return None;
+                }
+                let hi = saves[i * 2 + 1];
+                Some((lo, hi))
+            }
         }
-        let lo = self.saves[i * 2];
-        if lo == std::usize::MAX {
-            return None;
-        }
-        let hi = self.saves[i * 2 + 1];
-        Some((lo, hi))
     }
 
     pub fn at(&self, i: usize) -> Option<&'t str> {
-        self.pos(i).map(|(lo, hi)|
-            &self.text[lo..hi]
-        )
+        match *self {
+            Captures::Wrap(ref inner) => inner.at(i),
+            Captures::Impl { ref text, .. } => {
+                self.pos(i).map(|(lo, hi)|
+                    &text[lo..hi]
+                )
+            }
+        }
     }
 
-    // TODO: I don't think this matches regex-rs semantics; verify
+    pub fn iter(&'t self) -> SubCaptures<'t> {
+        SubCaptures { caps: self, i: 0 }
+    }
+
     pub fn len(&self) -> usize {
-        self.saves.len() / 2
-    }
-
-    // TODO: as above
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        match *self {
+            Captures::Wrap(ref inner) => inner.len(),
+            Captures::Impl { ref saves, .. } => saves.len() / 2
+        }
     }
 
 }
+
+impl<'t> Iterator for SubCaptures<'t> {
+    type Item = Option<&'t str>;
+
+    fn next(&mut self) -> Option<Option<&'t str>> {
+        if self.i < self.caps.len() {
+            let result = self.caps.at(self.i);
+            self.i += 1;
+            Some(result)
+        } else {
+            None
+        }
+    }
+}
+
+// TODO: might be nice to implement ExactSizeIterator etc for SubCaptures
 
 #[derive(Debug)]
 pub enum Error {

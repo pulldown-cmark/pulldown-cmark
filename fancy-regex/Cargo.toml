@@ -7,7 +7,7 @@ description = "An implementation of regexes, supporting a relatively rich set of
 repository = "https://github.com/google/pulldown-cmark"
 
 [dependencies]
-regex = "0.1.62"
+regex = "0.1.63"
 bit-set = "0.4"
 lazy_static = "0.1.15"
 memchr = "0.1.10"

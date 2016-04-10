@@ -61,6 +61,9 @@ fn main() {
                     }
                 }
                 println!("");
+                for cap in caps.iter() {
+                    println!("iterate {:?}", cap);
+                }
             }
         } else if cmd == "trace" {
             if let Some(re) = args.next() {

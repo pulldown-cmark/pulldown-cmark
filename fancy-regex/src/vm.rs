@@ -24,8 +24,14 @@ use std::usize;
 use regex::Regex;
 
 use codepoint_len;
+use prev_codepoint_ix;
+use Result;
+use Error;
 
 pub const OPTION_TRACE: u32 = 1;
+
+// TODO: make configurable
+const MAX_STACK: usize = 1000000;
 
 #[derive(Debug)]
 pub enum Insn {
@@ -57,6 +63,7 @@ pub enum Insn {
 pub struct Prog {
     body: Vec<Insn>,
     n_saves: usize,
+    max_stack: usize,
 }
 
 impl Prog {
@@ -64,6 +71,7 @@ impl Prog {
         Prog {
             body: body,
             n_saves: n_saves,
+            max_stack: MAX_STACK,
         }
     }
 
@@ -102,10 +110,14 @@ impl State {
         }
     }
 
-    fn push(&mut self, pc: usize, ix: usize) {
-        // TODO: overflow check
-        self.stack.push((pc, ix, self.nsave));
-        self.nsave = 0;
+    fn push(&mut self, pc: usize, ix: usize, max_stack: usize) -> Result<()> {
+        if self.stack.len() < max_stack {
+            self.stack.push((pc, ix, self.nsave));
+            self.nsave = 0;
+            Ok(())
+        } else {
+            Err(Error::StackOverflow)
+        }
     }
 
     fn pop(&mut self) -> (usize, usize) {
@@ -141,20 +153,8 @@ fn codepoint_len_at(s: &str, ix: usize) -> usize {
     codepoint_len(s.as_bytes()[ix])
 }
 
-// precondition: ix > 0
-fn prev_codepoint_ix(s: &str, mut ix: usize) -> usize {
-    let bytes = s.as_bytes();
-    loop {
-        ix -= 1;
-        // fancy bit magic for ranges 0..0x80 + 0xc0..
-        if (bytes[ix] as i8) >= -0x40 {
-            break;
-        }
-    }
-    ix
-}
-
-pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>> {
+pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) ->
+        Result<Option<Vec<usize>>> {
     let mut state = State::new(prog.n_saves);
     let mut pc = 0;
     let mut ix = pos;
@@ -174,7 +174,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     if options & OPTION_TRACE != 0 {
                         println!("{:?}", state.saves);
                     }
-                    return Some(state.saves);
+                    return Ok(Some(state.saves));
                 }
                 Insn::Any => {
                     if ix < s.len() {
@@ -191,7 +191,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     ix = end;
                 }
                 Insn::Split(x, y) => {
-                    state.push(y, ix);
+                    try!(state.push(y, ix, prog.max_stack));
                     pc = x;
                     continue;
                 }
@@ -210,7 +210,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     }
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
-                        state.push(next, ix);
+                        try!(state.push(next, ix, prog.max_stack));
                     }
                 }
                 Insn::RepeatNg { lo, hi, next, repeat } => {
@@ -221,7 +221,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     }
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
-                        state.push(pc + 1, ix);
+                        try!(state.push(pc + 1, ix, prog.max_stack));
                         pc = next;
                         continue;
                     }
@@ -235,7 +235,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
                         state.save(check, ix);
-                        state.push(next, ix);
+                        try!(state.push(next, ix, prog.max_stack));
                     }
                 }
                 Insn::RepeatEpsilonNg { lo, next, repeat, check } => {
@@ -247,7 +247,7 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
                     state.save(repeat, repcount + 1);
                     if repcount >= lo {
                         state.save(check, ix);
-                        state.push(pc + 1, ix);
+                        try!(state.push(pc + 1, ix, prog.max_stack));
                         pc = next;
                         continue;
                     }
@@ -322,10 +322,11 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) -> Option<Vec<usize>>
         }
         // "break 'fail" goes here
         if state.stack.is_empty() {
-            return None;
+            return Ok(None);
         }
         let (newpc, newix) = state.pop();
         pc = newpc;
         ix = newix;
     }
+
 }

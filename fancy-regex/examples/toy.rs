@@ -50,7 +50,7 @@ fn main() {
             let re = args.next().expect("expected regexp argument");
             let r = Regex::new(&re).unwrap();
             let text = args.next().expect("expected text argument");
-            if let Some(caps) = r.captures(&text) {
+            if let Some(caps) = r.captures(&text).unwrap() {
                 print!("captures:");
                 for i in 0..caps.len() {
                     print!(" {}:", i);
@@ -71,7 +71,7 @@ fn main() {
                 let a = Analysis::analyze(&e, &backrefs);
                 let p = compile(&a).unwrap();
                 if let Some(s) = args.next() {
-                    vm::run(&p, &s, 0, vm::OPTION_TRACE);
+                    vm::run(&p, &s, 0, vm::OPTION_TRACE).unwrap();
                 }
             }
         } else {

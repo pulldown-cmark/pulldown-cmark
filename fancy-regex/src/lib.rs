@@ -46,20 +46,29 @@ const MAX_RECURSION: usize = 64;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+// We use one Error type for both compile time and run time errors,
+// to minimize the boilerplate for callers.
 #[derive(Debug)]
 pub enum Error {
+    // Compile time errors
     ParseError,
     UnclosedOpenParen,
     InvalidRepeat,
     RecursionExceeded,
     LookBehindNotConst,
     InnerError(regex::Error),
+
+    // Run time errors
+    StackOverflow,
 }
 
 
 pub enum Regex {
     // Do we want to box this? It's pretty big...
-    Wrap(regex::Regex),
+    Wrap {
+        inner: regex::Regex,
+        inner1: Option<Box<regex::Regex>>,
+    },
     Impl {
         prog: Prog,
         n_groups: usize,
@@ -67,7 +76,14 @@ pub enum Regex {
 }
 
 pub enum Captures<'t> {
-    Wrap(regex::Captures<'t>),
+    Wrap {
+        inner: regex::Captures<'t>,
+
+        // starting position, in _from_pos variants
+        offset: usize,
+
+        enclosing_groups: usize,
+    },
     Impl {
         text: &'t str,
         saves: Vec<usize>,
@@ -81,19 +97,7 @@ pub struct SubCaptures<'t> {
 
 impl Regex {
     pub fn new(re: &str) -> Result<Regex> {
-        let maybe_backref = detect_possible_backref(&re);
-        if !maybe_backref {
-            if let Ok(result) = regex::Regex::new(re) {
-                return Ok(Regex::Wrap(result))
-            }
-        }
         let (raw_e, backrefs) = try!(Expr::parse(re));
-        if maybe_backref && backrefs.is_empty() {
-            // initial backref detection was a false positive
-            if let Ok(result) = regex::Regex::new(re) {
-                return Ok(Regex::Wrap(result))
-            }
-        }
 
         // wrapper to search for re at arbitrary start position,
         // and to capture the match bounds
@@ -108,6 +112,26 @@ impl Regex {
         ]);
 
         let a = Analysis::analyze(&e, &backrefs);
+
+        let inner_info = &a.infos[4];  // references inner expr
+        if !inner_info.hard {
+            // easy case, wrap regex
+
+            let inner = try!(compile::compile_inner(re));
+            let mut inner1 = None;
+
+            if inner_info.looks_left {
+                // create regex to handle 1-char look-behind
+                let re1 = ["^.+?(", re, ")"].concat();
+                let compiled = try!(compile::compile_inner(&re1));
+                inner1 = Some(Box::new(compiled));
+            }
+            return Ok(Regex::Wrap {
+                inner: inner,
+                inner1: inner1,
+            });
+        }
+
         let p = try!(compile(&a));
         Ok(Regex::Impl {
             prog: p,
@@ -115,33 +139,76 @@ impl Regex {
         })
     }
 
-    pub fn is_match(&self, text: &str) -> bool {
+    pub fn is_match(&self, text: &str) -> Result<bool> {
         match *self {
-            Regex::Wrap(ref inner) => inner.is_match(text),
-            Regex::Impl { ref prog, .. } =>  vm::run(prog, text, 0, 0).is_some()
+            Regex::Wrap { ref inner, .. } => Ok(inner.is_match(text)),
+            Regex::Impl { ref prog, .. } => {
+                let result = try!(vm::run(prog, text, 0, 0));
+                Ok(result.is_some())
+            }
         }
     }
 
-    pub fn find(&self, text: &str) -> Option<(usize, usize)> {
+    pub fn find(&self, text: &str) -> Result<Option<(usize, usize)>> {
         match *self {
-            Regex::Wrap(ref inner) => inner.find(text),
-            Regex::Impl { ref prog, .. } =>
-                vm::run(prog, text, 0, 0).map(|saves| (saves[0], saves[1]))
+            Regex::Wrap { ref inner, .. } => Ok(inner.find(text)),
+            Regex::Impl { ref prog, .. } => {
+                let result = try!(vm::run(prog, text, 0, 0));
+                Ok(result.map(|saves| (saves[0], saves[1])))
+            }
         }
     }
 
-    pub fn captures<'t>(&self, text: &'t str) -> Option<Captures<'t>> {
+    pub fn captures<'t>(&self, text: &'t str) -> Result<Option<Captures<'t>>> {
         match *self {
-            Regex::Wrap(ref inner) =>
-                inner.captures(text).map(|caps| Captures::Wrap(caps)),
+            Regex::Wrap { ref inner, .. } =>
+                Ok(inner.captures(text).map(|caps| Captures::Wrap {
+                    inner: caps,
+                    offset: 0,
+                    enclosing_groups: 0,
+                })),
             Regex::Impl { ref prog, n_groups } => {
-                return vm::run(prog, text, 0, 0).map(|mut saves| {
+                let result = try!(vm::run(prog, text, 0, 0));
+                return Ok(result.map(|mut saves| {
                     saves.truncate(n_groups * 2);
                     Captures::Impl {
                         text: text,
                         saves: saves
                     }
-                });
+                }));
+            }
+        }
+    }
+
+    pub fn captures_from_pos<'t>(&self, text: &'t str, pos: usize) ->
+            Result<Option<Captures<'t>>> {
+        match *self {
+            Regex::Wrap { ref inner, ref inner1 } => {
+                if inner1.is_none() || pos == 0 {
+                    Ok(inner.captures(&text[pos..]).map(|caps| Captures::Wrap {
+                        inner: caps,
+                        offset: pos,
+                        enclosing_groups: 0,
+                    }))
+                } else {
+                    let ix = prev_codepoint_ix(text, pos);
+                    let inner1 = inner1.as_ref().unwrap();
+                    Ok(inner1.captures(&text[ix..]).map(|caps| Captures::Wrap {
+                        inner: caps,
+                        offset: ix,
+                        enclosing_groups: 1,
+                    }))
+                }
+            }
+            Regex::Impl { ref prog, n_groups } => {
+                let result = try!(vm::run(prog, text, pos, 0));
+                return Ok(result.map(|mut saves| {
+                    saves.truncate(n_groups * 2);
+                    Captures::Impl {
+                        text: text,
+                        saves: saves
+                    }
+                }));
             }
         }
     }
@@ -149,7 +216,7 @@ impl Regex {
     // for debugging only
     pub fn debug_print(&self) {
         match *self {
-            Regex::Wrap(ref inner) => println!("wrapped {:?}", inner),
+            Regex::Wrap { ref inner, .. } => println!("wrapped {:?}", inner),
             Regex::Impl { ref prog, .. } => prog.debug_print()
         }
     }
@@ -158,7 +225,10 @@ impl Regex {
 impl<'t> Captures<'t> {
     pub fn pos(&self, i: usize) -> Option<(usize, usize)> {
         match *self {
-            Captures::Wrap(ref inner) => inner.pos(i),
+            Captures::Wrap { ref inner, ref offset, enclosing_groups } => {
+                inner.pos(i + enclosing_groups).map((|(lo, hi)|
+                    (lo + offset, hi + offset)))
+            }
             Captures::Impl { ref saves, .. } => {
                 if i >= saves.len() {
                     return None;
@@ -175,7 +245,9 @@ impl<'t> Captures<'t> {
 
     pub fn at(&self, i: usize) -> Option<&'t str> {
         match *self {
-            Captures::Wrap(ref inner) => inner.at(i),
+            Captures::Wrap { ref inner, enclosing_groups, .. } => {
+                inner.at(i + enclosing_groups)
+            }
             Captures::Impl { ref text, .. } => {
                 self.pos(i).map(|(lo, hi)|
                     &text[lo..hi]
@@ -190,7 +262,9 @@ impl<'t> Captures<'t> {
 
     pub fn len(&self) -> usize {
         match *self {
-            Captures::Wrap(ref inner) => inner.len(),
+            Captures::Wrap { ref inner, enclosing_groups, .. } => {
+                inner.len() - enclosing_groups
+            }
             Captures::Impl { ref saves, .. } => saves.len() / 2
         }
     }
@@ -328,6 +402,19 @@ impl Expr {
     }
 }
 
+// precondition: ix > 0
+fn prev_codepoint_ix(s: &str, mut ix: usize) -> usize {
+    let bytes = s.as_bytes();
+    loop {
+        ix -= 1;
+        // fancy bit magic for ranges 0..0x80 + 0xc0..
+        if (bytes[ix] as i8) >= -0x40 {
+            break;
+        }
+    }
+    ix
+}
+
 fn codepoint_len(b: u8) -> usize {
     match b {
         b if b < 0x80 => 1,
@@ -337,8 +424,12 @@ fn codepoint_len(b: u8) -> usize {
     }
 }
 
-// if this returns false, then there is no possible backref in the re
+// If this returns false, then there is no possible backref in the re
 
+// Both potential implementations are turned off, because we currently
+// always need to do a deeper analysis because of 1-character
+// look-behind. If we could call a find_from_pos method of regex::Regex,
+// it would make sense to bring this back.
 /*
 pub fn detect_possible_backref(re: &str) -> bool {
     let mut last = b'\x00';
@@ -348,7 +439,6 @@ pub fn detect_possible_backref(re: &str) -> bool {
     }
     false
 }
-*/
 
 pub fn detect_possible_backref(re: &str) -> bool {
     let mut bytes = re.as_bytes();
@@ -363,12 +453,13 @@ pub fn detect_possible_backref(re: &str) -> bool {
         }
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
     use Expr;
     use LookAround::*;
-    use detect_possible_backref;
+    //use detect_possible_backref;
     use std::usize;
 
     fn p(s: &str) -> Expr { Expr::parse(s).unwrap().0 }
@@ -541,6 +632,7 @@ mod tests {
         assert_eq!(s, "(a|b)");
     }
 
+    /*
     #[test]
     fn detect_backref() {
         assert_eq!(detect_possible_backref("a0a1a2"), false);
@@ -548,4 +640,5 @@ mod tests {
         assert_eq!(detect_possible_backref("a0a\\1a2"), true);
         assert_eq!(detect_possible_backref("a0a1a2\\"), false);
     }
+    */
 }

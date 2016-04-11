@@ -338,10 +338,7 @@ impl<'a> Compiler<'a> {
             start_group: usize, end_group: usize) -> Result<()> {
         let compiled = try!(compile_inner(inner_re));
         if looks_left {
-            let mut inner1 = String::with_capacity(inner_re.len() + 5);
-            inner1.push_str("^.(?:");
-            inner1.push_str(&inner_re[1..]);
-            inner1.push(')');
+            let inner1 = ["^.(?:", &inner_re[1..], ")"].concat();
             let compiled1 = try!(compile_inner(&inner1));
             self.b.add(Insn::Delegate {
                 inner: Box::new(compiled),
@@ -365,7 +362,7 @@ impl<'a> Compiler<'a> {
 
 }
 
-fn compile_inner(inner_re: &str) -> Result<regex::Regex> {
+pub fn compile_inner(inner_re: &str) -> Result<regex::Regex> {
     regex::Regex::new(inner_re).map_err(|e| Error::InnerError(e))
 }
 

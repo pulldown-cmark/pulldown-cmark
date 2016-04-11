@@ -62,6 +62,9 @@ pub enum Error {
     InvalidHex,
     InvalidCodepointValue,
     InvalidClass,
+    UnknownFlag,
+    NonUnicodeUnsupported,
+    InvalidBackref,
     InnerError(regex::Error),
 
     // Run time errors
@@ -109,7 +112,7 @@ impl Regex {
         // and to capture the match bounds
         let e = Expr::Concat(vec![
             Expr::Repeat {
-                child: Box::new(Expr::Any),
+                child: Box::new(Expr::Any { newline: true }),
                 lo: 0, hi: usize::MAX, greedy: false
             },
             Expr::Group(Box::new(
@@ -312,12 +315,14 @@ impl<'t> Iterator for SubCaptures<'t> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
     Empty,
-    Any,  // nl sensitivity
+    Any { newline: bool },
     StartText,
     EndText,
+    StartLine,
+    EndLine,
     Literal {
         val: String,
-        // case insensitive flag
+        casei: bool,
     },
     Concat(Vec<Expr>),
     Alt(Vec<Expr>),
@@ -374,10 +379,18 @@ impl Expr {
     pub fn to_str(&self, buf: &mut String, precedence: u8) {
         match *self {
             Expr::Empty => (),
-            Expr::Any => buf.push_str("(?s:.)"),
-            Expr::Literal{ ref val } => push_quoted(buf, val),
+            Expr::Any { newline } => buf.push_str(
+                if newline { "(?s:.)" } else { "." }
+            ),
+            Expr::Literal{ ref val, casei } => {
+                if casei { buf.push_str("(?i:"); }
+                push_quoted(buf, val);
+                if casei { buf.push_str(")"); }
+            }
             Expr::StartText => buf.push('^'),
             Expr::EndText => buf.push('$'),
+            Expr::StartLine => buf.push_str("(?m:^)"),
+            Expr::EndLine => buf.push_str("(?m:$)"),
             Expr::Concat(ref children) => {
                 if precedence > 1 {
                     buf.push_str("(?:");
@@ -491,136 +504,8 @@ pub fn detect_possible_backref(re: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use Expr;
-    use LookAround::*;
+    use parse::make_literal;
     //use detect_possible_backref;
-    use std::usize;
-
-    fn p(s: &str) -> Expr { Expr::parse(s).unwrap().0 }
-
-    #[test]
-    fn any() {
-        assert_eq!(p("."), Expr::Any);
-    }
-
-    #[test]
-    fn literal() {
-        assert_eq!(p("a"), Expr::Literal { val: String::from("a") });
-    }
-
-    #[test]
-    fn concat() {
-        assert_eq!(p("ab"), Expr::Concat(vec![
-            Expr::Literal { val: String::from("a") },
-            Expr::Literal { val: String::from("b") },
-        ]));
-    }
-
-    #[test]
-    fn alt() {
-        assert_eq!(p("a|b"), Expr::Alt(vec![
-            Expr::Literal { val: String::from("a") },
-            Expr::Literal { val: String::from("b") },
-        ]));
-    }
-
-    #[test]
-    fn group() {
-        assert_eq!(p("(a)"), Expr::Group(Box::new(
-            Expr::Literal { val: String::from("a") },
-        )));
-    }
-
-    #[test]
-    fn repeat() {
-        assert_eq!(p("a{2,42}"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: 42, greedy: true });
-        assert_eq!(p("a{2,}"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: usize::MAX, greedy: true });
-        assert_eq!(p("a{2}"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: 2, greedy: true });
-        assert_eq!(p("a{,2}"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 0, hi: 2, greedy: true });
-
-        assert_eq!(p("a{2,42}?"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: 42, greedy: false });
-        assert_eq!(p("a{2,}?"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: usize::MAX, greedy: false });
-        assert_eq!(p("a{2}?"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 2, hi: 2, greedy: false });
-        assert_eq!(p("a{,2}?"), Expr::Repeat{ child: Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), lo: 0, hi: 2, greedy: false });
-    }
-
-    #[test]
-    fn delegate_zero() {
-        assert_eq!(p("\\b"), Expr::Delegate {
-            inner: String::from("\\b"), size: 0
-        });
-    }
-
-    #[test]
-    fn delegate_named_group() {
-        assert_eq!(p("\\P{Greek}"), Expr::Delegate {
-            inner: String::from("\\P{Greek}"), size: 1
-        });
-    }
-
-    #[test]
-    fn backref() {
-        assert_eq!(p("\\42"), Expr::Backref(42));
-    }
-
-    #[test]
-    fn lookaround() {
-        assert_eq!(p("(?=a)"), Expr::LookAround(Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), LookAhead));
-        assert_eq!(p("(?!a)"), Expr::LookAround(Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), LookAheadNeg));
-        assert_eq!(p("(?<=a)"), Expr::LookAround(Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), LookBehind));
-        assert_eq!(p("(?<!a)"), Expr::LookAround(Box::new(
-            Expr::Literal { val: String::from("a") },
-        ), LookBehindNeg));
-    }
-
-    #[test]
-    fn shy_group() {
-        assert_eq!(p("(?:ab)c"), Expr::Concat(vec![
-            Expr::Concat(vec![
-                Expr::Literal { val: String::from("a") },
-                Expr::Literal { val: String::from("b") },
-            ]),
-            Expr::Literal { val: String::from("c") },
-        ]));
-    }
-
-    #[test]
-    fn lifetime() {
-        assert_eq!(p("\\'[a-zA-Z_][a-zA-Z0-9_]*(?!\\')\\b"),
-
-            Expr::Concat(vec![
-                Expr::Literal { val: String::from("\'") },
-                Expr::Delegate { inner: String::from("[a-zA-Z_]"), size: 1 },
-                Expr::Repeat { child: Box::new(
-                    Expr::Delegate { inner: String::from("[a-zA-Z0-9_]"), size: 1 }
-                ), lo: 0, hi: usize::MAX, greedy: true },
-                Expr::LookAround(Box::new(
-                    Expr::Literal { val: String::from("'") }
-                ), LookAheadNeg),
-                Expr::Delegate { inner: String::from("\\b"), size: 0 }]));
-
-    }
 
     // tests for to_str
 
@@ -629,10 +514,10 @@ mod tests {
         let mut s = String::new();
         let e = Expr::Concat(vec![
             Expr::Alt(vec![
-                Expr::Literal { val: String::from("a") },
-                Expr::Literal { val: String::from("b") },
+                make_literal("a"),
+                make_literal("b"),
             ]),
-            Expr::Literal { val: String::from("c") },
+            make_literal("c"),
         ]);
         e.to_str(&mut s, 0);
         assert_eq!(s, "(?:a|b)c");
@@ -643,8 +528,8 @@ mod tests {
         let mut s = String::new();
         let e = Expr::Repeat{ child: Box::new(
             Expr::Concat(vec![
-                Expr::Literal { val: String::from("a") },
-                Expr::Literal { val: String::from("b") },
+                make_literal("a"),
+                make_literal("b"),
             ])),
             lo: 2, hi: 3, greedy: true
         };
@@ -657,8 +542,8 @@ mod tests {
         let mut s = String::new();
         let e = Expr::Group(Box::new(
             Expr::Alt(vec![
-                Expr::Literal { val: String::from("a") },
-                Expr::Literal { val: String::from("b") },
+                make_literal("a"),
+                make_literal("b"),
             ])
         ));
         e.to_str(&mut s, 0);

@@ -20,8 +20,8 @@ import re
 re.compile('(a|b|ab)*bc').match('ab' * 28 + 'ac')
 ```
 
-In Python (tested on both 2.7 and 3.5, this match takes 91s, and doubles for each additional
-repeat of 'ab'.
+In Python (tested on both 2.7 and 3.5), this match takes 91s, and
+doubles for each additional repeat of 'ab'.
 
 Thus, many proponents
 [advocate](https://swtch.com/~rsc/regexp/regexp1.html) a purely NFA
@@ -77,7 +77,40 @@ delegates as much as possible to the NFA engine.
 
 ## Theory
 
-TODO: write this
+**(This section is written in a somewhat informal style; I hope to
+expand on it)**
+
+The fundamental idea is that it's a backtracking VM like PCRE, but as
+much as possible it delegates to an "inner" RE engine like RE2 (in
+this case, the Rust one). For the sublanguage not using fancy
+features, the library becomes a thin wrapper.
+
+Otherwise, you do an analysis to figure out what you can delegate and
+what you have to backtrack. I was thinking it might be tricky, but
+it's actually quite simple. The first phase, you just label each
+subexpression as "hard" (groups that get referenced in a backref,
+look-around, etc), and bubble that up. You also do a little extra
+analysis, mostly determining whether an expression has constant match
+length, and the minimum length.
+
+The second phase is top down, and you carry a context, also a boolean
+indicating whether it's "hard" or not. Intuitively, a hard context is
+one in which the match length will affect future backtracking.
+
+If the subexpression is easy and the context is easy, generate an
+instruction in the VM that delegates to the inner NFA implementation.
+Otherwise, generate VM code as in a backtracking engine. Most
+expression nodes are pretty straightforward; the only interesting case
+is concat (a sequence of subexpressions).
+
+Even that one is not terribly complex. First, determine a prefix of
+easy nodes of constant match length (this won't affect backtracking,
+so safe to delegate to NFA). Then, if your context is easy, determine
+a suffix of easy nodes. Both of these delegate to NFA. For the ones in
+between, recursively compile. In an easy context, the last of these
+also gets an easy context; everything else is generated in a hard
+context. So, conceptually, hard context flows from right to left, and
+from parents to children.
 
 ## Current status
 
@@ -92,11 +125,13 @@ the following features are missing:
 
      * Procedure calls and recursive expressions
 
-     * Correct handling of flags
-
 ## Acknowledgements
 
 Many thanks to [Andrew Gallant](http://blog.burntsushi.net/about/) for
 stimulating conversations that inspired this approach, as well as for
 creating the excellent regex crate.
+
+See the [repository root](https://github.com/google/pulldown-cmark)
+for more information about authorship, licensing, contribution, and a
+disclaimer.
 

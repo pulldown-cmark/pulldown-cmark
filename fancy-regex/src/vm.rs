@@ -37,6 +37,7 @@ const MAX_STACK: usize = 1000000;
 pub enum Insn {
     End,
     Any,
+    AnyNoNL,
     Lit(String),  // should be cow?
     Split(usize, usize),
     Jmp(usize),
@@ -183,9 +184,16 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) ->
                         break 'fail;
                     }
                 }
+                Insn::AnyNoNL => {
+                    if ix < s.len() && s.as_bytes()[ix] != b'\n' {
+                        ix += codepoint_len_at(s, ix)
+                    } else {
+                        break 'fail;
+                    }
+                }
                 Insn::Lit(ref val) => {
                     let end = ix + val.len();
-                    if end > s.len() || &s[ix..end] != val {
+                    if end > s.len() || &s.as_bytes()[ix..end] != val.as_bytes() {
                         break 'fail;
                     }
                     ix = end;

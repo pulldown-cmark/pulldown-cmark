@@ -73,19 +73,19 @@ impl<'a> Analysis<'a> {
         let mut hard = false;
         let mut looks_left = false;
         match *expr {
-            Expr::Empty | Expr::EndText => {
+            Expr::Empty | Expr::EndText | Expr::EndLine => {
                 const_size = true;
             }
-            Expr::Any => {
+            Expr::Any{..} => {
                 min_size = 1;
                 const_size = true;
             }
-            Expr::Literal{..} => {
+            Expr::Literal{ ref val, casei } => {
                 // right now each character in a literal gets its own node, that might change
                 min_size = 1;
-                const_size = true;
+                const_size = literal_const_size(val, casei);
             }
-            Expr::StartText => {
+            Expr::StartText | Expr::StartLine => {
                 const_size = true;
                 looks_left = true;
             }
@@ -173,7 +173,7 @@ impl<'a> Analysis<'a> {
 
     pub fn is_literal(&self, ix: usize) -> bool {
         match *self.infos[ix].expr {
-            Expr::Literal{..} => true,
+            Expr::Literal { casei, .. } => !casei,
             Expr::Concat(_) => {
                 let mut child = ix + 1;
                 loop {
@@ -189,7 +189,8 @@ impl<'a> Analysis<'a> {
 
     pub fn push_literal(&self, ix: usize, buf: &mut String) {
         match *self.infos[ix].expr {
-            Expr::Literal{ref val} => buf.push_str(&val),
+            // could be more paranoid about checking casei
+            Expr::Literal { ref val, .. } => buf.push_str(&val),
             Expr::Concat(_) => {
                 let mut child = ix + 1;
                 loop {
@@ -199,6 +200,33 @@ impl<'a> Analysis<'a> {
                 }
             }
             _ => panic!("push_literal called on non-literal")
+        }
+    }
+}
+
+fn literal_const_size(_: &str, _: bool) -> bool {
+    // Right now, regex doesn't do sophisticated case folding,
+    // test below will fail when that changes, then we need to
+    // do something fancier here.
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use regex;
+    use super::literal_const_size;
+
+    #[test]
+    fn case_folding_safe() {
+        let re = regex::Regex::new("(?i:ß)").unwrap();
+        if re.is_match("SS") {
+            assert!(!literal_const_size("ß", true));
+        }
+
+        // Another tricky example, Armenian ECH YIWN
+        let re = regex::Regex::new("(?i:\\x{0587})").unwrap();
+        if re.is_match("\u{0565}\u{0582}") {
+            assert!(!literal_const_size("\u{0587}", true));
         }
     }
 }

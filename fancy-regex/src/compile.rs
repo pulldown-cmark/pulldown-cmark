@@ -105,11 +105,18 @@ impl<'a> Compiler<'a> {
         }
         match *info.expr {
             Expr::Empty => (),
-            Expr::Literal{ ref val } => {
-                self.b.add(Insn::Lit(val.clone()));
+            Expr::Literal{ ref val, casei } => {
+                if !casei {
+                    try!(self.compile_delegates(&[ix]));
+                } else {
+                    self.b.add(Insn::Lit(val.clone()));
+                }
             }
-            Expr::Any => {
+            Expr::Any { newline: true } => {
                 self.b.add(Insn::Any);
+            }
+            Expr::Any { newline: false } => {
+                self.b.add(Insn::AnyNoNL);
             }
             Expr::Concat(_) => {
                 try!(self.compile_concat(ix, hard));
@@ -169,7 +176,8 @@ impl<'a> Compiler<'a> {
             Expr::Backref(group) => {
                 self.b.add(Insn::Backref(group * 2));
             }
-            Expr::Delegate { .. } | Expr::StartText | Expr::EndText => {
+            Expr::Delegate { .. } | Expr::StartText | Expr::EndText
+            | Expr::StartLine | Expr::EndLine => {
                 // TODO: might want to have more specialized impls
                 try!(self.compile_delegates(&[ix]));
             }
@@ -305,8 +313,8 @@ impl<'a> Compiler<'a> {
         if ixs.is_empty() {
             return Ok(());
         }
-        // TODO: might want to detect case of a group with no captures
-        // inside, so we can run find() instead of captures()
+        // TODO: might want to do something similar for case insensitive literals
+        // (have is_literal return an additional bool for casei)
         if ixs.iter().all(|&ix| self.a.is_literal(ix)) {
             let mut val = String::new();
             for &ix in ixs {
@@ -315,6 +323,8 @@ impl<'a> Compiler<'a> {
             self.b.add(Insn::Lit(val));
             return Ok(());
         }
+        // TODO: might want to detect case of a group with no captures
+        // inside, so we can run find() instead of captures()
         let mut annotated = String::new();
         annotated.push('^');
         let mut min_size = 0;

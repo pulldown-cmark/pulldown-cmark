@@ -169,7 +169,8 @@ impl<'a> Compiler<'a> {
             Expr::Backref(group) => {
                 self.b.add(Insn::Backref(group * 2));
             }
-            Expr::Delegate { .. } => {
+            Expr::Delegate { .. } | Expr::StartText | Expr::EndText => {
+                // TODO: might want to have more specialized impls
                 try!(self.compile_delegates(&[ix]));
             }
         }
@@ -338,7 +339,7 @@ impl<'a> Compiler<'a> {
             start_group: usize, end_group: usize) -> Result<()> {
         let compiled = try!(compile_inner(inner_re));
         if looks_left {
-            let inner1 = ["^.(?:", &inner_re[1..], ")"].concat();
+            let inner1 = ["^(?s:.)(?:", &inner_re[1..], ")"].concat();
             let compiled1 = try!(compile_inner(&inner1));
             self.b.add(Insn::Delegate {
                 inner: Box::new(compiled),

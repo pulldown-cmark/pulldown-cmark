@@ -56,6 +56,12 @@ pub enum Error {
     InvalidRepeat,
     RecursionExceeded,
     LookBehindNotConst,
+    TrailingBackslash,
+    InvalidEscape,
+    UnclosedUnicodeName,
+    InvalidHex,
+    InvalidCodepointValue,
+    InvalidClass,
     InnerError(regex::Error),
 
     // Run time errors
@@ -117,12 +123,24 @@ impl Regex {
         if !inner_info.hard {
             // easy case, wrap regex
 
-            let inner = try!(compile::compile_inner(re));
+            // we do our own to_str because escapes are different
+            let mut re_cooked = String::new();
+            // same as raw_e above, but it was moved, so traverse to find it
+            let raw_e = match e {
+                Expr::Concat(ref v) =>
+                    match v[1] {
+                        Expr::Group(ref child) => child,
+                        _ => unreachable!()
+                    },
+                _ => unreachable!()
+            };
+            raw_e.to_str(&mut re_cooked, 0);
+            let inner = try!(compile::compile_inner(&re_cooked));
             let mut inner1 = None;
 
             if inner_info.looks_left {
                 // create regex to handle 1-char look-behind
-                let re1 = ["^.+?(", re, ")"].concat();
+                let re1 = ["^(?s:.)+?(", re_cooked.as_str(), ")"].concat();
                 let compiled = try!(compile::compile_inner(&re1));
                 inner1 = Some(Box::new(compiled));
             }
@@ -295,6 +313,8 @@ impl<'t> Iterator for SubCaptures<'t> {
 pub enum Expr {
     Empty,
     Any,  // nl sensitivity
+    StartText,
+    EndText,
     Literal {
         val: String,
         // case insensitive flag
@@ -335,6 +355,17 @@ fn push_usize(s: &mut String, x: usize) {
     }
 }
 
+fn push_quoted(buf: &mut String, s: &str) {
+    for c in s.chars() {
+        match c {
+            '\\' | '.' | '+' | '*' | '?' | '(' | ')' | '|' |
+            '[' | ']' | '{' | '}' | '^' | '$' | '#' => buf.push('\\'),
+            _ => ()
+        }
+        buf.push(c);
+    }
+}
+
 impl Expr {
     pub fn parse(re: &str) -> Result<(Expr, BitSet)> {
         Parser::parse(re)
@@ -343,8 +374,10 @@ impl Expr {
     pub fn to_str(&self, buf: &mut String, precedence: u8) {
         match *self {
             Expr::Empty => (),
-            Expr::Any => buf.push('.'),
-            Expr::Literal{ ref val } => buf.push_str(val),  // TODO:  quoting?
+            Expr::Any => buf.push_str("(?s:.)"),
+            Expr::Literal{ ref val } => push_quoted(buf, val),
+            Expr::StartText => buf.push('^'),
+            Expr::EndText => buf.push('$'),
             Expr::Concat(ref children) => {
                 if precedence > 1 {
                     buf.push_str("(?:");
@@ -577,13 +610,13 @@ mod tests {
         assert_eq!(p("\\'[a-zA-Z_][a-zA-Z0-9_]*(?!\\')\\b"),
 
             Expr::Concat(vec![
-                Expr::Delegate { inner: String::from("\\\'"), size: 1 },
+                Expr::Literal { val: String::from("\'") },
                 Expr::Delegate { inner: String::from("[a-zA-Z_]"), size: 1 },
                 Expr::Repeat { child: Box::new(
                     Expr::Delegate { inner: String::from("[a-zA-Z0-9_]"), size: 1 }
                 ), lo: 0, hi: usize::MAX, greedy: true },
                 Expr::LookAround(Box::new(
-                    Expr::Delegate { inner: String::from("\\\'"), size: 1 }
+                    Expr::Literal { val: String::from("'") }
                 ), LookAheadNeg),
                 Expr::Delegate { inner: String::from("\\b"), size: 0 }]));
 

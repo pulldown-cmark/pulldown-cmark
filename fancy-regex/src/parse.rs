@@ -121,31 +121,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_atom(&mut self, ix: usize, depth: usize) -> Result<(usize, Expr)> {
-        lazy_static! {
-            static ref BACKREF: Regex = Regex::new(
-                "^\\\\(\\d+)"
-            ).unwrap();
-        }
         if ix == self.re.len() {
             return Ok((ix, Expr::Empty));
         }
         match self.re.as_bytes()[ix] {
-            b'.' => {
-                Ok((ix + 1, Expr::Any))
-            }
-            b'(' => return self.parse_group(ix, depth),
-            b'\\' => {
-                if let Some(caps) = BACKREF.captures(&self.re[ix..]) {
-                    let group = usize::from_str(caps.at(1).unwrap()).unwrap();
-                    let ix = ix + caps.pos(1).unwrap().1;
-                    self.backrefs.insert(group);
-                    return Ok((ix, Expr::Backref(group)));
-                }
-                self.parse_delegate(ix)
-            }
+            b'.' => Ok((ix + 1, Expr::Any)),
+            b'^' => Ok((ix + 1, Expr::StartText)),
+            b'$' => Ok((ix + 1, Expr::EndText)),
+            b'(' => self.parse_group(ix, depth),
+            b'\\' => self.parse_escape(ix),
             b'+' | b'*' | b'?' | b'|' | b')' | b']' | b'{' | b'}' =>
                 Ok((ix, Expr::Empty)),
-            b'[' | b'^' | b'$' => self.parse_delegate(ix),
+            b'[' => self.parse_class(ix),
             b => {
                 // TODO: probably want to match multiple codepoints
                 let next = ix + codepoint_len(b);
@@ -156,26 +143,113 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_delegate(&self, ix: usize) -> Result<(usize, Expr)> {
+    // ix points to \ character
+    fn parse_escape(&mut self, ix: usize) -> Result<(usize, Expr)> {
+        if ix + 1 == self.re.len() {
+            return Err(Error::TrailingBackslash);
+        }
+        let bytes = self.re.as_bytes();
+        let b = bytes[ix + 1];
+        let mut end = ix + 2;
+        let mut size = 1;
+        if is_digit(b)  {
+            while end < self.re.len() && is_digit(bytes[end]) {
+                end += 1;
+            }
+            let group = usize::from_str(&self.re[ix + 1 .. end]).unwrap();
+            self.backrefs.insert(group);
+            return Ok((end, Expr::Backref(group)));
+        } else if b == b'A' || b == b'z' || b == b'b' || b == b'B' {
+            size = 0;
+        } else if (b | 32) == b'd' || (b | 32) == b's' || (b | 32) == b'w' {
+            // size = 1
+        } else if (b | 32) == b'h' {
+            let s = if b == b'h' {
+                "[0-9A-Za-z]"
+            } else {
+                "^[0-9A-Za-z]"
+            };
+            let inner = String::from(s);
+            return Ok((end, Expr::Delegate { inner: inner, size: size }));
+        } else if b == b'x' {
+            if end + 2 > self.re.len() {
+                return Err(Error::InvalidHex);
+            }
+            let b = bytes[end];
+            let s = if is_hex_digit(b) && is_hex_digit(bytes[end + 1]) {
+                let start = end;
+                end += 2;
+                &self.re[start..end]
+            } else if b == b'{' {
+                let starthex = end + 1;
+                let mut endhex = starthex;
+                loop {
+                    if endhex == self.re.len() {
+                        return Err(Error::InvalidHex);
+                    }
+                    let b = bytes[endhex];
+                    if endhex > starthex && b == b'}' { break; }
+                    if is_hex_digit(b) && endhex < starthex + 6 {
+                        endhex += 1;
+                    } else {
+                        return Err(Error::InvalidHex);
+                    }
+                    end = endhex + 1;
+                }
+                &self.re[starthex .. endhex]
+            } else {
+                return Err(Error::InvalidHex);
+            };
+            let codepoint = u32::from_str_radix(s, 16).unwrap();
+            if let Some(c) = ::std::char::from_u32(codepoint) {
+                let mut inner = String::with_capacity(4);
+                inner.push(c);
+                return Ok((end, Expr::Literal { val: inner }));
+            } else {
+                return Err(Error::InvalidCodepointValue);
+            }
+        } else if (b | 32) == b'p' {
+            if end == self.re.len() {
+                return Err(Error::TrailingBackslash);  // better name?
+            }
+            let b = bytes[end];
+            end += 1;
+            if b == b'{' {
+                loop {
+                    if end == self.re.len() {
+                        return Err(Error::UnclosedUnicodeName);
+                    }
+                    if bytes[end] == b'}' {
+                        break;
+                    }
+                    end += 1;
+                }
+                end += 1;
+            }
+        } else if b'a' <= (b | 32) && (b | 32) <= b'z' {
+            return Err(Error::InvalidEscape);
+        } else if b'!' <= b && b <= b'~' {
+            let inner = String::from(&self.re[ix + 1..end]);
+            return Ok((end, Expr::Literal { val: inner }));
+        }
+        // what to do with characters outside printable ASCII?
+        let inner = String::from(&self.re[ix..end]);
+        Ok((end, Expr::Delegate { inner: inner, size: size }))
+    }
+
+    fn parse_class(&self, ix: usize) -> Result<(usize, Expr)> {
         lazy_static! {
-            static ref ZERO_WIDTH: Regex = Regex::new(
-                "^(\\^|\\$|\\\\[AzbB])"
-            ).unwrap();
-            static ref ONE_CHAR: Regex = Regex::new(
-                "^(\\\\([!-/:-@\\[-`\\{-~aftnrv]|x[0-9a-fA-F]{2}|x\\{[0-9a-fA-F]{1,6}\\})\
-                |\\.|\\[(\\\\.|[^\\\\\\]])+\\]|\\\\[dDsSwW]|\\\\[pP](\\w|\\{\\w+\\}))"
+            static ref CLASS: Regex = Regex::new(
+                r"^\[(\\.|[^\\\]])+\]"
             ).unwrap();
         }
-        let (size, x) = if let Some(caps) = ZERO_WIDTH.captures(&self.re[ix..]) {
-            (0, caps.at(0).unwrap())
+        if let Some((_, len)) = CLASS.find(&self.re[ix..]) {
+            let end = ix + len;
+            let inner = String::from(&self.re[ix..end]);
+            Ok((end, Expr::Delegate { inner: inner, size: 1 }))
         } else {
-            if let Some(caps) = ONE_CHAR.captures(&self.re[ix..]) {
-                (1, caps.at(0).unwrap())
-            } else {
-                return Ok((ix, Expr::Empty));
-            }
-        };
-        Ok((ix + x.len(), Expr::Delegate { inner: String::from(x), size: size }))
+            Err(Error::InvalidClass)
+        }
     }
 
     fn parse_group(&mut self, ix: usize, depth: usize) -> Result<(usize, Expr)> {
@@ -239,3 +313,10 @@ fn parse_repeat(s: &str, ix: usize) -> Result<(usize, usize, usize)> {
     Err(Error::InvalidRepeat)
 }
 
+fn is_digit(b: u8) -> bool {
+    b'0' <= b && b <= b'9'
+}
+
+fn is_hex_digit(b: u8) -> bool {
+    is_digit(b) || (b'a' <= (b | 32) && (b | 32) <= b'f')
+}

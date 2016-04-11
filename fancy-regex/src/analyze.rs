@@ -73,7 +73,7 @@ impl<'a> Analysis<'a> {
         let mut hard = false;
         let mut looks_left = false;
         match *expr {
-            Expr::Empty => {
+            Expr::Empty | Expr::EndText => {
                 const_size = true;
             }
             Expr::Any => {
@@ -84,6 +84,10 @@ impl<'a> Analysis<'a> {
                 // right now each character in a literal gets its own node, that might change
                 min_size = 1;
                 const_size = true;
+            }
+            Expr::StartText => {
+                const_size = true;
+                looks_left = true;
             }
             Expr::Concat(ref v) => {
                 let mut last_ix = usize::MAX;
@@ -150,7 +154,7 @@ impl<'a> Analysis<'a> {
                 // currently only used for empty and single-char matches
                 min_size = size;
                 const_size = true;
-                looks_left = size == 0;  // TODO: conservative for $ and \z
+                looks_left = size == 0;  // TODO: conservative for \z
             }
             Expr::Backref(_) => {
                 hard = true;

@@ -26,6 +26,7 @@ use fancy_regex::*;
 use fancy_regex::analyze::Analysis;
 use fancy_regex::compile::compile;
 use std::env;
+use std::str::FromStr;
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -50,7 +51,11 @@ fn main() {
             let re = args.next().expect("expected regexp argument");
             let r = Regex::new(&re).unwrap();
             let text = args.next().expect("expected text argument");
-            if let Some(caps) = r.captures(&text).unwrap() {
+            let mut pos = 0;
+            if let Some(pos_str) = args.next() {
+                pos = usize::from_str(&pos_str).unwrap();
+            }
+            if let Some(caps) = r.captures_from_pos(&text, pos).unwrap() {
                 print!("captures:");
                 for i in 0..caps.len() {
                     print!(" {}:", i);

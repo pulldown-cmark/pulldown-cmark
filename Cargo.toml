@@ -5,6 +5,7 @@ authors = [ "Raph Levien <raph@google.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/google/pulldown-cmark"
+keywords = ["markdown", "commonmark"]
 
 [[bin]]
 name = "pulldown-cmark"

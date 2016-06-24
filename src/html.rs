@@ -42,29 +42,24 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
 
     pub fn run(&mut self) {
         let mut numbers = HashMap::new();
-        loop {
-            match self.iter.next() {
-                Some(event) => {
-                    match event {
-                        Start(tag) => self.start_tag(tag, &mut numbers),
-                        End(tag) => self.end_tag(tag),
-                        Text(text) => escape_html(self.buf, &text, false),
-                        Html(html) => self.buf.push_str(&html),
-                        InlineHtml(html) => self.buf.push_str(&html),
-                        SoftBreak => self.buf.push('\n'),
-                        HardBreak => self.buf.push_str("<br />\n"),
-                        FootnoteReference(name) => {
-                            let len = numbers.len() + 1;
-                            self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
-                            escape_html(self.buf, &*name, false);
-                            self.buf.push_str("\">");
-                            let number = numbers.entry(name).or_insert(len);
-                            self.buf.push_str(&*format!("{}", number));
-                            self.buf.push_str("</a></sup>");
-                        },
-                    }
-                }
-                None => break
+        while let Some(event) = self.iter.next() {
+            match event {
+                Start(tag) => self.start_tag(tag, &mut numbers),
+                End(tag) => self.end_tag(tag),
+                Text(text) => escape_html(self.buf, &text, false),
+                Html(html) |
+                InlineHtml(html) => self.buf.push_str(&html),
+                SoftBreak => self.buf.push('\n'),
+                HardBreak => self.buf.push_str("<br />\n"),
+                FootnoteReference(name) => {
+                    let len = numbers.len() + 1;
+                    self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
+                    escape_html(self.buf, &*name, false);
+                    self.buf.push_str("\">");
+                    let number = numbers.entry(name).or_insert(len);
+                    self.buf.push_str(&*format!("{}", number));
+                    self.buf.push_str("</a></sup>");
+                },
             }
         }
     }
@@ -164,7 +159,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
         }
     }
 
-    fn end_tag<'c>(&mut self, tag: Tag<'c>) {
+    fn end_tag(&mut self, tag: Tag) {
         match tag {
             Tag::Paragraph => self.buf.push_str("</p>\n"),
             Tag::Rule => (),
@@ -202,27 +197,22 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
     // run raw text, consuming end tag
     fn raw_text<'c>(&mut self, numbers: &'c mut HashMap<Cow<'a, str>, usize>) {
         let mut nest = 0;
-        loop {
-            match self.iter.next() {
-                Some(event) => {
-                    match event {
-                        Start(_) => nest += 1,
-                        End(_) => {
-                            if nest == 0 { break; }
-                            nest -= 1;
-                        }
-                        Text(text) => escape_html(self.buf, &text, false),
-                        Html(_) => (),
-                        InlineHtml(html) => escape_html(self.buf, &html, false),
-                        SoftBreak | HardBreak => self.buf.push(' '),
-                        FootnoteReference(name) => {
-                            let len = numbers.len() + 1;
-                            let number = numbers.entry(name).or_insert(len);
-                            self.buf.push_str(&*format!("[{}]", number));
-                        }
-                    }
+        while let Some(event) = self.iter.next() {
+            match event {
+                Start(_) => nest += 1,
+                End(_) => {
+                    if nest == 0 { break; }
+                    nest -= 1;
                 }
-                None => break
+                Text(text) => escape_html(self.buf, &text, false),
+                Html(_) => (),
+                InlineHtml(html) => escape_html(self.buf, &html, false),
+                SoftBreak | HardBreak => self.buf.push(' '),
+                FootnoteReference(name) => {
+                    let len = numbers.len() + 1;
+                    let number = numbers.entry(name).or_insert(len);
+                    self.buf.push_str(&*format!("[{}]", number));
+                }
             }
         }
     }

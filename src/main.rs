@@ -77,10 +77,64 @@ fn read_file(filename: &str) -> String {
     }
 }
 
-fn find_test_delim(text: &str) -> Option<usize> {
-    if text.starts_with(".\n") { Some(0) }
-    else { text.find("\n.\n").map(|pos| pos + 1) }
+// Tests in the spec (v0.26) are of the form:
+//
+// ```````````````````````````````` example
+// <markdown input>
+// .
+// <expected output>
+// ````````````````````````````````
+struct Spec<'a> {
+    spec: &'a str,
+    test_n: usize,
 }
+
+impl<'a> Spec<'a> {
+    pub fn new(spec: &'a str) -> Self {
+        Spec{ spec: spec, test_n: 0 }
+    }
+}
+
+struct TestCase<'a> {
+    n: usize,
+    input: &'a str,
+    expected: &'a str,
+}
+
+impl<'a> TestCase<'a> {
+    pub fn new(n: usize, input: &'a str, expected: &'a str) -> Self {
+        TestCase { n: n, input: input, expected: expected }
+    }
+}
+
+impl<'a> Iterator for Spec<'a> {
+    type Item = TestCase<'a>;
+
+    fn next(&mut self) -> Option<TestCase<'a>> {
+        let spec = self.spec;
+
+        let i_start = match self.spec.find("```````````````````````````````` example\n").map(|pos| pos + 41) {
+            Some(pos) => pos,
+            None => return None,
+        };
+
+        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| pos + i_start){
+            Some(pos) => pos,
+            None => return None,
+        };
+
+        let e_end = match self.spec[i_end + 3..].find("````````````````````````````````\n").map(|pos| pos + i_end + 3){
+            Some(pos) => pos,
+            None => return None,
+        };
+
+        self.test_n += 1;
+        self.spec = &self.spec[e_end + 33 ..];
+
+        Some(TestCase::new(self.test_n, &spec[i_start .. i_end], &spec[i_end + 3 .. e_end]))
+    }
+}
+
 
 fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     //println!("spec length={}, args={:?}", spec_text.len(), args);
@@ -96,56 +150,46 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
         (first, last)
     };
 
-    let mut test_number = 1;
+    let spec = Spec::new(spec_text);
     let mut tests_failed = 0;
     let mut tests_run = 0;
     let mut line_count = 0;
-    let mut tail = spec_text;
-    loop {
-        let rest = match find_test_delim(tail) {
-            Some(pos) => &tail[pos + 2 ..],
-            None => break
-        };
-        let (source, rest) = match find_test_delim(rest) {
-            Some(pos) => (&rest[..pos], &rest[pos + 2 ..]),
-            None => break
-        };
-        let (html, rest) = match find_test_delim(rest) {
-            Some(pos) => (&rest[.. pos], &rest[pos + 2 ..]),
-            None => break
-        };
-        if first.map(|fst| fst <= test_number).unwrap_or(true) &&
-                last.map(|lst| test_number <= lst).unwrap_or(true) {
-            if tests_run == 0 || line_count == 0 || (test_number % 10 == 0) {
-                if line_count > 30 {
-                    println!("");
-                    line_count = 0;
-                } else if line_count > 0 {
-                    print!(" ");
-                }
-                print!("[{}]", test_number);
-            } else if line_count > 0 && (test_number % 10) == 5 {
+
+    for test in spec {
+        if first.map(|fst| test.n < fst).unwrap_or(false) { continue }
+        if last.map(|lst| test.n > lst).unwrap_or(false) { break }
+
+        if tests_run == 0 || line_count == 0 || (test.n % 10 == 0) {
+            if line_count > 30 {
+                println!("");
+                line_count = 0;
+            } else if line_count > 0 {
                 print!(" ");
             }
-            let our_html = render_html(&source.replace("→", "\t").replace("\n", "\r\n"), opts);
-            if our_html == html {
-                print!(".");
-            } else {
-                if tests_failed == 0 {
-                    print!("FAIL {}:\n---input---\n{}\n---wanted---\n{}\n---got---\n{}",
-                        test_number, source, html, our_html);
-                } else {
-                    print!("X");
-                }
-                tests_failed += 1;
-            }
-            let _ = io::stdout().flush();
-            tests_run += 1;
-            line_count += 1;
+            print!("[{:3}]", test.n);
+        } else if line_count > 0 && (test.n % 10) == 5 {
+            print!(" ");
         }
-        tail = rest;
-        test_number += 1;
+
+        let our_html = render_html(&test.input.replace("→", "\t").replace("\n", "\r\n"), opts);
+
+        if our_html == test.expected {
+            print!(".");
+        } else {
+            if tests_failed == 0 {
+                print!("FAIL {}:\n\n---input---\n{}\n\n---wanted---\n{}\n\n---got---\n{}\n",
+                    test.n, test.input, test.expected, our_html);
+            } else {
+                print!("X");
+            }
+            tests_failed += 1;
+        }
+
+        let _ = io::stdout().flush();
+        tests_run += 1;
+        line_count += 1;
     }
+
     println!("\n{}/{} tests passed", tests_run - tests_failed, tests_run)
 }
 

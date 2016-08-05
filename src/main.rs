@@ -36,13 +36,13 @@ use std::fs::File;
 
 fn render_html(text: &str, opts: Options) -> String {
     let mut s = String::with_capacity(text.len() * 3 / 2);
-    let p = Parser::new_ext(&text, opts);
+    let p = Parser::new_ext(text, opts);
     html::push_html(&mut s, p);
     s
 }
 
 fn dry_run(text:&str, opts: Options) {
-    let p = Parser::new_ext(&text, opts);
+    let p = Parser::new_ext(text, opts);
     /*
     let events = p.collect::<Vec<_>>();
     let count = events.len();
@@ -52,7 +52,7 @@ fn dry_run(text:&str, opts: Options) {
 }
 
 fn print_events(text: &str, opts: Options) {
-    let mut p = Parser::new_ext(&text, opts);
+    let mut p = Parser::new_ext(text, opts);
     loop {
         print!("{}: ", p.get_offset());
         if let Some(event) = p.next() {
@@ -114,8 +114,8 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             Some(pos) => (&rest[.. pos], &rest[pos + 2 ..]),
             None => break
         };
-        if first.map(|fst| fst <= test_number).unwrap_or(true) &&
-                last.map(|lst| test_number <= lst).unwrap_or(true) {
+        if first.map_or(true, |fst| fst <= test_number) &&
+                last.map_or(true, |lst| test_number <= lst) {
             if tests_run == 0 || line_count == 0 || (test_number % 10 == 0) {
                 if line_count > 30 {
                     println!("");
@@ -178,9 +178,8 @@ pub fn main() {
         }
     } else {
         let mut input = String::new();
-        match io::stdin().read_to_string(&mut input) {
-            Err(why) => panic!("couldn't read from stdin: {}", why),
-            Ok(_) => ()
+        if let Err(why) = io::stdin().read_to_string(&mut input) {
+            panic!("couldn't read from stdin: {}", why)
         }
         if matches.opt_present("events") {
             print_events(&input, opts);

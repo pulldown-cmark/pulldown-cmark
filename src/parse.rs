@@ -25,6 +25,7 @@ use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed};
 use std::collections::{HashMap, HashSet};
+use std::collections::hash_map::Entry;
 use std::cmp;
 
 #[derive(PartialEq, Debug)]
@@ -247,7 +248,7 @@ impl<'a> RawParser<'a> {
     // Return: bytes scanned, whether containers are complete, and remaining space
     fn scan_containers(&self, text: &str) -> (usize, bool, usize) {
         let (mut i, mut space) = scan_leading_space(text, 0);
-        for container in self.containers.iter() {
+        for container in &self.containers {
             match *container {
                 Container::BlockQuote => {
                     if space <= 3 {
@@ -263,7 +264,7 @@ impl<'a> RawParser<'a> {
                         return (i, false, space);
                     }
                 }
-                Container::FootnoteDefinition => (),
+                Container::FootnoteDefinition |
                 Container::List(_, _) => (),
                 Container::ListItem(indent) => {
                     if space >= indent {
@@ -358,7 +359,7 @@ impl<'a> RawParser<'a> {
                             _ => true,
                         }
                     }).collect();
-                    if close_tags.len() != 0 {
+                    if !close_tags.is_empty() {
                         for tag in &mut close_tags {
                             tag.1 = self.off; // limit
                             tag.2 = self.off; // next
@@ -538,7 +539,7 @@ impl<'a> RawParser<'a> {
         }
         self.state = State::TableRow;
         self.off = off;
-        return self.start(Tag::TableRow, self.text.len(), 0);
+        self.start(Tag::TableRow, self.text.len(), 0)
     }
 
     fn start_hrule(&mut self) -> Event<'a> {
@@ -619,7 +620,7 @@ impl<'a> RawParser<'a> {
         let beg_info = self.off + n;
         let next_line = beg_info + scan_nextline(&self.text[beg_info..]);
         self.off = next_line;
-        let info = unescape(&self.text[beg_info..next_line].trim());
+        let info = unescape(self.text[beg_info..next_line].trim());
         let size = self.text.len();
         self.state = State::CodeLineStart;
         self.start(Tag::CodeBlock(info), size, 0)
@@ -715,14 +716,8 @@ impl<'a> RawParser<'a> {
             space < 4
         } else if space <= 3 {
             let (n, c) = scan_code_fence(tail);
-            if c != self.fence_char || n < self.fence_count {
-                return false;
-            }
-            if n < tail.len() && scan_blank_line(&tail[n..]) == 0 {
-                // Closing code fences cannot have info strings
-                return false;
-            }
-            return true;
+            c == self.fence_char && n >= self.fence_count &&
+                (n >= tail.len() || scan_blank_line(&tail[n..]) != 0)
         } else {
             false
         }
@@ -815,9 +810,9 @@ impl<'a> RawParser<'a> {
         if linktext.is_empty() {
             return false;
         }
-        if !self.links.contains_key(&linktext) {
+        if let Entry::Vacant(entry) = self.links.entry(linktext) {
             let dest = unescape(raw_dest);
-            self.links.insert(linktext, (dest, title));
+            entry.insert((dest, title));
         }
         self.state = State::StartBlock;
         self.off += i;
@@ -963,7 +958,7 @@ impl<'a> RawParser<'a> {
             b'\t' => Some(self.char_tab()),
             b'\\' => self.char_backslash(),
             b'&' => self.char_entity(),
-            b'_' => self.char_emphasis(),
+            b'_' |
             b'*' => self.char_emphasis(),
             b'[' if self.opts.contains(OPTION_ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
@@ -975,7 +970,7 @@ impl<'a> RawParser<'a> {
 
     fn char_null(&mut self) -> Event<'a> {
         self.off += 1;
-        Event::Text(Borrowed(&"\u{fffd}"))
+        Event::Text(Borrowed("\u{fffd}"))
     }
 
     // expand tab in content (used for code and inline)
@@ -1209,7 +1204,7 @@ impl<'a> RawParser<'a> {
         let mut i = i + n;
 
         // scan dest
-        let (dest, title, beg, end, next) = if data[i..].starts_with("(") {
+        let (dest, title, beg, end, next) = if data[i..].starts_with('(') {
             i += 1;
             i += self.scan_whitespace_inline(&data[i..]);
             if i >= size { return None; }
@@ -1340,7 +1335,7 @@ impl<'a> RawParser<'a> {
         assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
         let (n_footnote, text_beg, text_end) = self.scan_footnote_label(data);
         if n_footnote == 0 { return None; }
-        return Some((&data[text_beg..text_end], n_footnote));
+        Some((&data[text_beg..text_end], n_footnote))
     }
 
     fn scan_footnote_label(&self, data: &str) -> (usize, usize, usize) {

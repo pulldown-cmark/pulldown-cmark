@@ -458,11 +458,11 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
             return (end + 1, Some(Borrowed(value)));
         }
     }
-    return (0, None);
+    (0, None)
 }
 
 // note: dest returned is raw, still needs to be unescaped
-pub fn scan_link_dest<'a>(data: &'a str) -> Option<(usize, &'a str)> {
+pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
     let size = data.len();
     let mut i = 0;
     let pointy_n = scan_ch(data, b'<');
@@ -506,7 +506,7 @@ pub fn scan_link_dest<'a>(data: &'a str) -> Option<(usize, &'a str)> {
 }
 
 // return value is: total bytes, link uri
-pub fn scan_autolink<'a>(data: &'a str) -> Option<(usize, Cow<'a, str>)> {
+pub fn scan_autolink(data: &str) -> Option<(usize, Cow<str>)> {
     let mut i = 0;
     let n = scan_ch(data, b'<');
     if n == 0 { return None; }
@@ -610,7 +610,7 @@ pub fn is_escaped(data: &str, loc: usize) -> bool {
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape<'a>(input: &'a str) -> Cow<'a, str> {
+pub fn unescape(input: &str) -> Cow<str> {
     if input.find(|c| c == '\\' || c == '&' || c == '\r').is_none() {
         Borrowed(input)
     } else {

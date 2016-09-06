@@ -94,7 +94,7 @@ impl<'a> Analysis<'a> {
                 const_size = true;
                 for child in v {
                     let ix = self.infos.len();
-                    self.visit(&child);
+                    self.visit(child);
                     if last_ix != usize::MAX {
                         self.infos[last_ix].next_sibling = ix;
                     }
@@ -114,7 +114,7 @@ impl<'a> Analysis<'a> {
                 let mut last_ix = ix;
                 for child in &v[1..] {
                     let ix = self.infos.len();
-                    self.visit(&child);
+                    self.visit(child);
                     self.infos[last_ix].next_sibling = ix;
                     const_size &= self.infos[ix].const_size && min_size == self.infos[ix].min_size;
                     min_size = min(min_size, self.infos[ix].min_size);
@@ -190,7 +190,7 @@ impl<'a> Analysis<'a> {
     pub fn push_literal(&self, ix: usize, buf: &mut String) {
         match *self.infos[ix].expr {
             // could be more paranoid about checking casei
-            Expr::Literal { ref val, .. } => buf.push_str(&val),
+            Expr::Literal { ref val, .. } => buf.push_str(val),
             Expr::Concat(_) => {
                 let mut child = ix + 1;
                 loop {

@@ -139,14 +139,14 @@ impl Regex {
             };
             raw_e.to_str(&mut re_cooked, 0);
             let inner = try!(compile::compile_inner(&re_cooked));
-            let mut inner1 = None;
-
-            if inner_info.looks_left {
+            let inner1 = if inner_info.looks_left {
                 // create regex to handle 1-char look-behind
                 let re1 = ["^(?s:.)+?(", re_cooked.as_str(), ")"].concat();
                 let compiled = try!(compile::compile_inner(&re1));
-                inner1 = Some(Box::new(compiled));
-            }
+                Some(Box::new(compiled))
+            } else {
+                None
+            };
             return Ok(Regex::Wrap {
                 inner: inner,
                 inner1: inner1,
@@ -190,13 +190,13 @@ impl Regex {
                 })),
             Regex::Impl { ref prog, n_groups } => {
                 let result = try!(vm::run(prog, text, 0, 0));
-                return Ok(result.map(|mut saves| {
+                Ok(result.map(|mut saves| {
                     saves.truncate(n_groups * 2);
                     Captures::Impl {
                         text: text,
                         saves: saves
                     }
-                }));
+                }))
             }
         }
     }
@@ -223,13 +223,13 @@ impl Regex {
             }
             Regex::Impl { ref prog, n_groups } => {
                 let result = try!(vm::run(prog, text, pos, 0));
-                return Ok(result.map(|mut saves| {
+                Ok(result.map(|mut saves| {
                     saves.truncate(n_groups * 2);
                     Captures::Impl {
                         text: text,
                         saves: saves
                     }
-                }));
+                }))
             }
         }
     }
@@ -269,7 +269,7 @@ impl<'t> Captures<'t> {
             Captures::Wrap { ref inner, enclosing_groups, .. } => {
                 inner.at(i + enclosing_groups)
             }
-            Captures::Impl { ref text, .. } => {
+            Captures::Impl { text, .. } => {
                 self.pos(i).map(|(lo, hi)|
                     &text[lo..hi]
                 )
@@ -290,6 +290,13 @@ impl<'t> Captures<'t> {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        match *self {
+            Captures::Wrap { ref inner, enclosing_groups, .. } =>
+                inner.len() == enclosing_groups,
+            Captures::Impl { ref saves, .. } => saves.is_empty()
+        }
+    }
 }
 
 impl<'t> Iterator for SubCaptures<'t> {

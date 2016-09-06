@@ -82,9 +82,9 @@ impl VMBuilder {
 
     fn set_repeat_target(&mut self, jmp_pc: usize, target: usize) {
         match self.prog[jmp_pc] {
-            Insn::RepeatGr { ref mut next, .. } => *next = target,
-            Insn::RepeatNg { ref mut next, .. } => *next = target,
-            Insn::RepeatEpsilonGr { ref mut next, .. } => *next = target,
+            Insn::RepeatGr { ref mut next, .. } |
+            Insn::RepeatNg { ref mut next, .. } |
+            Insn::RepeatEpsilonGr { ref mut next, .. } |
             Insn::RepeatEpsilonNg { ref mut next, .. } => *next = target,
             _ => panic!("mutating instruction other than Repeat")
         }
@@ -374,7 +374,7 @@ impl<'a> Compiler<'a> {
 }
 
 pub fn compile_inner(inner_re: &str) -> Result<regex::Regex> {
-    regex::Regex::new(inner_re).map_err(|e| Error::InnerError(e))
+    regex::Regex::new(inner_re).map_err(Error::InnerError)
 }
 
 // Don't need the expr because the analysis points to it

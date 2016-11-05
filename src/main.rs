@@ -149,9 +149,15 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     println!("\n{}/{} tests passed", tests_run - tests_failed, tests_run)
 }
 
+fn brief<ProgramName>(program: ProgramName) -> String
+        where ProgramName: std::fmt::Display {
+    return format!("Usage: {} FILE [options]", program);
+}
+
 pub fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
+    opts.optflag("h", "help", "this help message");
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
@@ -162,6 +168,10 @@ pub fn main() {
         Ok(m) => m,
         Err(f) => panic!(f.to_string())
     };
+    if matches.opt_present("help") {
+        println!("{}", opts.usage(&brief(&args[0])));
+        return;
+    }
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
         opts.insert(OPTION_ENABLE_TABLES);

@@ -166,7 +166,19 @@ pub fn main() {
     opts.optopt("b", "bench", "run benchmark", "FILE");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!(f.to_string())
+        Err(f) => {
+            let message = format!("{}\n{}\n",
+                                  f.to_string(),
+                                  opts.usage(&brief(&args[0])));
+            if let Err(err) = write!(std::io::stderr(), "{}", message) {
+                panic!("Failed to write to standard error: {}\n\
+                       Error encountered while trying to log the \
+                       following message: \"{}\"",
+                       err,
+                       message);
+            }
+            std::process::exit(1);
+        }
     };
     if matches.opt_present("help") {
         println!("{}", opts.usage(&brief(&args[0])));

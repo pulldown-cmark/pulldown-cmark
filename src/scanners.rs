@@ -26,6 +26,14 @@ use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
 
+#[derive(Copy, Clone, Debug)]
+pub enum Alignment {
+    None,
+    Left,
+    Center,
+    Right,
+}
+
 pub use puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
@@ -292,12 +300,13 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
 
 // returns number of bytes in line (including trailing newline) and column count
 // TODO: alignment
-pub fn scan_table_head(data: &str) -> (usize, i32) {
+pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
     let (mut i, spaces) = calc_indent(data, 4);
     if spaces > 3 || i == data.len() {
-        return (0, 0);
+        return (0, vec![]);
     }
-    let mut cols = 0;
+    let mut cols = vec![];
+    let mut active_col = Alignment::None;
     let mut start_col = true;
     if data.as_bytes()[i] == b'|' {
         i += 1;
@@ -309,25 +318,40 @@ pub fn scan_table_head(data: &str) -> (usize, i32) {
             break;
         }
         match *c {
-            b' ' | b':' => (),
+            b' ' => (),
+            b':' => {
+                active_col =
+                    match (start_col, active_col) {
+                        (true, Alignment::None) => Alignment::Left,
+                        (false, Alignment::Left) => Alignment::Center,
+                        (false, Alignment::None) => Alignment::Right,
+                        _ => active_col,
+                    };
+                start_col = false;
+            }
             b'-' => {
-                if start_col {
-                    cols += 1;
-                    start_col = false;
-                }
+                start_col = false;
             },
             b'|' => {
                 start_col = true;
+                cols.push(active_col);
+                active_col = Alignment::None;
             },
             _ => {
-                cols = 0;
+                cols = vec![];
+                start_col = true;
                 break;
             },
         }
         i += 1;
     }
-    if cols < 2 {
-        (0, 0)
+
+    if !start_col {
+        cols.push(active_col);
+    }
+
+    if cols.len() < 2 {
+        (0, vec![])
     } else {
         (i, cols)
     }

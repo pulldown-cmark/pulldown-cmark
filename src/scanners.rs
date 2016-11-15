@@ -298,8 +298,8 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
     (i, level)
 }
 
-// returns number of bytes in line (including trailing newline) and column count
-// TODO: alignment
+// returns number of bytes in line (including trailing
+// newline) and column alignments
 pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
     let (mut i, spaces) = calc_indent(data, 4);
     if spaces > 3 || i == data.len() {

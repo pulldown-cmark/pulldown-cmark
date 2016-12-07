@@ -1026,7 +1026,11 @@ impl<'a> RawParser<'a> {
         while i < limit {
             let c2 = data.as_bytes()[i];
             if c2 == b'\n' && !is_escaped(data, i) {
-                let space = 0;  // TODO: scan containers
+                let (_, complete, space) = self.scan_containers(&self.text[i..]);
+                if !complete {
+                    i += 1;
+                    continue;
+                }
                 if self.is_inline_block_end(&self.text[i + 1 .. limit], space) {
                     return None
                 } else {

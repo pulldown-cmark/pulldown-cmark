@@ -133,8 +133,8 @@ impl<'a> Iterator for Spec<'a> {
         self.spec = &self.spec[e_end + 33 ..];
 
         let test_case = TestCase {
-            original: spec[i_start .. i_end].to_string(),
-            expected: spec[i_end + 3 .. e_end].to_string()
+            original: spec[i_start .. i_end].to_string().replace("→", "\t"),
+            expected: spec[i_end + 3 .. e_end].to_string().replace("→", "\t")
         };
 
         Some(test_case)

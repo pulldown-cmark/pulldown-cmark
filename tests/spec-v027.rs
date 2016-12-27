@@ -6,8 +6,8 @@ extern crate pulldown_cmark;
 
     #[test]
     fn spec_test_1() {
-        let original = r##"→foo→baz→→bim"##;
-        let expected = r##"<pre><code>foo→baz→→bim
+        let original = r##"	foo	baz		bim"##;
+        let expected = r##"<pre><code>foo	baz		bim
 </code></pre>
 "##;
 
@@ -27,8 +27,8 @@ extern crate pulldown_cmark;
 
     #[test]
     fn spec_test_2() {
-        let original = r##"  →foo→baz→→bim"##;
-        let expected = r##"<pre><code>foo→baz→→bim
+        let original = r##"  	foo	baz		bim"##;
+        let expected = r##"<pre><code>foo	baz		bim
 </code></pre>
 "##;
 
@@ -48,10 +48,10 @@ extern crate pulldown_cmark;
 
     #[test]
     fn spec_test_3() {
-        let original = r##"    a→a
-    ὐ→a"##;
-        let expected = r##"<pre><code>a→a
-ὐ→a
+        let original = r##"    a	a
+    ὐ	a"##;
+        let expected = r##"<pre><code>a	a
+ὐ	a
 </code></pre>
 "##;
 
@@ -73,7 +73,7 @@ extern crate pulldown_cmark;
     fn spec_test_4() {
         let original = r##"  - foo
 
-→bar"##;
+	bar"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -100,7 +100,7 @@ extern crate pulldown_cmark;
     fn spec_test_5() {
         let original = r##"- foo
 
-→→bar"##;
+		bar"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -126,7 +126,7 @@ extern crate pulldown_cmark;
 
     #[test]
     fn spec_test_6() {
-        let original = r##">→→foo"##;
+        let original = r##">		foo"##;
         let expected = r##"<blockquote>
 <pre><code>  foo
 </code></pre>
@@ -149,7 +149,7 @@ extern crate pulldown_cmark;
 
     #[test]
     fn spec_test_7() {
-        let original = r##"-→→foo"##;
+        let original = r##"-		foo"##;
         let expected = r##"<ul>
 <li>
 <pre><code>  foo
@@ -175,7 +175,7 @@ extern crate pulldown_cmark;
     #[test]
     fn spec_test_8() {
         let original = r##"    foo
-→bar"##;
+	bar"##;
         let expected = r##"<pre><code>foo
 bar
 </code></pre>
@@ -199,7 +199,7 @@ bar
     fn spec_test_9() {
         let original = r##" - foo
    - bar
-→ - baz"##;
+	 - baz"##;
         let expected = r##"<ul>
 <li>foo
 <ul>
@@ -229,7 +229,7 @@ bar
 
     #[test]
     fn spec_test_10() {
-        let original = r##"#→Foo"##;
+        let original = r##"#	Foo"##;
         let expected = r##"<h1>Foo</h1>
 "##;
 
@@ -249,7 +249,7 @@ bar
 
     #[test]
     fn spec_test_11() {
-        let original = r##"*→*→*→"##;
+        let original = r##"*	*	*	"##;
         let expected = r##"<hr />
 "##;
 
@@ -7377,8 +7377,8 @@ baz</li>
 
     #[test]
     fn spec_test_288() {
-        let original = r##"\→\A\a\ \3\φ\«"##;
-        let expected = r##"<p>\→\A\a\ \3\φ\«</p>
+        let original = r##"\	\A\a\ \3\φ\«"##;
+        let expected = r##"<p>\	\A\a\ \3\φ\«</p>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};

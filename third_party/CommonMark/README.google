@@ -1,0 +1,12 @@
+URL: https://github.com/jgm/CommonMark.git
+Version: 1ef46a73e61968a60cc7b2e700381d719165b86c
+License: Creative Commons CC-BY-SA 4.0
+License File: LICENSE
+
+Description:
+CommonMark spec
+
+Local Modifications:
+This directory contains only the spec file. License file has been
+subsetted to only the files it applies to, and text of CC-BY-SA 4.0
+license has been added.

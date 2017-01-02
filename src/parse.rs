@@ -117,6 +117,14 @@ pub enum Event<'a> {
     HardBreak,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum Alignment {
+    None,
+    Left,
+    Center,
+    Right,
+}
+
 bitflags! {
     pub flags Options: u32 {
         const OPTION_FIRST_PASS = 1 << 0,

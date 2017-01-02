@@ -25,14 +25,7 @@ use utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
-
-#[derive(Copy, Clone, Debug)]
-pub enum Alignment {
-    None,
-    Left,
-    Center,
-    Right,
-}
+use parse::Alignment;
 
 pub use puncttable::{is_ascii_punctuation, is_punctuation};
 

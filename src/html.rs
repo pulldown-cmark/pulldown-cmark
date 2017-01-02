@@ -26,7 +26,7 @@ use std::fmt::Write;
 
 use parse::{Event, Tag};
 use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
-use scanners::Alignment;
+use parse::Alignment;
 use escape::{escape_html, escape_href};
 
 enum TableState {

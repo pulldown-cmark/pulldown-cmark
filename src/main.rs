@@ -149,9 +149,15 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     println!("\n{}/{} tests passed", tests_run - tests_failed, tests_run)
 }
 
+fn brief<ProgramName>(program: ProgramName) -> String
+        where ProgramName: std::fmt::Display {
+    return format!("Usage: {} FILE [options]", program);
+}
+
 pub fn main() {
     let args: Vec<_> = env::args().collect();
     let mut opts = getopts::Options::new();
+    opts.optflag("h", "help", "this help message");
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
@@ -160,8 +166,24 @@ pub fn main() {
     opts.optopt("b", "bench", "run benchmark", "FILE");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!(f.to_string())
+        Err(f) => {
+            let message = format!("{}\n{}\n",
+                                  f.to_string(),
+                                  opts.usage(&brief(&args[0])));
+            if let Err(err) = write!(std::io::stderr(), "{}", message) {
+                panic!("Failed to write to standard error: {}\n\
+                       Error encountered while trying to log the \
+                       following message: \"{}\"",
+                       err,
+                       message);
+            }
+            std::process::exit(1);
+        }
     };
+    if matches.opt_present("help") {
+        println!("{}", opts.usage(&brief(&args[0])));
+        return;
+    }
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
         opts.insert(OPTION_ENABLE_TABLES);

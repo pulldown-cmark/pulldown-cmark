@@ -25,13 +25,20 @@ fn generate_tests_from_spec() {
     use std::fs::{self, File, DirEntry, Metadata};
     use std::io::{Read, Write};
 
+    // This is a hardcoded path to the CommonMark spec because it is not situated in
+    // the specs/ directory. It's in an array to easily chain it to the other iterator
+    // and make it easy to eventually add other hardcoded paths in the future if needed
+    let hardcoded = ["./third_party/CommonMark/spec.txt"];
+    let hardcoded_iter = hardcoded.into_iter()
+                                  .map(PathBuf::from);
+
     // Create an iterator over the files in the specs/ directory that have a .txt extension
     let spec_files = fs::read_dir("./specs")
                         .expect("Could not find the 'specs' directory")
                         .filter_map(Result::ok)
                         .map(|d| d.path())
-                        .filter(|p| p.extension().map(|e| e.to_owned()).is_some());
-
+                        .filter(|p| p.extension().map(|e| e.to_owned()).is_some())
+                        .chain(hardcoded_iter);
 
     for file_path in spec_files {
         let mut raw_spec = String::new();

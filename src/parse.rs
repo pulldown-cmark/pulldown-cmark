@@ -92,7 +92,7 @@ pub enum Tag<'a> {
     FootnoteDefinition(Cow<'a, str>),
 
     // tables
-    Table(i32),
+    Table(Vec<Alignment>),
     TableHead,
     TableRow,
     TableCell,

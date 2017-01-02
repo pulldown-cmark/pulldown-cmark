@@ -7,6 +7,8 @@ description = "A pull parser for CommonMark"
 repository = "https://github.com/google/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 
+build = "build.rs"
+
 [[bin]]
 name = "pulldown-cmark"
 doc = false
@@ -14,3 +16,7 @@ doc = false
 [dependencies]
 getopts = "0.2"
 bitflags = "0.7"
+
+[features]
+default = []
+gen-tests = []

@@ -92,7 +92,7 @@ pub enum Tag<'a> {
     FootnoteDefinition(Cow<'a, str>),
 
     // tables
-    Table(i32),
+    Table(Vec<Alignment>),
     TableHead,
     TableRow,
     TableCell,
@@ -115,6 +115,14 @@ pub enum Event<'a> {
     FootnoteReference(Cow<'a, str>),
     SoftBreak,
     HardBreak,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Alignment {
+    None,
+    Left,
+    Center,
+    Right,
 }
 
 bitflags! {

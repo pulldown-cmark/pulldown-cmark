@@ -26,11 +26,20 @@ use std::fmt::Write;
 
 use parse::{Event, Tag};
 use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
+use parse::Alignment;
 use escape::{escape_html, escape_href};
+
+enum TableState {
+    Head,
+    Body,
+}
 
 struct Ctx<'b, I> {
     iter: I,
     buf: &'b mut String,
+    table_state: TableState,
+    table_alignments: Vec<Alignment>,
+    table_cell_index: usize,
 }
 
 impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
@@ -80,17 +89,30 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push((b'0' + level as u8) as char);
                 self.buf.push('>');
             }
-            Tag::Table(_) => {
+            Tag::Table(alignments) => {
+                self.table_alignments = alignments;
                 self.buf.push_str("<table>");
             }
             Tag::TableHead => {
+                self.table_state = TableState::Head;
                 self.buf.push_str("<thead><tr>");
             }
             Tag::TableRow => {
+                self.table_cell_index = 0;
                 self.buf.push_str("<tr>");
             }
             Tag::TableCell => {
-                self.buf.push_str("<td>");
+                match self.table_state {
+                    TableState::Head => self.buf.push_str("<th"),
+                    TableState::Body => self.buf.push_str("<td"),
+                }
+                match self.table_alignments.get(self.table_cell_index) {
+                    Some(&Alignment::Left) => self.buf.push_str(" align=\"left\""),
+                    Some(&Alignment::Center) => self.buf.push_str(" align=\"center\""),
+                    Some(&Alignment::Right) => self.buf.push_str(" align=\"right\""),
+                    _ => (),
+                }
+                self.buf.push_str(">");
             }
             Tag::BlockQuote => {
                 self.fresh_line();
@@ -169,16 +191,21 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push_str(">\n");
             }
             Tag::Table(_) => {
-                self.buf.push_str("</table>\n");
+                self.buf.push_str("</tbody></table>\n");
             }
             Tag::TableHead => {
-                self.buf.push_str("</tr></thead>\n");
+                self.buf.push_str("</tr></thead><tbody>\n");
+                self.table_state = TableState::Body;
             }
             Tag::TableRow => {
                 self.buf.push_str("</tr>\n");
             }
             Tag::TableCell => {
-                self.buf.push_str("</td>");
+                match self.table_state {
+                    TableState::Head => self.buf.push_str("</th>"),
+                    TableState::Body => self.buf.push_str("</td>"),
+                }
+                self.table_cell_index += 1;
             }
             Tag::BlockQuote => self.buf.push_str("</blockquote>\n"),
             Tag::CodeBlock(_) => self.buf.push_str("</code></pre>\n"),
@@ -222,6 +249,9 @@ pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
     let mut ctx = Ctx {
         iter: iter,
         buf: buf,
+        table_state: TableState::Head,
+        table_alignments: vec![],
+        table_cell_index: 0,
     };
     ctx.run();
 }

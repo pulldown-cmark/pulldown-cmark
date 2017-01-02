@@ -65,9 +65,9 @@ impl<'a> Parser<'a> {
     fn parse_re(&mut self, ix: usize, depth: usize) -> Result<(usize, Expr)> {
         let (ix, child) = try!(self.parse_branch(ix, depth));
         let mut ix = self.optional_whitespace(ix);
-        if self.re[ix..].starts_with("|") {
+        if self.re[ix..].starts_with('|') {
             let mut children = vec![child];
-            while self.re[ix..].starts_with("|") {
+            while self.re[ix..].starts_with('|') {
                 ix += 1;
                 let (next, child) = try!(self.parse_branch(ix, depth));
                 children.push(child);
@@ -91,12 +91,10 @@ impl<'a> Parser<'a> {
             }
             ix = next;
         }
-        if children.len() == 0 {
-            Ok((ix, Expr::Empty))
-        } else if children.len() == 1 {
-            Ok((ix, children.pop().unwrap()))
-        } else {
-            Ok((ix, Expr::Concat(children)))
+        match children.len() {
+            0 => Ok((ix, Expr::Empty)),
+            1 => Ok((ix, children.pop().unwrap())),
+            _ => Ok((ix, Expr::Concat(children))),
         }
     }
 
@@ -227,7 +225,7 @@ impl<'a> Parser<'a> {
         let mut end = ix + 2;
         let mut size = 1;
         if is_digit(b) {
-            if let Some((end, group)) = parse_decimal(&self.re, ix + 1) {
+            if let Some((end, group)) = parse_decimal(self.re, ix + 1) {
                 // protect BitSet against unreasonably large value
                 if group < self.re.len() / 2 {
                     self.backrefs.insert(group);
@@ -363,7 +361,7 @@ impl<'a> Parser<'a> {
             (Some(LookBehind), 3)
         } else if self.re[ix..].starts_with("?<!") {
             (Some(LookBehindNeg), 3)
-        } else if self.re[ix..].starts_with("?") {
+        } else if self.re[ix..].starts_with('?') {
             return self.parse_flags(ix, depth);
         } else {
             (None, 0)

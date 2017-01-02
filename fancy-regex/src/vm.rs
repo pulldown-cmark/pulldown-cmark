@@ -294,8 +294,8 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) ->
                     }
                 }
                 Insn::Delegate { ref inner, ref inner1, start_group, end_group } => {
-                    let re = match inner1 {
-                        &Some(ref inner1) if ix > 0 => {
+                    let re = match *inner1 {
+                        Some(ref inner1) if ix > 0 => {
                             ix = prev_codepoint_ix(s, ix);
                             inner1
                         }
@@ -306,23 +306,21 @@ pub fn run(prog: &Prog, s: &str, pos: usize, options: u32) ->
                             Some((_, end)) => ix += end,
                             _ => break 'fail
                         }
-                    } else {
-                        if let Some(caps) = re.captures(&s[ix..]) {
-                            let mut slot = start_group * 2;
-                            for i in 0..(end_group - start_group) {
-                                if let Some((beg, end)) = caps.pos(i + 1) {
-                                    state.save(slot, beg);
-                                    state.save(slot + 1, end);
-                                } else {
-                                    state.save(slot, usize::MAX);
-                                    state.save(slot + 1, usize::MAX);
-                                }
-                                slot += 2;
+                    } else if let Some(caps) = re.captures(&s[ix..]) {
+                        let mut slot = start_group * 2;
+                        for i in 0..(end_group - start_group) {
+                            if let Some((beg, end)) = caps.pos(i + 1) {
+                                state.save(slot, beg);
+                                state.save(slot + 1, end);
+                            } else {
+                                state.save(slot, usize::MAX);
+                                state.save(slot + 1, usize::MAX);
                             }
-                            ix += caps.pos(0).unwrap().1;
-                        } else {
-                            break 'fail;
+                            slot += 2;
                         }
+                        ix += caps.pos(0).unwrap().1;
+                    } else {
+                        break 'fail;
                     }
                 }
             }

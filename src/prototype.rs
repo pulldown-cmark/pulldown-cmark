@@ -124,7 +124,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let mut begin_text = start;
     while ix < s.len() {
         match s.as_bytes()[ix] {
-            b'\n' => {
+            b'\n' | b'\r' => {
                 tree.append_text(begin_text, ix);
                 return ix - start;
             }
@@ -159,9 +159,9 @@ fn first_pass(s: &str) -> Tree<Item> {
     let mut ix = 0;
     while ix < s.len() {
         let b = s.as_bytes()[ix];
-        if b == b'\n' {
+        if b == b'\n' || b == b'\r' {
             // blank line
-            ix += 1;
+            ix += scan_eol(&s[ix..]).0;
         } else {
             // start of paragraph
             tree.append(Item {
@@ -187,9 +187,9 @@ fn first_pass(s: &str) -> Tree<Item> {
                 }
                 let n = parse_line(&mut tree, s, ix);
                 ix += n;
-                if ix < s.len() {
+                if let (n, true) = scan_eol(&s[ix..]) {
                     last_soft_break = Some(ix);
-                    ix += 1;  // skip newline
+                    ix += n;  // skip newline
                 }
             }
             tree.pop();

@@ -15,7 +15,7 @@ doc = false
 
 [dependencies]
 getopts = "0.2"
-bitflags = "0.7"
+bitflags = "0.8"
 
 [features]
 default = []

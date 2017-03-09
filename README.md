@@ -1,5 +1,7 @@
 # pulldown-cmark
 
+[Documentation](https://docs.rs/pulldown-cmark/)
+
 This library is a pull parser for [CommonMark](http://commonmark.org/), written
 in [Rust](http://www.rust-lang.org/). It comes with a simple command-line tool,
 useful for rendering to HTML, and is also designed to be easy to use from as

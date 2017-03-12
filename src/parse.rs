@@ -750,7 +750,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn get_html_tag(&self) -> Option<&'static str> {
-        static TAGS: &[&'static str; 3] = &["</script>", "</pre>", "</style>"];
+        static TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
         for tag in TAGS {
             if self.text[self.off + 1..].starts_with(&tag[2..]) {
                 return Some(tag);

@@ -14298,3 +14298,40 @@ baz</p>
 
         assert_eq!(expected, s);
     }
+
+    #[test]
+    fn spec_test_622() {
+        let original = r##"Little header
+-----------
+
+<script>
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+        let expected = r##"<h2>Little header</h2>
+<script>
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }

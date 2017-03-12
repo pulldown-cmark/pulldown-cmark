@@ -749,10 +749,26 @@ impl<'a> RawParser<'a> {
                 data.starts_with("<!")
     }
 
+    fn get_html_tag(&self) -> Option<&'static str> {
+        static TAGS: &[&'static str; 3] = &["</script>", "</pre>", "</style>"];
+        for tag in TAGS {
+            if self.text[self.off + 1..].starts_with(&tag[2..]) {
+                return Some(tag);
+            }
+        }
+        None
+    }
+
     fn do_html_block(&mut self) -> Event<'a> {
+        let mut i = self.off;
+        if let Some(tag) = self.get_html_tag() {
+            let text = self.text[i..].split(tag).take(1).next().unwrap_or("");
+            self.off = i + text.len();
+            self.state = State::StartBlock;
+            return Event::Html(utils::cow_append(Borrowed(""), Borrowed(&self.text[i..self.off])));
+        }
         let size = self.text.len();
         let mut out = Borrowed("");
-        let mut i = self.off;
         let mut mark = i;
         loop {
             let n = scan_nextline(&self.text[i..]);

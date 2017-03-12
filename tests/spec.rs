@@ -14315,3 +14315,177 @@ function another_func() {
 
         assert_eq!(expected, s);
     }
+
+    #[test]
+    fn spec_test_623() {
+
+        let original = r##"Little header
+
+<script type="text/js">
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+        let expected = r##"<p>Little header</p>
+<script type="text/js">
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_624() {
+
+        let original = r##"Little header
+
+<script
+type="text/js">
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+        let expected = r##"<p>Little header</p>
+<script
+type="text/js">
+function some_func() {
+    console.log("teeeest");
+}
+
+
+function another_func() {
+    console.log("fooooo");
+}
+</script>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_625() {
+
+        let original = r##"Little header
+
+<?
+<div></div>
+<p>Useless</p>
+?>"##;
+        let expected = r##"<p>Little header</p>
+<?
+<div></div>
+<p>Useless</p>
+?>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_626() {
+
+        let original = r##"Little header
+
+<!--
+<div></div>
+<p>Useless</p>
+-->"##;
+        let expected = r##"<p>Little header</p>
+<!--
+<div></div>
+<p>Useless</p>
+-->"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_627() {
+
+        let original = r##"Little header
+
+<![CDATA[
+<div></div>
+<p>Useless</p>
+]]>"##;
+        let expected = r##"<p>Little header</p>
+<![CDATA[
+<div></div>
+<p>Useless</p>
+]]>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_628() {
+
+        let original = r##"Little header
+
+<!X
+Some things are here...
+>"##;
+        let expected = r##"<p>Little header</p>
+<!X
+Some things are here...
+>"##;
+
+        use pulldown_cmark::{Parser, html};
+
+        let mut s = String::new();
+
+        let p = Parser::new(&original);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }

@@ -390,8 +390,11 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         b'0' ... b'9' => {
             let mut i = 1;
             i += scan_while(&data[i..], is_digit);
-            start = data[..i].parse().unwrap();
             if i >= data.len() { return (0, 0, 0, 0); }
+            start = match data[..i].parse() {
+                Ok(start) => start,
+                Err(_) => return (0, 0, 0, 0),
+            };
             c = data.as_bytes()[i];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
             i + 1
@@ -679,5 +682,14 @@ pub fn spaces(n: usize) -> Cow<'static, str> {
             result.push(' ');
         }
         Owned(result)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn overflow_list() {
+        assert_eq!((0, 0, 0, 0), scan_listitem("4444444444444444444444444444444444444444444444444444444444!"));
     }
 }

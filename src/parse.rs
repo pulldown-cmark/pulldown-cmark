@@ -749,11 +749,34 @@ impl<'a> RawParser<'a> {
                 data.starts_with("<!")
     }
 
+    // http://spec.commonmark.org/0.26/#html-blocks
     fn get_html_tag(&self) -> Option<&'static str> {
-        static TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
-        for tag in TAGS {
-            if self.text[self.off + 1..].starts_with(&tag[2..]) {
-                return Some(tag);
+        static BEGIN_TAGS: &'static [&'static str; 3] = &["script", "pre", "style"];
+        static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
+
+        for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+            if self.off + 1 + beg_tag.len() < self.text.len() &&
+               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+                let pos = self.off + beg_tag.len() + 1;
+                let s = &self.text[pos..pos + 1];
+                if s == " " || s == "\n" || s == ">" {
+                    return Some(end_tag);
+                }
+            }
+        }
+        static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
+        static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
+        for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
+            if self.off + 1 + beg_tag.len() < self.text.len() &&
+               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+                return Some(end_tag);
+            }
+        }
+        if self.off + 4 < self.text.len() &&
+           self.text[self.off + 1..].starts_with("<!") {
+            let c = self.text[self.off + 4..self.off + 5].chars().next().unwrap();
+            if c >= 'A' && c <= 'Z' {
+                return Some(">");
             }
         }
         None

@@ -20,8 +20,6 @@
 
 //! Command line tool to exercise pulldown-cmark.
 
-#![cfg(feature = "binary")]
-
 extern crate getopts;
 
 extern crate pulldown_cmark;

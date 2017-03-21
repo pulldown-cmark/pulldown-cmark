@@ -11,14 +11,13 @@ build = "build.rs"
 
 [[bin]]
 name = "pulldown-cmark"
+required-features = ["getopts"]
 doc = false
-required-features = ["binary"]
 
 [dependencies]
 bitflags = "0.8"
 getopts = { version = "0.2", optional = true }
 
 [features]
-default = []
+default = ["getopts"]
 gen-tests = []
-binary = ["getopts"]

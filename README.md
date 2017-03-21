@@ -94,12 +94,18 @@ strings are available when they're needed. Thus, when rendering text to
 HTML, most text is copied just once, from the source document to the
 HTML buffer.
 
-## Building the pulldown-cmark binary
+## Building only the pulldown-cmark library
 
-By default it is not built. To do so:
+By default, the binary is built as well. If you don't want/need it, then build like this:
 
 ```bash
-> cargo build --features=binary
+> cargo build --no-default-features
+```
+
+Or put in your `Cargo.toml` file:
+
+```toml
+pulldown-cmark = { version = "0.0.11", default-features = false }
 ```
 
 ## Authors

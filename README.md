@@ -94,6 +94,14 @@ strings are available when they're needed. Thus, when rendering text to
 HTML, most text is copied just once, from the source document to the
 HTML buffer.
 
+## Building the pulldown-cmark binary
+
+By default it is not built. To do so:
+
+```bash
+> cargo build --features=binary
+```
+
 ## Authors
 
 The main author is Raph Levien.

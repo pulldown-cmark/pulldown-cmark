@@ -20,6 +20,11 @@
 
 //! Pull parser for commonmark.
 
+// When compiled for the rustc compiler itself we want to make sure that this is
+// an unstable crate.
+#![cfg_attr(rustbuild, feature(staged_api))]
+#![cfg_attr(rustbuild, unstable(feature = "rustdoc", issue = "27812"))]
+
 pub mod html;
 
 #[macro_use]

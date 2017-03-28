@@ -7,7 +7,8 @@ extern crate pulldown_cmark;
     #[test]
     fn spec_test_1() {
         let original = r##"	foo	baz		bim"##;
-        let expected = r##"<pre><code>foo	baz		bim</code></pre>
+        let expected = r##"<pre><code>foo	baz		bim
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -103,7 +104,8 @@ extern crate pulldown_cmark;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
-<pre><code>  bar</code></pre>
+<pre><code>  bar
+</code></pre>
 </li>
 </ul>
 "##;
@@ -126,7 +128,8 @@ extern crate pulldown_cmark;
     fn spec_test_6() {
         let original = r##">		foo"##;
         let expected = r##"<blockquote>
-<pre><code>  foo</code></pre>
+<pre><code>  foo
+</code></pre>
 </blockquote>
 "##;
 
@@ -149,7 +152,8 @@ extern crate pulldown_cmark;
         let original = r##"-		foo"##;
         let expected = r##"<ul>
 <li>
-<pre><code>  foo</code></pre>
+<pre><code>  foo
+</code></pre>
 </li>
 </ul>
 "##;
@@ -173,7 +177,8 @@ extern crate pulldown_cmark;
         let original = r##"    foo
 	bar"##;
         let expected = r##"<pre><code>foo
-bar</code></pre>
+bar
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -1759,7 +1764,8 @@ baz</p>
         let original = r##"    a simple
       indented code block"##;
         let expected = r##"<pre><code>a simple
-  indented code block</code></pre>
+  indented code block
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -1841,7 +1847,8 @@ baz</p>
         let expected = r##"<pre><code>&lt;a/&gt;
 *hi*
 
-- one</code></pre>
+- one
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -1873,7 +1880,8 @@ chunk2
 
 
 
-chunk3</code></pre>
+chunk3
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -1897,7 +1905,8 @@ chunk3</code></pre>
       chunk2"##;
         let expected = r##"<pre><code>chunk1
   
-  chunk2</code></pre>
+  chunk2
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -1996,7 +2005,8 @@ Heading
         let original = r##"        foo
     bar"##;
         let expected = r##"<pre><code>    foo
-bar</code></pre>
+bar
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -2041,7 +2051,8 @@ bar</code></pre>
     #[test]
     fn spec_test_87() {
         let original = r##"    foo  "##;
-        let expected = r##"<pre><code>foo  </code></pre>
+        let expected = r##"<pre><code>foo  
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -2236,7 +2247,8 @@ aaa
 aaa"##;
         let expected = r##"<pre><code>
 ```
-aaa</code></pre>
+aaa
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -2412,7 +2424,8 @@ aaa
     ```"##;
         let expected = r##"<pre><code>```
 aaa
-```</code></pre>
+```
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -2481,7 +2494,8 @@ aaa
 aaa
     ```"##;
         let expected = r##"<pre><code>aaa
-    ```</code></pre>
+    ```
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -2526,7 +2540,8 @@ aaa</p>
 aaa
 ~~~ ~~"##;
         let expected = r##"<pre><code>aaa
-~~~ ~~</code></pre>
+~~~ ~~
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -5329,7 +5344,8 @@ with two lines.</p>
         let expected = r##"<ul>
 <li>one</li>
 </ul>
-<pre><code> two</code></pre>
+<pre><code> two
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -5536,7 +5552,8 @@ with two lines.</p>
 <pre><code>bar
 
 
-baz</code></pre>
+baz
+</code></pre>
 </li>
 </ul>
 "##;
@@ -5697,7 +5714,8 @@ baz</code></pre>
         let expected = r##"<ol start="10">
 <li>
 <p>foo</p>
-<pre><code>bar</code></pre>
+<pre><code>bar
+</code></pre>
 </li>
 </ol>
 "##;
@@ -6213,7 +6231,8 @@ with two lines.</p>
 
         indented code
 
-    &gt; A block quote.</code></pre>
+    &gt; A block quote.
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -7475,7 +7494,8 @@ bar</p>
     #[test]
     fn spec_test_293() {
         let original = r##"    \[\]"##;
-        let expected = r##"<pre><code>\[\]</code></pre>
+        let expected = r##"<pre><code>\[\]
+</code></pre>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};

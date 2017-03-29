@@ -177,7 +177,7 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             print!(".");
         } else {
             if tests_failed == 0 {
-                print!("FAIL {}:\n\n---input---\n{}\n\n---wanted---\n{}\n\n---got---\n{}\n",
+                print!("FAIL {}:\n\n---input---\n{:?}\n\n---wanted---\n{:?}\n\n---got---\n{:?}\n",
                     test.n, test.input, test.expected, our_html);
             } else {
                 print!("X");

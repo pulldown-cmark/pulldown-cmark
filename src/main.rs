@@ -171,9 +171,9 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             print!(" ");
         }
 
-        let our_html = render_html(&test.input.replace("→", "\t").replace("\n", "\r\n"), opts);
+        let our_html = render_html(&test.input.replace("\n", "\r\n"), opts);
 
-        if our_html == test.expected.replace("→", "\t") {
+        if our_html == test.expected {
             print!(".");
         } else {
             if tests_failed == 0 {
@@ -236,7 +236,7 @@ pub fn main() {
         opts.insert(OPTION_ENABLE_FOOTNOTES);
     }
     if let Some(filename) = matches.opt_str("spec") {
-        run_spec(&read_file(&filename), &matches.free, opts);
+        run_spec(&read_file(&filename).replace("→", "\t"), &matches.free, opts);
     } else if let Some(filename) = matches.opt_str("bench") {
         let inp = read_file(&filename);
         for _ in 0..1000 {

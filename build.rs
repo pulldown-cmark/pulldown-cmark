@@ -127,12 +127,12 @@ impl<'a> Iterator for Spec<'a> {
             None => return None,
         };
 
-        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| pos + i_start){
+        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| (pos + 1) + i_start){
             Some(pos) => pos,
             None => return None,
         };
 
-        let e_end = match self.spec[i_end + 3..].find("````````````````````````````````\n").map(|pos| pos + i_end + 3){
+        let e_end = match self.spec[i_end + 2..].find("````````````````````````````````\n").map(|pos| pos + i_end + 2){
             Some(pos) => pos,
             None => return None,
         };
@@ -141,7 +141,7 @@ impl<'a> Iterator for Spec<'a> {
 
         let test_case = TestCase {
             original: spec[i_start .. i_end].to_string().replace("→", "\t"),
-            expected: spec[i_end + 3 .. e_end].to_string().replace("→", "\t")
+            expected: spec[i_end + 2 .. e_end].to_string().replace("→", "\t")
         };
 
         Some(test_case)

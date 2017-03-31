@@ -7,7 +7,8 @@ extern crate pulldown_cmark;
     #[test]
     fn spec_test_1() {
         let original = r##"Test header
------------"##;
+-----------
+"##;
         let expected = r##"<h2>Test header</h2>
 "##;
 
@@ -28,7 +29,8 @@ extern crate pulldown_cmark;
     #[test]
     fn spec_test_2() {
         let original = r##"Test|Table
-----|-----"##;
+----|-----
+"##;
         let expected = r##"<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
 </table>
 "##;
@@ -54,7 +56,8 @@ extern crate pulldown_cmark;
 Test row
 Test|2
 
-Test ending"##;
+Test ending
+"##;
         let expected = r##"<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
 <tr><td>Test row</td></tr>
 <tr><td>Test</td><td>2</td></tr>
@@ -83,7 +86,8 @@ Test ending"##;
 > Row 1 | Every
 > Row 2 | Day
 >
-> Paragraph"##;
+> Paragraph
+"##;
         let expected = r##"<blockquote>
 <table><thead><tr><td>Test  </td><td> Table</td></tr></thead>
 <tr><td>Row 1 </td><td> Every</td></tr>
@@ -115,7 +119,8 @@ Test ending"##;
     Col 1|Col 2
     -|-
     Row 1|Part 2
-    Row 2|Part 2"##;
+    Row 2|Part 2
+"##;
         let expected = r##"<ol>
 <li>
 <p>First entry</p>
@@ -149,7 +154,8 @@ Test ending"##;
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |R1C1 |R1C2 |
-|R2C1 |R2C2 |"##;
+|R2C1 |R2C2 |
+"##;
         let expected = r##"<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
 <tr><td>R1C1 </td><td>R1C2 </td></tr>
 <tr><td>R2C1 </td><td>R2C2 </td></tr>
@@ -175,7 +181,8 @@ Test ending"##;
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |       |       |
-|       |       |"##;
+|       |       |
+"##;
         let expected = r##"<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
 <tr><td>       </td><td>       </td></tr>
 <tr><td>       </td><td>       </td></tr>
@@ -201,7 +208,8 @@ Test ending"##;
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |   x   |       |
-|       |    x  |"##;
+|       |    x  |
+"##;
         let expected = r##"<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
 <tr><td>   x   </td><td>       </td></tr>
 <tr><td>       </td><td>    x  </td></tr>
@@ -227,7 +235,8 @@ Test ending"##;
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |✓    |✓    |
-|✓    |✓    |"##;
+|✓    |✓    |
+"##;
         let expected = r##"<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
 <tr><td>✓    </td><td>✓    </td></tr>
 <tr><td>✓    </td><td>✓    </td></tr>
@@ -258,7 +267,8 @@ Test ending"##;
 | `arm-unknown-linux-gnueabihf` |  ✓  |  ✓  |     | ARM Linux (2.6.18+)        |
 | `aarch64-unknown-linux-gnu`   |  ✓  |     |     | ARM64 Linux (2.6.18+)      |
 | `mips-unknown-linux-gnu`      |  ✓  |     |     | MIPS Linux (2.6.18+)       |
-| `mipsel-unknown-linux-gnu`    |  ✓  |     |     | MIPS (LE) Linux (2.6.18+)  |"##;
+| `mipsel-unknown-linux-gnu`    |  ✓  |     |     | MIPS (LE) Linux (2.6.18+)  |
+"##;
         let expected = r##"<table><thead><tr><td>  Target                       </td><td> std </td><td>rustc</td><td>cargo</td><td> notes                      </td></tr></thead>
 <tr><td> <code>x86_64-unknown-linux-musl</code>   </td><td>  ✓  </td><td>     </td><td>     </td><td> 64-bit Linux with MUSL     </td></tr>
 <tr><td> <code>arm-linux-androideabi</code>       </td><td>  ✓  </td><td>     </td><td>     </td><td> ARM Android                </td></tr>
@@ -287,7 +297,8 @@ Test ending"##;
     #[test]
     fn spec_test_11() {
         let original = r##"|-|-|
-|ぃ|い|"##;
+|ぃ|い|
+"##;
         let expected = r##"<p>|-|-|
 |ぃ|い|</p>
 "##;
@@ -310,7 +321,8 @@ Test ending"##;
     fn spec_test_12() {
         let original = r##"|ぁ|ぃ|
 |-|-|
-|ぃ|ぃ|"##;
+|ぃ|ぃ|
+"##;
         let expected = r##"<table><thead><tr><td>ぁ</td><td>ぃ</td></tr></thead>
 <tr><td>ぃ</td><td>ぃ</td></tr>
 </table>
@@ -334,7 +346,8 @@ Test ending"##;
     fn spec_test_13() {
         let original = r##"|Колонка 1|Колонка 2|
 |---------|---------|
-|Ячейка 1 |Ячейка 2 |"##;
+|Ячейка 1 |Ячейка 2 |
+"##;
         let expected = r##"<table><thead><tr><td>Колонка 1</td><td>Колонка 2</td></tr></thead>
 <tr><td>Ячейка 1 </td><td>Ячейка 2 </td></tr>
 </table>

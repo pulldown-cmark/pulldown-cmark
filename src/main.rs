@@ -118,12 +118,12 @@ impl<'a> Iterator for Spec<'a> {
             None => return None,
         };
 
-        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| pos + i_start){
+        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| (pos + 1) + i_start){
             Some(pos) => pos,
             None => return None,
         };
 
-        let e_end = match self.spec[i_end + 3..].find("````````````````````````````````\n").map(|pos| pos + i_end + 3){
+        let e_end = match self.spec[i_end + 2..].find("````````````````````````````````\n").map(|pos| pos + i_end + 2){
             Some(pos) => pos,
             None => return None,
         };
@@ -131,7 +131,7 @@ impl<'a> Iterator for Spec<'a> {
         self.test_n += 1;
         self.spec = &self.spec[e_end + 33 ..];
 
-        Some(TestCase::new(self.test_n, &spec[i_start .. i_end], &spec[i_end + 3 .. e_end]))
+        Some(TestCase::new(self.test_n, &spec[i_start .. i_end], &spec[i_end + 2 .. e_end]))
     }
 }
 
@@ -171,13 +171,13 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             print!(" ");
         }
 
-        let our_html = render_html(&test.input.replace("→", "\t").replace("\n", "\r\n"), opts);
+        let our_html = render_html(&test.input, opts);
 
-        if our_html == test.expected.replace("→", "\t") {
+        if our_html == test.expected {
             print!(".");
         } else {
             if tests_failed == 0 {
-                print!("FAIL {}:\n\n---input---\n{}\n\n---wanted---\n{}\n\n---got---\n{}\n",
+                print!("FAIL {}:\n\n---input---\n{:?}\n\n---wanted---\n{:?}\n\n---got---\n{:?}\n",
                     test.n, test.input, test.expected, our_html);
             } else {
                 print!("X");
@@ -236,7 +236,7 @@ pub fn main() {
         opts.insert(OPTION_ENABLE_FOOTNOTES);
     }
     if let Some(filename) = matches.opt_str("spec") {
-        run_spec(&read_file(&filename), &matches.free, opts);
+        run_spec(&read_file(&filename).replace("→", "\t"), &matches.free, opts);
     } else if let Some(filename) = matches.opt_str("bench") {
         let inp = read_file(&filename);
         for _ in 0..1000 {

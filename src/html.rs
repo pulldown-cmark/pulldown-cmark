@@ -59,7 +59,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 Html(html) |
                 InlineHtml(html) => self.buf.push_str(&html),
                 SoftBreak => self.buf.push('\n'),
-                HardBreak => self.buf.push_str("<br />\n"),
+                HardBreak => self.buf.push_str("<br />"),
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;
                     self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
@@ -68,7 +68,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                     let number = numbers.entry(name).or_insert(len);
                     self.buf.push_str(&*format!("{}", number));
                     self.buf.push_str("</a></sup>");
-                },
+                }
             }
         }
     }
@@ -81,7 +81,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::Rule => {
                 self.fresh_line();
-                self.buf.push_str("<hr />\n")
+                self.buf.push_str("<hr />")
             }
             Tag::Header(level) => {
                 self.fresh_line();
@@ -116,7 +116,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::BlockQuote => {
                 self.fresh_line();
-                self.buf.push_str("<blockquote>\n");
+                self.buf.push_str("<blockquote>");
             }
             Tag::CodeBlock(info) => {
                 self.fresh_line();
@@ -131,15 +131,15 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::List(Some(1)) => {
                 self.fresh_line();
-                self.buf.push_str("<ol>\n");
+                self.buf.push_str("<ol>");
             }
             Tag::List(Some(start)) => {
                 self.fresh_line();
-                let _ = write!(self.buf, "<ol start=\"{}\">\n", start);
+                let _ = write!(self.buf, "<ol start=\"{}\">", start);
             }
             Tag::List(None) => {
                 self.fresh_line();
-                self.buf.push_str("<ul>\n");
+                self.buf.push_str("<ul>");
             }
             Tag::Item => {
                 self.fresh_line();
@@ -183,22 +183,22 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
 
     fn end_tag(&mut self, tag: Tag) {
         match tag {
-            Tag::Paragraph => self.buf.push_str("</p>\n"),
+            Tag::Paragraph => self.buf.push_str("</p>"),
             Tag::Rule => (),
             Tag::Header(level) => {
                 self.buf.push_str("</h");
                 self.buf.push((b'0' + level as u8) as char);
-                self.buf.push_str(">\n");
+                self.buf.push_str(">");
             }
             Tag::Table(_) => {
-                self.buf.push_str("</tbody></table>\n");
+                self.buf.push_str("</tbody></table>");
             }
             Tag::TableHead => {
-                self.buf.push_str("</tr></thead><tbody>\n");
+                self.buf.push_str("</tr></thead><tbody>");
                 self.table_state = TableState::Body;
             }
             Tag::TableRow => {
-                self.buf.push_str("</tr>\n");
+                self.buf.push_str("</tr>");
             }
             Tag::TableCell => {
                 match self.table_state {
@@ -207,17 +207,17 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 }
                 self.table_cell_index += 1;
             }
-            Tag::BlockQuote => self.buf.push_str("</blockquote>\n"),
-            Tag::CodeBlock(_) => self.buf.push_str("</code></pre>\n"),
-            Tag::List(Some(_)) => self.buf.push_str("</ol>\n"),
-            Tag::List(None) => self.buf.push_str("</ul>\n"),
-            Tag::Item => self.buf.push_str("</li>\n"),
+            Tag::BlockQuote => self.buf.push_str("</blockquote>"),
+            Tag::CodeBlock(_) => self.buf.push_str("</code></pre>"),
+            Tag::List(Some(_)) => self.buf.push_str("</ol>"),
+            Tag::List(None) => self.buf.push_str("</ul>"),
+            Tag::Item => self.buf.push_str("</li>"),
             Tag::Emphasis => self.buf.push_str("</em>"),
             Tag::Strong => self.buf.push_str("</strong>"),
             Tag::Code => self.buf.push_str("</code>"),
             Tag::Link(_, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
-            Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
+            Tag::FootnoteDefinition(_) => self.buf.push_str("</div>"),
         }
     }
 

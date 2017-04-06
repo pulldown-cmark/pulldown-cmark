@@ -226,7 +226,7 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
                     break;
                 }
                 spaces = new_spaces;
-            },
+            }
             _ => break
         }
         i += 1;
@@ -324,17 +324,17 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
             }
             b'-' => {
                 start_col = false;
-            },
+            }
             b'|' => {
                 start_col = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
-            },
+            }
             _ => {
                 cols = vec![];
                 start_col = true;
-                break;
-            },
+                break
+            }
         }
         i += 1;
     }

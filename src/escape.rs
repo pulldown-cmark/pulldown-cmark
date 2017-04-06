@@ -49,10 +49,10 @@ pub fn escape_href(ob: &mut String, s: &str) {
             match c {
                 b'&' => {
                     ob.push_str("&amp;");
-                },
+                }
                 b'\'' => {
                     ob.push_str("&#x27;");
-                },
+                }
                 _ => {
                     let mut buf = [0u8; 3];
                     buf[0] = b'%';

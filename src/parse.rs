@@ -356,14 +356,15 @@ impl<'a> RawParser<'a> {
             if at_eol {
                 self.off += n;
                 self.state = State::StartBlock;
-                // two empty lines closes lists and footnotes
+                // two empty lines closes lists, one empty line closes a footnote
                 let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
                 //println!("{} empty lines (n = {})", empty_lines, n);
                 let mut closed = false;
-                if empty_lines >= 1 {
+                {
                     let mut close_tags: Vec<&mut (Tag<'a>, usize, usize)> = self.stack.iter_mut().skip_while(|tag| {
                         match tag.0 {
-                            Tag::List(_) | Tag::FootnoteDefinition(_) => false,
+                            Tag::List(_) => empty_lines == 0,
+                            Tag::FootnoteDefinition(_) => false,
                             _ => true,
                         }
                     }).collect();

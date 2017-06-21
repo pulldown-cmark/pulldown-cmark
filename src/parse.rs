@@ -126,10 +126,10 @@ pub enum Alignment {
 }
 
 bitflags! {
-    pub flags Options: u32 {
-        const OPTION_FIRST_PASS = 1 << 0,
-        const OPTION_ENABLE_TABLES = 1 << 1,
-        const OPTION_ENABLE_FOOTNOTES = 1 << 2,
+    pub struct Options: u32 {
+        const OPTION_FIRST_PASS = 1 << 0;
+        const OPTION_ENABLE_TABLES = 1 << 1;
+        const OPTION_ENABLE_FOOTNOTES = 1 << 2;
     }
 }
 

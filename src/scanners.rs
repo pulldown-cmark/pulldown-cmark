@@ -250,7 +250,7 @@ pub fn scan_hrule(data: &str) -> usize {
                 break;
             }
             c2 if c2 == c => n += 1,
-            b' ' => (),
+            b' '|b'\t' => (),
             _ => return 0
         }
         i += 1;

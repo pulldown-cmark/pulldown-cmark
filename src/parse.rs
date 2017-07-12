@@ -701,10 +701,6 @@ impl<'a> RawParser<'a> {
                     self.state = State::CodeLineStart;
                     break;
                 }
-                b'\t' => {
-                    if i > beg { break; }
-                    return self.char_tab();
-                }
                 b'\r' => {
                     // just skip it (does not support '\r' only line break)
                     if i > beg { break; }

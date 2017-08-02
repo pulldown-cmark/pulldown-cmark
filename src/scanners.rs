@@ -352,6 +352,9 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
 
 // returns: number of bytes scanned, char
 pub fn scan_code_fence(data: &str) -> (usize, u8) {
+    if data.is_empty() {
+        return (0, 0);
+    }
     let c = data.as_bytes()[0];
     if !(c == b'`' || c == b'~') { return (0, 0); }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);

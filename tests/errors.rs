@@ -18,3 +18,12 @@ fn test_unterminated_link() {
     let parser = Parser::new(&markdown);
     for _ in parser { }
 }
+
+#[test]
+fn test_infinite_loop() {
+    let markdown = "[<!W\n\\\n";
+    use pulldown_cmark::Parser;
+
+    let parser = Parser::new(&markdown);
+    for _ in parser { }
+}

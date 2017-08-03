@@ -1549,7 +1549,11 @@ impl<'a> RawParser<'a> {
         while i < data.len() {
             match data.as_bytes()[i] {
                 b'>' => return i + 1,
-                b'\n' => i += self.scan_whitespace_inline(&data[i..]),
+                b'\n' => {
+                    let n = self.scan_whitespace_inline(&data[i..]);
+                    if n == 0 { break; }
+                    i += n;
+                }
                 _ => i += 1
             }
         }

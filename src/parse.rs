@@ -755,8 +755,8 @@ impl<'a> RawParser<'a> {
             if self.off + 1 + beg_tag.len() < self.text.len() &&
                self.text[self.off + 1..].starts_with(&beg_tag[..]) {
                 let pos = self.off + beg_tag.len() + 1;
-                let s = &self.text[pos..pos + 1];
-                if s == " " || s == "\n" || s == ">" {
+                let s = self.text.as_bytes()[pos];
+                if s == b' ' || s == b'\n' || s == b'>' {
                     return Some(end_tag);
                 }
             }

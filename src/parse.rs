@@ -358,27 +358,21 @@ impl<'a> RawParser<'a> {
                 self.state = State::StartBlock;
                 // two empty lines closes lists, one empty line closes a footnote
                 let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
-                //println!("{} empty lines (n = {})", empty_lines, n);
-                let mut closed = false;
-                {
-                    let mut close_tags: Vec<&mut (Tag<'a>, usize, usize)> = self.stack.iter_mut().skip_while(|tag| {
-                        match tag.0 {
-                            Tag::List(_) => empty_lines == 0,
-                            Tag::FootnoteDefinition(_) => false,
-                            _ => true,
-                        }
-                    }).collect();
-                    if !close_tags.is_empty() {
-                        for tag in &mut close_tags {
+                for i in (0..self.stack.len()).rev() {
+                    let is_break = match self.stack[i].0 {
+                        Tag::List(_) => empty_lines >= 1,
+                        Tag::Item => false,
+                        Tag::FootnoteDefinition(_) => true,
+                        _ => break,
+                    };
+                    if is_break {
+                        for tag in &mut self.stack[i..] {
                             tag.1 = self.off; // limit
                             tag.2 = self.off; // next
                         }
-                        close_tags[0].2 = self.off + n; // next
-                        closed = true;
+                        self.stack[i].2 = self.off + n; // next
+                        return Some(self.end());
                     }
-                }
-                if closed {
-                    return Some(self.end());
                 }
                 self.off += n;
                 if let Some(_) = self.at_list(2) {
@@ -1364,7 +1358,14 @@ impl<'a> RawParser<'a> {
                 None
             } else {
                 let space = scan_whitespace_no_nl(&data[len + n_colon..]);
-                Some((name, len + n_colon + space))
+                // skip newline if definition is on a line by itself, as likely that
+                // means the footnote definition is a complex block.
+                let mut i = len + n_colon + space;
+                if let (n, true) = scan_eol(&data[i..]) {
+                    let (n_containers, _, _) = self.scan_containers(&data[i + n ..]);
+                    i += n + n_containers;
+                }
+                Some((name, i))
             }
         })
     }

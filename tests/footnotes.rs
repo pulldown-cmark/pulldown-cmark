@@ -101,8 +101,8 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 "##;
         let expected = r##"<div class="footnote-definition" id="lorem"><sup class="footnote-definition-label">1</sup>
 <p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.</p>
-<p>I had largely given over my inquiries into what Professor Angell called the &quot;Cthulhu Cult&quot;, and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 </div>
+<p>I had largely given over my inquiries into what Professor Angell called the &quot;Cthulhu Cult&quot;, and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 "##;
 
         use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
@@ -130,8 +130,8 @@ If a woodchuck could chuck wood.
 "##;
         let expected = r##"<div class="footnote-definition" id="ipsum"><sup class="footnote-definition-label">1</sup>
 <p>How much wood would a woodchuck chuck.</p>
-<p>If a woodchuck could chuck wood.</p>
 </div>
+<p>If a woodchuck could chuck wood.</p>
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
@@ -187,7 +187,6 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
 
 [^b]: This means that a footnote definition cannot be directly inside another footnote definition.
-
 > This means that a footnote cannot be directly inside another footnote's body. [^e]
 >
 > [^e]: They can, however, be inside anything else.

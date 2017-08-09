@@ -755,8 +755,8 @@ impl<'a> RawParser<'a> {
             if self.off + 1 + beg_tag.len() < self.text.len() &&
                self.text[self.off + 1..].starts_with(&beg_tag[..]) {
                 let pos = self.off + beg_tag.len() + 1;
-                let s = &self.text[pos..pos + 1];
-                if s == " " || s == "\n" || s == ">" {
+                let s = self.text.as_bytes()[pos];
+                if s == b' ' || s == b'\n' || s == b'>' {
                     return Some(end_tag);
                 }
             }
@@ -1549,7 +1549,11 @@ impl<'a> RawParser<'a> {
         while i < data.len() {
             match data.as_bytes()[i] {
                 b'>' => return i + 1,
-                b'\n' => i += self.scan_whitespace_inline(&data[i..]),
+                b'\n' => {
+                    let n = self.scan_whitespace_inline(&data[i..]);
+                    if n == 0 { break; }
+                    i += n;
+                }
                 _ => i += 1
             }
         }

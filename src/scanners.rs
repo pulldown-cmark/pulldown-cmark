@@ -520,11 +520,15 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
         i += 1;
     }
     let dest_end = i;
+    if dest_end > data.len() {
+        return None;
+    }
     if pointy {
         let n = scan_ch(&data[i..], b'>');
         if n == 0 { return None; }
         i += n;
     }
+
     Some((i, &data[dest_beg..dest_end]))
 }
 

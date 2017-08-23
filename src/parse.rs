@@ -245,10 +245,10 @@ impl<'a> RawParser<'a> {
     fn skip_blank_lines(&mut self) {
         loop {
             let ret = scan_blank_line(&self.text[self.off..]);
-            if ret == 0 {
+            if ret.is_none() {
                 break;
             }
-            self.off += ret;
+            self.off += ret.unwrap();
         }
     }
 
@@ -541,8 +541,8 @@ impl<'a> RawParser<'a> {
             }
         };
         let n = scan_blank_line(&self.text[off..]);
-        if n != 0 {
-            self.off = off + n;
+        if n.is_some() {
+            self.off = off + n.unwrap();
             return self.end();
         }
         self.state = State::TableRow;
@@ -600,8 +600,8 @@ impl<'a> RawParser<'a> {
                 }
                 self.off += n;
                 let n_blank = scan_blank_line(&self.text[self.off ..]);
-                if n_blank != 0 {
-                    self.off += n_blank;
+                if n_blank.is_some() {
+                    self.off += n_blank.unwrap();
                     self.state = State::StartBlock;
                 } else {
                     // TODO: deal with tab
@@ -644,10 +644,10 @@ impl<'a> RawParser<'a> {
 
         if self.fence_char == b'\0' {
             let n = scan_blank_line(&self.text[off..]);
-            if n != 0 {
+            if n.is_some() {
                 // TODO performance: this scanning is O(n^2) in the number of empty lines
-                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
-                let next = off + n + n_empty;
+                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n.unwrap() ..]);
+                let next = off + n.unwrap() + n_empty;
                 let (n_containers, scanned, nspace) = self.scan_containers(&self.text[next..]);
                 // TODO; handle space
                 if !scanned || self.is_code_block_end(next + n_containers, nspace) {
@@ -725,7 +725,7 @@ impl<'a> RawParser<'a> {
         } else if space <= 3 {
             let (n, c) = scan_code_fence(tail);
             c == self.fence_char && n >= self.fence_count &&
-                (n >= tail.len() || scan_blank_line(&tail[n..]) != 0)
+                (n >= tail.len() || scan_blank_line(&tail[n..]).is_some())
         } else {
             false
         }
@@ -767,7 +767,7 @@ impl<'a> RawParser<'a> {
             }
             let (n, scanned, space) = self.scan_containers(&self.text[i..]);
             let n_blank = scan_blank_line(&self.text[i + n ..]);
-            if n != 0 || !scanned || i + n == size || n_blank != 0 {
+            if n != 0 || !scanned || i + n == size || n_blank.is_some() {
                 if self.leading_space > 0 {
                     out = utils::cow_append(out, spaces(self.leading_space));
                 }
@@ -775,7 +775,7 @@ impl<'a> RawParser<'a> {
                 out = utils::cow_append(out, Borrowed(&self.text[mark..i]));
                 mark = i + n;
             }
-            if !scanned || i + n == size || n_blank != 0 {
+            if !scanned || i + n == size || n_blank.is_some() {
                 self.off = i;  // TODO: skip blank lines (cleaner source maps)
                 self.state = State::StartBlock;
                 return Event::Html(out)
@@ -857,7 +857,7 @@ impl<'a> RawParser<'a> {
     // determine whether the line starting at loc ends the block
     fn is_inline_block_end(&self, data: &str, space: usize) -> bool {
         data.is_empty() ||
-                scan_blank_line(data) != 0 ||
+                scan_blank_line(data).is_some() ||
                 space <= 3 && (scan_hrule(data) != 0 ||
                     scan_atx_header(data).0 != 0 ||
                     scan_code_fence(data).0 != 0 ||
@@ -891,7 +891,7 @@ impl<'a> RawParser<'a> {
                 n = 0;
                 break;
             }
-            n = if is_ascii_whitespace(bytes[i]) { scan_blank_line(&self.text[i..]) } else { 0 };
+            n = if is_ascii_whitespace(bytes[i]) { scan_blank_line(&self.text[i..]).unwrap() } else { 0 };
             if n != 0 {
                 if i > beg {
                     n = 0;

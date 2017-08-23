@@ -166,13 +166,12 @@ fn scan_trailing_codepoint(data: &str) -> Option<char> {
     }
 }
 
-// Maybe Option, size of 0 makes sense at EOF
-pub fn scan_blank_line(text: &str) -> usize {
+pub fn scan_blank_line(text: &str) -> Option<usize> {
     let i = scan_whitespace_no_nl(text);
     if let (n, true) = scan_eol(&text[i..]) {
-        i + n
+        Some(i + n)
     } else {
-        0
+        None
     }
 }
 
@@ -285,8 +284,8 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
     if !(c == b'-' || c == b'=') { return (0, 0); }
     i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
     let n = scan_blank_line(&data[i..]);
-    if n == 0 { return (0, 0); }
-    i += n;
+    if n.is_none() { return (0, 0); }
+    i += n.unwrap();
     let level = if c == b'=' { 1 } else { 2 };
     (i, level)
 }

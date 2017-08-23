@@ -151,6 +151,8 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             _ => ix += 1,
         }
     }
+    // need to close text at eof
+    tree.append_text(begin_text, ix);
     ix - start
 }
 

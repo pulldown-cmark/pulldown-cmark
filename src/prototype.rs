@@ -167,22 +167,14 @@ fn first_pass(s: &str) -> Tree<Item> {
             // blank line
             ix += scan_eol(&s[ix..]).0;
         } else {
-            let (mut leading_bytes, mut leading_space) = scan_leading_space(&s[ix..], 0);
+            let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
             ix += leading_bytes;
 
-            let hrule_size = scan_hrule(&s[ix..]);
-            if hrule_size > 0 {
-                tree.append(Item {
-                    start: ix,
-                    end: ix + hrule_size,
-                    body: ItemBody::Rule,
-                });
-                ix += hrule_size;
-                continue;
-            }
+            
 
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
-            if atx_level > 0 {
+            if atx_level > 0 && leading_spaces < 4 {
+                // println!("Found atx");
                 tree.append(Item {
                     start: ix,
                     end: 0, // set later
@@ -228,6 +220,35 @@ fn first_pass(s: &str) -> Tree<Item> {
                 tree.pop();
                 continue;
             }
+
+            let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+            if setext_bytes > 0 && leading_spaces < 4 {
+                // println!("Found possible setext.");
+                // the preceding lines must be a paragraph
+                if tree.cur != NIL {
+                    if let ItemBody::Paragraph = tree.nodes[tree.cur].item.body {
+                        // println!("setext confirmed");
+                        tree.nodes[tree.cur].item.body = ItemBody::Header(setext_level);
+                        tree.nodes[tree.cur].item.end += setext_bytes;
+                        ix += setext_bytes;
+                        continue;
+                    }
+                }
+            }
+
+            let hrule_size = scan_hrule(&s[ix..]);
+            if hrule_size > 0 && leading_spaces < 4 {
+                // println!("Found hrule");
+                tree.append(Item {
+                    start: ix,
+                    end: ix + hrule_size,
+                    body: ItemBody::Rule,
+                });
+                ix += hrule_size;
+                continue;
+            }
+
+            // println!("Examining paragraph");
 
             // start of paragraph
             tree.append(Item {

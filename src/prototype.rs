@@ -260,7 +260,25 @@ fn first_pass(s: &str) -> Tree<Item> {
             tree.push();
             let mut last_soft_break = None;
             while ix < s.len() {
-                ix += scan_whitespace_no_nl(&s[ix..]);
+                let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+                ix += leading_bytes;
+
+                // setext headers can interrupt paragraphs
+                let setext_bytes = scan_setext_header(&s[ix..]).0;
+                if setext_bytes > 0 && leading_spaces < 4 {
+                    break;
+                }
+                // thematic breaks can interrupt paragraphs
+                let hrule_bytes = scan_hrule(&s[ix..]);
+                if hrule_bytes > 0 && leading_spaces < 4 {
+                    break;
+                }
+                // atx headers can interrupt paragraphs
+                let atx_bytes = scan_atx_header(&s[ix..]).0;
+                if atx_bytes > 0 && leading_spaces < 4 {
+                    break;
+                }
+
                 if ix == s.len() || s.as_bytes()[ix] <= b' ' {
                     // EOF or empty line
                     break;

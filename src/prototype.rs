@@ -207,12 +207,16 @@ fn first_pass(s: &str) -> Tree<Item> {
                 while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
                     limit -= 1;
                 }
-                while limit > 0 && header_text.as_bytes()[limit-1] == b'#' {
-                    limit -= 1;
+                let mut closer = limit;
+                while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
+                    closer -= 1;
                 }
-                while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-                    limit -= 1;
-                }
+                if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
+                    limit = closer;
+                    while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                        limit -= 1;
+                    }
+                } else if closer == 0 { limit = closer; }
                 if tree.cur != NIL {
                     tree.nodes[tree.cur].item.end = limit + header_start;
                 }

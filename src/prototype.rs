@@ -92,6 +92,7 @@ enum ItemBody {
     Inline(usize, bool, bool),
     Emphasis,
     Strong,
+    Rule,
 }
 
 impl Tree<Item> {
@@ -150,6 +151,8 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             _ => ix += 1,
         }
     }
+    // need to close text at eof
+    tree.append_text(begin_text, ix);
     ix - start
 }
 
@@ -163,6 +166,20 @@ fn first_pass(s: &str) -> Tree<Item> {
             // blank line
             ix += scan_eol(&s[ix..]).0;
         } else {
+            let (mut leading_bytes, mut leading_space) = scan_leading_space(&s[ix..], 0);
+            ix += leading_bytes;
+
+            let hrule_size = scan_hrule(&s[ix..]);
+            if hrule_size > 0 {
+                tree.append(Item {
+                    start: ix,
+                    end: ix + hrule_size,
+                    body: ItemBody::Rule,
+                });
+                ix += hrule_size;
+                continue;
+            }
+
             // start of paragraph
             tree.append(Item {
                 start: ix,
@@ -349,6 +366,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Paragraph => Some(Tag::Paragraph),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
+        ItemBody::Rule => Some(Tag::Rule),
         _ => None,
     }
 }

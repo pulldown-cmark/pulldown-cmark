@@ -170,8 +170,6 @@ fn first_pass(s: &str) -> Tree<Item> {
             let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
             ix += leading_bytes;
 
-            
-
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
             if atx_level > 0 && leading_spaces < 4 {
                 // println!("Found atx");
@@ -225,21 +223,6 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
-            let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
-            if setext_bytes > 0 && leading_spaces < 4 {
-                // println!("Found possible setext.");
-                // the preceding lines must be a paragraph
-                if tree.cur != NIL {
-                    if let ItemBody::Paragraph = tree.nodes[tree.cur].item.body {
-                        // println!("setext confirmed");
-                        tree.nodes[tree.cur].item.body = ItemBody::Header(setext_level);
-                        tree.nodes[tree.cur].item.end += setext_bytes;
-                        ix += setext_bytes;
-                        continue;
-                    }
-                }
-            }
-
             let hrule_size = scan_hrule(&s[ix..]);
             if hrule_size > 0 && leading_spaces < 4 {
                 // println!("Found hrule");
@@ -251,8 +234,6 @@ fn first_pass(s: &str) -> Tree<Item> {
                 ix += hrule_size;
                 continue;
             }
-
-            // println!("Examining paragraph");
 
             // start of paragraph
             tree.append(Item {
@@ -268,8 +249,11 @@ fn first_pass(s: &str) -> Tree<Item> {
                 ix += leading_bytes;
 
                 // setext headers can interrupt paragraphs
-                let setext_bytes = scan_setext_header(&s[ix..]).0;
-                if setext_bytes > 0 && leading_spaces < 4 {
+                // but can't be preceded by an empty line. 
+                let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+                if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
+                    ix += setext_bytes;
+                    tree.nodes[cur].item.body = ItemBody::Header(setext_level);
                     break;
                 }
                 // thematic breaks can interrupt paragraphs

@@ -93,6 +93,7 @@ enum ItemBody {
     Emphasis,
     Strong,
     Rule,
+    Header(i32),
 }
 
 impl Tree<Item> {
@@ -177,6 +178,54 @@ fn first_pass(s: &str) -> Tree<Item> {
                     body: ItemBody::Rule,
                 });
                 ix += hrule_size;
+                continue;
+            }
+
+            let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+            if atx_level > 0 {
+                tree.append(Item {
+                    start: ix,
+                    end: 0, // set later
+                    body: ItemBody::Header(atx_level),
+                });
+                ix += atx_size;
+                // next char is space or scan_eol
+                // (guaranteed by scan_atx_header)
+                let b = s.as_bytes()[ix];
+                if b == b'\n' || b == b'\r' {
+                    ix += scan_eol(&s[ix..]).0;
+                    continue;
+                }
+                // skip leading spaces
+                let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
+                ix += skip_spaces;
+
+                // now handle the header text
+                let header_start = ix;
+                let header_node_idx = tree.cur; // so that we can set the endpoint later
+                tree.push();
+                let header_text_size = parse_line(&mut tree, s, ix);
+                ix += header_text_size;
+                tree.nodes[header_node_idx].item.end = ix;
+
+
+                // remove trailing matter from header text
+                let header_text = &s[header_start..];
+                let mut limit = ix - header_start;
+                while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                    limit -= 1;
+                }
+                while limit > 0 && header_text.as_bytes()[limit-1] == b'#' {
+                    limit -= 1;
+                }
+                while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                    limit -= 1;
+                }
+                if tree.cur != NIL {
+                    tree.nodes[tree.cur].item.end = limit + header_start;
+                }
+
+                tree.pop();
                 continue;
             }
 
@@ -367,6 +416,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
+        ItemBody::Header(level) => Some(Tag::Header(level)),
         _ => None,
     }
 }

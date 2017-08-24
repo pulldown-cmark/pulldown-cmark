@@ -173,12 +173,12 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
 
         let our_html = render_html(&test.input.replace("→", "\t").replace("\n", "\r\n"), opts);
 
-        if our_html == test.expected {
+        if our_html == test.expected.replace("→", "\t") {
             print!(".");
         } else {
             if tests_failed == 0 {
                 print!("FAIL {}:\n\n---input---\n{}\n\n---wanted---\n{}\n\n---got---\n{}\n",
-                    test.n, test.input, test.expected, our_html);
+                    test.n, test.input, test.expected, our_html.replace("\t","→"));
             } else {
                 print!("X");
             }

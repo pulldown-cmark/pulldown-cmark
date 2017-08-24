@@ -93,6 +93,7 @@ enum ItemBody {
     Emphasis,
     Strong,
     Rule,
+    Header(i32),
 }
 
 impl Tree<Item> {
@@ -166,11 +167,64 @@ fn first_pass(s: &str) -> Tree<Item> {
             // blank line
             ix += scan_eol(&s[ix..]).0;
         } else {
-            let (mut leading_bytes, mut leading_space) = scan_leading_space(&s[ix..], 0);
+            let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
             ix += leading_bytes;
 
+            let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+            if atx_level > 0 && leading_spaces < 4 {
+                // println!("Found atx");
+                tree.append(Item {
+                    start: ix,
+                    end: 0, // set later
+                    body: ItemBody::Header(atx_level),
+                });
+                ix += atx_size;
+                // next char is space or scan_eol
+                // (guaranteed by scan_atx_header)
+                let b = s.as_bytes()[ix];
+                if b == b'\n' || b == b'\r' {
+                    ix += scan_eol(&s[ix..]).0;
+                    continue;
+                }
+                // skip leading spaces
+                let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
+                ix += skip_spaces;
+
+                // now handle the header text
+                let header_start = ix;
+                let header_node_idx = tree.cur; // so that we can set the endpoint later
+                tree.push();
+                let header_text_size = parse_line(&mut tree, s, ix);
+                ix += header_text_size;
+                tree.nodes[header_node_idx].item.end = ix;
+
+
+                // remove trailing matter from header text
+                let header_text = &s[header_start..];
+                let mut limit = ix - header_start;
+                while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                    limit -= 1;
+                }
+                let mut closer = limit;
+                while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
+                    closer -= 1;
+                }
+                if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
+                    limit = closer;
+                    while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                        limit -= 1;
+                    }
+                } else if closer == 0 { limit = closer; }
+                if tree.cur != NIL {
+                    tree.nodes[tree.cur].item.end = limit + header_start;
+                }
+
+                tree.pop();
+                continue;
+            }
+
             let hrule_size = scan_hrule(&s[ix..]);
-            if hrule_size > 0 {
+            if hrule_size > 0 && leading_spaces < 4 {
                 tree.append(Item {
                     start: ix,
                     end: ix + hrule_size,
@@ -190,7 +244,28 @@ fn first_pass(s: &str) -> Tree<Item> {
             tree.push();
             let mut last_soft_break = None;
             while ix < s.len() {
-                ix += scan_whitespace_no_nl(&s[ix..]);
+                let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+                ix += leading_bytes;
+
+                // setext headers can interrupt paragraphs
+                // but can't be preceded by an empty line. 
+                let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+                if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
+                    ix += setext_bytes;
+                    tree.nodes[cur].item.body = ItemBody::Header(setext_level);
+                    break;
+                }
+                // thematic breaks can interrupt paragraphs
+                let hrule_bytes = scan_hrule(&s[ix..]);
+                if hrule_bytes > 0 && leading_spaces < 4 {
+                    break;
+                }
+                // atx headers can interrupt paragraphs
+                let atx_bytes = scan_atx_header(&s[ix..]).0;
+                if atx_bytes > 0 && leading_spaces < 4 {
+                    break;
+                }
+
                 if ix == s.len() || s.as_bytes()[ix] <= b' ' {
                     // EOF or empty line
                     break;
@@ -367,6 +442,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
+        ItemBody::Header(level) => Some(Tag::Header(level)),
         _ => None,
     }
 }

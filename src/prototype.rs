@@ -159,6 +159,181 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     ix - start
 }
 
+fn parse_indented_code_block(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    let codeblock_parent = tree.cur;
+    tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::CodeBlock
+        });
+    let codeblock_node = tree.cur;
+    tree.push();
+    let mut last_chunk = NIL;
+
+    // skip leading blanklines
+    while ix < s.len() {
+        if let Some(bl_size) = scan_blank_line(&s[ix..]) {
+            ix += bl_size;
+        } else { break; }
+    }
+
+    while ix < s.len() {
+        if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
+            let (codeline_end_offset, is_eof) = scan_nextline_icb(&s[ix..]);
+            tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
+
+            if is_eof {
+                tree.append(Item {
+                        start: codeline_end_offset,
+                        end: codeline_end_offset,
+                        body: ItemBody::SynthesizeNewLine,
+                });
+            }
+
+            if scan_blank_line(&s[ix..]).is_none() {
+                last_chunk = tree.cur;
+            }
+            ix += codeline_end_offset;
+        } else { // we've hit a non-indented line
+            break;
+        }
+    }
+    if last_chunk != NIL {
+        // everything after last_chunk is blank,
+        // and should be detached
+        tree.nodes[last_chunk].next = NIL;
+    } else {
+        // if we never saw a nonblank chunk then
+        // this isn't a valid codeblock, so detach it
+        tree.nodes[codeblock_parent].child = NIL;
+        // pop to the codeblock, next pop will rise
+        // to the parent, leaving detached codeblock behind
+        tree.pop();
+    }
+    tree.pop();
+    tree.nodes[codeblock_node].item.end = ix;
+    ix
+}
+
+fn parse_atx_header(mut tree : &mut Tree<Item>, s : &str, mut ix : usize,
+    atx_level : i32, atx_size : usize) -> usize {
+    
+    tree.append(Item {
+        start: ix,
+        end: 0, // set later
+        body: ItemBody::Header(atx_level),
+    });
+    ix += atx_size;
+    // next char is space or scan_eol
+    // (guaranteed by scan_atx_header)
+    let b = s.as_bytes()[ix];
+    if b == b'\n' || b == b'\r' {
+        ix += scan_eol(&s[ix..]).0;
+        return ix;
+    }
+    // skip leading spaces
+    let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
+    ix += skip_spaces;
+
+    // now handle the header text
+    let header_start = ix;
+    let header_node_idx = tree.cur; // so that we can set the endpoint later
+    tree.push();
+    let header_text_size = parse_line(&mut tree, s, ix);
+    ix += header_text_size;
+    tree.nodes[header_node_idx].item.end = ix;
+
+
+    // remove trailing matter from header text
+    let header_text = &s[header_start..];
+    let mut limit = ix - header_start;
+    while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+        limit -= 1;
+    }
+    let mut closer = limit;
+    while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
+        closer -= 1;
+    }
+    if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
+        limit = closer;
+        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+            limit -= 1;
+        }
+    } else if closer == 0 { limit = closer; }
+    if tree.cur != NIL {
+        tree.nodes[tree.cur].item.end = limit + header_start;
+    }
+
+    tree.pop();
+    ix
+}
+
+fn parse_hrule(mut tree : &mut Tree<Item>, hrule_size : usize, mut ix : usize) -> usize {
+    tree.append(Item {
+        start: ix,
+        end: ix + hrule_size,
+        body: ItemBody::Rule,
+    });
+    ix += hrule_size;
+    ix
+}
+
+fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    tree.append(Item {
+        start: ix,
+        end: 0,  // will get set later
+        body: ItemBody::Paragraph,
+    });
+    let cur = tree.cur;
+    tree.push();
+    let mut last_soft_break = None;
+    while ix < s.len() {
+        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+        ix += leading_bytes;
+
+        // setext headers can interrupt paragraphs
+        // but can't be preceded by an empty line. 
+        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+        if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
+            ix += setext_bytes;
+            tree.nodes[cur].item.body = ItemBody::Header(setext_level);
+            break;
+        }
+        // thematic breaks can interrupt paragraphs
+        let hrule_bytes = scan_hrule(&s[ix..]);
+        if hrule_bytes > 0 && leading_spaces < 4 {
+            break;
+        }
+        // atx headers can interrupt paragraphs
+        let atx_bytes = scan_atx_header(&s[ix..]).0;
+        if atx_bytes > 0 && leading_spaces < 4 {
+            break;
+        }
+
+        if ix == s.len() || s.as_bytes()[ix] <= b' ' {
+            // EOF or empty line
+            break;
+        }
+        if let Some(pos) = last_soft_break {
+            tree.append(Item {
+                start: pos,
+                end: pos + 1,  // TODO: handle \r\n
+                body: ItemBody::SoftBreak,
+            });
+        }
+        let n = parse_line(&mut tree, s, ix);
+        ix += n;
+        if let (n, true) = scan_eol(&s[ix..]) {
+            last_soft_break = Some(ix);
+            ix += n;  // skip newline
+        }
+    }
+    tree.pop();
+    tree.nodes[cur].item.end = ix;
+    ix
+}
+
+
 // Root is node 0
 fn first_pass(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
@@ -171,182 +346,25 @@ fn first_pass(s: &str) -> Tree<Item> {
         } else {
             let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
             
-
-            // Indented Code Blocks
             if leading_spaces >= 4 {
-                let codeblock_parent = tree.cur;
-                tree.append(Item {
-                        start: ix,
-                        end: 0, // set later
-                        body: ItemBody::CodeBlock
-                    });
-                let codeblock_node = tree.cur;
-                tree.push();
-                let mut last_chunk = NIL;
-
-                // skip leading blanklines
-                while ix < s.len() {
-                    if let Some(bl_size) = scan_blank_line(&s[ix..]) {
-                        ix += bl_size;
-                    } else { break; }
-                }
-
-                while ix < s.len() {
-                    if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
-                        let (codeline_end_offset, is_eof) = scan_nextline_icb(&s[ix..]);
-                        tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
-
-                        if is_eof {
-                            tree.append(Item {
-                                    start: codeline_end_offset,
-                                    end: codeline_end_offset,
-                                    body: ItemBody::SynthesizeNewLine,
-                            });
-                        }
-
-                        if scan_blank_line(&s[ix..]).is_none() {
-                            last_chunk = tree.cur;
-                        }
-                        ix += codeline_end_offset;
-                    } else { // we've hit a non-indented line
-                        break;
-                    }
-                }
-                if last_chunk != NIL {
-                    // everything after last_chunk is blank,
-                    // and should be detached
-                    tree.nodes[last_chunk].next = NIL;
-                } else {
-                    // if we never saw a nonblank chunk then
-                    // this isn't a valid codeblock, so detach it
-                    tree.nodes[codeblock_parent].child = NIL;
-                    // pop to the codeblock, next pop will rise
-                    // to the parent, leaving detached codeblock behind
-                    tree.pop();
-                }
-                tree.pop();
-                tree.nodes[codeblock_node].item.end = ix;
+                ix = parse_indented_code_block(&mut tree, s, ix);
                 continue;
             }
             ix += leading_bytes;
 
-            // ATX headers
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
             if atx_level > 0 && leading_spaces < 4 {
-                tree.append(Item {
-                    start: ix,
-                    end: 0, // set later
-                    body: ItemBody::Header(atx_level),
-                });
-                ix += atx_size;
-                // next char is space or scan_eol
-                // (guaranteed by scan_atx_header)
-                let b = s.as_bytes()[ix];
-                if b == b'\n' || b == b'\r' {
-                    ix += scan_eol(&s[ix..]).0;
-                    continue;
-                }
-                // skip leading spaces
-                let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
-                ix += skip_spaces;
-
-                // now handle the header text
-                let header_start = ix;
-                let header_node_idx = tree.cur; // so that we can set the endpoint later
-                tree.push();
-                let header_text_size = parse_line(&mut tree, s, ix);
-                ix += header_text_size;
-                tree.nodes[header_node_idx].item.end = ix;
-
-
-                // remove trailing matter from header text
-                let header_text = &s[header_start..];
-                let mut limit = ix - header_start;
-                while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-                    limit -= 1;
-                }
-                let mut closer = limit;
-                while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
-                    closer -= 1;
-                }
-                if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
-                    limit = closer;
-                    while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-                        limit -= 1;
-                    }
-                } else if closer == 0 { limit = closer; }
-                if tree.cur != NIL {
-                    tree.nodes[tree.cur].item.end = limit + header_start;
-                }
-
-                tree.pop();
+                ix = parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
                 continue;
             }
 
-            // Thematic Breaks
             let hrule_size = scan_hrule(&s[ix..]);
             if hrule_size > 0 && leading_spaces < 4 {
-                tree.append(Item {
-                    start: ix,
-                    end: ix + hrule_size,
-                    body: ItemBody::Rule,
-                });
-                ix += hrule_size;
+                ix = parse_hrule(&mut tree, hrule_size, ix);
                 continue;
             }
 
-            // Paragraphs
-            tree.append(Item {
-                start: ix,
-                end: 0,  // will get set later
-                body: ItemBody::Paragraph,
-            });
-            let cur = tree.cur;
-            tree.push();
-            let mut last_soft_break = None;
-            while ix < s.len() {
-                let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-                ix += leading_bytes;
-
-                // setext headers can interrupt paragraphs
-                // but can't be preceded by an empty line. 
-                let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
-                if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
-                    ix += setext_bytes;
-                    tree.nodes[cur].item.body = ItemBody::Header(setext_level);
-                    break;
-                }
-                // thematic breaks can interrupt paragraphs
-                let hrule_bytes = scan_hrule(&s[ix..]);
-                if hrule_bytes > 0 && leading_spaces < 4 {
-                    break;
-                }
-                // atx headers can interrupt paragraphs
-                let atx_bytes = scan_atx_header(&s[ix..]).0;
-                if atx_bytes > 0 && leading_spaces < 4 {
-                    break;
-                }
-
-                if ix == s.len() || s.as_bytes()[ix] <= b' ' {
-                    // EOF or empty line
-                    break;
-                }
-                if let Some(pos) = last_soft_break {
-                    tree.append(Item {
-                        start: pos,
-                        end: pos + 1,  // TODO: handle \r\n
-                        body: ItemBody::SoftBreak,
-                    });
-                }
-                let n = parse_line(&mut tree, s, ix);
-                ix += n;
-                if let (n, true) = scan_eol(&s[ix..]) {
-                    last_soft_break = Some(ix);
-                    ix += n;  // skip newline
-                }
-            }
-            tree.pop();
-            tree.nodes[cur].item.end = ix;
+            ix = parse_paragraph(&mut tree, s, ix);
         }
     }
     tree

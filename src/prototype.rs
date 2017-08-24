@@ -179,21 +179,21 @@ fn parse_indented_code_block(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
 
     while ix < s.len() {
         if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
-            let (codeline_end_offset, is_eof) = scan_nextline_icb(&s[ix..]);
+
+            let codeline_end_offset = scan_line_ending(&s[ix..]);
             tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
 
-            if is_eof {
-                tree.append(Item {
-                        start: codeline_end_offset,
-                        end: codeline_end_offset,
-                        body: ItemBody::SynthesizeNewLine,
-                });
-            }
+            tree.append(Item {
+                    start: codeline_end_offset,
+                    end: codeline_end_offset,
+                    body: ItemBody::SynthesizeNewLine,
+            });
 
             if scan_blank_line(&s[ix..]).is_none() {
                 last_chunk = tree.cur;
             }
             ix += codeline_end_offset;
+            ix += scan_eol(&s[ix..]).0;
         } else { // we've hit a non-indented line
             break;
         }

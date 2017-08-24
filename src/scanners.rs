@@ -133,6 +133,13 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
     }
 }
 
+pub fn scan_line_ending(s: &str) -> usize {
+    match s.as_bytes().iter().position(|&c| c == b'\r' || c == b'\n') {
+        Some(i) => i,
+        None => s.len()
+    }
+}
+
 // unusual among "scan" functions in that it scans from the _back_ of the string
 // TODO: should also scan unicode whitespace?
 pub fn scan_trailing_whitespace(data: &str) -> usize {
@@ -179,13 +186,6 @@ pub fn scan_nextline(s: &str) -> usize {
     match s.as_bytes().iter().position(|&c| c == b'\n') {
         Some(x) => x + 1,
         None => s.len()
-    }
-}
-
-pub fn scan_nextline_icb(s: &str) -> (usize, bool) {
-    match s.as_bytes().iter().position(|&c| c == b'\n') {
-        Some(x) => (x + 1, false),
-        None => (s.len(), true),
     }
 }
 

@@ -283,9 +283,11 @@ pub fn scan_setext_header(data: &str) -> (usize, i32) {
     let c = data.as_bytes()[i];
     if !(c == b'-' || c == b'=') { return (0, 0); }
     i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
-    let n = scan_blank_line(&data[i..]);
-    if n.is_none() { return (0, 0); }
-    i += n.unwrap();
+    if let Some(n) = scan_blank_line(&data[i..]) {
+        i += n;
+    } else {
+        return (0, 0);
+    }
     let level = if c == b'=' { 1 } else { 2 };
     (i, level)
 }

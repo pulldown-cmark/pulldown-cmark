@@ -225,7 +225,6 @@ fn first_pass(s: &str) -> Tree<Item> {
 
             let hrule_size = scan_hrule(&s[ix..]);
             if hrule_size > 0 && leading_spaces < 4 {
-                // println!("Found hrule");
                 tree.append(Item {
                     start: ix,
                     end: ix + hrule_size,

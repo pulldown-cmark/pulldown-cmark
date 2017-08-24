@@ -541,8 +541,8 @@ impl<'a> RawParser<'a> {
             }
         };
         let n = scan_blank_line(&self.text[off..]);
-        if n.is_some() {
-            self.off = off + n.unwrap();
+        if let Some(n) = n {
+            self.off = off + n;
             return self.end();
         }
         self.state = State::TableRow;
@@ -644,10 +644,10 @@ impl<'a> RawParser<'a> {
 
         if self.fence_char == b'\0' {
             let n = scan_blank_line(&self.text[off..]);
-            if n.is_some() {
+            if let Some(n) = n {
                 // TODO performance: this scanning is O(n^2) in the number of empty lines
-                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n.unwrap() ..]);
-                let next = off + n.unwrap() + n_empty;
+                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
+                let next = off + n + n_empty;
                 let (n_containers, scanned, nspace) = self.scan_containers(&self.text[next..]);
                 // TODO; handle space
                 if !scanned || self.is_code_block_end(next + n_containers, nspace) {

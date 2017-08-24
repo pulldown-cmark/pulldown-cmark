@@ -94,6 +94,8 @@ enum ItemBody {
     Strong,
     Rule,
     Header(i32),
+    CodeBlock,
+    SynthesizeNewLine,
 }
 
 impl Tree<Item> {
@@ -168,11 +170,69 @@ fn first_pass(s: &str) -> Tree<Item> {
             ix += scan_eol(&s[ix..]).0;
         } else {
             let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+            
+
+            // Indented Code Blocks
+            if leading_spaces >= 4 {
+                let codeblock_parent = tree.cur;
+                tree.append(Item {
+                        start: ix,
+                        end: 0, // set later
+                        body: ItemBody::CodeBlock
+                    });
+                let codeblock_node = tree.cur;
+                tree.push();
+                let mut last_chunk = NIL;
+
+                // skip leading blanklines
+                while ix < s.len() {
+                    if let Some(bl_size) = scan_blank_line(&s[ix..]) {
+                        ix += bl_size;
+                    } else { break; }
+                }
+
+                while ix < s.len() {
+                    if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
+                        let (codeline_end_offset, is_eof) = scan_nextline_icb(&s[ix..]);
+                        tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
+
+                        if is_eof {
+                            tree.append(Item {
+                                    start: codeline_end_offset,
+                                    end: codeline_end_offset,
+                                    body: ItemBody::SynthesizeNewLine,
+                            });
+                        }
+
+                        if scan_blank_line(&s[ix..]).is_none() {
+                            last_chunk = tree.cur;
+                        }
+                        ix += codeline_end_offset;
+                    } else { // we've hit a non-indented line
+                        break;
+                    }
+                }
+                if last_chunk != NIL {
+                    // everything after last_chunk is blank,
+                    // and should be detached
+                    tree.nodes[last_chunk].next = NIL;
+                } else {
+                    // if we never saw a nonblank chunk then
+                    // this isn't a valid codeblock, so detach it
+                    tree.nodes[codeblock_parent].child = NIL;
+                    // pop to the codeblock, next pop will rise
+                    // to the parent, leaving detached codeblock behind
+                    tree.pop();
+                }
+                tree.pop();
+                tree.nodes[codeblock_node].item.end = ix;
+                continue;
+            }
             ix += leading_bytes;
 
+            // ATX headers
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
             if atx_level > 0 && leading_spaces < 4 {
-                // println!("Found atx");
                 tree.append(Item {
                     start: ix,
                     end: 0, // set later
@@ -223,6 +283,7 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
+            // Thematic Breaks
             let hrule_size = scan_hrule(&s[ix..]);
             if hrule_size > 0 && leading_spaces < 4 {
                 tree.append(Item {
@@ -234,7 +295,7 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
-            // start of paragraph
+            // Paragraphs
             tree.append(Item {
                 start: ix,
                 end: 0,  // will get set later
@@ -443,6 +504,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
+        ItemBody::CodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         _ => None,
     }
 }
@@ -452,6 +514,9 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
     match item.body {
         ItemBody::Text => {
             Event::Text(Cow::from(&text[item.start..item.end]))
+        },
+        ItemBody::SynthesizeNewLine => {
+            Event::Text(Cow::from("\n"))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)

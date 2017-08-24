@@ -182,6 +182,13 @@ pub fn scan_nextline(s: &str) -> usize {
     }
 }
 
+pub fn scan_nextline_icb(s: &str) -> (usize, bool) {
+    match s.as_bytes().iter().position(|&c| c == b'\n') {
+        Some(x) => (x + 1, false),
+        None => (s.len(), true),
+    }
+}
+
 pub fn count_tab(bytes: &[u8]) -> usize {
     let mut count = 0;
     for &c in bytes.iter().rev() {
@@ -209,6 +216,25 @@ pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
         i += 1
     }
     (i, spaces)
+}
+
+// return: start byte for code text in indented code line, or None
+// for a non-code line
+pub fn scan_code_line(text: &str) -> Option<usize> {
+    let bytes = text.as_bytes();
+    let mut num_spaces = 0;
+    let mut i = 0;
+    for &c in bytes {
+        if num_spaces == 4 { return Some(4); }
+        match c {
+            b' ' => num_spaces += 1,
+            b'\t' => { return Some(i+1); },
+            b'\n' | b'\r' => { return Some(i); }, 
+            _ => { return None; },
+        }
+        i += 1;
+    }
+    return None;
 }
 
 // returned pair is (number of bytes, number of spaces)

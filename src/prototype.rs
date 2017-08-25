@@ -397,6 +397,17 @@ fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
     s.len()
 }
 
+fn scan_paragraph_interrupt(s: &str, leading_spaces: usize) -> bool {
+    leading_spaces < 4 &&
+    (s.is_empty() ||
+        s.as_bytes()[0] <= b' ' ||
+        scan_hrule(s) > 0 ||
+        scan_atx_header(s).0 > 0 ||
+        scan_code_fence(s).0 > 0 ||
+        get_html_end_tag(s).is_some() ||
+        is_html_tag(scan_html_block_tag(s).1))
+}
+
 fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
@@ -418,38 +429,9 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
             tree.nodes[cur].item.body = ItemBody::Header(setext_level);
             break;
         }
-        // thematic breaks can interrupt paragraphs
-        let hrule_bytes = scan_hrule(&s[ix..]);
-        if hrule_bytes > 0 && leading_spaces < 4 {
-            break;
-        }
-        // atx headers can interrupt paragraphs
-        let atx_bytes = scan_atx_header(&s[ix..]).0;
-        if atx_bytes > 0 && leading_spaces < 4 {
-            break;
-        }
 
-        // code fence blocks can interrupt paragraphs
-        let code_fence_size = scan_code_fence(&s[ix..]).0;
-        if code_fence_size > 0 && leading_spaces < 4 {
-            break;
-        }
+        if scan_paragraph_interrupt(&s[ix..], leading_spaces) { break; }
 
-        // html blocks type 1 to 5 can interrupt paragraphs
-        if let Some(_) = get_html_end_tag(&s[ix..]) {
-            break;
-        }
-
-        // html block type 6 can interrupt paragraphs
-        let possible_tag = scan_html_block_tag(&s[ix..]).1;
-        if is_html_tag(possible_tag) {
-            break;
-        }
-
-        if ix == s.len() || s.as_bytes()[ix] <= b' ' {
-            // EOF or empty line
-            break;
-        }
         if let Some(pos) = last_soft_break {
             tree.append(Item {
                 start: pos,

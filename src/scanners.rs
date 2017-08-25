@@ -237,6 +237,35 @@ pub fn scan_code_line(text: &str) -> Option<usize> {
     return None;
 }
 
+// return: start byte for code text in fenced code line
+// of given indentation
+pub fn scan_fenced_code_line(text : &str, mut indentation : usize) -> usize {
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    for &c in bytes {
+        if indentation == 0 || c != b' ' { return i; }
+        indentation -= 1;
+        i += 1;
+    }
+    i
+}
+
+// return: end byte for closing code fence, or None
+// if the line is not a closing code fence
+pub fn scan_closing_code_fence(text : &str, fence_char : u8, num_fence_chars_req : usize) -> Option<usize> {
+    let mut i = 0;
+    let (num_leading_bytes, num_leading_spaces) = scan_leading_space(text, 0);
+    if num_leading_spaces >= 4 { return None; }
+    i += num_leading_bytes;
+    let num_fence_chars_found = scan_ch_repeat(&text[i..], fence_char);
+    if num_fence_chars_found < num_fence_chars_req { return None; }
+    i += num_fence_chars_found;
+    let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
+    i += num_trailing_spaces;
+    if scan_eol(&text[i..]).1 { return Some(i); }
+    return None;
+}
+
 // returned pair is (number of bytes, number of spaces)
 pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
     let bytes = text.as_bytes();
@@ -379,6 +408,7 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
 
 // returns: number of bytes scanned, char
 pub fn scan_code_fence(data: &str) -> (usize, u8) {
+    if data.is_empty() { return (0,0); }
     let c = data.as_bytes()[0];
     if !(c == b'`' || c == b'~') { return (0, 0); }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);

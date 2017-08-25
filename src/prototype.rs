@@ -278,6 +278,42 @@ fn parse_hrule(mut tree : &mut Tree<Item>, hrule_size : usize, mut ix : usize) -
     ix
 }
 
+fn parse_code_fence_block(mut tree : &mut Tree<Item>, s : &str, mut ix : usize, indentation : usize) -> usize {
+    tree.append(Item {
+        start: ix,
+        end: 0, // set later
+        body: ItemBody::CodeBlock,
+    });
+    
+    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
+    // TODO: parse code fence info
+    ix += scan_nextline(&s[ix..]);
+
+    let codeblock_node = tree.cur;
+    tree.push();
+
+    while ix < s.len() {
+        if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
+            ix += code_fence_end;
+            ix += scan_eol(&s[ix..]).0;
+            break;
+        }
+        let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
+        let fenced_line_end_offset = scan_line_ending(&s[ix..]);
+        tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
+        tree.append(Item {
+                start: fenced_line_end_offset,
+                end: fenced_line_end_offset,
+                body: ItemBody::SynthesizeNewLine,
+        });
+        ix += fenced_line_end_offset;
+        ix += scan_eol(&s[ix..]).0;
+    }
+    tree.nodes[codeblock_node].item.end = ix;
+    tree.pop();
+    ix
+}
+
 fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
@@ -307,6 +343,12 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
         // atx headers can interrupt paragraphs
         let atx_bytes = scan_atx_header(&s[ix..]).0;
         if atx_bytes > 0 && leading_spaces < 4 {
+            break;
+        }
+
+        // code fence blocks can interrupt paragraphs
+        let code_fence_size = scan_code_fence(&s[ix..]).0;
+        if code_fence_size > 0 && leading_spaces < 4 {
             break;
         }
 
@@ -353,14 +395,20 @@ fn first_pass(s: &str) -> Tree<Item> {
             ix += leading_bytes;
 
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
-            if atx_level > 0 && leading_spaces < 4 {
+            if atx_level > 0 {
                 ix = parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
                 continue;
             }
 
             let hrule_size = scan_hrule(&s[ix..]);
-            if hrule_size > 0 && leading_spaces < 4 {
+            if hrule_size > 0 {
                 ix = parse_hrule(&mut tree, hrule_size, ix);
+                continue;
+            }
+
+            let (code_fence_size, code_fence_char) = scan_code_fence(&s[ix..]);
+            if code_fence_size > 0 {
+                ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
                 continue;
             }
 

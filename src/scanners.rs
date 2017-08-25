@@ -239,7 +239,7 @@ pub fn scan_code_line(text: &str) -> Option<usize> {
 
 // return: start byte for code text in fenced code line
 // of given indentation
-pub fn scan_fenced_code_line(text : &str, mut indentation : usize) -> usize {
+pub fn scan_fenced_code_line(text : &str, mut indentation: usize) -> usize {
     let bytes = text.as_bytes();
     let mut i = 0;
     for &c in bytes {
@@ -252,7 +252,7 @@ pub fn scan_fenced_code_line(text : &str, mut indentation : usize) -> usize {
 
 // return: end byte for closing code fence, or None
 // if the line is not a closing code fence
-pub fn scan_closing_code_fence(text : &str, fence_char : u8, num_fence_chars_req : usize) -> Option<usize> {
+pub fn scan_closing_code_fence(text: &str, fence_char: u8, num_fence_chars_req: usize) -> Option<usize> {
     let mut i = 0;
     let (num_leading_bytes, num_leading_spaces) = scan_leading_space(text, 0);
     if num_leading_spaces >= 4 { return None; }

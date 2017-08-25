@@ -159,7 +159,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     ix - start
 }
 
-fn parse_indented_code_block(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let codeblock_parent = tree.cur;
     tree.append(Item {
             start: ix,
@@ -215,8 +215,8 @@ fn parse_indented_code_block(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
     ix
 }
 
-fn parse_atx_header(mut tree : &mut Tree<Item>, s : &str, mut ix : usize,
-    atx_level : i32, atx_size : usize) -> usize {
+fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
+    atx_level: i32, atx_size: usize) -> usize {
     
     tree.append(Item {
         start: ix,
@@ -268,7 +268,7 @@ fn parse_atx_header(mut tree : &mut Tree<Item>, s : &str, mut ix : usize,
     ix
 }
 
-fn parse_hrule(mut tree : &mut Tree<Item>, hrule_size : usize, mut ix : usize) -> usize {
+fn parse_hrule(mut tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: ix + hrule_size,
@@ -278,7 +278,7 @@ fn parse_hrule(mut tree : &mut Tree<Item>, hrule_size : usize, mut ix : usize) -
     ix
 }
 
-fn parse_code_fence_block(mut tree : &mut Tree<Item>, s : &str, mut ix : usize, indentation : usize) -> usize {
+fn parse_code_fence_block(mut tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0, // set later
@@ -314,7 +314,7 @@ fn parse_code_fence_block(mut tree : &mut Tree<Item>, s : &str, mut ix : usize, 
     ix
 }
 
-fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_paragraph(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0,  // will get set later

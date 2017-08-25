@@ -97,6 +97,9 @@ enum ItemBody {
     CodeBlock,
     SynthesizeNewLine,
     Html,
+    BlockQuote,
+    List(usize, u8), // indent level, list character
+    ListItem(usize), // indent level
 }
 
 impl Tree<Item> {
@@ -137,6 +140,42 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
+}
+
+// Scan markers and indentation for current container stack
+// Return: bytes scanned, whether containers are complete, and remaining space
+fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool, usize) {
+    let (mut i, mut space) = scan_leading_space(text, 0);
+    for &vertebra in &(tree.spine) {
+        match tree.nodes[vertebra].item.body {
+            ItemBody::BlockQuote => {
+                if space <= 3 {
+                    let n = scan_blockquote_start(&text[i..]);
+                    if n > 0 {
+                        let (n_sp, next_space) = scan_leading_space(text, i + n);
+                        i += n + n_sp;
+                        space = next_space;
+                    } else {
+                        return (i, false, space);
+                    }
+                } else {
+                    return (i, false, space);
+                }
+            },
+            ItemBody::List(_, _) => (),
+            ItemBody::ListItem(indent) => {
+                if space >= indent {
+                    space -= indent;
+                } else if scan_eol(&text[i..]).1 {
+                    space = 0;
+                } else {
+                    return (i, false, 0);
+                }
+            },
+            _ => (),
+        }
+    }
+    (i, true, space)
 }
 
 // Return: number of bytes parsed
@@ -676,6 +715,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::CodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::BlockQuote => Some(Tag::BlockQuote),
         _ => None,
     }
 }

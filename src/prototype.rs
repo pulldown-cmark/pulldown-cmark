@@ -451,62 +451,62 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     ix
 }
 
+fn scan_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    let b = s.as_bytes()[ix];
+    if b == b'\n' || b == b'\r' {
+        // blank line
+        ix += scan_eol(&s[ix..]).0;
+        return ix
+    } else {
+        let (leading_bytes, containers_closed, leading_spaces) = scan_containers(&tree, &s[ix..]);
+        
+        if leading_spaces >= 4 {
+            return parse_indented_code_block(&mut tree, s, ix);
+        }
+
+        // leading spaces are preserved in html blocks
+        if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+            return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+        }
+
+        let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+        if is_html_tag(possible_tag) {
+            return parse_html_block_type_6(&mut tree, s, ix);
+        }
+
+        ix += leading_bytes;
+
+        let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+        if atx_level > 0 {
+            return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
+        }
+
+        let hrule_size = scan_hrule(&s[ix..]);
+        if hrule_size > 0 {
+            return parse_hrule(&mut tree, hrule_size, ix);
+        }
+
+        let code_fence_size = scan_code_fence(&s[ix..]).0;
+        if code_fence_size > 0 {
+            ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
+            continue;
+        }
+
+        if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
+            return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+        }
+
+        return parse_paragraph(&mut tree, s, ix);
+    }
+}
+
 
 // Root is node 0
 fn first_pass(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {
-        let b = s.as_bytes()[ix];
-        if b == b'\n' || b == b'\r' {
-            // blank line
-            ix += scan_eol(&s[ix..]).0;
-        } else {
-            let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-            
-            if leading_spaces >= 4 {
-                ix = parse_indented_code_block(&mut tree, s, ix);
-                continue;
-            }
-
-            // leading spaces are preserved in html blocks
-            if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
-                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
-                continue;
-            }
-
-            let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
-            if is_html_tag(possible_tag) {
-                ix = parse_html_block_type_6(&mut tree, s, ix);
-                continue;
-            }
-
-            ix += leading_bytes;
-
-            let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
-            if atx_level > 0 {
-                ix = parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
-                continue;
-            }
-
-            let hrule_size = scan_hrule(&s[ix..]);
-            if hrule_size > 0 {
-                ix = parse_hrule(&mut tree, hrule_size, ix);
-                continue;
-            }
-
-            let code_fence_size = scan_code_fence(&s[ix..]).0;
-            if code_fence_size > 0 {
-                ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
-                continue;
-            }
-
-            if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
-                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
-                continue;
-            }
-            ix = parse_paragraph(&mut tree, s, ix);
-        }
+        ix = scan_blocks(&mut tree, s, ix);
     }
     tree
 }

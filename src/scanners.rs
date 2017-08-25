@@ -30,13 +30,16 @@ use parse::Alignment;
 pub use puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
-const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
-    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
-    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
-    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
-    "li", "map", "object", "ol", "output", "p", "pre", "progress", "script",
-    "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
-    "thead", "tr", "ul", "video"];
+const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 
+    "basefont", "blockquote", "body", "button", "canvas", "caption", "center",
+    "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", 
+    "embed", "fieldset", "figcaption", "figure", "footer", "form", "frame", 
+    "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", 
+    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem", 
+    "meta", "map", "nav", "noframes", "object", "ol", "optgroup", "option", 
+    "output", "p", "param", "progress", "section", "source", "summary", 
+    "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", 
+    "ul", "video"];
 
 const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
     "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",

@@ -725,6 +725,15 @@ pub fn unescape(input: &str) -> Cow<str> {
     }
 }
 
+pub fn scan_html_block_tag(data: &str) -> (usize, &str) {
+    let mut i = scan_ch(data, b'<');
+    if i == 0 { return (0, "") }
+    i += scan_ch(&data[i..], b'/');
+    let n = scan_while(&data[i..], is_ascii_alphanumeric);
+    // TODO: scan attributes and >
+    (i + n, &data[i .. i + n])
+}
+
 pub fn is_html_tag(tag: &str) -> bool {
     HTML_TAGS.binary_search_by(|probe| utils::strcasecmp(probe, tag)).is_ok()
 }

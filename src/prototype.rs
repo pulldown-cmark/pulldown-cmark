@@ -330,10 +330,29 @@ fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize
             end: ix + htmlline_end_offset,
             body: ItemBody::SynthesizeNewLine,
         });
-        // println!("checking for html end tag: ix = {}, end_offset = {}", ix, htmlline_end_offset);
-        // println!("in line {}", &s[ix..ix+htmlline_end_offset]);
         if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
-            // println!("found end tag");
+            return ix + nextline_offset;
+        }
+        ix += nextline_offset;
+    }
+    s.len()
+}
+
+fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    while ix < s.len() {
+        let nextline_offset = scan_nextline(&s[ix..]);
+        let htmlline_end_offset = scan_line_ending(&s[ix..]);
+        tree.append(Item {
+            start: ix,
+            end: ix + htmlline_end_offset,
+            body: ItemBody::Html,
+        });
+        tree.append(Item {
+            start: ix + htmlline_end_offset,
+            end: ix + htmlline_end_offset,
+            body: ItemBody::SynthesizeNewLine,
+        });
+        if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
             return ix + nextline_offset;
         }
         ix += nextline_offset;
@@ -384,6 +403,12 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
             break;
         }
 
+        // html block type 6 can interrupt paragraphs
+        let possible_tag = scan_html_block_tag(&s[ix..]).1;
+        if is_html_tag(possible_tag) {
+            break;
+        }
+
         if ix == s.len() || s.as_bytes()[ix] <= b' ' {
             // EOF or empty line
             break;
@@ -428,6 +453,12 @@ fn first_pass(s: &str) -> Tree<Item> {
             // leading spaces are preserved in html blocks
             if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
                 ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+                continue;
+            }
+
+            let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+            if is_html_tag(possible_tag) {
+                ix = parse_html_block_type_6(&mut tree, s, ix);
                 continue;
             }
 

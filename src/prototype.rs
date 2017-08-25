@@ -93,9 +93,10 @@ enum ItemBody {
     Emphasis,
     Strong,
     Rule,
-    Header(i32),
+    Header(i32), // header level
     CodeBlock,
     SynthesizeNewLine,
+    Html,
 }
 
 impl Tree<Item> {
@@ -314,7 +315,33 @@ fn parse_code_fence_block(mut tree: &mut Tree<Item>, s: &str, mut ix: usize, ind
     ix
 }
 
-fn parse_paragraph(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+
+fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag : &'static str) -> usize {
+    while ix < s.len() {
+        let nextline_offset = scan_nextline(&s[ix..]);
+        let htmlline_end_offset = scan_line_ending(&s[ix..]);
+        tree.append(Item {
+            start: ix,
+            end: ix + htmlline_end_offset,
+            body: ItemBody::Html,
+        });
+        tree.append(Item {
+            start: ix + htmlline_end_offset,
+            end: ix + htmlline_end_offset,
+            body: ItemBody::SynthesizeNewLine,
+        });
+        // println!("checking for html end tag: ix = {}, end_offset = {}", ix, htmlline_end_offset);
+        // println!("in line {}", &s[ix..ix+htmlline_end_offset]);
+        if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
+            // println!("found end tag");
+            return ix + nextline_offset;
+        }
+        ix += nextline_offset;
+    }
+    s.len()
+}
+
+fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0,  // will get set later
@@ -349,6 +376,11 @@ fn parse_paragraph(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         // code fence blocks can interrupt paragraphs
         let code_fence_size = scan_code_fence(&s[ix..]).0;
         if code_fence_size > 0 && leading_spaces < 4 {
+            break;
+        }
+
+        // html blocks type 1 to 5 can interrupt paragraphs
+        if let Some(_) = get_html_end_tag(&s[ix..]) {
             break;
         }
 
@@ -392,6 +424,13 @@ fn first_pass(s: &str) -> Tree<Item> {
                 ix = parse_indented_code_block(&mut tree, s, ix);
                 continue;
             }
+
+            // leading spaces are preserved in html blocks
+            if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+                continue;
+            }
+
             ix += leading_bytes;
 
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
@@ -412,6 +451,10 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
+            if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
+                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+                continue;
+            }
             ix = parse_paragraph(&mut tree, s, ix);
         }
     }
@@ -419,15 +462,15 @@ fn first_pass(s: &str) -> Tree<Item> {
 }
 
 fn get_html_end_tag(text : &str) -> Option<&'static str> {
-    static BEGIN_TAGS: &'static [&'static str; 3] = &["script", "pre", "style"];
+    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
     static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
     for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
         if 1 + beg_tag.len() < text.len() &&
            text.starts_with(&beg_tag[..]) {
-            let pos = beg_tag.len() + 1;
+            let pos = beg_tag.len();
             let s = text.as_bytes()[pos];
-            if s == b' ' || s == b'\n' || s == b'>' {
+            if s == b' ' || s == b'\r' || s == b'\n' || s == b'>' {
                 return Some(end_tag);
             }
         }
@@ -615,6 +658,9 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
         },
         ItemBody::SynthesizeNewLine => {
             Event::Text(Cow::from("\n"))
+        },
+        ItemBody::Html => {
+            Event::Html(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)

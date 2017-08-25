@@ -418,6 +418,38 @@ fn first_pass(s: &str) -> Tree<Item> {
     tree
 }
 
+fn get_html_end_tag(text : &str) -> Option<&'static str> {
+    static BEGIN_TAGS: &'static [&'static str; 3] = &["script", "pre", "style"];
+    static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
+
+    for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+        if 1 + beg_tag.len() < text.len() &&
+           text.starts_with(&beg_tag[..]) {
+            let pos = beg_tag.len() + 1;
+            let s = text.as_bytes()[pos];
+            if s == b' ' || s == b'\n' || s == b'>' {
+                return Some(end_tag);
+            }
+        }
+    }
+    static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
+    static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
+    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
+        if 1 + beg_tag.len() < text.len() &&
+           text.starts_with(&beg_tag[..]) {
+            return Some(end_tag);
+        }
+    }
+    if text.len() > 2 &&
+       text.starts_with("<!") {
+        let c = text[2..].chars().next().unwrap();
+        if c >= 'A' && c <= 'Z' {
+            return Some(">");
+        }
+    }
+    None
+}
+
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
     start: usize,  // offset of tree node

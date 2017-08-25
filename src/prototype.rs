@@ -109,6 +109,21 @@ impl Tree<Item> {
             });
         }
     }
+
+    fn append_html_line(&mut self, start: usize, end: usize) {
+        if end >= start {
+            self.append(Item {
+                start: start,
+                end: end,
+                body: ItemBody::Html,
+            });
+            self.append(Item {
+                start: end,
+                end: end,
+                body: ItemBody::SynthesizeNewLine,
+            });
+        }
+    }
 }
 
 fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
@@ -320,16 +335,7 @@ fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize
     while ix < s.len() {
         let nextline_offset = scan_nextline(&s[ix..]);
         let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append(Item {
-            start: ix,
-            end: ix + htmlline_end_offset,
-            body: ItemBody::Html,
-        });
-        tree.append(Item {
-            start: ix + htmlline_end_offset,
-            end: ix + htmlline_end_offset,
-            body: ItemBody::SynthesizeNewLine,
-        });
+        tree.append_html_line(ix, ix+htmlline_end_offset);
         if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
             return ix + nextline_offset;
         }
@@ -342,16 +348,7 @@ fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
     while ix < s.len() {
         let nextline_offset = scan_nextline(&s[ix..]);
         let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append(Item {
-            start: ix,
-            end: ix + htmlline_end_offset,
-            body: ItemBody::Html,
-        });
-        tree.append(Item {
-            start: ix + htmlline_end_offset,
-            end: ix + htmlline_end_offset,
-            body: ItemBody::SynthesizeNewLine,
-        });
+        tree.append_html_line(ix, ix+htmlline_end_offset);
         if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
             return ix + nextline_offset;
         }

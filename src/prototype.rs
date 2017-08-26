@@ -142,41 +142,7 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     }
 }
 
-// Scan markers and indentation for current container stack
-// Return: bytes scanned, whether containers are complete, and remaining space
-fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool, usize) {
-    let (mut i, mut space) = scan_leading_space(text, 0);
-    for &vertebra in &(tree.spine) {
-        match tree.nodes[vertebra].item.body {
-            ItemBody::BlockQuote => {
-                if space <= 3 {
-                    let n = scan_blockquote_start(&text[i..]);
-                    if n > 0 {
-                        let (n_sp, next_space) = scan_leading_space(text, i + n);
-                        i += n + n_sp;
-                        space = next_space;
-                    } else {
-                        return (i, false, space);
-                    }
-                } else {
-                    return (i, false, space);
-                }
-            },
-            ItemBody::List(_, _) => (),
-            ItemBody::ListItem(indent) => {
-                if space >= indent {
-                    space -= indent;
-                } else if scan_eol(&text[i..]).1 {
-                    space = 0;
-                } else {
-                    return (i, false, 0);
-                }
-            },
-            _ => (),
-        }
-    }
-    (i, true, space)
-}
+
 
 // Return: number of bytes parsed
 fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
@@ -321,6 +287,7 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     }
 
     tree.pop();
+    ix += scan_eol(&s[ix..]).0;
     ix
 }
 
@@ -405,6 +372,7 @@ fn scan_paragraph_interrupt(s: &str, leading_spaces: usize) -> bool {
         scan_atx_header(s).0 > 0 ||
         scan_code_fence(s).0 > 0 ||
         get_html_end_tag(s).is_some() ||
+        scan_blockquote_start(s) > 0 ||
         is_html_tag(scan_html_block_tag(s).1))
 }
 
@@ -420,6 +388,10 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     while ix < s.len() {
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
+
+        if let Some(container_bytes) = scan_containers(&tree, &s[ix..]) {
+            ix += container_bytes;
+        }
 
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
@@ -451,14 +423,79 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     ix
 }
 
+// Scan markers and indentation for current container stack
+// Scans to the first character after the container marks
+// Return: bytes scanned, or None if containers are not complete
+fn scan_containers(tree: &Tree<Item>, text: &str) -> Option<usize> {
+    let leading_bytes = scan_leading_space(text, 0).0;
+    let mut i = 0;
+    for &vertebra in &(tree.spine) {
+        let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
+        i += space_bytes;
+        match tree.nodes[vertebra].item.body {
+            ItemBody::BlockQuote => {
+                if num_spaces >= 4 { return None; }
+                let n = scan_blockquote_start(&text[i..]);
+                if n > 0 {
+                    i += n
+                } else {
+                    return None;
+                }
+            },
+            ItemBody::ListItem(indent) => {
+                if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
+                    return None;
+                }
+                i += indent;
+            },
+            _ => (),
+        }
+    }
+    // Only move forward if any container marks were found
+    if i > leading_bytes { return Some(i); }
+    else {return Some(0); }
+}
+
+// Used on a new line, after scan_containers
+// scans to first character after new container markers
+fn scan_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    let begin = ix;
+    let leading_bytes = scan_leading_space(s, ix).0;
+    loop {
+        let (leading_bytes, leading_spaces) = scan_leading_space(s, ix);
+        if leading_spaces >= 4 { break; }
+        ix += leading_bytes;
+        
+        let blockquote_bytes = scan_blockquote_start(&s[ix..]);
+        if blockquote_bytes > 0 {
+            tree.append(Item {
+                start: ix,
+                end: ix, // TODO: set this correctly
+                body: ItemBody::BlockQuote,
+            });
+            tree.push();
+            ix += blockquote_bytes;
+            continue;
+        }
+        break;
+    }
+    if ix > leading_bytes + begin {
+        return ix;
+    } else {
+        return begin;
+    }
+}
+
+// Used on a new line, after scan_containers and scan_new_containers
 fn scan_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    if ix >= s.len() { return ix; }
     let b = s.as_bytes()[ix];
     if b == b'\n' || b == b'\r' {
         // blank line
         ix += scan_eol(&s[ix..]).0;
         return ix
     } else {
-        let (leading_bytes, containers_closed, leading_spaces) = scan_containers(&tree, &s[ix..]);
+        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         
         if leading_spaces >= 4 {
             return parse_indented_code_block(&mut tree, s, ix);
@@ -500,12 +537,14 @@ fn scan_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     }
 }
 
-
 // Root is node 0
 fn first_pass(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {
+        while let None = scan_containers(&tree, &s[ix..]) { tree.pop(); }
+        ix += scan_containers(&tree, &s[ix..]).unwrap();
+        ix = scan_new_containers(&mut tree, s, ix);
         ix = scan_blocks(&mut tree, s, ix);
     }
     tree
@@ -678,6 +717,7 @@ impl<'a> Parser<'a> {
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let mut tree = first_pass(text);
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
+        tree.spine = vec![];
         Parser {
             text: text,
             tree: tree,

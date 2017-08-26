@@ -171,7 +171,7 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             print!(" ");
         }
 
-        let our_html = render_html(&test.input.replace("→", "\t").replace("\n", "\r\n"), opts);
+        let our_html = render_html(&test.input.replace("→", "\t"), opts);
 
         if our_html == test.expected.replace("→", "\t") {
             print!(".");

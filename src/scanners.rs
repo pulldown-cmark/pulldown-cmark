@@ -440,7 +440,7 @@ pub fn scan_blockquote_start(data: &str) -> usize {
     }
 }
 
-// return number of bytes scanned, delimeter, start index, and indent
+// return number of bytes scanned, delimiter, start index, and indent
 pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     if data.is_empty() { return (0, 0, 0, 0); }
     let mut c = data.as_bytes()[0];

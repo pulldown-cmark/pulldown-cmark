@@ -495,7 +495,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
     for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
         if 1 + beg_tag.len() < text.len() &&
-           text.starts_with(&beg_tag[..]) {
+            text.starts_with(&beg_tag[..]) {
             let pos = beg_tag.len();
             let s = text.as_bytes()[pos];
             if s == b' ' || s == b'\r' || s == b'\n' || s == b'>' {
@@ -512,7 +512,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
         }
     }
     if text.len() > 2 &&
-       text.starts_with("<!") {
+        text.starts_with("<!") {
         let c = text[2..].chars().next().unwrap();
         if c >= 'A' && c <= 'Z' {
             return Some(">");

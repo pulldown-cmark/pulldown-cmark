@@ -30,13 +30,16 @@ use parse::Alignment;
 pub use puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
-const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
-    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
-    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
-    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
-    "li", "map", "object", "ol", "output", "p", "pre", "progress", "script",
-    "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
-    "thead", "tr", "ul", "video"];
+const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 
+    "basefont", "blockquote", "body", "button", "canvas", "caption", "center",
+    "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", 
+    "embed", "fieldset", "figcaption", "figure", "footer", "form", "frame", 
+    "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", 
+    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem", 
+    "meta", "map", "nav", "noframes", "object", "ol", "optgroup", "option", 
+    "output", "p", "param", "progress", "section", "source", "summary", 
+    "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", 
+    "ul", "video"];
 
 const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
     "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
@@ -720,6 +723,15 @@ pub fn unescape(input: &str) -> Cow<str> {
         result.push_str(&input[mark..]);
         Owned(result)
     }
+}
+
+pub fn scan_html_block_tag(data: &str) -> (usize, &str) {
+    let mut i = scan_ch(data, b'<');
+    if i == 0 { return (0, "") }
+    i += scan_ch(&data[i..], b'/');
+    let n = scan_while(&data[i..], is_ascii_alphanumeric);
+    // TODO: scan attributes and >
+    (i + n, &data[i .. i + n])
 }
 
 pub fn is_html_tag(tag: &str) -> bool {

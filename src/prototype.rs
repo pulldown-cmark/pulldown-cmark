@@ -93,9 +93,10 @@ enum ItemBody {
     Emphasis,
     Strong,
     Rule,
-    Header(i32),
+    Header(i32), // header level
     CodeBlock,
     SynthesizeNewLine,
+    Html,
 }
 
 impl Tree<Item> {
@@ -105,6 +106,21 @@ impl Tree<Item> {
                 start: start,
                 end: end,
                 body: ItemBody::Text,
+            });
+        }
+    }
+
+    fn append_html_line(&mut self, start: usize, end: usize) {
+        if end >= start {
+            self.append(Item {
+                start: start,
+                end: end,
+                body: ItemBody::Html,
+            });
+            self.append(Item {
+                start: end,
+                end: end,
+                body: ItemBody::SynthesizeNewLine,
             });
         }
     }
@@ -314,7 +330,34 @@ fn parse_code_fence_block(mut tree: &mut Tree<Item>, s: &str, mut ix: usize, ind
     ix
 }
 
-fn parse_paragraph(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+
+fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag : &'static str) -> usize {
+    while ix < s.len() {
+        let nextline_offset = scan_nextline(&s[ix..]);
+        let htmlline_end_offset = scan_line_ending(&s[ix..]);
+        tree.append_html_line(ix, ix+htmlline_end_offset);
+        if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
+            return ix + nextline_offset;
+        }
+        ix += nextline_offset;
+    }
+    s.len()
+}
+
+fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    while ix < s.len() {
+        let nextline_offset = scan_nextline(&s[ix..]);
+        let htmlline_end_offset = scan_line_ending(&s[ix..]);
+        tree.append_html_line(ix, ix+htmlline_end_offset);
+        if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
+            return ix + nextline_offset;
+        }
+        ix += nextline_offset;
+    }
+    s.len()
+}
+
+fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0,  // will get set later
@@ -349,6 +392,17 @@ fn parse_paragraph(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         // code fence blocks can interrupt paragraphs
         let code_fence_size = scan_code_fence(&s[ix..]).0;
         if code_fence_size > 0 && leading_spaces < 4 {
+            break;
+        }
+
+        // html blocks type 1 to 5 can interrupt paragraphs
+        if let Some(_) = get_html_end_tag(&s[ix..]) {
+            break;
+        }
+
+        // html block type 6 can interrupt paragraphs
+        let possible_tag = scan_html_block_tag(&s[ix..]).1;
+        if is_html_tag(possible_tag) {
             break;
         }
 
@@ -392,6 +446,19 @@ fn first_pass(s: &str) -> Tree<Item> {
                 ix = parse_indented_code_block(&mut tree, s, ix);
                 continue;
             }
+
+            // leading spaces are preserved in html blocks
+            if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+                continue;
+            }
+
+            let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+            if is_html_tag(possible_tag) {
+                ix = parse_html_block_type_6(&mut tree, s, ix);
+                continue;
+            }
+
             ix += leading_bytes;
 
             let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
@@ -412,10 +479,46 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
+            if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
+                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+                continue;
+            }
             ix = parse_paragraph(&mut tree, s, ix);
         }
     }
     tree
+}
+
+fn get_html_end_tag(text : &str) -> Option<&'static str> {
+    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
+    static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
+
+    for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+        if 1 + beg_tag.len() < text.len() &&
+            text.starts_with(&beg_tag[..]) {
+            let pos = beg_tag.len();
+            let s = text.as_bytes()[pos];
+            if s == b' ' || s == b'\r' || s == b'\n' || s == b'>' {
+                return Some(end_tag);
+            }
+        }
+    }
+    static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
+    static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
+    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
+        if 1 + beg_tag.len() < text.len() &&
+           text.starts_with(&beg_tag[..]) {
+            return Some(end_tag);
+        }
+    }
+    if text.len() > 2 &&
+        text.starts_with("<!") {
+        let c = text[2..].chars().next().unwrap();
+        if c >= 'A' && c <= 'Z' {
+            return Some(">");
+        }
+    }
+    None
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -583,6 +686,9 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
         },
         ItemBody::SynthesizeNewLine => {
             Event::Text(Cow::from("\n"))
+        },
+        ItemBody::Html => {
+            Event::Html(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)

@@ -389,13 +389,21 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
 
-        if let Some(container_bytes) = scan_containers(&tree, &s[ix..]) {
+        let container_scan = scan_containers(&tree, &s[ix..]);
+        if let Some(container_bytes) = container_scan {
             ix += container_bytes;
         }
 
+       
+        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+        // setext headers can't be lazy paragraph continuations
+        if let None = container_scan {
+            if setext_bytes > 0 && leading_spaces < 4 {
+                break; 
+            }
+        }
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
-        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
         if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
             ix += setext_bytes;
             tree.nodes[cur].item.body = ItemBody::Header(setext_level);

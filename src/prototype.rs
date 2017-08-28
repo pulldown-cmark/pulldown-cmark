@@ -373,6 +373,7 @@ fn scan_paragraph_interrupt(s: &str, leading_spaces: usize) -> bool {
         scan_code_fence(s).0 > 0 ||
         get_html_end_tag(s).is_some() ||
         scan_blockquote_start(s) > 0 ||
+        scan_listitem(s).0 > 0 ||
         is_html_tag(scan_html_block_tag(s).1))
 }
 
@@ -483,6 +484,27 @@ fn parse_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
             });
             tree.push();
             ix += blockquote_bytes;
+            continue;
+        }
+
+        let (listitem_bytes, listitem_delimiter, listitem_start, listitem_indent) = scan_listitem(&s[ix..]);
+        if listitem_bytes > 0 {
+            // thematic breaks take precedence over listitems
+            if scan_hrule(&s[ix..]) > 0 { break; }
+
+            tree.append(Item {
+                start: ix,
+                end: ix, // TODO: set this correctly
+                body: ItemBody::List(listitem_indent, listitem_delimiter),
+            });
+            tree.push();
+            tree.append(Item {
+                start: ix,
+                end: ix, // TODO: set this correctly
+                body: ItemBody::ListItem(listitem_indent),
+            });
+            tree.push();
+            ix += listitem_bytes;
             continue;
         }
         break;
@@ -746,6 +768,8 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::CodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
+        ItemBody::List(_, _) => Some(Tag::List(None)),
+        ItemBody::ListItem(_) => Some(Tag::Item),
         _ => None,
     }
 }

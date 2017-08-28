@@ -227,7 +227,7 @@ fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> u
     } else {
         // if we never saw a nonblank chunk then
         // this isn't a valid codeblock, so detach it
-        tree.nodes[codeblock_parent].child = NIL;
+        if codeblock_parent != NIL { tree.nodes[codeblock_parent].child = NIL; }
         // pop to the codeblock, next pop will rise
         // to the parent, leaving detached codeblock behind
         tree.pop();

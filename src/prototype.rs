@@ -467,7 +467,7 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> Option<usize> {
 
 // Used on a new line, after scan_containers
 // scans to first character after new container markers
-fn parse_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let begin = ix;
     let leading_bytes = scan_leading_space(s, ix).0;
     loop {
@@ -487,7 +487,7 @@ fn parse_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
             continue;
         }
 
-        let (listitem_bytes, listitem_delimiter, listitem_start, listitem_indent) = scan_listitem(&s[ix..]);
+        let (listitem_bytes, listitem_delimiter, _, listitem_indent) = scan_listitem(&s[ix..]);
         if listitem_bytes > 0 {
             // thematic breaks take precedence over listitems
             if scan_hrule(&s[ix..]) > 0 { break; }
@@ -555,8 +555,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
         let code_fence_size = scan_code_fence(&s[ix..]).0;
         if code_fence_size > 0 {
-            ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
-            continue;
+            return parse_code_fence_block(&mut tree, s, ix, leading_spaces);
         }
 
         if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {

@@ -466,7 +466,7 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> Option<usize> {
 
 // Used on a new line, after scan_containers
 // scans to first character after new container markers
-fn scan_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let begin = ix;
     let leading_bytes = scan_leading_space(s, ix).0;
     loop {
@@ -495,7 +495,7 @@ fn scan_new_containers(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usi
 }
 
 // Used on a new line, after scan_containers and scan_new_containers
-fn scan_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
     let b = s.as_bytes()[ix];
     if b == b'\n' || b == b'\r' {
@@ -552,8 +552,8 @@ fn first_pass(s: &str) -> Tree<Item> {
     while ix < s.len() {
         while let None = scan_containers(&tree, &s[ix..]) { tree.pop(); }
         ix += scan_containers(&tree, &s[ix..]).unwrap();
-        ix = scan_new_containers(&mut tree, s, ix);
-        ix = scan_blocks(&mut tree, s, ix);
+        ix = parse_new_containers(&mut tree, s, ix);
+        ix = parse_blocks(&mut tree, s, ix);
     }
     tree
 }

@@ -126,6 +126,7 @@ impl Tree<Item> {
     }
 }
 
+#[allow(dead_code)]
 fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     while ix != NIL {
         let node = &nodes[ix];
@@ -284,7 +285,7 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     ix
 }
 
-fn parse_hrule(mut tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
+fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: ix + hrule_size,
@@ -294,7 +295,7 @@ fn parse_hrule(mut tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> u
     ix
 }
 
-fn parse_code_fence_block(mut tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
+fn parse_code_fence_block(tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0, // set later
@@ -473,7 +474,7 @@ fn first_pass(s: &str) -> Tree<Item> {
                 continue;
             }
 
-            let (code_fence_size, code_fence_char) = scan_code_fence(&s[ix..]);
+            let code_fence_size = scan_code_fence(&s[ix..]).0;
             if code_fence_size > 0 {
                 ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
                 continue;
@@ -648,6 +649,7 @@ pub struct Parser<'a> {
     tree: Tree<Item>,
 }
 
+#[allow(unused_variables)]
 impl<'a> Parser<'a> {
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())

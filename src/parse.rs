@@ -74,6 +74,7 @@ pub struct RawParser<'a> {
     links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
+#[allow(dead_code)]
 pub struct ParseInfo<'a> {
     pub loose_lists: HashSet<usize>,
     pub links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
@@ -135,6 +136,7 @@ bitflags! {
 
 const MAX_LINK_NEST: usize = 10;
 
+#[allow(dead_code)]
 impl<'a> RawParser<'a> {
     pub fn new_with_links(text: &'a str, opts: Options,
             links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {

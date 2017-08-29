@@ -75,6 +75,16 @@ impl<T> Tree<T> {
     fn pop(&mut self) {
         self.cur = self.spine.pop().unwrap();
     }
+
+    // Look at the parent node, leaving tree in original state
+    fn peek_up(&mut self) -> Option<usize> {
+        if let Some(parent) = self.spine.pop() {
+            self.spine.push(parent);
+            return Some(parent);
+        } else {
+            return None;
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -127,6 +137,14 @@ impl Tree<Item> {
                 body: ItemBody::SynthesizeNewLine,
             });
         }
+    }
+
+    fn append_newline(&mut self, ix: usize) {
+        self.append(Item {
+            start: ix,
+            end: ix,
+            body: ItemBody::SynthesizeNewLine,
+        });
     }
 }
 
@@ -205,12 +223,7 @@ fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> u
 
             let codeline_end_offset = scan_line_ending(&s[ix..]);
             tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
-
-            tree.append(Item {
-                    start: codeline_end_offset,
-                    end: codeline_end_offset,
-                    body: ItemBody::SynthesizeNewLine,
-            });
+            tree.append_newline(codeline_end_offset);
 
             if scan_blank_line(&s[ix..]).is_none() {
                 last_chunk = tree.cur;
@@ -305,40 +318,15 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
     ix
 }
 
+// The parent node is a fenced code block.
 // Returns index of start of next line
-fn parse_code_fence_block(tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
-    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
-    tree.append(Item {
-        start: ix,
-        end: 0, // set later
-        body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, indentation),
-    });
-    
-    // TODO: parse code fence info
-    ix += scan_nextline(&s[ix..]);
-
-    let codeblock_node = tree.cur;
-    tree.push();
-
-    while ix < s.len() {
-        if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
-            ix += code_fence_end;
-            ix += scan_eol(&s[ix..]).0;
-            break;
-        }
-        let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
-        let fenced_line_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
-        tree.append(Item {
-                start: fenced_line_end_offset,
-                end: fenced_line_end_offset,
-                body: ItemBody::SynthesizeNewLine,
-        });
-        ix += fenced_line_end_offset;
-        ix += scan_eol(&s[ix..]).0;
-    }
-    tree.nodes[codeblock_node].item.end = ix;
-    tree.pop();
+fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
+    let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
+    let fenced_line_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
+    tree.append_newline(fenced_line_end_offset);
+    ix += fenced_line_end_offset;
+    ix += scan_eol(&s[ix..]).0;
     ix
 }
 
@@ -396,14 +384,14 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
         ix += leading_bytes;
 
         let container_scan = scan_containers(&tree, &s[ix..]);
-        if let Some(container_bytes) = container_scan {
-            ix += container_bytes;
+        if container_scan.1 {
+            ix += container_scan.0;
         }
 
        
         let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
         // setext headers can't be lazy paragraph continuations
-        if let None = container_scan {
+        if !container_scan.1 {
             if setext_bytes > 0 && leading_spaces < 4 {
                 break; 
             }
@@ -439,8 +427,8 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
 
 // Scan markers and indentation for current container stack
 // Scans to the first character after the container marks
-// Return: bytes scanned, or None if containers are not complete
-fn scan_containers(tree: &Tree<Item>, text: &str) -> Option<usize> {
+// Return: bytes scanned, and whether containers were closed
+fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     let leading_bytes = scan_leading_space(text, 0).0;
     let mut i = 0;
     for &vertebra in &(tree.spine) {
@@ -448,31 +436,44 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> Option<usize> {
         i += space_bytes;
         match tree.nodes[vertebra].item.body {
             ItemBody::BlockQuote => {
-                if num_spaces >= 4 { return None; }
+                if num_spaces >= 4 { return (i, false); }
                 let n = scan_blockquote_start(&text[i..]);
                 if n > 0 {
                     i += n
                 } else {
-                    return None;
+                    return (i, false);
                 }
             },
             ItemBody::ListItem(indent) => {
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
-                    return None;
+                    return (i, false);
                 }
                 i += indent;
+            },
+            ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, _) => {
+                if let Some(code_fence_end) = scan_closing_code_fence(&text[i..], code_fence_char, num_code_fence_chars) {
+                    i += code_fence_end;
+                    i += scan_eol(&text[i..]).0;
+                    return (i, false);
+                }
             },
             _ => (),
         }
     }
     // Only move forward if any container marks were found
-    if i > leading_bytes { return Some(i); }
-    else {return Some(0); }
+    if i > leading_bytes { return (i, true); }
+    else {return (0, true); }
 }
 
 // Used on a new line, after scan_containers
 // scans to first character after new container markers
 fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    // check if parent is a leaf block, which makes new containers illegal
+    if let Some(parent) = tree.peek_up() {
+        if let ItemBody::FencedCodeBlock(_, _, _) = tree.nodes[parent].item.body {
+            return ix;
+        }
+    }
     let begin = ix;
     let leading_bytes = scan_leading_space(s, ix).0;
     loop {
@@ -531,6 +532,13 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         ix += scan_eol(&s[ix..]).0;
         return ix
     } else {
+        // check if we are in a leaf block
+        if let Some(parent) = tree.peek_up() {
+            if let ItemBody::FencedCodeBlock(_, _, indentation) = tree.nodes[parent].item.body {
+                return parse_fenced_code_line(&mut tree, s, ix, indentation);
+            }
+        }
+
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         
         if leading_spaces >= 4 {
@@ -559,13 +567,19 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             return parse_hrule(&mut tree, hrule_size, ix);
         }
 
-        let code_fence_size = scan_code_fence(&s[ix..]).0;
-        if code_fence_size > 0 {
-            return parse_code_fence_block(&mut tree, s, ix, leading_spaces);
-        }
+        let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
+        if num_code_fence_chars > 0 {
+            tree.append(Item {
+                start: ix,
+                end: 0, // set later
+                body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces),
+            });
+            
+            // TODO: parse code fence info
+            ix += scan_nextline(&s[ix..]);
 
-        if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
-            return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+            tree.push();
+            return ix;
         }
 
         return parse_paragraph(&mut tree, s, ix);
@@ -577,8 +591,13 @@ fn first_pass(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {
-        while let None = scan_containers(&tree, &s[ix..]) { tree.pop(); }
-        ix += scan_containers(&tree, &s[ix..]).unwrap();
+        // start of a new line
+        let (container_offset, are_containers_closed) = scan_containers(&tree, &s[ix..]);
+        ix += container_offset;
+        if !are_containers_closed { 
+            tree.pop();
+            continue; }
+        // ix is past all container marks
         ix = parse_new_containers(&mut tree, s, ix);
         ix = parse_blocks(&mut tree, s, ix);
     }

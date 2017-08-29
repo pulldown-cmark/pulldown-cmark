@@ -230,7 +230,7 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
         return ix;
     }
     // skip leading spaces
-    let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
+    let skip_spaces = scan_whitespace_no_nl(&s[ix..]);
     ix += skip_spaces;
 
     // now handle the header text
@@ -389,7 +389,7 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
 // Scans to the first character after the container marks
 // Return: bytes scanned, and whether containers were closed
 fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
-    let leading_bytes = scan_leading_space(text, 0).0;
+    // let leading_bytes = scan_leading_space(text, 0).0;
     let mut i = 0;
     for &vertebra in &(tree.spine) {
         let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
@@ -406,11 +406,15 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 }
             },
             ItemBody::ListItem(indent) => {
-                i += space_bytes;
+                // println!("scanning for listitem at offset i: {}, indent: {}", i, indent);
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
                     return (i, false);
+                } else if scan_eol(&text[i..]).1 {
+                    return (i, true);
                 }
-                i += indent;
+                i += space_bytes;
+                // println!("scanning past leading space to offset i: {}", i);
+
             },
             ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, _) => {
                 i += space_bytes;
@@ -432,8 +436,9 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
         }
     }
     // Only move forward if any container marks were found
-    if i > leading_bytes { return (i, true); }
-    else {return (0, true); }
+    // if i > leading_bytes { return (i, true); }
+    // else {return (0, true); }
+    return (i, true);
 }
 
 // Used on a new line, after scan_containers
@@ -443,6 +448,9 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     if ix >= s.len() { return ix; }
     if let Some(parent) = tree.peek_up() {
         if let ItemBody::FencedCodeBlock(_, _, _) = tree.nodes[parent].item.body {
+            return ix;
+        }
+        if let ItemBody::IndentCodeBlock = tree.nodes[parent].item.body {
             return ix;
         }
     }

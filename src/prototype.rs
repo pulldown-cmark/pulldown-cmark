@@ -238,6 +238,8 @@ fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> u
     ix
 }
 
+// Starts with ix past all container marks.
+// Returns index of start of next line.
 fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     atx_level: i32, atx_size: usize) -> usize {
     
@@ -292,6 +294,7 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     ix
 }
 
+// Returns index of start of next line.
 fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
@@ -518,7 +521,8 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     }
 }
 
-// Used on a new line, after scan_containers and scan_new_containers
+// Used on a new line, after scan_containers and scan_new_containers.
+// Mutates tree as needed, and returns the start of the next line.
 fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
     let b = s.as_bytes()[ix];

@@ -224,10 +224,12 @@ pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
 // return: start byte for code text in indented code line, or None
 // for a non-code line
 pub fn scan_code_line(text: &str) -> Option<usize> {
+    // println!("scanning for code line");
     let bytes = text.as_bytes();
     let mut num_spaces = 0;
     let mut i = 0;
     for &c in bytes {
+        // println!("saw char {}", c as char);
         if num_spaces == 4 { return Some(4); }
         match c {
             b' ' => num_spaces += 1,

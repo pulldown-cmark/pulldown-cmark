@@ -109,7 +109,7 @@ enum ItemBody {
     SynthesizeNewLine,
     Html,
     BlockQuote,
-    List(usize, u8), // indent level, list character
+    List(usize, u8, Option<usize>), // indent level, list character, list start index
     ListItem(usize), // indent level
 }
 
@@ -473,15 +473,23 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
             continue;
         }
 
-        let (listitem_bytes, listitem_delimiter, _, listitem_indent) = scan_listitem(&s[ix..]);
+        let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
         if listitem_bytes > 0 {
             // thematic breaks take precedence over listitems
             if scan_hrule(&s[ix..]) > 0 { break; }
 
+            let listitem_start;
+            // handle ordered lists
+            if listitem_delimiter == b'.' || listitem_delimiter == b')' {
+                listitem_start = Some(listitem_start_index);
+            } else {
+                listitem_start = None;
+            }
+
             tree.append(Item {
                 start: ix,
                 end: ix, // TODO: set this correctly
-                body: ItemBody::List(listitem_indent, listitem_delimiter),
+                body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start),
             });
             tree.push();
             tree.append(Item {
@@ -783,7 +791,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::IndentCodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
-        ItemBody::List(_, _) => Some(Tag::List(None)),
+        ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
         _ => None,
     }

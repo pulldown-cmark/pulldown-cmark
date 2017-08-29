@@ -453,7 +453,7 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
             let mut i = 1;
             i += scan_while(&data[i..], is_digit);
             start = data[..i].parse().unwrap();
-            if i >= data.len() { return (0, 0, 0, 0); }
+            if i >= data.len() || i > 9 { return (0, 0, 0, 0); }
             c = data.as_bytes()[i];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
             i + 1

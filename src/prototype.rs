@@ -94,7 +94,8 @@ enum ItemBody {
     Strong,
     Rule,
     Header(i32), // header level
-    CodeBlock,
+    FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
+    IndentCodeBlock,
     SynthesizeNewLine,
     Html,
     BlockQuote,
@@ -186,7 +187,7 @@ fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> u
     tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::CodeBlock
+            body: ItemBody::IndentCodeBlock
         });
     let codeblock_node = tree.cur;
     tree.push();
@@ -301,14 +302,15 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
     ix
 }
 
+// Returns index of start of next line
 fn parse_code_fence_block(tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
+    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
     tree.append(Item {
         start: ix,
         end: 0, // set later
-        body: ItemBody::CodeBlock,
+        body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, indentation),
     });
     
-    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
     // TODO: parse code fence info
     ix += scan_nextline(&s[ix..]);
 
@@ -765,7 +767,8 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::CodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::IndentCodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _) => Some(Tag::List(None)),
         ItemBody::ListItem(_) => Some(Tag::Item),

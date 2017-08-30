@@ -842,6 +842,50 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
     }
 }
 
+// https://english.stackexchange.com/a/285573
+// tree.cur points to a List<_, _, _, false> Item Node
+fn surgerize_tight_list(tree : &mut Tree<Item>) {
+    let mut this_listitem = tree.nodes[tree.cur].child;
+    while this_listitem != NIL {
+        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
+            // first child is special, controls how we repoint this_listitem.child
+            let this_listitem_firstborn = tree.nodes[this_listitem].child;
+            if this_listitem_firstborn != NIL {
+                // println!("listitem {} firstborn is: {}", this_listitem, this_listitem_firstborn);
+                if let ItemBody::Paragraph = tree.nodes[this_listitem_firstborn].item.body {
+                    // paragraphs should always have children
+                    tree.nodes[this_listitem].child = tree.nodes[this_listitem_firstborn].child;
+                }
+
+                let mut this_listitem_child = this_listitem_firstborn;
+                let mut node_to_repoint = NIL;
+                while this_listitem_child != NIL {
+                    // surgerize paragraphs
+                    if let ItemBody::Paragraph = tree.nodes[this_listitem_child].item.body {
+                        let this_listitem_child_firstborn = tree.nodes[this_listitem_child].child;
+                        if node_to_repoint != NIL {
+                            tree.nodes[node_to_repoint].next = this_listitem_child_firstborn;
+                        }
+                        let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
+                        // println!("listitem child firstborn is: {}", this_listitem_child_firstborn);
+                        while tree.nodes[this_listitem_child_lastborn].next != NIL {
+                            this_listitem_child_lastborn = tree.nodes[this_listitem_child_lastborn].next;
+                        }
+                        node_to_repoint = this_listitem_child_lastborn;
+                    } else {
+                        node_to_repoint = this_listitem_child;
+                    }
+
+                    tree.nodes[node_to_repoint].next = tree.nodes[this_listitem_child].next;
+                    this_listitem_child = tree.nodes[this_listitem_child].next;
+                }
+            } // listitems should always have children, let this pass during testing
+        } // failure should be a panic, but I'll let it pass during testing
+
+        this_listitem = tree.nodes[this_listitem].next;
+    }
+}
+
 impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
@@ -858,22 +902,10 @@ impl<'a> Iterator for Parser<'a> {
         if let ItemBody::Inline(..) = self.tree.nodes[self.tree.cur].item.body {
             handle_inline(&mut self.tree, self.text);
         }
-        if let Some(Tag::Paragraph) = item_to_tag(&self.tree.nodes[self.tree.cur].item) {
-            // paragraphs need special handling because of tight lists
-            if let Some(parent) = self.tree.peek_up() {
-                if let ItemBody::ListItem(_) = self.tree.nodes[parent].item.body {
-                    if let Some(list_parent) = self.tree.peek_up_next() {
-                        if let ItemBody::List(_, _, _, false) = self.tree.nodes[list_parent].item.body {
-                            // the parent list is tight
-                            // jump to the child, and don't put this paragraph on the spine
-                            self.tree.cur = self.tree.nodes[self.tree.cur].child;
-                            let child_item = &self.tree.nodes[self.tree.cur].item;
-                            self.tree.cur = self.tree.nodes[self.tree.cur].next;
-                            return Some(item_to_event(child_item, self.text));
-                        }
-                    }
-                }
-            }
+        if let ItemBody::List(_, _, _, false) = self.tree.nodes[self.tree.cur].item.body {
+            surgerize_tight_list(&mut self.tree);
+            // println!("after surgery:\n");
+            // dump_tree(&self.tree.nodes, 0, 10);
         }
         let item = &self.tree.nodes[self.tree.cur].item;
         if let Some(tag) = item_to_tag(item) {

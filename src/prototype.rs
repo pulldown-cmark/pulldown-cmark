@@ -85,6 +85,18 @@ impl<T> Tree<T> {
             return None;
         }
     }
+
+    // Look at the grandparent node, leaving tree in original state
+    fn peek_up_next(&mut self) -> Option<usize> {
+        if let Some(parent) = self.spine.pop() {
+            if let Some(grandparent) = self.spine.pop() {
+                self.spine.push(grandparent);
+                self.spine.push(parent);
+                return Some(grandparent);
+            }
+        }
+        return None;
+    }
 }
 
 #[derive(Debug)]
@@ -109,7 +121,7 @@ enum ItemBody {
     SynthesizeNewLine,
     Html,
     BlockQuote,
-    List(usize, u8, Option<usize>), // indent level, list character, list start index
+    List(usize, u8, Option<usize>, bool), // indent level, list character, list start index, is_loose
     ListItem(usize), // indent level
 }
 
@@ -791,7 +803,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::IndentCodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
-        ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
+        ItemBody::List(_, _, listitem_start, _) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
         _ => None,
     }
@@ -829,6 +841,23 @@ impl<'a> Iterator for Parser<'a> {
         }
         if let ItemBody::Inline(..) = self.tree.nodes[self.tree.cur].item.body {
             handle_inline(&mut self.tree, self.text);
+        }
+        if let Some(Tag::Paragraph) = item_to_tag(&self.tree.nodes[self.tree.cur].item) {
+            // paragraphs need special handling because of tight lists
+            if let Some(parent) = self.tree.peek_up() {
+                if let ItemBody::ListItem(_) = self.tree.nodes[parent].item.body {
+                    if let Some(list_parent) = self.tree.peek_up_next() {
+                        if let ItemBody::List(_, _, _, false) = self.tree.nodes[list_parent].item.body {
+                            // the parent list is tight
+                            // jump to the child, and don't put this paragraph on the spine
+                            self.tree.cur = self.tree.nodes[self.tree.cur].child;
+                            let child_item = &self.tree.nodes[self.tree.cur].item;
+                            self.tree.cur = self.tree.nodes[self.tree.cur].next;
+                            return Some(item_to_event(child_item, self.text));
+                        }
+                    }
+                }
+            }
         }
         let item = &self.tree.nodes[self.tree.cur].item;
         if let Some(tag) = item_to_tag(item) {

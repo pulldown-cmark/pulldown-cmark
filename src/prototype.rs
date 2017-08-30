@@ -498,12 +498,28 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
                 listitem_start = None;
             }
 
-            tree.append(Item {
-                start: ix,
-                end: ix, // TODO: set this correctly
-                body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start),
-            });
-            tree.push();
+            let mut need_push = true; // Are we starting a new list?
+            if let Some(parent) = tree.peek_up() {
+                match tree.nodes[parent].item.body {
+                    ItemBody::List(_, delim, _, _) if delim == listitem_delimiter => {
+                        need_push = false;
+                    },
+                    ItemBody::List(_, _, _, _) => {
+                        // A different delimiter indicates a new list
+                        tree.pop();
+                    },
+                    _ => {},
+                }
+            }
+            if need_push {
+                tree.append(Item {
+                    start: ix,
+                    end: ix, // TODO: set this correctly
+                    body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start, false),
+                });
+                tree.push();
+            }
+
             tree.append(Item {
                 start: ix,
                 end: ix, // TODO: set this correctly

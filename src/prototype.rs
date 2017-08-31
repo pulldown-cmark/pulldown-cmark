@@ -121,8 +121,9 @@ enum ItemBody {
     SynthesizeNewLine,
     Html,
     BlockQuote,
-    List(usize, u8, Option<usize>, bool), // indent level, list character, list start index, is_loose
+    List(usize, u8, Option<usize>), // indent level, list character, list start index
     ListItem(usize), // indent level
+    BlankLine,
 }
 
 impl Tree<Item> {
@@ -501,10 +502,10 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
             let mut need_push = true; // Are we starting a new list?
             if let Some(parent) = tree.peek_up() {
                 match tree.nodes[parent].item.body {
-                    ItemBody::List(_, delim, _, _) if delim == listitem_delimiter => {
+                    ItemBody::List(_, delim, _) if delim == listitem_delimiter => {
                         need_push = false;
                     },
-                    ItemBody::List(_, _, _, _) => {
+                    ItemBody::List(_, _, _) => {
                         // A different delimiter indicates a new list
                         tree.pop();
                     },
@@ -515,7 +516,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
                 tree.append(Item {
                     start: ix,
                     end: ix, // TODO: set this correctly
-                    body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start, false),
+                    body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start),
                 });
                 tree.push();
             }
@@ -819,7 +820,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::IndentCodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
-        ItemBody::List(_, _, listitem_start, _) => Some(Tag::List(listitem_start)),
+        ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
         _ => None,
     }
@@ -834,12 +835,42 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
         ItemBody::SynthesizeNewLine => {
             Event::Text(Cow::from("\n"))
         },
+        ItemBody::BlankLine => {
+            Event::Text(Cow::from(""))
+        },
         ItemBody::Html => {
             Event::Html(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)
     }
+}
+
+// tree.cur points to a List<_, _, _> Item Node
+fn detect_tight_list(tree: &Tree<Item>) -> bool {
+    // println!("\n");
+    // dump_tree(&tree.nodes, 0, 10);
+    // println!("checking for tight list");
+    let mut this_listitem = tree.nodes[tree.cur].child;
+    while this_listitem != NIL {
+        // println!("checking listitem node {}", this_listitem);
+        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
+            let mut this_listitem_lastborn = tree.nodes[this_listitem].child;
+            if this_listitem_lastborn != NIL {
+                while tree.nodes[this_listitem_lastborn].next != NIL {
+                    this_listitem_lastborn = tree.nodes[this_listitem_lastborn].next;
+                }
+                // println!("lastborn was {}", this_listitem_lastborn);
+                if let ItemBody::BlankLine = tree.nodes[this_listitem_lastborn].item.body {
+                    // println!("found blankline lastborn {}", this_listitem_lastborn);
+                    return false;
+                }
+            } // the else should panic!
+        }
+
+        this_listitem = tree.nodes[this_listitem].next;
+    }
+    return true;
 }
 
 // https://english.stackexchange.com/a/285573
@@ -902,8 +933,10 @@ impl<'a> Iterator for Parser<'a> {
         if let ItemBody::Inline(..) = self.tree.nodes[self.tree.cur].item.body {
             handle_inline(&mut self.tree, self.text);
         }
-        if let ItemBody::List(_, _, _, false) = self.tree.nodes[self.tree.cur].item.body {
-            surgerize_tight_list(&mut self.tree);
+        if let ItemBody::List(_, _, _) = self.tree.nodes[self.tree.cur].item.body {
+            if detect_tight_list(&self.tree) {
+                surgerize_tight_list(&mut self.tree);
+            }
             // println!("after surgery:\n");
             // dump_tree(&self.tree.nodes, 0, 10);
         }

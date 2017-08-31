@@ -538,74 +538,91 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 // Mutates tree as needed, and returns the start of the next line.
 fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
-    let b = s.as_bytes()[ix];
-    if b == b'\n' || b == b'\r' {
-        // blank line
-        ix += scan_eol(&s[ix..]).0;
-        return ix
-    } else {
-        // check if we are in a leaf block
-        if let Some(parent) = tree.peek_up() {
-            if let ItemBody::FencedCodeBlock(_, _, indentation) = tree.nodes[parent].item.body {
-                return parse_fenced_code_line(&mut tree, s, ix, indentation);
-            }
-            if let ItemBody::IndentCodeBlock = tree.nodes[parent].item.body {
-                return parse_indented_code_line(&mut tree, s, ix);
-            }
-        }
+    // if let Some(blankline_size) = scan_blank_line(&s[ix..]) {
 
-        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-        
-        if leading_spaces >= 4 {
-            tree.append(Item {
-                start: ix,
-                end: 0, // set later
-                body: ItemBody::IndentCodeBlock
-            });
-            tree.push();
-            ix += leading_bytes;
+        // println!("found blankline at ix: {}", ix);
+        // tree.append(Item {
+        //     start: ix,
+        //     end: ix + blankline_size,
+        //     body: ItemBody::BlankLine,
+        // });
+
+        // ix += blankline_size;
+        // return ix;
+    // } else {
+        // check if we are in a leaf block
+    if let Some(parent) = tree.peek_up() {
+        if let ItemBody::FencedCodeBlock(_, _, indentation) = tree.nodes[parent].item.body {
+            return parse_fenced_code_line(&mut tree, s, ix, indentation);
+        }
+        if let ItemBody::IndentCodeBlock = tree.nodes[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
         }
-
-        // leading spaces are preserved in html blocks
-        if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
-            return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
-        }
-
-        let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
-        if is_html_tag(possible_tag) {
-            return parse_html_block_type_6(&mut tree, s, ix);
-        }
-
-        ix += leading_bytes;
-
-        let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
-        if atx_level > 0 {
-            return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
-        }
-
-        let hrule_size = scan_hrule(&s[ix..]);
-        if hrule_size > 0 {
-            return parse_hrule(&mut tree, hrule_size, ix);
-        }
-
-        let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
-        if num_code_fence_chars > 0 {
-            tree.append(Item {
-                start: ix,
-                end: 0, // set later
-                body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces),
-            });
-            
-            // TODO: parse code fence info
-            ix += scan_nextline(&s[ix..]);
-
-            tree.push();
-            return ix;
-        }
-
-        return parse_paragraph(&mut tree, s, ix);
     }
+
+    if let Some(blankline_size) = scan_blank_line(&s[ix..]) {
+        tree.append(Item {
+            start: ix,
+            end: ix + blankline_size,
+            body: ItemBody::BlankLine,
+        });
+
+        ix += blankline_size;
+        return ix;
+    }
+
+    let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+    
+    if leading_spaces >= 4 {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::IndentCodeBlock
+        });
+        tree.push();
+        ix += leading_bytes;
+        return parse_indented_code_line(&mut tree, s, ix);
+    }
+
+    // leading spaces are preserved in html blocks
+    if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+        return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+    }
+
+    let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+    if is_html_tag(possible_tag) {
+        return parse_html_block_type_6(&mut tree, s, ix);
+    }
+
+    ix += leading_bytes;
+
+    let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+    if atx_level > 0 {
+        return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
+    }
+
+    let hrule_size = scan_hrule(&s[ix..]);
+    if hrule_size > 0 {
+        return parse_hrule(&mut tree, hrule_size, ix);
+    }
+
+    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
+    if num_code_fence_chars > 0 {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces),
+        });
+        
+        // TODO: parse code fence info
+        ix += scan_nextline(&s[ix..]);
+
+        tree.push();
+        return ix;
+    }
+
+    return parse_paragraph(&mut tree, s, ix);
+    // }
 }
 
 // Root is node 0

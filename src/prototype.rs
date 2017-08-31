@@ -433,6 +433,13 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                     return (i, false);
                 }
             }
+            ItemBody::List(_, _, _) => {
+                // hrule interrupts list
+                let hrule_size = scan_hrule(&text[i..]);
+                if hrule_size > 0 {
+                    return (0, false);
+                }
+            }
             _ => (),
         }
     }

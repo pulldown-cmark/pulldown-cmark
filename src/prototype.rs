@@ -85,18 +85,6 @@ impl<T> Tree<T> {
             return None;
         }
     }
-
-    // Look at the grandparent node, leaving tree in original state
-    fn peek_up_next(&mut self) -> Option<usize> {
-        if let Some(parent) = self.spine.pop() {
-            if let Some(grandparent) = self.spine.pop() {
-                self.spine.push(grandparent);
-                self.spine.push(parent);
-                return Some(grandparent);
-            }
-        }
-        return None;
-    }
 }
 
 #[derive(Debug)]

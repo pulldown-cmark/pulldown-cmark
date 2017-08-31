@@ -105,7 +105,7 @@ enum ItemBody {
     Rule,
     Header(i32), // header level
     FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
-    IndentCodeBlock,
+    IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,
     Html,
     BlockQuote,
@@ -204,9 +204,21 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
 fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    
     let codeline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(ix, codeline_end_offset + ix);
     tree.append_newline(codeline_end_offset);
+
+    // record the last nonblank child so that we can remove
+    // trailing blanklines during tree parsing
+    if let None = scan_blank_line(&s[ix..]) {
+        let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
+        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree.nodes[parent_icb].item.body {
+            // println!("setting last_nonblank_child to {}", tree.cur);
+            *last_nonblank_child = tree.cur;
+        }
+    }
+
     ix += codeline_end_offset;
     ix += scan_eol(&s[ix..]).0;
     ix
@@ -424,11 +436,13 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                     return (i, false);
                 }
             },
-            ItemBody::IndentCodeBlock => {
+            ItemBody::IndentCodeBlock(_) => {
                 if let Some(codeline_start_offset) = scan_code_line(&text[i..]) {
                     i += codeline_start_offset;
                     return (i, true);
                 } else {
+                    // println!("close icb, detach after {}", last_nonblank_child);
+                    // tree.nodes[last_nonblank_child].next = NIL; // detach trailing blank lines
                     return (i, false);
                 }
             }
@@ -454,7 +468,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
         if let ItemBody::FencedCodeBlock(_, _, _) = tree.nodes[parent].item.body {
             return ix;
         }
-        if let ItemBody::IndentCodeBlock = tree.nodes[parent].item.body {
+        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return ix;
         }
     }
@@ -533,12 +547,14 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 // Used on a new line, after scan_containers and scan_new_containers.
 // Mutates tree as needed, and returns the start of the next line.
 fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    // println!("parsing blocks at ix: {}, len={}", ix, s.len());
     if ix >= s.len() { return ix; }
+
     if let Some(parent) = tree.peek_up() {
         if let ItemBody::FencedCodeBlock(_, _, indentation) = tree.nodes[parent].item.body {
             return parse_fenced_code_line(&mut tree, s, ix, indentation);
         }
-        if let ItemBody::IndentCodeBlock = tree.nodes[parent].item.body {
+        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
         }
     }
@@ -560,7 +576,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::IndentCodeBlock
+            body: ItemBody::IndentCodeBlock(NIL)
         });
         tree.push();
         ix += codeline_start_offset;
@@ -614,15 +630,20 @@ fn first_pass(s: &str) -> Tree<Item> {
     let mut ix = 0;
     while ix < s.len() {
         // start of a new line
+        // println!("\npassing thru new line at ix: {}", ix);
         let (container_offset, are_containers_closed) = scan_containers(&tree, &s[ix..]);
         ix += container_offset;
         if !are_containers_closed {
             tree.pop();
             continue; }
         // ix is past all container marks
+        // println!("parsing new containers at ix: {}", ix);
         ix = parse_new_containers(&mut tree, s, ix);
+        // println!("parsing blocks at ix: {}", ix);
         ix = parse_blocks(&mut tree, s, ix);
     }
+    // println!("\n");
+    // dump_tree(&tree.nodes, 0, 10);
     tree
 }
 
@@ -813,7 +834,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
-        ItemBody::IndentCodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
@@ -937,6 +958,9 @@ impl<'a> Iterator for Parser<'a> {
             }
             // println!("after surgery:\n");
             // dump_tree(&self.tree.nodes, 0, 10);
+        }
+        if let ItemBody::IndentCodeBlock(last_nonblank_child) = self.tree.nodes[self.tree.cur].item.body {
+            self.tree.nodes[last_nonblank_child].next = NIL;
         }
         let item = &self.tree.nodes[self.tree.cur].item;
         if let Some(tag) = item_to_tag(item) {

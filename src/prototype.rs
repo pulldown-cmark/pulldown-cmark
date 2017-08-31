@@ -870,6 +870,9 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
             let mut this_listitem_lastborn = tree.nodes[this_listitem].child;
             if this_listitem_lastborn != NIL {
                 while tree.nodes[this_listitem_lastborn].next != NIL {
+                    if let ItemBody::BlankLine = tree.nodes[this_listitem_lastborn].item.body {
+                        return false;
+                    }
                     this_listitem_lastborn = tree.nodes[this_listitem_lastborn].next;
                 }
                 // println!("lastborn was {}", this_listitem_lastborn);

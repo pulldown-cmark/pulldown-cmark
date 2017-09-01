@@ -353,13 +353,14 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     let mut last_soft_break = None;
     while ix < s.len() {
         let line_start = ix;
-        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-        ix += leading_bytes;
 
         let container_scan = scan_containers(&tree, &s[ix..]);
         if container_scan.1 {
             ix += container_scan.0;
         }
+
+        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+        ix += leading_bytes;
 
        
         let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
@@ -377,7 +378,7 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
             break;
         }
 
-        if scan_paragraph_interrupt(&s[ix..]) {
+        if leading_spaces < 4 && scan_paragraph_interrupt(&s[ix..]) {
             // println!("paragraph interrupted at ix: {}, leading_spaces: {}", ix, leading_spaces);
             ix = line_start; 
             // println!("restart line at ix: {}", ix);
@@ -414,12 +415,12 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
         match tree.nodes[vertebra].item.body {
             ItemBody::BlockQuote => {
                 i += space_bytes;
-                if num_spaces >= 4 { return (i, false); }
+                if num_spaces >= 4 { return (0, false); }
                 let n = scan_blockquote_start(&text[i..]);
                 if n > 0 {
                     i += n
                 } else {
-                    return (i, false);
+                    return (0, false);
                 }
             },
             ItemBody::ListItem(indent) => {

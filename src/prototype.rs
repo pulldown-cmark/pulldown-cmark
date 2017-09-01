@@ -425,7 +425,7 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 } else if scan_eol(&text[i..]).1 {
                     return (i, true);
                 }
-                i += space_bytes;
+                i += indent;
                 // println!("scanning past leading space to offset i: {}", i);
 
             },
@@ -443,7 +443,8 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 } else {
                     // println!("close icb, detach after {}", last_nonblank_child);
                     // tree.nodes[last_nonblank_child].next = NIL; // detach trailing blank lines
-                    return (i, false);
+                    // println!("did not find icb");
+                    return (0, false);
                 }
             }
             ItemBody::List(_, _, _) => {

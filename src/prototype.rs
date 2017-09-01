@@ -330,17 +330,16 @@ fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
     s.len()
 }
 
-fn scan_paragraph_interrupt(s: &str, leading_spaces: usize) -> bool {
-    leading_spaces < 4 &&
-    (s.is_empty() ||
-        s.as_bytes()[0] <= b' ' ||
-        scan_hrule(s) > 0 ||
-        scan_atx_header(s).0 > 0 ||
-        scan_code_fence(s).0 > 0 ||
-        get_html_end_tag(s).is_some() ||
-        scan_blockquote_start(s) > 0 ||
-        scan_listitem(s).0 > 0 ||
-        is_html_tag(scan_html_block_tag(s).1))
+fn scan_paragraph_interrupt(s: &str) -> bool {
+    s.is_empty() ||
+    s.as_bytes()[0] <= b' ' ||
+    scan_hrule(s) > 0 ||
+    scan_atx_header(s).0 > 0 ||
+    scan_code_fence(s).0 > 0 ||
+    get_html_end_tag(s).is_some() ||
+    scan_blockquote_start(s) > 0 ||
+    scan_listitem(s).0 > 0 ||
+    is_html_tag(scan_html_block_tag(s).1)
 }
 
 fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
@@ -353,6 +352,7 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     tree.push();
     let mut last_soft_break = None;
     while ix < s.len() {
+        let line_start = ix;
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
 
@@ -377,7 +377,11 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
             break;
         }
 
-        if scan_paragraph_interrupt(&s[ix..], leading_spaces) { break; }
+        if scan_paragraph_interrupt(&s[ix..]) {
+            // println!("paragraph interrupted at ix: {}, leading_spaces: {}", ix, leading_spaces);
+            ix = line_start; 
+            // println!("restart line at ix: {}", ix);
+            break; }
 
         if let Some(pos) = last_soft_break {
             tree.append(Item {

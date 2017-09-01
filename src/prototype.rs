@@ -530,7 +530,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
             tree.append(Item {
                 start: ix,
                 end: ix, // TODO: set this correctly
-                body: ItemBody::ListItem(listitem_indent),
+                body: ItemBody::ListItem(listitem_indent + leading_spaces),
             });
             tree.push();
             ix += listitem_bytes;
@@ -538,6 +538,15 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
         }
         break;
     }
+
+    // If we are at a ListItem node, we didn't see a new ListItem,
+    // so it's time to close the list.
+    if tree.cur != NIL {
+        if let ItemBody::ListItem(_) = tree.nodes[tree.cur].item.body {
+            tree.pop();
+        }
+    }
+
     if ix > leading_bytes + begin {
         return ix;
     } else {
@@ -879,11 +888,6 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
                         return false;
                     }
                     this_listitem_lastborn = tree.nodes[this_listitem_lastborn].next;
-                }
-                // println!("lastborn was {}", this_listitem_lastborn);
-                if let ItemBody::BlankLine = tree.nodes[this_listitem_lastborn].item.body {
-                    // println!("found blankline lastborn {}", this_listitem_lastborn);
-                    return false;
                 }
             } // the else should panic!
         }

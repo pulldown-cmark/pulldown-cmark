@@ -107,7 +107,7 @@ enum ItemBody {
     FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
     IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,
-    HtmlBlock(Option<String>), // end tag, or none for type 6
+    HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(usize, u8, Option<usize>), // indent level, list character, list start index
@@ -305,32 +305,38 @@ fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, indenta
 }
 
 
-fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag : &'static str) -> usize {
-    while ix < s.len() {
-        let nextline_offset = scan_nextline(&s[ix..]);
-        let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_html_line(ix, ix+htmlline_end_offset);
-        if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
-            return ix + nextline_offset;
-        }
-        ix += nextline_offset;
+fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
+    // while ix < s.len() {
+    let nextline_offset = scan_nextline(&s[ix..]);
+    let htmlline_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_html_line(ix, ix+htmlline_end_offset);
+    if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
+        // println!("leaving html block\n");
+        // dump_tree(&tree.nodes, 0, 10);
+        tree.pop(); // to HTML Block
     }
-    tree.pop();
-    s.len()
+    ix += nextline_offset;
+    ix
+    // }
+    // tree.pop();
+    // s.len()
 }
 
-fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
-    while ix < s.len() {
-        let nextline_offset = scan_nextline(&s[ix..]);
-        let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_html_line(ix, ix+htmlline_end_offset);
-        if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
-            return ix + nextline_offset;
-        }
-        ix += nextline_offset;
+fn parse_html_line_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    // while ix < s.len() {
+    let nextline_offset = scan_nextline(&s[ix..]);
+    let htmlline_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_html_line(ix, ix+htmlline_end_offset);
+    if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
+        // println!("leaving html block type 6\n");
+        // dump_tree(&tree.nodes, 0, 10);
+        tree.pop();
     }
-    tree.pop();
-    s.len()
+    ix += nextline_offset;
+    ix
+    // }
+    // tree.pop();
+    // s.len()
 }
 
 fn scan_paragraph_interrupt(s: &str) -> bool {
@@ -480,6 +486,9 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return ix;
         }
+        if let ItemBody::HtmlBlock(_) = tree.nodes[parent].item.body {
+            return ix;
+        }
     }
     let begin = ix;
     let leading_bytes = scan_leading_space(s, ix).0;
@@ -575,6 +584,12 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
         }
+        if let ItemBody::HtmlBlock(Some(html_end_tag)) = tree.nodes[parent].item.body {
+            return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
+        }
+        if let ItemBody::HtmlBlock(None) = tree.nodes[parent].item.body {
+            return parse_html_line_type_6(&mut tree, s, ix);
+        }
     }
 
     if let Some(blankline_size) = scan_blank_line(&s[ix..]) {
@@ -606,10 +621,10 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::HtmlBlock(Some(html_end_tag.to_string())),
+            body: ItemBody::HtmlBlock(Some(html_end_tag)),
         });
         tree.push();
-        return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
+        return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
     }
 
     let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
@@ -620,7 +635,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             body: ItemBody::HtmlBlock(None)
         });
         tree.push();
-        return parse_html_block_type_6(&mut tree, s, ix);
+        return parse_html_line_type_6(&mut tree, s, ix);
     }
 
     ix += leading_bytes;
@@ -868,6 +883,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
+        ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
         _ => None,
     }
 }

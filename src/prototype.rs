@@ -435,8 +435,8 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
 
             },
             ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, _) => {
-                if let Some(code_fence_end) = scan_closing_code_fence(&text[i+space_bytes..], code_fence_char, num_code_fence_chars) {
-                    i += code_fence_end+space_bytes;
+                if let Some(code_fence_end) = scan_closing_code_fence(&text[i..], code_fence_char, num_code_fence_chars) {
+                    i += code_fence_end;
                     i += scan_eol(&text[i..]).0;
                     return (i, false);
                 }

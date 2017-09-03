@@ -107,6 +107,7 @@ enum ItemBody {
     FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
     IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,
+    HtmlBlock(Option<String>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(usize, u8, Option<usize>), // indent level, list character, list start index
@@ -314,6 +315,7 @@ fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize
         }
         ix += nextline_offset;
     }
+    tree.pop();
     s.len()
 }
 
@@ -327,6 +329,7 @@ fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         }
         ix += nextline_offset;
     }
+    tree.pop();
     s.len()
 }
 
@@ -600,11 +603,23 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
     // leading spaces are preserved in html blocks
     if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(Some(html_end_tag.to_string())),
+        });
+        tree.push();
         return parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
     }
 
     let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
     if is_html_tag(possible_tag) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(None)
+        });
+        tree.push();
         return parse_html_block_type_6(&mut tree, s, ix);
     }
 

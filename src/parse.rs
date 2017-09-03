@@ -91,6 +91,7 @@ pub enum Tag<'a> {
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(Cow<'a, str>),
+    HtmlBlock,
 
     // tables
     Table(Vec<Alignment>),

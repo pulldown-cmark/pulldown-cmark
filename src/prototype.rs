@@ -364,9 +364,10 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
         let line_start = ix;
 
         let container_scan = scan_containers(&tree, &s[ix..]);
-        if container_scan.1 {
-            ix += container_scan.0;
-        }
+        // println!("paragraph container scan. Closed: {}, bytes: {}", container_scan.1, container_scan.0);
+        // if container_scan.1 {
+        ix += container_scan.0;
+        // }
 
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
@@ -429,7 +430,7 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 if n > 0 {
                     i += n
                 } else {
-                    return (0, false);
+                    return (i, false);
                 }
             },
             ItemBody::ListItem(indent) => {

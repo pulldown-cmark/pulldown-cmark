@@ -469,6 +469,10 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         postn = 1;
         postindent = 1;
     }
+    if let Some(_) = scan_blank_line(&data[w..]) {
+        postn = 0;
+        postindent = 1;
+    }
     (w + postn, c, start, w + postindent)
 }
 

@@ -918,14 +918,22 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
     let mut this_listitem = tree.nodes[tree.cur].child;
     while this_listitem != NIL {
         // println!("checking listitem node {}", this_listitem);
+        let on_lastborn_child = tree.nodes[this_listitem].next == NIL;
         if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
-            let mut this_listitem_lastborn = tree.nodes[this_listitem].child;
-            if this_listitem_lastborn != NIL {
-                while tree.nodes[this_listitem_lastborn].next != NIL {
-                    if let ItemBody::BlankLine = tree.nodes[this_listitem_lastborn].item.body {
-                        return false;
+            let mut this_listitem_child = tree.nodes[this_listitem].child;
+            let mut on_firstborn_grandchild = true; 
+            if this_listitem_child != NIL {
+                while this_listitem_child != NIL {
+                    let on_lastborn_grandchild = tree.nodes[this_listitem_child].next == NIL;
+                    if let ItemBody::BlankLine = tree.nodes[this_listitem_child].item.body {
+                        // If the first line is blank, this does not trigger looseness.
+                        // Blanklines at the very end of a list also do not trigger looseness.
+                        if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
+                            return false;
+                        }
                     }
-                    this_listitem_lastborn = tree.nodes[this_listitem_lastborn].next;
+                    on_firstborn_grandchild = false;
+                    this_listitem_child = tree.nodes[this_listitem_child].next;
                 }
             } // the else should panic!
         }

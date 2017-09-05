@@ -294,7 +294,15 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
 
 // The parent node is a fenced code block.
 // Returns index of start of next line
-fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
+fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, num_code_fence_chars: usize, code_fence_char: u8, indentation: usize) -> usize {
+    
+    if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
+        ix += code_fence_end;
+        ix += scan_eol(&s[ix..]).0;
+        tree.pop();
+        return ix;
+    }
+
     let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
     let fenced_line_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
@@ -444,13 +452,6 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 // println!("scanning past leading space to offset i: {}", i);
 
             },
-            ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, _) => {
-                if let Some(code_fence_end) = scan_closing_code_fence(&text[i..], code_fence_char, num_code_fence_chars) {
-                    i += code_fence_end;
-                    i += scan_eol(&text[i..]).0;
-                    return (i, false);
-                }
-            },
             ItemBody::IndentCodeBlock(_) => {
                 if let Some(codeline_start_offset) = scan_code_line(&text[i..]) {
                     i += codeline_start_offset;
@@ -579,8 +580,8 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
 
     if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(_, _, indentation) = tree.nodes[parent].item.body {
-            return parse_fenced_code_line(&mut tree, s, ix, indentation);
+        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation) = tree.nodes[parent].item.body {
+            return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
         }
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
@@ -677,11 +678,11 @@ fn first_pass(s: &str) -> Tree<Item> {
     while ix < s.len() {
         // start of a new line
         // println!("\npassing thru new line at ix: {}", ix);
-        let (container_offset, are_containers_closed) = scan_containers(&tree, &s[ix..]);
-        ix += container_offset;
+        let (container_offset, are_containers_closed) = scan_containers(&mut tree, &s[ix..]);
         if !are_containers_closed {
             tree.pop();
             continue; }
+        ix += container_offset;
         // ix is past all container marks
         // println!("parsing new containers at ix: {}", ix);
         ix = parse_new_containers(&mut tree, s, ix);

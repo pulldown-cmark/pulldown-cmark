@@ -446,6 +446,11 @@ fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
                     return (i, false);
                 } else if scan_eol(&text[i..]).1 {
+                    if let ItemBody::BlankLine = tree.nodes[tree.cur].item.body {
+                        if tree.nodes[vertebra].child == tree.cur {
+                            return (i, false);
+                        }
+                    }
                     return (i, true);
                 }
                 i += indent;

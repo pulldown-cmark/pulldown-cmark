@@ -163,8 +163,6 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     }
 }
 
-
-
 // Return: number of bytes parsed
 fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let start = ix;

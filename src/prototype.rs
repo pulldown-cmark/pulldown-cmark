@@ -75,6 +75,16 @@ impl<T> Tree<T> {
     fn pop(&mut self) {
         self.cur = self.spine.pop().unwrap();
     }
+
+    // Look at the parent node, leaving tree in original state
+    fn peek_up(&mut self) -> Option<usize> {
+        if let Some(parent) = self.spine.pop() {
+            self.spine.push(parent);
+            return Some(parent);
+        } else {
+            return None;
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -94,9 +104,15 @@ enum ItemBody {
     Strong,
     Rule,
     Header(i32), // header level
-    CodeBlock,
+    FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
+    IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,
+    HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
+    BlockQuote,
+    List(usize, u8, Option<usize>), // indent level, list character, list start index
+    ListItem(usize), // indent level
+    BlankLine,
 }
 
 impl Tree<Item> {
@@ -124,8 +140,17 @@ impl Tree<Item> {
             });
         }
     }
+
+    fn append_newline(&mut self, ix: usize) {
+        self.append(Item {
+            start: ix,
+            end: ix,
+            body: ItemBody::SynthesizeNewLine,
+        });
+    }
 }
 
+#[allow(dead_code)]
 fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     while ix != NIL {
         let node = &nodes[ix];
@@ -175,62 +200,30 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     ix - start
 }
 
-fn parse_indented_code_block(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    let codeblock_parent = tree.cur;
-    tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::CodeBlock
-        });
-    let codeblock_node = tree.cur;
-    tree.push();
-    let mut last_chunk = NIL;
+// ix is at the beginning of the code line text
+// returns the index of the start of the next line
+fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    
+    let codeline_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_text(ix, codeline_end_offset + ix);
+    tree.append_newline(codeline_end_offset);
 
-    // skip leading blanklines
-    while ix < s.len() {
-        if let Some(bl_size) = scan_blank_line(&s[ix..]) {
-            ix += bl_size;
-        } else { break; }
-    }
-
-    while ix < s.len() {
-        if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
-
-            let codeline_end_offset = scan_line_ending(&s[ix..]);
-            tree.append_text(codeline_start_offset + ix, codeline_end_offset + ix);
-
-            tree.append(Item {
-                    start: codeline_end_offset,
-                    end: codeline_end_offset,
-                    body: ItemBody::SynthesizeNewLine,
-            });
-
-            if scan_blank_line(&s[ix..]).is_none() {
-                last_chunk = tree.cur;
-            }
-            ix += codeline_end_offset;
-            ix += scan_eol(&s[ix..]).0;
-        } else { // we've hit a non-indented line
-            break;
+    // record the last nonblank child so that we can remove
+    // trailing blanklines during tree parsing
+    if let None = scan_blank_line(&s[ix..]) {
+        let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
+        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree.nodes[parent_icb].item.body {
+            *last_nonblank_child = tree.cur;
         }
     }
-    if last_chunk != NIL {
-        // everything after last_chunk is blank,
-        // and should be detached
-        tree.nodes[last_chunk].next = NIL;
-    } else {
-        // if we never saw a nonblank chunk then
-        // this isn't a valid codeblock, so detach it
-        tree.nodes[codeblock_parent].child = NIL;
-        // pop to the codeblock, next pop will rise
-        // to the parent, leaving detached codeblock behind
-        tree.pop();
-    }
-    tree.pop();
-    tree.nodes[codeblock_node].item.end = ix;
+
+    ix += codeline_end_offset;
+    ix += scan_eol(&s[ix..]).0;
     ix
 }
 
+// Starts with ix past all container marks.
+// Returns index of start of next line.
 fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     atx_level: i32, atx_size: usize) -> usize {
     
@@ -248,7 +241,7 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
         return ix;
     }
     // skip leading spaces
-    let skip_spaces = scan_ch_repeat(&s[ix..], b' ');
+    let skip_spaces = scan_whitespace_no_nl(&s[ix..]);
     ix += skip_spaces;
 
     // now handle the header text
@@ -281,10 +274,12 @@ fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
     }
 
     tree.pop();
+    ix += scan_eol(&s[ix..]).0;
     ix
 }
 
-fn parse_hrule(mut tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
+// Returns index of start of next line.
+fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: ix + hrule_size,
@@ -294,67 +289,60 @@ fn parse_hrule(mut tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> u
     ix
 }
 
-fn parse_code_fence_block(mut tree: &mut Tree<Item>, s: &str, mut ix: usize, indentation: usize) -> usize {
-    tree.append(Item {
-        start: ix,
-        end: 0, // set later
-        body: ItemBody::CodeBlock,
-    });
+// The parent node is a fenced code block.
+// Returns index of start of next line
+fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, num_code_fence_chars: usize, code_fence_char: u8, indentation: usize) -> usize {
     
-    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
-    // TODO: parse code fence info
-    ix += scan_nextline(&s[ix..]);
-
-    let codeblock_node = tree.cur;
-    tree.push();
-
-    while ix < s.len() {
-        if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
-            ix += code_fence_end;
-            ix += scan_eol(&s[ix..]).0;
-            break;
-        }
-        let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
-        let fenced_line_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
-        tree.append(Item {
-                start: fenced_line_end_offset,
-                end: fenced_line_end_offset,
-                body: ItemBody::SynthesizeNewLine,
-        });
-        ix += fenced_line_end_offset;
+    if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
+        ix += code_fence_end;
         ix += scan_eol(&s[ix..]).0;
+        tree.pop();
+        return ix;
     }
-    tree.nodes[codeblock_node].item.end = ix;
-    tree.pop();
+
+    let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
+    let fenced_line_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
+    tree.append_newline(fenced_line_end_offset);
+    ix += fenced_line_end_offset;
+    ix += scan_eol(&s[ix..]).0;
     ix
 }
 
 
-fn parse_html_block_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag : &'static str) -> usize {
-    while ix < s.len() {
-        let nextline_offset = scan_nextline(&s[ix..]);
-        let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_html_line(ix, ix+htmlline_end_offset);
-        if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
-            return ix + nextline_offset;
-        }
-        ix += nextline_offset;
+fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
+    // while ix < s.len() {
+    let nextline_offset = scan_nextline(&s[ix..]);
+    let htmlline_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_html_line(ix, ix+htmlline_end_offset);
+    if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
+        tree.pop(); // to HTML Block
     }
-    s.len()
+    ix += nextline_offset;
+    ix
 }
 
-fn parse_html_block_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
-    while ix < s.len() {
-        let nextline_offset = scan_nextline(&s[ix..]);
-        let htmlline_end_offset = scan_line_ending(&s[ix..]);
-        tree.append_html_line(ix, ix+htmlline_end_offset);
-        if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
-            return ix + nextline_offset;
-        }
-        ix += nextline_offset;
+fn parse_html_line_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+    let nextline_offset = scan_nextline(&s[ix..]);
+    let htmlline_end_offset = scan_line_ending(&s[ix..]);
+    tree.append_html_line(ix, ix+htmlline_end_offset);
+    if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
+        tree.pop();
     }
-    s.len()
+    ix += nextline_offset;
+    ix
+}
+
+fn scan_paragraph_interrupt(s: &str) -> bool {
+    s.is_empty() ||
+    s.as_bytes()[0] <= b' ' ||
+    scan_hrule(s) > 0 ||
+    scan_atx_header(s).0 > 0 ||
+    scan_code_fence(s).0 > 0 ||
+    get_html_end_tag(s).is_some() ||
+    scan_blockquote_start(s) > 0 ||
+    scan_listitem(s).0 > 0 ||
+    is_html_tag(scan_html_block_tag(s).1)
 }
 
 fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
@@ -367,49 +355,34 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     tree.push();
     let mut last_soft_break = None;
     while ix < s.len() {
+        let line_start = ix;
+
+        let container_scan = scan_containers(&tree, &s[ix..]);
+        ix += container_scan.0;
+
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
 
+       
+        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+        // setext headers can't be lazy paragraph continuations
+        if !container_scan.1 {
+            if setext_bytes > 0 && leading_spaces < 4 {
+                break; 
+            }
+        }
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
-        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
         if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
             ix += setext_bytes;
             tree.nodes[cur].item.body = ItemBody::Header(setext_level);
             break;
         }
-        // thematic breaks can interrupt paragraphs
-        let hrule_bytes = scan_hrule(&s[ix..]);
-        if hrule_bytes > 0 && leading_spaces < 4 {
-            break;
-        }
-        // atx headers can interrupt paragraphs
-        let atx_bytes = scan_atx_header(&s[ix..]).0;
-        if atx_bytes > 0 && leading_spaces < 4 {
-            break;
-        }
 
-        // code fence blocks can interrupt paragraphs
-        let code_fence_size = scan_code_fence(&s[ix..]).0;
-        if code_fence_size > 0 && leading_spaces < 4 {
-            break;
-        }
+        if leading_spaces < 4 && scan_paragraph_interrupt(&s[ix..]) {
+            ix = line_start; 
+            break; }
 
-        // html blocks type 1 to 5 can interrupt paragraphs
-        if let Some(_) = get_html_end_tag(&s[ix..]) {
-            break;
-        }
-
-        // html block type 6 can interrupt paragraphs
-        let possible_tag = scan_html_block_tag(&s[ix..]).1;
-        if is_html_tag(possible_tag) {
-            break;
-        }
-
-        if ix == s.len() || s.as_bytes()[ix] <= b' ' {
-            // EOF or empty line
-            break;
-        }
         if let Some(pos) = last_soft_break {
             tree.append(Item {
                 start: pos,
@@ -429,62 +402,268 @@ fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usiz
     ix
 }
 
+// Scan markers and indentation for current container stack
+// Scans to the first character after the container marks
+// Return: bytes scanned, and whether containers were closed
+fn scan_containers(tree: &Tree<Item>, text: &str) -> (usize, bool) {
+    let mut i = 0;
+    for &vertebra in &(tree.spine) {
+        let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
+        
+        match tree.nodes[vertebra].item.body {
+            ItemBody::BlockQuote => {
+                i += space_bytes;
+                if num_spaces >= 4 { return (0, false); }
+                let n = scan_blockquote_start(&text[i..]);
+                if n > 0 {
+                    i += n
+                } else {
+                    return (i, false);
+                }
+            },
+            ItemBody::ListItem(indent) => {
+                if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
+                    return (i, false);
+                } else if scan_eol(&text[i..]).1 {
+                    if let ItemBody::BlankLine = tree.nodes[tree.cur].item.body {
+                        if tree.nodes[vertebra].child == tree.cur {
+                            return (i, false);
+                        }
+                    }
+                    return (i, true);
+                }
+                i += indent;
+
+            },
+            ItemBody::IndentCodeBlock(_) => {
+                if let Some(codeline_start_offset) = scan_code_line(&text[i..]) {
+                    i += codeline_start_offset;
+                    return (i, true);
+                } else {
+                    return (0, false);
+                }
+            }
+            ItemBody::List(_, _, _) => {
+                // hrule interrupts list
+                let hrule_size = scan_hrule(&text[i..]);
+                if hrule_size > 0 {
+                    return (0, false);
+                }
+            }
+            _ => (),
+        }
+    }
+    return (i, true);
+}
+
+// Used on a new line, after scan_containers
+// scans to first character after new container markers
+fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    if ix >= s.len() { return ix; }
+    // check if parent is a leaf block, which makes new containers illegal
+    if let Some(parent) = tree.peek_up() {
+        if let ItemBody::FencedCodeBlock(_, _, _) = tree.nodes[parent].item.body {
+            return ix;
+        }
+        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
+            return ix;
+        }
+        if let ItemBody::HtmlBlock(_) = tree.nodes[parent].item.body {
+            return ix;
+        }
+    }
+    let begin = ix;
+    let leading_bytes = scan_leading_space(s, ix).0;
+    loop {
+        let (leading_bytes, leading_spaces) = scan_leading_space(s, ix);
+        if leading_spaces >= 4 { break; }
+        ix += leading_bytes;
+        
+        let blockquote_bytes = scan_blockquote_start(&s[ix..]);
+        if blockquote_bytes > 0 {
+            tree.append(Item {
+                start: ix,
+                end: ix, // TODO: set this correctly
+                body: ItemBody::BlockQuote,
+            });
+            tree.push();
+            ix += blockquote_bytes;
+            continue;
+        }
+
+        let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
+        if listitem_bytes > 0 {
+            // thematic breaks take precedence over listitems
+            if scan_hrule(&s[ix..]) > 0 { break; }
+
+            let listitem_start;
+            // handle ordered lists
+            if listitem_delimiter == b'.' || listitem_delimiter == b')' {
+                listitem_start = Some(listitem_start_index);
+            } else {
+                listitem_start = None;
+            }
+
+            let mut need_push = true; // Are we starting a new list?
+            if let Some(parent) = tree.peek_up() {
+                match tree.nodes[parent].item.body {
+                    ItemBody::List(_, delim, _) if delim == listitem_delimiter => {
+                        need_push = false;
+                    },
+                    ItemBody::List(_, _, _) => {
+                        // A different delimiter indicates a new list
+                        tree.pop();
+                    },
+                    _ => {},
+                }
+            }
+            if need_push {
+                tree.append(Item {
+                    start: ix,
+                    end: ix, // TODO: set this correctly
+                    body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start),
+                });
+                tree.push();
+            }
+
+            tree.append(Item {
+                start: ix,
+                end: ix, // TODO: set this correctly
+                body: ItemBody::ListItem(listitem_indent + leading_spaces),
+            });
+            tree.push();
+            ix += listitem_bytes;
+            continue;
+        }
+        break;
+    }
+
+    // If we are at a ListItem node, we didn't see a new ListItem,
+    // so it's time to close the list.
+    if tree.cur != NIL {
+        if let ItemBody::ListItem(_) = tree.nodes[tree.cur].item.body {
+            tree.pop();
+        }
+    }
+
+    if ix > leading_bytes + begin {
+        return ix;
+    } else {
+        return begin;
+    }
+}
+
+// Used on a new line, after scan_containers and scan_new_containers.
+// Mutates tree as needed, and returns the start of the next line.
+fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+    if ix >= s.len() { return ix; }
+
+    if let Some(parent) = tree.peek_up() {
+        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation) = tree.nodes[parent].item.body {
+            return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
+        }
+        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
+            return parse_indented_code_line(&mut tree, s, ix);
+        }
+        if let ItemBody::HtmlBlock(Some(html_end_tag)) = tree.nodes[parent].item.body {
+            return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
+        }
+        if let ItemBody::HtmlBlock(None) = tree.nodes[parent].item.body {
+            return parse_html_line_type_6(&mut tree, s, ix);
+        }
+    }
+
+    if let Some(blankline_size) = scan_blank_line(&s[ix..]) {
+        tree.append(Item {
+            start: ix,
+            end: ix + blankline_size,
+            body: ItemBody::BlankLine,
+        });
+
+        ix += blankline_size;
+        return ix;
+    }
+
+    let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+    
+    if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::IndentCodeBlock(NIL)
+        });
+        tree.push();
+        ix += codeline_start_offset;
+        return parse_indented_code_line(&mut tree, s, ix);
+    }
+
+    // leading spaces are preserved in html blocks
+    if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(Some(html_end_tag)),
+        });
+        tree.push();
+        return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
+    }
+
+    let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+    if is_html_tag(possible_tag) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(None)
+        });
+        tree.push();
+        return parse_html_line_type_6(&mut tree, s, ix);
+    }
+
+    ix += leading_bytes;
+
+    let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+    if atx_level > 0 {
+        return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
+    }
+
+    let hrule_size = scan_hrule(&s[ix..]);
+    if hrule_size > 0 {
+        return parse_hrule(&mut tree, hrule_size, ix);
+    }
+
+    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
+    if num_code_fence_chars > 0 {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces),
+        });
+        
+        // TODO: parse code fence info
+        ix += scan_nextline(&s[ix..]);
+
+        tree.push();
+        return ix;
+    }
+
+    return parse_paragraph(&mut tree, s, ix);
+    // }
+}
 
 // Root is node 0
 fn first_pass(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {
-        let b = s.as_bytes()[ix];
-        if b == b'\n' || b == b'\r' {
-            // blank line
-            ix += scan_eol(&s[ix..]).0;
-        } else {
-            let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-            
-            if leading_spaces >= 4 {
-                ix = parse_indented_code_block(&mut tree, s, ix);
-                continue;
-            }
-
-            // leading spaces are preserved in html blocks
-            if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
-                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
-                continue;
-            }
-
-            let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
-            if is_html_tag(possible_tag) {
-                ix = parse_html_block_type_6(&mut tree, s, ix);
-                continue;
-            }
-
-            ix += leading_bytes;
-
-            let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
-            if atx_level > 0 {
-                ix = parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
-                continue;
-            }
-
-            let hrule_size = scan_hrule(&s[ix..]);
-            if hrule_size > 0 {
-                ix = parse_hrule(&mut tree, hrule_size, ix);
-                continue;
-            }
-
-            let (code_fence_size, code_fence_char) = scan_code_fence(&s[ix..]);
-            if code_fence_size > 0 {
-                ix = parse_code_fence_block(&mut tree, s, ix, leading_spaces);
-                continue;
-            }
-
-            if let Some(html_end_tag) = get_html_end_tag(&s[ix..]) {
-                ix = parse_html_block_type_1_to_5(&mut tree, s, ix, html_end_tag);
-                continue;
-            }
-            ix = parse_paragraph(&mut tree, s, ix);
-        }
+        // start of a new line
+        let (container_offset, are_containers_closed) = scan_containers(&mut tree, &s[ix..]);
+        if !are_containers_closed {
+            tree.pop();
+            continue; }
+        ix += container_offset;
+        // ix is past all container marks
+        ix = parse_new_containers(&mut tree, s, ix);
+        ix = parse_blocks(&mut tree, s, ix);
     }
     tree
 }
@@ -574,7 +753,6 @@ fn handle_inline(tree: &mut Tree<Item>, s: &str) {
     let mut cur = tree.cur;
     while cur != NIL {
         if let ItemBody::Inline(mut count, can_open, can_close) = tree.nodes[cur].item.body {
-            //println!("considering {}: {:?}, {:?}", cur, tree.nodes[cur].item, stack);
             let c = s.as_bytes()[tree.nodes[cur].item.start];
             let both = can_open && can_close;
             if can_close {
@@ -634,7 +812,6 @@ fn handle_inline(tree: &mut Tree<Item>, s: &str) {
                 prev = cur + count - 1;
                 cur = tree.nodes[prev].next;
             }
-            //println!("after inline, cur = {}, prev = {}, {:?}", cur, prev, stack);
         } else {
             prev = cur;
             cur = tree.nodes[cur].next;
@@ -648,6 +825,7 @@ pub struct Parser<'a> {
     tree: Tree<Item>,
 }
 
+#[allow(unused_variables)]
 impl<'a> Parser<'a> {
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())
@@ -655,6 +833,7 @@ impl<'a> Parser<'a> {
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let mut tree = first_pass(text);
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
+        tree.spine = vec![];
         Parser {
             text: text,
             tree: tree,
@@ -673,7 +852,12 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::CodeBlock => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::BlockQuote => Some(Tag::BlockQuote),
+        ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
+        ItemBody::ListItem(_) => Some(Tag::Item),
+        ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
         _ => None,
     }
 }
@@ -687,11 +871,85 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
         ItemBody::SynthesizeNewLine => {
             Event::Text(Cow::from("\n"))
         },
+        ItemBody::BlankLine => {
+            Event::Text(Cow::from(""))
+        },
         ItemBody::Html => {
             Event::Html(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)
+    }
+}
+
+// tree.cur points to a List<_, _, _> Item Node
+fn detect_tight_list(tree: &Tree<Item>) -> bool {
+    let mut this_listitem = tree.nodes[tree.cur].child;
+    while this_listitem != NIL {
+        let on_lastborn_child = tree.nodes[this_listitem].next == NIL;
+        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
+            let mut this_listitem_child = tree.nodes[this_listitem].child;
+            let mut on_firstborn_grandchild = true; 
+            if this_listitem_child != NIL {
+                while this_listitem_child != NIL {
+                    let on_lastborn_grandchild = tree.nodes[this_listitem_child].next == NIL;
+                    if let ItemBody::BlankLine = tree.nodes[this_listitem_child].item.body {
+                        // If the first line is blank, this does not trigger looseness.
+                        // Blanklines at the very end of a list also do not trigger looseness.
+                        if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
+                            return false;
+                        }
+                    }
+                    on_firstborn_grandchild = false;
+                    this_listitem_child = tree.nodes[this_listitem_child].next;
+                }
+            } // the else should panic!
+        }
+
+        this_listitem = tree.nodes[this_listitem].next;
+    }
+    return true;
+}
+
+// https://english.stackexchange.com/a/285573
+// tree.cur points to a List<_, _, _, false> Item Node
+fn surgerize_tight_list(tree : &mut Tree<Item>) {
+    let mut this_listitem = tree.nodes[tree.cur].child;
+    while this_listitem != NIL {
+        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
+            // first child is special, controls how we repoint this_listitem.child
+            let this_listitem_firstborn = tree.nodes[this_listitem].child;
+            if this_listitem_firstborn != NIL {
+                if let ItemBody::Paragraph = tree.nodes[this_listitem_firstborn].item.body {
+                    // paragraphs should always have children
+                    tree.nodes[this_listitem].child = tree.nodes[this_listitem_firstborn].child;
+                }
+
+                let mut this_listitem_child = this_listitem_firstborn;
+                let mut node_to_repoint = NIL;
+                while this_listitem_child != NIL {
+                    // surgerize paragraphs
+                    if let ItemBody::Paragraph = tree.nodes[this_listitem_child].item.body {
+                        let this_listitem_child_firstborn = tree.nodes[this_listitem_child].child;
+                        if node_to_repoint != NIL {
+                            tree.nodes[node_to_repoint].next = this_listitem_child_firstborn;
+                        }
+                        let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
+                        while tree.nodes[this_listitem_child_lastborn].next != NIL {
+                            this_listitem_child_lastborn = tree.nodes[this_listitem_child_lastborn].next;
+                        }
+                        node_to_repoint = this_listitem_child_lastborn;
+                    } else {
+                        node_to_repoint = this_listitem_child;
+                    }
+
+                    tree.nodes[node_to_repoint].next = tree.nodes[this_listitem_child].next;
+                    this_listitem_child = tree.nodes[this_listitem_child].next;
+                }
+            } // listitems should always have children, let this pass during testing
+        } // failure should be a panic, but I'll let it pass during testing
+
+        this_listitem = tree.nodes[this_listitem].next;
     }
 }
 
@@ -710,6 +968,14 @@ impl<'a> Iterator for Parser<'a> {
         }
         if let ItemBody::Inline(..) = self.tree.nodes[self.tree.cur].item.body {
             handle_inline(&mut self.tree, self.text);
+        }
+        if let ItemBody::List(_, _, _) = self.tree.nodes[self.tree.cur].item.body {
+            if detect_tight_list(&self.tree) {
+                surgerize_tight_list(&mut self.tree);
+            }
+        }
+        if let ItemBody::IndentCodeBlock(last_nonblank_child) = self.tree.nodes[self.tree.cur].item.body {
+            self.tree.nodes[last_nonblank_child].next = NIL;
         }
         let item = &self.tree.nodes[self.tree.cur].item;
         if let Some(tag) = item_to_tag(item) {

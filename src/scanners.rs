@@ -307,7 +307,7 @@ pub fn scan_hrule(data: &str) -> usize {
                 break;
             }
             c2 if c2 == c => n += 1,
-            b' ' => (),
+            b' ' | b'\t' => (),
             _ => return 0
         }
         i += 1;
@@ -440,7 +440,7 @@ pub fn scan_blockquote_start(data: &str) -> usize {
     }
 }
 
-// return number of bytes scanned, delimeter, start index, and indent
+// return number of bytes scanned, delimiter, start index, and indent
 pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     if data.is_empty() { return (0, 0, 0, 0); }
     let mut c = data.as_bytes()[0];
@@ -451,7 +451,7 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
             let mut i = 1;
             i += scan_while(&data[i..], is_digit);
             start = data[..i].parse().unwrap();
-            if i >= data.len() { return (0, 0, 0, 0); }
+            if i >= data.len() || i > 9 { return (0, 0, 0, 0); }
             c = data.as_bytes()[i];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
             i + 1
@@ -465,6 +465,10 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         postindent += 1;
     } else if postindent > 4 {
         postn = 1;
+        postindent = 1;
+    }
+    if let Some(_) = scan_blank_line(&data[w..]) {
+        postn = 0;
         postindent = 1;
     }
     (w + postn, c, start, w + postindent)

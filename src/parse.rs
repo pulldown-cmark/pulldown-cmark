@@ -74,6 +74,7 @@ pub struct RawParser<'a> {
     links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
+#[allow(dead_code)]
 pub struct ParseInfo<'a> {
     pub loose_lists: HashSet<usize>,
     pub links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
@@ -90,6 +91,7 @@ pub enum Tag<'a> {
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(Cow<'a, str>),
+    HtmlBlock,
 
     // tables
     Table(Vec<Alignment>),
@@ -135,6 +137,7 @@ bitflags! {
 
 const MAX_LINK_NEST: usize = 10;
 
+#[allow(dead_code)]
 impl<'a> RawParser<'a> {
     pub fn new_with_links(text: &'a str, opts: Options,
             links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {

@@ -93,6 +93,14 @@ pub fn is_ascii_alphanumeric(c: u8) -> bool {
     }
 }
 
+pub fn is_ascii_letterdigitdash(c: u8) -> bool {
+    match c {
+        b'-' => {return true;},
+        _ => {},
+    }
+    return is_ascii_alphanumeric(c);
+}
+
 fn is_hexdigit(c: u8) -> bool {
     match c {
         b'0' ... b'9' | b'a' ... b'f' | b'A' ... b'F' => true,
@@ -102,6 +110,13 @@ fn is_hexdigit(c: u8) -> bool {
 
 fn is_digit(c: u8) -> bool {
     b'0' <= c && c <= b'9'
+}
+
+fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
+    match c {
+        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' => false,
+        _ => true
+    }
 }
 
 // scan a single character
@@ -124,6 +139,10 @@ pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
 // TODO: maybe should scan unicode whitespace too
 pub fn scan_whitespace_no_nl(data: &str) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
+}
+
+pub fn scan_attr_value_chars(data: &str) -> usize {
+    scan_while(data, is_valid_unquoted_attr_value_char)
 }
 
 // Maybe returning Option<usize> would be more Rustic?
@@ -663,13 +682,17 @@ fn scan_email(data: &str) -> usize {
     i
 }
 
-pub fn scan_attribute_name(data: &str) -> usize {
+pub fn scan_attribute_name(data: &str) -> Option<usize> {
     let size = data.len();
-    if size == 0 { return 0; }
+    if size == 0 { 
+        return None; }
     match data.as_bytes()[0] {
         c if is_ascii_alpha(c) => (),
         b'_' | b':' => (),
-        _ => return 0
+        _ => {
+   
+            return None;
+        }
     }
     let mut i = 1;
     while i < size {
@@ -679,7 +702,33 @@ pub fn scan_attribute_name(data: &str) -> usize {
             _ => break
         }
     }
-    i
+    Some(i)
+}
+
+pub fn scan_attribute_value(data: &str) -> Option<usize> {
+    let size = data.len();
+    if size == 0 { return None; }
+    let mut i = 0;
+    match data.as_bytes()[0] {
+        b'\'' => {
+            i += 1;
+            i += scan_while(&data[i..], |c| c != b'\'');
+            i += 1;
+        },
+        b'"' => {
+            i += 1;
+            i += scan_while(&data[i..], |c| c != b'"');
+            i += 1;
+        },
+        b' ' | b'=' | b'>' | b'<' | b'`' => { return None; },
+        _ => { // unquoted attribute value
+            i += scan_attr_value_chars(&data[i..]);
+            // return Some(i);
+        }
+    }
+    if i >= data.len() { return None; }
+    return Some(i);
+
 }
 
 pub fn is_escaped(data: &str, loc: usize) -> bool {
@@ -740,6 +789,79 @@ pub fn scan_html_block_tag(data: &str) -> (usize, &str) {
 
 pub fn is_html_tag(tag: &str) -> bool {
     HTML_TAGS.binary_search_by(|probe| utils::strcasecmp(probe, tag)).is_ok()
+}
+
+pub fn scan_html_type_7(data: &str) -> Option<usize> {
+    let mut i = scan_ch(data, b'<');
+    if i == 0 {
+        return None; }
+    i += scan_ch(&data[i..], b'/');
+    let l = scan_while(&data[i..], is_ascii_alpha);
+    if l == 0 {
+        return None; }
+    i += l;
+    let n = scan_while(&data[i..], is_ascii_letterdigitdash);
+    i += n;
+
+    loop {
+        i += scan_whitespace_no_nl(&data[i..]);
+        let c = data.as_bytes()[i];
+        match c {
+            b'/' | b'>' => { 
+                break; },
+            _ => {},
+        }
+        if let Some(a) = scan_attribute(&data[i..]) {
+            if a == 0 {break;}
+            i += a;
+        } else {
+            return None;
+        }
+    }
+
+    i += scan_whitespace_no_nl(&data[i..]);
+
+    i += scan_ch(&data[i..], b'/');
+
+    let c = scan_ch(&data[i..], b'>');
+    if c == 0 {
+        return None;}
+    i += c;
+
+    if let Some(_) = scan_blank_line(&data[i..]) {
+        return Some(i);
+    } else {
+        return None;
+    }
+}
+
+pub fn scan_attribute(data: &str) -> Option<usize> {
+    let mut i = scan_whitespace_no_nl(data);
+    if let Some(attr_name_bytes) = scan_attribute_name(&data[i..]) {
+        i += attr_name_bytes;
+    } else {
+        return None;
+    }
+    if let Some(attr_valspec_bytes) = scan_attribute_value_spec(&data[i..]) {
+        i += attr_valspec_bytes;
+    } else {
+        return None;
+    }
+    return Some(i);
+}
+
+pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {
+    let mut i = scan_whitespace_no_nl(data);
+    let eq = scan_ch(&data[i..], b'=');
+    if eq == 0 { return None; }
+    i += eq;
+    i += scan_whitespace_no_nl(&data[i..]);
+    if let Some(attr_val_bytes) = scan_attribute_value(&data[i..]) {
+        i += attr_val_bytes;
+        return Some(i);
+    } else {
+        return None;
+    }
 }
 
 pub fn spaces(n: usize) -> Cow<'static, str> {

@@ -321,7 +321,7 @@ fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize,
     ix
 }
 
-fn parse_html_line_type_6(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_html_line(ix, ix+htmlline_end_offset);
@@ -568,7 +568,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
         }
         if let ItemBody::HtmlBlock(None) = tree.nodes[parent].item.body {
-            return parse_html_line_type_6(&mut tree, s, ix);
+            return parse_html_line_type_6or7(&mut tree, s, ix);
         }
     }
 
@@ -615,8 +615,23 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
             body: ItemBody::HtmlBlock(None)
         });
         tree.push();
-        return parse_html_line_type_6(&mut tree, s, ix);
+        return parse_html_line_type_6or7(&mut tree, s, ix);
     }
+
+    if let Some(html_bytes) = scan_html_type_7(&s[ix+leading_bytes..]) {
+        tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(None)
+        });
+        tree.push();
+        tree.append_html_line(ix, ix+html_bytes);
+        ix += html_bytes;
+        let nextline_offset = scan_nextline(&s[ix..]);
+        return ix + nextline_offset;
+    }
+
+
 
     ix += leading_bytes;
 
@@ -853,7 +868,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::FencedCodeBlock(_,_,_) => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::FencedCodeBlock(_,_,_, ref info_string) => Some(Tag::CodeBlock(Cow::from(info_string.clone()))),
         ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),

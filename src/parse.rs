@@ -1434,9 +1434,9 @@ impl<'a> RawParser<'a> {
                 let n = self.scan_whitespace_inline(&data[i..]);
                 if n == 0 { break; }
                 i += n;
-                let n = scan_attribute_name(&data[i..]);
-                if n == 0 { break; }
-                i += n;
+                // let n = scan_attribute_name(&data[i..]);
+                // if n == 0 { break; }
+                // i += n;
                 let n = self.scan_whitespace_inline(&data[i..]);
                 if scan_ch(&data[i + n ..], b'=') != 0 {
                     i += n + 1;

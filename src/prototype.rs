@@ -104,7 +104,7 @@ enum ItemBody {
     Strong,
     Rule,
     Header(i32), // header level
-    FencedCodeBlock(usize, u8, usize), // number of fence chars, fence char, indentation
+    FencedCodeBlock(usize, u8, usize, String), // number of fence chars, fence char, indentation, info string
     IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
@@ -311,7 +311,6 @@ fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, num_cod
 
 
 fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
-    // while ix < s.len() {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_html_line(ix, ix+htmlline_end_offset);
@@ -462,7 +461,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     if ix >= s.len() { return ix; }
     // check if parent is a leaf block, which makes new containers illegal
     if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(_, _, _) = tree.nodes[parent].item.body {
+        if let ItemBody::FencedCodeBlock(_, _, _, _) = tree.nodes[parent].item.body {
             return ix;
         }
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
@@ -559,7 +558,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
 
     if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation) = tree.nodes[parent].item.body {
+        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation, _) = tree.nodes[parent].item.body {
             return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
         }
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
@@ -633,10 +632,12 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
     let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
     if num_code_fence_chars > 0 {
+        let nextline_offset = scan_nextline(&s[ix..]);
+        let info_string = s[ix+num_code_fence_chars..ix+nextline_offset].trim().to_string();
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces),
+            body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces, info_string),
         });
         
         // TODO: parse code fence info

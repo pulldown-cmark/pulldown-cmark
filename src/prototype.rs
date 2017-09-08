@@ -648,14 +648,13 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
     if num_code_fence_chars > 0 {
         let nextline_offset = scan_nextline(&s[ix..]);
-        let info_string = s[ix+num_code_fence_chars..ix+nextline_offset].trim().to_string();
+        let info_string = unescape(s[ix+num_code_fence_chars..ix+nextline_offset].trim()).to_string();
         tree.append(Item {
             start: ix,
             end: 0, // set later
             body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces, info_string),
         });
         
-        // TODO: parse code fence info
         ix += scan_nextline(&s[ix..]);
 
         tree.push();

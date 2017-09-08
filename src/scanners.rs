@@ -94,11 +94,7 @@ pub fn is_ascii_alphanumeric(c: u8) -> bool {
 }
 
 pub fn is_ascii_letterdigitdash(c: u8) -> bool {
-    match c {
-        b'-' => {return true;},
-        _ => {},
-    }
-    return is_ascii_alphanumeric(c);
+    c == b'-' || is_ascii_alphanumeric(c)
 }
 
 fn is_hexdigit(c: u8) -> bool {

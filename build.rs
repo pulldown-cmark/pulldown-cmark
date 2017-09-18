@@ -54,6 +54,8 @@ fn generate_tests_from_spec() {
         let mut spec_rs = File::create(&rs_test_file)
                                .expect(&format!("Could not create {:?}", rs_test_file));
 
+        let spec_name = file_path.file_stem().unwrap().to_str().unwrap();
+
         let spec = Spec::new(&raw_spec);
         let mut n_tests = 0;
 
@@ -67,7 +69,7 @@ fn generate_tests_from_spec() {
                     r###"
 
     #[test]
-    fn spec_test_{i}() {{
+    fn {}_test_{i}_() {{
         let original = r##"{original}"##;
         let expected = r##"{expected}"##;
 
@@ -84,6 +86,7 @@ fn generate_tests_from_spec() {
 
         assert_eq!(expected, s);
     }}"###,
+                    spec_name,
                     i=i+1,
                     original=testcase.original,
                     expected=testcase.expected

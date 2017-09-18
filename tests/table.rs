@@ -5,7 +5,7 @@ extern crate pulldown_cmark;
 
 
     #[test]
-    fn spec_test_1() {
+    fn table_test_1_() {
         let original = r##"Test header
 -----------
 "##;
@@ -27,7 +27,7 @@ extern crate pulldown_cmark;
     }
 
     #[test]
-    fn spec_test_2() {
+    fn table_test_2_() {
         let original = r##"Test|Table
 ----|-----
 "##;
@@ -50,7 +50,7 @@ extern crate pulldown_cmark;
     }
 
     #[test]
-    fn spec_test_3() {
+    fn table_test_3_() {
         let original = r##"Test|Table
 ----|-----
 Test row
@@ -80,7 +80,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_4() {
+    fn table_test_4_() {
         let original = r##"> Test  | Table
 > ------|------
 > Row 1 | Every
@@ -112,7 +112,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_5() {
+    fn table_test_5_() {
         let original = r##" 1. First entry
  2. Second entry
 
@@ -150,7 +150,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_6() {
+    fn table_test_6_() {
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |R1C1 |R1C2 |
@@ -177,7 +177,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_7() {
+    fn table_test_7_() {
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |       |       |
@@ -204,7 +204,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_8() {
+    fn table_test_8_() {
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |   x   |       |
@@ -231,7 +231,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_9() {
+    fn table_test_9_() {
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |✓    |✓    |
@@ -258,7 +258,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_10() {
+    fn table_test_10_() {
         let original = r##"|  Target                       | std |rustc|cargo| notes                      |
 |-------------------------------|-----|-----|-----|----------------------------|
 | `x86_64-unknown-linux-musl`   |  ✓  |     |     | 64-bit Linux with MUSL     |
@@ -295,7 +295,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_11() {
+    fn table_test_11_() {
         let original = r##"|-|-|
 |ぃ|い|
 "##;
@@ -318,7 +318,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_12() {
+    fn table_test_12_() {
         let original = r##"|ぁ|ぃ|
 |-|-|
 |ぃ|ぃ|
@@ -343,7 +343,7 @@ Test ending
     }
 
     #[test]
-    fn spec_test_13() {
+    fn table_test_13_() {
         let original = r##"|Колонка 1|Колонка 2|
 |---------|---------|
 |Ячейка 1 |Ячейка 2 |

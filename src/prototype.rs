@@ -173,6 +173,11 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
                 tree.append_text(begin_text, ix);
                 return ix - start;
             }
+            b'\\' if ix + 1 < s.len() && is_ascii_punctuation(s.as_bytes()[ix + 1]) => {
+                tree.append_text(begin_text, ix);
+                begin_text = ix + 1;
+                ix = ix + 2;
+            }
             c @ b'*' | c @b'_' => {
                 tree.append_text(begin_text, ix);
                 let mut count = 1;

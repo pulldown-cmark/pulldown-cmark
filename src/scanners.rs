@@ -831,6 +831,73 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
     }
 }
 
+pub fn scan_inline_html_open(data: &str) -> Option<usize> {
+    let mut i = scan_ch(data, b'<');
+    if i == 0 {
+        return None; }
+    let l = scan_while(&data[i..], is_ascii_alpha);
+    if l == 0 {
+        return None; }
+    i += l;
+    let n = scan_while(&data[i..], is_ascii_letterdigitdash);
+    i += n;
+
+    loop {
+        let l = scan_whitespace_no_nl(&data[i..]);
+        i += l;
+        let c = data.as_bytes()[i];
+        match c {
+            b'/' | b'>' => { 
+                break; },
+            _ => {},
+        }
+        if l == 0 {
+            return None; }
+        if let Some(a) = scan_attribute(&data[i..]) {
+            if a == 0 {break;}
+            i += a;
+        } else {
+            return None;
+        }
+    }
+
+    i += scan_whitespace_no_nl(&data[i..]);
+
+    i += scan_ch(&data[i..], b'/');
+
+    let c = scan_ch(&data[i..], b'>');
+    if c == 0 {
+        return None;}
+    i += c;
+
+    return Some(i);
+}
+
+pub fn scan_inline_html_close(data: &str) -> Option<usize> {
+    let mut i = scan_ch(data, b'<');
+    if i == 0 {
+        return None; }
+    let l = scan_ch(&data[i..], b'/');
+    if l == 0 {
+        return None; }
+    i += l;
+    let l = scan_while(&data[i..], is_ascii_alpha);
+    if l == 0 {
+        return None; }
+    i += l;
+    let n = scan_while(&data[i..], is_ascii_letterdigitdash);
+    i += n;
+
+    i += scan_whitespace_no_nl(&data[i..]);
+
+    let c = scan_ch(&data[i..], b'>');
+    if c == 0 {
+        return None;}
+    i += c;
+
+    return Some(i);
+}
+
 pub fn scan_attribute(data: &str) -> Option<usize> {
     let mut i = scan_whitespace_no_nl(data);
     if let Some(attr_name_bytes) = scan_attribute_name(&data[i..]) {

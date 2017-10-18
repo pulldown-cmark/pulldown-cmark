@@ -99,6 +99,7 @@ enum ItemBody {
     Paragraph,
     Text,
     SoftBreak,
+    HardBreak,
     Inline(usize, bool, bool),
     Emphasis,
     Strong,
@@ -171,7 +172,31 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     while ix < s.len() {
         match s.as_bytes()[ix] {
             b'\n' | b'\r' => {
-                tree.append_text(begin_text, ix);
+                let mut i = ix;
+                if ix - 1 >= begin_text && s.as_bytes()[ix - 1] == b'\\' {
+                    i -= 1;
+                    tree.append_text(begin_text, i);
+                    tree.append(Item {
+                        start: i,
+                        end: ix,
+                        body: ItemBody::HardBreak,
+                    });
+                } else if ix - 2 >= begin_text
+                    && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 1])
+                    && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 2]) {
+                    i -= 2;
+                    while is_ascii_whitespace_no_nl(s.as_bytes()[i - 1]) {
+                        i -= 1;
+                    }
+                    tree.append_text(begin_text, i);
+                    tree.append(Item {
+                        start: i,
+                        end: ix,
+                        body: ItemBody::HardBreak,
+                    });
+                } else {
+                    tree.append_text(begin_text, ix);
+                }
                 return ix - start;
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(s.as_bytes()[ix + 1]) => {
@@ -931,6 +956,7 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
             Event::InlineHtml(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
+        ItemBody::HardBreak => Event::HardBreak,
         _ => panic!("unexpected item body {:?}", item.body)
     }
 }

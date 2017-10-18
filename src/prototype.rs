@@ -109,6 +109,7 @@ enum ItemBody {
     SynthesizeNewLine,
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
+    InlineHtml,
     BlockQuote,
     List(usize, u8, Option<usize>), // indent level, list character, list start index
     ListItem(usize), // indent level
@@ -191,6 +192,35 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
                 }
                 ix += count;
                 begin_text = ix;
+            }
+            b'<' if ix + 1 < s.len() && s.as_bytes()[ix + 1] == b'/' => {
+                if let Some(count) = scan_inline_html_close(&s[ix..]) {
+                    tree.append_text(begin_text, ix);
+                    tree.append(Item {
+                        start: ix,
+                        end: ix + count,
+                        body: ItemBody::InlineHtml,
+                    });
+                    ix += count;
+                    begin_text = ix;
+                } else {
+                    ix += 1;
+                }
+            }
+            b'<' => {
+                // TODO: parse <url> links, like: <http://rust-lang.org/>
+                if let Some(count) = scan_inline_html_open(&s[ix..]) {
+                    tree.append_text(begin_text, ix);
+                    tree.append(Item {
+                        start: ix,
+                        end: ix + count,
+                        body: ItemBody::InlineHtml,
+                    });
+                    ix += count;
+                    begin_text = ix;
+                } else {
+                    ix += 1;
+                }
             }
             _ => ix += 1,
         }
@@ -891,6 +921,9 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
         },
         ItemBody::Html => {
             Event::Html(Cow::from(&text[item.start..item.end]))
+        },
+        ItemBody::InlineHtml => {
+            Event::InlineHtml(Cow::from(&text[item.start..item.end]))
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         _ => panic!("unexpected item body {:?}", item.body)

@@ -84,9 +84,14 @@ pub enum Tag<'a> {
     // block-level tags
     Paragraph,
     Rule,
+
+    /// A heading. The field indicates the level of the heading.
     Header(i32),
+
     BlockQuote,
     CodeBlock(Cow<'a, str>),
+
+    /// A list. If the list is ordered the field indicates the number of the first item.
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(Cow<'a, str>),
@@ -101,7 +106,11 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Code,
+
+    /// A link. The first field is the destination URL, the second is a title
     Link(Cow<'a, str>, Cow<'a, str>),
+
+    /// An image. The first field is the destination URL, the second is a title
     Image(Cow<'a, str>, Cow<'a, str>),
 }
 

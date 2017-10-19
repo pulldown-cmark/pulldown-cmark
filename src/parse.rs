@@ -127,9 +127,9 @@ pub enum Alignment {
 
 bitflags! {
     pub struct Options: u32 {
-        const OPTION_FIRST_PASS = 1 << 0;
-        const OPTION_ENABLE_TABLES = 1 << 1;
-        const OPTION_ENABLE_FOOTNOTES = 1 << 2;
+        const FIRST_PASS = 1 << 0;
+        const ENABLE_TABLES = 1 << 1;
+        const ENABLE_FOOTNOTES = 1 << 2;
     }
 }
 
@@ -181,7 +181,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn init_active(&mut self) {
-        if self.opts.contains(OPTION_FIRST_PASS) {
+        if self.opts.contains(Options::FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
             for &c in b"\x00\t\n\r_\\&*[!`<" {
@@ -461,7 +461,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
-                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                    if self.opts.contains(Options::ENABLE_FOOTNOTES) {
                         if let Some((name, n)) = self.parse_footnote_definition(tail) {
                             if self.containers.last() == Some(&Container::FootnoteDefinition) {
                                 return Some(self.end());
@@ -498,7 +498,7 @@ impl<'a> RawParser<'a> {
                     self.state = State::Inline;
                     return self.start(Tag::Header(level), i, next);
                 }
-                if self.opts.contains(OPTION_ENABLE_TABLES) {
+                if self.opts.contains(Options::ENABLE_TABLES) {
                     let (n, cols) = scan_table_head(&self.text[i..]);
                     if n != 0 {
                         let next = i + n;
@@ -518,7 +518,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_head(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         if let State::TableHead(limit, next) = self.state {
             self.state = State::TableRow;
             return self.start(Tag::TableHead, limit, next);
@@ -528,7 +528,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_body(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         let (off, _) = match self.scan_containers(&self.text[self.off ..]) {
             (n, true, space) => (self.off + n, space),
             _ => {
@@ -897,7 +897,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn next_table_cell(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         let bytes   = self.text.as_bytes();
         let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off ..]);
         let mut i   = beg;
@@ -998,7 +998,7 @@ impl<'a> RawParser<'a> {
             b'&' => self.char_entity(),
             b'_' |
             b'*' => self.char_emphasis(),
-            b'[' if self.opts.contains(OPTION_ENABLE_FOOTNOTES) => self.char_link_footnote(),
+            b'[' if self.opts.contains(Options::ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
@@ -1117,7 +1117,7 @@ impl<'a> RawParser<'a> {
                     i += 1;
                 }
             } else if c2 == b'[' {
-                if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                if self.opts.contains(Options::ENABLE_FOOTNOTES) {
                     if let Some((_, n)) = self.parse_footnote(&self.text[i..limit]) {
                         i += n;
                         continue;
@@ -1319,7 +1319,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
-                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
+                    if self.opts.contains(Options::ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
                         return false;
                     }
                     if self.parse_link(&data[i..], true).is_some() { return true; }
@@ -1351,7 +1351,7 @@ impl<'a> RawParser<'a> {
     // # Footnotes
 
     fn parse_footnote_definition<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         self.parse_footnote(data).and_then(|(name, len)| {
             let n_colon = scan_ch(&data[len ..], b':');
             if n_colon == 0 {
@@ -1371,7 +1371,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn char_link_footnote(&mut self) -> Option<Event<'a>> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         if let Some((name, end)) = self.parse_footnote(&self.text[self.off .. self.limit()]) {
             self.off += end;
             Some(Event::FootnoteReference(Cow::Borrowed(name)))
@@ -1381,14 +1381,14 @@ impl<'a> RawParser<'a> {
     }
 
     fn parse_footnote<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let (n_footnote, text_beg, text_end) = self.scan_footnote_label(data);
         if n_footnote == 0 { return None; }
         Some((&data[text_beg..text_end], n_footnote))
     }
 
     fn scan_footnote_label(&self, data: &str) -> (usize, usize, usize) {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let mut i = scan_ch(data, b'[');
         if i == 0 { return (0, 0, 0); }
         if i >= data.len() || data.as_bytes()[i] != b'^' { return (0, 0, 0); }

@@ -6,7 +6,20 @@ fn main() {
 // If the "gen-tests" feature is absent,
 // this function will be compiled down to nothing
 #[cfg(not(feature="gen-tests"))]
-fn generate_tests_from_spec() {}
+fn generate_tests_from_spec() {
+    // except for the indication to Cargo that it touches nothing
+    println!("cargo:rerun-if-changed=build.rs");
+}
+
+#[cfg(feature="gen-tests")]
+fn options_by_spec(file_name: &str) -> &'static str {
+    match file_name {
+        "footnotes.txt" => "OPTION_ENABLE_FOOTNOTES",
+        "table.txt" => "OPTION_ENABLE_TABLES",
+        "math.txt" => "OPTION_ENABLE_MATH",
+        _ => "Options::empty()",
+    }
+}
 
 // If the feature is present, generate tests
 // from any .txt file present in the specs/ directory
@@ -47,8 +60,12 @@ fn generate_tests_from_spec() {
              .and_then(|mut f| f.read_to_string(&mut raw_spec))
              .expect("Could not read the spec file");
 
+        let file_name = file_path.file_name().expect("Invalid filename");
+
+        let options = options_by_spec(file_name.to_str().unwrap_or(""));
+
         let rs_test_file = PathBuf::from("./tests/")
-                                   .join(file_path.file_name().expect("Invalid filename"))
+                                   .join(file_name)
                                    .with_extension("rs");
 
         let mut spec_rs = File::create(&rs_test_file)
@@ -77,11 +94,7 @@ fn generate_tests_from_spec() {
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = {options};
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -90,7 +103,8 @@ fn generate_tests_from_spec() {
                     spec_name,
                     i=i+1,
                     original=testcase.original,
-                    expected=testcase.expected
+                    expected=testcase.expected,
+                    options=options
                 ),
             ).unwrap();
 

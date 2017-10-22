@@ -16,11 +16,7 @@ extern crate pulldown_cmark;
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -40,11 +36,7 @@ extern crate pulldown_cmark;
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -71,11 +63,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -104,11 +92,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -143,11 +127,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -171,11 +151,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -199,11 +175,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -227,11 +199,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -255,11 +223,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -293,11 +257,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -317,11 +277,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -343,11 +299,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -369,11 +321,7 @@ Test ending
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_TABLES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 

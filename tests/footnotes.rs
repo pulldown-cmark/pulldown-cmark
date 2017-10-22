@@ -20,11 +20,7 @@ extern crate pulldown_cmark;
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -51,11 +47,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -85,11 +77,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -112,11 +100,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -143,11 +127,7 @@ If a woodchuck could chuck wood.
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -175,11 +155,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -221,11 +197,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
@@ -250,11 +222,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
         let mut s = String::new();
 
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-        opts.insert(OPTION_ENABLE_MATH);
-
+        let opts = OPTION_ENABLE_FOOTNOTES;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 

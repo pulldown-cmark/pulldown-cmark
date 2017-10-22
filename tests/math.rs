@@ -152,16 +152,16 @@ extern crate pulldown_cmark;
    >
    > = a(ei - fh) - b(di - fg) + c(dh - eg).$$
    >
-   > In the other words, it is the sum of elements in the top row and
-   > determinants for respective *minors* with alternating signs.
+   > In the other words, it is the sum of elements in the top row *times*
+   > determinants for respective minors with alternating signs.
 "##;
         let expected = r##"<ol>
 <li>
 <blockquote>
 <p>3-by-3 matrix <span class="math math-inline">A = \begin{pmatrix} a &amp; b &amp; c \\ d &amp; e &amp; f \\ g &amp; h &amp; i \end{pmatrix}</span> has a determinant
 <span class="math math-display">\mathrm{det} A  = a \mathrm{det} \begin{pmatrix} e &amp; f \\ h &amp; i \end{pmatrix} - b \mathrm{det} \begin{pmatrix} d &amp; f \\ g &amp; i \end{pmatrix} + c \mathrm{det} \begin{pmatrix} d &amp; e \\ g &amp; h \end{pmatrix}  = a(ei - fh) - b(di - fg) + c(dh - eg).</span></p>
-<p>In the other words, it is the sum of elements in the top row and
-determinants for respective <em>minors</em> with alternating signs.</p>
+<p>In the other words, it is the sum of elements in the top row <em>times</em>
+determinants for respective minors with alternating signs.</p>
 </blockquote>
 </li>
 </ol>

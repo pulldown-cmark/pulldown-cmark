@@ -692,6 +692,18 @@ pub fn spaces(n: usize) -> Cow<'static, str> {
     }
 }
 
+pub fn scan_dollar(data: &str) -> usize {
+    if data.len() > 0 && data.as_bytes()[0] == b'$' {
+        if data.len() > 1 && data.as_bytes()[1] == b'$' {
+            2
+        } else {
+            1
+        }
+    } else {
+        0
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

@@ -178,6 +178,12 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push_str(&*format!("{}", number));
                 self.buf.push_str("</sup>");
             }
+            Tag::InlineMath => {
+                self.buf.push_str("<span class=\"math math-inline\">");
+            }
+            Tag::DisplayMath => {
+                self.buf.push_str("<span class=\"math math-display\">");
+            }
         }
     }
 
@@ -218,6 +224,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Link(_, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
+            Tag::InlineMath | Tag::DisplayMath => self.buf.push_str("</span>"),
         }
     }
 

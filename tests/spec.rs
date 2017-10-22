@@ -12,13 +12,14 @@ extern crate pulldown_cmark;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -34,13 +35,14 @@ extern crate pulldown_cmark;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -58,13 +60,14 @@ extern crate pulldown_cmark;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -86,13 +89,14 @@ extern crate pulldown_cmark;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -115,13 +119,14 @@ extern crate pulldown_cmark;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -139,13 +144,14 @@ extern crate pulldown_cmark;
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -165,13 +171,14 @@ extern crate pulldown_cmark;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -189,13 +196,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -222,13 +230,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -243,13 +252,14 @@ bar
         let expected = r##"<h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -264,13 +274,14 @@ bar
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -289,13 +300,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -314,13 +326,14 @@ ___
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -335,13 +348,14 @@ ___
         let expected = r##"<p>+++</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -356,13 +370,14 @@ ___
         let expected = r##"<p>===</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -381,13 +396,14 @@ __
 __</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -406,13 +422,14 @@ __</p>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -428,13 +445,14 @@ __</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -451,13 +469,14 @@ __</p>
 ***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -472,13 +491,14 @@ __</p>
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -493,13 +513,14 @@ __</p>
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -514,13 +535,14 @@ __</p>
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -535,13 +557,14 @@ __</p>
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -556,13 +579,14 @@ __</p>
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -583,13 +607,14 @@ a------
 <p>---a---</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -604,13 +629,14 @@ a------
         let expected = r##"<p><em>-</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -633,13 +659,14 @@ a------
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -658,13 +685,14 @@ bar
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -682,13 +710,14 @@ bar
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -711,13 +740,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -738,13 +768,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -769,13 +800,14 @@ bar
 <h6>foo</h6>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -790,13 +822,14 @@ bar
         let expected = r##"<p>####### foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -814,13 +847,14 @@ bar
 <p>#hashtag</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -835,13 +869,14 @@ bar
         let expected = r##"<p>## foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -856,13 +891,14 @@ bar
         let expected = r##"<h1>foo <em>bar</em> *baz*</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -877,13 +913,14 @@ bar
         let expected = r##"<h1>foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -902,13 +939,14 @@ bar
 <h1>foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -924,13 +962,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -947,13 +986,14 @@ bar
 # bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -970,13 +1010,14 @@ bar
 <h3>bar</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -993,13 +1034,14 @@ bar
 <h5>foo</h5>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1014,13 +1056,14 @@ bar
         let expected = r##"<h3>foo</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1035,13 +1078,14 @@ bar
         let expected = r##"<h3>foo ### b</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1056,13 +1100,14 @@ bar
         let expected = r##"<h1>foo#</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1081,13 +1126,14 @@ bar
 <h1>foo #</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1106,13 +1152,14 @@ bar
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1131,13 +1178,14 @@ Bar foo
 <p>Bar foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1156,13 +1204,14 @@ Bar foo
 <h3></h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1182,13 +1231,14 @@ Foo *bar*
 <h2>Foo <em>bar</em></h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1206,13 +1256,14 @@ baz*
 baz</em></h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1232,13 +1283,14 @@ Foo
 <h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1262,13 +1314,14 @@ Foo
 <h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1292,13 +1345,14 @@ Foo
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1314,13 +1368,14 @@ Foo
         let expected = r##"<h2>Foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1337,13 +1392,14 @@ Foo
 ---</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1365,13 +1421,14 @@ Foo
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1387,13 +1444,14 @@ Foo
         let expected = r##"<h2>Foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1409,13 +1467,14 @@ Foo
         let expected = r##"<h2>Foo\</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1439,13 +1498,14 @@ of dashes"/>
 <p>of dashes&quot;/&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1464,13 +1524,14 @@ of dashes"/>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1491,13 +1552,14 @@ bar
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1516,13 +1578,14 @@ bar
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1540,13 +1603,14 @@ Bar
 Bar</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1569,13 +1633,14 @@ Baz
 <p>Baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1591,13 +1656,14 @@ Baz
         let expected = r##"<p>====</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1614,13 +1680,14 @@ Baz
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1639,13 +1706,14 @@ Baz
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1663,13 +1731,14 @@ Baz
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1688,13 +1757,14 @@ Baz
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1710,13 +1780,14 @@ Baz
         let expected = r##"<h2>&gt; foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1737,13 +1808,14 @@ baz
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1766,13 +1838,14 @@ bar</p>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1793,13 +1866,14 @@ bar</p>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1820,13 +1894,14 @@ bar
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1844,13 +1919,14 @@ baz</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1872,13 +1948,14 @@ baz</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1902,13 +1979,14 @@ baz</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1930,13 +2008,14 @@ baz</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1964,13 +2043,14 @@ chunk3
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1990,13 +2070,14 @@ chunk3
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2014,13 +2095,14 @@ chunk3
 bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2038,13 +2120,14 @@ bar
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2070,13 +2153,14 @@ Heading
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2094,13 +2178,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2120,13 +2205,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2142,13 +2228,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2168,13 +2255,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2194,13 +2282,14 @@ bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2217,13 +2306,14 @@ foo
         let expected = r##"<p><code>foo</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2243,13 +2333,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2269,13 +2360,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2295,13 +2387,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2321,13 +2414,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2342,13 +2436,14 @@ aaa
         let expected = r##"<pre><code></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2369,13 +2464,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2397,13 +2493,14 @@ bbb
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2423,13 +2520,14 @@ bbb
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2445,13 +2543,14 @@ bbb
         let expected = r##"<pre><code></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2471,13 +2570,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2499,13 +2599,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2527,13 +2628,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2553,13 +2655,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2577,13 +2680,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2601,13 +2705,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2626,13 +2731,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2649,13 +2755,14 @@ aaa
 aaa</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2674,13 +2781,14 @@ aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2702,13 +2810,14 @@ baz
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2731,13 +2840,14 @@ bar
 <h1>baz</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2759,13 +2869,14 @@ end
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2787,13 +2898,14 @@ end
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2809,13 +2921,14 @@ end
         let expected = r##"<pre><code class="language-;"></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2832,13 +2945,14 @@ foo
 foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2856,13 +2970,14 @@ foo</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2888,13 +3003,14 @@ _world_.
 </td></tr></table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2924,13 +3040,14 @@ okay.
 <p>okay.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2949,13 +3066,14 @@ okay.
          <foo><a>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2972,13 +3090,14 @@ okay.
 *foo*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2999,13 +3118,14 @@ okay.
 </DIV>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3024,13 +3144,14 @@ okay.
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3049,13 +3170,14 @@ okay.
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3075,13 +3197,14 @@ okay.
 <p><em>bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3098,13 +3221,14 @@ okay.
 *hi*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3121,13 +3245,14 @@ foo
 foo
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3144,13 +3269,14 @@ foo
 *foo*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3165,13 +3291,14 @@ foo
         let expected = r##"<div><a href="bar">*foo*</a></div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3190,13 +3317,14 @@ foo
 </td></tr></table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3217,13 +3345,14 @@ int x = 33;
 ```
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3242,13 +3371,14 @@ int x = 33;
 </a>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3267,13 +3397,14 @@ int x = 33;
 </Warning>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3292,13 +3423,14 @@ int x = 33;
 </i>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3315,13 +3447,14 @@ int x = 33;
 *bar*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3340,13 +3473,14 @@ int x = 33;
 </del>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3367,13 +3501,14 @@ int x = 33;
 </del>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3388,13 +3523,14 @@ int x = 33;
         let expected = r##"<p><del><em>foo</em></del></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3421,13 +3557,14 @@ main = print $ parseTags tags
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3452,13 +3589,14 @@ document.getElementById("demo").innerHTML = "Hello JavaScript!";
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3485,13 +3623,14 @@ p {color:blue;}
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3512,13 +3651,14 @@ foo
 foo
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3540,13 +3680,14 @@ foo
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3567,13 +3708,14 @@ foo
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3590,13 +3732,14 @@ foo
 <p><em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3613,13 +3756,14 @@ foo
 <p><em>baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3638,13 +3782,14 @@ foo
 </script>1. *bar*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3667,13 +3812,14 @@ bar
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3698,13 +3844,14 @@ okay
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3719,13 +3866,14 @@ okay
         let expected = r##"<!DOCTYPE html>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3764,13 +3912,14 @@ function matchwo(a,b)
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3789,13 +3938,14 @@ function matchwo(a,b)
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3814,13 +3964,14 @@ function matchwo(a,b)
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3841,13 +3992,14 @@ bar
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3868,13 +4020,14 @@ bar
 *foo*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3893,13 +4046,14 @@ baz
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3920,13 +4074,14 @@ baz</p>
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3945,13 +4100,14 @@ baz</p>
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3982,13 +4138,14 @@ Hi
 </table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4020,13 +4177,14 @@ Hi
 </table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4043,13 +4201,14 @@ Hi
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4068,13 +4227,14 @@ Hi
         let expected = r##"<p><a href="/url" title="the title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4091,13 +4251,14 @@ Hi
         let expected = r##"<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4116,13 +4277,14 @@ Hi
         let expected = r##"<p><a href="my%20url" title="title">Foo bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4147,13 +4309,14 @@ line2
 ">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4174,13 +4337,14 @@ with blank line'
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4198,13 +4362,14 @@ with blank line'
         let expected = r##"<p><a href="/url">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4222,13 +4387,14 @@ with blank line'
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4245,13 +4411,14 @@ with blank line'
         let expected = r##"<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4268,13 +4435,14 @@ with blank line'
         let expected = r##"<p><a href="url">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4292,13 +4460,14 @@ with blank line'
         let expected = r##"<p><a href="first">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4315,13 +4484,14 @@ with blank line'
         let expected = r##"<p><a href="/url">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4338,13 +4508,14 @@ with blank line'
         let expected = r##"<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4358,13 +4529,14 @@ with blank line'
 "##;
         let expected = r##""##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4382,13 +4554,14 @@ bar
         let expected = r##"<p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4403,13 +4576,14 @@ bar
         let expected = r##"<p>[foo]: /url &quot;title&quot; ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4425,13 +4599,14 @@ bar
         let expected = r##"<p>&quot;title&quot; ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4450,13 +4625,14 @@ bar
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4477,13 +4653,14 @@ bar
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4503,13 +4680,14 @@ bar
 <p>[bar]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4529,13 +4707,14 @@ bar
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4559,13 +4738,14 @@ bar
 <a href="/baz-url">baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4584,13 +4764,14 @@ bar
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4608,13 +4789,14 @@ bbb
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4636,13 +4818,14 @@ bbb</p>
 ddd</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4661,13 +4844,14 @@ bbb
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4684,13 +4868,14 @@ bbb
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4709,13 +4894,14 @@ bbb
 ccc</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4732,13 +4918,14 @@ bbb
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4756,13 +4943,14 @@ bbb
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4779,13 +4967,14 @@ bbb
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4808,13 +4997,14 @@ aaa
 <h1>aaa</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4835,13 +5025,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4862,13 +5053,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4889,13 +5081,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4915,13 +5108,14 @@ baz</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4942,13 +5136,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4969,13 +5164,14 @@ foo</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4994,13 +5190,14 @@ foo</p>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5023,13 +5220,14 @@ foo</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5050,13 +5248,14 @@ foo</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5077,13 +5276,14 @@ foo
 <pre><code></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5102,13 +5302,14 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5124,13 +5325,14 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5148,13 +5350,14 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5173,13 +5376,14 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5201,13 +5405,14 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5226,13 +5431,14 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5252,13 +5458,14 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5277,13 +5484,14 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5306,13 +5514,14 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5331,13 +5540,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5357,13 +5567,14 @@ baz
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5383,13 +5594,14 @@ baz
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5412,13 +5624,14 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5443,13 +5656,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5472,13 +5686,14 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5504,13 +5719,14 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5540,13 +5756,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5566,13 +5783,14 @@ with two lines.</p>
 <p>two</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5594,13 +5812,14 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5621,13 +5840,14 @@ with two lines.</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5649,13 +5869,14 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5681,13 +5902,14 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5711,13 +5933,14 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5735,13 +5958,14 @@ with two lines.</p>
 <p>2.two</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5764,13 +5988,14 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5803,13 +6028,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5838,13 +6064,14 @@ baz
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5861,13 +6088,14 @@ baz
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5882,13 +6110,14 @@ baz
         let expected = r##"<p>1234567890. not ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5905,13 +6134,14 @@ baz
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5928,13 +6158,14 @@ baz
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5949,13 +6180,14 @@ baz
         let expected = r##"<p>-1. not ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5978,13 +6210,14 @@ baz
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6007,13 +6240,14 @@ baz
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6036,13 +6270,14 @@ paragraph
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6069,13 +6304,14 @@ paragraph
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6102,13 +6338,14 @@ paragraph
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6126,13 +6363,14 @@ bar
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6152,13 +6390,14 @@ bar
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6180,13 +6419,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6218,13 +6458,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6242,13 +6483,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6268,13 +6510,14 @@ bar
 <p>foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6295,13 +6538,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6322,13 +6566,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6349,13 +6594,14 @@ bar
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6372,13 +6618,14 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6400,13 +6647,14 @@ foo
 1.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6436,13 +6684,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6472,13 +6721,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6508,13 +6758,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6540,13 +6791,14 @@ with two lines.</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6576,13 +6828,14 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6601,13 +6854,14 @@ with two lines.</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6632,13 +6886,14 @@ continued here.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6663,13 +6918,14 @@ continued here.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6701,13 +6957,14 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6730,13 +6987,14 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6758,13 +7016,14 @@ continued here.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6785,13 +7044,14 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6812,13 +7072,14 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6843,13 +7104,14 @@ continued here.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6874,13 +7136,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6903,13 +7166,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6932,13 +7196,14 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6959,13 +7224,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6982,13 +7248,14 @@ baz</li>
 14.  The number of doors is 6.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7007,13 +7274,14 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7043,13 +7311,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7082,13 +7351,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7117,13 +7387,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7157,13 +7428,14 @@ baz</li>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7196,13 +7468,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7231,13 +7504,14 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7265,13 +7539,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7297,13 +7572,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7333,13 +7609,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7368,13 +7645,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7404,13 +7682,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7439,13 +7718,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7470,13 +7750,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7505,13 +7786,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7528,13 +7810,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7556,13 +7839,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7587,13 +7871,14 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7619,13 +7904,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7661,13 +7947,14 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7682,13 +7969,14 @@ baz</li>
         let expected = r##"<p><code>hi</code>lo`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7703,13 +7991,14 @@ baz</li>
         let expected = r##"<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7724,13 +8013,14 @@ baz</li>
         let expected = r##"<p>\	\A\a\ \3\φ\«</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7759,13 +8049,14 @@ baz</li>
 [foo]: /url &quot;not a reference&quot;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7780,13 +8071,14 @@ baz</li>
         let expected = r##"<p>\<em>emphasis</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7803,13 +8095,14 @@ bar
 bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7824,13 +8117,14 @@ bar</p>
         let expected = r##"<p><code>\[\`</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7846,13 +8140,14 @@ bar</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7870,13 +8165,14 @@ bar</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7891,13 +8187,14 @@ bar</p>
         let expected = r##"<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7912,13 +8209,14 @@ bar</p>
         let expected = r##"<a href="/bar\/)">
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7933,13 +8231,14 @@ bar</p>
         let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7956,13 +8255,14 @@ bar</p>
         let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7980,13 +8280,14 @@ foo
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8005,13 +8306,14 @@ foo
 ∲ ≧̸</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8026,13 +8328,14 @@ foo
         let expected = r##"<p># Ӓ Ϡ � �</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8047,13 +8350,14 @@ foo
         let expected = r##"<p>&quot; ആ ಫ</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8070,13 +8374,14 @@ foo
 &amp;ThisIsNotDefined; &amp;hi?;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8091,13 +8396,14 @@ foo
         let expected = r##"<p>&amp;copy</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8112,13 +8418,14 @@ foo
         let expected = r##"<p>&amp;MadeUpEntity;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8133,13 +8440,14 @@ foo
         let expected = r##"<a href="&ouml;&ouml;.html">
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8154,13 +8462,14 @@ foo
         let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8177,13 +8486,14 @@ foo
         let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8201,13 +8511,14 @@ foo
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8222,13 +8533,14 @@ foo
         let expected = r##"<p><code>f&amp;ouml;&amp;ouml;</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8244,13 +8556,14 @@ foo
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8265,13 +8578,14 @@ foo
         let expected = r##"<p><code>foo</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8286,13 +8600,14 @@ foo
         let expected = r##"<p><code>foo ` bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8307,13 +8622,14 @@ foo
         let expected = r##"<p><code>``</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8330,13 +8646,14 @@ foo
         let expected = r##"<p><code>foo</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8352,13 +8669,14 @@ foo
         let expected = r##"<p><code>foo bar baz</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8373,13 +8691,14 @@ foo
         let expected = r##"<p><code>a  b</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8394,13 +8713,14 @@ foo
         let expected = r##"<p><code>foo `` bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8415,13 +8735,14 @@ foo
         let expected = r##"<p><code>foo\</code>bar`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8436,13 +8757,14 @@ foo
         let expected = r##"<p>*foo<code>*</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8457,13 +8779,14 @@ foo
         let expected = r##"<p>[not a <code>link](/foo</code>)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8478,13 +8801,14 @@ foo
         let expected = r##"<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8499,13 +8823,14 @@ foo
         let expected = r##"<p><a href="`">`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8520,13 +8845,14 @@ foo
         let expected = r##"<p><code>&lt;http://foo.bar.</code>baz&gt;`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8541,13 +8867,14 @@ foo
         let expected = r##"<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8562,13 +8889,14 @@ foo
         let expected = r##"<p>```foo``</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8583,13 +8911,14 @@ foo
         let expected = r##"<p>`foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8604,13 +8933,14 @@ foo
         let expected = r##"<p>`foo<code>bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8625,13 +8955,14 @@ foo
         let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8646,13 +8977,14 @@ foo
         let expected = r##"<p>a * foo bar*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8667,13 +8999,14 @@ foo
         let expected = r##"<p>a*&quot;foo&quot;*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8688,13 +9021,14 @@ foo
         let expected = r##"<p>* a *</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8709,13 +9043,14 @@ foo
         let expected = r##"<p>foo<em>bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8730,13 +9065,14 @@ foo
         let expected = r##"<p>5<em>6</em>78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8751,13 +9087,14 @@ foo
         let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8772,13 +9109,14 @@ foo
         let expected = r##"<p>_ foo bar_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8793,13 +9131,14 @@ foo
         let expected = r##"<p>a_&quot;foo&quot;_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8814,13 +9153,14 @@ foo
         let expected = r##"<p>foo_bar_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8835,13 +9175,14 @@ foo
         let expected = r##"<p>5_6_78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8856,13 +9197,14 @@ foo
         let expected = r##"<p>пристаням_стремятся_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8877,13 +9219,14 @@ foo
         let expected = r##"<p>aa_&quot;bb&quot;_cc</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8898,13 +9241,14 @@ foo
         let expected = r##"<p>foo-<em>(bar)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8919,13 +9263,14 @@ foo
         let expected = r##"<p>_foo*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8940,13 +9285,14 @@ foo
         let expected = r##"<p>*foo bar *</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8963,13 +9309,14 @@ foo
 *</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8984,13 +9331,14 @@ foo
         let expected = r##"<p>*(*foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9005,13 +9353,14 @@ foo
         let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9026,13 +9375,14 @@ foo
         let expected = r##"<p><em>foo</em>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9047,13 +9397,14 @@ foo
         let expected = r##"<p>_foo bar _</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9068,13 +9419,14 @@ foo
         let expected = r##"<p>_(_foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9089,13 +9441,14 @@ foo
         let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9110,13 +9463,14 @@ foo
         let expected = r##"<p>_foo_bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9131,13 +9485,14 @@ foo
         let expected = r##"<p>_пристаням_стремятся</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9152,13 +9507,14 @@ foo
         let expected = r##"<p><em>foo_bar_baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9173,13 +9529,14 @@ foo
         let expected = r##"<p><em>(bar)</em>.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9194,13 +9551,14 @@ foo
         let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9215,13 +9573,14 @@ foo
         let expected = r##"<p>** foo bar**</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9236,13 +9595,14 @@ foo
         let expected = r##"<p>a**&quot;foo&quot;**</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9257,13 +9617,14 @@ foo
         let expected = r##"<p>foo<strong>bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9278,13 +9639,14 @@ foo
         let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9299,13 +9661,14 @@ foo
         let expected = r##"<p>__ foo bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9322,13 +9685,14 @@ foo bar__
 foo bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9343,13 +9707,14 @@ foo bar__</p>
         let expected = r##"<p>a__&quot;foo&quot;__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9364,13 +9729,14 @@ foo bar__</p>
         let expected = r##"<p>foo__bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9385,13 +9751,14 @@ foo bar__</p>
         let expected = r##"<p>5__6__78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9406,13 +9773,14 @@ foo bar__</p>
         let expected = r##"<p>пристаням__стремятся__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9427,13 +9795,14 @@ foo bar__</p>
         let expected = r##"<p><strong>foo, <strong>bar</strong>, baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9448,13 +9817,14 @@ foo bar__</p>
         let expected = r##"<p>foo-<strong>(bar)</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9469,13 +9839,14 @@ foo bar__</p>
         let expected = r##"<p>**foo bar **</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9490,13 +9861,14 @@ foo bar__</p>
         let expected = r##"<p>**(**foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9511,13 +9883,14 @@ foo bar__</p>
         let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9534,13 +9907,14 @@ foo bar__</p>
 <em>Asclepias physocarpa</em>)</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9555,13 +9929,14 @@ foo bar__</p>
         let expected = r##"<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9576,13 +9951,14 @@ foo bar__</p>
         let expected = r##"<p><strong>foo</strong>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9597,13 +9973,14 @@ foo bar__</p>
         let expected = r##"<p>__foo bar __</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9618,13 +9995,14 @@ foo bar__</p>
         let expected = r##"<p>__(__foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9639,13 +10017,14 @@ foo bar__</p>
         let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9660,13 +10039,14 @@ foo bar__</p>
         let expected = r##"<p>__foo__bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9681,13 +10061,14 @@ foo bar__</p>
         let expected = r##"<p>__пристаням__стремятся</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9702,13 +10083,14 @@ foo bar__</p>
         let expected = r##"<p><strong>foo__bar__baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9723,13 +10105,14 @@ foo bar__</p>
         let expected = r##"<p><strong>(bar)</strong>.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9744,13 +10127,14 @@ foo bar__</p>
         let expected = r##"<p><em>foo <a href="/url">bar</a></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9767,13 +10151,14 @@ bar*
 bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9788,13 +10173,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9809,13 +10195,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <em>bar</em> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9830,13 +10217,14 @@ bar</em></p>
         let expected = r##"<p><em><em>foo</em> bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9851,13 +10239,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <em>bar</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9872,13 +10261,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9893,13 +10283,14 @@ bar</em></p>
         let expected = r##"<p><em>foo<strong>bar</strong>baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9914,13 +10305,14 @@ bar</em></p>
         let expected = r##"<p><em><strong>foo</strong> bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9935,13 +10327,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <strong>bar</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9956,13 +10349,14 @@ bar</em></p>
         let expected = r##"<p><em>foo<strong>bar</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9977,13 +10371,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <strong>bar <em>baz</em> bim</strong> bop</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9998,13 +10393,14 @@ bar</em></p>
         let expected = r##"<p><em>foo <a href="/url"><em>bar</em></a></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10019,13 +10415,14 @@ bar</em></p>
         let expected = r##"<p>** is not an empty emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10040,13 +10437,14 @@ bar</em></p>
         let expected = r##"<p>**** is not an empty strong emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10061,13 +10459,14 @@ bar</em></p>
         let expected = r##"<p><strong>foo <a href="/url">bar</a></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10084,13 +10483,14 @@ bar**
 bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10105,13 +10505,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10126,13 +10527,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo <strong>bar</strong> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10147,13 +10549,14 @@ bar</strong></p>
         let expected = r##"<p><strong><strong>foo</strong> bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10168,13 +10571,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo <strong>bar</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10189,13 +10593,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10210,13 +10615,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo<em>bar</em>baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10231,13 +10637,14 @@ bar</strong></p>
         let expected = r##"<p><strong><em>foo</em> bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10252,13 +10659,14 @@ bar</strong></p>
         let expected = r##"<p><strong>foo <em>bar</em></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10275,13 +10683,14 @@ bim* bop**
 bim</em> bop</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10296,13 +10705,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10317,13 +10727,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>__ is not an empty emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10338,13 +10749,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>____ is not an empty strong emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10359,13 +10771,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo ***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10380,13 +10793,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10401,13 +10815,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10422,13 +10837,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo *****</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10443,13 +10859,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10464,13 +10881,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10485,13 +10903,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>*<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10506,13 +10925,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo</em>*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10527,13 +10947,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>*<strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10548,13 +10969,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>***<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10569,13 +10991,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong>foo</strong>*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10590,13 +11013,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo</em>***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10611,13 +11035,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo ___</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10632,13 +11057,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10653,13 +11079,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10674,13 +11101,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo _____</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10695,13 +11123,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10716,13 +11145,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10737,13 +11167,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>_<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10758,13 +11189,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo</em>_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10779,13 +11211,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>_<strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10800,13 +11233,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>___<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10821,13 +11255,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong>foo</strong>_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10842,13 +11277,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo</em>___</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10863,13 +11299,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10884,13 +11321,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10905,13 +11343,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10926,13 +11365,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10947,13 +11387,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10968,13 +11409,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10989,13 +11431,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><strong><strong><strong>foo</strong></strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11010,13 +11453,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em><strong>foo</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11031,13 +11475,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em><strong><strong>foo</strong></strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11052,13 +11497,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo _bar</em> baz_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11073,13 +11519,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11094,13 +11541,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>**foo <strong>bar baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11115,13 +11563,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>*foo <em>bar baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11136,13 +11585,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>*<a href="/url">bar*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11157,13 +11607,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>_foo <a href="/url">bar_</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11178,13 +11629,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>*<img src="foo" title="*"/></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11199,13 +11651,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>**<a href="**"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11220,13 +11673,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>__<a href="__"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11241,13 +11695,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>a <code>*</code></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11262,13 +11717,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><em>a <code>_</code></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11283,13 +11739,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11304,13 +11761,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11325,13 +11783,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11346,13 +11805,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><a href="/uri">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11367,13 +11827,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><a href="">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11388,13 +11849,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p><a href="">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11409,13 +11871,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>[link](/my uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11430,13 +11893,14 @@ bim</em> bop</strong></p>
         let expected = r##"<p>[link](&lt;/my uri&gt;)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11453,13 +11917,14 @@ bar)
 bar)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11476,13 +11941,14 @@ bar>)
 bar>)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11497,13 +11963,14 @@ bar>)</p>
         let expected = r##"<p><a href="(foo)">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11518,13 +11985,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo(and(bar))">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11539,13 +12007,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo(and(bar)">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11560,13 +12029,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo(and(bar)">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11581,13 +12051,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo):">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11608,13 +12079,14 @@ bar>)</p>
 <p><a href="http://example.com?foo=3#frag">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11629,13 +12101,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo%5Cbar">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11650,13 +12123,14 @@ bar>)</p>
         let expected = r##"<p><a href="foo%20b%C3%A4">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11671,13 +12145,14 @@ bar>)</p>
         let expected = r##"<p><a href="%22title%22">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11696,13 +12171,14 @@ bar>)</p>
 <a href="/url" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11717,13 +12193,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title &quot;&quot;">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11738,13 +12215,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url%C2%A0%22title%22">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11759,13 +12237,14 @@ bar>)</p>
         let expected = r##"<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11780,13 +12259,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11802,13 +12282,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11823,13 +12304,14 @@ bar>)</p>
         let expected = r##"<p>[link] (/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11844,13 +12326,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11865,13 +12348,14 @@ bar>)</p>
         let expected = r##"<p>[link] bar](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11886,13 +12370,14 @@ bar>)</p>
         let expected = r##"<p>[link <a href="/uri">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11907,13 +12392,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11928,13 +12414,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11949,13 +12436,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11970,13 +12458,14 @@ bar>)</p>
         let expected = r##"<p>[foo <a href="/uri">bar</a>](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11991,13 +12480,14 @@ bar>)</p>
         let expected = r##"<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12012,13 +12502,14 @@ bar>)</p>
         let expected = r##"<p><img src="uri3" alt="[foo](uri2)" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12033,13 +12524,14 @@ bar>)</p>
         let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12054,13 +12546,14 @@ bar>)</p>
         let expected = r##"<p><a href="baz*">foo *bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12075,13 +12568,14 @@ bar>)</p>
         let expected = r##"<p><em>foo [bar</em> baz]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12096,13 +12590,14 @@ bar>)</p>
         let expected = r##"<p>[foo <bar attr="](baz)"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12117,13 +12612,14 @@ bar>)</p>
         let expected = r##"<p>[foo<code>](/uri)</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12138,13 +12634,14 @@ bar>)</p>
         let expected = r##"<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12161,13 +12658,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12184,13 +12682,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12207,13 +12706,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12230,13 +12730,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12253,13 +12754,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12276,13 +12778,14 @@ bar>)</p>
         let expected = r##"<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12299,13 +12802,14 @@ bar>)</p>
         let expected = r##"<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12322,13 +12826,14 @@ bar>)</p>
         let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12345,13 +12850,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">foo *bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12368,13 +12874,14 @@ bar>)</p>
         let expected = r##"<p>[foo <bar attr="][ref]"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12391,13 +12898,14 @@ bar>)</p>
         let expected = r##"<p>[foo<code>][ref]</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12414,13 +12922,14 @@ bar>)</p>
         let expected = r##"<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12437,13 +12946,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12460,13 +12970,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url">Толпой</a> is a Russian word.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12484,13 +12995,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url">Baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12507,13 +13019,14 @@ bar>)</p>
         let expected = r##"<p>[foo] <a href="/url" title="title">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12532,13 +13045,14 @@ bar>)</p>
 <a href="/url" title="title">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12557,13 +13071,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url1">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12580,13 +13095,14 @@ bar>)</p>
         let expected = r##"<p>[bar][foo!]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12604,13 +13120,14 @@ bar>)</p>
 <p>[ref[]: /uri</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12628,13 +13145,14 @@ bar>)</p>
 <p>[ref[bar]]: /uri</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12652,13 +13170,14 @@ bar>)</p>
 <p>[[[foo]]]: /url</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12675,13 +13194,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12698,13 +13218,14 @@ bar>)</p>
         let expected = r##"<p><a href="/uri">bar\</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12722,13 +13243,14 @@ bar>)</p>
 <p>[]: /uri</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12750,13 +13272,14 @@ bar>)</p>
 ]: /uri</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12773,13 +13296,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12796,13 +13320,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12819,13 +13344,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12844,13 +13370,14 @@ bar>)</p>
 []</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12867,13 +13394,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12890,13 +13418,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12913,13 +13442,14 @@ bar>)</p>
         let expected = r##"<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12936,13 +13466,14 @@ bar>)</p>
         let expected = r##"<p>[[bar <a href="/url">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12959,13 +13490,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12982,13 +13514,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url">foo</a> bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13005,13 +13538,14 @@ bar>)</p>
         let expected = r##"<p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13028,13 +13562,14 @@ bar>)</p>
         let expected = r##"<p>*<a href="/url">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13052,13 +13587,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url2">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13075,13 +13611,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url1">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13098,13 +13635,14 @@ bar>)</p>
         let expected = r##"<p><a href="">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13121,13 +13659,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url1">foo</a>(not a link)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13144,13 +13683,14 @@ bar>)</p>
         let expected = r##"<p>[foo]<a href="/url">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13168,13 +13708,14 @@ bar>)</p>
         let expected = r##"<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13192,13 +13733,14 @@ bar>)</p>
         let expected = r##"<p>[foo]<a href="/url1">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13213,13 +13755,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13236,13 +13779,14 @@ bar>)</p>
         let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13257,13 +13801,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13278,13 +13823,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13301,13 +13847,14 @@ bar>)</p>
         let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13324,13 +13871,14 @@ bar>)</p>
         let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13345,13 +13893,14 @@ bar>)</p>
         let expected = r##"<p><img src="train.jpg" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13366,13 +13915,14 @@ bar>)</p>
         let expected = r##"<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13387,13 +13937,14 @@ bar>)</p>
         let expected = r##"<p><img src="url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13408,13 +13959,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13431,13 +13983,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13454,13 +14007,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13477,13 +14031,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13500,13 +14055,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13523,13 +14079,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13548,13 +14105,14 @@ bar>)</p>
 []</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13571,13 +14129,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13594,13 +14153,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13618,13 +14178,14 @@ bar>)</p>
 <p>[[foo]]: /url &quot;title&quot;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13641,13 +14202,14 @@ bar>)</p>
         let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13664,13 +14226,14 @@ bar>)</p>
         let expected = r##"<p>![foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13687,13 +14250,14 @@ bar>)</p>
         let expected = r##"<p>!<a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13708,13 +14272,14 @@ bar>)</p>
         let expected = r##"<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13729,13 +14294,14 @@ bar>)</p>
         let expected = r##"<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13750,13 +14316,14 @@ bar>)</p>
         let expected = r##"<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13771,13 +14338,14 @@ bar>)</p>
         let expected = r##"<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13792,13 +14360,14 @@ bar>)</p>
         let expected = r##"<p><a href="a+b+c:d">a+b+c:d</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13813,13 +14382,14 @@ bar>)</p>
         let expected = r##"<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13834,13 +14404,14 @@ bar>)</p>
         let expected = r##"<p><a href="http://../">http://../</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13855,13 +14426,14 @@ bar>)</p>
         let expected = r##"<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13876,13 +14448,14 @@ bar>)</p>
         let expected = r##"<p>&lt;http://foo.bar/baz bim&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13897,13 +14470,14 @@ bar>)</p>
         let expected = r##"<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13918,13 +14492,14 @@ bar>)</p>
         let expected = r##"<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13939,13 +14514,14 @@ bar>)</p>
         let expected = r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13960,13 +14536,14 @@ bar>)</p>
         let expected = r##"<p>&lt;foo+@bar.example.com&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13981,13 +14558,14 @@ bar>)</p>
         let expected = r##"<p>&lt;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14002,13 +14580,14 @@ bar>)</p>
         let expected = r##"<p>&lt; http://foo.bar &gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14023,13 +14602,14 @@ bar>)</p>
         let expected = r##"<p>&lt;m:abc&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14044,13 +14624,14 @@ bar>)</p>
         let expected = r##"<p>&lt;foo.bar.baz&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14065,13 +14646,14 @@ bar>)</p>
         let expected = r##"<p>http://example.com</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14086,13 +14668,14 @@ bar>)</p>
         let expected = r##"<p>foo@bar.example.com</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14107,13 +14690,14 @@ bar>)</p>
         let expected = r##"<p><a><bab><c2c></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14128,13 +14712,14 @@ bar>)</p>
         let expected = r##"<p><a/><b2/></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14151,13 +14736,14 @@ data="foo" >
 data="foo" ></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14174,13 +14760,14 @@ _boolean zoop:33=zoop:33 />
 _boolean zoop:33=zoop:33 /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14195,13 +14782,14 @@ _boolean zoop:33=zoop:33 /></p>
         let expected = r##"<p>Foo <responsive-image src="foo.jpg" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14216,13 +14804,14 @@ _boolean zoop:33=zoop:33 /></p>
         let expected = r##"<p>&lt;33&gt; &lt;__&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14237,13 +14826,14 @@ _boolean zoop:33=zoop:33 /></p>
         let expected = r##"<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14258,13 +14848,14 @@ _boolean zoop:33=zoop:33 /></p>
         let expected = r##"<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14281,13 +14872,14 @@ foo><bar/ >
 foo&gt;&lt;bar/ &gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14302,13 +14894,14 @@ foo&gt;&lt;bar/ &gt;</p>
         let expected = r##"<p>&lt;a href='bar'title=title&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14323,13 +14916,14 @@ foo&gt;&lt;bar/ &gt;</p>
         let expected = r##"<p></a></foo ></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14344,13 +14938,14 @@ foo&gt;&lt;bar/ &gt;</p>
         let expected = r##"<p>&lt;/a href=&quot;foo&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14367,13 +14962,14 @@ comment - with hyphen -->
 comment - with hyphen --></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14388,13 +14984,14 @@ comment - with hyphen --></p>
         let expected = r##"<p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14412,13 +15009,14 @@ foo <!-- foo--->
 <p>foo &lt;!-- foo---&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14433,13 +15031,14 @@ foo <!-- foo--->
         let expected = r##"<p>foo <?php echo $a; ?></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14454,13 +15053,14 @@ foo <!-- foo--->
         let expected = r##"<p>foo <!ELEMENT br EMPTY></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14475,13 +15075,14 @@ foo <!-- foo--->
         let expected = r##"<p>foo <![CDATA[>&<]]></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14496,13 +15097,14 @@ foo <!-- foo--->
         let expected = r##"<p>foo <a href="&ouml;"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14517,13 +15119,14 @@ foo <!-- foo--->
         let expected = r##"<p>foo <a href="\*"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14538,13 +15141,14 @@ foo <!-- foo--->
         let expected = r##"<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14561,13 +15165,14 @@ baz
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14584,13 +15189,14 @@ baz
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14607,13 +15213,14 @@ baz
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14630,13 +15237,14 @@ baz</p>
 bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14653,13 +15261,14 @@ bar</p>
 bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14676,13 +15285,14 @@ bar*
 bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14699,13 +15309,14 @@ bar*
 bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14721,13 +15332,14 @@ span`
         let expected = r##"<p><code>code span</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14743,13 +15355,14 @@ span`
         let expected = r##"<p><code>code\ span</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14766,13 +15379,14 @@ bar">
 bar"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14789,13 +15403,14 @@ bar">
 bar"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14810,13 +15425,14 @@ bar"></p>
         let expected = r##"<p>foo\</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14831,13 +15447,14 @@ bar"></p>
         let expected = r##"<p>foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14852,13 +15469,14 @@ bar"></p>
         let expected = r##"<h3>foo\</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14873,13 +15491,14 @@ bar"></p>
         let expected = r##"<h3>foo</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14896,13 +15515,14 @@ baz
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14919,13 +15539,14 @@ baz</p>
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14940,13 +15561,14 @@ baz</p>
         let expected = r##"<p>hello $.;'there</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14961,13 +15583,14 @@ baz</p>
         let expected = r##"<p>Foo χρῆν</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14982,13 +15605,14 @@ baz</p>
         let expected = r##"<p>Multiple     spaces</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::*;
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
         opts.insert(OPTION_ENABLE_TABLES);
         opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(OPTION_ENABLE_MATH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

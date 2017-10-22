@@ -40,6 +40,8 @@ enum State {
     Code,
     InlineCode,
     Literal,
+    InlineMath,
+    DisplayMath,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -103,6 +105,8 @@ pub enum Tag<'a> {
     Code,
     Link(Cow<'a, str>, Cow<'a, str>),
     Image(Cow<'a, str>, Cow<'a, str>),
+    InlineMath,
+    DisplayMath,
 }
 
 #[derive(Clone, Debug)]
@@ -130,6 +134,7 @@ bitflags! {
         const OPTION_FIRST_PASS = 1 << 0;
         const OPTION_ENABLE_TABLES = 1 << 1;
         const OPTION_ENABLE_FOOTNOTES = 1 << 2;
+        const OPTION_ENABLE_MATH = 1 << 3;
     }
 }
 
@@ -184,7 +189,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`<" {
+            for &c in b"\x00\t\n\r_\\&*[!`<$" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -223,6 +228,8 @@ impl<'a> RawParser<'a> {
 
             // inline
             Tag::Code => self.state = State::Inline,
+            Tag::InlineMath | Tag::DisplayMath => self.state = State::Inline,
+
             _ => (),
         }
         if next != 0 { self.off = next; }
@@ -886,6 +893,8 @@ impl<'a> RawParser<'a> {
 
     // determine whether the line starting at loc ends the block
     fn is_inline_block_end(&self, data: &str, space: usize) -> bool {
+        if self.state == State::DisplayMath { return false; }
+
         data.is_empty() ||
                 scan_blank_line(data) != 0 ||
                 space <= 3 && (scan_hrule(data) != 0 ||
@@ -1002,6 +1011,7 @@ impl<'a> RawParser<'a> {
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
+            b'$' if self.opts.contains(OPTION_ENABLE_MATH) => self.char_dollar(),
             _ => None
         }
     }
@@ -1128,6 +1138,13 @@ impl<'a> RawParser<'a> {
                 } else {
                     i += 1;
                 }
+            } else if c2 == b'$' && self.opts.contains(OPTION_ENABLE_MATH) {
+                let (n, beg, _) = self.scan_inline_math(&self.text[i..limit]);
+                if n != 0 {
+                    i += n;
+                } else {
+                    i += beg;
+                }
             } else {
                 i += 1;
             }
@@ -1183,6 +1200,15 @@ impl<'a> RawParser<'a> {
                         i += beg;
                     }
                 }
+                b'$' if self.opts.contains(OPTION_ENABLE_MATH) => {
+                    let (n, beg, _) = self.scan_inline_math(&data[i..]);
+                    if n != 0 {
+                        i += n;
+                    } else {
+                        i += beg;
+                    }
+                }
+
                 _ => i += 1
             }
         }
@@ -1341,6 +1367,15 @@ impl<'a> RawParser<'a> {
                         i += beg;
                     }
                 }
+                b'$' if self.opts.contains(OPTION_ENABLE_MATH) => {
+                    let (n, beg, _) = self.scan_inline_math(&data[i..]);
+                    if n != 0 {
+                        i += n;
+                    } else {
+                        i += beg;
+                    }
+                }
+
                 _ => ()
             }
             i += 1;
@@ -1689,6 +1724,115 @@ impl<'a> RawParser<'a> {
             self.end()
         }
     }
+
+    fn char_dollar(&mut self) -> Option<Event<'a>> {
+        let beg = self.off;
+        let limit = self.limit();
+        let mut i = beg;
+        let (n, math_beg, math_end) = self.scan_inline_math(&self.text[i..limit]);
+        if n == 0 {
+            self.off += math_beg - 1;
+            return None;
+        }
+        i += math_beg;
+        let space_len = self.scan_whitespace_inline(&self.text[i..limit]);
+        if math_beg == 1 && space_len > 0 {
+            // the initial $ followed by spaces
+            self.off += math_beg - 1;
+            return None;
+        }
+        let end = beg + math_end;
+        let next = beg + n;
+        if math_beg == 1 {
+            if let Some(&b'0'...b'9') = self.text[next..limit].as_bytes().get(0) {
+                // the final $ followed by digits
+                self.off += math_beg - 1;
+                return None;
+            }
+        }
+        i += space_len;
+        self.off = i;
+        let (state, tag) = if math_beg > 1 {
+            (State::DisplayMath, Tag::DisplayMath)
+        } else {
+            (State::InlineMath, Tag::InlineMath)
+        };
+        self.state = state;
+        Some(self.start(tag, end, next))
+    }
+
+    // next position, the "beginning" of the content, the end of the content
+    // the "beginning" also corresponds to the number of dollars to be consumed,
+    // no matter the inline math is well-formed or not
+    fn scan_inline_math(&self, data: &str) -> (usize, usize, usize) {
+        let size = data.len();
+        let open_len = scan_dollar(data);
+        if open_len == 0 {
+            return (0, open_len, 0);
+        }
+        let mut i = open_len;
+        while i < size {
+            match data.as_bytes()[i] {
+                b'$' if !is_escaped(data, i) => {
+                    let close_len = scan_dollar(&data[i..]);
+                    if close_len == open_len {
+                        return (i + open_len, open_len, i);
+                    } else {
+                        i += close_len;
+                    }
+                }
+                b'\n' => {
+                    i += 1;
+                    let (n, _, space) = self.scan_containers(&data[i..]);
+                    i += n;
+                    if open_len == 1 && self.is_inline_block_end(&data[i..], space) {
+                        return (0, open_len, 0);
+                    }
+                }
+                _ => i += 1
+            }
+        }
+        (0, open_len, 0)
+    }
+
+    fn next_math(&mut self) -> Event<'a> {
+        let beg = self.off;
+        let mut i = beg;
+        let limit = self.limit();
+        while i < limit {
+            let c = self.text.as_bytes()[i];
+            if is_ascii_whitespace(c) {
+                let n = self.scan_whitespace_inline(&self.text[i..limit]);
+                if i + n == limit || n == 0 {
+                    if i > beg {
+                        break;
+                    } else {
+                        return self.end();
+                    }
+                }
+                if c == b' ' && n == 1 {
+                    // optimization to reduce number of text blocks produced
+                    i += 1;
+                } else {
+                    if i > beg {
+                        break;
+                    }
+                    i += n;
+                    self.off = i;
+                    return Event::Text(Borrowed(" "));
+                }
+            } else {
+                i += 1;
+            }
+        }
+        if i > beg {
+            self.off = i;
+            Event::Text(Borrowed(&self.text[beg..i]))
+        } else {
+            self.end()
+        }
+    }
+
 }
 
 impl<'a> Iterator for RawParser<'a> {
@@ -1713,6 +1857,7 @@ impl<'a> Iterator for RawParser<'a> {
                 State::Code => return Some(self.next_code()),
                 State::InlineCode => return Some(self.next_inline_code()),
                 State::Literal => return Some(self.next_literal()),
+                State::InlineMath | State::DisplayMath => return Some(self.next_math()),
             }
         }
         match self.stack.pop() {

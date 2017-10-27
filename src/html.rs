@@ -59,7 +59,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 Html(html) |
                 InlineHtml(html) => self.buf.push_str(&html),
                 SoftBreak => self.buf.push('\n'),
-                HardBreak => self.buf.push_str("<br />\n"),
+                HardBreak => self.buf.push_str("<br />"),
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;
                     self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");

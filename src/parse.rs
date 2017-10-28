@@ -144,6 +144,7 @@ bitflags! {
         const OPTION_FIRST_PASS = 1 << 0;
         const OPTION_ENABLE_TABLES = 1 << 1;
         const OPTION_ENABLE_FOOTNOTES = 1 << 2;
+        const OPTION_DISABLE_HTML = 1 << 3;
     }
 }
 
@@ -757,6 +758,10 @@ impl<'a> RawParser<'a> {
     }
 
     fn is_html_block(&self, data: &str) -> bool {
+        if self.opts.contains(OPTION_DISABLE_HTML) {
+            return false;
+        }
+
         let (n_tag, tag) = self.scan_html_block_tag(data);
         (n_tag > 0 && is_html_tag(tag)) ||
                 data.starts_with("<?") ||
@@ -1473,6 +1478,10 @@ impl<'a> RawParser<'a> {
     }
 
     fn scan_inline_html(&self, data: &str) -> usize {
+        if self.opts.contains(OPTION_DISABLE_HTML) {
+            return 0;
+        }
+
         let n = self.scan_html_tag(data);
         if n != 0 { return n; }
         let n = self.scan_html_comment(data);

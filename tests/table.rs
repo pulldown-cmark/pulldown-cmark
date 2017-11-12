@@ -7,7 +7,7 @@ include!("normalize_html.rs.inc");
 
 
     #[test]
-    fn spec_test_1() {
+    fn table_test_1() {
         let original = r##"Test header
 -----------"##;
         let expected = r##"<h2>Test header</h2>
@@ -28,7 +28,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn spec_test_2() {
+    fn table_test_2() {
         let original = r##"Test|Table
 ----|-----"##;
         let expected = r##"<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
@@ -50,7 +50,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn spec_test_3() {
+    fn table_test_3() {
         let original = r##"Test|Table
 ----|-----
 Test row
@@ -79,7 +79,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_4() {
+    fn table_test_4() {
         let original = r##"> Test  | Table
 > ------|------
 > Row 1 | Every
@@ -110,7 +110,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_5() {
+    fn table_test_5() {
         let original = r##" 1. First entry
  2. Second entry
 
@@ -147,7 +147,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_6() {
+    fn table_test_6() {
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |R1C1 |R1C2 |
@@ -173,7 +173,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_7() {
+    fn table_test_7() {
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |       |       |
@@ -199,7 +199,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_8() {
+    fn table_test_8() {
         let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |   x   |       |
@@ -225,7 +225,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_9() {
+    fn table_test_9() {
         let original = r##"|Col 1|Col 2|
 |-----|-----|
 |✓    |✓    |
@@ -251,7 +251,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_10() {
+    fn table_test_10() {
         let original = r##"|  Target                       | std |rustc|cargo| notes                      |
 |-------------------------------|-----|-----|-----|----------------------------|
 | `x86_64-unknown-linux-musl`   |  ✓  |     |     | 64-bit Linux with MUSL     |
@@ -287,7 +287,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_11() {
+    fn table_test_11() {
         let original = r##"|-|-|
 |ぃ|い|"##;
         let expected = r##"<p>|-|-|
@@ -309,7 +309,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_12() {
+    fn table_test_12() {
         let original = r##"|ぁ|ぃ|
 |-|-|
 |ぃ|ぃ|"##;
@@ -333,7 +333,7 @@ Test ending"##;
     }
 
     #[test]
-    fn spec_test_13() {
+    fn table_test_13() {
         let original = r##"|Колонка 1|Колонка 2|
 |---------|---------|
 |Ячейка 1 |Ячейка 2 |"##;

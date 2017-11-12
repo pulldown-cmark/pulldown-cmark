@@ -7,7 +7,7 @@ include!("normalize_html.rs.inc");
 
 
     #[test]
-    fn spec_test_1() {
+    fn footnotes_test_1() {
         let original = r##"Lorem ipsum.[^a]
 
 [^a]: Cool."##;
@@ -32,7 +32,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn spec_test_2() {
+    fn footnotes_test_2() {
         let original = r##"> This is the song that never ends.\
 > Yes it goes on and on my friends.[^lambchops]
 >
@@ -61,7 +61,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
     }
 
     #[test]
-    fn spec_test_3() {
+    fn footnotes_test_3() {
         let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]:
@@ -93,7 +93,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
     }
 
     #[test]
-    fn spec_test_4() {
+    fn footnotes_test_4() {
         let original = r##"[^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
 
 I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp."##;
@@ -118,7 +118,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
     }
 
     #[test]
-    fn spec_test_5() {
+    fn footnotes_test_5() {
         let original = r##"[^ipsum]: How much wood would a woodchuck chuck.
 
 If a woodchuck could chuck wood.
@@ -147,7 +147,7 @@ If a woodchuck could chuck wood.
     }
 
     #[test]
-    fn spec_test_6() {
+    fn footnotes_test_6() {
         let original = r##"> He's also really stupid. [^why]
 >
 > [^why]: Because your mamma!
@@ -177,7 +177,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
     }
 
     #[test]
-    fn spec_test_7() {
+    fn footnotes_test_7() {
         let original = r##"Nested footnotes are considered poor style. [^a] [^xkcd]
 
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
@@ -222,7 +222,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
     }
 
     #[test]
-    fn spec_test_8() {
+    fn footnotes_test_8() {
         let original = r##"[^Doh] Ray Me Fa So La Te Do! [^1]
 
 [^Doh]: I know. Wrong Doe. And it won't render right.

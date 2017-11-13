@@ -29,9 +29,37 @@ use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, Foo
 use parse::Alignment;
 use escape::{escape_html, escape_href};
 
+pub trait IntoHtml<C> {
+    fn render(self, ctx: &mut C, buf: &mut String);
+}
+
 enum TableState {
     Head,
     Body,
+}
+
+impl<'a, 'b, I: Iterator<Item = Event<'a>>> IntoHtml<Ctx<'a, 'b, I>> for Event<'a> {
+    fn render(self, ctx: &mut Ctx<'a, 'b, I>, buf: &mut String) {
+        match self {
+            Start(tag) => ctx.start_tag(tag),
+            End(tag) => ctx.end_tag(tag),
+            Text(text) => escape_html(buf, &text, false),
+            Html(html) | InlineHtml(html) => buf.push_str(&html),
+            SoftBreak => buf.push('\n'),
+            HardBreak => buf.push_str("<br />\n"),
+            FootnoteReference(name) => {
+                let len = ctx.numbers.len() + 1;
+                buf.push_str(
+                    "<sup class=\"footnote-reference\"><a href=\"#",
+                );
+                escape_html(buf, &*name, false);
+                buf.push_str("\">");
+                let number = ctx.numbers.entry(name).or_insert(len);
+                buf.push_str(&*format!("{}", number));
+                buf.push_str("</a></sup>");
+            }
+        }
+    }
 }
 
 struct Ctx<'a, 'b, I: IntoIterator> {

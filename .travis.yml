@@ -1,0 +1,10 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+script:
+  - cargo test --features "gen-tests"
+matrix:
+  allow_failures:
+    - rust: nightly

@@ -34,7 +34,7 @@ enum TableState {
     Body,
 }
 
-struct Ctx<'a, 'b, I> {
+struct Ctx<'a, 'b, I: IntoIterator> {
     iter: I,
     buf: &'b mut String,
     table_state: TableState,

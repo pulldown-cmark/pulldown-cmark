@@ -70,7 +70,7 @@ impl<'a, T: IntoHtml<Context<'a>>> Renderer<'a, T> {
         }
     }
 
-	pub fn render(self) {
+    pub fn render(self) {
     }
 }
 
@@ -92,25 +92,25 @@ impl<'a, 'b, I: Iterator<Item = Event<'a>>> Ctx<'a, 'b, I> {
 
     pub fn run(&mut self) {
         while let Some(event) = self.iter.next() {
-			match event {
-				Start(tag) => self.start_tag(tag),
-				End(tag) => self.end_tag(tag),
-				Text(text) => escape_html(self.buf, &text, false),
-				Html(html) |
-				InlineHtml(html) => self.buf.push_str(&html),
-				SoftBreak => self.buf.push('\n'),
-				HardBreak => self.buf.push_str("<br />\n"),
-				FootnoteReference(name) => {
-					let len = self.numbers.len() + 1;
-					self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
-					escape_html(self.buf, &*name, false);
-					self.buf.push_str("\">");
-					let number = self.numbers.entry(name).or_insert(len);
-					self.buf.push_str(&*format!("{}", number));
-					self.buf.push_str("</a></sup>");
-				},
-			}
-		}
+            match event {
+                Start(tag) => self.start_tag(tag),
+                End(tag) => self.end_tag(tag),
+                Text(text) => escape_html(self.buf, &text, false),
+                Html(html) |
+                InlineHtml(html) => self.buf.push_str(&html),
+                SoftBreak => self.buf.push('\n'),
+                HardBreak => self.buf.push_str("<br />\n"),
+                FootnoteReference(name) => {
+                    let len = self.numbers.len() + 1;
+                    self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
+                    escape_html(self.buf, &*name, false);
+                    self.buf.push_str("\">");
+                    let number = self.numbers.entry(name).or_insert(len);
+                    self.buf.push_str(&*format!("{}", number));
+                    self.buf.push_str("</a></sup>");
+                },
+            }
+        }
     }
 
     fn start_tag(&mut self, tag: Tag<'a>) {

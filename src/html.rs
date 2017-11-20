@@ -31,7 +31,7 @@ use parse::Alignment;
 use escape::{escape_html, escape_href};
 
 pub trait IntoHtml<C> {
-    fn render(self, ctx: &mut C);
+    fn render(self, ctx: &mut C, buf: &mut String);
 }
 
 enum TableState {
@@ -39,29 +39,10 @@ enum TableState {
     Body,
 }
 
-impl<'a, 'b, I> IntoHtml<Ctx<'a, 'b, I>> for Event<'a>
-where
-    I: Iterator<Item = Event<'a>>,
-{
-    fn render(self, ctx: &mut Ctx<'a, 'b, I>) {
+impl<'a> IntoHtml<Context<'a>> for Event<'a> {
+    fn render(self, ctx: &mut Context<'a>, buf: &mut String) {
         match self {
-            Start(tag) => ctx.start_tag(tag),
-            End(tag) => ctx.end_tag(tag),
-            Text(text) => escape_html(ctx.buf, &text, false),
-            Html(html) | InlineHtml(html) => ctx.buf.push_str(&html),
-            SoftBreak => ctx.buf.push('\n'),
-            HardBreak => ctx.buf.push_str("<br />\n"),
-            FootnoteReference(name) => {
-                let len = ctx.numbers.len() + 1;
-                ctx.buf.push_str(
-                    "<sup class=\"footnote-reference\"><a href=\"#",
-                );
-                escape_html(ctx.buf, &*name, false);
-                ctx.buf.push_str("\">");
-                let number = ctx.numbers.entry(name).or_insert(len);
-                ctx.buf.push_str(&*format!("{}", number));
-                ctx.buf.push_str("</a></sup>");
-            }
+            _ => ()
         }
     }
 }

@@ -49,7 +49,7 @@ impl<'a> IntoHtml<Context<'a>> for Event<'a> {
     fn render(self, ctx: &mut Context<'a>, buf: &mut String) {
         match self {
             _ => (),
-            Start(tag) => ctx.start_tag(buf, tag),
+            // Start(tag) => ctx.start_tag(buf, tag),
             // End(tag) => ctx.end_tag(tag),
             // Text(text) => escape_html(buf, &text, false),
             // Html(html) |
@@ -85,143 +85,8 @@ impl<'a> Context<'a> {
             table_cell_index: 0,
         }
     }
-
-    fn raw_text<'c>(&mut self, buf: &mut String) {
-        let mut nest = 0;
-        while let Some(event) = self.events.next() {
-            match event {
-                Start(_) => nest += 1,
-                End(_) => {
-                    if nest == 0 {
-                        break;
-                    }
-                    nest -= 1;
-                }
-                Text(text) => escape_html(buf, &text, false),
-                Html(_) => (),
-                InlineHtml(html) => escape_html(buf, &html, false),
-                SoftBreak | HardBreak => buf.push(' '),
-                FootnoteReference(name) => {
-                    let len = self.numbers.len() + 1;
-                    let number = self.numbers.entry(name).or_insert(len);
-                    buf.push_str(&*format!("[{}]", number));
-                }
-            }
-        }
-    }
-
-    fn start_tag(&mut self, buf: &mut String, tag: Tag<'a>) {
-        match tag {
-            Tag::Paragraph => {
-                fresh_line(buf);
-                buf.push_str("<p>");
-            }
-            Tag::Rule => {
-                fresh_line(buf);
-                buf.push_str("<hr />\n")
-            }
-            Tag::Header(level) => {
-                fresh_line(buf);
-                buf.push_str("<h");
-                buf.push((b'0' + level as u8) as char);
-                buf.push('>');
-            }
-            Tag::Table(alignments) => {
-                self.table_alignments = alignments;
-                buf.push_str("<table>");
-            }
-            Tag::TableHead => {
-                self.table_state = TableState::Head;
-                buf.push_str("<thead><tr>");
-            }
-            Tag::TableRow => {
-                self.table_cell_index = 0;
-                buf.push_str("<tr>");
-            }
-            Tag::TableCell => {
-                match self.table_state {
-                    TableState::Head => buf.push_str("<th"),
-                    TableState::Body => buf.push_str("<td"),
-                }
-                match self.table_alignments.get(self.table_cell_index) {
-                    Some(&Alignment::Left) => buf.push_str(" align=\"left\""),
-                    Some(&Alignment::Center) => buf.push_str(" align=\"center\""),
-                    Some(&Alignment::Right) => buf.push_str(" align=\"right\""),
-                    _ => (),
-                }
-                buf.push_str(">");
-            }
-            Tag::BlockQuote => {
-                fresh_line(buf);
-                buf.push_str("<blockquote>\n");
-            }
-            Tag::CodeBlock(info) => {
-                fresh_line(buf);
-                let lang = info.split(' ').next().unwrap();
-                if lang.is_empty() {
-                    buf.push_str("<pre><code>");
-                } else {
-                    buf.push_str("<pre><code class=\"language-");
-                    escape_html(buf, lang, false);
-                    buf.push_str("\">");
-                }
-            }
-            Tag::List(Some(1)) => {
-                fresh_line(buf);
-                buf.push_str("<ol>\n");
-            }
-            Tag::List(Some(start)) => {
-                fresh_line(buf);
-                let _ = write!(buf, "<ol start=\"{}\">\n", start);
-            }
-            Tag::List(None) => {
-                fresh_line(buf);
-                buf.push_str("<ul>\n");
-            }
-            Tag::Item => {
-                fresh_line(buf);
-                buf.push_str("<li>");
-            }
-            Tag::Emphasis => buf.push_str("<em>"),
-            Tag::Strong => buf.push_str("<strong>"),
-            Tag::Code => buf.push_str("<code>"),
-            Tag::Link(dest, title) => {
-                buf.push_str("<a href=\"");
-                escape_href(buf, &dest);
-                if !title.is_empty() {
-                    buf.push_str("\" title=\"");
-                    escape_html(buf, &title, false);
-                }
-                buf.push_str("\">");
-            }
-            Tag::Image(dest, title) => {
-                buf.push_str("<img src=\"");
-                escape_href(buf, &dest);
-                buf.push_str("\" alt=\"");
-                self.raw_text(buf);
-                if !title.is_empty() {
-                    buf.push_str("\" title=\"");
-                    escape_html(buf, &title, false);
-                }
-                buf.push_str("\" />")
-            }
-            Tag::FootnoteDefinition(name) => {
-                fresh_line(buf);
-                let len = self.numbers.len() + 1;
-                buf.push_str(
-                    "<div class=\"footnote-definition\" id=\"",
-                );
-                escape_html(buf, &*name, false);
-                buf.push_str(
-                    "\"><sup class=\"footnote-definition-label\">",
-                );
-                let number = self.numbers.entry(name).or_insert(len);
-                buf.push_str(&*format!("{}", number));
-                buf.push_str("</sup>");
-            }
-        }
-    }
 }
+
 pub struct Renderer<'a, T, I>
 where
     T: 'a + IntoHtml<Context<'a>>,
@@ -496,13 +361,6 @@ impl<'a, 'b, I: Iterator<Item = Event<'a>>> Ctx<'a, 'b, I> {
 /// "#);
 /// ```
 pub fn push_html<'a, I: Iterator<Item = Event<'a>>>(buf: &mut String, iter: I) {
-    let mut ctx = Ctx {
-        iter: iter,
-        buf: buf,
-        table_state: TableState::Head,
-        table_alignments: vec![],
-        table_cell_index: 0,
-        numbers:  HashMap::new(),
-    };
-    ctx.run();
+    let renderer = Renderer::new(iter);
+    renderer.render(buf);
 }

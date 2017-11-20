@@ -39,7 +39,10 @@ enum TableState {
     Body,
 }
 
-impl<'a, 'b, I: Iterator<Item = Event<'a>>> IntoHtml<Ctx<'a, 'b, I>> for Event<'a> {
+impl<'a, 'b, I> IntoHtml<Ctx<'a, 'b, I>> for Event<'a>
+where
+    I: Iterator<Item = Event<'a>>,
+{
     fn render(self, ctx: &mut Ctx<'a, 'b, I>) {
         match self {
             Start(tag) => ctx.start_tag(tag),

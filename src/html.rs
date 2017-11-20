@@ -75,7 +75,10 @@ where
         }
     }
 
-    pub fn render(self) {
+    pub fn render(mut self, buf: &mut String) {
+        while let Some(event) = self.events.next() {
+            event.render(&mut self, &mut buf)
+        }
     }
 }
 

@@ -54,18 +54,23 @@ pub struct Context<'a> {
     table_cell_index: usize,
 }
 
-pub struct Renderer<'a, T>
+pub struct Renderer<'a, T, I>
 where
     T: 'a + IntoHtml<Context<'a>>,
+    I: Iterator<Item = T>
 {
-    events: Option<Box<Iterator<Item = T>>>,
+    events: I,
     _t: PhantomData<&'a T>,
 }
 
-impl<'a, T: IntoHtml<Context<'a>>> Renderer<'a, T> {
-    pub fn new() -> Renderer<'a, T> {
+impl<'a, T ,I> Renderer<'a, T, I>
+where
+    T: IntoHtml<Context<'a>>,
+    I: Iterator<Item = T>
+{
+    pub fn new(events: I) -> Renderer<'a, T, I> {
         Renderer {
-            events: None,
+            events,
             _t : PhantomData
         }
     }

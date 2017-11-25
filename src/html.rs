@@ -23,26 +23,109 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::marker::PhantomData;
 
 use parse::{Event, Tag};
 use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
 use parse::Alignment;
 use escape::{escape_html, escape_href};
 
+pub trait IntoHtml<C> {
+    fn render(self, ctx: &mut C, buf: &mut String);
+}
+
 enum TableState {
     Head,
     Body,
 }
 
-struct Ctx<'b, I> {
-    iter: I,
-    buf: &'b mut String,
+pub fn fresh_line(buf: &mut String) {
+    if !(buf.is_empty() || buf.ends_with('\n')) {
+        buf.push('\n');
+    }
+}
+
+impl<'a> IntoHtml<Context<'a>> for Event<'a> {
+    fn render(self, ctx: &mut Context<'a>, buf: &mut String) {
+        match self {
+            _ => (),
+            // Start(tag) => ctx.start_tag(buf, tag),
+            // End(tag) => ctx.end_tag(tag),
+            // Text(text) => escape_html(buf, &text, false),
+            // Html(html) |
+            // InlineHtml(html) => buf.push_str(&html),
+            // SoftBreak => buf.push('\n'),
+            // HardBreak => buf.push_str("<br />\n"),
+            // FootnoteReference(name) => {
+            //     let len = ctx.numbers.len() + 1;
+            //     buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
+            //     escape_html(buf, &*name, false);
+            //     buf.push_str("\">");
+            //     let number = ctx.numbers.entry(name).or_insert(len);
+            //     buf.push_str(&*format!("{}", number));
+            //     buf.push_str("</a></sup>");
+            // },
+        }
+    }
+}
+
+pub struct Context<'a> {
+    numbers: HashMap<Cow<'a, str>, usize>,
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
 }
 
-impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
+impl<'a> Context<'a> {
+    fn new() -> Context<'a> {
+        Context {
+            numbers: HashMap::new(),
+            table_state: TableState::Head,
+            table_alignments: vec![],
+            table_cell_index: 0,
+        }
+    }
+}
+
+pub struct Renderer<'a, T, I>
+where
+    T: 'a + IntoHtml<Context<'a>>,
+    I: Iterator<Item = T>
+{
+    events: I,
+    _t: PhantomData<&'a T>,
+}
+
+impl<'a, T ,I> Renderer<'a, T, I>
+where
+    T: IntoHtml<Context<'a>>,
+    I: Iterator<Item = T>
+{
+    pub fn new(events: I) -> Renderer<'a, T, I> {
+        Renderer {
+            events,
+            _t : PhantomData
+        }
+    }
+
+    pub fn render(mut self, buf: &mut String) {
+        let mut ctx = Context::new();
+        while let Some(event) = self.events.next() {
+            event.render(&mut ctx, buf)
+        }
+    }
+}
+
+struct Ctx<'a, 'b, I: IntoIterator> {
+    iter: I,
+    buf: &'b mut String,
+    table_state: TableState,
+    table_alignments: Vec<Alignment>,
+    table_cell_index: usize,
+    numbers: HashMap<Cow<'a, str>, usize>,
+}
+
+impl<'a, 'b, I: Iterator<Item = Event<'a>>> Ctx<'a, 'b, I> {
     fn fresh_line(&mut self) {
         if !(self.buf.is_empty() || self.buf.ends_with('\n')) {
             self.buf.push('\n');
@@ -50,10 +133,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
     }
 
     pub fn run(&mut self) {
-        let mut numbers = HashMap::new();
         while let Some(event) = self.iter.next() {
             match event {
-                Start(tag) => self.start_tag(tag, &mut numbers),
+                Start(tag) => self.start_tag(tag),
                 End(tag) => self.end_tag(tag),
                 Text(text) => escape_html(self.buf, &text, false),
                 Html(html) |
@@ -61,11 +143,11 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 SoftBreak => self.buf.push('\n'),
                 HardBreak => self.buf.push_str("<br />\n"),
                 FootnoteReference(name) => {
-                    let len = numbers.len() + 1;
+                    let len = self.numbers.len() + 1;
                     self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
                     escape_html(self.buf, &*name, false);
                     self.buf.push_str("\">");
-                    let number = numbers.entry(name).or_insert(len);
+                    let number = self.numbers.entry(name).or_insert(len);
                     self.buf.push_str(&*format!("{}", number));
                     self.buf.push_str("</a></sup>");
                 },
@@ -73,9 +155,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
         }
     }
 
-    fn start_tag(&mut self, tag: Tag<'a>, numbers: &mut HashMap<Cow<'a, str>, usize>) {
+    fn start_tag(&mut self, tag: Tag<'a>) {
         match tag {
-            Tag::Paragraph =>  {
+            Tag::Paragraph => {
                 self.fresh_line();
                 self.buf.push_str("<p>");
             }
@@ -161,7 +243,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push_str("<img src=\"");
                 escape_href(self.buf, &dest);
                 self.buf.push_str("\" alt=\"");
-                self.raw_text(numbers);
+                self.raw_text();
                 if !title.is_empty() {
                     self.buf.push_str("\" title=\"");
                     escape_html(self.buf, &title, false);
@@ -170,11 +252,15 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::FootnoteDefinition(name) => {
                 self.fresh_line();
-                let len = numbers.len() + 1;
-                self.buf.push_str("<div class=\"footnote-definition\" id=\"");
+                let len = self.numbers.len() + 1;
+                self.buf.push_str(
+                    "<div class=\"footnote-definition\" id=\"",
+                );
                 escape_html(self.buf, &*name, false);
-                self.buf.push_str("\"><sup class=\"footnote-definition-label\">");
-                let number = numbers.entry(name).or_insert(len);
+                self.buf.push_str(
+                    "\"><sup class=\"footnote-definition-label\">",
+                );
+                let number = self.numbers.entry(name).or_insert(len);
                 self.buf.push_str(&*format!("{}", number));
                 self.buf.push_str("</sup>");
             }
@@ -222,13 +308,15 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
     }
 
     // run raw text, consuming end tag
-    fn raw_text<'c>(&mut self, numbers: &'c mut HashMap<Cow<'a, str>, usize>) {
+    fn raw_text<'c>(&mut self) {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
                 Start(_) => nest += 1,
                 End(_) => {
-                    if nest == 0 { break; }
+                    if nest == 0 {
+                        break;
+                    }
                     nest -= 1;
                 }
                 Text(text) => escape_html(self.buf, &text, false),
@@ -236,8 +324,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 InlineHtml(html) => escape_html(self.buf, &html, false),
                 SoftBreak | HardBreak => self.buf.push(' '),
                 FootnoteReference(name) => {
-                    let len = numbers.len() + 1;
-                    let number = numbers.entry(name).or_insert(len);
+                    let len = self.numbers.len() + 1;
+                    let number = self.numbers.entry(name).or_insert(len);
                     self.buf.push_str(&*format!("[{}]", number));
                 }
             }
@@ -272,13 +360,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
-    let mut ctx = Ctx {
-        iter: iter,
-        buf: buf,
-        table_state: TableState::Head,
-        table_alignments: vec![],
-        table_cell_index: 0,
-    };
-    ctx.run();
+pub fn push_html<'a, I: Iterator<Item = Event<'a>>>(buf: &mut String, iter: I) {
+    let renderer = Renderer::new(iter);
+    renderer.render(buf);
 }

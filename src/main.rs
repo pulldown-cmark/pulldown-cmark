@@ -25,7 +25,7 @@ extern crate getopts;
 extern crate pulldown_cmark;
 
 use pulldown_cmark::Parser;
-use pulldown_cmark::{Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+use pulldown_cmark::Options;
 use pulldown_cmark::html;
 
 use std::env;
@@ -230,10 +230,10 @@ pub fn main() {
     }
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
-        opts.insert(OPTION_ENABLE_TABLES);
+        opts.insert(Options::ENABLE_TABLES);
     }
     if matches.opt_present("enable-footnotes") {
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
     }
     if let Some(filename) = matches.opt_str("spec") {
         run_spec(&read_file(&filename).replace("→", "\t"), &matches.free, opts);

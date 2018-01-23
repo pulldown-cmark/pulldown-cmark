@@ -64,6 +64,10 @@ pub struct RawParser<'a> {
     containers: Vec<Container>,
     last_line_was_empty: bool,
 
+    /// In case we have a broken link/image reference, we can call this callback
+    /// with the reference name and use the link/title pair returned instead
+    broken_link_callback: Option<&'a Fn(&str) -> Option<(String, String)>>,
+
     // state for code fences
     fence_char: u8,
     fence_count: usize,
@@ -145,8 +149,10 @@ bitflags! {
 const MAX_LINK_NEST: usize = 10;
 
 impl<'a> RawParser<'a> {
-    pub fn new_with_links(text: &'a str, opts: Options,
-            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
+    pub fn new_with_links_and_callback(text: &'a str, opts: Options,
+            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
+            callback: Option<&'a Fn(&str) -> Option<(String, String)>>)
+    -> RawParser<'a> {
         let mut ret = RawParser {
             text: text,
             off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
@@ -162,6 +168,8 @@ impl<'a> RawParser<'a> {
             fence_count: 0,
             fence_indent: 0,
 
+            broken_link_callback: callback,
+
             // info, used in second pass
             loose_lists: HashSet::new(),
             links: links,
@@ -171,8 +179,13 @@ impl<'a> RawParser<'a> {
         ret
     }
 
+    pub fn new_with_links(text: &'a str, opts: Options,
+            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
+        Self::new_with_links_and_callback(text, opts, links, None)
+    }
+
     pub fn new(text: &'a str, opts: Options) -> RawParser<'a> {
-        RawParser::new_with_links(text, opts, HashMap::new())
+        Self::new_with_links(text, opts, HashMap::new())
     }
 
     // offset into text representing current parse position, hopefully
@@ -1298,7 +1311,17 @@ impl<'a> RawParser<'a> {
             let reference = self.normalize_link_ref(&data[ref_beg..ref_end]);
             let (dest, title) = match self.links.get(&reference) {
                 Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
-                None => return None
+                None => {
+                    if let Some(ref callback) = self.broken_link_callback {
+                        if let Some(val) = callback(&reference) {
+                            (val.0.into(), val.1.into())
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        return None;
+                    }
+                }
             };
             (dest, title, text_beg, text_end, i)
         };

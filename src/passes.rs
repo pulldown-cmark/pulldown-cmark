@@ -33,7 +33,18 @@ impl<'a> Parser<'a> {
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
-    pub fn new_ext(text: &'a str, mut opts: Options) -> Parser<'a> {
+    pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
+        Self::new_with_broken_link_callback(text, opts, None)
+    }
+
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link name and title if not
+    /// None.
+    pub fn new_with_broken_link_callback(text: &'a str, mut opts: Options,
+            callback: Option<&'a Fn(&str) -> Option<(String, String)>>)
+            -> Parser<'a>  {
         opts.remove(OPTION_FIRST_PASS);
         // first pass, collecting info
         let first_opts = opts | OPTION_FIRST_PASS;
@@ -43,7 +54,7 @@ impl<'a> Parser<'a> {
 
         // second pass
         let loose_lists = info.loose_lists;
-        let second = RawParser::new_with_links(text, opts, info.links);
+        let second = RawParser::new_with_links_and_callback(text, opts, info.links, callback);
 
         //println!("loose lists: {:?}", info.loose_lists);
         Parser {

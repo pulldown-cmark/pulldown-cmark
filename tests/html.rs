@@ -206,3 +206,35 @@ console.log("fooooo");
 
     assert_eq!(expected, s);
 }
+
+#[test]
+fn html_test_broken_callback() {
+    let original = r##"[foo],
+[bar],
+[baz],
+
+   [baz]: https://example.org
+"##;
+
+    let expected = r##"<p><a href="https://replaced.example.org" title="some title">foo</a>,
+[bar],
+<a href="https://example.org">baz</a>,</p>
+"##;
+
+    use pulldown_cmark::{Options, Parser, html};
+
+    let mut s = String::new();
+
+    let callback = |reference: &str| -> Option<(String, String)> {
+        if reference == "foo" || reference == "baz" {
+            Some(("https://replaced.example.org".into(), "some title".into()))
+        } else {
+            None
+        }
+    };
+
+    let p = Parser::new_with_broken_link_callback(&original, Options::empty(), Some(&callback));
+    html::push_html(&mut s, p);
+
+    assert_eq!(expected, s);
+}

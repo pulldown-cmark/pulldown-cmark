@@ -43,7 +43,7 @@ impl<'a> Parser<'a> {
     /// and the returned pair will be used as the link name and title if not
     /// None.
     pub fn new_with_broken_link_callback(text: &'a str, mut opts: Options,
-            callback: Option<&'a Fn(&str) -> Option<(String, String)>>)
+            callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
             -> Parser<'a>  {
         opts.remove(OPTION_FIRST_PASS);
         // first pass, collecting info

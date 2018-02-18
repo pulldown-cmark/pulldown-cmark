@@ -225,7 +225,7 @@ fn html_test_broken_callback() {
 
     let mut s = String::new();
 
-    let callback = |reference: &str| -> Option<(String, String)> {
+    let callback = |reference: &str, _normalized: &str| -> Option<(String, String)> {
         if reference == "foo" || reference == "baz" {
             Some(("https://replaced.example.org".into(), "some title".into()))
         } else {

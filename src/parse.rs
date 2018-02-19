@@ -65,8 +65,9 @@ pub struct RawParser<'a> {
     last_line_was_empty: bool,
 
     /// In case we have a broken link/image reference, we can call this callback
-    /// with the reference name and use the link/title pair returned instead
-    broken_link_callback: Option<&'a Fn(&str) -> Option<(String, String)>>,
+    /// with the reference name (both normalized and not normalized) and use
+    /// the link/title pair returned instead
+    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
 
     // state for code fences
     fence_char: u8,
@@ -151,7 +152,7 @@ const MAX_LINK_NEST: usize = 10;
 impl<'a> RawParser<'a> {
     pub fn new_with_links_and_callback(text: &'a str, opts: Options,
             links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
-            callback: Option<&'a Fn(&str) -> Option<(String, String)>>)
+            callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
     -> RawParser<'a> {
         let mut ret = RawParser {
             text: text,
@@ -1313,7 +1314,7 @@ impl<'a> RawParser<'a> {
                 Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
                 None => {
                     if let Some(ref callback) = self.broken_link_callback {
-                        if let Some(val) = callback(&reference) {
+                        if let Some(val) = callback(&reference, &data[ref_beg..ref_end]) {
                             (val.0.into(), val.1.into())
                         } else {
                             return None;

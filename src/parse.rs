@@ -935,9 +935,16 @@ impl<'a> RawParser<'a> {
             return self.end();
         }
         let mut n = 0;
+        let mut in_code = false;
         while i < limit {
             let c = bytes[i];
-            if c == b'\\' && i + 1 < limit && bytes[i + 1] == b'|' {
+            if c == b'`' {
+                in_code = !in_code;
+            }
+            if in_code {
+                i += 1;
+                continue;
+            } else if c == b'\\' && i + 1 < limit && bytes[i + 1] == b'|' {
                 i += 2;
                 continue;
             } else if c == b'|' {

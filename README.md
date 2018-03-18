@@ -19,7 +19,7 @@ It is designed to be:
 There are many parsers for Markdown and its variants, but to my knowledge none
 use pull parsing. Pull parsing has become popular for XML, especially for
 memory-conscious applications, because it uses dramatically less memory than
-construcing a document tree, but is much easier to use than push parsers. Push
+constructing a document tree, but is much easier to use than push parsers. Push
 parsers are notoriously difficult to use, and also often error-prone because of
 the need for user to delicately juggle state in a series of callbacks.
 

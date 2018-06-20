@@ -51,7 +51,7 @@ Or expanding an abbreviation in text:
 
 ```rust
 let parser = parser.map(|event| match event {
-	Event::Str(text) => Event::Str(text.replace("abbr", "abbreviation")),
+	Event::Text(text) => Event::Text(text.replace("abbr", "abbreviation")),
 	_ => event
 });
 ```
@@ -86,7 +86,7 @@ full power and expressivity of Rust's iterator infrastructure, including
 for loops and `map` (as in the examples above), collecting the events into
 a vector (for recording, playback, and manipulation), and more.
 
-Further, the Str event (representing text) is a copy-on-write string (note:
+Further, the `Text` event (representing text) is a copy-on-write string (note:
 this isn't quite true yet). The vast majority of text fragments are just
 slices of the source document. For these, copy-on-write gives a convenient
 representation that requires no allocation or copying, but allocated

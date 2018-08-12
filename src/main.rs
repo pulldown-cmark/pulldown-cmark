@@ -37,7 +37,7 @@ use std::fs::File;
 fn render_html(text: &str, opts: Options) -> String {
     let mut s = String::with_capacity(text.len() * 3 / 2);
     let p = Parser::new_ext(text, opts);
-    html::push_html(&mut s, p);
+    html::push_html(&mut s, p).unwrap();
     s
 }
 
@@ -252,7 +252,8 @@ pub fn main() {
         } else if matches.opt_present("dry-run") {
             dry_run(&input, opts);
         } else {
-            print!("{}", render_html(&input, opts));
+            let p = Parser::new_ext(&input, opts);
+            html::write_html(io::stdout(), p).unwrap();
         }
     }
 }

@@ -82,7 +82,7 @@ fn generate_tests_from_spec() {
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }}"###,

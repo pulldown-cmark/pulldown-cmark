@@ -25,7 +25,7 @@ extern crate pulldown_cmark;
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -55,7 +55,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -88,7 +88,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -114,7 +114,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -144,7 +144,7 @@ If a woodchuck could chuck wood.
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -175,7 +175,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -220,7 +220,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }
@@ -248,7 +248,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
+        html::push_html(&mut s, p).unwrap();
 
         assert_eq!(expected, s);
     }

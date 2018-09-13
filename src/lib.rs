@@ -39,4 +39,4 @@ mod puncttable;
 mod utils;
 
 pub use passes::Parser;
-pub use parse::{Alignment, Event, Tag, Options};
+pub use parse::{Alignment, Event, Tag, LinkType, Options};

@@ -148,7 +148,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Emphasis => self.buf.push_str("<em>"),
             Tag::Strong => self.buf.push_str("<strong>"),
             Tag::Code => self.buf.push_str("<code>"),
-            Tag::Link(dest, title) => {
+            Tag::Link(_, dest, title) => {
                 self.buf.push_str("<a href=\"");
                 escape_href(self.buf, &dest);
                 if !title.is_empty() {
@@ -157,7 +157,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 }
                 self.buf.push_str("\">");
             }
-            Tag::Image(dest, title) => {
+            Tag::Image(_, dest, title) => {
                 self.buf.push_str("<img src=\"");
                 escape_href(self.buf, &dest);
                 self.buf.push_str("\" alt=\"");
@@ -215,8 +215,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Emphasis => self.buf.push_str("</em>"),
             Tag::Strong => self.buf.push_str("</strong>"),
             Tag::Code => self.buf.push_str("</code>"),
-            Tag::Link(_, _) => self.buf.push_str("</a>"),
-            Tag::Image(_, _) => (), // shouldn't happen, handled in start
+            Tag::Link(_, _, _) => self.buf.push_str("</a>"),
+            Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
         }
     }

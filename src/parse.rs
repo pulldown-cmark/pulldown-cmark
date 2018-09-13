@@ -112,11 +112,25 @@ pub enum Tag<'a> {
     Strong,
     Code,
 
-    /// A link. The first field is the destination URL, the second is a title
-    Link(Cow<'a, str>, Cow<'a, str>),
+    /// A link. The first field is the link type, the second the destination URL and the third is a title
+    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
 
-    /// An image. The first field is the destination URL, the second is a title
-    Image(Cow<'a, str>, Cow<'a, str>),
+    /// An image. The first field is the link type, the second the destination URL, and the third is a title
+    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LinkType {
+    /// Inline link like `[foo](bar)`
+    Inline,
+    /// Reference link like `[foo][bar]`
+    Reference,
+    /// Collapsed link like `[foo][]`
+    Collapsed,
+    /// Shortcut link like `[foo]`
+    Shortcut,
+    /// Autolink like `<http://foo.bar/baz>`
+    Autolink,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1269,7 +1283,7 @@ impl<'a> RawParser<'a> {
         let mut i = i + n;
 
         // scan dest
-        let (dest, title, beg, end, next) = if data[i..].starts_with('(') {
+        let (dest, title, beg, end, next, typ) = if data[i..].starts_with('(') {
             i += 1;
             i += self.scan_whitespace_inline(&data[i..]);
             if i >= size { return None; }
@@ -1296,7 +1310,7 @@ impl<'a> RawParser<'a> {
             i += self.scan_whitespace_inline(&data[i..]);
             if i == size || data.as_bytes()[i] != b')' { return None; }
             i += 1;
-            (dest, title, text_beg, text_end, i)
+            (dest, title, text_beg, text_end, i, LinkType::Inline)
         } else {
             // try link reference
             let j = i + self.scan_whitespace_inline(&data[i..]);
@@ -1324,12 +1338,19 @@ impl<'a> RawParser<'a> {
                     }
                 }
             };
-            (dest, title, text_beg, text_end, i)
+            let typ = if n_ref == 0 {
+                LinkType::Shortcut
+            } else if ref_beg == ref_end {
+                LinkType::Collapsed
+            } else {
+                LinkType::Reference
+            };
+            (dest, title, text_beg, text_end, i, typ)
         };
         if is_image {
-            Some((Tag::Image(dest, title), beg, end, next))
+            Some((Tag::Image(typ, dest, title), beg, end, next))
         } else {
-            Some((Tag::Link(dest, title), beg, end, next))
+            Some((Tag::Link(typ, dest, title), beg, end, next))
         }
     }
 
@@ -1455,7 +1476,7 @@ impl<'a> RawParser<'a> {
             let next = self.off + n;
             self.off += 1;
             self.state = State::Literal;
-            return Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
+            return Some(self.start(Tag::Link(LinkType::Autolink, link, Borrowed("")), next - 1, next))
         }
         let n = self.scan_inline_html(tail);
         if n != 0 {

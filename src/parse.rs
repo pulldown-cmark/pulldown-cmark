@@ -125,10 +125,16 @@ pub enum LinkType {
     Inline,
     /// Reference link like `[foo][bar]`
     Reference,
+    /// Reference without destination in the document, but resolved by the broken_link_callback
+    ReferenceUnknown,
     /// Collapsed link like `[foo][]`
     Collapsed,
+    /// Collapsed link without destination in the document, but resolved by the broken_link_callback
+    CollapsedUnknown,
     /// Shortcut link like `[foo]`
     Shortcut,
+    /// Shortcut without destination in the document, but resolved by the broken_link_callback
+    ShortcutUnknown,
     /// Autolink like `<http://foo.bar/baz>`
     Autolink,
 }
@@ -1324,12 +1330,12 @@ impl<'a> RawParser<'a> {
                 i = j + n_ref;
             }
             let reference = self.normalize_link_ref(&data[ref_beg..ref_end]);
-            let (dest, title) = match self.links.get(&reference) {
-                Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
+            let (dest, title, unknown) = match self.links.get(&reference) {
+                Some(&(ref dest, ref title)) => (dest.clone(), title.clone(), false),
                 None => {
                     if let Some(ref callback) = self.broken_link_callback {
                         if let Some(val) = callback(&reference, &data[ref_beg..ref_end]) {
-                            (val.0.into(), val.1.into())
+                            (val.0.into(), val.1.into(), true)
                         } else {
                             return None;
                         }
@@ -1339,11 +1345,23 @@ impl<'a> RawParser<'a> {
                 }
             };
             let typ = if n_ref == 0 {
-                LinkType::Shortcut
+                if unknown {
+                    LinkType::ShortcutUnknown
+                } else {
+                    LinkType::Shortcut
+                }
             } else if ref_beg == ref_end {
-                LinkType::Collapsed
+                if unknown {
+                    LinkType::CollapsedUnknown
+                } else {
+                    LinkType::Collapsed
+                }
             } else {
-                LinkType::Reference
+                if unknown {
+                    LinkType::ReferenceUnknown
+                } else {
+                    LinkType::Reference
+                }
             };
             (dest, title, text_beg, text_end, i, typ)
         };

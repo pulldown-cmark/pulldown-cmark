@@ -646,7 +646,7 @@ impl<'a> RawParser<'a> {
         let beg_info = self.off + n;
         let next_line = beg_info + scan_nextline(&self.text[beg_info..]);
         self.off = next_line;
-        let info = unescape(self.text[beg_info..next_line].trim());
+        let info = self.text[beg_info..next_line].trim();
         let size = self.text.len();
         self.state = State::CodeLineStart;
         self.start(Tag::CodeBlock(info), size, 0)

@@ -20,7 +20,7 @@
 
 //! Main public pull parse interface, running two passes over input.
 
-use parse::{RawParser, Event, Tag, Options, OPTION_FIRST_PASS};
+use parse::{RawParser, Event, Tag, Options};
 use std::collections::HashSet;
 
 pub struct Parser<'a> {
@@ -45,9 +45,9 @@ impl<'a> Parser<'a> {
     pub fn new_with_broken_link_callback(text: &'a str, mut opts: Options,
             callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
             -> Parser<'a>  {
-        opts.remove(OPTION_FIRST_PASS);
+        opts.remove(Options::FIRST_PASS);
         // first pass, collecting info
-        let first_opts = opts | OPTION_FIRST_PASS;
+        let first_opts = opts | Options::FIRST_PASS;
         let mut first = RawParser::new(text, first_opts);
         while first.next().is_some() { }
         let info = first.get_info();

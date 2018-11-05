@@ -426,7 +426,9 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
 
 // returns: number of bytes scanned, char
 pub fn scan_code_fence(data: &str) -> (usize, u8) {
-    if data.is_empty() { return (0,0); }
+    if data.is_empty() {
+        return (0, 0);
+    }
     let c = data.as_bytes()[0];
     if !(c == b'`' || c == b'~') { return (0, 0); }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);
@@ -465,8 +467,11 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         b'0' ... b'9' => {
             let mut i = 1;
             i += scan_while(&data[i..], is_digit);
-            start = data[..i].parse().unwrap();
-            if i >= data.len() || i > 9 { return (0, 0, 0, 0); }
+            if i >= data.len() { return (0, 0, 0, 0); }
+            start = match data[..i].parse() {
+                Ok(start) => start,
+                Err(_) => return (0, 0, 0, 0),
+            };
             c = data.as_bytes()[i];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
             i + 1
@@ -593,11 +598,15 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
         i += 1;
     }
     let dest_end = i;
+    if dest_end > data.len() {
+        return None;
+    }
     if pointy {
         let n = scan_ch(&data[i..], b'>');
         if n == 0 { return None; }
         i += n;
     }
+
     Some((i, &data[dest_beg..dest_end]))
 }
 
@@ -937,5 +946,14 @@ pub fn spaces(n: usize) -> Cow<'static, str> {
             result.push(' ');
         }
         Owned(result)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn overflow_list() {
+        assert_eq!((0, 0, 0, 0), scan_listitem("4444444444444444444444444444444444444444444444444444444444!"));
     }
 }

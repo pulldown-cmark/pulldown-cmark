@@ -1,21 +1,24 @@
 [package]
 name = "pulldown-cmark"
-version = "0.0.8"
-authors = [ "Raph Levien <raph@google.com>" ]
+# Note: This not a valid release, intended to be filled in when it's ready.
+version = "0.0.0"
+authors = [ "Raph Levien <raph.levien@gmail.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
-repository = "https://github.com/google/pulldown-cmark"
+repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
+categories = ["text-processing"]
 
 build = "build.rs"
 
 [[bin]]
 name = "pulldown-cmark"
+required-features = ["getopts"]
 doc = false
 
 [dependencies]
-bitflags = "0.7"
-getopts = "0.2"
+bitflags = "1.0"
+getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]
 html5ever = "0.20"
@@ -24,5 +27,5 @@ regex = "0.2"
 tendril = "0.4"
 
 [features]
-default = []
+default = ["getopts"]
 gen-tests = []

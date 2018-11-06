@@ -165,7 +165,9 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     }
 }
 
-// Return: number of bytes parsed
+/// Parse a line of input, appending text and items to tree.
+///
+/// Returns: number of bytes parsed (not including terminating newline).
 fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let start = ix;
     let mut begin_text = start;
@@ -173,7 +175,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         match s.as_bytes()[ix] {
             b'\n' | b'\r' => {
                 let mut i = ix;
-                if ix - 1 >= begin_text && s.as_bytes()[ix - 1] == b'\\' {
+                if ix >= begin_text + 1 && s.as_bytes()[ix - 1] == b'\\' {
                     i -= 1;
                     tree.append_text(begin_text, i);
                     tree.append(Item {
@@ -181,11 +183,11 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
                         end: ix,
                         body: ItemBody::HardBreak,
                     });
-                } else if ix - 2 >= begin_text
+                } else if ix >= begin_text + 2
                     && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 1])
                     && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 2]) {
                     i -= 2;
-                    while is_ascii_whitespace_no_nl(s.as_bytes()[i - 1]) {
+                    while i > 0 && is_ascii_whitespace_no_nl(s.as_bytes()[i - 1]) {
                         i -= 1;
                     }
                     tree.append_text(begin_text, i);

@@ -1,11 +1,12 @@
 [package]
 name = "pulldown-cmark"
-version = "0.1.2"
-authors = [ "Raph Levien <raph@google.com>" ]
+version = "0.2.0"
+authors = [ "Raph Levien <raph.levien@gmail.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/google/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
+categories = ["text-processing"]
 
 build = "build.rs"
 

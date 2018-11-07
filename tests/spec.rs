@@ -3,79 +3,81 @@
 
 extern crate pulldown_cmark;
 
-include!("normalize_html.rs.inc");
-
 
     #[test]
     fn spec_test_1() {
-        let original = r##"	foo	baz		bim"##;
+        let original = r##"	foo	baz		bim
+"##;
         let expected = r##"<pre><code>foo	baz		bim
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_2() {
-        let original = r##"  	foo	baz		bim"##;
+        let original = r##"  	foo	baz		bim
+"##;
         let expected = r##"<pre><code>foo	baz		bim
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_3() {
         let original = r##"    a	a
-    ὐ	a"##;
+    ὐ	a
+"##;
         let expected = r##"<pre><code>a	a
 ὐ	a
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_4() {
         let original = r##"  - foo
 
-	bar"##;
+	bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -84,25 +86,26 @@ include!("normalize_html.rs.inc");
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_5() {
         let original = r##"- foo
 
-		bar"##;
+		bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -112,46 +115,48 @@ include!("normalize_html.rs.inc");
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_6() {
-        let original = r##">		foo"##;
+        let original = r##">		foo
+"##;
         let expected = r##"<blockquote>
 <pre><code>  foo
 </code></pre>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_7() {
-        let original = r##"-		foo"##;
+        let original = r##"-		foo
+"##;
         let expected = r##"<ul>
 <li>
 <pre><code>  foo
@@ -160,48 +165,50 @@ include!("normalize_html.rs.inc");
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_8() {
         let original = r##"    foo
-	bar"##;
+	bar
+"##;
         let expected = r##"<pre><code>foo
 bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_9() {
         let original = r##" - foo
    - bar
-	 - baz"##;
+	 - baz
+"##;
         let expected = r##"<ul>
 <li>foo
 <ul>
@@ -215,337 +222,352 @@ bar
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_10() {
-        let original = r##"#	Foo"##;
+        let original = r##"#	Foo
+"##;
         let expected = r##"<h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_11() {
-        let original = r##"*	*	*	"##;
+        let original = r##"*	*	*	
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_12() {
         let original = r##"- `one
-- two`"##;
+- two`
+"##;
         let expected = r##"<ul>
 <li>`one</li>
 <li>two`</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_13() {
         let original = r##"***
 ---
-___"##;
+___
+"##;
         let expected = r##"<hr />
 <hr />
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_14() {
-        let original = r##"+++"##;
+        let original = r##"+++
+"##;
         let expected = r##"<p>+++</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_15() {
-        let original = r##"==="##;
+        let original = r##"===
+"##;
         let expected = r##"<p>===</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_16() {
         let original = r##"--
 **
-__"##;
+__
+"##;
         let expected = r##"<p>--
 **
 __</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_17() {
         let original = r##" ***
   ***
-   ***"##;
+   ***
+"##;
         let expected = r##"<hr />
 <hr />
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_18() {
-        let original = r##"    ***"##;
+        let original = r##"    ***
+"##;
         let expected = r##"<pre><code>***
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_19() {
         let original = r##"Foo
-    ***"##;
+    ***
+"##;
         let expected = r##"<p>Foo
 ***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_20() {
-        let original = r##"_____________________________________"##;
+        let original = r##"_____________________________________
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_21() {
-        let original = r##" - - -"##;
+        let original = r##" - - -
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_22() {
-        let original = r##" **  * ** * ** * **"##;
+        let original = r##" **  * ** * ** * **
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_23() {
-        let original = r##"-     -      -      -"##;
+        let original = r##"-     -      -      -
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_24() {
-        let original = r##"- - - -    "##;
+        let original = r##"- - - -    
+"##;
         let expected = r##"<hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -554,51 +576,54 @@ __</p>
 
 a------
 
----a---"##;
+---a---
+"##;
         let expected = r##"<p>_ _ _ _ a</p>
 <p>a------</p>
 <p>---a---</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_26() {
-        let original = r##" *-*"##;
+        let original = r##" *-*
+"##;
         let expected = r##"<p><em>-</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_27() {
         let original = r##"- foo
 ***
-- bar"##;
+- bar
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 </ul>
@@ -608,72 +633,75 @@ a------
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_28() {
         let original = r##"Foo
 ***
-bar"##;
+bar
+"##;
         let expected = r##"<p>Foo</p>
 <hr />
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_29() {
         let original = r##"Foo
 ---
-bar"##;
+bar
+"##;
         let expected = r##"<h2>Foo</h2>
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_30() {
         let original = r##"* Foo
 * * *
-* Bar"##;
+* Bar
+"##;
         let expected = r##"<ul>
 <li>Foo</li>
 </ul>
@@ -683,24 +711,25 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_31() {
         let original = r##"- Foo
-- * * *"##;
+- * * *
+"##;
         let expected = r##"<ul>
 <li>Foo</li>
 <li>
@@ -709,18 +738,18 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -730,7 +759,8 @@ bar"##;
 ### foo
 #### foo
 ##### foo
-###### foo"##;
+###### foo
+"##;
         let expected = r##"<h1>foo</h1>
 <h2>foo</h2>
 <h3>foo</h3>
@@ -739,388 +769,405 @@ bar"##;
 <h6>foo</h6>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_33() {
-        let original = r##"####### foo"##;
+        let original = r##"####### foo
+"##;
         let expected = r##"<p>####### foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_34() {
         let original = r##"#5 bolt
 
-#hashtag"##;
+#hashtag
+"##;
         let expected = r##"<p>#5 bolt</p>
 <p>#hashtag</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_35() {
-        let original = r##"\## foo"##;
+        let original = r##"\## foo
+"##;
         let expected = r##"<p>## foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_36() {
-        let original = r##"# foo *bar* \*baz\*"##;
+        let original = r##"# foo *bar* \*baz\*
+"##;
         let expected = r##"<h1>foo <em>bar</em> *baz*</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_37() {
-        let original = r##"#                  foo                     "##;
+        let original = r##"#                  foo                     
+"##;
         let expected = r##"<h1>foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_38() {
         let original = r##" ### foo
   ## foo
-   # foo"##;
+   # foo
+"##;
         let expected = r##"<h3>foo</h3>
 <h2>foo</h2>
 <h1>foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_39() {
-        let original = r##"    # foo"##;
+        let original = r##"    # foo
+"##;
         let expected = r##"<pre><code># foo
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_40() {
         let original = r##"foo
-    # bar"##;
+    # bar
+"##;
         let expected = r##"<p>foo
 # bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_41() {
         let original = r##"## foo ##
-  ###   bar    ###"##;
+  ###   bar    ###
+"##;
         let expected = r##"<h2>foo</h2>
 <h3>bar</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_42() {
         let original = r##"# foo ##################################
-##### foo ##"##;
+##### foo ##
+"##;
         let expected = r##"<h1>foo</h1>
 <h5>foo</h5>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_43() {
-        let original = r##"### foo ###     "##;
+        let original = r##"### foo ###     
+"##;
         let expected = r##"<h3>foo</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_44() {
-        let original = r##"### foo ### b"##;
+        let original = r##"### foo ### b
+"##;
         let expected = r##"<h3>foo ### b</h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_45() {
-        let original = r##"# foo#"##;
+        let original = r##"# foo#
+"##;
         let expected = r##"<h1>foo#</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_46() {
         let original = r##"### foo \###
 ## foo #\##
-# foo \#"##;
+# foo \#
+"##;
         let expected = r##"<h3>foo ###</h3>
 <h2>foo ###</h2>
 <h1>foo #</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_47() {
         let original = r##"****
 ## foo
-****"##;
+****
+"##;
         let expected = r##"<hr />
 <h2>foo</h2>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_48() {
         let original = r##"Foo bar
 # baz
-Bar foo"##;
+Bar foo
+"##;
         let expected = r##"<p>Foo bar</p>
 <h1>baz</h1>
 <p>Bar foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_49() {
         let original = r##"## 
 #
-### ###"##;
+### ###
+"##;
         let expected = r##"<h2></h2>
 <h1></h1>
 <h3></h3>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1129,46 +1176,48 @@ Bar foo"##;
 =========
 
 Foo *bar*
----------"##;
+---------
+"##;
         let expected = r##"<h1>Foo <em>bar</em></h1>
 <h2>Foo <em>bar</em></h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_51() {
         let original = r##"Foo *bar
 baz*
-===="##;
+====
+"##;
         let expected = r##"<h1>Foo <em>bar
 baz</em></h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1177,23 +1226,24 @@ baz</em></h1>
 -------------------------
 
 Foo
-="##;
+=
+"##;
         let expected = r##"<h2>Foo</h2>
 <h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1205,24 +1255,25 @@ Foo
 -----
 
   Foo
-  ==="##;
+  ===
+"##;
         let expected = r##"<h2>Foo</h2>
 <h2>Foo</h2>
 <h1>Foo</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1231,7 +1282,8 @@ Foo
     ---
 
     Foo
----"##;
+---
+"##;
         let expected = r##"<pre><code>Foo
 ---
 
@@ -1240,61 +1292,63 @@ Foo
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_55() {
         let original = r##"Foo
-   ----      "##;
+   ----      
+"##;
         let expected = r##"<h2>Foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_56() {
         let original = r##"Foo
-    ---"##;
+    ---
+"##;
         let expected = r##"<p>Foo
 ---</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1303,67 +1357,70 @@ Foo
 = =
 
 Foo
---- -"##;
+--- -
+"##;
         let expected = r##"<p>Foo
 = =</p>
 <p>Foo</p>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_58() {
         let original = r##"Foo  
------"##;
+-----
+"##;
         let expected = r##"<h2>Foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_59() {
         let original = r##"Foo\
-----"##;
+----
+"##;
         let expected = r##"<h2>Foo\</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1374,56 +1431,59 @@ Foo
 
 <a title="a lot
 ---
-of dashes"/>"##;
+of dashes"/>
+"##;
         let expected = r##"<h2>`Foo</h2>
 <p>`</p>
 <h2>&lt;a title=&quot;a lot</h2>
 <p>of dashes&quot;/&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_61() {
         let original = r##"> Foo
----"##;
+---
+"##;
         let expected = r##"<blockquote>
 <p>Foo</p>
 </blockquote>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_62() {
         let original = r##"> foo
 bar
-==="##;
+===
+"##;
         let expected = r##"<blockquote>
 <p>foo
 bar
@@ -1431,65 +1491,67 @@ bar
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_63() {
         let original = r##"- Foo
----"##;
+---
+"##;
         let expected = r##"<ul>
 <li>Foo</li>
 </ul>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_64() {
         let original = r##"Foo
 Bar
----"##;
+---
+"##;
         let expected = r##"<h2>Foo
 Bar</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1499,160 +1561,167 @@ Foo
 ---
 Bar
 ---
-Baz"##;
+Baz
+"##;
         let expected = r##"<hr />
 <h2>Foo</h2>
 <h2>Bar</h2>
 <p>Baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_66() {
         let original = r##"
-===="##;
+====
+"##;
         let expected = r##"<p>====</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_67() {
         let original = r##"---
----"##;
+---
+"##;
         let expected = r##"<hr />
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_68() {
         let original = r##"- foo
------"##;
+-----
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 </ul>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_69() {
         let original = r##"    foo
----"##;
+---
+"##;
         let expected = r##"<pre><code>foo
 </code></pre>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_70() {
         let original = r##"> foo
------"##;
+-----
+"##;
         let expected = r##"<blockquote>
 <p>foo</p>
 </blockquote>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_71() {
         let original = r##"\> foo
-------"##;
+------
+"##;
         let expected = r##"<h2>&gt; foo</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1661,24 +1730,25 @@ Baz"##;
 
 bar
 ---
-baz"##;
+baz
+"##;
         let expected = r##"<p>Foo</p>
 <h2>bar</h2>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1688,25 +1758,26 @@ bar
 
 ---
 
-baz"##;
+baz
+"##;
         let expected = r##"<p>Foo
 bar</p>
 <hr />
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1714,25 +1785,26 @@ bar</p>
         let original = r##"Foo
 bar
 * * *
-baz"##;
+baz
+"##;
         let expected = r##"<p>Foo
 bar</p>
 <hr />
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1740,55 +1812,58 @@ bar</p>
         let original = r##"Foo
 bar
 \---
-baz"##;
+baz
+"##;
         let expected = r##"<p>Foo
 bar
 ---
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_76() {
         let original = r##"    a simple
-      indented code block"##;
+      indented code block
+"##;
         let expected = r##"<pre><code>a simple
   indented code block
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_77() {
         let original = r##"  - foo
 
-    bar"##;
+    bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -1797,25 +1872,26 @@ baz</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_78() {
         let original = r##"1.  foo
 
-    - bar"##;
+    - bar
+"##;
         let expected = r##"<ol>
 <li>
 <p>foo</p>
@@ -1826,18 +1902,18 @@ baz</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1845,7 +1921,8 @@ baz</p>
         let original = r##"    <a/>
     *hi*
 
-    - one"##;
+    - one
+"##;
         let expected = r##"<pre><code>&lt;a/&gt;
 *hi*
 
@@ -1853,18 +1930,18 @@ baz</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1875,7 +1952,8 @@ baz</p>
   
  
  
-    chunk3"##;
+    chunk3
+"##;
         let expected = r##"<pre><code>chunk1
 
 chunk2
@@ -1886,89 +1964,92 @@ chunk3
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_81() {
         let original = r##"    chunk1
       
-      chunk2"##;
+      chunk2
+"##;
         let expected = r##"<pre><code>chunk1
   
   chunk2
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_82() {
         let original = r##"Foo
     bar
+
 "##;
         let expected = r##"<p>Foo
 bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_83() {
         let original = r##"    foo
-bar"##;
+bar
+"##;
         let expected = r##"<pre><code>foo
 </code></pre>
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -1978,7 +2059,8 @@ bar"##;
 Heading
 ------
     foo
-----"##;
+----
+"##;
         let expected = r##"<h1>Heading</h1>
 <pre><code>foo
 </code></pre>
@@ -1988,41 +2070,42 @@ Heading
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_85() {
         let original = r##"        foo
-    bar"##;
+    bar
+"##;
         let expected = r##"<pre><code>    foo
 bar
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -2031,44 +2114,46 @@ bar
     
     foo
     
+
 "##;
         let expected = r##"<pre><code>foo
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_87() {
-        let original = r##"    foo  "##;
+        let original = r##"    foo  
+"##;
         let expected = r##"<pre><code>foo  
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -2076,24 +2161,25 @@ bar
         let original = r##"```
 <
  >
-```"##;
+```
+"##;
         let expected = r##"<pre><code>&lt;
  &gt;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
@@ -2101,178 +2187,209 @@ bar
         let original = r##"~~~
 <
  >
-~~~"##;
+~~~
+"##;
         let expected = r##"<pre><code>&lt;
  &gt;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_90() {
-        let original = r##"```
-aaa
-~~~
-```"##;
-        let expected = r##"<pre><code>aaa
-~~~
-</code></pre>
+        let original = r##"``
+foo
+``
+"##;
+        let expected = r##"<p><code>foo</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_91() {
-        let original = r##"~~~
+        let original = r##"```
 aaa
+~~~
 ```
-~~~"##;
+"##;
         let expected = r##"<pre><code>aaa
-```
+~~~
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_92() {
-        let original = r##"````
+        let original = r##"~~~
 aaa
 ```
-``````"##;
+~~~
+"##;
         let expected = r##"<pre><code>aaa
 ```
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_93() {
+        let original = r##"````
+aaa
+```
+``````
+"##;
+        let expected = r##"<pre><code>aaa
+```
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_94() {
         let original = r##"~~~~
 aaa
 ~~~
-~~~~"##;
+~~~~
+"##;
         let expected = r##"<pre><code>aaa
 ~~~
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_94() {
-        let original = r##"```"##;
-        let expected = r##"<pre><code></code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_95() {
+        let original = r##"```
+"##;
+        let expected = r##"<pre><code></code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_96() {
         let original = r##"`````
 
 ```
-aaa"##;
+aaa
+"##;
         let expected = r##"<pre><code>
 ```
 aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_96() {
+    fn spec_test_97() {
         let original = r##"> ```
 > aaa
 
-bbb"##;
+bbb
+"##;
         let expected = r##"<blockquote>
 <pre><code>aaa
 </code></pre>
@@ -2280,463 +2397,537 @@ bbb"##;
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_97() {
-        let original = r##"```
-
-  
-```"##;
-        let expected = r##"<pre><code>
-  
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_98() {
         let original = r##"```
-```"##;
-        let expected = r##"<pre><code></code></pre>
+
+  
+```
+"##;
+        let expected = r##"<pre><code>
+  
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_99() {
-        let original = r##" ```
- aaa
-aaa
-```"##;
-        let expected = r##"<pre><code>aaa
-aaa
-</code></pre>
+        let original = r##"```
+```
+"##;
+        let expected = r##"<pre><code></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_100() {
+        let original = r##" ```
+ aaa
+aaa
+```
+"##;
+        let expected = r##"<pre><code>aaa
+aaa
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_101() {
         let original = r##"  ```
 aaa
   aaa
 aaa
-  ```"##;
+  ```
+"##;
         let expected = r##"<pre><code>aaa
 aaa
 aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_101() {
+    fn spec_test_102() {
         let original = r##"   ```
    aaa
     aaa
   aaa
-   ```"##;
+   ```
+"##;
         let expected = r##"<pre><code>aaa
  aaa
 aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_102() {
+    fn spec_test_103() {
         let original = r##"    ```
     aaa
-    ```"##;
+    ```
+"##;
         let expected = r##"<pre><code>```
 aaa
 ```
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_103() {
-        let original = r##"```
-aaa
-  ```"##;
-        let expected = r##"<pre><code>aaa
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_104() {
-        let original = r##"   ```
+        let original = r##"```
 aaa
-  ```"##;
+  ```
+"##;
         let expected = r##"<pre><code>aaa
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_105() {
+        let original = r##"   ```
+aaa
+  ```
+"##;
+        let expected = r##"<pre><code>aaa
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_106() {
         let original = r##"```
 aaa
-    ```"##;
+    ```
+"##;
         let expected = r##"<pre><code>aaa
     ```
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_106() {
-        let original = r##"``` ```
-aaa"##;
-        let expected = r##"<p><code></code>
-aaa</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_107() {
+        let original = r##"``` ```
+aaa
+"##;
+        let expected = r##"<p><code></code>
+aaa</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_108() {
         let original = r##"~~~~~~
 aaa
-~~~ ~~"##;
+~~~ ~~
+"##;
         let expected = r##"<pre><code>aaa
 ~~~ ~~
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_108() {
+    fn spec_test_109() {
         let original = r##"foo
 ```
 bar
 ```
-baz"##;
+baz
+"##;
         let expected = r##"<p>foo</p>
 <pre><code>bar
 </code></pre>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_109() {
+    fn spec_test_110() {
         let original = r##"foo
 ---
 ~~~
 bar
 ~~~
-# baz"##;
+# baz
+"##;
         let expected = r##"<h2>foo</h2>
 <pre><code>bar
 </code></pre>
 <h1>baz</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_110() {
-        let original = r##"```ruby
-def foo(x)
-  return 3
-end
-```"##;
-        let expected = r##"<pre><code class="language-ruby">def foo(x)
-  return 3
-end
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_111() {
-        let original = r##"~~~~    ruby startline=3 $%@#$
+        let original = r##"```ruby
 def foo(x)
   return 3
 end
-~~~~~~~"##;
+```
+"##;
         let expected = r##"<pre><code class="language-ruby">def foo(x)
   return 3
 end
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_112() {
-        let original = r##"````;
-````"##;
-        let expected = r##"<pre><code class="language-;"></code></pre>
+        let original = r##"~~~~    ruby startline=3 $%@#$
+def foo(x)
+  return 3
+end
+~~~~~~~
+"##;
+        let expected = r##"<pre><code class="language-ruby">def foo(x)
+  return 3
+end
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_113() {
-        let original = r##"``` aa ```
-foo"##;
-        let expected = r##"<p><code>aa</code>
-foo</p>
+        let original = r##"````;
+````
+"##;
+        let expected = r##"<pre><code class="language-;"></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_114() {
-        let original = r##"```
-``` aaa
-```"##;
-        let expected = r##"<pre><code>``` aaa
-</code></pre>
+        let original = r##"``` aa ```
+foo
+"##;
+        let expected = r##"<p><code>aa</code>
+foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_115() {
+        let original = r##"~~~ aa ``` ~~~
+foo
+~~~
+"##;
+        let expected = r##"<pre><code class="language-aa">foo
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_116() {
+        let original = r##"```
+``` aaa
+```
+"##;
+        let expected = r##"<pre><code>``` aaa
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_117() {
+        let original = r##"<table><tr><td>
+<pre>
+**Hello**,
+
+_world_.
+</pre>
+</td></tr></table>
+"##;
+        let expected = r##"<table><tr><td>
+<pre>
+**Hello**,
+<p><em>world</em>.
+</pre></p>
+</td></tr></table>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_118() {
         let original = r##"<table>
   <tr>
     <td>
@@ -2745,7 +2936,8 @@ foo</p>
   </tr>
 </table>
 
-okay."##;
+okay.
+"##;
         let expected = r##"<table>
   <tr>
     <td>
@@ -2756,474 +2948,494 @@ okay."##;
 <p>okay.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_116() {
+    fn spec_test_119() {
         let original = r##" <div>
   *hello*
-         <foo><a>"##;
+         <foo><a>
+"##;
         let expected = r##" <div>
   *hello*
          <foo><a>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_117() {
+    fn spec_test_120() {
         let original = r##"</div>
-*foo*"##;
+*foo*
+"##;
         let expected = r##"</div>
 *foo*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_118() {
+    fn spec_test_121() {
         let original = r##"<DIV CLASS="foo">
 
 *Markdown*
 
-</DIV>"##;
+</DIV>
+"##;
         let expected = r##"<DIV CLASS="foo">
 <p><em>Markdown</em></p>
 </DIV>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_119() {
-        let original = r##"<div id="foo"
-  class="bar">
-</div>"##;
-        let expected = r##"<div id="foo"
-  class="bar">
-</div>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_120() {
-        let original = r##"<div id="foo" class="bar
-  baz">
-</div>"##;
-        let expected = r##"<div id="foo" class="bar
-  baz">
-</div>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_121() {
-        let original = r##"<div>
-*foo*
-
-*bar*"##;
-        let expected = r##"<div>
-*foo*
-<p><em>bar</em></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_122() {
         let original = r##"<div id="foo"
-*hi*"##;
+  class="bar">
+</div>
+"##;
         let expected = r##"<div id="foo"
-*hi*
+  class="bar">
+</div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_123() {
-        let original = r##"<div class
-foo"##;
-        let expected = r##"<div class
-foo
+        let original = r##"<div id="foo" class="bar
+  baz">
+</div>
+"##;
+        let expected = r##"<div id="foo" class="bar
+  baz">
+</div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_124() {
-        let original = r##"<div *???-&&&-<---
-*foo*"##;
-        let expected = r##"<div *???-&&&-<---
+        let original = r##"<div>
 *foo*
+
+*bar*
+"##;
+        let expected = r##"<div>
+*foo*
+<p><em>bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_125() {
-        let original = r##"<div><a href="bar">*foo*</a></div>"##;
-        let expected = r##"<div><a href="bar">*foo*</a></div>
+        let original = r##"<div id="foo"
+*hi*
+"##;
+        let expected = r##"<div id="foo"
+*hi*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_126() {
+        let original = r##"<div class
+foo
+"##;
+        let expected = r##"<div class
+foo
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_127() {
+        let original = r##"<div *???-&&&-<---
+*foo*
+"##;
+        let expected = r##"<div *???-&&&-<---
+*foo*
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_128() {
+        let original = r##"<div><a href="bar">*foo*</a></div>
+"##;
+        let expected = r##"<div><a href="bar">*foo*</a></div>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_129() {
         let original = r##"<table><tr><td>
 foo
-</td></tr></table>"##;
+</td></tr></table>
+"##;
         let expected = r##"<table><tr><td>
 foo
 </td></tr></table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_127() {
+    fn spec_test_130() {
         let original = r##"<div></div>
 ``` c
 int x = 33;
-```"##;
+```
+"##;
         let expected = r##"<div></div>
 ``` c
 int x = 33;
 ```
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_128() {
+    fn spec_test_131() {
         let original = r##"<a href="foo">
 *bar*
-</a>"##;
+</a>
+"##;
         let expected = r##"<a href="foo">
 *bar*
 </a>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_129() {
+    fn spec_test_132() {
         let original = r##"<Warning>
 *bar*
-</Warning>"##;
+</Warning>
+"##;
         let expected = r##"<Warning>
 *bar*
 </Warning>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_130() {
+    fn spec_test_133() {
         let original = r##"<i class="foo">
 *bar*
-</i>"##;
+</i>
+"##;
         let expected = r##"<i class="foo">
 *bar*
 </i>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_131() {
+    fn spec_test_134() {
         let original = r##"</ins>
-*bar*"##;
+*bar*
+"##;
         let expected = r##"</ins>
 *bar*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_132() {
+    fn spec_test_135() {
         let original = r##"<del>
 *foo*
-</del>"##;
+</del>
+"##;
         let expected = r##"<del>
 *foo*
 </del>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_133() {
+    fn spec_test_136() {
         let original = r##"<del>
 
 *foo*
 
-</del>"##;
+</del>
+"##;
         let expected = r##"<del>
 <p><em>foo</em></p>
 </del>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_134() {
-        let original = r##"<del>*foo*</del>"##;
+    fn spec_test_137() {
+        let original = r##"<del>*foo*</del>
+"##;
         let expected = r##"<p><del><em>foo</em></del></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_135() {
+    fn spec_test_138() {
         let original = r##"<pre language="haskell"><code>
 import Text.HTML.TagSoup
 
 main :: IO ()
 main = print $ parseTags tags
 </code></pre>
-okay"##;
+okay
+"##;
         let expected = r##"<pre language="haskell"><code>
 import Text.HTML.TagSoup
 
@@ -3233,28 +3445,29 @@ main = print $ parseTags tags
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_136() {
+    fn spec_test_139() {
         let original = r##"<script type="text/javascript">
 // JavaScript example
 
 document.getElementById("demo").innerHTML = "Hello JavaScript!";
 </script>
-okay"##;
+okay
+"##;
         let expected = r##"<script type="text/javascript">
 // JavaScript example
 
@@ -3263,29 +3476,30 @@ document.getElementById("demo").innerHTML = "Hello JavaScript!";
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_137() {
+    fn spec_test_140() {
         let original = r##"<style
   type="text/css">
 h1 {color:red;}
 
 p {color:blue;}
 </style>
-okay"##;
+okay
+"##;
         let expected = r##"<style
   type="text/css">
 h1 {color:red;}
@@ -3295,52 +3509,54 @@ p {color:blue;}
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_138() {
+    fn spec_test_141() {
         let original = r##"<style
   type="text/css">
 
-foo"##;
+foo
+"##;
         let expected = r##"<style
   type="text/css">
 
 foo
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_139() {
+    fn spec_test_142() {
         let original = r##"> <div>
 > foo
 
-bar"##;
+bar
+"##;
         let expected = r##"<blockquote>
 <div>
 foo
@@ -3348,24 +3564,25 @@ foo
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_140() {
+    fn spec_test_143() {
         let original = r##"- <div>
-- foo"##;
+- foo
+"##;
         let expected = r##"<ul>
 <li>
 <div>
@@ -3374,95 +3591,99 @@ foo
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_141() {
+    fn spec_test_144() {
         let original = r##"<style>p{color:red;}</style>
-*foo*"##;
+*foo*
+"##;
         let expected = r##"<style>p{color:red;}</style>
 <p><em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_142() {
+    fn spec_test_145() {
         let original = r##"<!-- foo -->*bar*
-*baz*"##;
+*baz*
+"##;
         let expected = r##"<!-- foo -->*bar*
 <p><em>baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_143() {
+    fn spec_test_146() {
         let original = r##"<script>
 foo
-</script>1. *bar*"##;
+</script>1. *bar*
+"##;
         let expected = r##"<script>
 foo
 </script>1. *bar*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_144() {
+    fn spec_test_147() {
         let original = r##"<!-- Foo
 
 bar
    baz -->
-okay"##;
+okay
+"##;
         let expected = r##"<!-- Foo
 
 bar
@@ -3470,28 +3691,29 @@ bar
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_145() {
+    fn spec_test_148() {
         let original = r##"<?php
 
   echo '>';
 
 ?>
-okay"##;
+okay
+"##;
         let expected = r##"<?php
 
   echo '>';
@@ -3500,42 +3722,43 @@ okay"##;
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_146() {
-        let original = r##"<!DOCTYPE html>"##;
+    fn spec_test_149() {
+        let original = r##"<!DOCTYPE html>
+"##;
         let expected = r##"<!DOCTYPE html>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_147() {
+    fn spec_test_150() {
         let original = r##"<![CDATA[
 function matchwo(a,b)
 {
@@ -3548,7 +3771,8 @@ function matchwo(a,b)
   }
 }
 ]]>
-okay"##;
+okay
+"##;
         let expected = r##"<![CDATA[
 function matchwo(a,b)
 {
@@ -3564,196 +3788,203 @@ function matchwo(a,b)
 <p>okay</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_148() {
+    fn spec_test_151() {
         let original = r##"  <!-- foo -->
 
-    <!-- foo -->"##;
+    <!-- foo -->
+"##;
         let expected = r##"  <!-- foo -->
 <pre><code>&lt;!-- foo --&gt;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_149() {
+    fn spec_test_152() {
         let original = r##"  <div>
 
-    <div>"##;
+    <div>
+"##;
         let expected = r##"  <div>
 <pre><code>&lt;div&gt;
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_150() {
+    fn spec_test_153() {
         let original = r##"Foo
 <div>
 bar
-</div>"##;
+</div>
+"##;
         let expected = r##"<p>Foo</p>
 <div>
 bar
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_151() {
+    fn spec_test_154() {
         let original = r##"<div>
 bar
 </div>
-*foo*"##;
+*foo*
+"##;
         let expected = r##"<div>
 bar
 </div>
 *foo*
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_152() {
+    fn spec_test_155() {
         let original = r##"Foo
 <a href="bar">
-baz"##;
+baz
+"##;
         let expected = r##"<p>Foo
 <a href="bar">
 baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_153() {
+    fn spec_test_156() {
         let original = r##"<div>
 
 *Emphasized* text.
 
-</div>"##;
+</div>
+"##;
         let expected = r##"<div>
 <p><em>Emphasized</em> text.</p>
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_154() {
+    fn spec_test_157() {
         let original = r##"<div>
 *Emphasized* text.
-</div>"##;
+</div>
+"##;
         let expected = r##"<div>
 *Emphasized* text.
 </div>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_155() {
+    fn spec_test_158() {
         let original = r##"<table>
 
 <tr>
@@ -3764,7 +3995,8 @@ Hi
 
 </tr>
 
-</table>"##;
+</table>
+"##;
         let expected = r##"<table>
 <tr>
 <td>
@@ -3774,22 +4006,22 @@ Hi
 </table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_156() {
+    fn spec_test_159() {
         let original = r##"<table>
 
   <tr>
@@ -3800,7 +4032,8 @@ Hi
 
   </tr>
 
-</table>"##;
+</table>
+"##;
         let expected = r##"<table>
   <tr>
 <pre><code>&lt;td&gt;
@@ -3811,121 +4044,126 @@ Hi
 </table>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_157() {
-        let original = r##"[foo]: /url "title"
-
-[foo]"##;
-        let expected = r##"<p><a href="/url" title="title">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_158() {
-        let original = r##"   [foo]: 
-      /url  
-           'the title'  
-
-[foo]"##;
-        let expected = r##"<p><a href="/url" title="the title">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_159() {
-        let original = r##"[Foo*bar\]]:my_(url) 'title (with parens)'
-
-[Foo*bar\]]"##;
-        let expected = r##"<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_160() {
-        let original = r##"[Foo bar]:
-<my%20url>
-'title'
+        let original = r##"[foo]: /url "title"
 
-[Foo bar]"##;
-        let expected = r##"<p><a href="my%20url" title="title">Foo bar</a></p>
+[foo]
+"##;
+        let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_161() {
+        let original = r##"   [foo]: 
+      /url  
+           'the title'  
+
+[foo]
+"##;
+        let expected = r##"<p><a href="/url" title="the title">foo</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_162() {
+        let original = r##"[Foo*bar\]]:my_(url) 'title (with parens)'
+
+[Foo*bar\]]
+"##;
+        let expected = r##"<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_163() {
+        let original = r##"[Foo bar]:
+<my url>
+'title'
+
+[Foo bar]
+"##;
+        let expected = r##"<p><a href="my%20url" title="title">Foo bar</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_164() {
         let original = r##"[foo]: /url '
 title
 line1
 line2
 '
 
-[foo]"##;
+[foo]
+"##;
         let expected = r##"<p><a href="/url" title="
 title
 line1
@@ -3933,388 +4171,428 @@ line2
 ">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_162() {
+    fn spec_test_165() {
         let original = r##"[foo]: /url 'title
 
 with blank line'
 
-[foo]"##;
+[foo]
+"##;
         let expected = r##"<p>[foo]: /url 'title</p>
 <p>with blank line'</p>
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_163() {
-        let original = r##"[foo]:
-/url
-
-[foo]"##;
-        let expected = r##"<p><a href="/url">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_164() {
-        let original = r##"[foo]:
-
-[foo]"##;
-        let expected = r##"<p>[foo]:</p>
-<p>[foo]</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_165() {
-        let original = r##"[foo]: /url\bar\*baz "foo\"bar\baz"
-
-[foo]"##;
-        let expected = r##"<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_166() {
-        let original = r##"[foo]
+        let original = r##"[foo]:
+/url
 
-[foo]: url"##;
-        let expected = r##"<p><a href="url">foo</a></p>
+[foo]
+"##;
+        let expected = r##"<p><a href="/url">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_167() {
-        let original = r##"[foo]
+        let original = r##"[foo]:
 
-[foo]: first
-[foo]: second"##;
-        let expected = r##"<p><a href="first">foo</a></p>
+[foo]
+"##;
+        let expected = r##"<p>[foo]:</p>
+<p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_168() {
-        let original = r##"[FOO]: /url
+        let original = r##"[foo]: <bar>(baz)
 
-[Foo]"##;
-        let expected = r##"<p><a href="/url">Foo</a></p>
+[foo]
+"##;
+        let expected = r##"<p>[foo]: <bar>(baz)</p>
+<p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_169() {
-        let original = r##"[ΑΓΩ]: /φου
+        let original = r##"[foo]: /url\bar\*baz "foo\"bar\baz"
 
-[αγω]"##;
-        let expected = r##"<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
+[foo]
+"##;
+        let expected = r##"<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_170() {
-        let original = r##"[foo]: /url"##;
-        let expected = r##""##;
+        let original = r##"[foo]
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+[foo]: url
+"##;
+        let expected = r##"<p><a href="url">foo</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_171() {
-        let original = r##"[
-foo
-]: /url
-bar"##;
-        let expected = r##"<p>bar</p>
+        let original = r##"[foo]
+
+[foo]: first
+[foo]: second
+"##;
+        let expected = r##"<p><a href="first">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_172() {
-        let original = r##"[foo]: /url "title" ok"##;
-        let expected = r##"<p>[foo]: /url &quot;title&quot; ok</p>
+        let original = r##"[FOO]: /url
+
+[Foo]
+"##;
+        let expected = r##"<p><a href="/url">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_173() {
-        let original = r##"[foo]: /url
-"title" ok"##;
-        let expected = r##"<p>&quot;title&quot; ok</p>
+        let original = r##"[ΑΓΩ]: /φου
+
+[αγω]
+"##;
+        let expected = r##"<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_174() {
+        let original = r##"[foo]: /url
+"##;
+        let expected = r##""##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_175() {
+        let original = r##"[
+foo
+]: /url
+bar
+"##;
+        let expected = r##"<p>bar</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_176() {
+        let original = r##"[foo]: /url "title" ok
+"##;
+        let expected = r##"<p>[foo]: /url &quot;title&quot; ok</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_177() {
+        let original = r##"[foo]: /url
+"title" ok
+"##;
+        let expected = r##"<p>&quot;title&quot; ok</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_178() {
         let original = r##"    [foo]: /url "title"
 
-[foo]"##;
+[foo]
+"##;
         let expected = r##"<pre><code>[foo]: /url &quot;title&quot;
 </code></pre>
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_175() {
+    fn spec_test_179() {
         let original = r##"```
 [foo]: /url
 ```
 
-[foo]"##;
+[foo]
+"##;
         let expected = r##"<pre><code>[foo]: /url
 </code></pre>
 <p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_176() {
+    fn spec_test_180() {
         let original = r##"Foo
 [bar]: /baz
 
-[bar]"##;
+[bar]
+"##;
         let expected = r##"<p>Foo
 [bar]: /baz</p>
 <p>[bar]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_177() {
+    fn spec_test_181() {
         let original = r##"# [Foo]
 [foo]: /url
-> bar"##;
+> bar
+"##;
         let expected = r##"<h1><a href="/url">Foo</a></h1>
 <blockquote>
 <p>bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_178() {
+    fn spec_test_182() {
         let original = r##"[foo]: /foo-url "foo"
 [bar]: /bar-url
   "bar"
@@ -4322,239 +4600,249 @@ bar"##;
 
 [foo],
 [bar],
-[baz]"##;
+[baz]
+"##;
         let expected = r##"<p><a href="/foo-url" title="foo">foo</a>,
 <a href="/bar-url" title="bar">bar</a>,
 <a href="/baz-url">baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_179() {
+    fn spec_test_183() {
         let original = r##"[foo]
 
-> [foo]: /url"##;
+> [foo]: /url
+"##;
         let expected = r##"<p><a href="/url">foo</a></p>
 <blockquote>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_180() {
+    fn spec_test_184() {
         let original = r##"aaa
 
-bbb"##;
+bbb
+"##;
         let expected = r##"<p>aaa</p>
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_181() {
+    fn spec_test_185() {
         let original = r##"aaa
 bbb
 
 ccc
-ddd"##;
+ddd
+"##;
         let expected = r##"<p>aaa
 bbb</p>
 <p>ccc
 ddd</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_182() {
+    fn spec_test_186() {
         let original = r##"aaa
 
 
-bbb"##;
+bbb
+"##;
         let expected = r##"<p>aaa</p>
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_183() {
+    fn spec_test_187() {
         let original = r##"  aaa
- bbb"##;
+ bbb
+"##;
         let expected = r##"<p>aaa
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_184() {
+    fn spec_test_188() {
         let original = r##"aaa
              bbb
-                                       ccc"##;
+                                       ccc
+"##;
         let expected = r##"<p>aaa
 bbb
 ccc</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_185() {
+    fn spec_test_189() {
         let original = r##"   aaa
-bbb"##;
+bbb
+"##;
         let expected = r##"<p>aaa
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_186() {
+    fn spec_test_190() {
         let original = r##"    aaa
-bbb"##;
+bbb
+"##;
         let expected = r##"<pre><code>aaa
 </code></pre>
 <p>bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_187() {
+    fn spec_test_191() {
         let original = r##"aaa     
-bbb     "##;
+bbb     
+"##;
         let expected = r##"<p>aaa<br />
 bbb</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_188() {
+    fn spec_test_192() {
         let original = r##"  
 
 aaa
@@ -4562,133 +4850,32 @@ aaa
 
 # aaa
 
-  "##;
+  
+"##;
         let expected = r##"<p>aaa</p>
 <h1>aaa</h1>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_189() {
-        let original = r##"> # Foo
-> bar
-> baz"##;
-        let expected = r##"<blockquote>
-<h1>Foo</h1>
-<p>bar
-baz</p>
-</blockquote>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_190() {
-        let original = r##"># Foo
->bar
-> baz"##;
-        let expected = r##"<blockquote>
-<h1>Foo</h1>
-<p>bar
-baz</p>
-</blockquote>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_191() {
-        let original = r##"   > # Foo
-   > bar
- > baz"##;
-        let expected = r##"<blockquote>
-<h1>Foo</h1>
-<p>bar
-baz</p>
-</blockquote>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_192() {
-        let original = r##"    > # Foo
-    > bar
-    > baz"##;
-        let expected = r##"<pre><code>&gt; # Foo
-&gt; bar
-&gt; baz
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_193() {
         let original = r##"> # Foo
 > bar
-baz"##;
+> baz
+"##;
         let expected = r##"<blockquote>
 <h1>Foo</h1>
 <p>bar
@@ -4696,25 +4883,133 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_194() {
+        let original = r##"># Foo
+>bar
+> baz
+"##;
+        let expected = r##"<blockquote>
+<h1>Foo</h1>
+<p>bar
+baz</p>
+</blockquote>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_195() {
+        let original = r##"   > # Foo
+   > bar
+ > baz
+"##;
+        let expected = r##"<blockquote>
+<h1>Foo</h1>
+<p>bar
+baz</p>
+</blockquote>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_196() {
+        let original = r##"    > # Foo
+    > bar
+    > baz
+"##;
+        let expected = r##"<pre><code>&gt; # Foo
+&gt; bar
+&gt; baz
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_197() {
+        let original = r##"> # Foo
+> bar
+baz
+"##;
+        let expected = r##"<blockquote>
+<h1>Foo</h1>
+<p>bar
+baz</p>
+</blockquote>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_198() {
         let original = r##"> bar
 baz
-> foo"##;
+> foo
+"##;
         let expected = r##"<blockquote>
 <p>bar
 baz
@@ -4722,48 +5017,50 @@ foo</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_195() {
+    fn spec_test_199() {
         let original = r##"> foo
----"##;
+---
+"##;
         let expected = r##"<blockquote>
 <p>foo</p>
 </blockquote>
 <hr />
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_196() {
+    fn spec_test_200() {
         let original = r##"> - foo
-- bar"##;
+- bar
+"##;
         let expected = r##"<blockquote>
 <ul>
 <li>foo</li>
@@ -4774,24 +5071,25 @@ foo</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_197() {
+    fn spec_test_201() {
         let original = r##">     foo
-    bar"##;
+    bar
+"##;
         let expected = r##"<blockquote>
 <pre><code>foo
 </code></pre>
@@ -4800,25 +5098,26 @@ foo</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_198() {
+    fn spec_test_202() {
         let original = r##"> ```
 foo
-```"##;
+```
+"##;
         let expected = r##"<blockquote>
 <pre><code></code></pre>
 </blockquote>
@@ -4826,117 +5125,122 @@ foo
 <pre><code></code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_199() {
+    fn spec_test_203() {
         let original = r##"> foo
-    - bar"##;
+    - bar
+"##;
         let expected = r##"<blockquote>
 <p>foo
 - bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_200() {
-        let original = r##">"##;
+    fn spec_test_204() {
+        let original = r##">
+"##;
         let expected = r##"<blockquote>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_201() {
+    fn spec_test_205() {
         let original = r##">
 >  
-> "##;
+> 
+"##;
         let expected = r##"<blockquote>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_202() {
+    fn spec_test_206() {
         let original = r##">
 > foo
->  "##;
+>  
+"##;
         let expected = r##"<blockquote>
 <p>foo</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_203() {
+    fn spec_test_207() {
         let original = r##"> foo
 
-> bar"##;
+> bar
+"##;
         let expected = r##"<blockquote>
 <p>foo</p>
 </blockquote>
@@ -4945,98 +5249,102 @@ foo
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_204() {
+    fn spec_test_208() {
         let original = r##"> foo
-> bar"##;
+> bar
+"##;
         let expected = r##"<blockquote>
 <p>foo
 bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_205() {
+    fn spec_test_209() {
         let original = r##"> foo
 >
-> bar"##;
+> bar
+"##;
         let expected = r##"<blockquote>
 <p>foo</p>
 <p>bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_206() {
+    fn spec_test_210() {
         let original = r##"foo
-> bar"##;
+> bar
+"##;
         let expected = r##"<p>foo</p>
 <blockquote>
 <p>bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_207() {
+    fn spec_test_211() {
         let original = r##"> aaa
 ***
-> bbb"##;
+> bbb
+"##;
         let expected = r##"<blockquote>
 <p>aaa</p>
 </blockquote>
@@ -5046,98 +5354,102 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_208() {
+    fn spec_test_212() {
         let original = r##"> bar
-baz"##;
+baz
+"##;
         let expected = r##"<blockquote>
 <p>bar
 baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_209() {
+    fn spec_test_213() {
         let original = r##"> bar
 
-baz"##;
+baz
+"##;
         let expected = r##"<blockquote>
 <p>bar</p>
 </blockquote>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_210() {
+    fn spec_test_214() {
         let original = r##"> bar
 >
-baz"##;
+baz
+"##;
         let expected = r##"<blockquote>
 <p>bar</p>
 </blockquote>
 <p>baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_211() {
+    fn spec_test_215() {
         let original = r##"> > > foo
-bar"##;
+bar
+"##;
         let expected = r##"<blockquote>
 <blockquote>
 <blockquote>
@@ -5148,25 +5460,26 @@ bar</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_212() {
+    fn spec_test_216() {
         let original = r##">>> foo
 > bar
->>baz"##;
+>>baz
+"##;
         let expected = r##"<blockquote>
 <blockquote>
 <blockquote>
@@ -5178,25 +5491,26 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_213() {
+    fn spec_test_217() {
         let original = r##">     code
 
->    not code"##;
+>    not code
+"##;
         let expected = r##"<blockquote>
 <pre><code>code
 </code></pre>
@@ -5206,28 +5520,29 @@ baz</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_214() {
+    fn spec_test_218() {
         let original = r##"A paragraph
 with two lines.
 
     indented code
 
-> A block quote."##;
+> A block quote.
+"##;
         let expected = r##"<p>A paragraph
 with two lines.</p>
 <pre><code>indented code
@@ -5237,28 +5552,29 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_215() {
+    fn spec_test_219() {
         let original = r##"1.  A paragraph
     with two lines.
 
         indented code
 
-    > A block quote."##;
+    > A block quote.
+"##;
         let expected = r##"<ol>
 <li>
 <p>A paragraph
@@ -5272,50 +5588,52 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_216() {
+    fn spec_test_220() {
         let original = r##"- one
 
- two"##;
+ two
+"##;
         let expected = r##"<ul>
 <li>one</li>
 </ul>
 <p>two</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_217() {
+    fn spec_test_221() {
         let original = r##"- one
 
-  two"##;
+  two
+"##;
         let expected = r##"<ul>
 <li>
 <p>one</p>
@@ -5324,25 +5642,26 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_218() {
+    fn spec_test_222() {
         let original = r##" -    one
 
-     two"##;
+     two
+"##;
         let expected = r##"<ul>
 <li>one</li>
 </ul>
@@ -5350,25 +5669,26 @@ with two lines.</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_219() {
+    fn spec_test_223() {
         let original = r##" -    one
 
-      two"##;
+      two
+"##;
         let expected = r##"<ul>
 <li>
 <p>one</p>
@@ -5377,25 +5697,26 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_220() {
+    fn spec_test_224() {
         let original = r##"   > > 1.  one
 >>
->>     two"##;
+>>     two
+"##;
         let expected = r##"<blockquote>
 <blockquote>
 <ol>
@@ -5408,25 +5729,26 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_221() {
+    fn spec_test_225() {
         let original = r##">>- one
 >>
-  >  > two"##;
+  >  > two
+"##;
         let expected = r##"<blockquote>
 <blockquote>
 <ul>
@@ -5437,49 +5759,51 @@ with two lines.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_222() {
+    fn spec_test_226() {
         let original = r##"-one
 
-2.two"##;
+2.two
+"##;
         let expected = r##"<p>-one</p>
 <p>2.two</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_223() {
+    fn spec_test_227() {
         let original = r##"- foo
 
 
-  bar"##;
+  bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -5488,22 +5812,22 @@ with two lines.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_224() {
+    fn spec_test_228() {
         let original = r##"1.  foo
 
     ```
@@ -5512,7 +5836,8 @@ with two lines.</p>
 
     baz
 
-    > bam"##;
+    > bam
+"##;
         let expected = r##"<ol>
 <li>
 <p>foo</p>
@@ -5526,28 +5851,29 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_225() {
+    fn spec_test_229() {
         let original = r##"- Foo
 
       bar
 
 
-      baz"##;
+      baz
+"##;
         let expected = r##"<ul>
 <li>
 <p>Foo</p>
@@ -5560,131 +5886,137 @@ baz
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_226() {
-        let original = r##"123456789. ok"##;
+    fn spec_test_230() {
+        let original = r##"123456789. ok
+"##;
         let expected = r##"<ol start="123456789">
 <li>ok</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_227() {
-        let original = r##"1234567890. not ok"##;
+    fn spec_test_231() {
+        let original = r##"1234567890. not ok
+"##;
         let expected = r##"<p>1234567890. not ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_228() {
-        let original = r##"0. ok"##;
+    fn spec_test_232() {
+        let original = r##"0. ok
+"##;
         let expected = r##"<ol start="0">
 <li>ok</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_229() {
-        let original = r##"003. ok"##;
+    fn spec_test_233() {
+        let original = r##"003. ok
+"##;
         let expected = r##"<ol start="3">
 <li>ok</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_230() {
-        let original = r##"-1. not ok"##;
+    fn spec_test_234() {
+        let original = r##"-1. not ok
+"##;
         let expected = r##"<p>-1. not ok</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_231() {
+    fn spec_test_235() {
         let original = r##"- foo
 
-      bar"##;
+      bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -5694,25 +6026,26 @@ baz
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_232() {
+    fn spec_test_236() {
         let original = r##"  10.  foo
 
-           bar"##;
+           bar
+"##;
         let expected = r##"<ol start="10">
 <li>
 <p>foo</p>
@@ -5722,27 +6055,28 @@ baz
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_233() {
+    fn spec_test_237() {
         let original = r##"    indented code
 
 paragraph
 
-    more code"##;
+    more code
+"##;
         let expected = r##"<pre><code>indented code
 </code></pre>
 <p>paragraph</p>
@@ -5750,27 +6084,28 @@ paragraph
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_234() {
+    fn spec_test_238() {
         let original = r##"1.     indented code
 
    paragraph
 
-       more code"##;
+       more code
+"##;
         let expected = r##"<ol>
 <li>
 <pre><code>indented code
@@ -5782,27 +6117,28 @@ paragraph
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_235() {
+    fn spec_test_239() {
         let original = r##"1.      indented code
 
    paragraph
 
-       more code"##;
+       more code
+"##;
         let expected = r##"<ol>
 <li>
 <pre><code> indented code
@@ -5814,73 +6150,76 @@ paragraph
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_236() {
+    fn spec_test_240() {
         let original = r##"   foo
 
-bar"##;
+bar
+"##;
         let expected = r##"<p>foo</p>
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_237() {
+    fn spec_test_241() {
         let original = r##"-    foo
 
-  bar"##;
+  bar
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 </ul>
 <p>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_238() {
+    fn spec_test_242() {
         let original = r##"-  foo
 
-   bar"##;
+   bar
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -5889,22 +6228,22 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_239() {
+    fn spec_test_243() {
         let original = r##"-
   foo
 -
@@ -5912,7 +6251,8 @@ bar"##;
   bar
   ```
 -
-      baz"##;
+      baz
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li>
@@ -5926,73 +6266,76 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_240() {
+    fn spec_test_244() {
         let original = r##"-   
-  foo"##;
+  foo
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_241() {
+    fn spec_test_245() {
         let original = r##"-
 
-  foo"##;
+  foo
+"##;
         let expected = r##"<ul>
 <li></li>
 </ul>
 <p>foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_242() {
+    fn spec_test_246() {
         let original = r##"- foo
 -
-- bar"##;
+- bar
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li></li>
@@ -6000,25 +6343,26 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_243() {
+    fn spec_test_247() {
         let original = r##"- foo
 -   
-- bar"##;
+- bar
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li></li>
@@ -6026,25 +6370,26 @@ bar"##;
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_244() {
+    fn spec_test_248() {
         let original = r##"1. foo
 2.
-3. bar"##;
+3. bar
+"##;
         let expected = r##"<ol>
 <li>foo</li>
 <li></li>
@@ -6052,77 +6397,80 @@ bar"##;
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_245() {
-        let original = r##"*"##;
+    fn spec_test_249() {
+        let original = r##"*
+"##;
         let expected = r##"<ul>
 <li></li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_246() {
+    fn spec_test_250() {
         let original = r##"foo
 *
 
 foo
-1."##;
+1.
+"##;
         let expected = r##"<p>foo
 *</p>
 <p>foo
 1.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_247() {
+    fn spec_test_251() {
         let original = r##" 1.  A paragraph
      with two lines.
 
          indented code
 
-     > A block quote."##;
+     > A block quote.
+"##;
         let expected = r##"<ol>
 <li>
 <p>A paragraph
@@ -6136,28 +6484,29 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_248() {
+    fn spec_test_252() {
         let original = r##"  1.  A paragraph
       with two lines.
 
           indented code
 
-      > A block quote."##;
+      > A block quote.
+"##;
         let expected = r##"<ol>
 <li>
 <p>A paragraph
@@ -6171,28 +6520,29 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_249() {
+    fn spec_test_253() {
         let original = r##"   1.  A paragraph
        with two lines.
 
            indented code
 
-       > A block quote."##;
+       > A block quote.
+"##;
         let expected = r##"<ol>
 <li>
 <p>A paragraph
@@ -6206,28 +6556,29 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_250() {
+    fn spec_test_254() {
         let original = r##"    1.  A paragraph
         with two lines.
 
             indented code
 
-        > A block quote."##;
+        > A block quote.
+"##;
         let expected = r##"<pre><code>1.  A paragraph
     with two lines.
 
@@ -6237,28 +6588,29 @@ with two lines.</p>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_251() {
+    fn spec_test_255() {
         let original = r##"  1.  A paragraph
 with two lines.
 
           indented code
 
-      > A block quote."##;
+      > A block quote.
+"##;
         let expected = r##"<ol>
 <li>
 <p>A paragraph
@@ -6272,48 +6624,50 @@ with two lines.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_252() {
+    fn spec_test_256() {
         let original = r##"  1.  A paragraph
-    with two lines."##;
+    with two lines.
+"##;
         let expected = r##"<ol>
 <li>A paragraph
 with two lines.</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_253() {
+    fn spec_test_257() {
         let original = r##"> 1. > Blockquote
-continued here."##;
+continued here.
+"##;
         let expected = r##"<blockquote>
 <ol>
 <li>
@@ -6326,24 +6680,25 @@ continued here.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_254() {
+    fn spec_test_258() {
         let original = r##"> 1. > Blockquote
-> continued here."##;
+> continued here.
+"##;
         let expected = r##"<blockquote>
 <ol>
 <li>
@@ -6356,26 +6711,27 @@ continued here.</p>
 </blockquote>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_255() {
+    fn spec_test_259() {
         let original = r##"- foo
   - bar
     - baz
-      - boo"##;
+      - boo
+"##;
         let expected = r##"<ul>
 <li>foo
 <ul>
@@ -6393,26 +6749,27 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_256() {
+    fn spec_test_260() {
         let original = r##"- foo
  - bar
   - baz
-   - boo"##;
+   - boo
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li>bar</li>
@@ -6421,24 +6778,25 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_257() {
+    fn spec_test_261() {
         let original = r##"10) foo
-    - bar"##;
+    - bar
+"##;
         let expected = r##"<ol start="10">
 <li>foo
 <ul>
@@ -6448,24 +6806,25 @@ continued here.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_258() {
+    fn spec_test_262() {
         let original = r##"10) foo
-   - bar"##;
+   - bar
+"##;
         let expected = r##"<ol start="10">
 <li>foo</li>
 </ol>
@@ -6474,23 +6833,24 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_259() {
-        let original = r##"- - foo"##;
+    fn spec_test_263() {
+        let original = r##"- - foo
+"##;
         let expected = r##"<ul>
 <li>
 <ul>
@@ -6500,23 +6860,24 @@ continued here.</p>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_260() {
-        let original = r##"1. - 2. foo"##;
+    fn spec_test_264() {
+        let original = r##"1. - 2. foo
+"##;
         let expected = r##"<ol>
 <li>
 <ul>
@@ -6530,26 +6891,27 @@ continued here.</p>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_261() {
+    fn spec_test_265() {
         let original = r##"- # Foo
 - Bar
   ---
-  baz"##;
+  baz
+"##;
         let expected = r##"<ul>
 <li>
 <h1>Foo</h1>
@@ -6560,25 +6922,26 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_262() {
+    fn spec_test_266() {
         let original = r##"- foo
 - bar
-+ baz"##;
++ baz
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li>bar</li>
@@ -6588,25 +6951,26 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_263() {
+    fn spec_test_267() {
         let original = r##"1. foo
 2. bar
-3) baz"##;
+3) baz
+"##;
         let expected = r##"<ol>
 <li>foo</li>
 <li>bar</li>
@@ -6616,25 +6980,26 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_264() {
+    fn spec_test_268() {
         let original = r##"Foo
 - bar
-- baz"##;
+- baz
+"##;
         let expected = r##"<p>Foo</p>
 <ul>
 <li>bar</li>
@@ -6642,74 +7007,77 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_265() {
+    fn spec_test_269() {
         let original = r##"The number of windows in my house is
-14.  The number of doors is 6."##;
+14.  The number of doors is 6.
+"##;
         let expected = r##"<p>The number of windows in my house is
 14.  The number of doors is 6.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_266() {
+    fn spec_test_270() {
         let original = r##"The number of windows in my house is
-1.  The number of doors is 6."##;
+1.  The number of doors is 6.
+"##;
         let expected = r##"<p>The number of windows in my house is</p>
 <ol>
 <li>The number of doors is 6.</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_267() {
+    fn spec_test_271() {
         let original = r##"- foo
 
 - bar
 
 
-- baz"##;
+- baz
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -6723,28 +7091,29 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_268() {
+    fn spec_test_272() {
         let original = r##"- foo
   - bar
     - baz
 
 
-      bim"##;
+      bim
+"##;
         let expected = r##"<ul>
 <li>foo
 <ul>
@@ -6761,29 +7130,30 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_269() {
+    fn spec_test_273() {
         let original = r##"- foo
 - bar
 
 <!-- -->
 
 - baz
-- bim"##;
+- bim
+"##;
         let expected = r##"<ul>
 <li>foo</li>
 <li>bar</li>
@@ -6795,22 +7165,22 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_270() {
+    fn spec_test_274() {
         let original = r##"-   foo
 
     notcode
@@ -6819,7 +7189,8 @@ baz</li>
 
 <!-- -->
 
-    code"##;
+    code
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -6834,31 +7205,30 @@ baz</li>
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_271() {
+    fn spec_test_275() {
         let original = r##"- a
  - b
   - c
    - d
-    - e
-   - f
-  - g
- - h
-- i"##;
+  - e
+ - f
+- g
+"##;
         let expected = r##"<ul>
 <li>a</li>
 <li>b</li>
@@ -6867,32 +7237,31 @@ baz</li>
 <li>e</li>
 <li>f</li>
 <li>g</li>
-<li>h</li>
-<li>i</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_272() {
+    fn spec_test_276() {
         let original = r##"1. a
 
   2. b
 
-    3. c"##;
+   3. c
+"##;
         let expected = r##"<ol>
 <li>
 <p>a</p>
@@ -6906,26 +7275,92 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_273() {
+    fn spec_test_277() {
+        let original = r##"- a
+ - b
+  - c
+   - d
+    - e
+"##;
+        let expected = r##"<ul>
+<li>a</li>
+<li>b</li>
+<li>c</li>
+<li>d
+- e</li>
+</ul>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_278() {
+        let original = r##"1. a
+
+  2. b
+
+    3. c
+"##;
+        let expected = r##"<ol>
+<li>
+<p>a</p>
+</li>
+<li>
+<p>b</p>
+</li>
+</ol>
+<pre><code>3. c
+</code></pre>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_279() {
         let original = r##"- a
 - b
 
-- c"##;
+- c
+"##;
         let expected = r##"<ul>
 <li>
 <p>a</p>
@@ -6939,26 +7374,27 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_274() {
+    fn spec_test_280() {
         let original = r##"* a
 *
 
-* c"##;
+* c
+"##;
         let expected = r##"<ul>
 <li>
 <p>a</p>
@@ -6970,27 +7406,28 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_275() {
+    fn spec_test_281() {
         let original = r##"- a
 - b
 
   c
-- d"##;
+- d
+"##;
         let expected = r##"<ul>
 <li>
 <p>a</p>
@@ -7005,27 +7442,28 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_276() {
+    fn spec_test_282() {
         let original = r##"- a
 - b
 
   [ref]: /url
-- d"##;
+- d
+"##;
         let expected = r##"<ul>
 <li>
 <p>a</p>
@@ -7039,29 +7477,30 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_277() {
+    fn spec_test_283() {
         let original = r##"- a
 - ```
   b
 
 
   ```
-- c"##;
+- c
+"##;
         let expected = r##"<ul>
 <li>a</li>
 <li>
@@ -7074,27 +7513,28 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_278() {
+    fn spec_test_284() {
         let original = r##"- a
   - b
 
     c
-- d"##;
+- d
+"##;
         let expected = r##"<ul>
 <li>a
 <ul>
@@ -7108,26 +7548,27 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_279() {
+    fn spec_test_285() {
         let original = r##"* a
   > b
   >
-* c"##;
+* c
+"##;
         let expected = r##"<ul>
 <li>a
 <blockquote>
@@ -7138,28 +7579,29 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_280() {
+    fn spec_test_286() {
         let original = r##"- a
   > b
   ```
   c
   ```
-- d"##;
+- d
+"##;
         let expected = r##"<ul>
 <li>a
 <blockquote>
@@ -7172,46 +7614,48 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_281() {
-        let original = r##"- a"##;
+    fn spec_test_287() {
+        let original = r##"- a
+"##;
         let expected = r##"<ul>
 <li>a</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_282() {
+    fn spec_test_288() {
         let original = r##"- a
-  - b"##;
+  - b
+"##;
         let expected = r##"<ul>
 <li>a
 <ul>
@@ -7221,27 +7665,28 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_283() {
+    fn spec_test_289() {
         let original = r##"1. ```
    foo
    ```
 
-   bar"##;
+   bar
+"##;
         let expected = r##"<ol>
 <li>
 <pre><code>foo
@@ -7251,26 +7696,27 @@ baz</li>
 </ol>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_284() {
+    fn spec_test_290() {
         let original = r##"* foo
   * bar
 
-  baz"##;
+  baz
+"##;
         let expected = r##"<ul>
 <li>
 <p>foo</p>
@@ -7282,29 +7728,30 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_285() {
+    fn spec_test_291() {
         let original = r##"- a
   - b
   - c
 
 - d
   - e
-  - f"##;
+  - f
+"##;
         let expected = r##"<ul>
 <li>
 <p>a</p>
@@ -7323,82 +7770,85 @@ baz</li>
 </ul>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_286() {
-        let original = r##"`hi`lo`"##;
+    fn spec_test_292() {
+        let original = r##"`hi`lo`
+"##;
         let expected = r##"<p><code>hi</code>lo`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_287() {
-        let original = r##"\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~"##;
+    fn spec_test_293() {
+        let original = r##"\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
+"##;
         let expected = r##"<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_288() {
-        let original = r##"\	\A\a\ \3\φ\«"##;
+    fn spec_test_294() {
+        let original = r##"\	\A\a\ \3\φ\«
+"##;
         let expected = r##"<p>\	\A\a\ \3\φ\«</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_289() {
+    fn spec_test_295() {
         let original = r##"\*not emphasized*
 \<br/> not a tag
 \[not a link](/foo)
@@ -7406,7 +7856,8 @@ baz</li>
 1\. not a list
 \* not a list
 \# not a heading
-\[foo]: /url "not a reference""##;
+\[foo]: /url "not a reference"
+"##;
         let expected = r##"<p>*not emphasized*
 &lt;br/&gt; not a tag
 [not a link](/foo)
@@ -7417,6886 +7868,7356 @@ baz</li>
 [foo]: /url &quot;not a reference&quot;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_290() {
-        let original = r##"\\*emphasis*"##;
-        let expected = r##"<p>\<em>emphasis</em></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_291() {
-        let original = r##"foo\
-bar"##;
-        let expected = r##"<p>foo<br />
-bar</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_292() {
-        let original = r##"`` \[\` ``"##;
-        let expected = r##"<p><code>\[\`</code></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_293() {
-        let original = r##"    \[\]"##;
-        let expected = r##"<pre><code>\[\]
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_294() {
-        let original = r##"~~~
-\[\]
-~~~"##;
-        let expected = r##"<pre><code>\[\]
-</code></pre>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_295() {
-        let original = r##"<http://example.com?find=\*>"##;
-        let expected = r##"<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_296() {
-        let original = r##"<a href="/bar\/)">"##;
-        let expected = r##"<a href="/bar\/)">
+        let original = r##"\\*emphasis*
+"##;
+        let expected = r##"<p>\<em>emphasis</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_297() {
-        let original = r##"[foo](/bar\* "ti\*tle")"##;
-        let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
+        let original = r##"foo\
+bar
+"##;
+        let expected = r##"<p>foo<br />
+bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_298() {
-        let original = r##"[foo]
-
-[foo]: /bar\* "ti\*tle""##;
-        let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
+        let original = r##"`` \[\` ``
+"##;
+        let expected = r##"<p><code>\[\`</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_299() {
-        let original = r##"``` foo\+bar
-foo
-```"##;
-        let expected = r##"<pre><code class="language-foo+bar">foo
+        let original = r##"    \[\]
+"##;
+        let expected = r##"<pre><code>\[\]
 </code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_300() {
-        let original = r##"&nbsp; &amp; &copy; &AElig; &Dcaron;
-&frac34; &HilbertSpace; &DifferentialD;
-&ClockwiseContourIntegral; &ngE;"##;
-        let expected = r##"<p>  &amp; © Æ Ď
-¾ ℋ ⅆ
-∲ ≧̸</p>
+        let original = r##"~~~
+\[\]
+~~~
+"##;
+        let expected = r##"<pre><code>\[\]
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_301() {
-        let original = r##"&#35; &#1234; &#992; &#98765432; &#0;"##;
-        let expected = r##"<p># Ӓ Ϡ � �</p>
+        let original = r##"<http://example.com?find=\*>
+"##;
+        let expected = r##"<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_302() {
-        let original = r##"&#X22; &#XD06; &#xcab;"##;
-        let expected = r##"<p>&quot; ആ ಫ</p>
+        let original = r##"<a href="/bar\/)">
+"##;
+        let expected = r##"<a href="/bar\/)">
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_303() {
-        let original = r##"&nbsp &x; &#; &#x;
-&ThisIsNotDefined; &hi?;"##;
-        let expected = r##"<p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
-&amp;ThisIsNotDefined; &amp;hi?;</p>
+        let original = r##"[foo](/bar\* "ti\*tle")
+"##;
+        let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_304() {
-        let original = r##"&copy"##;
-        let expected = r##"<p>&amp;copy</p>
+        let original = r##"[foo]
+
+[foo]: /bar\* "ti\*tle"
+"##;
+        let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_305() {
-        let original = r##"&MadeUpEntity;"##;
-        let expected = r##"<p>&amp;MadeUpEntity;</p>
+        let original = r##"``` foo\+bar
+foo
+```
+"##;
+        let expected = r##"<pre><code class="language-foo+bar">foo
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_306() {
-        let original = r##"<a href="&ouml;&ouml;.html">"##;
-        let expected = r##"<a href="&ouml;&ouml;.html">
+        let original = r##"&nbsp; &amp; &copy; &AElig; &Dcaron;
+&frac34; &HilbertSpace; &DifferentialD;
+&ClockwiseContourIntegral; &ngE;
+"##;
+        let expected = r##"<p>  &amp; © Æ Ď
+¾ ℋ ⅆ
+∲ ≧̸</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_307() {
-        let original = r##"[foo](/f&ouml;&ouml; "f&ouml;&ouml;")"##;
-        let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
+        let original = r##"&#35; &#1234; &#992; &#0;
+"##;
+        let expected = r##"<p># Ӓ Ϡ �</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_308() {
-        let original = r##"[foo]
-
-[foo]: /f&ouml;&ouml; "f&ouml;&ouml;""##;
-        let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
+        let original = r##"&#X22; &#XD06; &#xcab;
+"##;
+        let expected = r##"<p>&quot; ആ ಫ</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_309() {
-        let original = r##"``` f&ouml;&ouml;
-foo
-```"##;
-        let expected = r##"<pre><code class="language-föö">foo
-</code></pre>
+        let original = r##"&nbsp &x; &#; &#x;
+&#987654321;
+&#abcdef0;
+&ThisIsNotDefined; &hi?;
+"##;
+        let expected = r##"<p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
+&amp;#987654321;
+&amp;#abcdef0;
+&amp;ThisIsNotDefined; &amp;hi?;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_310() {
-        let original = r##"`f&ouml;&ouml;`"##;
-        let expected = r##"<p><code>f&amp;ouml;&amp;ouml;</code></p>
+        let original = r##"&copy
+"##;
+        let expected = r##"<p>&amp;copy</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_311() {
-        let original = r##"    f&ouml;f&ouml;"##;
-        let expected = r##"<pre><code>f&amp;ouml;f&amp;ouml;
-</code></pre>
+        let original = r##"&MadeUpEntity;
+"##;
+        let expected = r##"<p>&amp;MadeUpEntity;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_312() {
-        let original = r##"`foo`"##;
-        let expected = r##"<p><code>foo</code></p>
+        let original = r##"<a href="&ouml;&ouml;.html">
+"##;
+        let expected = r##"<a href="&ouml;&ouml;.html">
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_313() {
-        let original = r##"`` foo ` bar  ``"##;
-        let expected = r##"<p><code>foo ` bar</code></p>
+        let original = r##"[foo](/f&ouml;&ouml; "f&ouml;&ouml;")
+"##;
+        let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_314() {
-        let original = r##"` `` `"##;
-        let expected = r##"<p><code>``</code></p>
+        let original = r##"[foo]
+
+[foo]: /f&ouml;&ouml; "f&ouml;&ouml;"
+"##;
+        let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_315() {
-        let original = r##"``
+        let original = r##"``` f&ouml;&ouml;
 foo
-``"##;
-        let expected = r##"<p><code>foo</code></p>
+```
+"##;
+        let expected = r##"<pre><code class="language-föö">foo
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_316() {
-        let original = r##"`foo   bar
-  baz`"##;
-        let expected = r##"<p><code>foo bar baz</code></p>
+        let original = r##"`f&ouml;&ouml;`
+"##;
+        let expected = r##"<p><code>f&amp;ouml;&amp;ouml;</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_317() {
-        let original = r##"`a  b`"##;
-        let expected = r##"<p><code>a  b</code></p>
+        let original = r##"    f&ouml;f&ouml;
+"##;
+        let expected = r##"<pre><code>f&amp;ouml;f&amp;ouml;
+</code></pre>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_318() {
-        let original = r##"`foo `` bar`"##;
-        let expected = r##"<p><code>foo `` bar</code></p>
+        let original = r##"`foo`
+"##;
+        let expected = r##"<p><code>foo</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_319() {
-        let original = r##"`foo\`bar`"##;
-        let expected = r##"<p><code>foo\</code>bar`</p>
+        let original = r##"`` foo ` bar ``
+"##;
+        let expected = r##"<p><code>foo ` bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_320() {
-        let original = r##"*foo`*`"##;
-        let expected = r##"<p>*foo<code>*</code></p>
+        let original = r##"` `` `
+"##;
+        let expected = r##"<p><code>``</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_321() {
-        let original = r##"[not a `link](/foo`)"##;
-        let expected = r##"<p>[not a <code>link](/foo</code>)</p>
+        let original = r##"`  ``  `
+"##;
+        let expected = r##"<p><code> `` </code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_322() {
-        let original = r##"`<a href="`">`"##;
-        let expected = r##"<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
+        let original = r##"` a`
+"##;
+        let expected = r##"<p><code> a</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_323() {
-        let original = r##"<a href="`">`"##;
-        let expected = r##"<p><a href="`">`</p>
+        let original = r##"` b `
+"##;
+        let expected = r##"<p><code> b </code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_324() {
-        let original = r##"`<http://foo.bar.`baz>`"##;
-        let expected = r##"<p><code>&lt;http://foo.bar.</code>baz&gt;`</p>
+        let original = r##"``
+foo
+bar  
+baz
+``
+"##;
+        let expected = r##"<p><code>foo bar   baz</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_325() {
-        let original = r##"<http://foo.bar.`baz>`"##;
-        let expected = r##"<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
+        let original = r##"``
+foo 
+``
+"##;
+        let expected = r##"<p><code>foo </code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_326() {
-        let original = r##"```foo``"##;
-        let expected = r##"<p>```foo``</p>
+        let original = r##"`foo   bar 
+baz`
+"##;
+        let expected = r##"<p><code>foo   bar  baz</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_327() {
-        let original = r##"`foo"##;
-        let expected = r##"<p>`foo</p>
+        let original = r##"`foo\`bar`
+"##;
+        let expected = r##"<p><code>foo\</code>bar`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_328() {
-        let original = r##"*foo bar*"##;
-        let expected = r##"<p><em>foo bar</em></p>
+        let original = r##"``foo`bar``
+"##;
+        let expected = r##"<p><code>foo`bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_329() {
-        let original = r##"a * foo bar*"##;
-        let expected = r##"<p>a * foo bar*</p>
+        let original = r##"` foo `` bar `
+"##;
+        let expected = r##"<p><code>foo `` bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_330() {
-        let original = r##"a*"foo"*"##;
-        let expected = r##"<p>a*&quot;foo&quot;*</p>
+        let original = r##"*foo`*`
+"##;
+        let expected = r##"<p>*foo<code>*</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_331() {
-        let original = r##"* a *"##;
-        let expected = r##"<p>* a *</p>
+        let original = r##"[not a `link](/foo`)
+"##;
+        let expected = r##"<p>[not a <code>link](/foo</code>)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_332() {
-        let original = r##"foo*bar*"##;
-        let expected = r##"<p>foo<em>bar</em></p>
+        let original = r##"`<a href="`">`
+"##;
+        let expected = r##"<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_333() {
-        let original = r##"5*6*78"##;
-        let expected = r##"<p>5<em>6</em>78</p>
+        let original = r##"<a href="`">`
+"##;
+        let expected = r##"<p><a href="`">`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_334() {
-        let original = r##"_foo bar_"##;
-        let expected = r##"<p><em>foo bar</em></p>
+        let original = r##"`<http://foo.bar.`baz>`
+"##;
+        let expected = r##"<p><code>&lt;http://foo.bar.</code>baz&gt;`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_335() {
-        let original = r##"_ foo bar_"##;
-        let expected = r##"<p>_ foo bar_</p>
+        let original = r##"<http://foo.bar.`baz>`
+"##;
+        let expected = r##"<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_336() {
-        let original = r##"a_"foo"_"##;
-        let expected = r##"<p>a_&quot;foo&quot;_</p>
+        let original = r##"```foo``
+"##;
+        let expected = r##"<p>```foo``</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_337() {
-        let original = r##"foo_bar_"##;
-        let expected = r##"<p>foo_bar_</p>
+        let original = r##"`foo
+"##;
+        let expected = r##"<p>`foo</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_338() {
-        let original = r##"5_6_78"##;
-        let expected = r##"<p>5_6_78</p>
+        let original = r##"`foo``bar``
+"##;
+        let expected = r##"<p>`foo<code>bar</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_339() {
-        let original = r##"пристаням_стремятся_"##;
-        let expected = r##"<p>пристаням_стремятся_</p>
+        let original = r##"*foo bar*
+"##;
+        let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_340() {
-        let original = r##"aa_"bb"_cc"##;
-        let expected = r##"<p>aa_&quot;bb&quot;_cc</p>
+        let original = r##"a * foo bar*
+"##;
+        let expected = r##"<p>a * foo bar*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_341() {
-        let original = r##"foo-_(bar)_"##;
-        let expected = r##"<p>foo-<em>(bar)</em></p>
+        let original = r##"a*"foo"*
+"##;
+        let expected = r##"<p>a*&quot;foo&quot;*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_342() {
-        let original = r##"_foo*"##;
-        let expected = r##"<p>_foo*</p>
+        let original = r##"* a *
+"##;
+        let expected = r##"<p>* a *</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_343() {
-        let original = r##"*foo bar *"##;
-        let expected = r##"<p>*foo bar *</p>
+        let original = r##"foo*bar*
+"##;
+        let expected = r##"<p>foo<em>bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_344() {
-        let original = r##"*foo bar
-*"##;
-        let expected = r##"<p>*foo bar
-*</p>
+        let original = r##"5*6*78
+"##;
+        let expected = r##"<p>5<em>6</em>78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_345() {
-        let original = r##"*(*foo)"##;
-        let expected = r##"<p>*(*foo)</p>
+        let original = r##"_foo bar_
+"##;
+        let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_346() {
-        let original = r##"*(*foo*)*"##;
-        let expected = r##"<p><em>(<em>foo</em>)</em></p>
+        let original = r##"_ foo bar_
+"##;
+        let expected = r##"<p>_ foo bar_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_347() {
-        let original = r##"*foo*bar"##;
-        let expected = r##"<p><em>foo</em>bar</p>
+        let original = r##"a_"foo"_
+"##;
+        let expected = r##"<p>a_&quot;foo&quot;_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_348() {
-        let original = r##"_foo bar _"##;
-        let expected = r##"<p>_foo bar _</p>
+        let original = r##"foo_bar_
+"##;
+        let expected = r##"<p>foo_bar_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_349() {
-        let original = r##"_(_foo)"##;
-        let expected = r##"<p>_(_foo)</p>
+        let original = r##"5_6_78
+"##;
+        let expected = r##"<p>5_6_78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_350() {
-        let original = r##"_(_foo_)_"##;
-        let expected = r##"<p><em>(<em>foo</em>)</em></p>
+        let original = r##"пристаням_стремятся_
+"##;
+        let expected = r##"<p>пристаням_стремятся_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_351() {
-        let original = r##"_foo_bar"##;
-        let expected = r##"<p>_foo_bar</p>
+        let original = r##"aa_"bb"_cc
+"##;
+        let expected = r##"<p>aa_&quot;bb&quot;_cc</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_352() {
-        let original = r##"_пристаням_стремятся"##;
-        let expected = r##"<p>_пристаням_стремятся</p>
+        let original = r##"foo-_(bar)_
+"##;
+        let expected = r##"<p>foo-<em>(bar)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_353() {
-        let original = r##"_foo_bar_baz_"##;
-        let expected = r##"<p><em>foo_bar_baz</em></p>
+        let original = r##"_foo*
+"##;
+        let expected = r##"<p>_foo*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_354() {
-        let original = r##"_(bar)_."##;
-        let expected = r##"<p><em>(bar)</em>.</p>
+        let original = r##"*foo bar *
+"##;
+        let expected = r##"<p>*foo bar *</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_355() {
-        let original = r##"**foo bar**"##;
-        let expected = r##"<p><strong>foo bar</strong></p>
+        let original = r##"*foo bar
+*
+"##;
+        let expected = r##"<p>*foo bar
+*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_356() {
-        let original = r##"** foo bar**"##;
-        let expected = r##"<p>** foo bar**</p>
+        let original = r##"*(*foo)
+"##;
+        let expected = r##"<p>*(*foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_357() {
-        let original = r##"a**"foo"**"##;
-        let expected = r##"<p>a**&quot;foo&quot;**</p>
+        let original = r##"*(*foo*)*
+"##;
+        let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_358() {
-        let original = r##"foo**bar**"##;
-        let expected = r##"<p>foo<strong>bar</strong></p>
+        let original = r##"*foo*bar
+"##;
+        let expected = r##"<p><em>foo</em>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_359() {
-        let original = r##"__foo bar__"##;
-        let expected = r##"<p><strong>foo bar</strong></p>
+        let original = r##"_foo bar _
+"##;
+        let expected = r##"<p>_foo bar _</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_360() {
-        let original = r##"__ foo bar__"##;
-        let expected = r##"<p>__ foo bar__</p>
+        let original = r##"_(_foo)
+"##;
+        let expected = r##"<p>_(_foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_361() {
-        let original = r##"__
-foo bar__"##;
-        let expected = r##"<p>__
-foo bar__</p>
+        let original = r##"_(_foo_)_
+"##;
+        let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_362() {
-        let original = r##"a__"foo"__"##;
-        let expected = r##"<p>a__&quot;foo&quot;__</p>
+        let original = r##"_foo_bar
+"##;
+        let expected = r##"<p>_foo_bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_363() {
-        let original = r##"foo__bar__"##;
-        let expected = r##"<p>foo__bar__</p>
+        let original = r##"_пристаням_стремятся
+"##;
+        let expected = r##"<p>_пристаням_стремятся</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_364() {
-        let original = r##"5__6__78"##;
-        let expected = r##"<p>5__6__78</p>
+        let original = r##"_foo_bar_baz_
+"##;
+        let expected = r##"<p><em>foo_bar_baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_365() {
-        let original = r##"пристаням__стремятся__"##;
-        let expected = r##"<p>пристаням__стремятся__</p>
+        let original = r##"_(bar)_.
+"##;
+        let expected = r##"<p><em>(bar)</em>.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_366() {
-        let original = r##"__foo, __bar__, baz__"##;
-        let expected = r##"<p><strong>foo, <strong>bar</strong>, baz</strong></p>
+        let original = r##"**foo bar**
+"##;
+        let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_367() {
-        let original = r##"foo-__(bar)__"##;
-        let expected = r##"<p>foo-<strong>(bar)</strong></p>
+        let original = r##"** foo bar**
+"##;
+        let expected = r##"<p>** foo bar**</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_368() {
-        let original = r##"**foo bar **"##;
-        let expected = r##"<p>**foo bar **</p>
+        let original = r##"a**"foo"**
+"##;
+        let expected = r##"<p>a**&quot;foo&quot;**</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_369() {
-        let original = r##"**(**foo)"##;
-        let expected = r##"<p>**(**foo)</p>
+        let original = r##"foo**bar**
+"##;
+        let expected = r##"<p>foo<strong>bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_370() {
-        let original = r##"*(**foo**)*"##;
-        let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
+        let original = r##"__foo bar__
+"##;
+        let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_371() {
-        let original = r##"**Gomphocarpus (*Gomphocarpus physocarpus*, syn.
-*Asclepias physocarpa*)**"##;
-        let expected = r##"<p><strong>Gomphocarpus (<em>Gomphocarpus physocarpus</em>, syn.
-<em>Asclepias physocarpa</em>)</strong></p>
+        let original = r##"__ foo bar__
+"##;
+        let expected = r##"<p>__ foo bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_372() {
-        let original = r##"**foo "*bar*" foo**"##;
-        let expected = r##"<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
+        let original = r##"__
+foo bar__
+"##;
+        let expected = r##"<p>__
+foo bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_373() {
-        let original = r##"**foo**bar"##;
-        let expected = r##"<p><strong>foo</strong>bar</p>
+        let original = r##"a__"foo"__
+"##;
+        let expected = r##"<p>a__&quot;foo&quot;__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_374() {
-        let original = r##"__foo bar __"##;
-        let expected = r##"<p>__foo bar __</p>
+        let original = r##"foo__bar__
+"##;
+        let expected = r##"<p>foo__bar__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_375() {
-        let original = r##"__(__foo)"##;
-        let expected = r##"<p>__(__foo)</p>
+        let original = r##"5__6__78
+"##;
+        let expected = r##"<p>5__6__78</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_376() {
-        let original = r##"_(__foo__)_"##;
-        let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
+        let original = r##"пристаням__стремятся__
+"##;
+        let expected = r##"<p>пристаням__стремятся__</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_377() {
-        let original = r##"__foo__bar"##;
-        let expected = r##"<p>__foo__bar</p>
+        let original = r##"__foo, __bar__, baz__
+"##;
+        let expected = r##"<p><strong>foo, <strong>bar</strong>, baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_378() {
-        let original = r##"__пристаням__стремятся"##;
-        let expected = r##"<p>__пристаням__стремятся</p>
+        let original = r##"foo-__(bar)__
+"##;
+        let expected = r##"<p>foo-<strong>(bar)</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_379() {
-        let original = r##"__foo__bar__baz__"##;
-        let expected = r##"<p><strong>foo__bar__baz</strong></p>
+        let original = r##"**foo bar **
+"##;
+        let expected = r##"<p>**foo bar **</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_380() {
-        let original = r##"__(bar)__."##;
-        let expected = r##"<p><strong>(bar)</strong>.</p>
+        let original = r##"**(**foo)
+"##;
+        let expected = r##"<p>**(**foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_381() {
-        let original = r##"*foo [bar](/url)*"##;
-        let expected = r##"<p><em>foo <a href="/url">bar</a></em></p>
+        let original = r##"*(**foo**)*
+"##;
+        let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_382() {
-        let original = r##"*foo
-bar*"##;
-        let expected = r##"<p><em>foo
-bar</em></p>
+        let original = r##"**Gomphocarpus (*Gomphocarpus physocarpus*, syn.
+*Asclepias physocarpa*)**
+"##;
+        let expected = r##"<p><strong>Gomphocarpus (<em>Gomphocarpus physocarpus</em>, syn.
+<em>Asclepias physocarpa</em>)</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_383() {
-        let original = r##"_foo __bar__ baz_"##;
-        let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
+        let original = r##"**foo "*bar*" foo**
+"##;
+        let expected = r##"<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_384() {
-        let original = r##"_foo _bar_ baz_"##;
-        let expected = r##"<p><em>foo <em>bar</em> baz</em></p>
+        let original = r##"**foo**bar
+"##;
+        let expected = r##"<p><strong>foo</strong>bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_385() {
-        let original = r##"__foo_ bar_"##;
-        let expected = r##"<p><em><em>foo</em> bar</em></p>
+        let original = r##"__foo bar __
+"##;
+        let expected = r##"<p>__foo bar __</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_386() {
-        let original = r##"*foo *bar**"##;
-        let expected = r##"<p><em>foo <em>bar</em></em></p>
+        let original = r##"__(__foo)
+"##;
+        let expected = r##"<p>__(__foo)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_387() {
-        let original = r##"*foo **bar** baz*"##;
-        let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
+        let original = r##"_(__foo__)_
+"##;
+        let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_388() {
-        let original = r##"*foo**bar**baz*"##;
-        let expected = r##"<p><em>foo<strong>bar</strong>baz</em></p>
+        let original = r##"__foo__bar
+"##;
+        let expected = r##"<p>__foo__bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_389() {
-        let original = r##"***foo** bar*"##;
-        let expected = r##"<p><em><strong>foo</strong> bar</em></p>
+        let original = r##"__пристаням__стремятся
+"##;
+        let expected = r##"<p>__пристаням__стремятся</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_390() {
-        let original = r##"*foo **bar***"##;
-        let expected = r##"<p><em>foo <strong>bar</strong></em></p>
+        let original = r##"__foo__bar__baz__
+"##;
+        let expected = r##"<p><strong>foo__bar__baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_391() {
-        let original = r##"*foo**bar***"##;
-        let expected = r##"<p><em>foo<strong>bar</strong></em></p>
+        let original = r##"__(bar)__.
+"##;
+        let expected = r##"<p><strong>(bar)</strong>.</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_392() {
-        let original = r##"*foo **bar *baz* bim** bop*"##;
-        let expected = r##"<p><em>foo <strong>bar <em>baz</em> bim</strong> bop</em></p>
+        let original = r##"*foo [bar](/url)*
+"##;
+        let expected = r##"<p><em>foo <a href="/url">bar</a></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_393() {
-        let original = r##"*foo [*bar*](/url)*"##;
-        let expected = r##"<p><em>foo <a href="/url"><em>bar</em></a></em></p>
+        let original = r##"*foo
+bar*
+"##;
+        let expected = r##"<p><em>foo
+bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_394() {
-        let original = r##"** is not an empty emphasis"##;
-        let expected = r##"<p>** is not an empty emphasis</p>
+        let original = r##"_foo __bar__ baz_
+"##;
+        let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_395() {
-        let original = r##"**** is not an empty strong emphasis"##;
-        let expected = r##"<p>**** is not an empty strong emphasis</p>
+        let original = r##"_foo _bar_ baz_
+"##;
+        let expected = r##"<p><em>foo <em>bar</em> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_396() {
-        let original = r##"**foo [bar](/url)**"##;
-        let expected = r##"<p><strong>foo <a href="/url">bar</a></strong></p>
+        let original = r##"__foo_ bar_
+"##;
+        let expected = r##"<p><em><em>foo</em> bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_397() {
-        let original = r##"**foo
-bar**"##;
-        let expected = r##"<p><strong>foo
-bar</strong></p>
+        let original = r##"*foo *bar**
+"##;
+        let expected = r##"<p><em>foo <em>bar</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_398() {
-        let original = r##"__foo _bar_ baz__"##;
-        let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
+        let original = r##"*foo **bar** baz*
+"##;
+        let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_399() {
-        let original = r##"__foo __bar__ baz__"##;
-        let expected = r##"<p><strong>foo <strong>bar</strong> baz</strong></p>
+        let original = r##"*foo**bar**baz*
+"##;
+        let expected = r##"<p><em>foo<strong>bar</strong>baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_400() {
-        let original = r##"____foo__ bar__"##;
-        let expected = r##"<p><strong><strong>foo</strong> bar</strong></p>
+        let original = r##"*foo**bar*
+"##;
+        let expected = r##"<p><em>foo**bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_401() {
-        let original = r##"**foo **bar****"##;
-        let expected = r##"<p><strong>foo <strong>bar</strong></strong></p>
+        let original = r##"***foo** bar*
+"##;
+        let expected = r##"<p><em><strong>foo</strong> bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_402() {
-        let original = r##"**foo *bar* baz**"##;
-        let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
+        let original = r##"*foo **bar***
+"##;
+        let expected = r##"<p><em>foo <strong>bar</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_403() {
-        let original = r##"**foo*bar*baz**"##;
-        let expected = r##"<p><strong>foo<em>bar</em>baz</strong></p>
+        let original = r##"*foo**bar***
+"##;
+        let expected = r##"<p><em>foo<strong>bar</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_404() {
-        let original = r##"***foo* bar**"##;
-        let expected = r##"<p><strong><em>foo</em> bar</strong></p>
+        let original = r##"*foo **bar *baz* bim** bop*
+"##;
+        let expected = r##"<p><em>foo <strong>bar <em>baz</em> bim</strong> bop</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_405() {
-        let original = r##"**foo *bar***"##;
-        let expected = r##"<p><strong>foo <em>bar</em></strong></p>
+        let original = r##"*foo [*bar*](/url)*
+"##;
+        let expected = r##"<p><em>foo <a href="/url"><em>bar</em></a></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_406() {
-        let original = r##"**foo *bar **baz**
-bim* bop**"##;
-        let expected = r##"<p><strong>foo <em>bar <strong>baz</strong>
-bim</em> bop</strong></p>
+        let original = r##"** is not an empty emphasis
+"##;
+        let expected = r##"<p>** is not an empty emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_407() {
-        let original = r##"**foo [*bar*](/url)**"##;
-        let expected = r##"<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
+        let original = r##"**** is not an empty strong emphasis
+"##;
+        let expected = r##"<p>**** is not an empty strong emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_408() {
-        let original = r##"__ is not an empty emphasis"##;
-        let expected = r##"<p>__ is not an empty emphasis</p>
+        let original = r##"**foo [bar](/url)**
+"##;
+        let expected = r##"<p><strong>foo <a href="/url">bar</a></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_409() {
-        let original = r##"____ is not an empty strong emphasis"##;
-        let expected = r##"<p>____ is not an empty strong emphasis</p>
+        let original = r##"**foo
+bar**
+"##;
+        let expected = r##"<p><strong>foo
+bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_410() {
-        let original = r##"foo ***"##;
-        let expected = r##"<p>foo ***</p>
+        let original = r##"__foo _bar_ baz__
+"##;
+        let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_411() {
-        let original = r##"foo *\**"##;
-        let expected = r##"<p>foo <em>*</em></p>
+        let original = r##"__foo __bar__ baz__
+"##;
+        let expected = r##"<p><strong>foo <strong>bar</strong> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_412() {
-        let original = r##"foo *_*"##;
-        let expected = r##"<p>foo <em>_</em></p>
+        let original = r##"____foo__ bar__
+"##;
+        let expected = r##"<p><strong><strong>foo</strong> bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_413() {
-        let original = r##"foo *****"##;
-        let expected = r##"<p>foo *****</p>
+        let original = r##"**foo **bar****
+"##;
+        let expected = r##"<p><strong>foo <strong>bar</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_414() {
-        let original = r##"foo **\***"##;
-        let expected = r##"<p>foo <strong>*</strong></p>
+        let original = r##"**foo *bar* baz**
+"##;
+        let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_415() {
-        let original = r##"foo **_**"##;
-        let expected = r##"<p>foo <strong>_</strong></p>
+        let original = r##"**foo*bar*baz**
+"##;
+        let expected = r##"<p><strong>foo<em>bar</em>baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_416() {
-        let original = r##"**foo*"##;
-        let expected = r##"<p>*<em>foo</em></p>
+        let original = r##"***foo* bar**
+"##;
+        let expected = r##"<p><strong><em>foo</em> bar</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_417() {
-        let original = r##"*foo**"##;
-        let expected = r##"<p><em>foo</em>*</p>
+        let original = r##"**foo *bar***
+"##;
+        let expected = r##"<p><strong>foo <em>bar</em></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_418() {
-        let original = r##"***foo**"##;
-        let expected = r##"<p>*<strong>foo</strong></p>
+        let original = r##"**foo *bar **baz**
+bim* bop**
+"##;
+        let expected = r##"<p><strong>foo <em>bar <strong>baz</strong>
+bim</em> bop</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_419() {
-        let original = r##"****foo*"##;
-        let expected = r##"<p>***<em>foo</em></p>
+        let original = r##"**foo [*bar*](/url)**
+"##;
+        let expected = r##"<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_420() {
-        let original = r##"**foo***"##;
-        let expected = r##"<p><strong>foo</strong>*</p>
+        let original = r##"__ is not an empty emphasis
+"##;
+        let expected = r##"<p>__ is not an empty emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_421() {
-        let original = r##"*foo****"##;
-        let expected = r##"<p><em>foo</em>***</p>
+        let original = r##"____ is not an empty strong emphasis
+"##;
+        let expected = r##"<p>____ is not an empty strong emphasis</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_422() {
-        let original = r##"foo ___"##;
-        let expected = r##"<p>foo ___</p>
+        let original = r##"foo ***
+"##;
+        let expected = r##"<p>foo ***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_423() {
-        let original = r##"foo _\__"##;
-        let expected = r##"<p>foo <em>_</em></p>
+        let original = r##"foo *\**
+"##;
+        let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_424() {
-        let original = r##"foo _*_"##;
-        let expected = r##"<p>foo <em>*</em></p>
+        let original = r##"foo *_*
+"##;
+        let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_425() {
-        let original = r##"foo _____"##;
-        let expected = r##"<p>foo _____</p>
+        let original = r##"foo *****
+"##;
+        let expected = r##"<p>foo *****</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_426() {
-        let original = r##"foo __\___"##;
-        let expected = r##"<p>foo <strong>_</strong></p>
+        let original = r##"foo **\***
+"##;
+        let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_427() {
-        let original = r##"foo __*__"##;
-        let expected = r##"<p>foo <strong>*</strong></p>
+        let original = r##"foo **_**
+"##;
+        let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_428() {
-        let original = r##"__foo_"##;
-        let expected = r##"<p>_<em>foo</em></p>
+        let original = r##"**foo*
+"##;
+        let expected = r##"<p>*<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_429() {
-        let original = r##"_foo__"##;
-        let expected = r##"<p><em>foo</em>_</p>
+        let original = r##"*foo**
+"##;
+        let expected = r##"<p><em>foo</em>*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_430() {
-        let original = r##"___foo__"##;
-        let expected = r##"<p>_<strong>foo</strong></p>
+        let original = r##"***foo**
+"##;
+        let expected = r##"<p>*<strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_431() {
-        let original = r##"____foo_"##;
-        let expected = r##"<p>___<em>foo</em></p>
+        let original = r##"****foo*
+"##;
+        let expected = r##"<p>***<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_432() {
-        let original = r##"__foo___"##;
-        let expected = r##"<p><strong>foo</strong>_</p>
+        let original = r##"**foo***
+"##;
+        let expected = r##"<p><strong>foo</strong>*</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_433() {
-        let original = r##"_foo____"##;
-        let expected = r##"<p><em>foo</em>___</p>
+        let original = r##"*foo****
+"##;
+        let expected = r##"<p><em>foo</em>***</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_434() {
-        let original = r##"**foo**"##;
-        let expected = r##"<p><strong>foo</strong></p>
+        let original = r##"foo ___
+"##;
+        let expected = r##"<p>foo ___</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_435() {
-        let original = r##"*_foo_*"##;
-        let expected = r##"<p><em><em>foo</em></em></p>
+        let original = r##"foo _\__
+"##;
+        let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_436() {
-        let original = r##"__foo__"##;
-        let expected = r##"<p><strong>foo</strong></p>
+        let original = r##"foo _*_
+"##;
+        let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_437() {
-        let original = r##"_*foo*_"##;
-        let expected = r##"<p><em><em>foo</em></em></p>
+        let original = r##"foo _____
+"##;
+        let expected = r##"<p>foo _____</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_438() {
-        let original = r##"****foo****"##;
-        let expected = r##"<p><strong><strong>foo</strong></strong></p>
+        let original = r##"foo __\___
+"##;
+        let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_439() {
-        let original = r##"____foo____"##;
-        let expected = r##"<p><strong><strong>foo</strong></strong></p>
+        let original = r##"foo __*__
+"##;
+        let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_440() {
-        let original = r##"******foo******"##;
-        let expected = r##"<p><strong><strong><strong>foo</strong></strong></strong></p>
+        let original = r##"__foo_
+"##;
+        let expected = r##"<p>_<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_441() {
-        let original = r##"***foo***"##;
-        let expected = r##"<p><strong><em>foo</em></strong></p>
+        let original = r##"_foo__
+"##;
+        let expected = r##"<p><em>foo</em>_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_442() {
-        let original = r##"_____foo_____"##;
-        let expected = r##"<p><strong><strong><em>foo</em></strong></strong></p>
+        let original = r##"___foo__
+"##;
+        let expected = r##"<p>_<strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_443() {
-        let original = r##"*foo _bar* baz_"##;
-        let expected = r##"<p><em>foo _bar</em> baz_</p>
+        let original = r##"____foo_
+"##;
+        let expected = r##"<p>___<em>foo</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_444() {
-        let original = r##"*foo __bar *baz bim__ bam*"##;
-        let expected = r##"<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
+        let original = r##"__foo___
+"##;
+        let expected = r##"<p><strong>foo</strong>_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_445() {
-        let original = r##"**foo **bar baz**"##;
-        let expected = r##"<p>**foo <strong>bar baz</strong></p>
+        let original = r##"_foo____
+"##;
+        let expected = r##"<p><em>foo</em>___</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_446() {
-        let original = r##"*foo *bar baz*"##;
-        let expected = r##"<p>*foo <em>bar baz</em></p>
+        let original = r##"**foo**
+"##;
+        let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_447() {
-        let original = r##"*[bar*](/url)"##;
-        let expected = r##"<p>*<a href="/url">bar*</a></p>
+        let original = r##"*_foo_*
+"##;
+        let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_448() {
-        let original = r##"_foo [bar_](/url)"##;
-        let expected = r##"<p>_foo <a href="/url">bar_</a></p>
+        let original = r##"__foo__
+"##;
+        let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_449() {
-        let original = r##"*<img src="foo" title="*"/>"##;
-        let expected = r##"<p>*<img src="foo" title="*"/></p>
+        let original = r##"_*foo*_
+"##;
+        let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_450() {
-        let original = r##"**<a href="**">"##;
-        let expected = r##"<p>**<a href="**"></p>
+        let original = r##"****foo****
+"##;
+        let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_451() {
-        let original = r##"__<a href="__">"##;
-        let expected = r##"<p>__<a href="__"></p>
+        let original = r##"____foo____
+"##;
+        let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_452() {
-        let original = r##"*a `*`*"##;
-        let expected = r##"<p><em>a <code>*</code></em></p>
+        let original = r##"******foo******
+"##;
+        let expected = r##"<p><strong><strong><strong>foo</strong></strong></strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_453() {
-        let original = r##"_a `_`_"##;
-        let expected = r##"<p><em>a <code>_</code></em></p>
+        let original = r##"***foo***
+"##;
+        let expected = r##"<p><em><strong>foo</strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_454() {
-        let original = r##"**a<http://foo.bar/?q=**>"##;
-        let expected = r##"<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
+        let original = r##"_____foo_____
+"##;
+        let expected = r##"<p><em><strong><strong>foo</strong></strong></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_455() {
-        let original = r##"__a<http://foo.bar/?q=__>"##;
-        let expected = r##"<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
+        let original = r##"*foo _bar* baz_
+"##;
+        let expected = r##"<p><em>foo _bar</em> baz_</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_456() {
-        let original = r##"[link](/uri "title")"##;
-        let expected = r##"<p><a href="/uri" title="title">link</a></p>
+        let original = r##"*foo __bar *baz bim__ bam*
+"##;
+        let expected = r##"<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_457() {
-        let original = r##"[link](/uri)"##;
-        let expected = r##"<p><a href="/uri">link</a></p>
+        let original = r##"**foo **bar baz**
+"##;
+        let expected = r##"<p>**foo <strong>bar baz</strong></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_458() {
-        let original = r##"[link]()"##;
-        let expected = r##"<p><a href="">link</a></p>
+        let original = r##"*foo *bar baz*
+"##;
+        let expected = r##"<p>*foo <em>bar baz</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_459() {
-        let original = r##"[link](<>)"##;
-        let expected = r##"<p><a href="">link</a></p>
+        let original = r##"*[bar*](/url)
+"##;
+        let expected = r##"<p>*<a href="/url">bar*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_460() {
-        let original = r##"[link](/my uri)"##;
-        let expected = r##"<p>[link](/my uri)</p>
+        let original = r##"_foo [bar_](/url)
+"##;
+        let expected = r##"<p>_foo <a href="/url">bar_</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_461() {
-        let original = r##"[link](</my uri>)"##;
-        let expected = r##"<p>[link](&lt;/my uri&gt;)</p>
+        let original = r##"*<img src="foo" title="*"/>
+"##;
+        let expected = r##"<p>*<img src="foo" title="*"/></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_462() {
-        let original = r##"[link](foo
-bar)"##;
-        let expected = r##"<p>[link](foo
-bar)</p>
+        let original = r##"**<a href="**">
+"##;
+        let expected = r##"<p>**<a href="**"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_463() {
-        let original = r##"[link](<foo
-bar>)"##;
-        let expected = r##"<p>[link](<foo
-bar>)</p>
+        let original = r##"__<a href="__">
+"##;
+        let expected = r##"<p>__<a href="__"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_464() {
-        let original = r##"[link](\(foo\))"##;
-        let expected = r##"<p><a href="(foo)">link</a></p>
+        let original = r##"*a `*`*
+"##;
+        let expected = r##"<p><em>a <code>*</code></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_465() {
-        let original = r##"[link](foo(and(bar)))"##;
-        let expected = r##"<p><a href="foo(and(bar))">link</a></p>
+        let original = r##"_a `_`_
+"##;
+        let expected = r##"<p><em>a <code>_</code></em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_466() {
-        let original = r##"[link](foo\(and\(bar\))"##;
-        let expected = r##"<p><a href="foo(and(bar)">link</a></p>
+        let original = r##"**a<http://foo.bar/?q=**>
+"##;
+        let expected = r##"<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_467() {
-        let original = r##"[link](<foo(and(bar)>)"##;
-        let expected = r##"<p><a href="foo(and(bar)">link</a></p>
+        let original = r##"__a<http://foo.bar/?q=__>
+"##;
+        let expected = r##"<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_468() {
-        let original = r##"[link](foo\)\:)"##;
-        let expected = r##"<p><a href="foo):">link</a></p>
+        let original = r##"[link](/uri "title")
+"##;
+        let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_469() {
+        let original = r##"[link](/uri)
+"##;
+        let expected = r##"<p><a href="/uri">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_470() {
+        let original = r##"[link]()
+"##;
+        let expected = r##"<p><a href="">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_471() {
+        let original = r##"[link](<>)
+"##;
+        let expected = r##"<p><a href="">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_472() {
+        let original = r##"[link](/my uri)
+"##;
+        let expected = r##"<p>[link](/my uri)</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_473() {
+        let original = r##"[link](</my uri>)
+"##;
+        let expected = r##"<p><a href="/my%20uri">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_474() {
+        let original = r##"[link](foo
+bar)
+"##;
+        let expected = r##"<p>[link](foo
+bar)</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_475() {
+        let original = r##"[link](<foo
+bar>)
+"##;
+        let expected = r##"<p>[link](<foo
+bar>)</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_476() {
+        let original = r##"[link](\(foo\))
+"##;
+        let expected = r##"<p><a href="(foo)">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_477() {
+        let original = r##"[link](foo(and(bar)))
+"##;
+        let expected = r##"<p><a href="foo(and(bar))">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_478() {
+        let original = r##"[link](foo\(and\(bar\))
+"##;
+        let expected = r##"<p><a href="foo(and(bar)">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_479() {
+        let original = r##"[link](<foo(and(bar)>)
+"##;
+        let expected = r##"<p><a href="foo(and(bar)">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_480() {
+        let original = r##"[link](foo\)\:)
+"##;
+        let expected = r##"<p><a href="foo):">link</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_481() {
         let original = r##"[link](#fragment)
 
 [link](http://example.com#fragment)
 
-[link](http://example.com?foo=3#frag)"##;
+[link](http://example.com?foo=3#frag)
+"##;
         let expected = r##"<p><a href="#fragment">link</a></p>
 <p><a href="http://example.com#fragment">link</a></p>
 <p><a href="http://example.com?foo=3#frag">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_470() {
-        let original = r##"[link](foo\bar)"##;
+    fn spec_test_482() {
+        let original = r##"[link](foo\bar)
+"##;
         let expected = r##"<p><a href="foo%5Cbar">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_471() {
-        let original = r##"[link](foo%20b&auml;)"##;
+    fn spec_test_483() {
+        let original = r##"[link](foo%20b&auml;)
+"##;
         let expected = r##"<p><a href="foo%20b%C3%A4">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_472() {
-        let original = r##"[link]("title")"##;
+    fn spec_test_484() {
+        let original = r##"[link]("title")
+"##;
         let expected = r##"<p><a href="%22title%22">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
-    fn spec_test_473() {
+    fn spec_test_485() {
         let original = r##"[link](/url "title")
 [link](/url 'title')
-[link](/url (title))"##;
+[link](/url (title))
+"##;
         let expected = r##"<p><a href="/url" title="title">link</a>
 <a href="/url" title="title">link</a>
 <a href="/url" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_474() {
-        let original = r##"[link](/url "title \"&quot;")"##;
-        let expected = r##"<p><a href="/url" title="title &quot;&quot;">link</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_475() {
-        let original = r##"[link](/url "title")"##;
-        let expected = r##"<p><a href="/url%C2%A0%22title%22">link</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_476() {
-        let original = r##"[link](/url "title "and" title")"##;
-        let expected = r##"<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_477() {
-        let original = r##"[link](/url 'title "and" title')"##;
-        let expected = r##"<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_478() {
-        let original = r##"[link](   /uri
-  "title"  )"##;
-        let expected = r##"<p><a href="/uri" title="title">link</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_479() {
-        let original = r##"[link] (/uri)"##;
-        let expected = r##"<p>[link] (/uri)</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_480() {
-        let original = r##"[link [foo [bar]]](/uri)"##;
-        let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_481() {
-        let original = r##"[link] bar](/uri)"##;
-        let expected = r##"<p>[link] bar](/uri)</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_482() {
-        let original = r##"[link [bar](/uri)"##;
-        let expected = r##"<p>[link <a href="/uri">bar</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_483() {
-        let original = r##"[link \[bar](/uri)"##;
-        let expected = r##"<p><a href="/uri">link [bar</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_484() {
-        let original = r##"[link *foo **bar** `#`*](/uri)"##;
-        let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_485() {
-        let original = r##"[![moon](moon.jpg)](/uri)"##;
-        let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_486() {
-        let original = r##"[foo [bar](/uri)](/uri)"##;
-        let expected = r##"<p>[foo <a href="/uri">bar</a>](/uri)</p>
+        let original = r##"[link](/url "title \"&quot;")
+"##;
+        let expected = r##"<p><a href="/url" title="title &quot;&quot;">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_487() {
-        let original = r##"[foo *[bar [baz](/uri)](/uri)*](/uri)"##;
-        let expected = r##"<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
+        let original = r##"[link](/url "title")
+"##;
+        let expected = r##"<p><a href="/url%C2%A0%22title%22">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_488() {
-        let original = r##"![[[foo](uri1)](uri2)](uri3)"##;
-        let expected = r##"<p><img src="uri3" alt="[foo](uri2)" /></p>
+        let original = r##"[link](/url "title "and" title")
+"##;
+        let expected = r##"<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_489() {
-        let original = r##"*[foo*](/uri)"##;
-        let expected = r##"<p>*<a href="/uri">foo*</a></p>
+        let original = r##"[link](/url 'title "and" title')
+"##;
+        let expected = r##"<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_490() {
-        let original = r##"[foo *bar](baz*)"##;
-        let expected = r##"<p><a href="baz*">foo *bar</a></p>
+        let original = r##"[link](   /uri
+  "title"  )
+"##;
+        let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_491() {
-        let original = r##"*foo [bar* baz]"##;
-        let expected = r##"<p><em>foo [bar</em> baz]</p>
+        let original = r##"[link] (/uri)
+"##;
+        let expected = r##"<p>[link] (/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_492() {
-        let original = r##"[foo <bar attr="](baz)">"##;
-        let expected = r##"<p>[foo <bar attr="](baz)"></p>
+        let original = r##"[link [foo [bar]]](/uri)
+"##;
+        let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_493() {
-        let original = r##"[foo`](/uri)`"##;
-        let expected = r##"<p>[foo<code>](/uri)</code></p>
+        let original = r##"[link] bar](/uri)
+"##;
+        let expected = r##"<p>[link] bar](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_494() {
-        let original = r##"[foo<http://example.com/?search=](uri)>"##;
-        let expected = r##"<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
+        let original = r##"[link [bar](/uri)
+"##;
+        let expected = r##"<p>[link <a href="/uri">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_495() {
-        let original = r##"[foo][bar]
-
-[bar]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">foo</a></p>
+        let original = r##"[link \[bar](/uri)
+"##;
+        let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_496() {
-        let original = r##"[link [foo [bar]]][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
+        let original = r##"[link *foo **bar** `#`*](/uri)
+"##;
+        let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_497() {
-        let original = r##"[link \[bar][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p><a href="/uri">link [bar</a></p>
+        let original = r##"[![moon](moon.jpg)](/uri)
+"##;
+        let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_498() {
-        let original = r##"[link *foo **bar** `#`*][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
+        let original = r##"[foo [bar](/uri)](/uri)
+"##;
+        let expected = r##"<p>[foo <a href="/uri">bar</a>](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_499() {
-        let original = r##"[![moon](moon.jpg)][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
+        let original = r##"[foo *[bar [baz](/uri)](/uri)*](/uri)
+"##;
+        let expected = r##"<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_500() {
-        let original = r##"[foo [bar](/uri)][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
+        let original = r##"![[[foo](uri1)](uri2)](uri3)
+"##;
+        let expected = r##"<p><img src="uri3" alt="[foo](uri2)" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_501() {
-        let original = r##"[foo *bar [baz][ref]*][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
+        let original = r##"*[foo*](/uri)
+"##;
+        let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_502() {
-        let original = r##"*[foo*][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p>*<a href="/uri">foo*</a></p>
+        let original = r##"[foo *bar](baz*)
+"##;
+        let expected = r##"<p><a href="baz*">foo *bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_503() {
-        let original = r##"[foo *bar][ref]
-
-[ref]: /uri"##;
-        let expected = r##"<p><a href="/uri">foo *bar</a></p>
+        let original = r##"*foo [bar* baz]
+"##;
+        let expected = r##"<p><em>foo [bar</em> baz]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_504() {
-        let original = r##"[foo <bar attr="][ref]">
-
-[ref]: /uri"##;
-        let expected = r##"<p>[foo <bar attr="][ref]"></p>
+        let original = r##"[foo <bar attr="](baz)">
+"##;
+        let expected = r##"<p>[foo <bar attr="](baz)"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_505() {
-        let original = r##"[foo`][ref]`
-
-[ref]: /uri"##;
-        let expected = r##"<p>[foo<code>][ref]</code></p>
+        let original = r##"[foo`](/uri)`
+"##;
+        let expected = r##"<p>[foo<code>](/uri)</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_506() {
-        let original = r##"[foo<http://example.com/?search=][ref]>
-
-[ref]: /uri"##;
-        let expected = r##"<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
+        let original = r##"[foo<http://example.com/?search=](uri)>
+"##;
+        let expected = r##"<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_507() {
-        let original = r##"[foo][BaR]
+        let original = r##"[foo][bar]
 
-[bar]: /url "title""##;
+[bar]: /url "title"
+"##;
         let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_508() {
-        let original = r##"[Толпой][Толпой] is a Russian word.
+        let original = r##"[link [foo [bar]]][ref]
 
-[ТОЛПОЙ]: /url"##;
-        let expected = r##"<p><a href="/url">Толпой</a> is a Russian word.</p>
+[ref]: /uri
+"##;
+        let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_509() {
-        let original = r##"[Foo
-  bar]: /url
+        let original = r##"[link \[bar][ref]
 
-[Baz][Foo bar]"##;
-        let expected = r##"<p><a href="/url">Baz</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_510() {
-        let original = r##"[foo] [bar]
+        let original = r##"[link *foo **bar** `#`*][ref]
 
-[bar]: /url "title""##;
-        let expected = r##"<p>[foo] <a href="/url" title="title">bar</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_511() {
-        let original = r##"[foo]
-[bar]
+        let original = r##"[![moon](moon.jpg)][ref]
 
-[bar]: /url "title""##;
-        let expected = r##"<p>[foo]
-<a href="/url" title="title">bar</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_512() {
-        let original = r##"[foo]: /url1
+        let original = r##"[foo [bar](/uri)][ref]
 
-[foo]: /url2
-
-[bar][foo]"##;
-        let expected = r##"<p><a href="/url1">bar</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_513() {
-        let original = r##"[bar][foo\!]
+        let original = r##"[foo *bar [baz][ref]*][ref]
 
-[foo!]: /url"##;
-        let expected = r##"<p>[bar][foo!]</p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_514() {
-        let original = r##"[foo][ref[]
+        let original = r##"*[foo*][ref]
 
-[ref[]: /uri"##;
-        let expected = r##"<p>[foo][ref[]</p>
-<p>[ref[]: /uri</p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_515() {
-        let original = r##"[foo][ref[bar]]
+        let original = r##"[foo *bar][ref]
 
-[ref[bar]]: /uri"##;
-        let expected = r##"<p>[foo][ref[bar]]</p>
-<p>[ref[bar]]: /uri</p>
+[ref]: /uri
+"##;
+        let expected = r##"<p><a href="/uri">foo *bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_516() {
-        let original = r##"[[[foo]]]
+        let original = r##"[foo <bar attr="][ref]">
 
-[[[foo]]]: /url"##;
-        let expected = r##"<p>[[[foo]]]</p>
-<p>[[[foo]]]: /url</p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>[foo <bar attr="][ref]"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_517() {
-        let original = r##"[foo][ref\[]
+        let original = r##"[foo`][ref]`
 
-[ref\[]: /uri"##;
-        let expected = r##"<p><a href="/uri">foo</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>[foo<code>][ref]</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_518() {
-        let original = r##"[bar\\]: /uri
+        let original = r##"[foo<http://example.com/?search=][ref]>
 
-[bar\\]"##;
-        let expected = r##"<p><a href="/uri">bar\</a></p>
+[ref]: /uri
+"##;
+        let expected = r##"<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_519() {
-        let original = r##"[]
+        let original = r##"[foo][BaR]
 
-[]: /uri"##;
-        let expected = r##"<p>[]</p>
-<p>[]: /uri</p>
+[bar]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_520() {
+        let original = r##"[Толпой][Толпой] is a Russian word.
+
+[ТОЛПОЙ]: /url
+"##;
+        let expected = r##"<p><a href="/url">Толпой</a> is a Russian word.</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_521() {
+        let original = r##"[Foo
+  bar]: /url
+
+[Baz][Foo bar]
+"##;
+        let expected = r##"<p><a href="/url">Baz</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_522() {
+        let original = r##"[foo] [bar]
+
+[bar]: /url "title"
+"##;
+        let expected = r##"<p>[foo] <a href="/url" title="title">bar</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_523() {
+        let original = r##"[foo]
+[bar]
+
+[bar]: /url "title"
+"##;
+        let expected = r##"<p>[foo]
+<a href="/url" title="title">bar</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_524() {
+        let original = r##"[foo]: /url1
+
+[foo]: /url2
+
+[bar][foo]
+"##;
+        let expected = r##"<p><a href="/url1">bar</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_525() {
+        let original = r##"[bar][foo\!]
+
+[foo!]: /url
+"##;
+        let expected = r##"<p>[bar][foo!]</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_526() {
+        let original = r##"[foo][ref[]
+
+[ref[]: /uri
+"##;
+        let expected = r##"<p>[foo][ref[]</p>
+<p>[ref[]: /uri</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_527() {
+        let original = r##"[foo][ref[bar]]
+
+[ref[bar]]: /uri
+"##;
+        let expected = r##"<p>[foo][ref[bar]]</p>
+<p>[ref[bar]]: /uri</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_528() {
+        let original = r##"[[[foo]]]
+
+[[[foo]]]: /url
+"##;
+        let expected = r##"<p>[[[foo]]]</p>
+<p>[[[foo]]]: /url</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_529() {
+        let original = r##"[foo][ref\[]
+
+[ref\[]: /uri
+"##;
+        let expected = r##"<p><a href="/uri">foo</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_530() {
+        let original = r##"[bar\\]: /uri
+
+[bar\\]
+"##;
+        let expected = r##"<p><a href="/uri">bar\</a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_531() {
+        let original = r##"[]
+
+[]: /uri
+"##;
+        let expected = r##"<p>[]</p>
+<p>[]: /uri</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_532() {
         let original = r##"[
  ]
 
 [
- ]: /uri"##;
+ ]: /uri
+"##;
         let expected = r##"<p>[
 ]</p>
 <p>[
 ]: /uri</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_521() {
-        let original = r##"[foo][]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_522() {
-        let original = r##"[*foo* bar][]
-
-[*foo* bar]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_523() {
-        let original = r##"[Foo][]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">Foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_524() {
-        let original = r##"[foo] 
-[]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">foo</a>
-[]</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_525() {
-        let original = r##"[foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_526() {
-        let original = r##"[*foo* bar]
-
-[*foo* bar]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_527() {
-        let original = r##"[[*foo* bar]]
-
-[*foo* bar]: /url "title""##;
-        let expected = r##"<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_528() {
-        let original = r##"[[bar [foo]
-
-[foo]: /url"##;
-        let expected = r##"<p>[[bar <a href="/url">foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_529() {
-        let original = r##"[Foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><a href="/url" title="title">Foo</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_530() {
-        let original = r##"[foo] bar
-
-[foo]: /url"##;
-        let expected = r##"<p><a href="/url">foo</a> bar</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_531() {
-        let original = r##"\[foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p>[foo]</p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
-    }
-
-    #[test]
-    fn spec_test_532() {
-        let original = r##"[foo*]: /url
-
-*[foo*]"##;
-        let expected = r##"<p>*<a href="/url">foo*</a></p>
-"##;
-
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_533() {
-        let original = r##"[foo][bar]
+        let original = r##"[foo][]
 
-[foo]: /url1
-[bar]: /url2"##;
-        let expected = r##"<p><a href="/url2">foo</a></p>
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_534() {
-        let original = r##"[foo][]
+        let original = r##"[*foo* bar][]
 
-[foo]: /url1"##;
-        let expected = r##"<p><a href="/url1">foo</a></p>
+[*foo* bar]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_535() {
-        let original = r##"[foo]()
+        let original = r##"[Foo][]
 
-[foo]: /url1"##;
-        let expected = r##"<p><a href="">foo</a></p>
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_536() {
-        let original = r##"[foo](not a link)
+        let original = r##"[foo] 
+[]
 
-[foo]: /url1"##;
-        let expected = r##"<p><a href="/url1">foo</a>(not a link)</p>
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">foo</a>
+[]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_537() {
-        let original = r##"[foo][bar][baz]
+        let original = r##"[foo]
 
-[baz]: /url"##;
-        let expected = r##"<p>[foo]<a href="/url">bar</a></p>
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_538() {
-        let original = r##"[foo][bar][baz]
+        let original = r##"[*foo* bar]
 
-[baz]: /url1
-[bar]: /url2"##;
-        let expected = r##"<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
+[*foo* bar]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_539() {
-        let original = r##"[foo][bar][baz]
+        let original = r##"[[*foo* bar]]
 
-[baz]: /url1
-[foo]: /url2"##;
-        let expected = r##"<p>[foo]<a href="/url1">bar</a></p>
+[*foo* bar]: /url "title"
+"##;
+        let expected = r##"<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_540() {
-        let original = r##"![foo](/url "title")"##;
-        let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
+        let original = r##"[[bar [foo]
+
+[foo]: /url
+"##;
+        let expected = r##"<p>[[bar <a href="/url">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_541() {
-        let original = r##"![foo *bar*]
+        let original = r##"[Foo]
 
-[foo *bar*]: train.jpg "train & tracks""##;
-        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_542() {
-        let original = r##"![foo ![bar](/url)](/url2)"##;
-        let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
+        let original = r##"[foo] bar
+
+[foo]: /url
+"##;
+        let expected = r##"<p><a href="/url">foo</a> bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_543() {
-        let original = r##"![foo [bar](/url)](/url2)"##;
-        let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
+        let original = r##"\[foo]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p>[foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_544() {
-        let original = r##"![foo *bar*][]
+        let original = r##"[foo*]: /url
 
-[foo *bar*]: train.jpg "train & tracks""##;
-        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
+*[foo*]
+"##;
+        let expected = r##"<p>*<a href="/url">foo*</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_545() {
-        let original = r##"![foo *bar*][foobar]
+        let original = r##"[foo][bar]
 
-[FOOBAR]: train.jpg "train & tracks""##;
-        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
+[foo]: /url1
+[bar]: /url2
+"##;
+        let expected = r##"<p><a href="/url2">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_546() {
-        let original = r##"![foo](train.jpg)"##;
-        let expected = r##"<p><img src="train.jpg" alt="foo" /></p>
+        let original = r##"[foo][]
+
+[foo]: /url1
+"##;
+        let expected = r##"<p><a href="/url1">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_547() {
-        let original = r##"My ![foo bar](/path/to/train.jpg  "title"   )"##;
-        let expected = r##"<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
+        let original = r##"[foo]()
+
+[foo]: /url1
+"##;
+        let expected = r##"<p><a href="">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_548() {
-        let original = r##"![foo](<url>)"##;
-        let expected = r##"<p><img src="url" alt="foo" /></p>
+        let original = r##"[foo](not a link)
+
+[foo]: /url1
+"##;
+        let expected = r##"<p><a href="/url1">foo</a>(not a link)</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_549() {
-        let original = r##"![](/url)"##;
-        let expected = r##"<p><img src="/url" alt="" /></p>
+        let original = r##"[foo][bar][baz]
+
+[baz]: /url
+"##;
+        let expected = r##"<p>[foo]<a href="/url">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_550() {
-        let original = r##"![foo][bar]
+        let original = r##"[foo][bar][baz]
 
-[bar]: /url"##;
-        let expected = r##"<p><img src="/url" alt="foo" /></p>
+[baz]: /url1
+[bar]: /url2
+"##;
+        let expected = r##"<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_551() {
-        let original = r##"![foo][bar]
+        let original = r##"[foo][bar][baz]
 
-[BAR]: /url"##;
-        let expected = r##"<p><img src="/url" alt="foo" /></p>
+[baz]: /url1
+[foo]: /url2
+"##;
+        let expected = r##"<p>[foo]<a href="/url1">bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_552() {
-        let original = r##"![foo][]
-
-[foo]: /url "title""##;
+        let original = r##"![foo](/url "title")
+"##;
         let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_553() {
-        let original = r##"![*foo* bar][]
+        let original = r##"![foo *bar*]
 
-[*foo* bar]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
+[foo *bar*]: train.jpg "train & tracks"
+"##;
+        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_554() {
-        let original = r##"![Foo][]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
+        let original = r##"![foo ![bar](/url)](/url2)
+"##;
+        let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_555() {
-        let original = r##"![foo] 
-[]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="foo" title="title" />
-[]</p>
+        let original = r##"![foo [bar](/url)](/url2)
+"##;
+        let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_556() {
-        let original = r##"![foo]
+        let original = r##"![foo *bar*][]
 
-[foo]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
+[foo *bar*]: train.jpg "train & tracks"
+"##;
+        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_557() {
-        let original = r##"![*foo* bar]
+        let original = r##"![foo *bar*][foobar]
 
-[*foo* bar]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
+[FOOBAR]: train.jpg "train & tracks"
+"##;
+        let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_558() {
-        let original = r##"![[foo]]
-
-[[foo]]: /url "title""##;
-        let expected = r##"<p>![[foo]]</p>
-<p>[[foo]]: /url &quot;title&quot;</p>
+        let original = r##"![foo](train.jpg)
+"##;
+        let expected = r##"<p><img src="train.jpg" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_559() {
-        let original = r##"![Foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
+        let original = r##"My ![foo bar](/path/to/train.jpg  "title"   )
+"##;
+        let expected = r##"<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_560() {
-        let original = r##"\!\[foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p>![foo]</p>
+        let original = r##"![foo](<url>)
+"##;
+        let expected = r##"<p><img src="url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_561() {
-        let original = r##"\![foo]
-
-[foo]: /url "title""##;
-        let expected = r##"<p>!<a href="/url" title="title">foo</a></p>
+        let original = r##"![](/url)
+"##;
+        let expected = r##"<p><img src="/url" alt="" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_562() {
-        let original = r##"<http://foo.bar.baz>"##;
-        let expected = r##"<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
+        let original = r##"![foo][bar]
+
+[bar]: /url
+"##;
+        let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_563() {
-        let original = r##"<http://foo.bar.baz/test?q=hello&id=22&boolean>"##;
-        let expected = r##"<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
+        let original = r##"![foo][bar]
+
+[BAR]: /url
+"##;
+        let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_564() {
-        let original = r##"<irc://foo.bar:2233/baz>"##;
-        let expected = r##"<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
+        let original = r##"![foo][]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_565() {
-        let original = r##"<MAILTO:FOO@BAR.BAZ>"##;
-        let expected = r##"<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
+        let original = r##"![*foo* bar][]
+
+[*foo* bar]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_566() {
-        let original = r##"<a+b+c:d>"##;
-        let expected = r##"<p><a href="a+b+c:d">a+b+c:d</a></p>
+        let original = r##"![Foo][]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_567() {
-        let original = r##"<made-up-scheme://foo,bar>"##;
-        let expected = r##"<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
+        let original = r##"![foo] 
+[]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="foo" title="title" />
+[]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_568() {
-        let original = r##"<http://../>"##;
-        let expected = r##"<p><a href="http://../">http://../</a></p>
+        let original = r##"![foo]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_569() {
-        let original = r##"<localhost:5001/foo>"##;
-        let expected = r##"<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
+        let original = r##"![*foo* bar]
+
+[*foo* bar]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_570() {
-        let original = r##"<http://foo.bar/baz bim>"##;
-        let expected = r##"<p>&lt;http://foo.bar/baz bim&gt;</p>
+        let original = r##"![[foo]]
+
+[[foo]]: /url "title"
+"##;
+        let expected = r##"<p>![[foo]]</p>
+<p>[[foo]]: /url &quot;title&quot;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_571() {
-        let original = r##"<http://example.com/\[\>"##;
-        let expected = r##"<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
+        let original = r##"![Foo]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_572() {
-        let original = r##"<foo@bar.example.com>"##;
-        let expected = r##"<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
+        let original = r##"!\[foo]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p>![foo]</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_573() {
-        let original = r##"<foo+special@Bar.baz-bar0.com>"##;
-        let expected = r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
+        let original = r##"\![foo]
+
+[foo]: /url "title"
+"##;
+        let expected = r##"<p>!<a href="/url" title="title">foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_574() {
-        let original = r##"<foo\+@bar.example.com>"##;
-        let expected = r##"<p>&lt;foo+@bar.example.com&gt;</p>
+        let original = r##"<http://foo.bar.baz>
+"##;
+        let expected = r##"<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_575() {
-        let original = r##"<>"##;
-        let expected = r##"<p>&lt;&gt;</p>
+        let original = r##"<http://foo.bar.baz/test?q=hello&id=22&boolean>
+"##;
+        let expected = r##"<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_576() {
-        let original = r##"< http://foo.bar >"##;
-        let expected = r##"<p>&lt; http://foo.bar &gt;</p>
+        let original = r##"<irc://foo.bar:2233/baz>
+"##;
+        let expected = r##"<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_577() {
-        let original = r##"<m:abc>"##;
-        let expected = r##"<p>&lt;m:abc&gt;</p>
+        let original = r##"<MAILTO:FOO@BAR.BAZ>
+"##;
+        let expected = r##"<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_578() {
-        let original = r##"<foo.bar.baz>"##;
-        let expected = r##"<p>&lt;foo.bar.baz&gt;</p>
+        let original = r##"<a+b+c:d>
+"##;
+        let expected = r##"<p><a href="a+b+c:d">a+b+c:d</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_579() {
-        let original = r##"http://example.com"##;
-        let expected = r##"<p>http://example.com</p>
+        let original = r##"<made-up-scheme://foo,bar>
+"##;
+        let expected = r##"<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_580() {
-        let original = r##"foo@bar.example.com"##;
-        let expected = r##"<p>foo@bar.example.com</p>
+        let original = r##"<http://../>
+"##;
+        let expected = r##"<p><a href="http://../">http://../</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_581() {
-        let original = r##"<a><bab><c2c>"##;
-        let expected = r##"<p><a><bab><c2c></p>
+        let original = r##"<localhost:5001/foo>
+"##;
+        let expected = r##"<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_582() {
-        let original = r##"<a/><b2/>"##;
-        let expected = r##"<p><a/><b2/></p>
+        let original = r##"<http://foo.bar/baz bim>
+"##;
+        let expected = r##"<p>&lt;http://foo.bar/baz bim&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_583() {
-        let original = r##"<a  /><b2
-data="foo" >"##;
-        let expected = r##"<p><a  /><b2
-data="foo" ></p>
+        let original = r##"<http://example.com/\[\>
+"##;
+        let expected = r##"<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_584() {
-        let original = r##"<a foo="bar" bam = 'baz <em>"</em>'
-_boolean zoop:33=zoop:33 />"##;
-        let expected = r##"<p><a foo="bar" bam = 'baz <em>"</em>'
-_boolean zoop:33=zoop:33 /></p>
+        let original = r##"<foo@bar.example.com>
+"##;
+        let expected = r##"<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_585() {
-        let original = r##"Foo <responsive-image src="foo.jpg" />"##;
-        let expected = r##"<p>Foo <responsive-image src="foo.jpg" /></p>
+        let original = r##"<foo+special@Bar.baz-bar0.com>
+"##;
+        let expected = r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_586() {
-        let original = r##"<33> <__>"##;
-        let expected = r##"<p>&lt;33&gt; &lt;__&gt;</p>
+        let original = r##"<foo\+@bar.example.com>
+"##;
+        let expected = r##"<p>&lt;foo+@bar.example.com&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_587() {
-        let original = r##"<a h*#ref="hi">"##;
-        let expected = r##"<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
+        let original = r##"<>
+"##;
+        let expected = r##"<p>&lt;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_588() {
-        let original = r##"<a href="hi'> <a href=hi'>"##;
-        let expected = r##"<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
+        let original = r##"< http://foo.bar >
+"##;
+        let expected = r##"<p>&lt; http://foo.bar &gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_589() {
-        let original = r##"< a><
-foo><bar/ >"##;
-        let expected = r##"<p>&lt; a&gt;&lt;
-foo&gt;&lt;bar/ &gt;</p>
+        let original = r##"<m:abc>
+"##;
+        let expected = r##"<p>&lt;m:abc&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_590() {
-        let original = r##"<a href='bar'title=title>"##;
-        let expected = r##"<p>&lt;a href='bar'title=title&gt;</p>
+        let original = r##"<foo.bar.baz>
+"##;
+        let expected = r##"<p>&lt;foo.bar.baz&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_591() {
-        let original = r##"</a></foo >"##;
-        let expected = r##"<p></a></foo ></p>
+        let original = r##"http://example.com
+"##;
+        let expected = r##"<p>http://example.com</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_592() {
-        let original = r##"</a href="foo">"##;
-        let expected = r##"<p>&lt;/a href=&quot;foo&quot;&gt;</p>
+        let original = r##"foo@bar.example.com
+"##;
+        let expected = r##"<p>foo@bar.example.com</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_593() {
-        let original = r##"foo <!-- this is a
-comment - with hyphen -->"##;
-        let expected = r##"<p>foo <!-- this is a
-comment - with hyphen --></p>
+        let original = r##"<a><bab><c2c>
+"##;
+        let expected = r##"<p><a><bab><c2c></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_594() {
-        let original = r##"foo <!-- not a comment -- two hyphens -->"##;
-        let expected = r##"<p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
+        let original = r##"<a/><b2/>
+"##;
+        let expected = r##"<p><a/><b2/></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_595() {
-        let original = r##"foo <!--> foo -->
-
-foo <!-- foo--->"##;
-        let expected = r##"<p>foo &lt;!--&gt; foo --&gt;</p>
-<p>foo &lt;!-- foo---&gt;</p>
+        let original = r##"<a  /><b2
+data="foo" >
+"##;
+        let expected = r##"<p><a  /><b2
+data="foo" ></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_596() {
-        let original = r##"foo <?php echo $a; ?>"##;
-        let expected = r##"<p>foo <?php echo $a; ?></p>
+        let original = r##"<a foo="bar" bam = 'baz <em>"</em>'
+_boolean zoop:33=zoop:33 />
+"##;
+        let expected = r##"<p><a foo="bar" bam = 'baz <em>"</em>'
+_boolean zoop:33=zoop:33 /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_597() {
-        let original = r##"foo <!ELEMENT br EMPTY>"##;
-        let expected = r##"<p>foo <!ELEMENT br EMPTY></p>
+        let original = r##"Foo <responsive-image src="foo.jpg" />
+"##;
+        let expected = r##"<p>Foo <responsive-image src="foo.jpg" /></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_598() {
-        let original = r##"foo <![CDATA[>&<]]>"##;
-        let expected = r##"<p>foo <![CDATA[>&<]]></p>
+        let original = r##"<33> <__>
+"##;
+        let expected = r##"<p>&lt;33&gt; &lt;__&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_599() {
-        let original = r##"foo <a href="&ouml;">"##;
-        let expected = r##"<p>foo <a href="&ouml;"></p>
+        let original = r##"<a h*#ref="hi">
+"##;
+        let expected = r##"<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_600() {
-        let original = r##"foo <a href="\*">"##;
-        let expected = r##"<p>foo <a href="\*"></p>
+        let original = r##"<a href="hi'> <a href=hi'>
+"##;
+        let expected = r##"<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_601() {
-        let original = r##"<a href="\"">"##;
-        let expected = r##"<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
+        let original = r##"< a><
+foo><bar/ >
+<foo bar=baz
+bim!bop />
+"##;
+        let expected = r##"<p>&lt; a&gt;&lt;
+foo&gt;&lt;bar/ &gt;
+&lt;foo bar=baz
+bim!bop /&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_602() {
-        let original = r##"foo  
-baz"##;
-        let expected = r##"<p>foo<br />
-baz</p>
+        let original = r##"<a href='bar'title=title>
+"##;
+        let expected = r##"<p>&lt;a href='bar'title=title&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_603() {
-        let original = r##"foo\
-baz"##;
-        let expected = r##"<p>foo<br />
-baz</p>
+        let original = r##"</a></foo >
+"##;
+        let expected = r##"<p></a></foo ></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_604() {
-        let original = r##"foo       
-baz"##;
-        let expected = r##"<p>foo<br />
-baz</p>
+        let original = r##"</a href="foo">
+"##;
+        let expected = r##"<p>&lt;/a href=&quot;foo&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_605() {
-        let original = r##"foo  
-     bar"##;
-        let expected = r##"<p>foo<br />
-bar</p>
+        let original = r##"foo <!-- this is a
+comment - with hyphen -->
+"##;
+        let expected = r##"<p>foo <!-- this is a
+comment - with hyphen --></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_606() {
-        let original = r##"foo\
-     bar"##;
-        let expected = r##"<p>foo<br />
-bar</p>
+        let original = r##"foo <!-- not a comment -- two hyphens -->
+"##;
+        let expected = r##"<p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_607() {
-        let original = r##"*foo  
-bar*"##;
-        let expected = r##"<p><em>foo<br />
-bar</em></p>
+        let original = r##"foo <!--> foo -->
+
+foo <!-- foo--->
+"##;
+        let expected = r##"<p>foo &lt;!--&gt; foo --&gt;</p>
+<p>foo &lt;!-- foo---&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_608() {
-        let original = r##"*foo\
-bar*"##;
-        let expected = r##"<p><em>foo<br />
-bar</em></p>
+        let original = r##"foo <?php echo $a; ?>
+"##;
+        let expected = r##"<p>foo <?php echo $a; ?></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_609() {
-        let original = r##"`code  
-span`"##;
-        let expected = r##"<p><code>code span</code></p>
+        let original = r##"foo <!ELEMENT br EMPTY>
+"##;
+        let expected = r##"<p>foo <!ELEMENT br EMPTY></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_610() {
-        let original = r##"`code\
-span`"##;
-        let expected = r##"<p><code>code\ span</code></p>
+        let original = r##"foo <![CDATA[>&<]]>
+"##;
+        let expected = r##"<p>foo <![CDATA[>&<]]></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_611() {
-        let original = r##"<a href="foo  
-bar">"##;
-        let expected = r##"<p><a href="foo  
-bar"></p>
+        let original = r##"foo <a href="&ouml;">
+"##;
+        let expected = r##"<p>foo <a href="&ouml;"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_612() {
-        let original = r##"<a href="foo\
-bar">"##;
-        let expected = r##"<p><a href="foo\
-bar"></p>
+        let original = r##"foo <a href="\*">
+"##;
+        let expected = r##"<p>foo <a href="\*"></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_613() {
-        let original = r##"foo\"##;
-        let expected = r##"<p>foo\</p>
+        let original = r##"<a href="\"">
+"##;
+        let expected = r##"<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_614() {
-        let original = r##"foo  "##;
-        let expected = r##"<p>foo</p>
+        let original = r##"foo  
+baz
+"##;
+        let expected = r##"<p>foo<br />
+baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_615() {
-        let original = r##"### foo\"##;
-        let expected = r##"<h3>foo\</h3>
+        let original = r##"foo\
+baz
+"##;
+        let expected = r##"<p>foo<br />
+baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_616() {
-        let original = r##"### foo  "##;
-        let expected = r##"<h3>foo</h3>
+        let original = r##"foo       
+baz
+"##;
+        let expected = r##"<p>foo<br />
+baz</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_617() {
-        let original = r##"foo
-baz"##;
-        let expected = r##"<p>foo
-baz</p>
+        let original = r##"foo  
+     bar
+"##;
+        let expected = r##"<p>foo<br />
+bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_618() {
-        let original = r##"foo 
- baz"##;
-        let expected = r##"<p>foo
-baz</p>
+        let original = r##"foo\
+     bar
+"##;
+        let expected = r##"<p>foo<br />
+bar</p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_619() {
-        let original = r##"hello $.;'there"##;
-        let expected = r##"<p>hello $.;'there</p>
+        let original = r##"*foo  
+bar*
+"##;
+        let expected = r##"<p><em>foo<br />
+bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_620() {
-        let original = r##"Foo χρῆν"##;
-        let expected = r##"<p>Foo χρῆν</p>
+        let original = r##"*foo\
+bar*
+"##;
+        let expected = r##"<p><em>foo<br />
+bar</em></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
     }
 
     #[test]
     fn spec_test_621() {
-        let original = r##"Multiple     spaces"##;
-        let expected = r##"<p>Multiple     spaces</p>
+        let original = r##"`code 
+span`
+"##;
+        let expected = r##"<p><code>code  span</code></p>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+        use pulldown_cmark::{Parser, html, Options};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_622() {
+        let original = r##"`code\
+span`
+"##;
+        let expected = r##"<p><code>code\ span</code></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_623() {
+        let original = r##"<a href="foo  
+bar">
+"##;
+        let expected = r##"<p><a href="foo  
+bar"></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_624() {
+        let original = r##"<a href="foo\
+bar">
+"##;
+        let expected = r##"<p><a href="foo\
+bar"></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_625() {
+        let original = r##"foo\
+"##;
+        let expected = r##"<p>foo\</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_626() {
+        let original = r##"foo  
+"##;
+        let expected = r##"<p>foo</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_627() {
+        let original = r##"### foo\
+"##;
+        let expected = r##"<h3>foo\</h3>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_628() {
+        let original = r##"### foo  
+"##;
+        let expected = r##"<h3>foo</h3>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_629() {
+        let original = r##"foo
+baz
+"##;
+        let expected = r##"<p>foo
+baz</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_630() {
+        let original = r##"foo 
+ baz
+"##;
+        let expected = r##"<p>foo
+baz</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_631() {
+        let original = r##"hello $.;'there
+"##;
+        let expected = r##"<p>hello $.;'there</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_632() {
+        let original = r##"Foo χρῆν
+"##;
+        let expected = r##"<p>Foo χρῆν</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
+    }
+
+    #[test]
+    fn spec_test_633() {
+        let original = r##"Multiple     spaces
+"##;
+        let expected = r##"<p>Multiple     spaces</p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(expected, s);
     }

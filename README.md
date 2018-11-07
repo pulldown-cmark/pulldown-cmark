@@ -1,5 +1,7 @@
 # pulldown-cmark
 
+[Documentation](https://docs.rs/pulldown-cmark/)
+
 This library is a pull parser for [CommonMark](http://commonmark.org/), written
 in [Rust](http://www.rust-lang.org/). It comes with a simple command-line tool,
 useful for rendering to HTML, and is also designed to be easy to use from as
@@ -17,7 +19,7 @@ It is designed to be:
 There are many parsers for Markdown and its variants, but to my knowledge none
 use pull parsing. Pull parsing has become popular for XML, especially for
 memory-conscious applications, because it uses dramatically less memory than
-construcing a document tree, but is much easier to use than push parsers. Push
+constructing a document tree, but is much easier to use than push parsers. Push
 parsers are notoriously difficult to use, and also often error-prone because of
 the need for user to delicately juggle state in a series of callbacks.
 
@@ -49,7 +51,7 @@ Or expanding an abbreviation in text:
 
 ```rust
 let parser = parser.map(|event| match event {
-	Event::Str(text) => Event::Str(text.replace("abbr", "abbreviation")),
+	Event::Text(text) => Event::Text(text.replace("abbr", "abbreviation")),
 	_ => event
 });
 ```
@@ -84,7 +86,7 @@ full power and expressivity of Rust's iterator infrastructure, including
 for loops and `map` (as in the examples above), collecting the events into
 a vector (for recording, playback, and manipulation), and more.
 
-Further, the Str event (representing text) is a copy-on-write string (note:
+Further, the `Text` event (representing text) is a copy-on-write string (note:
 this isn't quite true yet). The vast majority of text fragments are just
 slices of the source document. For these, copy-on-write gives a convenient
 representation that requires no allocation or copying, but allocated
@@ -92,17 +94,25 @@ strings are available when they're needed. Thus, when rendering text to
 HTML, most text is copied just once, from the source document to the
 HTML buffer.
 
+## Building only the pulldown-cmark library
+
+By default, the binary is built as well. If you don't want/need it, then build like this:
+
+```bash
+> cargo build --no-default-features
+```
+
+Or put in your `Cargo.toml` file:
+
+```toml
+pulldown-cmark = { version = "0.0.11", default-features = false }
+```
+
 ## Authors
 
 The main author is Raph Levien.
 
 ## Contributions
 
-We gladly accept contributions via GitHub pull requests, as long as the author
-has signed the Google Contributor License. Please see CONTRIBUTIONS.md for
-more details.
-
-### Disclaimer
-
-This is not an official Google product (experimental or otherwise), it
-is just code that happens to be owned by Google.
+We gladly accept contributions via GitHub pull requests. Please see
+`CONTRIBUTIONS.md` for more details.

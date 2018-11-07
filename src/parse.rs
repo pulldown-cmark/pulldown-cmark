@@ -64,6 +64,11 @@ pub struct RawParser<'a> {
     containers: Vec<Container>,
     last_line_was_empty: bool,
 
+    /// In case we have a broken link/image reference, we can call this callback
+    /// with the reference name (both normalized and not normalized) and use
+    /// the link/title pair returned instead
+    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+
     // state for code fences
     fence_char: u8,
     fence_count: usize,
@@ -80,14 +85,19 @@ pub struct ParseInfo<'a> {
     pub links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     // block-level tags
     Paragraph,
     Rule,
+
+    /// A heading. The field indicates the level of the heading.
     Header(i32),
+
     BlockQuote,
     CodeBlock(Cow<'a, str>),
+
+    /// A list. If the list is ordered the field indicates the number of the first item.
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(Cow<'a, str>),
@@ -103,11 +113,15 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Code,
+
+    /// A link. The first field is the destination URL, the second is a title
     Link(Cow<'a, str>, Cow<'a, str>),
+
+    /// An image. The first field is the destination URL, the second is a title
     Image(Cow<'a, str>, Cow<'a, str>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
@@ -119,7 +133,7 @@ pub enum Event<'a> {
     HardBreak,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Alignment {
     None,
     Left,
@@ -128,10 +142,10 @@ pub enum Alignment {
 }
 
 bitflags! {
-    pub flags Options: u32 {
-        const OPTION_FIRST_PASS = 1 << 0,
-        const OPTION_ENABLE_TABLES = 1 << 1,
-        const OPTION_ENABLE_FOOTNOTES = 1 << 2,
+    pub struct Options: u32 {
+        const FIRST_PASS = 1 << 0;
+        const ENABLE_TABLES = 1 << 1;
+        const ENABLE_FOOTNOTES = 1 << 2;
     }
 }
 
@@ -139,8 +153,10 @@ const MAX_LINK_NEST: usize = 10;
 
 #[allow(dead_code)]
 impl<'a> RawParser<'a> {
-    pub fn new_with_links(text: &'a str, opts: Options,
-            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
+    pub fn new_with_links_and_callback(text: &'a str, opts: Options,
+            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
+            callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
+    -> RawParser<'a> {
         let mut ret = RawParser {
             text: text,
             off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
@@ -156,6 +172,8 @@ impl<'a> RawParser<'a> {
             fence_count: 0,
             fence_indent: 0,
 
+            broken_link_callback: callback,
+
             // info, used in second pass
             loose_lists: HashSet::new(),
             links: links,
@@ -165,8 +183,13 @@ impl<'a> RawParser<'a> {
         ret
     }
 
+    pub fn new_with_links(text: &'a str, opts: Options,
+            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
+        Self::new_with_links_and_callback(text, opts, links, None)
+    }
+
     pub fn new(text: &'a str, opts: Options) -> RawParser<'a> {
-        RawParser::new_with_links(text, opts, HashMap::new())
+        Self::new_with_links(text, opts, HashMap::new())
     }
 
     // offset into text representing current parse position, hopefully
@@ -184,7 +207,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn init_active(&mut self) {
-        if self.opts.contains(OPTION_FIRST_PASS) {
+        if self.opts.contains(Options::FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
             for &c in b"\x00\t\n\r_\\&*[!`<" {
@@ -359,28 +382,23 @@ impl<'a> RawParser<'a> {
             if at_eol {
                 self.off += n;
                 self.state = State::StartBlock;
-                // two empty lines closes lists and footnotes
+                // two empty lines closes lists, one empty line closes a footnote
                 let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
-                //println!("{} empty lines (n = {})", empty_lines, n);
-                let mut closed = false;
-                if empty_lines >= 1 {
-                    let mut close_tags: Vec<&mut (Tag<'a>, usize, usize)> = self.stack.iter_mut().skip_while(|tag| {
-                        match tag.0 {
-                            Tag::List(_) | Tag::FootnoteDefinition(_) => false,
-                            _ => true,
-                        }
-                    }).collect();
-                    if !close_tags.is_empty() {
-                        for tag in &mut close_tags {
+                for i in (0..self.stack.len()).rev() {
+                    let is_break = match self.stack[i].0 {
+                        Tag::List(_) => empty_lines >= 1,
+                        Tag::Item => false,
+                        Tag::FootnoteDefinition(_) => true,
+                        _ => break,
+                    };
+                    if is_break {
+                        for tag in &mut self.stack[i..] {
                             tag.1 = self.off; // limit
                             tag.2 = self.off; // next
                         }
-                        close_tags[0].2 = self.off + n; // next
-                        closed = true;
+                        self.stack[i].2 = self.off + n; // next
+                        return Some(self.end());
                     }
-                }
-                if closed {
-                    return Some(self.end());
                 }
                 self.off += n;
                 if let Some(_) = self.at_list(2) {
@@ -469,7 +487,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
-                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                    if self.opts.contains(Options::ENABLE_FOOTNOTES) {
                         if let Some((name, n)) = self.parse_footnote_definition(tail) {
                             if self.containers.last() == Some(&Container::FootnoteDefinition) {
                                 return Some(self.end());
@@ -506,7 +524,7 @@ impl<'a> RawParser<'a> {
                     self.state = State::Inline;
                     return self.start(Tag::Header(level), i, next);
                 }
-                if self.opts.contains(OPTION_ENABLE_TABLES) {
+                if self.opts.contains(Options::ENABLE_TABLES) {
                     let (n, cols) = scan_table_head(&self.text[i..]);
                     if n != 0 {
                         let next = i + n;
@@ -526,7 +544,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_head(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         if let State::TableHead(limit, next) = self.state {
             self.state = State::TableRow;
             return self.start(Tag::TableHead, limit, next);
@@ -536,7 +554,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_table_body(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         let (off, _) = match self.scan_containers(&self.text[self.off ..]) {
             (n, true, space) => (self.off + n, space),
             _ => {
@@ -631,10 +649,10 @@ impl<'a> RawParser<'a> {
         let beg_info = self.off + n;
         let next_line = beg_info + scan_nextline(&self.text[beg_info..]);
         self.off = next_line;
-        let info = unescape(self.text[beg_info..next_line].trim());
+        let info = self.text[beg_info..next_line].trim();
         let size = self.text.len();
         self.state = State::CodeLineStart;
-        self.start(Tag::CodeBlock(info), size, 0)
+        self.start(Tag::CodeBlock(Cow::Borrowed(info)), size, 0)
     }
 
     fn next_code_line_start(&mut self) -> Event<'a> {
@@ -703,10 +721,6 @@ impl<'a> RawParser<'a> {
                     self.state = State::CodeLineStart;
                     break;
                 }
-                b'\t' => {
-                    if i > beg { break; }
-                    return self.char_tab();
-                }
                 b'\r' => {
                     // just skip it (does not support '\r' only line break)
                     if i > beg { break; }
@@ -752,10 +766,49 @@ impl<'a> RawParser<'a> {
                 data.starts_with("<!")
     }
 
+    // http://spec.commonmark.org/0.26/#html-blocks
+    fn get_html_tag(&self) -> Option<&'static str> {
+        static BEGIN_TAGS: &'static [&'static str; 3] = &["script", "pre", "style"];
+        static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
+
+        for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+            if self.off + 1 + beg_tag.len() < self.text.len() &&
+               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+                let pos = self.off + beg_tag.len() + 1;
+                let s = self.text.as_bytes()[pos];
+                if s == b' ' || s == b'\n' || s == b'>' {
+                    return Some(end_tag);
+                }
+            }
+        }
+        static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
+        static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
+        for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
+            if self.off + 1 + beg_tag.len() < self.text.len() &&
+               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+                return Some(end_tag);
+            }
+        }
+        if self.off + 4 < self.text.len() &&
+           self.text[self.off + 1..].starts_with("<!") {
+            let c = self.text[self.off + 4..self.off + 5].chars().next().unwrap();
+            if c >= 'A' && c <= 'Z' {
+                return Some(">");
+            }
+        }
+        None
+    }
+
     fn do_html_block(&mut self) -> Event<'a> {
+        let mut i = self.off;
+        if let Some(tag) = self.get_html_tag() {
+            let text = self.text[i..].split(tag).take(1).next().unwrap_or("");
+            self.off = i + text.len();
+            self.state = State::StartBlock;
+            return Event::Html(utils::cow_append(Borrowed(""), Borrowed(&self.text[i..self.off])));
+        }
         let size = self.text.len();
         let mut out = Borrowed("");
-        let mut i = self.off;
         let mut mark = i;
         loop {
             let n = scan_nextline(&self.text[i..]);
@@ -870,7 +923,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn next_table_cell(&mut self) -> Event<'a> {
-        assert!(self.opts.contains(OPTION_ENABLE_TABLES));
+        assert!(self.opts.contains(Options::ENABLE_TABLES));
         let bytes   = self.text.as_bytes();
         let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off ..]);
         let mut i   = beg;
@@ -971,7 +1024,7 @@ impl<'a> RawParser<'a> {
             b'&' => self.char_entity(),
             b'_' |
             b'*' => self.char_emphasis(),
-            b'[' if self.opts.contains(OPTION_ENABLE_FOOTNOTES) => self.char_link_footnote(),
+            b'[' if self.opts.contains(Options::ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
@@ -1090,7 +1143,7 @@ impl<'a> RawParser<'a> {
                     i += 1;
                 }
             } else if c2 == b'[' {
-                if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                if self.opts.contains(Options::ENABLE_FOOTNOTES) {
                     if let Some((_, n)) = self.parse_footnote(&self.text[i..limit]) {
                         i += n;
                         continue;
@@ -1262,7 +1315,17 @@ impl<'a> RawParser<'a> {
             let reference = self.normalize_link_ref(&data[ref_beg..ref_end]);
             let (dest, title) = match self.links.get(&reference) {
                 Some(&(ref dest, ref title)) => (dest.clone(), title.clone()),
-                None => return None
+                None => {
+                    if let Some(ref callback) = self.broken_link_callback {
+                        if let Some(val) = callback(&reference, &data[ref_beg..ref_end]) {
+                            (val.0.into(), val.1.into())
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        return None;
+                    }
+                }
             };
             (dest, title, text_beg, text_end, i)
         };
@@ -1292,7 +1355,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 b'[' => {
-                    if self.opts.contains(OPTION_ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
+                    if self.opts.contains(Options::ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
                         return false;
                     }
                     if self.parse_link(&data[i..], true).is_some() { return true; }
@@ -1324,20 +1387,27 @@ impl<'a> RawParser<'a> {
     // # Footnotes
 
     fn parse_footnote_definition<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         self.parse_footnote(data).and_then(|(name, len)| {
             let n_colon = scan_ch(&data[len ..], b':');
             if n_colon == 0 {
                 None
             } else {
                 let space = scan_whitespace_no_nl(&data[len + n_colon..]);
-                Some((name, len + n_colon + space))
+                // skip newline if definition is on a line by itself, as likely that
+                // means the footnote definition is a complex block.
+                let mut i = len + n_colon + space;
+                if let (n, true) = scan_eol(&data[i..]) {
+                    let (n_containers, _, _) = self.scan_containers(&data[i + n ..]);
+                    i += n + n_containers;
+                }
+                Some((name, i))
             }
         })
     }
 
     fn char_link_footnote(&mut self) -> Option<Event<'a>> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         if let Some((name, end)) = self.parse_footnote(&self.text[self.off .. self.limit()]) {
             self.off += end;
             Some(Event::FootnoteReference(Cow::Borrowed(name)))
@@ -1347,14 +1417,14 @@ impl<'a> RawParser<'a> {
     }
 
     fn parse_footnote<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let (n_footnote, text_beg, text_end) = self.scan_footnote_label(data);
         if n_footnote == 0 { return None; }
         Some((&data[text_beg..text_end], n_footnote))
     }
 
     fn scan_footnote_label(&self, data: &str) -> (usize, usize, usize) {
-        assert!(self.opts.contains(OPTION_ENABLE_FOOTNOTES));
+        assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let mut i = scan_ch(data, b'[');
         if i == 0 { return (0, 0, 0); }
         if i >= data.len() || data.as_bytes()[i] != b'^' { return (0, 0, 0); }
@@ -1516,7 +1586,11 @@ impl<'a> RawParser<'a> {
         while i < data.len() {
             match data.as_bytes()[i] {
                 b'>' => return i + 1,
-                b'\n' => i += self.scan_whitespace_inline(&data[i..]),
+                b'\n' => {
+                    let n = self.scan_whitespace_inline(&data[i..]);
+                    if n == 0 { break; }
+                    i += n;
+                }
                 _ => i += 1
             }
         }

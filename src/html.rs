@@ -135,7 +135,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::List(Some(start)) => {
                 self.fresh_line();
-                let _ = write!(self.buf, "<ol start=\"{}\">\n", start);
+                let _ = writeln!(self.buf, "<ol start=\"{}\">", start);
             }
             Tag::List(None) => {
                 self.fresh_line();
@@ -247,6 +247,33 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
     }
 }
 
+/// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
+/// push it to a `String`.
+///
+/// # Examples
+///
+/// ```
+/// use pulldown_cmark::{html, Parser};
+///
+/// let markdown_str = r#"
+/// hello
+/// =====
+///
+/// * alpha
+/// * beta
+/// "#;
+/// let parser = Parser::new(markdown_str);
+///
+/// let mut html_buf = String::new();
+/// html::push_html(&mut html_buf, parser);
+///
+/// assert_eq!(html_buf, r#"<h1>hello</h1>
+/// <ul>
+/// <li>alpha</li>
+/// <li>beta</li>
+/// </ul>
+/// "#);
+/// ```
 pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
     let mut ctx = Ctx {
         iter: iter,

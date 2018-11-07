@@ -135,7 +135,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::List(Some(start)) => {
                 self.fresh_line();
-                let _ = write!(self.buf, "<ol start=\"{}\">\n", start);
+                let _ = writeln!(self.buf, "<ol start=\"{}\">", start);
             }
             Tag::List(None) => {
                 self.fresh_line();

@@ -162,7 +162,7 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
         if test.n % 10 == 1 {
             if test.n % 40 == 1 {
                 if test.n > 1 {
-                    println!("");
+                    println!();
                 }
             } else {
                 print!(" ");

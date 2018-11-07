@@ -74,13 +74,13 @@ fn generate_tests_from_spec() {
         let original = r##"{original}"##;
         let expected = r##"{expected}"##;
 
-        use pulldown_cmark::{{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES}};
+        use pulldown_cmark::{{Parser, html, Options}};
 
         let mut s = String::new();
 
         let mut opts = Options::empty();
-        opts.insert(OPTION_ENABLE_TABLES);
-        opts.insert(OPTION_ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

@@ -114,11 +114,5 @@ The main author is Raph Levien.
 
 ## Contributions
 
-We gladly accept contributions via GitHub pull requests, as long as the author
-has signed the Google Contributor License. Please see CONTRIBUTIONS.md for
-more details.
-
-### Disclaimer
-
-This is not an official Google product (experimental or otherwise), it
-is just code that happens to be owned by Google.
+We gladly accept contributions via GitHub pull requests. Please see
+`CONTRIBUTIONS.md` for more details.

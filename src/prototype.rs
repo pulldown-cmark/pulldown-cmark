@@ -406,7 +406,8 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     is_html_tag(scan_html_block_tag(s).1)
 }
 
-fn parse_paragraph(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+#[allow(unused)]
+fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0,  // will get set later
@@ -727,8 +728,111 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     // }
 }
 
-// Root is node 0
+/// Return number of bytes parsed, landing at beginning of line following paragraph.
+fn parse_paragraph(tree: &mut Tree<Item>, s: &str, start_ix: usize) -> usize {
+    let mut ix = start_ix;
+    ix += scan_whitespace_no_nl(&s[ix..]);
+    ix += parse_line(tree, s, ix);
+    loop {
+        let soft_break_start = ix;
+        let (n_eol, is_eol) = scan_eol(&s[ix..]);
+        if !is_eol { break; }
+        ix += n_eol;
+        let soft_break_end = ix;
+
+        let mut line_start = LineStart::new(&s[ix..]);
+        let _ = scan_containers_new(tree, &mut line_start);
+        line_start.scan_all_space();
+        ix += line_start.bytes_scanned();
+        if scan_paragraph_interrupt(&s[ix..]) {
+            break;
+        }
+        tree.append(Item {
+            start: soft_break_start,
+            end: soft_break_end,
+            body: ItemBody::SoftBreak,
+        });
+        ix += parse_line(tree, s, ix);
+    }
+    ix - start_ix
+}
+
+/// Returns number of containers scanned
+fn scan_containers_new(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
+    let mut i = 0;
+    for &node_ix in &tree.spine {
+        match tree.nodes[node_ix].item.body {
+            ItemBody::BlockQuote => {
+                if !line_start.scan_blockquote_marker() {
+                    break;
+                }
+            }
+            ItemBody::Paragraph => (),
+            _ => panic!("unexpected node in tree"),
+        }
+        i += 1;
+    }
+    i
+}
+
+fn parse_block(tree: &mut Tree<Item>, s: &str, start_ix: usize) -> usize {
+    let mut line_start = LineStart::new(&s[start_ix..]);
+
+    let i = scan_containers_new(tree, &mut line_start);
+    for _ in i..tree.spine.len() {
+        tree.pop();
+    }
+
+    // Process new containers
+    loop {
+        if line_start.scan_blockquote_marker() {
+            tree.append(Item {
+                // ix is the start of the line; should it be inside?
+                start: start_ix,
+                end: 0,  // will get set later
+                body: ItemBody::BlockQuote,
+            });
+            tree.push();
+        } else {
+            break;
+        }
+    }
+
+    let mut ix = start_ix + line_start.bytes_scanned();
+
+    if let Some(n) = scan_blank_line(&s[ix..]) {
+        ix += n;
+    } else {
+        // paragraph
+        // TODO: move tree container into parse_paragraph?
+        tree.append(Item {
+            // ix is the start of the line; should it be inside?
+            start: ix,
+            end: 0,  // will get set later
+            body: ItemBody::Paragraph,
+        });
+        tree.push();
+        ix += parse_paragraph(tree, s, ix);
+        tree.pop();
+        tree.nodes[tree.cur].item.end = ix;
+    }
+    ix - start_ix
+}
+
 fn first_pass(s: &str) -> Tree<Item> {
+    let mut tree = Tree::new();
+    let mut ix = 0;
+    while ix < s.len() {
+        let n = parse_block(&mut tree, s, ix);
+        ix += n;
+    }
+    //dump_tree(&tree.nodes, 0, 0);
+    tree
+}
+
+#[allow(unused)]
+// Root is node 0
+fn first_pass_old(s: &str) -> Tree<Item> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {

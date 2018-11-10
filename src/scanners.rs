@@ -64,6 +64,83 @@ const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
     "wtai", "wyciwyg", "xcon", "xcon-userid", "xfire", "xmlrpc.beep",
     "xmlrpc.beeps", "xmpp", "xri", "ymsgr", "z39.50r", "z39.50s"];
 
+/// Analysis of the beginning of a line, including indentation and container
+/// markers.
+#[derive(Clone)]
+pub struct LineStart<'a> {
+    text: &'a str,
+    ix: usize,
+    spaces_remaining: usize,
+}
+
+impl<'a> LineStart<'a> {
+    pub fn new(text: &str) -> LineStart {
+        LineStart { text, ix: 0, spaces_remaining: 0 }
+    }
+
+    /// Try to scan a number of spaces.
+    pub fn scan_space(&mut self, mut n_space: usize) -> bool {
+        let n_from_remaining = self.spaces_remaining.min(n_space);
+        self.spaces_remaining -= n_from_remaining;
+        n_space -= n_from_remaining;
+        let bytes = self.text.as_bytes();
+        while n_space > 0 && self.ix < bytes.len() {
+            match bytes[self.ix] {
+                b' ' => {
+                    self.ix += 1;
+                    n_space -= 1;
+                }
+                b'\t' => {
+                    self.ix += 1;
+                    let spaces = 4 - self.ix % 4;
+                    let n = spaces.min(n_space);
+                    n_space -= n;
+                    self.spaces_remaining = spaces - n;
+                }
+                _ => break,
+            }
+        }
+        n_space == 0
+    }
+
+    /// Scan all available ASCII whitespace (not including eol).
+    pub fn scan_all_space(&mut self) {
+        self.spaces_remaining = 0;
+        let bytes = self.text.as_bytes();
+        while self.ix < bytes.len() {
+            match bytes[self.ix] {
+                b' ' | b'\t' => self.ix += 1,
+                _ => break,
+            }
+        }
+    }
+
+    fn scan_ch(&mut self, c: u8) -> bool {
+        if self.ix < self.text.len() && self.text.as_bytes()[self.ix] == c {
+            self.ix += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn scan_blockquote_marker(&mut self) -> bool {
+        let save = self.clone();
+        let _ = self.scan_space(3);
+        if self.scan_ch(b'>') {
+            let _ = self.scan_space(1);
+            true
+        } else {
+            *self = save;
+            false
+        }
+    }
+
+    pub fn bytes_scanned(&self) -> usize {
+        self.ix
+    }
+}
+
 pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
 }

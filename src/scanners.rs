@@ -69,13 +69,14 @@ const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
 #[derive(Clone)]
 pub struct LineStart<'a> {
     text: &'a str,
+    tab_start: usize,
     ix: usize,
     spaces_remaining: usize,
 }
 
 impl<'a> LineStart<'a> {
     pub fn new(text: &str) -> LineStart {
-        LineStart { text, ix: 0, spaces_remaining: 0 }
+        LineStart { text, tab_start: 0, ix: 0, spaces_remaining: 0 }
     }
 
     /// Try to scan a number of spaces.
@@ -91,8 +92,9 @@ impl<'a> LineStart<'a> {
                     n_space -= 1;
                 }
                 b'\t' => {
+                    let spaces = 4 - (self.ix - self.tab_start) % 4;
                     self.ix += 1;
-                    let spaces = 4 - self.ix % 4;
+                    self.tab_start = self.ix;
                     let n = spaces.min(n_space);
                     n_space -= n;
                     self.spaces_remaining = spaces - n;
@@ -113,6 +115,15 @@ impl<'a> LineStart<'a> {
                 _ => break,
             }
         }
+    }
+
+    /// Determine whether we're at end of line (includes end of file).
+    pub fn is_at_eol(&mut self) -> bool {
+        if self.ix == self.text.len() {
+            return true;
+        }
+        let c = self.text.as_bytes()[self.ix];
+        c == b'\r' || c == b'\n'
     }
 
     fn scan_ch(&mut self, c: u8) -> bool {
@@ -138,6 +149,10 @@ impl<'a> LineStart<'a> {
 
     pub fn bytes_scanned(&self) -> usize {
         self.ix
+    }
+
+    pub fn remaining_space(&self) -> usize {
+        self.spaces_remaining
     }
 }
 

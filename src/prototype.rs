@@ -136,6 +136,11 @@ impl<'a> FirstPass<'a> {
 
         line_start.scan_all_space();
         let ix = start_ix + line_start.bytes_scanned();
+        // TODO: Option would be nicer interface
+        let (atx_size, atx_level) = scan_atx_header(&self.text[ix..]);
+        if atx_size > 0 {
+            return self.parse_atx_header(ix, atx_level, atx_size);
+        }
         self.parse_paragraph(ix)
     }
 
@@ -306,6 +311,62 @@ impl<'a> FirstPass<'a> {
         self.tree.push();
         self.last_line_blank = false;
     }
+
+    /// Parse an ATX header.
+    ///
+    /// Returns index of start of next line.
+    fn parse_atx_header(&mut self, mut ix: usize, atx_level: i32, atx_size: usize) -> usize {
+        self.tree.append(Item {
+            start: ix,
+            end: 0, // set later
+            body: ItemBody::Header(atx_level),
+        });
+        ix += atx_size;
+        // next char is space or scan_eol
+        // (guaranteed by scan_atx_header)
+        let b = self.text.as_bytes()[ix];
+        if b == b'\n' || b == b'\r' {
+            ix += scan_eol(&self.text[ix..]).0;
+            return ix;
+        }
+        // skip leading spaces
+        let skip_spaces = scan_whitespace_no_nl(&self.text[ix..]);
+        ix += skip_spaces;
+
+        // now handle the header text
+        let header_start = ix;
+        let header_node_idx = self.tree.cur; // so that we can set the endpoint later
+        self.tree.push();
+        let header_text_size = parse_line(&mut self.tree, &self.text, ix);
+        ix += header_text_size;
+        self.tree.nodes[header_node_idx].item.end = ix;
+
+        // remove trailing matter from header text
+        // TODO: probably better to find limit before parsing; this makes assumptions
+        // about the way the line is parsed.
+        let header_text = &self.text[header_start..];
+        let mut limit = ix - header_start;
+        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+            limit -= 1;
+        }
+        let mut closer = limit;
+        while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
+            closer -= 1;
+        }
+        if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
+            limit = closer;
+            while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+                limit -= 1;
+            }
+        } else if closer == 0 { limit = closer; }
+        if self.tree.cur != NIL {
+            self.tree.nodes[self.tree.cur].item.end = limit + header_start;
+        }
+
+        self.tree.pop();
+        ix += scan_eol(&self.text[ix..]).0;
+        ix
+    }
 }
 
 impl Tree<Item> {
@@ -475,62 +536,6 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
     ix
 }
 
-// Starts with ix past all container marks.
-// Returns index of start of next line.
-fn parse_atx_header(mut tree: &mut Tree<Item>, s: &str, mut ix: usize,
-    atx_level: i32, atx_size: usize) -> usize {
-    
-    tree.append(Item {
-        start: ix,
-        end: 0, // set later
-        body: ItemBody::Header(atx_level),
-    });
-    ix += atx_size;
-    // next char is space or scan_eol
-    // (guaranteed by scan_atx_header)
-    let b = s.as_bytes()[ix];
-    if b == b'\n' || b == b'\r' {
-        ix += scan_eol(&s[ix..]).0;
-        return ix;
-    }
-    // skip leading spaces
-    let skip_spaces = scan_whitespace_no_nl(&s[ix..]);
-    ix += skip_spaces;
-
-    // now handle the header text
-    let header_start = ix;
-    let header_node_idx = tree.cur; // so that we can set the endpoint later
-    tree.push();
-    let header_text_size = parse_line(&mut tree, s, ix);
-    ix += header_text_size;
-    tree.nodes[header_node_idx].item.end = ix;
-
-
-    // remove trailing matter from header text
-    let header_text = &s[header_start..];
-    let mut limit = ix - header_start;
-    while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-        limit -= 1;
-    }
-    let mut closer = limit;
-    while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
-        closer -= 1;
-    }
-    if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
-        limit = closer;
-        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-            limit -= 1;
-        }
-    } else if closer == 0 { limit = closer; }
-    if tree.cur != NIL {
-        tree.nodes[tree.cur].item.end = limit + header_start;
-    }
-
-    tree.pop();
-    ix += scan_eol(&s[ix..]).0;
-    ix
-}
-
 // Returns index of start of next line.
 fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
@@ -593,7 +598,7 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_code_fence(s).0 > 0 ||
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||
-    scan_listitem(s).0 > 0 ||
+    scan_listitem(s).0 > 0 ||  // TODO: be stricter with ordered lists
     is_html_tag(scan_html_block_tag(s).1)
 }
 
@@ -889,9 +894,10 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
     ix += leading_bytes;
 
-    let (atx_size, atx_level) = scan_atx_header(&s[ix..]);
+    let (_atx_size, atx_level) = scan_atx_header(&s[ix..]);
     if atx_level > 0 {
-        return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
+        unimplemented!();
+        //return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
     }
 
     let hrule_size = scan_hrule(&s[ix..]);

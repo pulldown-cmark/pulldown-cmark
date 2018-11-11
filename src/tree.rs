@@ -58,8 +58,17 @@ impl<T> Tree<T> {
         self.cur = self.spine.pop().unwrap();
     }
 
-    // Look at the parent node, leaving tree in original state
-    pub fn peek_up(&mut self) -> Option<usize> {
+    /// Look at the parent node.
+    pub fn peek_up(&self) -> Option<usize> {
         self.spine.last().cloned()
+    }
+
+    /// Look at grandparent node.
+    pub fn peek_grandparent(&mut self) -> Option<usize> {
+        if self.spine.len() >= 2 {
+            Some(self.spine[self.spine.len() - 2].clone())
+        } else {
+            None
+        }
     }
 }

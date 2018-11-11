@@ -52,7 +52,7 @@ enum ItemBody {
     Html,
     InlineHtml,
     BlockQuote,
-    List(usize, u8, Option<usize>), // offset of first blank line, list character, list start index
+    List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
     SynthesizeText(Cow<'static, str>),
     BlankLine,
@@ -65,12 +65,14 @@ enum ItemBody {
 struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
+    last_line_blank: bool,
 }
 
 impl<'a> FirstPass<'a> {
     fn new(text: &str) -> FirstPass {
         let tree = Tree::new();
-        FirstPass { text, tree }
+        let last_line_blank = false;
+        FirstPass { text, tree, last_line_blank }
     }
 
     fn run(mut self) -> Tree<Item> {
@@ -78,7 +80,10 @@ impl<'a> FirstPass<'a> {
         while ix < self.text.len() {
             ix = self.parse_block(ix);
         }
-        //dump_tree(&tree.nodes, 0, 0);
+        for _ in 0..self.tree.spine.len() {
+            self.pop(ix);
+        }
+        //dump_tree(&self.tree.nodes, 0, 0);
         self.tree
     }
 
@@ -88,14 +93,14 @@ impl<'a> FirstPass<'a> {
 
         let i = self.scan_containers(&mut line_start);
         for _ in i..self.tree.spine.len() {
-            self.tree.pop();
+            self.pop(start_ix);
         }
 
         // Process new containers
         loop {
             let container_start = start_ix + line_start.bytes_scanned();
             if line_start.scan_blockquote_marker() {
-                self.finish_list();
+                self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
                     end: 0,  // will get set later
@@ -118,10 +123,11 @@ impl<'a> FirstPass<'a> {
 
         let ix = start_ix + line_start.bytes_scanned();
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
+            self.last_line_blank = true;
             return ix + n;
         }
 
-        self.finish_list();
+        self.finish_list(start_ix);
         if line_start.scan_space(4) {
             let ix = start_ix + line_start.bytes_scanned();
             let remaining_space = line_start.remaining_space();
@@ -216,8 +222,7 @@ impl<'a> FirstPass<'a> {
         }
         // TODO: trim trailing whitespace lines (mutate tree).
 
-        self.tree.pop();
-        self.tree.nodes[self.tree.cur].item.end = ix;
+        self.pop(ix);
         ix
     }
 
@@ -246,13 +251,31 @@ impl<'a> FirstPass<'a> {
         i
     }
 
-    /// Close a list if it's open.
-    fn finish_list(&mut self) {
+    /// Pop a container, setting its end.
+    fn pop(&mut self, ix: usize) {
+        self.tree.pop();
+        self.tree.nodes[self.tree.cur].item.end = ix;
+        if let ItemBody::List(true, _, _) = self.tree.nodes[self.tree.cur].item.body {
+            surgerize_tight_list(&mut self.tree);
+        }
+    }
+
+    /// Close a list if it's open. Also set loose if last line was blank.
+    fn finish_list(&mut self, ix: usize) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
-                // TODO: fix up end
-                self.tree.pop();
+                self.pop(ix);
             }
+        }
+        if self.last_line_blank {
+            if let Some(node_ix) = self.tree.peek_grandparent() {
+                if let ItemBody::List(ref mut is_tight, _, _) =
+                    self.tree.nodes[node_ix].item.body
+                {
+                    *is_tight = false;
+                }
+            }
+            self.last_line_blank = false;
         }
     }
 
@@ -260,19 +283,28 @@ impl<'a> FirstPass<'a> {
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(_, existing_ch, _) = self.tree.nodes[node_ix].item.body {
+            if let ItemBody::List(ref mut is_tight, existing_ch, _) =
+                self.tree.nodes[node_ix].item.body
+            {
                 if existing_ch == ch {
+                    if self.last_line_blank {
+                        *is_tight = false;
+                    }
                     return;
                 }
-                self.finish_list();
+            }
+            if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
+                // TODO: this is not the best choice; maybe get end from last list item.
+                self.pop(start);
             }
         }
         self.tree.append(Item {
             start: start,
             end: 0,  // will get set later
-            body: ItemBody::List(0, ch, index),
+            body: ItemBody::List(true, ch, index),
         });
         self.tree.push();
+        self.last_line_blank = false;
     }
 }
 
@@ -742,7 +774,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
                 tree.append(Item {
                     start: ix,
                     end: ix, // TODO: set this correctly
-                    body: ItemBody::List(listitem_indent, listitem_delimiter, listitem_start),
+                    body: ItemBody::List(false /* */, listitem_delimiter, listitem_start),
                 });
                 tree.push();
             }
@@ -1130,6 +1162,7 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
     }
 }
 
+#[allow(unused)]
 // tree.cur points to a List<_, _, _> Item Node
 fn detect_tight_list(tree: &Tree<Item>) -> bool {
     let mut this_listitem = tree.nodes[tree.cur].child;

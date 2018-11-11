@@ -80,7 +80,23 @@ impl<'a> LineStart<'a> {
     }
 
     /// Try to scan a number of spaces.
-    pub fn scan_space(&mut self, mut n_space: usize) -> bool {
+    ///
+    /// Returns true if all spaces were consumed.
+    ///
+    /// Note: consumes some spaces even if not successful.
+    pub fn scan_space(&mut self, n_space: usize) -> bool {
+        self.scan_space_inner(n_space) == 0
+    }
+
+    /// Scan a number of spaces up to a maximum.
+    ///
+    /// Returns number of spaces scanned.
+    pub fn scan_space_upto(&mut self, n_space: usize) -> usize {
+        n_space - self.scan_space_inner(n_space)
+    }
+
+    /// Returns unused remainder of spaces.
+    fn scan_space_inner(&mut self, mut n_space: usize) -> usize {
         let n_from_remaining = self.spaces_remaining.min(n_space);
         self.spaces_remaining -= n_from_remaining;
         n_space -= n_from_remaining;
@@ -102,7 +118,7 @@ impl<'a> LineStart<'a> {
                 _ => break,
             }
         }
-        n_space == 0
+        n_space
     }
 
     /// Scan all available ASCII whitespace (not including eol).
@@ -145,6 +161,37 @@ impl<'a> LineStart<'a> {
             *self = save;
             false
         }
+    }
+
+    /// Scan a list marker.
+    ///
+    /// Return value is the character, the start index, and the indent in spaces.
+    /// For ordered list markers, the character will be one of b'.' or b')'. For
+    /// bullet list markers, it will be one of b'-', b'+', or b'*'.
+    pub fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
+        let save = self.clone();
+        let mut indent = self.scan_space_upto(3);
+        if self.ix < self.text.len() {
+            let c = self.text.as_bytes()[self.ix];
+            if c == b'-' || c == b'+' || c == b'*' {
+                self.ix += 1;
+                if self.scan_space(1) || self.is_at_eol() {
+                    indent += 2;
+
+                    let save = self.clone();
+                    let post_indent = self.scan_space_upto(4);
+                    if post_indent < 4 {
+                        indent += post_indent;
+                    } else {
+                        *self = save;
+                    }
+                    return Some((c, 0, indent));
+                }
+            }
+            // TODO: handle ordered list markers.
+        }
+        *self = save;
+        None
     }
 
     pub fn bytes_scanned(&self) -> usize {

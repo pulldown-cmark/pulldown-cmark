@@ -37,6 +37,7 @@ mod escape;
 mod puncttable;
 mod utils;
 mod prototype;
+mod tree;
 
 pub use prototype::Parser;
 pub use parse::{Alignment, Event, Tag, Options};

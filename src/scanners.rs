@@ -174,6 +174,10 @@ impl<'a> LineStart<'a> {
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
+                if scan_hrule(&self.text[self.ix..]) > 0 {
+                    *self = save;
+                    return None;
+                }
                 self.ix += 1;
                 if self.scan_space(1) || self.is_at_eol() {
                     indent += 2;
@@ -446,6 +450,7 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 }
 
 // return size of line containing hrule, including trailing newline, or 0
+// TODO: switch to Option return type
 pub fn scan_hrule(data: &str) -> usize {
     let bytes = data.as_bytes();
     let size = data.len();

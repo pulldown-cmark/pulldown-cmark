@@ -136,6 +136,12 @@ impl<'a> FirstPass<'a> {
 
         line_start.scan_all_space();
         let ix = start_ix + line_start.bytes_scanned();
+
+        let n = scan_hrule(&self.text[ix..]);
+        if n > 0 {
+            return self.parse_hrule(n, ix);
+        }
+
         // TODO: Option would be nicer interface
         let (atx_size, atx_level) = scan_atx_header(&self.text[ix..]);
         if atx_size > 0 {
@@ -164,12 +170,13 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let _ = self.scan_containers(&mut line_start);
-            line_start.scan_all_space();
+            let _ = line_start.scan_space(3);
             let ix_new = ix + line_start.bytes_scanned();
             if scan_paragraph_interrupt(&self.text[ix_new..]) {
                 break;
             }
-            ix = ix_new;
+            line_start.scan_all_space();
+            ix += line_start.bytes_scanned();
             self.tree.append(Item {
                 start: soft_break_start,
                 end: soft_break_end,
@@ -310,6 +317,18 @@ impl<'a> FirstPass<'a> {
         });
         self.tree.push();
         self.last_line_blank = false;
+    }
+
+    /// Parse a thematic break.
+    ///
+    /// Returns index of start of next line.
+    fn parse_hrule(&mut self, hrule_size: usize, ix: usize) -> usize {
+        self.tree.append(Item {
+            start: ix,
+            end: ix + hrule_size,
+            body: ItemBody::Rule,
+        });
+        ix + hrule_size
     }
 
     /// Parse an ATX header.
@@ -591,8 +610,7 @@ fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
 }
 
 fn scan_paragraph_interrupt(s: &str) -> bool {
-    s.is_empty() ||
-    s.as_bytes()[0] <= b' ' ||  // TODO: is this needed?
+    scan_eol(s).1 ||
     scan_hrule(s) > 0 ||
     scan_atx_header(s).0 > 0 ||
     scan_code_fence(s).0 > 0 ||

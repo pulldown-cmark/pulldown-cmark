@@ -155,31 +155,39 @@ impl<'a> FirstPass<'a> {
             end: 0,  // will get set later
             body: ItemBody::Paragraph,
         });
+        let node = self.tree.cur;
         self.tree.push();
 
         let mut ix = start_ix;
         loop {
-            ix += parse_line(&mut self.tree, &self.text, ix);
-            let soft_break_start = ix;
-            let (n_eol, is_eol) = scan_eol(&self.text[ix..]);
-            if !is_eol { break; }
-            ix += n_eol;
-            let soft_break_end = ix;
+            let (next_ix, brk) = parse_line(&mut self.tree, &self.text, ix);
+            ix = next_ix;
 
             let mut line_start = LineStart::new(&self.text[ix..]);
-            let _ = self.scan_containers(&mut line_start);
-            let _ = line_start.scan_space(3);
-            let ix_new = ix + line_start.bytes_scanned();
-            if scan_paragraph_interrupt(&self.text[ix_new..]) {
-                break;
+            let n_containers = self.scan_containers(&mut line_start);
+            if !line_start.scan_space(4) {
+                let ix_new = ix + line_start.bytes_scanned();
+                if n_containers == self.tree.spine.len() {
+                    if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
+                        self.tree.nodes[node].item.body = ItemBody::Header(level);
+                        if let Some(Item { start, end: _, body: ItemBody::HardBreak }) = brk {
+                            if self.text.as_bytes()[start] == b'\\' {
+                                self.tree.append_text(start, start + 1);
+                            }
+                        }
+                        ix = ix_new + n;
+                        break;
+                    }
+                }
+                if scan_paragraph_interrupt(&self.text[ix_new..]) {
+                    break;
+                }
             }
             line_start.scan_all_space();
-            ix += line_start.bytes_scanned();
-            self.tree.append(Item {
-                start: soft_break_start,
-                end: soft_break_end,
-                body: ItemBody::SoftBreak,
-            });
+            ix = next_ix + line_start.bytes_scanned();
+            if let Some(item) = brk {
+                self.tree.append(item);
+            }
         }
 
         self.tree.pop();
@@ -354,8 +362,7 @@ impl<'a> FirstPass<'a> {
         let header_start = ix;
         let header_node_idx = self.tree.cur; // so that we can set the endpoint later
         self.tree.push();
-        let header_text_size = parse_line(&mut self.tree, &self.text, ix);
-        ix += header_text_size;
+        ix = parse_line(&mut self.tree, &self.text, ix).0;
         self.tree.nodes[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text
@@ -363,6 +370,12 @@ impl<'a> FirstPass<'a> {
         // about the way the line is parsed.
         let header_text = &self.text[header_start..];
         let mut limit = ix - header_start;
+        if limit > 0 && header_text.as_bytes()[limit-1] == b'\n' {
+            limit -= 1;
+        }
+        if limit > 0 && header_text.as_bytes()[limit-1] == b'\r' {
+            limit -= 1;
+        }
         while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
             limit -= 1;
         }
@@ -381,7 +394,6 @@ impl<'a> FirstPass<'a> {
         }
 
         self.tree.pop();
-        ix += scan_eol(&self.text[ix..]).0;
         ix
     }
 }
@@ -436,8 +448,8 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
 
 /// Parse a line of input, appending text and items to tree.
 ///
-/// Returns: number of bytes parsed (not including terminating newline).
-fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+/// Returns: index after line and an item representing the break.
+fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<Item>) {
     let start = ix;
     let mut begin_text = start;
     while ix < s.len() {
@@ -447,11 +459,12 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
                 if ix >= begin_text + 1 && s.as_bytes()[ix - 1] == b'\\' {
                     i -= 1;
                     tree.append_text(begin_text, i);
-                    tree.append(Item {
+                    ix += scan_eol(&s[ix..]).0;
+                    return (ix, Some(Item {
                         start: i,
                         end: ix,
                         body: ItemBody::HardBreak,
-                    });
+                    }));
                 } else if ix >= begin_text + 2
                     && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 1])
                     && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 2]) {
@@ -460,20 +473,25 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
                         i -= 1;
                     }
                     tree.append_text(begin_text, i);
-                    tree.append(Item {
+                    ix += scan_eol(&s[ix..]).0;
+                    return (ix, Some(Item {
                         start: i,
                         end: ix,
                         body: ItemBody::HardBreak,
-                    });
-                } else {
-                    tree.append_text(begin_text, ix);
+                    }));
                 }
-                return ix - start;
+                tree.append_text(begin_text, ix);
+                ix += scan_eol(&s[ix..]).0;
+                return (ix, Some(Item {
+                    start: i,
+                    end: ix,
+                    body: ItemBody::SoftBreak,
+                }));
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(s.as_bytes()[ix + 1]) => {
                 tree.append_text(begin_text, ix);
                 begin_text = ix + 1;
-                ix = ix + 2;
+                ix += 2;
             }
             c @ b'*' | c @b'_' => {
                 tree.append_text(begin_text, ix);
@@ -528,7 +546,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     }
     // need to close text at eof
     tree.append_text(begin_text, ix);
-    ix - start
+    (ix, None)
 }
 
 // ix is at the beginning of the code line text
@@ -664,7 +682,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
                 body: ItemBody::SoftBreak,
             });
         }
-        let n = parse_line(&mut tree, s, ix);
+        let n = parse_line(&mut tree, s, ix).0;
         ix += n;
         if let (n, true) = scan_eol(&s[ix..]) {
             last_soft_break = Some(ix);

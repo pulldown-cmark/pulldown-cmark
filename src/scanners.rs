@@ -499,21 +499,27 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     }
 }
 
-// returns number of bytes in line (including trailing newline) and level
-pub fn scan_setext_header(data: &str) -> (usize, i32) {
+pub fn scan_setext_header(_data: &str) -> (usize, i32) {
+    unimplemented!();
+}
+
+/// Scan a setext heading underline.
+///
+/// Returns number of bytes in line (including trailing newline) and level.
+pub fn scan_setext_heading(data: &str) -> Option<(usize, i32)> {
     let size = data.len();
     let mut i = 0;
-    if i == size { return (0, 0); }
+    if i == size { return None; }
     let c = data.as_bytes()[i];
-    if !(c == b'-' || c == b'=') { return (0, 0); }
+    if !(c == b'-' || c == b'=') { return None; }
     i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
     if let Some(n) = scan_blank_line(&data[i..]) {
         i += n;
     } else {
-        return (0, 0);
+        return None;
     }
     let level = if c == b'=' { 1 } else { 2 };
-    (i, level)
+    Some((i, level))
 }
 
 // returns number of bytes in line (including trailing

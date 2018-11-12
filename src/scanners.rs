@@ -474,8 +474,15 @@ pub fn scan_hrule(data: &str) -> usize {
     if n >= 3 { i } else { 0 }
 }
 
-// returns number of bytes in prefix and level
-pub fn scan_atx_header(data: &str) -> (usize, i32) {
+// TODO: obsolete, remove in code cleanup
+pub fn scan_atx_header(_data: &str) -> (usize, i32) {
+    unimplemented!();
+}
+
+/// Scan an ATX heading opening sequence.
+///
+/// Returns number of bytes in prefix and level.
+pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     let size = data.len();
     let level = scan_ch_repeat(data, b'#');
     let i = level;
@@ -483,12 +490,12 @@ pub fn scan_atx_header(data: &str) -> (usize, i32) {
         if i < size {
             match data.as_bytes()[i] {
                 b' ' | b'\t' ... b'\r' => (),
-                _ => return (0, 0)
+                _ => return None
             }
         }
-        (i, level as i32)
+        Some((i, level as i32))
     } else {
-        (0, 0)
+        None
     }
 }
 

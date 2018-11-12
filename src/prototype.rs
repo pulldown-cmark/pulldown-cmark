@@ -142,10 +142,8 @@ impl<'a> FirstPass<'a> {
             return self.parse_hrule(n, ix);
         }
 
-        // TODO: Option would be nicer interface
-        let (atx_size, atx_level) = scan_atx_header(&self.text[ix..]);
-        if atx_size > 0 {
-            return self.parse_atx_header(ix, atx_level, atx_size);
+        if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
+            return self.parse_atx_heading(ix, atx_level, atx_size);
         }
         self.parse_paragraph(ix)
     }
@@ -331,10 +329,10 @@ impl<'a> FirstPass<'a> {
         ix + hrule_size
     }
 
-    /// Parse an ATX header.
+    /// Parse an ATX heading.
     ///
     /// Returns index of start of next line.
-    fn parse_atx_header(&mut self, mut ix: usize, atx_level: i32, atx_size: usize) -> usize {
+    fn parse_atx_heading(&mut self, mut ix: usize, atx_level: i32, atx_size: usize) -> usize {
         self.tree.append(Item {
             start: ix,
             end: 0, // set later
@@ -342,7 +340,7 @@ impl<'a> FirstPass<'a> {
         });
         ix += atx_size;
         // next char is space or scan_eol
-        // (guaranteed by scan_atx_header)
+        // (guaranteed by scan_atx_heading)
         let b = self.text.as_bytes()[ix];
         if b == b'\n' || b == b'\r' {
             ix += scan_eol(&self.text[ix..]).0;
@@ -612,7 +610,7 @@ fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
 fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_eol(s).1 ||
     scan_hrule(s) > 0 ||
-    scan_atx_header(s).0 > 0 ||
+    scan_atx_heading(s).is_some() ||
     scan_code_fence(s).0 > 0 ||
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||

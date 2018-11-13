@@ -872,15 +872,24 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
     if size == 0 { return None; }
     let mut i = 0;
     match data.as_bytes()[0] {
-        b'\'' => {
+        quote @ b'\'' | quote @ b'"' => {
             i += 1;
-            i += scan_while(&data[i..], |c| c != b'\'');
-            i += 1;
-        },
-        b'"' => {
-            i += 1;
-            i += scan_while(&data[i..], |c| c != b'"');
-            i += 1;
+            // Block structure such as a setext heading must
+            // be determined before inlines such as HTML tags,
+            // so attributes must be processed one line at a time
+            loop {
+                if i >= data.len() { return None; }
+                if scan_setext_heading(&data[i..]).is_some() {
+                    return None;
+                }
+                i += scan_while(&data[i..], |c| {c != quote && c != b'\r' && c != b'\n'});
+                if data.as_bytes()[i] == quote {
+                    i += 1;
+                    break;
+                } else {
+                    i += scan_eol(&data[i..]).0;
+                }
+            }
         },
         b' ' | b'=' | b'>' | b'<' | b'`' => { return None; },
         _ => { // unquoted attribute value
@@ -890,7 +899,6 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
     }
     if i >= data.len() { return None; }
     return Some(i);
-
 }
 
 pub fn is_escaped(data: &str, loc: usize) -> bool {

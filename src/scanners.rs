@@ -435,13 +435,11 @@ pub fn scan_fenced_code_line(text : &str, mut indentation: usize) -> usize {
 
 // return: end byte for closing code fence, or None
 // if the line is not a closing code fence
-pub fn scan_closing_code_fence(text: &str, fence_char: u8, num_fence_chars_req: usize) -> Option<usize> {
+pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) -> Option<usize> {
+    if text.is_empty() { return Some(0); }
     let mut i = 0;
-    let (num_leading_bytes, num_leading_spaces) = scan_leading_space(text, 0);
-    if num_leading_spaces >= 4 { return None; }
-    i += num_leading_bytes;
     let num_fence_chars_found = scan_ch_repeat(&text[i..], fence_char);
-    if num_fence_chars_found < num_fence_chars_req { return None; }
+    if num_fence_chars_found < n_fence_char { return None; }
     i += num_fence_chars_found;
     let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
     i += num_trailing_spaces;
@@ -603,6 +601,7 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
     }
 }
 
+// TODO: change return type to Option.
 // returns: number of bytes scanned, char
 pub fn scan_code_fence(data: &str) -> (usize, u8) {
     if data.is_empty() {

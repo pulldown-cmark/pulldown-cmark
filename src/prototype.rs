@@ -46,7 +46,7 @@ enum ItemBody {
     MaybeHtml,
     Rule,
     Header(i32), // header level
-    FencedCodeBlock(usize, u8, usize, String), // number of fence chars, fence char, indentation, info string
+    FencedCodeBlock(String), // info string (maybe cow?)
     IndentCodeBlock(usize), // last non-blank child
     SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
@@ -129,7 +129,8 @@ impl<'a> FirstPass<'a> {
         }
 
         self.finish_list(start_ix);
-        if line_start.scan_space(4) {
+        let indent = line_start.scan_space_upto(4);
+        if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
             let remaining_space = line_start.remaining_space();
             return self.parse_indented_code_block(ix, remaining_space);
@@ -145,6 +146,11 @@ impl<'a> FirstPass<'a> {
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
             return self.parse_atx_heading(ix, atx_level, atx_size);
+        }
+
+        let (n, fence_ch) = scan_code_fence(&self.text[ix..]);
+        if n > 0 {
+            return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
         self.parse_paragraph(ix)
     }
@@ -221,13 +227,7 @@ impl<'a> FirstPass<'a> {
 
             let line_start_ix = ix;
             ix += scan_nextline(&self.text[ix..]);
-            if self.text.as_bytes()[ix - 2] == b'\r' {
-                // Normalize CRLF to LF
-                self.tree.append_text(line_start_ix, ix - 2);
-                self.tree.append_text(ix - 1, ix);
-            } else {
-                self.tree.append_text(line_start_ix, ix);
-            }
+            self.append_code_text(line_start_ix, ix);
             // TODO(spec clarification): should we synthesize newline at EOF?
 
             if !last_line_blank {
@@ -236,8 +236,10 @@ impl<'a> FirstPass<'a> {
             }
 
             let mut line_start = LineStart::new(&self.text[ix..]);
-            let _ = self.scan_containers(&mut line_start);
-            if !(line_start.scan_space(4) || line_start.is_at_eol()) {
+            let n_containers = self.scan_containers(&mut line_start);
+            if n_containers < self.tree.spine.len()
+                || !(line_start.scan_space(4) || line_start.is_at_eol())
+            {
                 break;
             }
             let next_line_ix = ix + line_start.bytes_scanned();
@@ -253,6 +255,68 @@ impl<'a> FirstPass<'a> {
         self.tree.nodes[last_nonblank_child].next = NIL;
         self.pop(end_ix);
         ix
+    }
+
+    fn parse_fenced_code_block(&mut self, start_ix: usize, indent: usize,
+        fence_ch: u8, n_fence_char: usize) -> usize
+    {
+        let mut info_start = start_ix + n_fence_char;
+        info_start += scan_whitespace_no_nl(&self.text[info_start..]);
+        let mut info_end = info_start + scan_nextline(&self.text[info_start..]);
+        while info_end > info_start && is_ascii_whitespace(self.text.as_bytes()[info_end - 1]) {
+            info_end -= 1;
+        }
+        let info_string = self.text[info_start..info_end].to_string();
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0,  // will get set later
+            body: ItemBody::FencedCodeBlock(info_string),
+        });
+        self.tree.push();
+        let mut ix = start_ix + scan_nextline(&self.text[start_ix..]);
+        loop {
+            let mut line_start = LineStart::new(&self.text[ix..]);
+            let n_containers = self.scan_containers(&mut line_start);
+            if n_containers < self.tree.spine.len() {
+                break;
+            }
+            line_start.scan_space(indent);
+            let mut close_line_start = line_start.clone();
+            if !close_line_start.scan_space(4) {
+                let close_ix = ix + close_line_start.bytes_scanned();
+                if let Some(n) =
+                    scan_closing_code_fence(&self.text[close_ix..], fence_ch, n_fence_char)
+                {
+                    ix = close_ix + n;
+                    break;
+                }
+            }
+            let remaining_space = line_start.remaining_space();
+            ix += line_start.bytes_scanned();
+            // TODO(cleanup): dedup cut'n'paste
+            if remaining_space > 0 {
+                self.tree.append(Item {
+                    start: ix,
+                    end: ix,
+                    body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+                });
+            }
+            let next_ix = ix + scan_nextline(&self.text[ix..]);
+            self.append_code_text(ix, next_ix);
+            ix = next_ix;
+        }
+        self.pop(ix);
+        ix
+    }
+
+    fn append_code_text(&mut self, start: usize, end: usize) {
+        if self.text.as_bytes()[end - 2] == b'\r' {
+            // Normalize CRLF to LF
+            self.tree.append_text(start, end - 2);
+            self.tree.append_text(end - 1, end);
+        } else {
+            self.tree.append_text(start, end);
+        }
     }
 
     /// Returns number of containers scanned.
@@ -273,6 +337,7 @@ impl<'a> FirstPass<'a> {
                 }
                 ItemBody::Paragraph => (),
                 ItemBody::IndentCodeBlock(_) => (),
+                ItemBody::FencedCodeBlock(_) => (),
                 _ => panic!("unexpected node in tree"),
             }
             i += 1;
@@ -747,7 +812,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     if ix >= s.len() { return ix; }
     // check if parent is a leaf block, which makes new containers illegal
     if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(_, _, _, _) = tree.nodes[parent].item.body {
+        if let ItemBody::FencedCodeBlock(_) = tree.nodes[parent].item.body {
             return ix;
         }
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
@@ -844,9 +909,11 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
 
     if let Some(parent) = tree.peek_up() {
+        /*
         if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation, _) = tree.nodes[parent].item.body {
             return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
         }
+        */
         if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
         }
@@ -939,7 +1006,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::FencedCodeBlock(num_code_fence_chars, code_fence_char, leading_spaces, info_string),
+            body: ItemBody::FencedCodeBlock(info_string),
         });
         
         ix += scan_nextline(&s[ix..]);
@@ -1412,7 +1479,7 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::FencedCodeBlock(_,_,_, ref info_string) => Some(Tag::CodeBlock(Cow::from(info_string.clone()))),
+        ItemBody::FencedCodeBlock(ref info_string) => Some(Tag::CodeBlock(Cow::from(info_string.clone()))),
         ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock(Cow::from(""))),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),

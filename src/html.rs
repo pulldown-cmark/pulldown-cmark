@@ -34,7 +34,7 @@ enum TableState {
     Body,
 }
 
-struct HtmlWriter<I, W>
+struct HtmlWriter<'a, I, W>
 where
     W: Write,
 {
@@ -56,7 +56,7 @@ where
     numbers: HashMap<Cow<'a, str>, usize>,
 }
 
-impl<'a, I, W> HtmlWriter<I, W>
+impl<'a, I, W> HtmlWriter<'a, I, W>
 where
     I: Iterator<Item = Event<'a>>,
     W: Write,
@@ -100,7 +100,7 @@ where
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
-                    self.start_tag(tag, &mut numbers)?;
+                    self.start_tag(tag)?;
                 }
                 End(tag) => {
                     self.end_tag(tag)?;
@@ -221,7 +221,7 @@ where
             Tag::Emphasis => self.write(b"<em>", false)?,
             Tag::Strong => self.write(b"<strong>", false)?,
             Tag::Code => self.write(b"<code>", false)?,
-            Tag::Link(dest, title) => {
+            Tag::Link(_, dest, title) => {
                 self.write(b"<a href=\"", false)?;
                 self.bytes_written += escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
@@ -230,11 +230,11 @@ where
                 }
                 self.write(b"\">", false)?;
             }
-            Tag::Image(dest, title) => {
+            Tag::Image(_, dest, title) => {
                 self.write(b"<img src=\"", false)?;
                 self.bytes_written += escape_href(&mut self.writer, &dest)?;
                 self.write(b"\" alt=\"", false)?;
-                self.raw_text(numbers)?;
+                self.raw_text()?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
                     self.bytes_written += escape_html(&mut self.writer, &title, false)?;
@@ -247,7 +247,7 @@ where
                 self.write(b"<div class=\"footnote-definition\" id=\"", false)?;
                 self.bytes_written += escape_html(&mut self.writer, &*name, false)?;
                 self.write(b"\"><sup class=\"footnote-definition-label\">", false)?;
-                let number = self.numbers.entry(name).or_insert(len);
+                let number = *self.numbers.entry(name).or_insert(len);
                 self.write(&*format!("{}", number).as_bytes(), false)?;
                 self.write(b"</sup>", false)?;
             }
@@ -311,10 +311,10 @@ where
             Tag::Code => {
                 self.write(b"</code>", false)?;
             }
-            Tag::Link(_, _) => {
+            Tag::Link(_, _, _) => {
                 self.write(b"</a>", false)?;
             }
-            Tag::Image(_, _) => (), // shouldn't happen, handled in start
+            Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
                 self.write(b"</div>", true)?;
             }
@@ -346,7 +346,7 @@ where
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
-                    let number = self.numbers.entry(name).or_insert(len);
+                    let number = *self.numbers.entry(name).or_insert(len);
                     self.write(&*format!("[{}]", number).as_bytes(), false)?;
                 }
             }
@@ -433,7 +433,7 @@ where
         table_state: TableState::Head,
         table_alignments: vec![],
         table_cell_index: 0,
-        numbers:  HashMap::new(),
+        numbers: HashMap::new(),
     };
     writer.run()
 }

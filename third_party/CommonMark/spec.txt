@@ -5607,7 +5607,7 @@ references and their corresponding code points.
 &frac34; &HilbertSpace; &DifferentialD;
 &ClockwiseContourIntegral; &ngE;
 .
-<p>  &amp; © Æ Ď
+<p>  &amp; © Æ Ď
 ¾ ℋ ⅆ
 ∲ ≧̸</p>
 ````````````````````````````````
@@ -5800,9 +5800,9 @@ Only [spaces], and not [unicode whitespace] in general, are
 stripped in this way:
 
 ```````````````````````````````` example
-` b `
+` b `
 .
-<p><code> b </code></p>
+<p><code> b </code></p>
 ````````````````````````````````
 
 
@@ -6193,9 +6193,9 @@ a*"foo"*
 Unicode nonbreaking spaces count as whitespace, too:
 
 ```````````````````````````````` example
-* a *
+* a *
 .
-<p>* a *</p>
+<p>* a *</p>
 ````````````````````````````````
 
 
@@ -7541,7 +7541,7 @@ Titles must be separated from the link using a [whitespace].
 Other [Unicode whitespace] like non-breaking space doesn't work.
 
 ```````````````````````````````` example
-[link](/url "title")
+[link](/url "title")
 .
 <p><a href="/url%C2%A0%22title%22">link</a></p>
 ````````````````````````````````

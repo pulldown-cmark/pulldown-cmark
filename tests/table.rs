@@ -3,6 +3,8 @@
 
 extern crate pulldown_cmark;
 
+include!("normalize_html.rs.inc");
+
 
     #[test]
     fn table_test_1() {
@@ -23,7 +25,7 @@ extern crate pulldown_cmark;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -46,7 +48,7 @@ extern crate pulldown_cmark;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -76,7 +78,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -108,7 +110,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -146,7 +148,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -173,7 +175,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -200,7 +202,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -227,7 +229,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -254,7 +256,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -291,7 +293,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -314,7 +316,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -339,7 +341,7 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -364,5 +366,5 @@ Test ending
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }

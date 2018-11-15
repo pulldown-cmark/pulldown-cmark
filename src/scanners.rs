@@ -420,19 +420,6 @@ pub fn scan_code_line(text: &str) -> Option<usize> {
     return None;
 }
 
-// return: start byte for code text in fenced code line
-// of given indentation
-pub fn scan_fenced_code_line(text : &str, mut indentation: usize) -> usize {
-    let bytes = text.as_bytes();
-    let mut i = 0;
-    for &c in bytes {
-        if indentation == 0 || c != b' ' { return i; }
-        indentation -= 1;
-        i += 1;
-    }
-    i
-}
-
 // return: end byte for closing code fence, or None
 // if the line is not a closing code fence
 pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) -> Option<usize> {

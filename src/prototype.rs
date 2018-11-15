@@ -34,16 +34,24 @@ struct Item {
     body: ItemBody,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum ItemBody {
     Paragraph,
     Text,
     SoftBreak,
     HardBreak,
+
+    // These are possible inline items, need to be resolved in second pass.
     Inline(usize, bool, bool), // Perhaps this should be MaybeEmphasis?
+    MaybeCode(usize),
+    MaybeHtml,
+    Backslash,
+
+    // These are inline items after resolution.
     Emphasis,
     Strong,
-    MaybeHtml,
+    Code,
+
     Rule,
     Header(i32), // header level
     FencedCodeBlock(String), // info string (maybe cow?)
@@ -217,17 +225,9 @@ impl<'a> FirstPass<'a> {
 
         let mut ix = start_ix;
         loop {
-            if remaining_space > 0 {
-                self.tree.append(Item {
-                    start: ix,
-                    end: ix,
-                    body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
-                });
-            }
-
             let line_start_ix = ix;
             ix += scan_nextline(&self.text[ix..]);
-            self.append_code_text(line_start_ix, ix);
+            self.append_code_text(remaining_space, line_start_ix, ix);
             // TODO(spec clarification): should we synthesize newline at EOF?
 
             if !last_line_blank {
@@ -293,23 +293,22 @@ impl<'a> FirstPass<'a> {
             }
             let remaining_space = line_start.remaining_space();
             ix += line_start.bytes_scanned();
-            // TODO(cleanup): dedup cut'n'paste
-            if remaining_space > 0 {
-                self.tree.append(Item {
-                    start: ix,
-                    end: ix,
-                    body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
-                });
-            }
             let next_ix = ix + scan_nextline(&self.text[ix..]);
-            self.append_code_text(ix, next_ix);
+            self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
         self.pop(ix);
         ix
     }
 
-    fn append_code_text(&mut self, start: usize, end: usize) {
+    fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
+        if remaining_space > 0 {
+            self.tree.append(Item {
+                start: start,
+                end: start,
+                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+            });
+        }
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append_text(start, end - 2);
@@ -565,15 +564,17 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(s.as_bytes()[ix + 1]) => {
                 tree.append_text(begin_text, ix);
+                tree.append(Item {
+                    start: ix,
+                    end: ix + 1,
+                    body: ItemBody::Backslash,
+                });
                 begin_text = ix + 1;
                 ix += 2;
             }
             c @ b'*' | c @b'_' => {
                 tree.append_text(begin_text, ix);
-                let mut count = 1;
-                while ix + count < s.len() && s.as_bytes()[ix + count] == c {
-                    count += 1;
-                }
+                let count = 1 + scan_ch_repeat(&s[ix+1..], c);
                 let can_open = ix + count < s.len() && !is_ascii_whitespace(s.as_bytes()[ix + count]);
                 let can_close = ix > start && !is_ascii_whitespace(s.as_bytes()[ix - 1]);
                 // TODO: can skip if neither can_open nor can_close
@@ -584,6 +585,17 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                         body: ItemBody::Inline(count - i, can_open, can_close),
                     });
                 }
+                ix += count;
+                begin_text = ix;
+            }
+            b'`' => {
+                tree.append_text(begin_text, ix);
+                let count = 1 + scan_ch_repeat(&s[ix+1..], b'`');
+                tree.append(Item {
+                    start: ix,
+                    end: ix + count,
+                    body: ItemBody::MaybeCode(count),
+                });
                 ix += count;
                 begin_text = ix;
             }
@@ -639,27 +651,6 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
     ix += hrule_size;
     ix
 }
-
-// The parent node is a fenced code block.
-// Returns index of start of next line
-fn parse_fenced_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize, num_code_fence_chars: usize, code_fence_char: u8, indentation: usize) -> usize {
-    
-    if let Some(code_fence_end) = scan_closing_code_fence(&s[ix..], code_fence_char, num_code_fence_chars) {
-        ix += code_fence_end;
-        ix += scan_eol(&s[ix..]).0;
-        tree.pop();
-        return ix;
-    }
-
-    let fenced_line_start_offset = scan_fenced_code_line(&s[ix..], indentation);
-    let fenced_line_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_text(fenced_line_start_offset + ix, fenced_line_end_offset + ix);
-    tree.append_newline(fenced_line_end_offset);
-    ix += fenced_line_end_offset;
-    ix += scan_eol(&s[ix..]).0;
-    ix
-}
-
 
 fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
@@ -936,7 +927,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         return ix;
     }
 
-    let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+    let (leading_bytes, _leading_spaces) = scan_leading_space(&s[ix..], 0);
     
     if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
         tree.append(Item {
@@ -999,7 +990,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         return parse_hrule(&mut tree, hrule_size, ix);
     }
 
-    let (num_code_fence_chars, code_fence_char) = scan_code_fence(&s[ix..]);
+    let (num_code_fence_chars, _code_fence_char) = scan_code_fence(&s[ix..]);
     if num_code_fence_chars > 0 {
         let nextline_offset = scan_nextline(&s[ix..]);
         let info_string = unescape(s[ix+num_code_fence_chars..ix+nextline_offset].trim()).to_string();
@@ -1329,6 +1320,84 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
     false
 }
 
+/// Make a code span.
+///
+/// Both `open` and `close` are matching MaybeCode items.
+fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
+    tree.nodes[open].item.end = tree.nodes[close].item.end;
+    tree.nodes[open].item.body = ItemBody::Code;
+    let first = tree.nodes[open].next;
+    tree.nodes[open].next = tree.nodes[close].next;
+    tree.nodes[open].child = first;
+    let mut node = first;
+    let last;
+    loop {
+        let next = tree.nodes[node].next;
+        match tree.nodes[node].item.body {
+            ItemBody::SoftBreak => {
+                // TODO: trailing space is stripped in parse_line, and we don't want it
+                // stripped.
+                tree.nodes[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+            }
+            ItemBody::HardBreak => {
+                let start = tree.nodes[node].item.start;
+                if s.as_bytes()[start] == b'\\' {
+                    tree.nodes[node].item.body = ItemBody::Text;
+                    let end = tree.nodes[node].item.end;
+                    let space = tree.create_node(Item {
+                        start: start + 1,
+                        end,
+                        body: ItemBody::SynthesizeText(Borrowed(" "))
+                    });
+                    tree.nodes[space].next = next;
+                    tree.nodes[node].next = space;
+                    tree.nodes[node].item.end = start + 1;
+                } else {
+                    tree.nodes[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                }
+            }
+            _ => tree.nodes[node].item.body = ItemBody::Text,
+        }
+        if next == close {
+            last = node;
+            tree.nodes[node].next = NIL;
+            break;
+        }
+        node = next;
+    }
+    // Strip opening and closing space, if appropriate.
+    let opening = match &tree.nodes[first].item.body {
+        ItemBody::Text => s.as_bytes()[tree.nodes[first].item.start] == b' ',
+        ItemBody::SynthesizeText(text) => text.starts_with(' '),
+        _ => unreachable!("unexpected item"),
+    };
+    let closing = match &tree.nodes[last].item.body {
+        ItemBody::Text => s.as_bytes()[tree.nodes[last].item.end - 1] == b' ',
+        ItemBody::SynthesizeText(text) => text.ends_with(' '),
+        _ => unreachable!("unexpected item"),
+    };
+    // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
+    if opening && closing {
+        if tree.nodes[first].item.body == ItemBody::SynthesizeText(Borrowed(" "))
+            || tree.nodes[first].item.end - tree.nodes[first].item.start == 1
+        {
+            tree.nodes[open].child = tree.nodes[first].next;
+        } else {
+            tree.nodes[first].item.start += 1;
+        }
+        if tree.nodes[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
+            tree.nodes[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
+        } else {
+            tree.nodes[last].item.end -= 1;
+        }
+        // TODO: if last is now empty, remove it (we have size-0 items in the tree)
+    }
+}
+
+/// Handle inline HTML and code spans.
+///
+/// This function handles both inline HTML and code spans, because they have
+/// the same precedence. (Maybe rename?)
 fn handle_inline_html(tree: &mut Tree<Item>, s: &str) {
     let mut cur = tree.cur;
     while cur != NIL {
@@ -1355,11 +1424,24 @@ fn handle_inline_html(tree: &mut Tree<Item>, s: &str) {
                 continue;
             }
             tree.nodes[cur].item.body = ItemBody::Text;
+        } else if let ItemBody::MaybeCode(count) = tree.nodes[cur].item.body {
+            // TODO(performance): this has quadratic pathological behavior, I think
+            let first = tree.nodes[cur].next;
+            let mut scan = first;
+            while scan != NIL {
+                if tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
+                    make_code_span(tree, s, cur, scan);
+                    break;
+                }
+                scan = tree.nodes[scan].next;
+            }
+            if scan == NIL {
+                tree.nodes[cur].item.body = ItemBody::Text;
+            }
         }
         cur = tree.nodes[cur].next;
     }
 }
-
 
 fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
     let mut stack = InlineStack::new();
@@ -1475,6 +1557,7 @@ impl<'a> Parser<'a> {
 fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
     match item.body {
         ItemBody::Paragraph => Some(Tag::Paragraph),
+        ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Rule => Some(Tag::Rule),
@@ -1602,24 +1685,11 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
         match self.tree.nodes[self.tree.cur].item.body {
-            ItemBody::Inline(..) | ItemBody::MaybeHtml =>
+            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_) =>
                 handle_inline(&mut self.tree, self.text),
+            ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),
         }
-        if let ItemBody::List(_, _, _) = self.tree.nodes[self.tree.cur].item.body {
-            // TODO: this should be done in finish_list.
-            /*
-            if detect_tight_list(&self.tree) {
-                surgerize_tight_list(&mut self.tree);
-            }
-            */
-        }
-        // TODO: clean this up in parse_indented_code_block proper
-        /*
-        if let ItemBody::IndentCodeBlock(last_nonblank_child) = self.tree.nodes[self.tree.cur].item.body {
-            self.tree.nodes[last_nonblank_child].next = NIL;
-        }
-        */
         let item = &self.tree.nodes[self.tree.cur].item;
         if let Some(tag) = item_to_tag(item) {
             let child = self.tree.nodes[self.tree.cur].child;

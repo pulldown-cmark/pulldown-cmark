@@ -33,18 +33,24 @@ impl<T> Tree<T> {
 
     /// Append one item to the current position in the tree.
     pub fn append(&mut self, item: T) {
-        let this = self.nodes.len();
-        self.nodes.push(Node {
-            child: NIL,
-            next: NIL,
-            item: item,
-        });
+        let this = self.create_node(item);
         if self.cur != NIL {
             self.nodes[self.cur].next = this;
         } else if let Some(&parent) = self.spine.last() {
             self.nodes[parent].child = this;
         }
         self.cur = this;
+    }
+
+    /// Create an isolated node.
+    pub fn create_node(&mut self, item: T) -> usize {
+        let this = self.nodes.len();
+        self.nodes.push(Node {
+            child: NIL,
+            next: NIL,
+            item: item,
+        });
+        this
     }
 
     /// Push down one level, so that new items become children of the current node.

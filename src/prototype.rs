@@ -205,6 +205,9 @@ impl<'a> FirstPass<'a> {
             body: ItemBody::IndentCodeBlock(0), // TODO: probably remove arg
         });
         self.tree.push();
+        let mut last_nonblank_child = NIL;
+        let mut end_ix = 0;
+        let mut last_line_blank = false;
 
         let mut ix = start_ix;
         loop {
@@ -227,6 +230,11 @@ impl<'a> FirstPass<'a> {
             }
             // TODO(spec clarification): should we synthesize newline at EOF?
 
+            if !last_line_blank {
+                last_nonblank_child = self.tree.cur;
+                end_ix = ix;
+            }
+
             let mut line_start = LineStart::new(&self.text[ix..]);
             let _ = self.scan_containers(&mut line_start);
             if !(line_start.scan_space(4) || line_start.is_at_eol()) {
@@ -238,10 +246,12 @@ impl<'a> FirstPass<'a> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
+            last_line_blank = scan_blank_line(&self.text[ix..]).is_some();
         }
-        // TODO: trim trailing whitespace lines (mutate tree).
 
-        self.pop(ix);
+        // Trim trailing blank lines.
+        self.tree.nodes[last_nonblank_child].next = NIL;
+        self.pop(end_ix);
         ix
     }
 
@@ -308,14 +318,13 @@ impl<'a> FirstPass<'a> {
                 if existing_ch == ch {
                     if self.last_line_blank {
                         *is_tight = false;
+                        self.last_line_blank = false;
                     }
                     return;
                 }
             }
-            if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
-                // TODO: this is not the best choice; maybe get end from last list item.
-                self.pop(start);
-            }
+            // TODO: this is not the best choice for end; maybe get end from last list item.
+            self.finish_list(start);
         }
         self.tree.append(Item {
             start: start,
@@ -1267,6 +1276,8 @@ fn handle_inline_html(tree: &mut Tree<Item>, s: &str) {
                 }
             };
             if let Some((node, ix)) = maybe_html {
+                // TODO: this logic isn't right if the replaced chain has
+                // tricky stuff (skipped containers, replaced nulls).
                 tree.nodes[cur].item.body = ItemBody::InlineHtml;
                 tree.nodes[cur].item.end = ix;
                 tree.nodes[cur].next = node;

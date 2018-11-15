@@ -180,22 +180,44 @@ impl<'a> LineStart<'a> {
                 }
                 self.ix += 1;
                 if self.scan_space(1) || self.is_at_eol() {
-                    indent += 2;
-
-                    let save = self.clone();
-                    let post_indent = self.scan_space_upto(4);
-                    if post_indent < 4 {
-                        indent += post_indent;
-                    } else {
-                        *self = save;
+                    return self.finish_list_marker(c, 0, indent + 2);
+                }
+            } else if c >= b'0' && c <= b'9' {
+                let start_ix = self.ix;
+                let mut ix = self.ix + 1;
+                let mut val = (c - b'0') as u64;
+                while ix < self.text.len() && ix - start_ix < 10 {
+                    let c = self.text.as_bytes()[ix];
+                    ix += 1;
+                    if c >= b'0' && c <= b'9' {
+                        val = val * 10 + (c - b'0') as u64;
+                    } else if c == b')' || c == b'.' {
+                        self.ix = ix + 1;
+                        indent += ix - start_ix;
+                        let val_usize = val as usize;
+                        // This will cause some failures on 32 bit arch.
+                        // TODO (breaking API change): should be u64, not usize.
+                        if val_usize as u64 != val { return None; }
+                        return self.finish_list_marker(c, val_usize, indent);
                     }
-                    return Some((c, 0, indent));
                 }
             }
-            // TODO: handle ordered list markers.
         }
         *self = save;
         None
+    }
+
+    fn finish_list_marker(&mut self, c: u8, start: usize, mut indent: usize)
+        -> Option<(u8, usize, usize)>
+    {
+        let save = self.clone();
+        let post_indent = self.scan_space_upto(4);
+        if post_indent < 4 {
+            indent += post_indent;
+        } else {
+            *self = save;
+        }
+        Some((c, start, indent))
     }
 
     pub fn bytes_scanned(&self) -> usize {

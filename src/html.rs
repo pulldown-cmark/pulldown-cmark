@@ -95,8 +95,6 @@ where
     }
 
     pub fn run(mut self) -> io::Result<usize> {
-        let mut numbers = HashMap::new();
-
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
@@ -119,11 +117,11 @@ where
                     self.write(b"<br />", true)?;
                 }
                 FootnoteReference(name) => {
-                    let len = numbers.len() + 1;
+                    let len = self.numbers.len() + 1;
                     self.write(b"<sup class=\"footnote-reference\"><a href=\"#", false)?;
                     self.bytes_written += escape_html(&mut self.writer, &name, false)?;
                     self.write(b"\">", false)?;
-                    let number = numbers.entry(name).or_insert(len);
+                    let number = *self.numbers.entry(name).or_insert(len);
                     self.write(format!("{}", number).as_bytes(), false)?;
                     self.write(b"</a></sup>", false)?
                 }

@@ -144,7 +144,38 @@ impl<'a> FirstPass<'a> {
             return self.parse_indented_code_block(ix, remaining_space);
         }
 
+
+        // HTML Blocks
+
+        // HTML blocks may have 1-3 spaces in front of them, but our scanning
+        // functions don't know that. The spaces are preserved in the output,
+        // so we don't want to move `ix` yet.
         line_start.scan_all_space();
+        let nonspace_ix = start_ix + line_start.bytes_scanned();
+
+        // HTML block openings always happen on a single line, but our scanning
+        // functions are also used for inline HTML and may consume multiple lines,
+        // so we should only allow them to see one line at a time.
+        let line_end_ix = nonspace_ix + scan_line_ending(&self.text[nonspace_ix..]);
+        // Types 1-5 are all detected by one function and all end with the same
+        // pattern
+        if let Some(_html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..=line_end_ix]) {
+            // return after parsing type 1 to 5
+        }
+
+        // Detect type 6
+        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..=line_end_ix]).1;
+        if is_html_tag(possible_tag) {
+            // return after parsing type 6
+        }
+
+        // Detect type 7
+        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..=line_end_ix]) {
+            // return after parsing type 7
+        }
+
+        // Remaining blocks aren't impacted by leading spaces, so we can consume
+        // the rest.
         let ix = start_ix + line_start.bytes_scanned();
 
         let n = scan_hrule(&self.text[ix..]);

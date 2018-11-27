@@ -159,8 +159,8 @@ impl<'a> FirstPass<'a> {
         let line_end_ix = nonspace_ix + scan_line_ending(&self.text[nonspace_ix..]);
         // Types 1-5 are all detected by one function and all end with the same
         // pattern
-        if let Some(_html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..=line_end_ix]) {
-            // return after parsing type 1 to 5
+        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..=line_end_ix]) {
+            return self.parse_html_block_type_1_to_5(ix, html_end_tag);
         }
 
         // Detect type 6
@@ -238,6 +238,49 @@ impl<'a> FirstPass<'a> {
 
         self.tree.pop();
         self.tree.nodes[self.tree.cur].item.end = ix;
+        ix
+    }
+
+    /// When start_ix is at the beginning of an HTML block of type 1 to 5,
+    /// this will find the end of the block, adding the block itself to the
+    /// tree and also keeping track of the lines of HTML within the block.
+    ///
+    /// The html_end_tag is the tag that must be found on a line to end the block.
+    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(Some(html_end_tag)),
+        });
+        self.tree.push();
+
+        let mut ix = start_ix;
+        let end_ix;
+        loop {
+            let line_start_ix = ix;
+            ix += scan_nextline(&self.text[ix..]);
+            self.append_html_line(line_start_ix, ix);
+
+            let mut line_start = LineStart::new(&self.text[ix..]);
+            let n_containers = self.scan_containers(&mut line_start);
+            if n_containers < self.tree.spine.len() {
+                end_ix = ix;
+                break;
+            }
+
+            if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
+                end_ix = ix;
+                break;
+            }
+
+            let next_line_ix = ix + line_start.bytes_scanned();
+            if next_line_ix == self.text.len() {
+                end_ix = next_line_ix;
+                break;
+            }
+            ix = next_line_ix;
+        }
+        &self.pop(end_ix);
         ix
     }
 
@@ -349,6 +392,26 @@ impl<'a> FirstPass<'a> {
         }
     }
 
+
+    /// Appends a line of HTML to the tree.
+    fn append_html_line(&mut self, start: usize, end: usize)
+    {
+
+        if end > start {
+            self.tree.append(Item {
+                start: start,
+                // Normalize CRLF to LF
+                end: if self.text.as_bytes()[end - 2] == b'\r' { end - 2 } else { end - 1},
+                body: ItemBody::Html,
+            });
+        }
+        self.tree.append(Item {
+            start: end,
+            end: end,
+            body: ItemBody::SynthesizeNewLine,
+        });
+    }
+
     /// Returns number of containers scanned.
     fn scan_containers(&self, line_start: &mut LineStart) -> usize {
         let mut i = 0;
@@ -368,6 +431,7 @@ impl<'a> FirstPass<'a> {
                 ItemBody::Paragraph => (),
                 ItemBody::IndentCodeBlock(_) => (),
                 ItemBody::FencedCodeBlock(_) => (),
+                ItemBody::HtmlBlock(_) => (),
                 _ => panic!("unexpected node in tree"),
             }
             i += 1;
@@ -1066,7 +1130,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
     for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-        if 1 + beg_tag.len() < text.len() &&
+        if 1 + beg_tag.len() <= text.len() &&
             text.starts_with(&beg_tag[..]) {
             let pos = beg_tag.len();
             let s = text.as_bytes()[pos];
@@ -1078,7 +1142,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
     static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
     for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
-        if 1 + beg_tag.len() < text.len() &&
+        if 1 + beg_tag.len() <= text.len() &&
            text.starts_with(&beg_tag[..]) {
             return Some(end_tag);
         }

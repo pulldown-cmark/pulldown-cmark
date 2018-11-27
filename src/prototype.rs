@@ -166,12 +166,12 @@ impl<'a> FirstPass<'a> {
         // Detect type 6
         let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..=line_end_ix]).1;
         if is_html_tag(possible_tag) {
-            // return after parsing type 6
+            return self.parse_html_block_type_6_or_7(ix);
         }
 
         // Detect type 7
         if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..=line_end_ix]) {
-            // return after parsing type 7
+            return self.parse_html_block_type_6_or_7(ix);
         }
 
         // Remaining blocks aren't impacted by leading spaces, so we can consume
@@ -281,6 +281,43 @@ impl<'a> FirstPass<'a> {
             ix = next_line_ix;
         }
         &self.pop(end_ix);
+        ix
+    }
+
+    /// When start_ix is at the beginning of an HTML block of type 6 or 7,
+    /// this will consume lines until there is a blank line and keep track of
+    /// the HTML within the block.
+    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock(None)
+        });
+        self.tree.push();
+
+        let mut ix = start_ix;
+        let end_ix;
+        loop {
+            let line_start_ix = ix;
+            ix += scan_nextline(&self.text[ix..]);
+            self.append_html_line(line_start_ix, ix);
+
+            let mut line_start = LineStart::new(&self.text[ix..]);
+            let n_containers = self.scan_containers(&mut line_start);
+            if n_containers < self.tree.spine.len() || line_start.is_at_eol()
+            {
+                end_ix = ix;
+                break;
+            }
+
+            let next_line_ix = ix + line_start.bytes_scanned();
+            if next_line_ix == self.text.len() || scan_eol(&self.text[next_line_ix..]).1 {
+                end_ix = next_line_ix;
+                break;
+            }
+            ix = next_line_ix;
+        }
+        self.pop(end_ix);
         ix
     }
 

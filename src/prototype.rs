@@ -138,34 +138,35 @@ impl<'a> FirstPass<'a> {
 
         self.finish_list(start_ix);
         let indent = line_start.scan_space_upto(4);
-        let remaining_space = line_start.remaining_space();
         if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
+            let remaining_space = line_start.remaining_space();
             return self.parse_indented_code_block(ix, remaining_space);
         }
 
 
         // HTML Blocks
 
-        // Our HTML scanning functions don't know what to do with leading spaces,
-        // so start them out at the first nonspace character
-        let nonspace_ix = start_ix + line_start.bytes_scanned();
+        // Start scanning at the first nonspace character, but remember how many
+        // spaces there are because HTML blocks need to preserve them.
+        let remaining_space = indent;
+        let ix = start_ix + line_start.bytes_scanned();
 
         // Types 1-5 are all detected by one function and all end with the same
         // pattern
-        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_1_to_5(ix, html_end_tag);
+        if let Some(html_end_tag) = get_html_end_tag(&self.text[ix..]) {
+            return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
         }
 
         // Detect type 6
-        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
+        let possible_tag = scan_html_block_tag(&self.text[ix..]).1;
         if is_html_tag(possible_tag) {
-            return self.parse_html_block_type_6_or_7(ix);
+            return self.parse_html_block_type_6_or_7(ix, remaining_space);
         }
 
         // Detect type 7
-        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_6_or_7(ix);
+        if let Some(_html_bytes) = scan_html_type_7(&self.text[ix..]) {
+            return self.parse_html_block_type_6_or_7(ix, remaining_space);
         }
 
         // Remaining blocks aren't impacted by leading spaces, so we can consume
@@ -240,7 +241,7 @@ impl<'a> FirstPass<'a> {
     /// tree and also keeping track of the lines of HTML within the block.
     ///
     /// The html_end_tag is the tag that must be found on a line to end the block.
-    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str) -> usize {
+    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str, mut remaining_space: usize) -> usize {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
@@ -253,7 +254,7 @@ impl<'a> FirstPass<'a> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&self.text[ix..]);
-            self.append_html_line(line_start_ix, ix);
+            self.append_html_line(remaining_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
@@ -273,6 +274,7 @@ impl<'a> FirstPass<'a> {
                 break;
             }
             ix = next_line_ix;
+            remaining_space = line_start.remaining_space();
         }
         &self.pop(end_ix);
         ix
@@ -281,7 +283,7 @@ impl<'a> FirstPass<'a> {
     /// When start_ix is at the beginning of an HTML block of type 6 or 7,
     /// this will consume lines until there is a blank line and keep track of
     /// the HTML within the block.
-    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize) -> usize {
+    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize, mut remaining_space: usize) -> usize {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
@@ -294,7 +296,7 @@ impl<'a> FirstPass<'a> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&self.text[ix..]);
-            self.append_html_line(line_start_ix, ix);
+            self.append_html_line(remaining_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
@@ -310,6 +312,7 @@ impl<'a> FirstPass<'a> {
                 break;
             }
             ix = next_line_ix;
+            remaining_space = line_start.remaining_space();
         }
         self.pop(end_ix);
         ix
@@ -425,9 +428,14 @@ impl<'a> FirstPass<'a> {
 
 
     /// Appends a line of HTML to the tree.
-    fn append_html_line(&mut self, start: usize, end: usize)
-    {
-
+    fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
+        if remaining_space > 0 {
+            self.tree.append(Item {
+                start: start,
+                end: start,
+                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+            });
+        }
         if end > start {
             self.tree.append(Item {
                 start: start,

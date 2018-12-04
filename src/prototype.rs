@@ -305,7 +305,7 @@ impl<'a> FirstPass<'a> {
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
-            if next_line_ix == self.text.len() || scan_eol(&self.text[next_line_ix..]).1 {
+            if next_line_ix == self.text.len() || scan_blank_line(&self.text[next_line_ix..]).is_some() {
                 end_ix = next_line_ix;
                 break;
             }

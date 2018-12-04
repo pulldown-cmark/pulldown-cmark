@@ -275,7 +275,7 @@ fn is_digit(c: u8) -> bool {
 
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
     match c {
-        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' => false,
+        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => false,
         _ => true
     }
 }
@@ -882,15 +882,15 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
     match data.as_bytes()[0] {
         b'\'' => {
             i += 1;
-            i += scan_while(&data[i..], |c| c != b'\'');
+            i += scan_while(&data[i..], |c| c != b'\'' && c != b'\n' && c != b'\r');
             i += 1;
         },
         b'"' => {
             i += 1;
-            i += scan_while(&data[i..], |c| c != b'"');
+            i += scan_while(&data[i..], |c| c != b'"' && c != b'\n' && c != b'\r');
             i += 1;
         },
-        b' ' | b'=' | b'>' | b'<' | b'`' => { return None; },
+        b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => { return None; },
         _ => { // unquoted attribute value
             i += scan_attr_value_chars(&data[i..]);
             // return Some(i);

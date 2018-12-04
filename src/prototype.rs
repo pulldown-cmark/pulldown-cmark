@@ -138,39 +138,33 @@ impl<'a> FirstPass<'a> {
 
         self.finish_list(start_ix);
         let indent = line_start.scan_space_upto(4);
+        let remaining_space = line_start.remaining_space();
         if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
-            let remaining_space = line_start.remaining_space();
             return self.parse_indented_code_block(ix, remaining_space);
         }
 
 
         // HTML Blocks
 
-        // HTML blocks may have 1-3 spaces in front of them, but our scanning
-        // functions don't know that. The spaces are preserved in the output,
-        // so we don't want to move `ix` yet.
-        line_start.scan_all_space();
+        // Our HTML scanning functions don't know what to do with leading spaces,
+        // so start them out at the first nonspace character
         let nonspace_ix = start_ix + line_start.bytes_scanned();
 
-        // HTML block openings always happen on a single line, but our scanning
-        // functions are also used for inline HTML and may consume multiple lines,
-        // so we should only allow them to see one line at a time.
-        let line_end_ix = nonspace_ix + scan_line_ending(&self.text[nonspace_ix..]);
         // Types 1-5 are all detected by one function and all end with the same
         // pattern
-        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..=line_end_ix]) {
+        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..]) {
             return self.parse_html_block_type_1_to_5(ix, html_end_tag);
         }
 
         // Detect type 6
-        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..=line_end_ix]).1;
+        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
         if is_html_tag(possible_tag) {
             return self.parse_html_block_type_6_or_7(ix);
         }
 
         // Detect type 7
-        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..=line_end_ix]) {
+        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
             return self.parse_html_block_type_6_or_7(ix);
         }
 

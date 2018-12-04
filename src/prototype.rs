@@ -169,10 +169,6 @@ impl<'a> FirstPass<'a> {
             return self.parse_html_block_type_6_or_7(ix, remaining_space);
         }
 
-        // Remaining blocks aren't impacted by leading spaces, so we can consume
-        // the rest.
-        let ix = start_ix + line_start.bytes_scanned();
-
         let n = scan_hrule(&self.text[ix..]);
         if n > 0 {
             return self.parse_hrule(n, ix);

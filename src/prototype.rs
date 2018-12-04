@@ -1174,12 +1174,23 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
     static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
-    for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-        if 1 + beg_tag.len() <= text.len() &&
-            text.starts_with(&beg_tag[..]) {
+    'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+        if text.len() >= beg_tag.len() && text.starts_with("<") {
+            for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {
+                if ! (&text.as_bytes()[i+1] == c || &text.as_bytes()[i+1] == &(c - 32)) {
+                    continue 'type_1;
+                }
+            }
+
+            // Must either be the end of the line...
+            if text.len() == beg_tag.len() {
+                return Some(end_tag);
+            }
+
+            // ...or be followed by whitespace, newline, or '>'.
             let pos = beg_tag.len();
-            let s = text.as_bytes()[pos];
-            if s == b' ' || s == b'\r' || s == b'\n' || s == b'>' {
+            let s = text.as_bytes()[pos] as char;
+            if s.is_whitespace() || s == '>' {
                 return Some(end_tag);
             }
         }
@@ -1187,8 +1198,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
     static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
     for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
-        if 1 + beg_tag.len() <= text.len() &&
-           text.starts_with(&beg_tag[..]) {
+        if text.starts_with(&beg_tag[..]) {
             return Some(end_tag);
         }
     }

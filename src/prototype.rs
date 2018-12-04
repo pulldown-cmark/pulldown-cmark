@@ -436,19 +436,25 @@ impl<'a> FirstPass<'a> {
                 body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
             });
         }
-        if end > start {
+        if self.text.as_bytes()[end - 2] == b'\r' {
+            // Normalize CRLF to LF
             self.tree.append(Item {
                 start: start,
-                // Normalize CRLF to LF
-                end: if self.text.as_bytes()[end - 2] == b'\r' { end - 2 } else { end - 1},
+                end: end - 2,
+                body: ItemBody::Html,
+            });
+            self.tree.append(Item {
+                start: end - 1,
+                end: end,
+                body: ItemBody::Html,
+            });
+        } else {
+            self.tree.append(Item {
+                start: start,
+                end: end,
                 body: ItemBody::Html,
             });
         }
-        self.tree.append(Item {
-            start: end,
-            end: end,
-            body: ItemBody::SynthesizeNewLine,
-        });
     }
 
     /// Returns number of containers scanned.

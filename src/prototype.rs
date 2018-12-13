@@ -137,6 +137,9 @@ impl<'a> FirstPass<'a> {
         }
 
         self.finish_list(start_ix);
+
+        // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
+        let remaining_space = line_start.remaining_space();
         let indent = line_start.scan_space_upto(4);
         if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
@@ -147,27 +150,29 @@ impl<'a> FirstPass<'a> {
 
         // HTML Blocks
 
-        // Start scanning at the first nonspace character, but remember how many
-        // spaces there are because HTML blocks need to preserve them.
-        let remaining_space = indent;
-        let ix = start_ix + line_start.bytes_scanned();
+        // Start scanning at the first nonspace character, but don't advance `ix` yet because any
+        // spaces present before the HTML block begins should be preserved.
+        let nonspace_ix = start_ix + line_start.bytes_scanned();
 
         // Types 1-5 are all detected by one function and all end with the same
         // pattern
-        if let Some(html_end_tag) = get_html_end_tag(&self.text[ix..]) {
+        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..]) {
             return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
         }
 
         // Detect type 6
-        let possible_tag = scan_html_block_tag(&self.text[ix..]).1;
+        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
         if is_html_tag(possible_tag) {
             return self.parse_html_block_type_6_or_7(ix, remaining_space);
         }
 
         // Detect type 7
-        if let Some(_html_bytes) = scan_html_type_7(&self.text[ix..]) {
+        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
             return self.parse_html_block_type_6_or_7(ix, remaining_space);
         }
+
+        // Advance `ix` after HTML blocks have been scanned
+        let ix = start_ix + line_start.bytes_scanned();
 
         let n = scan_hrule(&self.text[ix..]);
         if n > 0 {

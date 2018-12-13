@@ -1175,6 +1175,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
     static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
+    // TODO: Consider using `strcasecmp` here
     'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
         if text.len() >= beg_tag.len() && text.starts_with("<") {
             for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {

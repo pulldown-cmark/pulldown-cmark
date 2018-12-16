@@ -45,12 +45,18 @@ enum ItemBody {
     Inline(usize, bool, bool), // Perhaps this should be MaybeEmphasis?
     MaybeCode(usize),
     MaybeHtml,
+    MaybeLinkOpen,
+    MaybeLinkClose,
     Backslash,
 
     // These are inline items after resolution.
     Emphasis,
     Strong,
     Code,
+    InlineHtml,
+    // Link params: destination, title.
+    // TODO: get lifetime in type so this can be a cow
+    Link(String, String),
 
     Rule,
     Header(i32), // header level
@@ -59,7 +65,6 @@ enum ItemBody {
     SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
-    InlineHtml,
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
@@ -242,7 +247,9 @@ impl<'a> FirstPass<'a> {
     /// tree and also keeping track of the lines of HTML within the block.
     ///
     /// The html_end_tag is the tag that must be found on a line to end the block.
-    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str, mut remaining_space: usize) -> usize {
+    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str,
+            mut remaining_space: usize) -> usize
+    {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
@@ -284,7 +291,9 @@ impl<'a> FirstPass<'a> {
     /// When start_ix is at the beginning of an HTML block of type 6 or 7,
     /// this will consume lines until there is a blank line and keep track of
     /// the HTML within the block.
-    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize, mut remaining_space: usize) -> usize {
+    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize, mut remaining_space: usize)
+        -> usize
+    {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
@@ -308,7 +317,9 @@ impl<'a> FirstPass<'a> {
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
-            if next_line_ix == self.text.len() || scan_blank_line(&self.text[next_line_ix..]).is_some() {
+            if next_line_ix == self.text.len()
+                || scan_blank_line(&self.text[next_line_ix..]).is_some()
+            {
                 end_ix = next_line_ix;
                 break;
             }
@@ -434,6 +445,7 @@ impl<'a> FirstPass<'a> {
             self.tree.append(Item {
                 start: start,
                 end: start,
+                // TODO: maybe this should synthesize to html rather than text?
                 body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
             });
         }
@@ -665,13 +677,14 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
 ///
 /// Returns: index after line and an item representing the break.
 fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<Item>) {
+    let bytes = s.as_bytes();
     let start = ix;
     let mut begin_text = start;
     while ix < s.len() {
-        match s.as_bytes()[ix] {
+        match bytes[ix] {
             b'\n' | b'\r' => {
                 let mut i = ix;
-                if ix >= begin_text + 1 && s.as_bytes()[ix - 1] == b'\\' {
+                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' {
                     i -= 1;
                     tree.append_text(begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
@@ -681,10 +694,10 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                         body: ItemBody::HardBreak,
                     }));
                 } else if ix >= begin_text + 2
-                    && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 1])
-                    && is_ascii_whitespace_no_nl(s.as_bytes()[ix - 2]) {
+                    && is_ascii_whitespace_no_nl(bytes[ix - 1])
+                    && is_ascii_whitespace_no_nl(bytes[ix - 2]) {
                     i -= 2;
-                    while i > 0 && is_ascii_whitespace_no_nl(s.as_bytes()[i - 1]) {
+                    while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
                         i -= 1;
                     }
                     tree.append_text(begin_text, i);
@@ -703,7 +716,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                     body: ItemBody::SoftBreak,
                 }));
             }
-            b'\\' if ix + 1 < s.len() && is_ascii_punctuation(s.as_bytes()[ix + 1]) => {
+            b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                 tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
@@ -716,8 +729,8 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
             c @ b'*' | c @b'_' => {
                 tree.append_text(begin_text, ix);
                 let count = 1 + scan_ch_repeat(&s[ix+1..], c);
-                let can_open = ix + count < s.len() && !is_ascii_whitespace(s.as_bytes()[ix + count]);
-                let can_close = ix > start && !is_ascii_whitespace(s.as_bytes()[ix - 1]);
+                let can_open = ix + count < s.len() && !is_ascii_whitespace(bytes[ix + count]);
+                let can_close = ix > start && !is_ascii_whitespace(bytes[ix - 1]);
                 // TODO: can skip if neither can_open nor can_close
                 for i in 0..count {
                     tree.append(Item {
@@ -748,6 +761,26 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                     start: ix,
                     end: ix + 1,
                     body: ItemBody::MaybeHtml,
+                });
+                ix += 1;
+                begin_text = ix;
+            }
+            b'[' => {
+                tree.append_text(begin_text, ix);
+                tree.append(Item {
+                    start: ix,
+                    end: ix + 1,
+                    body: ItemBody::MaybeLinkOpen,
+                });
+                ix += 1;
+                begin_text = ix;
+            }
+            b']' => {
+                tree.append_text(begin_text, ix);
+                tree.append(Item {
+                    start: ix,
+                    end: ix + 1,
+                    body: ItemBody::MaybeLinkClose,
                 });
                 ix += 1;
                 begin_text = ix;
@@ -1192,6 +1225,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
             // ...or be followed by whitespace, newline, or '>'.
             let pos = beg_tag.len();
             let s = text.as_bytes()[pos] as char;
+            // TODO: I think this should be ASCII whitespace only
             if s.is_whitespace() || s == '>' {
                 return Some(end_tag);
             }
@@ -1262,6 +1296,7 @@ impl InlineStack {
 }
 
 /// An iterator for text in an inline chain.
+#[derive(Clone)]
 struct InlineScanner<'a> {
     tree: &'a Tree<Item>,
     text: &'a str,
@@ -1271,7 +1306,7 @@ struct InlineScanner<'a> {
 
 impl<'a> InlineScanner<'a> {
     fn new(tree: &'a Tree<Item>, text: &'a str, cur: usize) -> InlineScanner<'a> {
-        let ix = if cur == NIL { !0} else { tree.nodes[cur].item.start };
+        let ix = if cur == NIL { !0 } else { tree.nodes[cur].item.start };
         InlineScanner { tree, text, cur, ix }
     }
 
@@ -1322,10 +1357,23 @@ impl<'a> InlineScanner<'a> {
 
     fn to_node_and_ix(&self) -> (usize, usize) {
         let mut cur = self.cur;
-        if self.tree.nodes[cur].item.end == self.ix {
+        if cur != NIL && self.tree.nodes[cur].item.end == self.ix {
             cur = self.tree.nodes[cur].next;
         }
         (cur, self.ix)
+    }
+
+    fn next_char(&mut self) -> Option<char> {
+        if self.cur == NIL { return None; }
+        while self.ix == self.tree.nodes[self.cur].item.end {
+            self.cur = self.tree.nodes[self.cur].next;
+            if self.cur == NIL { return None; }
+            self.ix = self.tree.nodes[self.cur].item.start;
+        }
+        self.text[self.ix..].chars().next().map(|c| {
+            self.ix += c.len_utf8();
+            c
+        })
     }
 }
 
@@ -1546,51 +1594,223 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
     }
 }
 
-/// Handle inline HTML and code spans.
-///
-/// This function handles both inline HTML and code spans, because they have
-/// the same precedence. (Maybe rename?)
-fn handle_inline_html(tree: &mut Tree<Item>, s: &str) {
-    let mut cur = tree.cur;
-    while cur != NIL {
-        if let ItemBody::MaybeHtml = tree.nodes[cur].item.body {
-            let maybe_html = {
-                let next = tree.nodes[cur].next;
-                let mut scanner = InlineScanner::new(tree, s, next);
-                if scan_inline_html(&mut scanner) {
-                    Some(scanner.to_node_and_ix())
+fn scan_link_destination_plain(scanner: &mut InlineScanner) -> Option<String> {
+    let mut url = String::new();
+    let mut nest = 0;
+    while let Some(c) = scanner.next_char() {
+        match c {
+            '(' => {
+                url.push(c);
+                nest += 1;
+            }
+            ')' => {
+                if nest == 0 {
+                    scanner.unget();
+                    return Some(url);
+                }
+                url.push(c);
+                nest -= 1;
+            }
+            '\x00'..=' ' => {
+                scanner.unget();
+                return Some(url);
+            },
+            '\\' => {
+                if let Some(c) = scanner.next_char() {
+                    if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
+                        url.push('\\');
+                    }
+                    url.push(c);
                 } else {
-                    None
+                    return None;
                 }
-            };
-            if let Some((node, ix)) = maybe_html {
-                // TODO: this logic isn't right if the replaced chain has
-                // tricky stuff (skipped containers, replaced nulls).
-                tree.nodes[cur].item.body = ItemBody::InlineHtml;
-                tree.nodes[cur].item.end = ix;
-                tree.nodes[cur].next = node;
-                cur = node;
-                if cur != NIL {
-                    tree.nodes[cur].item.start = ix;
-                }
-                continue;
             }
-            tree.nodes[cur].item.body = ItemBody::Text;
-        } else if let ItemBody::MaybeCode(count) = tree.nodes[cur].item.body {
-            // TODO(performance): this has quadratic pathological behavior, I think
-            let first = tree.nodes[cur].next;
-            let mut scan = first;
-            while scan != NIL {
-                if tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
-                    make_code_span(tree, s, cur, scan);
-                    break;
+            _ => url.push(c),
+        }
+    }
+    None
+}
+
+fn scan_link_destination_pointy(scanner: &mut InlineScanner) -> Option<String> {
+    if !scanner.scan_ch(b'<') {
+        return None;
+    }
+    let mut url = String::new();
+    while let Some(c) = scanner.next_char() {
+        match c {
+            '>' => return Some(url),
+            '\x00'..='\x1f' | '<' => return None,
+            '\\' => {
+                let c = scanner.next_char()?;
+                if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
+                    url.push('\\');
                 }
-                scan = tree.nodes[scan].next;
+                url.push(c);
             }
-            if scan == NIL {
-                tree.nodes[cur].item.body = ItemBody::Text;
+            _ => url.push(c),
+        }
+    }
+    None
+}
+
+fn scan_link_destination(scanner: &mut InlineScanner) -> Option<String> {
+    let save = scanner.clone();
+    if let Some(url) = scan_link_destination_pointy(scanner) {
+        return Some(url);
+    }
+    *scanner = save;
+    scan_link_destination_plain(scanner)
+}
+
+fn scan_link_title(scanner: &mut InlineScanner) -> Option<String> {
+    let open = scanner.next_char()?;
+    if !(open == '\'' || open == '\"' || open == '(') {
+        return None;
+    }
+    let mut title = String::new();
+    let mut nest = 0;
+    while let Some(c) = scanner.next_char() {
+        if c == open {
+            if open == '(' {
+                nest += 1;
+            } else {
+                return Some(title);
             }
         }
+        if open == '(' && c == ')' {
+            if nest == 0 {
+                return Some(title);
+            } else {
+                nest -= 1;
+            }
+        }
+        if c == '\\' {
+            let c = scanner.next_char()?;
+            if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
+                title.push('\\');
+            }
+            title.push(c);
+        } else {
+            title.push(c);
+        }
+    }
+    None
+}
+
+fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
+    if !scanner.scan_ch(b'(') {
+        return None;
+    }
+    scanner.scan_while(is_ascii_whitespace);
+    let url = scan_link_destination(scanner)?;
+    let mut title = String::new();
+    let save = scanner.clone();
+    if scanner.scan_while(is_ascii_whitespace) > 0 {
+        if let Some(t) = scan_link_title(scanner) {
+            title = t;
+            scanner.scan_while(is_ascii_whitespace);
+        } else {
+            *scanner = save;
+        }
+    }
+    if !scanner.scan_ch(b')') {
+        return None;
+    }
+    Some((url, title))
+}
+
+// TODO: if it's just node, get rid of struct. But I think there probably will be
+// state related to normalization.
+struct LinkStackEl {
+    node: usize,
+}
+
+/// Handle inline HTML, code spans, and links.
+///
+/// This function handles both inline HTML and code spans, because they have
+/// the same precedence. It also handles links, even though they have lower
+/// precedence, because the URL of links must not be processed.
+fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
+    let mut link_stack = Vec::new();
+    let mut cur = tree.cur;
+    let mut prev = NIL;
+    while cur != NIL {
+        match tree.nodes[cur].item.body {
+            ItemBody::MaybeHtml => {
+                let maybe_html = {
+                    let next = tree.nodes[cur].next;
+                    let mut scanner = InlineScanner::new(tree, s, next);
+                    if scan_inline_html(&mut scanner) {
+                        Some(scanner.to_node_and_ix())
+                    } else {
+                        None
+                    }
+                };
+                if let Some((node, ix)) = maybe_html {
+                    // TODO: this logic isn't right if the replaced chain has
+                    // tricky stuff (skipped containers, replaced nulls).
+                    tree.nodes[cur].item.body = ItemBody::InlineHtml;
+                    tree.nodes[cur].item.end = ix;
+                    tree.nodes[cur].next = node;
+                    cur = node;
+                    if cur != NIL {
+                        tree.nodes[cur].item.start = ix;
+                    }
+                    continue;
+                }
+                tree.nodes[cur].item.body = ItemBody::Text;
+            }
+            ItemBody::MaybeCode(count) => {
+                // TODO(performance): this has quadratic pathological behavior, I think
+                let first = tree.nodes[cur].next;
+                let mut scan = first;
+                while scan != NIL {
+                    if tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
+                        make_code_span(tree, s, cur, scan);
+                        break;
+                    }
+                    scan = tree.nodes[scan].next;
+                }
+                if scan == NIL {
+                    tree.nodes[cur].item.body = ItemBody::Text;
+                }
+            }
+            ItemBody::MaybeLinkOpen => {
+                tree.nodes[cur].item.body = ItemBody::Text;
+                link_stack.push( LinkStackEl { node: cur });
+            }
+            ItemBody::MaybeLinkClose => {
+                let made_link = if let Some(tos) = link_stack.last() {
+                    let next = tree.nodes[cur].next;
+                    let (link_info, (next_node, next_ix)) = {
+                        let mut scanner = InlineScanner::new(tree, s, next);
+                        (scan_inline_link(&mut scanner), scanner.to_node_and_ix())
+                    };
+                    if let Some((url, title)) = link_info {
+                        tree.nodes[prev].next = NIL;
+                        cur = tos.node;
+                        tree.nodes[cur].item.body = ItemBody::Link(url.into(), title.into());
+                        tree.nodes[cur].child = tree.nodes[cur].next;
+                        tree.nodes[cur].next = next_node;
+                        if next_node != NIL {
+                            tree.nodes[next_node].item.start = next_ix;
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+                if made_link {
+                    link_stack.clear();
+                } else {
+                    tree.nodes[cur].item.body = ItemBody::Text;
+                }
+            }
+            _ => (),
+        }
+        prev = cur;
         cur = tree.nodes[cur].next;
     }
 }
@@ -1675,7 +1895,7 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
 ///
 /// Note: there's some potential for optimization here, but that's future work.
 fn handle_inline(tree: &mut Tree<Item>, s: &str) {
-    handle_inline_html(tree, s);
+    handle_inline_pass1(tree, s);
     handle_emphasis(tree, s);
 }
 
@@ -1712,10 +1932,13 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
+        ItemBody::Link(ref url, ref title) =>
+            Some(Tag::Link(url.clone().into(), title.clone().into())),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::FencedCodeBlock(ref info_string) => Some(Tag::CodeBlock(Cow::from(info_string.clone()))),
-        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock(Cow::from(""))),
+        ItemBody::FencedCodeBlock(ref info_string) =>
+            Some(Tag::CodeBlock(info_string.clone().into())),
+        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
@@ -1837,7 +2060,8 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
         match self.tree.nodes[self.tree.cur].item.body {
-            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_) =>
+            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
+            | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose =>
                 handle_inline(&mut self.tree, self.text),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),

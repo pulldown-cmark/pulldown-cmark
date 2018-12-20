@@ -26,8 +26,7 @@ use std::collections::HashMap;
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
-
-use unicase::UniCase;
+use crate::linklabel::{LinkLabelBuilder, LinkLabel};
 
 #[derive(Debug)]
 struct Item {
@@ -84,7 +83,7 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
-    references: HashMap<UniCase<String>, RefDef<'a>>,
+    references: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
@@ -95,7 +94,7 @@ impl<'a> FirstPass<'a> {
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item>, HashMap<UniCase<String>, RefDef<'a>>) {
+    fn run(mut self) -> (Tree<Item>, HashMap<LinkLabel<'a>, RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -192,8 +191,7 @@ impl<'a> FirstPass<'a> {
         // Reference definitions of the form
         // [foo]: /url "title"
         if let Some((bytecount, label, refdef)) = self.scan_refdef(ix) {
-            let unicased = UniCase::new(label);
-            self.references.entry(unicased).or_insert(refdef);
+            self.references.entry(label).or_insert(refdef);
             return ix + bytecount;
         }
 
@@ -638,9 +636,11 @@ impl<'a> FirstPass<'a> {
     }
 
     // returns # of bytes, label and definition
-    fn scan_refdef(&self, start: usize) -> Option<(usize, String, RefDef<'a>)> {
+    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
         // scan label
-        let (mut i, label) = scan_link_label(&self.text[start..])?;
+        let mut builder = LinkLabelBuilder::new();
+        let mut i = builder.add_text(&self.text[start..])?;
+        let label = builder.build();
         i += start;
         if scan_ch(&self.text[i..], b':') == 0 {
             return None;
@@ -766,55 +766,6 @@ impl<'a> FirstPass<'a> {
             }
             _ => None
         }
-    }
-}
-
-// returns index after label and label on success. note that we can't (always)
-// return a &str since we need to collapse whitespaces.
-// TODO: we could do Cows though?
-// TODO: move to scanners?
-fn scan_link_label(text: &str) -> Option<(usize, String)> {
-    if scan_ch(text, b'[') == 0 {
-        return None;
-    }
-    let mut i = 1;
-    let mut only_white_space = true;
-    let bytes = text.as_bytes();
-    let mut label = String::new();
-
-    loop {
-        if i >= bytes.len() { return None; }
-        match bytes[i] {
-            b'[' => return None,
-            b']' => break,
-            b'\\' => {
-                label.push('\\');
-                let next_byte = *bytes.get(i + 1)?;
-                if next_byte != b'\\' {
-                    label.push(next_byte as char);
-                }
-                i += 2;
-            }
-            c if is_ascii_whitespace(c) => {
-                i += scan_while(&text[i..], is_ascii_whitespace);
-                // normalize labels by collapsing whitespaces, including linebreaks
-                label.push(' ');
-            }
-            c => {
-                only_white_space = false;
-                i += 1;
-                label.push(c as char);
-            }
-        }
-    }
-
-    if only_white_space {
-        return None;
-    }
-    if scan_ch(&text[i..], b']') == 0 {
-        None
-    } else {
-        Some((i + 1, label))
     }
 }
 
@@ -2018,67 +1969,33 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
 }
 
 #[derive(Debug, Clone)]
-enum RefScan {
+enum RefScan<'a> {
     // contains label, next node index
-    Label(String, usize),
+    Label(LinkLabel<'a>, usize),
     // contains next node index
     Collapsed(usize),
     Failed,
 }
 
-fn scan_reference<'a>(scanner: &'a mut InlineScanner) -> RefScan {
-    let label = if let Some(label) = scan_label(scanner) {
-        label
-    } else {
-        return RefScan::Failed
-    };
-
-    let next_node = scanner.tree.nodes[scanner.cur].next;
-    if label.len() == 0 {
-        RefScan::Collapsed(next_node)
-    } else {
-        RefScan::Label(label, next_node)
+fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> RefScan<'b> {
+    if cur == NIL {
+        return RefScan::Failed;
     }
-}
 
-fn scan_label<'a>(scanner: &'a mut InlineScanner) -> Option<String> {
-    if !scanner.scan_ch(b'[') {
-        return None;
-    }
-    
-    let mut label = String::new();
+    let start = tree.nodes[cur].item.start;
+    let mut builder = LinkLabelBuilder::new();
 
-    while let Some(c) = scanner.next_char() {
-        match c {
-            // FIXME: this block is used more often - should abstract it!
-            '\\' => {
-                label.push('\\');
-                if let Some(c) = scanner.next_char() {
-                    if c != '\\' {
-                        label.push(c);
-                    }
-                } else {
-                    return None;
-                }
-            }
-            '[' => return None,
-            ']' => {
-                scanner.unget();
-                break;
-            }
-            // TODO: introduce whitespace helper function for chars?
-            _ if c <= '\x7f' && is_ascii_whitespace(c as u8) => {
-                scanner.scan_while(is_ascii_whitespace);
-                label.push(' ');
-            }
-            _ => label.push(c),
+    if let Some(ix) = builder.add_text(&text[start..]) {
+        let mut scanner = InlineScanner::new(tree, text, cur);
+        for _ in 0..ix { scanner.next(); } // move to right node in tree
+        let next_node = tree.nodes[scanner.cur].next;
+        if ix == 2 {
+            RefScan::Collapsed(next_node)
+        } else {
+            RefScan::Label(builder.build(), next_node)
         }
-    }
-
-    if !scanner.scan_ch(b']') {
-        None
     } else {
-        Some(label)
+        RefScan::Failed
     }
 }
 
@@ -2118,7 +2035,7 @@ struct RefDef<'a> {
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
-    refdefs: HashMap<UniCase<String>, RefDef<'a>>,
+    refdefs: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2248,33 +2165,30 @@ impl<'a> Parser<'a> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
-                            let scan_result = scan_reference(scanner);
+                            let scan_result = scan_reference(&self.tree, &self.text, next);
                             let label_node = self.tree.nodes[tos.node].next;
                             let node_after_link = match scan_result {
                                 RefScan::Label(_, next_node) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
-                            let label = match scan_result {
-                                RefScan::Label(l, ..) => l,
+                            let label: Option<LinkLabel<'a>> = match scan_result {
+                                RefScan::Label(l, ..) => Some(l),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let start = self.tree.nodes[tos.node].item.end - 1;
                                     let end = self.tree.nodes[cur].item.end;
                                     let search_text = &self.text[start..end];
-                                    if let Some((_ix, label)) = scan_link_label(search_text) {
-                                        label
-                                    } else {
-                                        // FIXME: this is terrible for multiple reasons
-                                        "NONEXISTENTKEY".into()
-                                    }
+
+                                    let mut builder = LinkLabelBuilder::new();
+                                    builder.add_text(search_text).map(|_| builder.build())
                                 }
                             };
+                            // TODO: actually validate link text if let RefScan::Label(..) = scan_result
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
-                            if let Some(matching_def) = self.refdefs.get(&UniCase::new(label)) {
+                            if let Some(matching_def) = label.and_then(|l| self.refdefs.get(&l)) {
                                 // found a matching definition!
                                 let title = matching_def.title.unwrap_or("").into();
                                 let url = matching_def.dest.into();

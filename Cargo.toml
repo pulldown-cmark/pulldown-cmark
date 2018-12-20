@@ -19,7 +19,7 @@ doc = false
 
 [dependencies]
 bitflags = "1.0"
-unicase = "2.2"
+unicase = "2.2.0"
 getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]

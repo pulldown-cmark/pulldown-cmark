@@ -21,7 +21,7 @@ extern crate pulldown_cmark;
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -44,7 +44,7 @@ extern crate pulldown_cmark;
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -74,7 +74,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -106,7 +106,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -144,7 +144,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -171,7 +171,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -198,7 +198,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -225,7 +225,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -252,7 +252,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -289,7 +289,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -312,7 +312,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -337,7 +337,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }
@@ -362,7 +362,7 @@ Test ending
         opts.insert(Options::ENABLE_FOOTNOTES);
 
         let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p).unwrap();
+        html::push_html(&mut s, p);
 
         assert_eq!(expected, s);
     }

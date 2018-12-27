@@ -33,7 +33,7 @@ console.log("fooooo");
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -71,7 +71,7 @@ console.log("fooooo");
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -95,7 +95,7 @@ fn html_test_3() {
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -119,7 +119,7 @@ fn html_test_4() {
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -143,7 +143,7 @@ fn html_test_5() {
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -165,7 +165,7 @@ Some things are here...
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -202,7 +202,7 @@ console.log("fooooo");
     let mut s = String::new();
 
     let p = Parser::new(&original);
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
@@ -234,7 +234,7 @@ fn html_test_broken_callback() {
     };
 
     let p = Parser::new_with_broken_link_callback(&original, Options::empty(), Some(&callback));
-    html::push_html(&mut s, p).unwrap();
+    html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }

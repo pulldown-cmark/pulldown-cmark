@@ -20,6 +20,7 @@
 
 //! Utility functions for HTML escaping
 
+use std::io::{self, Write};
 use std::str::from_utf8;
 
 static HREF_SAFE: [u8; 128] = [
@@ -34,37 +35,51 @@ static HREF_SAFE: [u8; 128] = [
     ];
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
+static AMP_ESCAPE: &'static [u8] = b"&amp;";
+static SLASH_ESCAPE: &'static [u8] = b"&#x27;";
 
-pub fn escape_href(ob: &mut String, s: &str) {
+pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<usize>
+where
+    W: Write,
+{
+    let bytes = s.as_bytes();
+    let mut bytes_written = 0;
     let mut mark = 0;
-    for i in 0..s.len() {
-        let c = s.as_bytes()[i];
+    for i in 0..bytes.len() {
+        let c = bytes[i];
         if c >= 0x80 || HREF_SAFE[c as usize] == 0 {
             // character needing escape
 
             // write partial substring up to mark
             if mark < i {
-                ob.push_str(&s[mark..i]);
+                w.write_all(&bytes[mark..i])?;
+                bytes_written += &bytes[mark..i].len();
             }
             match c {
                 b'&' => {
-                    ob.push_str("&amp;");
-                },
+                    w.write_all(AMP_ESCAPE)?;
+                    bytes_written += AMP_ESCAPE.len();
+                }
                 b'\'' => {
-                    ob.push_str("&#x27;");
-                },
+                    w.write_all(SLASH_ESCAPE)?;
+                    bytes_written += SLASH_ESCAPE.len();
+                }
                 _ => {
                     let mut buf = [0u8; 3];
                     buf[0] = b'%';
                     buf[1] = HEX_CHARS[((c as usize) >> 4) & 0xF];
                     buf[2] = HEX_CHARS[(c as usize) & 0xF];
-                    ob.push_str(from_utf8(&buf).unwrap());
+                    let escaped = from_utf8(&buf).unwrap().as_bytes();
+                    w.write_all(escaped)?;
+                    bytes_written += escaped.len();
                 }
             }
-            mark = i + 1;  // all escaped characters are ASCII
+            mark = i + 1; // all escaped characters are ASCII
         }
     }
-    ob.push_str(&s[mark..]);
+    w.write_all(&bytes[mark..])?;
+    bytes_written += &bytes[mark..].len();
+    Ok(bytes_written)
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -95,26 +110,36 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&gt;"
     ];
 
-pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
-    let size = s.len();
+pub fn escape_html<W>(mut w: W, s: &str, secure: bool) -> io::Result<usize>
+where
+    W: Write,
+{
     let bytes = s.as_bytes();
+    let mut bytes_written = 0;
     let mut mark = 0;
     let mut i = 0;
-    while i < size {
-        match bytes[i..].iter().position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0) {
+    while i < s.len() {
+        match bytes[i..]
+            .iter()
+            .position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0)
+        {
             Some(pos) => {
                 i += pos;
             }
-            None => break
+            None => break,
         }
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 && (secure || c != b'/') {
-            ob.push_str(&s[mark..i]);
-            ob.push_str(HTML_ESCAPES[escape as usize]);
-            mark = i + 1;  // all escaped characters are ASCII
+            let escape_seq = HTML_ESCAPES[escape as usize];
+            w.write_all(&bytes[mark..i])?;
+            w.write_all(escape_seq.as_bytes())?;
+            bytes_written += &bytes[mark..i].len() + escape_seq.len();
+            mark = i + 1; // all escaped characters are ASCII
         }
         i += 1;
     }
-    ob.push_str(&s[mark..]);
+    w.write_all(&bytes[mark..])?;
+    bytes_written += &s[mark..].len();
+    Ok(bytes_written)
 }

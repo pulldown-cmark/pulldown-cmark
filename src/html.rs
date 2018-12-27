@@ -380,14 +380,13 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I>(s: &mut String, iter: I) -> io::Result<()>
+pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
     let mut buf = Vec::with_capacity(s.capacity());
-    let _ = write_html(Cursor::new(&mut buf), iter)?;
+    let _ = write_html(Cursor::new(&mut buf), iter).unwrap();
     s.push_str(&String::from_utf8_lossy(&buf));
-    Ok(())
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and

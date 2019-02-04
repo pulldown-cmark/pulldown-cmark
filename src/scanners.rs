@@ -38,29 +38,6 @@ const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
     "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
     "thead", "tr", "ul", "video"];
 
-const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
-    "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
-    "bitcoin", "bolo", "callto", "cap", "chrome", "chrome-extension", "cid",
-    "coap", "com-eventbrite-attendee", "content", "crid", "cvs", "data", "dav",
-    "dict", "dlna-playcontainer", "dlna-playsingle", "dns", "doi", "dtn",
-    "dvb", "ed2k", "facetime", "feed", "file", "finger", "fish", "ftp", "geo",
-    "gg", "git", "gizmoproject", "go", "gopher", "gtalk", "h323", "hcp",
-    "http", "https", "iax", "icap", "icon", "im", "imap", "info", "ipn", "ipp",
-    "irc", "irc6", "ircs", "iris", "iris.beep", "iris.lwz", "iris.xpc",
-    "iris.xpcs", "itms", "jar", "javascript", "jms", "keyparc", "lastfm",
-    "ldap", "ldaps", "magnet", "mailto", "maps", "market", "message", "mid",
-    "mms", "ms-help", "msnim", "msrp", "msrps", "mtqp", "mumble", "mupdate",
-    "mvn", "news", "nfs", "ni", "nih", "nntp", "notes", "oid",
-    "opaquelocktoken", "palm", "paparazzi", "platform", "pop", "pres", "proxy",
-    "psyc", "query", "res", "resource", "rmi", "rsync", "rtmp", "rtsp",
-    "secondlife", "service", "session", "sftp", "sgn", "shttp", "sieve", "sip",
-    "sips", "skype", "smb", "sms", "snmp", "soap.beep", "soap.beeps", "soldat",
-    "spotify", "ssh", "steam", "svn", "tag", "teamspeak", "tel", "telnet",
-    "tftp", "things", "thismessage", "tip", "tn3270", "tv", "udp", "unreal",
-    "urn", "ut2004", "vemmi", "ventrilo", "view-source", "webcal", "ws", "wss",
-    "wtai", "wyciwyg", "xcon", "xcon-userid", "xfire", "xmlrpc.beep",
-    "xmlrpc.beeps", "xmpp", "xri", "ymsgr", "z39.50r", "z39.50s"];
-
 pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
 }
@@ -552,21 +529,27 @@ pub fn scan_autolink(data: &str) -> Option<(usize, Cow<str>)> {
     Some((i + 1, link))
 }
 
+// returns the number of bytes in the uri or 0 when the data does
+// not have a uri prefix
 fn scan_uri(data: &str) -> usize {
+    // scheme's first byte must be an ascii letter
+    if data.len() < 1 || ! is_ascii_alpha(data.as_bytes()[0]) {
+        return 0;
+    }
+
     let mut i = 0;
     while i < data.len() {
         match data.as_bytes()[i] {
-            c if is_ascii_alphanumeric(c)  => i += 1,
-            b'.' | b'-' => i += 1,
+            c if is_ascii_alphanumeric(c) => i += 1,
+            b'.' | b'-' | b'+' => i += 1,
             b':' => break,
             _ => return 0
         }
     }
-    if i == data.len() { return 0; }
-    let scheme = &data[..i];
-    if !URI_SCHEMES.binary_search_by(|probe| utils::strcasecmp(probe, scheme)).is_ok() {
-        return 0;
-    }
+
+    // scheme length must be between 2 and 32 characters long
+    if i < 2 || i > 32 || i == data.len() { return 0; }
+
     i += 1;  // scan the :
     while i < data.len() {
         match data.as_bytes()[i] {
@@ -574,8 +557,7 @@ fn scan_uri(data: &str) -> usize {
             _ => i += 1
         }
     }
-    if i == data.len() { return 0; }
-    i
+    if i == data.len() { 0 } else { i }
 }
 
 fn scan_email(data: &str) -> usize {

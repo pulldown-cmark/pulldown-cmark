@@ -1314,6 +1314,8 @@ impl<'a> InlineScanner<'a> {
         self.ix -= 1;
     }
 
+    // Consumes byte if it was next and returns true. Does
+    // nothing and returns false otherwise.
     fn scan_ch(&mut self, c: u8) -> bool {
         self.scan_if(|scanned| scanned == c)
     }
@@ -1323,8 +1325,9 @@ impl<'a> InlineScanner<'a> {
         self.scan_while(|scanned| scanned != c)
     }
 
-    fn scan_if<F>(&mut self, f: F) -> bool
-        where F: Fn(u8) -> bool
+    fn scan_if<F>(&mut self, mut f: F) -> bool
+    where
+        F: FnMut(u8) -> bool,
     {
         if let Some(c) = self.next() {
             if !f(c) {
@@ -1336,8 +1339,9 @@ impl<'a> InlineScanner<'a> {
         false
     }
 
-    fn scan_while<F>(&mut self, f: F) -> usize
-        where F: Fn(u8) -> bool
+    fn scan_while<F>(&mut self, mut f: F) -> usize
+    where
+        F: FnMut(u8) -> bool,
     {
         let mut n = 0;
         while let Some(c) = self.next() {
@@ -1697,6 +1701,125 @@ fn scan_link_title(scanner: &mut InlineScanner) -> Option<String> {
     None
 }
 
+// TODO: cows?
+fn scan_autolink(scanner: &mut InlineScanner) -> Option<String> {
+    let save = scanner.clone();
+    let scans = scan_uri(scanner).or_else(|| {
+        *scanner = save.clone();
+        scan_email(scanner)
+    });
+    if let Some(uri) = scans {
+        if scanner.scan_ch(b'>') {
+            return Some(uri);
+        }
+    }
+    *scanner = save;
+    None
+}
+
+// must return scanner to original state
+// TODO: such invariants should probably be captured by the type system
+fn scan_uri(scanner: &mut InlineScanner) -> Option<String> {
+    // FIXME: don't use strings?
+    let mut uri = String::new();
+
+    // scheme's first byte must be an ascii letter
+    let first = scanner.next()?;
+    if !is_ascii_alpha(first) {
+        return None;
+    } else {
+        uri.push(first as char);
+    }
+
+    while let Some(c) = scanner.next() {
+        match c {
+            c if is_ascii_alphanumeric(c) => uri.push(c as char),
+            c @ b'.' | c @ b'-' | c @ b'+' => uri.push(c as char),
+            b':' => {uri.push(c as char); break; }
+            _ => {
+                return None;
+            }
+        }
+    }
+
+    // scheme length must be between 2 and 32 characters long. scheme
+    // must be followed by colon
+    if uri.len() < 3 || uri.len() > 33  {
+        return None;
+    }
+
+    let mut ended = false;
+    while let Some(c) = scanner.next() {
+        match c {
+            b'\0' ... b' ' => {
+                ended = true;
+            }
+            b'>' | b'<' => break,
+            _ if ended => return None,
+            c => uri.push(c as char),
+        }
+    };
+    scanner.unget();
+
+    Some(uri)
+}
+
+fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
+    // using a regex library would be convenient, but doing it by hand is not too bad
+
+    // FIXME: don't use strings?
+    let mut uri: String = "mailto:".into();
+
+    while let Some(c) = scanner.next() {
+        match c {
+            c if is_ascii_alphanumeric(c) => uri.push(c as char),
+            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
+            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => uri.push(c as char),
+            b'@' => {
+                uri.push('@');
+                break;
+            }
+            _ => {
+                return None;
+            }
+        }
+    }
+
+    loop {
+        let label_start = uri.len();
+        let mut fresh_label = true;
+
+        while let Some(c) = scanner.next() {
+            match c {
+                c if is_ascii_alphanumeric(c) => uri.push(c as char),
+                b'-' if fresh_label => {
+                    return None;
+                }
+                b'-' => uri.push('-'),
+                _ => {
+                    scanner.unget();
+                    break;
+                }
+            }
+            fresh_label = false;
+        }
+
+        if uri.len() == label_start || uri.len() - label_start > 63
+            || uri.chars().last() == Some('-') {
+            return None;
+        }
+
+        if scanner.scan_ch(b'.') {
+            uri.push('.');
+        } else {
+            break;
+        }
+    }
+
+    Some(uri)
+}
+
+// TODO: Cows more efficient?
 fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
     if !scanner.scan_ch(b'(') {
         return None;
@@ -1737,16 +1860,27 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
     while cur != NIL {
         match tree.nodes[cur].item.body {
             ItemBody::MaybeHtml => {
-                let maybe_html = {
-                    let next = tree.nodes[cur].next;
-                    let mut scanner = InlineScanner::new(tree, s, next);
-                    if scan_inline_html(&mut scanner) {
-                        Some(scanner.to_node_and_ix())
-                    } else {
-                        None
-                    }
-                };
-                if let Some((node, ix)) = maybe_html {
+                let next = tree.nodes[cur].next;
+                let scanner = &mut InlineScanner::new(tree, s, next);
+
+                if let Some(uri) = scan_autolink(scanner) {
+                    // FIXME: all this tree surgery is pretty bad. i have no
+                    // idea what's going on here, and i wrote this. we should
+                    // probably use a tree with a proper interface that abstracts
+                    // this
+                    let (node, ix) = scanner.to_node_and_ix();
+                    tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
+                    tree.nodes[cur].item.end = ix;
+                    tree.nodes[cur].next = node;
+                    let old_cur = tree.cur;
+                    tree.cur = cur;
+                    tree.push();
+                    tree.append_text(tree.nodes[cur].item.start + 1, ix - 1);
+                    tree.cur = old_cur;
+                    cur = node;
+                    continue;
+                } else if scan_inline_html(scanner) {
+                    let (node, ix) = scanner.to_node_and_ix();
                     // TODO: this logic isn't right if the replaced chain has
                     // tricky stuff (skipped containers, replaced nulls).
                     tree.nodes[cur].item.body = ItemBody::InlineHtml;
@@ -1782,11 +1916,9 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
             ItemBody::MaybeLinkClose => {
                 let made_link = if let Some(tos) = link_stack.last() {
                     let next = tree.nodes[cur].next;
-                    let (link_info, (next_node, next_ix)) = {
-                        let mut scanner = InlineScanner::new(tree, s, next);
-                        (scan_inline_link(&mut scanner), scanner.to_node_and_ix())
-                    };
-                    if let Some((url, title)) = link_info {
+                    let scanner = &mut InlineScanner::new(tree, s, next);
+                    if let Some((url, title)) = scan_inline_link(scanner) {
+                        let (next_node, next_ix) = scanner.to_node_and_ix();
                         tree.nodes[prev].next = NIL;
                         cur = tos.node;
                         tree.nodes[cur].item.body = ItemBody::Link(url.into(), title.into());

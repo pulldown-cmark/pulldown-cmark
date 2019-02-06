@@ -47,6 +47,7 @@ enum ItemBody {
     MaybeHtml,
     MaybeLinkOpen,
     MaybeLinkClose,
+    MaybeImage,
     Backslash,
 
     // These are inline items after resolution.
@@ -55,8 +56,9 @@ enum ItemBody {
     Code,
     InlineHtml,
     // Link params: destination, title.
-    // TODO: get lifetime in type so this can be a cow
+    // TODO: get lifetime in type so these strings can be cows
     Link(String, String),
+    Image(String, String),
 
     Rule,
     Header(i32), // header level
@@ -766,11 +768,16 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 begin_text = ix;
             }
             b'[' => {
-                tree.append_text(begin_text, ix);
+                let (link_type, start) = if ix >= begin_text + 1 && bytes[ix - 1] == b'!' {
+                    (ItemBody::MaybeImage, ix - 1)
+                } else {
+                    (ItemBody::MaybeLinkOpen, ix)
+                };
+                tree.append_text(begin_text, start);
                 tree.append(Item {
-                    start: ix,
+                    start,
                     end: ix + 1,
-                    body: ItemBody::MaybeLinkOpen,
+                    body: link_type,
                 });
                 ix += 1;
                 begin_text = ix;
@@ -1838,10 +1845,9 @@ fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
     Some((url, title))
 }
 
-// TODO: if it's just node, get rid of struct. But I think there probably will be
-// state related to normalization.
 struct LinkStackEl {
     node: usize,
+    is_image: bool,
 }
 
 /// Handle inline HTML, code spans, and links.
@@ -1853,6 +1859,7 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
     let mut link_stack = Vec::new();
     let mut cur = tree.cur;
     let mut prev = NIL;
+
     while cur != NIL {
         match tree.nodes[cur].item.body {
             ItemBody::MaybeHtml => {
@@ -1907,31 +1914,44 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
             }
             ItemBody::MaybeLinkOpen => {
                 tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur });
+                link_stack.push( LinkStackEl { node: cur, is_image: false });
+            }
+            ItemBody::MaybeImage => {
+                tree.nodes[cur].item.body = ItemBody::Text;
+                link_stack.push( LinkStackEl { node: cur, is_image: true });
             }
             ItemBody::MaybeLinkClose => {
-                let made_link = if let Some(tos) = link_stack.last() {
+                if let Some(tos) = link_stack.last() {
                     let next = tree.nodes[cur].next;
                     let scanner = &mut InlineScanner::new(tree, s, next);
+
                     if let Some((url, title)) = scan_inline_link(scanner) {
                         let (next_node, next_ix) = scanner.to_node_and_ix();
                         tree.nodes[prev].next = NIL;
                         cur = tos.node;
-                        tree.nodes[cur].item.body = ItemBody::Link(url.into(), title.into());
+                        tree.nodes[cur].item.body = if tos.is_image {
+                            ItemBody::Image(url.into(), title.into())
+                        } else {
+                            ItemBody::Link(url.into(), title.into())
+                        };
                         tree.nodes[cur].child = tree.nodes[cur].next;
                         tree.nodes[cur].next = next_node;
                         if next_node != NIL {
                             tree.nodes[next_node].item.start = next_ix;
                         }
-                        true
+
+                        let inside_image_alt = link_stack.iter().position(|e| e.is_image)
+                            .map(|i| i != link_stack.len() - 1)
+                            .unwrap_or(false);
+
+                        if tos.is_image || inside_image_alt {
+                            link_stack.pop();
+                        } else {
+                            link_stack.clear();
+                        }
                     } else {
-                        false
+                        tree.nodes[cur].item.body = ItemBody::Text;
                     }
-                } else {
-                    false
-                };
-                if made_link {
-                    link_stack.clear();
                 } else {
                     tree.nodes[cur].item.body = ItemBody::Text;
                 }
@@ -2062,6 +2082,8 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Link(ref url, ref title) =>
             Some(Tag::Link(url.clone().into(), title.clone().into())),
+        ItemBody::Image(ref url, ref title) =>
+            Some(Tag::Image(url.clone().into(), title.clone().into())),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(ref info_string) =>
@@ -2189,7 +2211,7 @@ impl<'a> Iterator for Parser<'a> {
         }
         match self.tree.nodes[self.tree.cur].item.body {
             ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
-            | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose =>
+            | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                 handle_inline(&mut self.tree, self.text),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),

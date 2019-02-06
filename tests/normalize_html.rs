@@ -17,12 +17,18 @@ fn strip_double_space() {
 
 #[test]
 fn strip_inline_internal_text() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html("<u> a </u> b <u> c </u>"))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html("<u> a </u> b <u> c </u>")
+    )
 }
 
 #[test]
 fn strip_inline_block_internal_text() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html(" <u> a </u> b <u> c </u> "))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html(" <u> a </u> b <u> c </u> ")
+    )
 }
 
 #[test]
@@ -32,10 +38,16 @@ fn leaves_necessary_whitespace_alone() {
 
 #[test]
 fn leaves_necessary_whitespace_alone_weird() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html(" <u>a </u>b <u>c</u>"))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html(" <u>a </u>b <u>c</u>")
+    )
 }
 
 #[test]
 fn leaves_necessary_whitespace_all_nested() {
-    assert_eq!("<u></u><u></u><u></u><u></u>", normalize_html("<u> </u><u> </u><u> </u><u> </u>"))
+    assert_eq!(
+        "<u></u><u></u><u></u><u></u>",
+        normalize_html("<u> </u><u> </u><u> </u><u> </u>")
+    )
 }

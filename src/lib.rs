@@ -30,14 +30,14 @@ pub mod html;
 #[macro_use]
 extern crate bitflags;
 
-mod parse;
-mod scanners;
 mod entities;
 mod escape;
-mod puncttable;
-mod utils;
+mod parse;
 mod prototype;
+mod puncttable;
+mod scanners;
 mod tree;
+mod utils;
 
+pub use crate::parse::{Alignment, Event, Options, Tag};
 pub use crate::prototype::Parser;
-pub use crate::parse::{Alignment, Event, Tag, Options};

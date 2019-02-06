@@ -24,10 +24,12 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use crate::parse::{Event, Tag};
-use crate::parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
+use crate::escape::{escape_href, escape_html};
 use crate::parse::Alignment;
-use crate::escape::{escape_html, escape_href};
+use crate::parse::Event::{
+    End, FootnoteReference, HardBreak, Html, InlineHtml, SoftBreak, Start, Text,
+};
+use crate::parse::{Event, Tag};
 
 enum TableState {
     Head,
@@ -42,7 +44,7 @@ struct Ctx<'b, I> {
     table_cell_index: usize,
 }
 
-impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
+impl<'a, 'b, I: Iterator<Item = Event<'a>>> Ctx<'b, I> {
     fn fresh_line(&mut self) {
         if !(self.buf.is_empty() || self.buf.ends_with('\n')) {
             self.buf.push('\n');
@@ -56,26 +58,26 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 Start(tag) => self.start_tag(tag, &mut numbers),
                 End(tag) => self.end_tag(tag),
                 Text(text) => escape_html(self.buf, &text, false),
-                Html(html) |
-                InlineHtml(html) => self.buf.push_str(&html),
+                Html(html) | InlineHtml(html) => self.buf.push_str(&html),
                 SoftBreak => self.buf.push('\n'),
                 HardBreak => self.buf.push_str("<br />\n"),
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;
-                    self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
+                    self.buf
+                        .push_str("<sup class=\"footnote-reference\"><a href=\"#");
                     escape_html(self.buf, &*name, false);
                     self.buf.push_str("\">");
                     let number = numbers.entry(name).or_insert(len);
                     self.buf.push_str(&*format!("{}", number));
                     self.buf.push_str("</a></sup>");
-                },
+                }
             }
         }
     }
 
     fn start_tag(&mut self, tag: Tag<'a>, numbers: &mut HashMap<Cow<'a, str>, usize>) {
         match tag {
-            Tag::Paragraph =>  {
+            Tag::Paragraph => {
                 self.fresh_line();
                 self.buf.push_str("<p>");
             }
@@ -171,9 +173,11 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::FootnoteDefinition(name) => {
                 self.fresh_line();
                 let len = numbers.len() + 1;
-                self.buf.push_str("<div class=\"footnote-definition\" id=\"");
+                self.buf
+                    .push_str("<div class=\"footnote-definition\" id=\"");
                 escape_html(self.buf, &*name, false);
-                self.buf.push_str("\"><sup class=\"footnote-definition-label\">");
+                self.buf
+                    .push_str("\"><sup class=\"footnote-definition-label\">");
                 let number = numbers.entry(name).or_insert(len);
                 self.buf.push_str(&*format!("{}", number));
                 self.buf.push_str("</sup>");
@@ -230,7 +234,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             match event {
                 Start(_) => nest += 1,
                 End(_) => {
-                    if nest == 0 { break; }
+                    if nest == 0 {
+                        break;
+                    }
                     nest -= 1;
                 }
                 Text(text) => escape_html(self.buf, &text, false),
@@ -274,7 +280,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
+pub fn push_html<'a, I: Iterator<Item = Event<'a>>>(buf: &mut String, iter: I) {
     let mut ctx = Ctx {
         iter,
         buf,

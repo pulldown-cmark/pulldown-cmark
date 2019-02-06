@@ -23,10 +23,10 @@
 use crate::scanners::*;
 use crate::utils;
 use std::borrow::Cow;
-use std::borrow::Cow::{Borrowed};
-use std::collections::{HashMap, HashSet};
-use std::collections::hash_map::Entry;
+use std::borrow::Cow::Borrowed;
 use std::cmp;
+use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet};
 
 #[derive(PartialEq, Debug)]
 enum State {
@@ -75,7 +75,7 @@ pub struct RawParser<'a> {
     fence_indent: usize,
 
     // info, used in second pass
-    loose_lists: HashSet<usize>,  // offset is at list marker
+    loose_lists: HashSet<usize>, // offset is at list marker
     links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
 }
 
@@ -98,7 +98,7 @@ pub enum Tag<'a> {
     CodeBlock(Cow<'a, str>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
-    List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
+    List(Option<usize>), // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(Cow<'a, str>),
     HtmlBlock,
@@ -153,10 +153,12 @@ const MAX_LINK_NEST: usize = 10;
 
 #[allow(dead_code)]
 impl<'a> RawParser<'a> {
-    pub fn new_with_links_and_callback(text: &'a str, opts: Options,
-            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
-            callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
-    -> RawParser<'a> {
+    pub fn new_with_links_and_callback(
+        text: &'a str,
+        opts: Options,
+        links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
+        callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    ) -> RawParser<'a> {
         let mut ret = RawParser {
             text,
             off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
@@ -183,8 +185,11 @@ impl<'a> RawParser<'a> {
         ret
     }
 
-    pub fn new_with_links(text: &'a str, opts: Options,
-            links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>) -> RawParser<'a> {
+    pub fn new_with_links(
+        text: &'a str,
+        opts: Options,
+        links: HashMap<String, (Cow<'a, str>, Cow<'a, str>)>,
+    ) -> RawParser<'a> {
         Self::new_with_links_and_callback(text, opts, links, None)
     }
 
@@ -219,7 +224,7 @@ impl<'a> RawParser<'a> {
     fn limit(&self) -> usize {
         match self.stack.last() {
             Some(&(_, limit, _)) => limit,
-            None => self.text.len()
+            None => self.text.len(),
         }
     }
 
@@ -251,7 +256,9 @@ impl<'a> RawParser<'a> {
             Tag::Code => self.state = State::Inline,
             _ => (),
         }
-        if next != 0 { self.off = next; }
+        if next != 0 {
+            self.off = next;
+        }
 
         /*
         if self.stack.is_empty() {
@@ -264,7 +271,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn skip_leading_whitespace(&mut self) {
-        self.off += scan_whitespace_no_nl(&self.text[self.off .. self.limit()]);
+        self.off += scan_whitespace_no_nl(&self.text[self.off..self.limit()]);
     }
 
     // TODO: this function doesn't respect containers
@@ -298,8 +305,7 @@ impl<'a> RawParser<'a> {
                         return (i, false, space);
                     }
                 }
-                Container::FootnoteDefinition |
-                Container::List(_, _) => (),
+                Container::FootnoteDefinition | Container::List(_, _) => (),
                 Container::ListItem(indent) => {
                     if space >= indent {
                         space -= indent;
@@ -328,7 +334,7 @@ impl<'a> RawParser<'a> {
             if i == text.len() {
                 return (i, lines + 1);
             }
-            let n_blank = scan_eol(&text[i + n ..]).0;
+            let n_blank = scan_eol(&text[i + n..]).0;
             if n_blank == 0 {
                 return (i, lines);
             }
@@ -341,7 +347,7 @@ impl<'a> RawParser<'a> {
     fn scan_whitespace_inline(&self, text: &str) -> usize {
         let i = scan_whitespace_no_nl(text);
         if let (n, true) = scan_eol(&text[i..]) {
-            let (n_containers, _, space) = self.scan_containers(&text[i + n ..]);
+            let (n_containers, _, space) = self.scan_containers(&text[i + n..]);
             let j = i + n + n_containers;
             if !self.is_inline_block_end(&text[j..], space) {
                 return j;
@@ -369,7 +375,7 @@ impl<'a> RawParser<'a> {
                 return Some(self.end());
             }
             if self.state != State::InContainers {
-                let (n, scanned, space) = self.scan_containers(&self.text[self.off ..]);
+                let (n, scanned, space) = self.scan_containers(&self.text[self.off..]);
                 if !scanned {
                     return Some(self.end());
                 }
@@ -378,12 +384,12 @@ impl<'a> RawParser<'a> {
                 self.state = State::InContainers;
             }
 
-            let (n, at_eol) = scan_eol(&self.text[self.off ..]);
+            let (n, at_eol) = scan_eol(&self.text[self.off..]);
             if at_eol {
                 self.off += n;
                 self.state = State::StartBlock;
                 // two empty lines closes lists, one empty line closes a footnote
-                let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off ..]);
+                let (n, empty_lines) = self.scan_empty_lines(&self.text[self.off..]);
                 for i in (0..self.stack.len()).rev() {
                     let is_break = match self.stack[i].0 {
                         Tag::List(_) => empty_lines >= 1,
@@ -423,7 +429,7 @@ impl<'a> RawParser<'a> {
                 return Some(self.start_indented_code());
             }
 
-            let tail = &self.text[self.off ..];
+            let tail = &self.text[self.off..];
 
             // must be before list item because ambiguous
             let n = scan_hrule(tail);
@@ -494,14 +500,18 @@ impl<'a> RawParser<'a> {
                             }
                             self.off += n;
                             self.containers.push(Container::FootnoteDefinition);
-                            return Some(self.start(Tag::FootnoteDefinition(Cow::Borrowed(name)), self.text.len(), 0));
+                            return Some(self.start(
+                                Tag::FootnoteDefinition(Cow::Borrowed(name)),
+                                self.text.len(),
+                                0,
+                            ));
                         }
                     }
                     if self.try_link_reference_definition(tail) {
                         continue;
                     }
                 }
-                _ => ()
+                _ => (),
             }
             return Some(self.start_paragraph());
         }
@@ -555,7 +565,7 @@ impl<'a> RawParser<'a> {
 
     fn start_table_body(&mut self) -> Event<'a> {
         assert!(self.opts.contains(Options::ENABLE_TABLES));
-        let (off, _) = match self.scan_containers(&self.text[self.off ..]) {
+        let (off, _) = match self.scan_containers(&self.text[self.off..]) {
             (n, true, space) => (self.off + n, space),
             _ => {
                 return self.end();
@@ -572,8 +582,8 @@ impl<'a> RawParser<'a> {
     }
 
     fn start_hrule(&mut self) -> Event<'a> {
-        let limit = self.off;  // body of hrule is empty
-        self.state = State::Inline;  // handy state for producing correct end tag
+        let limit = self.off; // body of hrule is empty
+        self.state = State::Inline; // handy state for producing correct end tag
         self.start(Tag::Rule, limit, limit)
     }
 
@@ -620,7 +630,7 @@ impl<'a> RawParser<'a> {
                     return self.end();
                 }
                 self.off += n;
-                let n_blank = scan_blank_line(&self.text[self.off ..]);
+                let n_blank = scan_blank_line(&self.text[self.off..]);
                 if n_blank.is_some() {
                     self.off += n_blank.unwrap();
                     self.state = State::StartBlock;
@@ -636,7 +646,11 @@ impl<'a> RawParser<'a> {
             _ => {
                 self.containers.push(Container::List(self.off, c));
                 // arguably this should be done in the scanner, it should return option
-                let startopt = if c == b'.' || c == b')' { Some(start) } else { None };
+                let startopt = if c == b'.' || c == b')' {
+                    Some(start)
+                } else {
+                    None
+                };
                 self.start(Tag::List(startopt), self.text.len(), 0)
             }
         }
@@ -656,7 +670,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn next_code_line_start(&mut self) -> Event<'a> {
-        let (off, space) = match self.scan_containers(&self.text[self.off ..]) {
+        let (off, space) = match self.scan_containers(&self.text[self.off..]) {
             (n, true, space) => (self.off + n, space),
             _ => {
                 return self.end();
@@ -667,7 +681,7 @@ impl<'a> RawParser<'a> {
             let n = scan_blank_line(&self.text[off..]);
             if let Some(n) = n {
                 // TODO performance: this scanning is O(n^2) in the number of empty lines
-                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n ..]);
+                let (n_empty, _lines) = self.scan_empty_lines(&self.text[off + n..]);
                 let next = off + n + n_empty;
                 let (n_containers, scanned, nspace) = self.scan_containers(&self.text[next..]);
                 // TODO; handle space
@@ -723,10 +737,12 @@ impl<'a> RawParser<'a> {
                 }
                 b'\r' => {
                     // just skip it (does not support '\r' only line break)
-                    if i > beg { break; }
+                    if i > beg {
+                        break;
+                    }
                     beg += 1;
                 }
-                _ => ()
+                _ => (),
             }
             i += 1;
         }
@@ -741,8 +757,9 @@ impl<'a> RawParser<'a> {
             space < 4
         } else if space <= 3 {
             let (n, c) = scan_code_fence(tail);
-            c == self.fence_char && n >= self.fence_count &&
-                (n >= tail.len() || scan_blank_line(&tail[n..]).is_some())
+            c == self.fence_char
+                && n >= self.fence_count
+                && (n >= tail.len() || scan_blank_line(&tail[n..]).is_some())
         } else {
             false
         }
@@ -752,18 +769,18 @@ impl<'a> RawParser<'a> {
 
     fn scan_html_block_tag(&self, data: &'a str) -> (usize, &'a str) {
         let mut i = scan_ch(data, b'<');
-        if i == 0 { return (0, "") }
+        if i == 0 {
+            return (0, "");
+        }
         i += scan_ch(&data[i..], b'/');
         let n = scan_while(&data[i..], is_ascii_alphanumeric);
         // TODO: scan attributes and >
-        (i + n, &data[i .. i + n])
+        (i + n, &data[i..i + n])
     }
 
     fn is_html_block(&self, data: &str) -> bool {
         let (n_tag, tag) = self.scan_html_block_tag(data);
-        (n_tag > 0 && is_html_tag(tag)) ||
-                data.starts_with("<?") ||
-                data.starts_with("<!")
+        (n_tag > 0 && is_html_tag(tag)) || data.starts_with("<?") || data.starts_with("<!")
     }
 
     // http://spec.commonmark.org/0.26/#html-blocks
@@ -772,8 +789,9 @@ impl<'a> RawParser<'a> {
         static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
         for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-            if self.off + 1 + beg_tag.len() < self.text.len() &&
-               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+            if self.off + 1 + beg_tag.len() < self.text.len()
+                && self.text[self.off + 1..].starts_with(&beg_tag[..])
+            {
                 let pos = self.off + beg_tag.len() + 1;
                 let s = self.text.as_bytes()[pos];
                 if s == b' ' || s == b'\n' || s == b'>' {
@@ -784,14 +802,17 @@ impl<'a> RawParser<'a> {
         static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
         static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
         for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
-            if self.off + 1 + beg_tag.len() < self.text.len() &&
-               self.text[self.off + 1..].starts_with(&beg_tag[..]) {
+            if self.off + 1 + beg_tag.len() < self.text.len()
+                && self.text[self.off + 1..].starts_with(&beg_tag[..])
+            {
                 return Some(end_tag);
             }
         }
-        if self.off + 4 < self.text.len() &&
-           self.text[self.off + 1..].starts_with("<!") {
-            let c = self.text[self.off + 4..self.off + 5].chars().next().unwrap();
+        if self.off + 4 < self.text.len() && self.text[self.off + 1..].starts_with("<!") {
+            let c = self.text[self.off + 4..self.off + 5]
+                .chars()
+                .next()
+                .unwrap();
             if c >= 'A' && c <= 'Z' {
                 return Some(">");
             }
@@ -805,7 +826,10 @@ impl<'a> RawParser<'a> {
             let text = self.text[i..].split(tag).take(1).next().unwrap_or("");
             self.off = i + text.len();
             self.state = State::StartBlock;
-            return Event::Html(utils::cow_append(Borrowed(""), Borrowed(&self.text[i..self.off])));
+            return Event::Html(utils::cow_append(
+                Borrowed(""),
+                Borrowed(&self.text[i..self.off]),
+            ));
         }
         let size = self.text.len();
         let mut out = Borrowed("");
@@ -818,11 +842,11 @@ impl<'a> RawParser<'a> {
                     out = utils::cow_append(out, spaces(self.leading_space));
                     self.leading_space = 0;
                 }
-                out = utils::cow_append(out, Borrowed(&self.text[mark .. i - 2]));
+                out = utils::cow_append(out, Borrowed(&self.text[mark..i - 2]));
                 mark = i - 1;
             }
             let (n, scanned, space) = self.scan_containers(&self.text[i..]);
-            let n_blank = scan_blank_line(&self.text[i + n ..]);
+            let n_blank = scan_blank_line(&self.text[i + n..]);
             if n != 0 || !scanned || i + n == size || n_blank.is_some() {
                 if self.leading_space > 0 {
                     out = utils::cow_append(out, spaces(self.leading_space));
@@ -832,9 +856,9 @@ impl<'a> RawParser<'a> {
                 mark = i + n;
             }
             if !scanned || i + n == size || n_blank.is_some() {
-                self.off = i;  // TODO: skip blank lines (cleaner source maps)
+                self.off = i; // TODO: skip blank lines (cleaner source maps)
                 self.state = State::StartBlock;
-                return Event::Html(out)
+                return Event::Html(out);
             }
         }
     }
@@ -843,19 +867,27 @@ impl<'a> RawParser<'a> {
 
     fn try_link_reference_definition(&mut self, data: &'a str) -> bool {
         let (n_link, text_beg, text_end, max_nest) = self.scan_link_label(data);
-        if n_link == 0 || max_nest > 1 { return false; }
-        let n_colon = scan_ch(&data[n_link ..], b':');
-        if n_colon == 0 { return false; }
+        if n_link == 0 || max_nest > 1 {
+            return false;
+        }
+        let n_colon = scan_ch(&data[n_link..], b':');
+        if n_colon == 0 {
+            return false;
+        }
         let mut i = n_link + n_colon;
         i += self.scan_whitespace_inline(&data[i..]);
         let linkdest = scan_link_dest(&data[i..]);
-        if linkdest.is_none() { return false; }
+        if linkdest.is_none() {
+            return false;
+        }
         let (n_dest, raw_dest) = linkdest.unwrap();
-        if n_dest == 0 { return false; }
+        if n_dest == 0 {
+            return false;
+        }
         i += n_dest;
         i += scan_whitespace_no_nl(&data[i..]);
         let n_nl = self.scan_whitespace_inline(&data[i..]);
-        let (n_title, title_beg, title_end) = self.scan_link_title(&data[i + n_nl ..]);
+        let (n_title, title_beg, title_end) = self.scan_link_title(&data[i + n_nl..]);
         let title = if n_title == 0 {
             Borrowed("")
         } else {
@@ -890,7 +922,7 @@ impl<'a> RawParser<'a> {
         let mut i = 0;
         while i < raw.len() {
             let n = scan_nextline(&raw[i..]);
-            for c in raw[i.. i + n].chars() {
+            for c in raw[i..i + n].chars() {
                 if c.is_whitespace() {
                     need_space = true;
                 } else {
@@ -903,7 +935,9 @@ impl<'a> RawParser<'a> {
                 }
             }
             i += n;
-            if i == raw.len() { break; }
+            if i == raw.len() {
+                break;
+            }
             i += self.scan_containers(&raw[i..]).0;
             need_space = true;
         }
@@ -912,24 +946,25 @@ impl<'a> RawParser<'a> {
 
     // determine whether the line starting at loc ends the block
     fn is_inline_block_end(&self, data: &str, space: usize) -> bool {
-        data.is_empty() ||
-                scan_blank_line(data).is_some() ||
-                space <= 3 && (scan_hrule(data) != 0 ||
-                    scan_atx_header(data).0 != 0 ||
-                    scan_code_fence(data).0 != 0 ||
-                    scan_blockquote_start(data) != 0 ||
-                    scan_listitem(data).0 != 0 ||
-                    self.is_html_block(data))
+        data.is_empty()
+            || scan_blank_line(data).is_some()
+            || space <= 3
+                && (scan_hrule(data) != 0
+                    || scan_atx_header(data).0 != 0
+                    || scan_code_fence(data).0 != 0
+                    || scan_blockquote_start(data) != 0
+                    || scan_listitem(data).0 != 0
+                    || self.is_html_block(data))
     }
 
     fn next_table_cell(&mut self) -> Event<'a> {
         assert!(self.opts.contains(Options::ENABLE_TABLES));
-        let bytes   = self.text.as_bytes();
-        let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off ..]);
-        let mut i   = beg;
-        let limit   = self.limit();
+        let bytes = self.text.as_bytes();
+        let mut beg = self.off + scan_whitespace_no_nl(&self.text[self.off..]);
+        let mut i = beg;
+        let limit = self.limit();
         if i < limit && bytes[i] == b'|' {
-            i   += 1;
+            i += 1;
             beg += 1;
             self.off += 1;
         }
@@ -947,7 +982,11 @@ impl<'a> RawParser<'a> {
                 n = 0;
                 break;
             }
-            n = if is_ascii_whitespace(bytes[i]) { scan_blank_line(&self.text[i..]).unwrap() } else { 0 };
+            n = if is_ascii_whitespace(bytes[i]) {
+                scan_blank_line(&self.text[i..]).unwrap()
+            } else {
+                0
+            };
             if n != 0 {
                 if i > beg {
                     n = 0;
@@ -971,9 +1010,15 @@ impl<'a> RawParser<'a> {
         let mut i = beg;
         let limit = self.limit();
         while i < limit {
-            match bytes[i..limit].iter().position(|&c| self.active_tab[c as usize] != 0) {
+            match bytes[i..limit]
+                .iter()
+                .position(|&c| self.active_tab[c as usize] != 0)
+            {
                 Some(pos) => i += pos,
-                None => { i = limit; break; }
+                None => {
+                    i = limit;
+                    break;
+                }
             }
             let c = bytes[i];
             if c == b'\n' || c == b'\r' {
@@ -996,7 +1041,11 @@ impl<'a> RawParser<'a> {
                 }
                 i += scan_whitespace_no_nl(&self.text[i..limit]);
                 self.off = i;
-                return if n >= 2 { Event::HardBreak } else { Event::SoftBreak };
+                return if n >= 2 {
+                    Event::HardBreak
+                } else {
+                    Event::SoftBreak
+                };
             }
             self.off = i;
             if i > beg {
@@ -1005,7 +1054,7 @@ impl<'a> RawParser<'a> {
             if let Some(event) = self.active_char(c) {
                 return event;
             }
-            i = self.off;  // let handler advance offset even on None
+            i = self.off; // let handler advance offset even on None
             i += 1;
         }
         if i > beg {
@@ -1022,13 +1071,12 @@ impl<'a> RawParser<'a> {
             b'\t' => Some(self.char_tab()),
             b'\\' => self.char_backslash(),
             b'&' => self.char_entity(),
-            b'_' |
-            b'*' => self.char_emphasis(),
+            b'_' | b'*' => self.char_emphasis(),
             b'[' if self.opts.contains(Options::ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -1040,7 +1088,7 @@ impl<'a> RawParser<'a> {
     // expand tab in content (used for code and inline)
     // scan backward to find offset, counting unicode code points
     fn char_tab(&mut self) -> Event<'a> {
-        let count = count_tab(&self.text.as_bytes()[.. self.off]);
+        let count = count_tab(&self.text.as_bytes()[..self.off]);
         self.off += 1;
         Event::Text(Borrowed(&"    "[..count]))
     }
@@ -1048,10 +1096,10 @@ impl<'a> RawParser<'a> {
     fn char_backslash(&mut self) -> Option<Event<'a>> {
         let limit = self.limit();
         if self.off + 1 < limit {
-            if let (_, true) = scan_eol(&self.text[self.off + 1 .. limit]) {
-                let n_white = self.scan_whitespace_inline(&self.text[self.off + 1 .. limit]);
-                let space = 0;  // TODO: figure this out
-                if !self.is_inline_block_end(&self.text[self.off + 1 + n_white .. limit], space) {
+            if let (_, true) = scan_eol(&self.text[self.off + 1..limit]) {
+                let n_white = self.scan_whitespace_inline(&self.text[self.off + 1..limit]);
+                let space = 0; // TODO: figure this out
+                if !self.is_inline_block_end(&self.text[self.off + 1 + n_white..limit], space) {
                     self.off += 1 + n_white;
                     return Some(Event::HardBreak);
                 }
@@ -1059,19 +1107,19 @@ impl<'a> RawParser<'a> {
             let c = self.text.as_bytes()[self.off + 1];
             if is_ascii_punctuation(c) {
                 self.off += 2;
-                return Some(Event::Text(Borrowed(&self.text[self.off - 1 .. self.off])));
+                return Some(Event::Text(Borrowed(&self.text[self.off - 1..self.off])));
             }
         }
         None
     }
 
     fn char_entity(&mut self) -> Option<Event<'a>> {
-        match scan_entity(&self.text[self.off ..]) {
+        match scan_entity(&self.text[self.off..]) {
             (n, Some(value)) => {
                 self.off += n;
                 Some(Event::Text(value))
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -1085,7 +1133,7 @@ impl<'a> RawParser<'a> {
         if !can_open {
             return None;
         }
-        let mut stack = vec![n];  // TODO performance: don't allocate
+        let mut stack = vec![n]; // TODO performance: don't allocate
         let mut i = self.off + n;
         while i < limit {
             let c2 = data.as_bytes()[i];
@@ -1095,8 +1143,8 @@ impl<'a> RawParser<'a> {
                     i += 1;
                     continue;
                 }
-                if self.is_inline_block_end(&self.text[i + 1 .. limit], space) {
-                    return None
+                if self.is_inline_block_end(&self.text[i + 1..limit], space) {
+                    return None;
                 } else {
                     i += 1;
                 }
@@ -1167,21 +1215,29 @@ impl<'a> RawParser<'a> {
     // return value is: total bytes, start of text, end of text, max nesting
     fn scan_link_label(&self, data: &str) -> (usize, usize, usize, usize) {
         let mut i = scan_ch(data, b'[');
-        if i == 0 { return (0, 0, 0, 0); }
+        if i == 0 {
+            return (0, 0, 0, 0);
+        }
         let text_beg = i;
         let mut max_nest = 1;
         let mut nest = 1;
         loop {
-            if i >= data.len() { return (0, 0, 0, 0); }
+            if i >= data.len() {
+                return (0, 0, 0, 0);
+            }
             match data.as_bytes()[i] {
                 b'\n' => {
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { return (0, 0, 0, 0); }
+                    if n == 0 {
+                        return (0, 0, 0, 0);
+                    }
                     i += n;
                 }
                 b'[' => {
                     nest += 1;
-                    if nest == MAX_LINK_NEST { return (0, 0, 0, 0); }
+                    if nest == MAX_LINK_NEST {
+                        return (0, 0, 0, 0);
+                    }
                     max_nest = cmp::max(max_nest, nest);
                     i += 1;
                 }
@@ -1209,50 +1265,57 @@ impl<'a> RawParser<'a> {
                         i += beg;
                     }
                 }
-                _ => i += 1
+                _ => i += 1,
             }
         }
         let text_end = i;
-        i += 1;  // skip closing ]
+        i += 1; // skip closing ]
         (i, text_beg, text_end, max_nest)
     }
 
     fn scan_link_title(&self, data: &str) -> (usize, usize, usize) {
         let size = data.len();
-        if size == 0 { return (0, 0, 0); }
+        if size == 0 {
+            return (0, 0, 0);
+        }
         let mut i = 0;
         let titleclose = match data.as_bytes()[i] {
             b'(' => b')',
             b'\'' => b'\'',
             b'\"' => b'\"',
-            _ => return (0, 0, 0)
+            _ => return (0, 0, 0),
         };
         i += 1;
         let title_beg = i;
         while i < size {
             match data.as_bytes()[i] {
                 x if x == titleclose => break,
-                b'\\' => i += 2,  // may be > size
+                b'\\' => i += 2, // may be > size
                 b'\n' => {
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { return (0, 0, 0); }
+                    if n == 0 {
+                        return (0, 0, 0);
+                    }
                     i += n;
                 }
-                _ => i += 1
+                _ => i += 1,
             }
         }
-        if i >= size { return (0, 0, 0); }
+        if i >= size {
+            return (0, 0, 0);
+        }
         let title_end = i;
         i += 1;
         (i, title_beg, title_end)
     }
 
     fn char_link(&mut self) -> Option<Event<'a>> {
-        self.parse_link(&self.text[self.off .. self.limit()], false).map(|(tag, beg, end, n)| {
-            let off = self.off;
-            self.off += beg;
-            self.start(tag, off + end, off + n)
-        })
+        self.parse_link(&self.text[self.off..self.limit()], false)
+            .map(|(tag, beg, end, n)| {
+                let off = self.off;
+                self.off += beg;
+                self.start(tag, off + end, off + n)
+            })
     }
 
     // return: tag, begin, end, total size
@@ -1263,7 +1326,9 @@ impl<'a> RawParser<'a> {
         let i = scan_ch(data, b'!');
         let is_image = i == 1;
         let (n, text_beg, text_end, max_nest) = self.scan_link_label(&data[i..]);
-        if n == 0 { return None; }
+        if n == 0 {
+            return None;
+        }
         let (text_beg, text_end) = (text_beg + i, text_end + i);
         if !is_image && !recur && max_nest > 1 && self.contains_link(&data[text_beg..text_end]) {
             // disallow nested links in links (but ok in images)
@@ -1275,7 +1340,9 @@ impl<'a> RawParser<'a> {
         let (dest, title, beg, end, next) = if data[i..].starts_with('(') {
             i += 1;
             i += self.scan_whitespace_inline(&data[i..]);
-            if i >= size { return None; }
+            if i >= size {
+                return None;
+            }
 
             let linkdest = scan_link_dest(&data[i..])?;
             let (n, raw_dest) = linkdest;
@@ -1283,7 +1350,9 @@ impl<'a> RawParser<'a> {
             i += n;
 
             i += self.scan_whitespace_inline(&data[i..]);
-            if i == size { return None; }
+            if i == size {
+                return None;
+            }
 
             // scan title
             let (n_title, title_beg, title_end) = self.scan_link_title(&data[i..]);
@@ -1296,7 +1365,9 @@ impl<'a> RawParser<'a> {
                 unescape(&data[title_beg..title_end])
             };
             i += self.scan_whitespace_inline(&data[i..]);
-            if i == size || data.as_bytes()[i] != b')' { return None; }
+            if i == size || data.as_bytes()[i] != b')' {
+                return None;
+            }
             i += 1;
             (dest, title, text_beg, text_end, i)
         } else {
@@ -1343,21 +1414,27 @@ impl<'a> RawParser<'a> {
             match data.as_bytes()[i] {
                 b'\n' => {
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { return false; }
+                    if n == 0 {
+                        return false;
+                    }
                     i += n;
                     continue;
                 }
                 b'!' => {
-                    if scan_ch(&data[i + 1 ..], b'[') != 0 {
+                    if scan_ch(&data[i + 1..], b'[') != 0 {
                         // ok to contain image, skip over opening bracket
                         i += 1;
                     }
                 }
                 b'[' => {
-                    if self.opts.contains(Options::ENABLE_FOOTNOTES) && self.parse_footnote(&data[i..]).is_some() {
+                    if self.opts.contains(Options::ENABLE_FOOTNOTES)
+                        && self.parse_footnote(&data[i..]).is_some()
+                    {
                         return false;
                     }
-                    if self.parse_link(&data[i..], true).is_some() { return true; }
+                    if self.parse_link(&data[i..], true).is_some() {
+                        return true;
+                    }
                 }
                 b'\\' => i += 1,
                 b'<' => {
@@ -1376,7 +1453,7 @@ impl<'a> RawParser<'a> {
                         i += beg;
                     }
                 }
-                _ => ()
+                _ => (),
             }
             i += 1;
         }
@@ -1388,7 +1465,7 @@ impl<'a> RawParser<'a> {
     fn parse_footnote_definition<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
         assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         self.parse_footnote(data).and_then(|(name, len)| {
-            let n_colon = scan_ch(&data[len ..], b':');
+            let n_colon = scan_ch(&data[len..], b':');
             if n_colon == 0 {
                 None
             } else {
@@ -1397,7 +1474,7 @@ impl<'a> RawParser<'a> {
                 // means the footnote definition is a complex block.
                 let mut i = len + n_colon + space;
                 if let (n, true) = scan_eol(&data[i..]) {
-                    let (n_containers, _, _) = self.scan_containers(&data[i + n ..]);
+                    let (n_containers, _, _) = self.scan_containers(&data[i + n..]);
                     i += n + n_containers;
                 }
                 Some((name, i))
@@ -1407,7 +1484,7 @@ impl<'a> RawParser<'a> {
 
     fn char_link_footnote(&mut self) -> Option<Event<'a>> {
         assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
-        if let Some((name, end)) = self.parse_footnote(&self.text[self.off .. self.limit()]) {
+        if let Some((name, end)) = self.parse_footnote(&self.text[self.off..self.limit()]) {
             self.off += end;
             Some(Event::FootnoteReference(Cow::Borrowed(name)))
         } else {
@@ -1418,50 +1495,60 @@ impl<'a> RawParser<'a> {
     fn parse_footnote<'b>(&self, data: &'b str) -> Option<(&'b str, usize)> {
         assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let (n_footnote, text_beg, text_end) = self.scan_footnote_label(data);
-        if n_footnote == 0 { return None; }
+        if n_footnote == 0 {
+            return None;
+        }
         Some((&data[text_beg..text_end], n_footnote))
     }
 
     fn scan_footnote_label(&self, data: &str) -> (usize, usize, usize) {
         assert!(self.opts.contains(Options::ENABLE_FOOTNOTES));
         let mut i = scan_ch(data, b'[');
-        if i == 0 { return (0, 0, 0); }
-        if i >= data.len() || data.as_bytes()[i] != b'^' { return (0, 0, 0); }
+        if i == 0 {
+            return (0, 0, 0);
+        }
+        if i >= data.len() || data.as_bytes()[i] != b'^' {
+            return (0, 0, 0);
+        }
         i += 1;
         let text_beg = i;
         loop {
-            if i >= data.len() { return (0, 0, 0); }
+            if i >= data.len() {
+                return (0, 0, 0);
+            }
             match data.as_bytes()[i] {
                 b'\n' => {
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { return (0, 0, 0); }
+                    if n == 0 {
+                        return (0, 0, 0);
+                    }
                     i += n;
                     continue;
                 }
                 b']' => break,
                 b'\\' => i += 1,
-                _ => ()
+                _ => (),
             }
             i += 1;
         }
         let text_end = i;
-        i += 1;  // skip closing ]
+        i += 1; // skip closing ]
         (i, text_beg, text_end)
     }
 
     // # Autolinks and inline HTML
 
     fn char_lt(&mut self) -> Option<Event<'a>> {
-        let tail = &self.text[self.off .. self.limit()];
+        let tail = &self.text[self.off..self.limit()];
         if let Some((n, link)) = scan_autolink(tail) {
             let next = self.off + n;
             self.off += 1;
             self.state = State::Literal;
-            return Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
+            return Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next));
         }
         let n = self.scan_inline_html(tail);
         if n != 0 {
-            return Some(self.inline_html_event(n))
+            return Some(self.inline_html_event(n));
         }
         None
     }
@@ -1476,42 +1563,60 @@ impl<'a> RawParser<'a> {
 
     fn scan_inline_html(&self, data: &str) -> usize {
         let n = self.scan_html_tag(data);
-        if n != 0 { return n; }
+        if n != 0 {
+            return n;
+        }
         let n = self.scan_html_comment(data);
-        if n != 0 { return n; }
+        if n != 0 {
+            return n;
+        }
         let n = self.scan_processing_instruction(data);
-        if n != 0 { return n; }
+        if n != 0 {
+            return n;
+        }
         let n = self.scan_declaration(data);
-        if n != 0 { return n; }
+        if n != 0 {
+            return n;
+        }
         let n = self.scan_cdata(data);
-        if n != 0 { return n; }
+        if n != 0 {
+            return n;
+        }
         0
     }
 
     fn scan_html_tag(&self, data: &str) -> usize {
         let size = data.len();
         let mut i = 0;
-        if scan_ch(data, b'<') == 0 { return 0; }
+        if scan_ch(data, b'<') == 0 {
+            return 0;
+        }
         i += 1;
         let n_slash = scan_ch(&data[i..], b'/');
         i += n_slash;
-        if i == size || !is_ascii_alpha(data.as_bytes()[i]) { return 0; }
+        if i == size || !is_ascii_alpha(data.as_bytes()[i]) {
+            return 0;
+        }
         i += 1;
         i += scan_while(&data[i..], is_ascii_alphanumeric);
         if n_slash == 0 {
             loop {
                 let n = self.scan_whitespace_inline(&data[i..]);
-                if n == 0 { break; }
+                if n == 0 {
+                    break;
+                }
                 i += n;
                 // let n = scan_attribute_name(&data[i..]);
                 // if n == 0 { break; }
                 // i += n;
                 let n = self.scan_whitespace_inline(&data[i..]);
-                if scan_ch(&data[i + n ..], b'=') != 0 {
+                if scan_ch(&data[i + n..], b'=') != 0 {
                     i += n + 1;
                     i += self.scan_whitespace_inline(&data[i..]);
                     let n_attr = self.scan_attribute_value(&data[i..]);
-                    if n_attr == 0 { return 0; }
+                    if n_attr == 0 {
+                        return 0;
+                    }
                     i += n_attr;
                 }
             }
@@ -1520,14 +1625,17 @@ impl<'a> RawParser<'a> {
         } else {
             i += self.scan_whitespace_inline(&data[i..]);
         }
-        if scan_ch(&data[i..], b'>') == 0 { return 0; }
-        i += 1;
-        i
+        if scan_ch(&data[i..], b'>') == 0 {
+            return 0;
+        }
+        i + 1
     }
 
     fn scan_attribute_value(&self, data: &str) -> usize {
         let size = data.len();
-        if size == 0 { return 0; }
+        if size == 0 {
+            return 0;
+        }
         let open = data.as_bytes()[0];
         let quoted = open == b'\'' || open == b'"';
         let mut i = if quoted { 1 } else { 0 };
@@ -1535,31 +1643,40 @@ impl<'a> RawParser<'a> {
             let c = data.as_bytes()[i];
             match c {
                 b'\n' => {
-                    if !quoted { break; }
+                    if !quoted {
+                        break;
+                    }
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { return 0; }
+                    if n == 0 {
+                        return 0;
+                    }
                     i += n;
                 }
-                b'\'' | b'"' | b'=' | b'<' | b'>' | b'`' | b'\t' ... b' ' => {
-                    if !quoted || c == open { break; }
+                b'\'' | b'"' | b'=' | b'<' | b'>' | b'`' | b'\t'...b' ' => {
+                    if !quoted || c == open {
+                        break;
+                    }
                     i += 1;
                 }
-                _ => i += 1
+                _ => i += 1,
             }
         }
         if quoted {
-            if i == size || data.as_bytes()[i] != open { return 0; }
+            if i == size || data.as_bytes()[i] != open {
+                return 0;
+            }
             i += 1;
         }
         i
     }
 
     fn scan_html_comment(&self, data: &str) -> usize {
-        if !data.starts_with("<!--") { return 0; }
+        if !data.starts_with("<!--") {
+            return 0;
+        }
         if let Some(n) = data[4..].find("--") {
             let text = &data[4..4 + n];
-            if !text.starts_with('>') && !text.starts_with("->") &&
-                    data[n + 6 ..].starts_with('>') {
+            if !text.starts_with('>') && !text.starts_with("->") && data[n + 6..].starts_with('>') {
                 return n + 7;
             }
         }
@@ -1567,7 +1684,9 @@ impl<'a> RawParser<'a> {
     }
 
     fn scan_processing_instruction(&self, data: &str) -> usize {
-        if !data.starts_with("<?") { return 0; }
+        if !data.starts_with("<?") {
+            return 0;
+        }
         if let Some(n) = data[2..].find("?>") {
             return n + 4;
         }
@@ -1575,29 +1694,39 @@ impl<'a> RawParser<'a> {
     }
 
     fn scan_declaration(&self, data: &str) -> usize {
-        if !data.starts_with("<!") { return 0; }
+        if !data.starts_with("<!") {
+            return 0;
+        }
         let n = scan_while(&data[2..], is_ascii_upper);
-        if n == 0 { return 0; }
+        if n == 0 {
+            return 0;
+        }
         let i = n + 2;
         let n = self.scan_whitespace_inline(&data[i..]);
-        if n == 0 { return 0; }
+        if n == 0 {
+            return 0;
+        }
         let mut i = i + n;
         while i < data.len() {
             match data.as_bytes()[i] {
                 b'>' => return i + 1,
                 b'\n' => {
                     let n = self.scan_whitespace_inline(&data[i..]);
-                    if n == 0 { break; }
+                    if n == 0 {
+                        break;
+                    }
                     i += n;
                 }
-                _ => i += 1
+                _ => i += 1,
             }
         }
         0
     }
 
     fn scan_cdata(&self, data: &str) -> usize {
-        if !data.starts_with("<![CDATA[") { return 0; }
+        if !data.starts_with("<![CDATA[") {
+            return 0;
+        }
         if let Some(n) = data[9..].find("]]>") {
             return n + 12;
         }
@@ -1605,7 +1734,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn inline_html_event(&mut self, n: usize) -> Event<'a> {
-        let data = &self.text[self.off .. self.off + n];
+        let data = &self.text[self.off..self.off + n];
         let size = data.len();
         let mut out = Borrowed("");
         let mut i = 0;
@@ -1614,7 +1743,7 @@ impl<'a> RawParser<'a> {
             let n = scan_nextline(&data[i..]);
             i += n;
             if n >= 2 && data.as_bytes()[i - 2] == b'\r' {
-                out = utils::cow_append(out, Borrowed(&data[mark .. i - 2]));
+                out = utils::cow_append(out, Borrowed(&data[mark..i - 2]));
                 mark = i - 1;
             }
             if i < size {
@@ -1663,7 +1792,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 // TODO: '<'
-                _ => i += 1
+                _ => i += 1,
             }
         }
         (0, backtick_len, 0)
@@ -1752,7 +1881,7 @@ impl<'a> Iterator for RawParser<'a> {
         }
         match self.stack.pop() {
             Some((tag, _, _)) => Some(Event::End(tag)),
-            None => None
+            None => None,
         }
     }
 }

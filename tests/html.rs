@@ -28,7 +28,7 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -66,7 +66,7 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -90,7 +90,7 @@ fn html_test_3() {
 <p>Useless</p>
 ?>"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -114,7 +114,7 @@ fn html_test_4() {
 <p>Useless</p>
 -->"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -138,7 +138,7 @@ fn html_test_5() {
 <p>Useless</p>
 ]]>"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -160,7 +160,7 @@ Some things are here...
 Some things are here...
 >"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 
@@ -197,7 +197,7 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
+    use pulldown_cmark::{html, Parser};
 
     let mut s = String::new();
 

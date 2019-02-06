@@ -20,14 +20,14 @@
 
 //! Utilities for manipulating strings.
 
-use std::cmp;
 use std::borrow::Cow;
 use std::borrow::Cow::Owned;
+use std::cmp;
 
 fn ascii_tolower(c: u8) -> u8 {
     match c {
-        b'A' ... b'Z' => c + b'a' - b'A',
-        _ => c
+        b'A'...b'Z' => c + b'a' - b'A',
+        _ => c,
     }
 }
 
@@ -36,7 +36,7 @@ pub fn strcasecmp(a: &str, b: &str) -> cmp::Ordering {
     for i in 0..cmp::min(a.len(), b.len()) {
         match ascii_tolower(a.as_bytes()[i]).cmp(&ascii_tolower(b.as_bytes()[i])) {
             cmp::Ordering::Equal => (),
-            ordering => return ordering
+            ordering => return ordering,
         }
     }
     a.len().cmp(&b.len())

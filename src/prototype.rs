@@ -23,9 +23,9 @@
 use std::borrow::Cow;
 use std::borrow::Cow::Borrowed;
 
-use crate::parse::{Event, Tag, Options};
+use crate::parse::{Event, Options, Tag};
 use crate::scanners::*;
-use crate::tree::{NIL, Node, Tree};
+use crate::tree::{Node, Tree, NIL};
 
 #[derive(Debug)]
 struct Item {
@@ -59,15 +59,15 @@ enum ItemBody {
     Link(String, String),
 
     Rule,
-    Header(i32), // header level
-    FencedCodeBlock(String), // info string (maybe cow?)
-    IndentCodeBlock(usize), // last non-blank child
-    SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
+    Header(i32),                     // header level
+    FencedCodeBlock(String),         // info string (maybe cow?)
+    IndentCodeBlock(usize),          // last non-blank child
+    SynthesizeNewLine,               // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
-    ListItem(usize), // indent level
+    ListItem(usize),               // indent level
     SynthesizeText(Cow<'static, str>),
     BlankLine,
 }
@@ -86,7 +86,11 @@ impl<'a> FirstPass<'a> {
     fn new(text: &str) -> FirstPass {
         let tree = Tree::new();
         let last_line_blank = false;
-        FirstPass { text, tree, last_line_blank }
+        FirstPass {
+            text,
+            tree,
+            last_line_blank,
+        }
     }
 
     fn run(mut self) -> Tree<Item> {
@@ -117,16 +121,20 @@ impl<'a> FirstPass<'a> {
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: 0, // will get set later
                     body: ItemBody::BlockQuote,
                 });
                 self.tree.push();
             } else if let Some((ch, index, indent)) = line_start.scan_list_marker() {
-                let opt_index = if ch == b'.' || ch == b')' { Some(index) } else { None };
+                let opt_index = if ch == b'.' || ch == b')' {
+                    Some(index)
+                } else {
+                    None
+                };
                 self.continue_list(container_start, ch, opt_index);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: 0, // will get set later
                     body: ItemBody::ListItem(indent),
                 });
                 self.tree.push();
@@ -151,7 +159,6 @@ impl<'a> FirstPass<'a> {
             let remaining_space = line_start.remaining_space();
             return self.parse_indented_code_block(ix, remaining_space);
         }
-
 
         // HTML Blocks
 
@@ -199,7 +206,7 @@ impl<'a> FirstPass<'a> {
     fn parse_paragraph(&mut self, start_ix: usize) -> usize {
         self.tree.append(Item {
             start: start_ix,
-            end: 0,  // will get set later
+            end: 0, // will get set later
             body: ItemBody::Paragraph,
         });
         let node = self.tree.cur;
@@ -217,7 +224,12 @@ impl<'a> FirstPass<'a> {
                 if n_containers == self.tree.spine.len() {
                     if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
                         self.tree.nodes[node].item.body = ItemBody::Header(level);
-                        if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
+                        if let Some(Item {
+                            start,
+                            body: ItemBody::HardBreak,
+                            ..
+                        }) = brk
+                        {
                             if self.text.as_bytes()[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
                             }
@@ -247,9 +259,12 @@ impl<'a> FirstPass<'a> {
     /// tree and also keeping track of the lines of HTML within the block.
     ///
     /// The html_end_tag is the tag that must be found on a line to end the block.
-    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str,
-            mut remaining_space: usize) -> usize
-    {
+    fn parse_html_block_type_1_to_5(
+        &mut self,
+        start_ix: usize,
+        html_end_tag: &'static str,
+        mut remaining_space: usize,
+    ) -> usize {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
@@ -291,13 +306,15 @@ impl<'a> FirstPass<'a> {
     /// When start_ix is at the beginning of an HTML block of type 6 or 7,
     /// this will consume lines until there is a blank line and keep track of
     /// the HTML within the block.
-    fn parse_html_block_type_6_or_7(&mut self, start_ix: usize, mut remaining_space: usize)
-        -> usize
-    {
+    fn parse_html_block_type_6_or_7(
+        &mut self,
+        start_ix: usize,
+        mut remaining_space: usize,
+    ) -> usize {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
+            body: ItemBody::HtmlBlock(None),
         });
         self.tree.push();
 
@@ -310,8 +327,7 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine.len() || line_start.is_at_eol()
-            {
+            if n_containers < self.tree.spine.len() || line_start.is_at_eol() {
                 end_ix = ix;
                 break;
             }
@@ -330,12 +346,10 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    fn parse_indented_code_block(&mut self, start_ix: usize, mut remaining_space: usize)
-        -> usize
-    {
+    fn parse_indented_code_block(&mut self, start_ix: usize, mut remaining_space: usize) -> usize {
         self.tree.append(Item {
             start: start_ix,
-            end: 0,  // will get set later
+            end: 0,                             // will get set later
             body: ItemBody::IndentCodeBlock(0), // TODO: probably remove arg
         });
         self.tree.push();
@@ -377,9 +391,13 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    fn parse_fenced_code_block(&mut self, start_ix: usize, indent: usize,
-        fence_ch: u8, n_fence_char: usize) -> usize
-    {
+    fn parse_fenced_code_block(
+        &mut self,
+        start_ix: usize,
+        indent: usize,
+        fence_ch: u8,
+        n_fence_char: usize,
+    ) -> usize {
         let mut info_start = start_ix + n_fence_char;
         info_start += scan_whitespace_no_nl(&self.text[info_start..]);
         let mut info_end = info_start + scan_nextline(&self.text[info_start..]);
@@ -389,7 +407,7 @@ impl<'a> FirstPass<'a> {
         let info_string = self.text[info_start..info_end].to_string();
         self.tree.append(Item {
             start: start_ix,
-            end: 0,  // will get set later
+            end: 0, // will get set later
             body: ItemBody::FencedCodeBlock(info_string),
         });
         self.tree.push();
@@ -437,7 +455,6 @@ impl<'a> FirstPass<'a> {
             self.tree.append_text(start, end);
         }
     }
-
 
     /// Appends a line of HTML to the tree.
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -515,9 +532,7 @@ impl<'a> FirstPass<'a> {
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
-                if let ItemBody::List(ref mut is_tight, _, _) =
-                    self.tree.nodes[node_ix].item.body
-                {
+                if let ItemBody::List(ref mut is_tight, _, _) = self.tree.nodes[node_ix].item.body {
                     *is_tight = false;
                 }
             }
@@ -545,7 +560,7 @@ impl<'a> FirstPass<'a> {
         }
         self.tree.append(Item {
             start,
-            end: 0,  // will get set later
+            end: 0, // will get set later
             body: ItemBody::List(true, ch, index),
         });
         self.tree.push();
@@ -597,25 +612,27 @@ impl<'a> FirstPass<'a> {
         // about the way the line is parsed.
         let header_text = &self.text[header_start..];
         let mut limit = ix - header_start;
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\n' {
+        if limit > 0 && header_text.as_bytes()[limit - 1] == b'\n' {
             limit -= 1;
         }
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\r' {
+        if limit > 0 && header_text.as_bytes()[limit - 1] == b'\r' {
             limit -= 1;
         }
-        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+        while limit > 0 && header_text.as_bytes()[limit - 1] == b' ' {
             limit -= 1;
         }
         let mut closer = limit;
-        while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
+        while closer > 0 && header_text.as_bytes()[closer - 1] == b'#' {
             closer -= 1;
         }
-        if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
+        if closer > 0 && header_text.as_bytes()[closer - 1] == b' ' {
             limit = closer;
-            while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
+            while limit > 0 && header_text.as_bytes()[limit - 1] == b' ' {
                 limit -= 1;
             }
-        } else if closer == 0 { limit = closer; }
+        } else if closer == 0 {
+            limit = closer;
+        }
         if self.tree.cur != NIL {
             self.tree.nodes[self.tree.cur].item.end = limit + header_start;
         }
@@ -667,7 +684,10 @@ fn dump_tree(nodes: &[Node<Item>], mut ix: usize, level: usize) {
         for _ in 0..level {
             print!("  ");
         }
-        println!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
+        println!(
+            "{}: {:?} {} {}",
+            ix, node.item.body, node.item.start, node.item.end
+        );
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
@@ -688,33 +708,43 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                     i -= 1;
                     tree.append_text(begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
-                    return (ix, Some(Item {
-                        start: i,
-                        end: ix,
-                        body: ItemBody::HardBreak,
-                    }));
+                    return (
+                        ix,
+                        Some(Item {
+                            start: i,
+                            end: ix,
+                            body: ItemBody::HardBreak,
+                        }),
+                    );
                 } else if ix >= begin_text + 2
                     && is_ascii_whitespace_no_nl(bytes[ix - 1])
-                    && is_ascii_whitespace_no_nl(bytes[ix - 2]) {
+                    && is_ascii_whitespace_no_nl(bytes[ix - 2])
+                {
                     i -= 2;
                     while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
                         i -= 1;
                     }
                     tree.append_text(begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
-                    return (ix, Some(Item {
-                        start: i,
-                        end: ix,
-                        body: ItemBody::HardBreak,
-                    }));
+                    return (
+                        ix,
+                        Some(Item {
+                            start: i,
+                            end: ix,
+                            body: ItemBody::HardBreak,
+                        }),
+                    );
                 }
                 tree.append_text(begin_text, ix);
                 ix += scan_eol(&s[ix..]).0;
-                return (ix, Some(Item {
-                    start: i,
-                    end: ix,
-                    body: ItemBody::SoftBreak,
-                }));
+                return (
+                    ix,
+                    Some(Item {
+                        start: i,
+                        end: ix,
+                        body: ItemBody::SoftBreak,
+                    }),
+                );
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                 tree.append_text(begin_text, ix);
@@ -726,9 +756,9 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 begin_text = ix + 1;
                 ix += 2;
             }
-            c @ b'*' | c @b'_' => {
+            c @ b'*' | c @ b'_' => {
                 tree.append_text(begin_text, ix);
-                let count = 1 + scan_ch_repeat(&s[ix+1..], c);
+                let count = 1 + scan_ch_repeat(&s[ix + 1..], c);
                 let can_open = ix + count < s.len() && !is_ascii_whitespace(bytes[ix + count]);
                 let can_close = ix > start && !is_ascii_whitespace(bytes[ix - 1]);
                 // TODO: can skip if neither can_open nor can_close
@@ -744,7 +774,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
             }
             b'`' => {
                 tree.append_text(begin_text, ix);
-                let count = 1 + scan_ch_repeat(&s[ix+1..], b'`');
+                let count = 1 + scan_ch_repeat(&s[ix + 1..], b'`');
                 tree.append(Item {
                     start: ix,
                     end: ix + count,
@@ -796,7 +826,6 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
 fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    
     let codeline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(ix, codeline_end_offset + ix);
     tree.append_newline(codeline_end_offset);
@@ -805,7 +834,9 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
     // trailing blanklines during tree parsing
     if scan_blank_line(&s[ix..]).is_none() {
         let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
-        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree.nodes[parent_icb].item.body {
+        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) =
+            tree.nodes[parent_icb].item.body
+        {
             *last_nonblank_child = tree.cur;
         }
     }
@@ -826,22 +857,27 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
     ix
 }
 
-fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
+fn parse_html_line_type_1_to_5(
+    tree: &mut Tree<Item>,
+    s: &str,
+    mut ix: usize,
+    html_end_tag: &'static str,
+) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_html_line(ix, ix+htmlline_end_offset);
-    if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
+    tree.append_html_line(ix, ix + htmlline_end_offset);
+    if (&s[ix..ix + htmlline_end_offset]).contains(html_end_tag) {
         tree.pop(); // to HTML Block
     }
     ix += nextline_offset;
     ix
 }
 
-fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_html_line_type_6or7(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_html_line(ix, ix+htmlline_end_offset);
-    if scan_blank_line(&s[ix+nextline_offset..]).is_some() {
+    tree.append_html_line(ix, ix + htmlline_end_offset);
+    if scan_blank_line(&s[ix + nextline_offset..]).is_some() {
         tree.pop();
     }
     ix += nextline_offset;
@@ -860,10 +896,10 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 }
 
 #[allow(unused)]
-fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_paragraph_old(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
-        end: 0,  // will get set later
+        end: 0, // will get set later
         body: ItemBody::Paragraph,
     });
     let cur = tree.cur;
@@ -878,14 +914,13 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
         ix += leading_bytes;
 
-       
         let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
         // setext headers can't be lazy paragraph continuations
         if !container_scan.1 && setext_bytes > 0 && leading_spaces < 4 {
             break;
         }
         // setext headers can interrupt paragraphs
-        // but can't be preceded by an empty line. 
+        // but can't be preceded by an empty line.
         if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
             ix += setext_bytes;
             tree.nodes[cur].item.body = ItemBody::Header(setext_level);
@@ -893,13 +928,14 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         }
 
         if leading_spaces < 4 && scan_paragraph_interrupt(&s[ix..]) {
-            ix = line_start; 
-            break; }
+            ix = line_start;
+            break;
+        }
 
         if let Some(pos) = last_soft_break {
             tree.append(Item {
                 start: pos,
-                end: pos + 1,  // TODO: handle \r\n
+                end: pos + 1, // TODO: handle \r\n
                 body: ItemBody::SoftBreak,
             });
         }
@@ -907,7 +943,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         ix += n;
         if let (n, true) = scan_eol(&s[ix..]) {
             last_soft_break = Some(ix);
-            ix += n;  // skip newline
+            ix += n; // skip newline
         }
     }
     tree.pop();
@@ -921,19 +957,21 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
 fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     let mut i = 0;
     for &vertebra in &(tree.spine) {
-        let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
-        
+        let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
+
         match tree.nodes[vertebra].item.body {
             ItemBody::BlockQuote => {
                 i += space_bytes;
-                if num_spaces >= 4 { return (0, false); }
+                if num_spaces >= 4 {
+                    return (0, false);
+                }
                 let n = scan_blockquote_start(&text[i..]);
                 if n > 0 {
                     i += n
                 } else {
                     return (i, false);
                 }
-            },
+            }
             ItemBody::ListItem(indent) => {
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
                     return (i, false);
@@ -946,8 +984,7 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                     return (i, true);
                 }
                 i += indent;
-
-            },
+            }
             ItemBody::IndentCodeBlock(_) => {
                 if let Some(codeline_start_offset) = scan_code_line(&text[i..]) {
                     i += codeline_start_offset;
@@ -972,7 +1009,9 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
 // Used on a new line, after scan_containers_old
 // scans to first character after new container markers
 fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    if ix >= s.len() { return ix; }
+    if ix >= s.len() {
+        return ix;
+    }
     // check if parent is a leaf block, which makes new containers illegal
     if let Some(parent) = tree.peek_up() {
         if let ItemBody::FencedCodeBlock(_) = tree.nodes[parent].item.body {
@@ -989,9 +1028,11 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     let leading_bytes = scan_leading_space(s, ix).0;
     loop {
         let (leading_bytes, leading_spaces) = scan_leading_space(s, ix);
-        if leading_spaces >= 4 { break; }
+        if leading_spaces >= 4 {
+            break;
+        }
         ix += leading_bytes;
-        
+
         let blockquote_bytes = scan_blockquote_start(&s[ix..]);
         if blockquote_bytes > 0 {
             tree.append(Item {
@@ -1004,15 +1045,18 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
             continue;
         }
 
-        let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
+        let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) =
+            scan_listitem(&s[ix..]);
         if listitem_bytes > 0 {
             // thematic breaks take precedence over listitems
-            if scan_hrule(&s[ix..]) > 0 { break; }
+            if scan_hrule(&s[ix..]) > 0 {
+                break;
+            }
 
             let listitem_start;
             // handle ordered lists
             listitem_start = if listitem_delimiter == b'.' || listitem_delimiter == b')' {
-                 Some(listitem_start_index)
+                Some(listitem_start_index)
             } else {
                 None
             };
@@ -1022,12 +1066,12 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
                 match tree.nodes[parent].item.body {
                     ItemBody::List(_, delim, _) if delim == listitem_delimiter => {
                         need_push = false;
-                    },
+                    }
                     ItemBody::List(_, _, _) => {
                         // A different delimiter indicates a new list
                         tree.pop();
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
             if need_push {
@@ -1069,7 +1113,9 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 // Used on a new line, after scan_containers_old and scan_new_containers.
 // Mutates tree as needed, and returns the start of the next line.
 fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    if ix >= s.len() { return ix; }
+    if ix >= s.len() {
+        return ix;
+    }
 
     if let Some(parent) = tree.peek_up() {
         /*
@@ -1100,12 +1146,12 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     }
 
     let (leading_bytes, _leading_spaces) = scan_leading_space(&s[ix..], 0);
-    
+
     if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::IndentCodeBlock(NIL)
+            body: ItemBody::IndentCodeBlock(NIL),
         });
         tree.push();
         ix += codeline_start_offset;
@@ -1113,7 +1159,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     }
 
     // leading spaces are preserved in html blocks
-    if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
+    if let Some(html_end_tag) = get_html_end_tag(&s[ix + leading_bytes..]) {
         tree.append(Item {
             start: ix,
             end: 0, // set later
@@ -1123,31 +1169,29 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
     }
 
-    let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
+    let possible_tag = scan_html_block_tag(&s[ix + leading_bytes..]).1;
     if is_html_tag(possible_tag) {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
+            body: ItemBody::HtmlBlock(None),
         });
         tree.push();
         return parse_html_line_type_6or7(&mut tree, s, ix);
     }
 
-    if let Some(html_bytes) = scan_html_type_7(&s[ix+leading_bytes..]) {
+    if let Some(html_bytes) = scan_html_type_7(&s[ix + leading_bytes..]) {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
+            body: ItemBody::HtmlBlock(None),
         });
         tree.push();
-        tree.append_html_line(ix, ix+html_bytes);
+        tree.append_html_line(ix, ix + html_bytes);
         ix += html_bytes;
         let nextline_offset = scan_nextline(&s[ix..]);
         return ix + nextline_offset;
     }
-
-
 
     ix += leading_bytes;
 
@@ -1165,13 +1209,14 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
     let (num_code_fence_chars, _code_fence_char) = scan_code_fence(&s[ix..]);
     if num_code_fence_chars > 0 {
         let nextline_offset = scan_nextline(&s[ix..]);
-        let info_string = unescape(s[ix+num_code_fence_chars..ix+nextline_offset].trim()).to_string();
+        let info_string =
+            unescape(s[ix + num_code_fence_chars..ix + nextline_offset].trim()).to_string();
         tree.append(Item {
             start: ix,
             end: 0, // set later
             body: ItemBody::FencedCodeBlock(info_string),
         });
-        
+
         ix += scan_nextline(&s[ix..]);
 
         tree.push();
@@ -1193,7 +1238,8 @@ fn first_pass_old(s: &str) -> Tree<Item> {
         let (container_offset, are_containers_closed) = scan_containers_old(&tree, &s[ix..]);
         if !are_containers_closed {
             tree.pop();
-            continue; }
+            continue;
+        }
         ix += container_offset;
         // ix is past all container marks
         ix = parse_new_containers(&mut tree, s, ix);
@@ -1202,7 +1248,7 @@ fn first_pass_old(s: &str) -> Tree<Item> {
     tree
 }
 
-fn get_html_end_tag(text : &str) -> Option<&'static str> {
+fn get_html_end_tag(text: &str) -> Option<&'static str> {
     static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
     static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
 
@@ -1210,7 +1256,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
         if text.len() >= beg_tag.len() && text.starts_with('<') {
             for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (&text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == (c - 32)) {
+                if !(&text.as_bytes()[i + 1] == c || text.as_bytes()[i + 1] == (c - 32)) {
                     continue 'type_1;
                 }
             }
@@ -1236,8 +1282,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
             return Some(end_tag);
         }
     }
-    if text.len() > 2 &&
-        text.starts_with("<!") {
+    if text.len() > 2 && text.starts_with("<!") {
         let c = text[2..].chars().next().unwrap();
         if c >= 'A' && c <= 'Z' {
             return Some(">");
@@ -1248,10 +1293,10 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
-    start: usize,  // offset of tree node
+    start: usize, // offset of tree node
     count: usize,
-    c: u8,  // b'*' or b'_'
-    both: bool,  // can both open and close
+    c: u8,      // b'*' or b'_'
+    both: bool, // can both open and close
 }
 
 #[derive(Debug)]
@@ -1261,9 +1306,7 @@ struct InlineStack {
 
 impl InlineStack {
     fn new() -> InlineStack {
-        InlineStack {
-            stack: Vec::new(),
-        }
+        InlineStack { stack: Vec::new() }
     }
 
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
@@ -1304,8 +1347,17 @@ struct InlineScanner<'a> {
 
 impl<'a> InlineScanner<'a> {
     fn new(tree: &'a Tree<Item>, text: &'a str, cur: usize) -> InlineScanner<'a> {
-        let ix = if cur == NIL { !0 } else { tree.nodes[cur].item.start };
-        InlineScanner { tree, text, cur, ix }
+        let ix = if cur == NIL {
+            !0
+        } else {
+            tree.nodes[cur].item.start
+        };
+        InlineScanner {
+            tree,
+            text,
+            cur,
+            ix,
+        }
     }
 
     fn unget(&mut self) {
@@ -1322,7 +1374,8 @@ impl<'a> InlineScanner<'a> {
     }
 
     fn scan_if<F>(&mut self, f: F) -> bool
-        where F: Fn(u8) -> bool
+    where
+        F: Fn(u8) -> bool,
     {
         if let Some(c) = self.next() {
             if !f(c) {
@@ -1335,7 +1388,8 @@ impl<'a> InlineScanner<'a> {
     }
 
     fn scan_while<F>(&mut self, f: F) -> usize
-        where F: Fn(u8) -> bool
+    where
+        F: Fn(u8) -> bool,
     {
         let mut n = 0;
         while let Some(c) = self.next() {
@@ -1362,10 +1416,14 @@ impl<'a> InlineScanner<'a> {
     }
 
     fn next_char(&mut self) -> Option<char> {
-        if self.cur == NIL { return None; }
+        if self.cur == NIL {
+            return None;
+        }
         while self.ix == self.tree.nodes[self.cur].item.end {
             self.cur = self.tree.nodes[self.cur].next;
-            if self.cur == NIL { return None; }
+            if self.cur == NIL {
+                return None;
+            }
             self.ix = self.tree.nodes[self.cur].item.start;
         }
         self.text[self.ix..].chars().next().map(|c| {
@@ -1379,10 +1437,14 @@ impl<'a> Iterator for InlineScanner<'a> {
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        if self.cur == NIL { return None; }
+        if self.cur == NIL {
+            return None;
+        }
         while self.ix == self.tree.nodes[self.cur].item.end {
             self.cur = self.tree.nodes[self.cur].next;
-            if self.cur == NIL { return None; }
+            if self.cur == NIL {
+                return None;
+            }
             self.ix = self.tree.nodes[self.cur].item.start;
         }
         let c = self.text.as_bytes()[self.ix];
@@ -1395,8 +1457,9 @@ fn scan_inline_attribute_name(scanner: &mut InlineScanner) -> bool {
     if !scanner.scan_if(|c| is_ascii_alpha(c) || c == b'_' || c == b':') {
         return false;
     }
-    scanner.scan_while(|c| is_ascii_alphanumeric(c)
-        || c == b'_' || c == b'.' || c == b':' || c == b'-');
+    scanner.scan_while(|c| {
+        is_ascii_alphanumeric(c) || c == b'_' || c == b'.' || c == b':' || c == b'-'
+    });
     true
 }
 
@@ -1406,13 +1469,20 @@ fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
             scanner.unget();
         } else if c == b'\'' {
             scanner.scan_while(|c| c != b'\'');
-            return scanner.scan_ch(b'\'')
+            return scanner.scan_ch(b'\'');
         } else if c == b'"' {
             scanner.scan_while(|c| c != b'"');
-            return scanner.scan_ch(b'"')
+            return scanner.scan_ch(b'"');
         } else {
-            scanner.scan_while(|c| !(is_ascii_whitespace(c)
-                || c == b'=' || c == b'<' || c == b'>' || c == b'`' || c == b'\'' || c == b'"'));
+            scanner.scan_while(|c| {
+                !(is_ascii_whitespace(c)
+                    || c == b'='
+                    || c == b'<'
+                    || c == b'>'
+                    || c == b'`'
+                    || c == b'\''
+                    || c == b'"')
+            });
             return true;
         }
     }
@@ -1420,7 +1490,9 @@ fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
 }
 
 fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
-    if !scan_inline_attribute_name(scanner) { return false; }
+    if !scan_inline_attribute_name(scanner) {
+        return false;
+    }
     let n_whitespace = scanner.scan_while(is_ascii_whitespace);
     if scanner.scan_ch(b'=') {
         scanner.scan_while(is_ascii_whitespace);
@@ -1436,9 +1508,13 @@ fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
 fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
     if let Some(c) = scanner.next() {
         if c == b'-' {
-            if !scanner.scan_ch(b'-') { return false; }
+            if !scanner.scan_ch(b'-') {
+                return false;
+            }
             // Saw "<!--", scan comment.
-            if scanner.scan_ch(b'>') { return false; }
+            if scanner.scan_ch(b'>') {
+                return false;
+            }
             if scanner.scan_ch(b'-') {
                 if scanner.scan_ch(b'>') {
                     return false;
@@ -1448,21 +1524,31 @@ fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
             }
             while scanner.scan_upto(b'-') > 0 {
                 scanner.scan_ch(b'-');
-                if scanner.scan_ch(b'-') { return scanner.scan_ch(b'>'); }
+                if scanner.scan_ch(b'-') {
+                    return scanner.scan_ch(b'>');
+                }
             }
         } else if c == b'[' {
-            if !scanner.scan_str("CDATA[") { return false; }
+            if !scanner.scan_str("CDATA[") {
+                return false;
+            }
             loop {
                 scanner.scan_upto(b']');
-                if !scanner.scan_ch(b']') { return false; }
+                if !scanner.scan_ch(b']') {
+                    return false;
+                }
                 if scanner.scan_while(|c| c == b']') > 0 && scanner.scan_ch(b'>') {
                     return true;
                 }
             }
         } else {
             // Scan declaration.
-            if scanner.scan_while(|c| c >= b'A' && c <= b'Z') == 0 { return false; }
-            if scanner.scan_while(is_ascii_whitespace) == 0 { return false; }
+            if scanner.scan_while(|c| c >= b'A' && c <= b'Z') == 0 {
+                return false;
+            }
+            if scanner.scan_while(is_ascii_whitespace) == 0 {
+                return false;
+            }
             scanner.scan_upto(b'>');
             return scanner.scan_ch(b'>');
         }
@@ -1473,7 +1559,9 @@ fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
 /// Scan processing directive, with initial "<?" already consumed.
 fn scan_inline_html_processing(scanner: &mut InlineScanner) -> bool {
     while let Some(c) = scanner.next() {
-        if c == b'?' && scanner.scan_ch(b'>') { return true; }
+        if c == b'?' && scanner.scan_ch(b'>') {
+            return true;
+        }
     }
     false
 }
@@ -1545,7 +1633,7 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
                     let space = tree.create_node(Item {
                         start: start + 1,
                         end,
-                        body: ItemBody::SynthesizeText(Borrowed(" "))
+                        body: ItemBody::SynthesizeText(Borrowed(" ")),
                     });
                     tree.nodes[space].next = next;
                     tree.nodes[node].next = space;
@@ -1612,7 +1700,7 @@ fn scan_link_destination_plain(scanner: &mut InlineScanner) -> Option<String> {
             '\x00'..=' ' => {
                 scanner.unget();
                 return Some(url);
-            },
+            }
             '\\' => {
                 if let Some(c) = scanner.next_char() {
                     if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
@@ -1770,7 +1858,7 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
             }
             ItemBody::MaybeLinkOpen => {
                 tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur });
+                link_stack.push(LinkStackEl { node: cur });
             }
             ItemBody::MaybeLinkClose => {
                 let made_link = if let Some(tos) = link_stack.last() {
@@ -1912,7 +2000,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn get_offset(&self) -> usize {
-        0  // TODO
+        0 // TODO
     }
 }
 
@@ -1922,12 +2010,14 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
-        ItemBody::Link(ref url, ref title) =>
-            Some(Tag::Link(url.clone().into(), title.clone().into())),
+        ItemBody::Link(ref url, ref title) => {
+            Some(Tag::Link(url.clone().into(), title.clone().into()))
+        }
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
-        ItemBody::FencedCodeBlock(ref info_string) =>
-            Some(Tag::CodeBlock(info_string.clone().into())),
+        ItemBody::FencedCodeBlock(ref info_string) => {
+            Some(Tag::CodeBlock(info_string.clone().into()))
+        }
         ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
@@ -1940,27 +2030,15 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
 // leaf items only
 fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
     match item.body {
-        ItemBody::Text => {
-            Event::Text(Cow::from(&text[item.start..item.end]))
-        },
-        ItemBody::SynthesizeText(ref text) => {
-            Event::Text(text.clone())
-        }
-        ItemBody::SynthesizeNewLine => {
-            Event::Text(Cow::from("\n"))
-        },
-        ItemBody::BlankLine => {
-            Event::Text(Cow::from(""))
-        },
-        ItemBody::Html => {
-            Event::Html(Cow::from(&text[item.start..item.end]))
-        },
-        ItemBody::InlineHtml => {
-            Event::InlineHtml(Cow::from(&text[item.start..item.end]))
-        },
+        ItemBody::Text => Event::Text(Cow::from(&text[item.start..item.end])),
+        ItemBody::SynthesizeText(ref text) => Event::Text(text.clone()),
+        ItemBody::SynthesizeNewLine => Event::Text(Cow::from("\n")),
+        ItemBody::BlankLine => Event::Text(Cow::from("")),
+        ItemBody::Html => Event::Html(Cow::from(&text[item.start..item.end])),
+        ItemBody::InlineHtml => Event::InlineHtml(Cow::from(&text[item.start..item.end])),
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
-        _ => panic!("unexpected item body {:?}", item.body)
+        _ => panic!("unexpected item body {:?}", item.body),
     }
 }
 
@@ -1972,14 +2050,15 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
         let on_lastborn_child = tree.nodes[this_listitem].next == NIL;
         if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
             let mut this_listitem_child = tree.nodes[this_listitem].child;
-            let mut on_firstborn_grandchild = true; 
+            let mut on_firstborn_grandchild = true;
             if this_listitem_child != NIL {
                 while this_listitem_child != NIL {
                     let on_lastborn_grandchild = tree.nodes[this_listitem_child].next == NIL;
                     if let ItemBody::BlankLine = tree.nodes[this_listitem_child].item.body {
                         // If the first line is blank, this does not trigger looseness.
                         // Blanklines at the very end of a list also do not trigger looseness.
-                        if !(on_lastborn_child && on_lastborn_grandchild || on_firstborn_grandchild) {  
+                        if !(on_lastborn_child && on_lastborn_grandchild || on_firstborn_grandchild)
+                        {
                             return false;
                         }
                     }
@@ -1996,7 +2075,7 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
 
 // https://english.stackexchange.com/a/285573
 // tree.cur points to a List<_, _, _, false> Item Node
-fn surgerize_tight_list(tree : &mut Tree<Item>) {
+fn surgerize_tight_list(tree: &mut Tree<Item>) {
     let mut this_listitem = tree.nodes[tree.cur].child;
     while this_listitem != NIL {
         if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
@@ -2019,7 +2098,8 @@ fn surgerize_tight_list(tree : &mut Tree<Item>) {
                         }
                         let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
                         while tree.nodes[this_listitem_child_lastborn].next != NIL {
-                            this_listitem_child_lastborn = tree.nodes[this_listitem_child_lastborn].next;
+                            this_listitem_child_lastborn =
+                                tree.nodes[this_listitem_child_lastborn].next;
                         }
                         node_to_repoint = this_listitem_child_lastborn;
                     } else {
@@ -2050,9 +2130,11 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
         match self.tree.nodes[self.tree.cur].item.body {
-            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
-            | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose =>
-                handle_inline(&mut self.tree, self.text),
+            ItemBody::Inline(..)
+            | ItemBody::MaybeHtml
+            | ItemBody::MaybeCode(_)
+            | ItemBody::MaybeLinkOpen
+            | ItemBody::MaybeLinkClose => handle_inline(&mut self.tree, self.text),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),
         }
@@ -2061,10 +2143,10 @@ impl<'a> Iterator for Parser<'a> {
             let child = self.tree.nodes[self.tree.cur].child;
             self.tree.spine.push(self.tree.cur);
             self.tree.cur = child;
-            return Some(Event::Start(tag))
+            return Some(Event::Start(tag));
         } else {
             self.tree.cur = self.tree.nodes[self.tree.cur].next;
-            return Some(item_to_event(item, self.text))
+            return Some(item_to_event(item, self.text));
         }
     }
 }

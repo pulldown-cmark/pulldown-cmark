@@ -24,10 +24,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use parse::{Event, Tag};
-use parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
-use parse::Alignment;
-use escape::{escape_html, escape_href};
+use crate::parse::{Event, Tag};
+use crate::parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
+use crate::parse::Alignment;
+use crate::escape::{escape_html, escape_href};
 
 enum TableState {
     Head,

@@ -20,8 +20,8 @@
 
 //! Raw parser, for doing a single pass over input.
 
-use scanners::*;
-use utils;
+use crate::scanners::*;
+use crate::utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed};
 use std::collections::{HashMap, HashSet};

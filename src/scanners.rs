@@ -20,14 +20,14 @@
 
 //! Scanners for fragments of CommonMark syntax
 
-use entities;
-use utils;
+use crate::entities;
+use crate::utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
-use parse::Alignment;
+use crate::parse::Alignment;
 
-pub use puncttable::{is_ascii_punctuation, is_punctuation};
+pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
 const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 

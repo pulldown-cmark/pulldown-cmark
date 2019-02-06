@@ -39,5 +39,5 @@ mod utils;
 mod prototype;
 mod tree;
 
-pub use prototype::Parser;
-pub use parse::{Alignment, Event, Tag, Options};
+pub use crate::prototype::Parser;
+pub use crate::parse::{Alignment, Event, Tag, Options};

@@ -23,9 +23,9 @@
 use std::borrow::Cow;
 use std::borrow::Cow::Borrowed;
 
-use parse::{Event, Tag, Options};
-use scanners::*;
-use tree::{NIL, Node, Tree};
+use crate::parse::{Event, Tag, Options};
+use crate::scanners::*;
+use crate::tree::{NIL, Node, Tree};
 
 #[derive(Debug)]
 struct Item {

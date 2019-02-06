@@ -1737,16 +1737,10 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
     while cur != NIL {
         match tree.nodes[cur].item.body {
             ItemBody::MaybeHtml => {
-                let maybe_html = {
-                    let next = tree.nodes[cur].next;
-                    let mut scanner = InlineScanner::new(tree, s, next);
-                    if scan_inline_html(&mut scanner) {
-                        Some(scanner.to_node_and_ix())
-                    } else {
-                        None
-                    }
-                };
-                if let Some((node, ix)) = maybe_html {
+                let next = tree.nodes[cur].next;
+                let mut scanner = InlineScanner::new(tree, s, next);
+                if scan_inline_html(&mut scanner) {
+                    let (node, ix) = scanner.to_node_and_ix();
                     // TODO: this logic isn't right if the replaced chain has
                     // tricky stuff (skipped containers, replaced nulls).
                     tree.nodes[cur].item.body = ItemBody::InlineHtml;
@@ -1756,9 +1750,9 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
                     if cur != NIL {
                         tree.nodes[cur].item.start = ix;
                     }
-                    continue;
+                } else {
+                    tree.nodes[cur].item.body = ItemBody::Text;
                 }
-                tree.nodes[cur].item.body = ItemBody::Text;
             }
             ItemBody::MaybeCode(count) => {
                 // TODO(performance): this has quadratic pathological behavior, I think

@@ -30,7 +30,7 @@ use crate::parse::Alignment;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary_search
-const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 
+const HTML_TAGS: [&str; 72] = ["address", "article", "aside", "base", 
     "basefont", "blockquote", "body", "button", "canvas", "caption", "center",
     "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", 
     "embed", "fieldset", "figcaption", "figure", "footer", "form", "frame", 
@@ -41,7 +41,7 @@ const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base",
     "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", 
     "ul", "video"];
 
-const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
+const URI_SCHEMES: [&str; 164] = ["aaa", "aaas", "about", "acap",
     "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
     "bitcoin", "bolo", "callto", "cap", "chrome", "chrome-extension", "cid",
     "coap", "com-eventbrite-attendee", "content", "crid", "cvs", "data", "dav",
@@ -134,7 +134,7 @@ impl<'a> LineStart<'a> {
     }
 
     /// Determine whether we're at end of line (includes end of file).
-    pub fn is_at_eol(&mut self) -> bool {
+    pub fn is_at_eol(&self) -> bool {
         if self.ix == self.text.len() {
             return true;
         }
@@ -185,12 +185,12 @@ impl<'a> LineStart<'a> {
             } else if c >= b'0' && c <= b'9' {
                 let start_ix = self.ix;
                 let mut ix = self.ix + 1;
-                let mut val = (c - b'0') as u64;
+                let mut val = u64::from(c - b'0');
                 while ix < self.text.len() && ix - start_ix < 10 {
                     let c = self.text.as_bytes()[ix];
                     ix += 1;
                     if c >= b'0' && c <= b'9' {
-                        val = val * 10 + (c - b'0') as u64;
+                        val = val * 10 + u64::from(c - b'0');
                     } else if c == b')' || c == b'.' {
                         self.ix = ix + 1;
                         indent += ix - start_ix;
@@ -404,10 +404,9 @@ pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
 // return: start byte for code text in indented code line, or None
 // for a non-code line
 pub fn scan_code_line(text: &str) -> Option<usize> {
-    let bytes = text.as_bytes();
     let mut num_spaces = 0;
-    let mut i = 0;
-    for &c in bytes {
+
+    for (i, c) in text.bytes().enumerate() {
         if num_spaces == 4 { return Some(4); }
         match c {
             b' ' => num_spaces += 1,
@@ -415,9 +414,9 @@ pub fn scan_code_line(text: &str) -> Option<usize> {
             b'\n' | b'\r' => { return Some(i); }, 
             _ => { return None; },
         }
-        i += 1;
     }
-    return None;
+    
+    None
 }
 
 // return: end byte for closing code fence, or None
@@ -430,8 +429,7 @@ pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) 
     i += num_fence_chars_found;
     let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
     i += num_trailing_spaces;
-    if scan_eol(&text[i..]).1 { return Some(i); }
-    return None;
+    if scan_eol(&text[i..]).1 { Some(i) } else { None }
 }
 
 // returned pair is (number of bytes, number of spaces)
@@ -652,7 +650,7 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         postn = 1;
         postindent = 1;
     }
-    if let Some(_) = scan_blank_line(&data[w..]) {
+    if scan_blank_line(&data[w..]).is_none() {
         postn = 0;
         postindent = 1;
     }
@@ -807,7 +805,7 @@ fn scan_uri(data: &str) -> usize {
     }
     if i == data.len() { return 0; }
     let scheme = &data[..i];
-    if !URI_SCHEMES.binary_search_by(|probe| utils::strcasecmp(probe, scheme)).is_ok() {
+    if URI_SCHEMES.binary_search_by(|probe| utils::strcasecmp(probe, scheme)).is_err() {
         return 0;
     }
     i += 1;  // scan the :
@@ -896,9 +894,7 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
             // return Some(i);
         }
     }
-    if i >= data.len() { return None; }
-    return Some(i);
-
+    if i >= data.len() { None } else { Some(i) }
 }
 
 pub fn is_escaped(data: &str, loc: usize) -> bool {
@@ -998,11 +994,7 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
         return None;}
     i += c;
 
-    if let Some(_) = scan_blank_line(&data[i..]) {
-        return Some(i);
-    } else {
-        return None;
-    }
+    scan_blank_line(&data[i..]).map(|_| i)
 }
 
 pub fn scan_attribute(data: &str) -> Option<usize> {
@@ -1021,17 +1013,12 @@ pub fn scan_attribute(data: &str) -> Option<usize> {
 }
 
 pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {
-    let mut i = scan_whitespace_no_nl(data);
+    let i = scan_whitespace_no_nl(data);
     let eq = scan_ch(&data[i..], b'=');
     if eq == 0 { return None; }
-    i += eq;
-    i += scan_whitespace_no_nl(&data[i..]);
-    if let Some(attr_val_bytes) = scan_attribute_value(&data[i..]) {
-        i += attr_val_bytes;
-        return Some(i);
-    } else {
-        return None;
-    }
+
+    let total = i + eq + scan_whitespace_no_nl(&data[i..]) + scan_attribute_value(&data[i..])?;
+    Some(total)
 }
 
 pub fn spaces(n: usize) -> Cow<'static, str> {

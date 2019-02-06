@@ -276,8 +276,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
 /// ```
 pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
     let mut ctx = Ctx {
-        iter: iter,
-        buf: buf,
+        iter,
+        buf,
         table_state: TableState::Head,
         table_alignments: vec![],
         table_cell_index: 0,

@@ -48,7 +48,7 @@ impl<T> Tree<T> {
         self.nodes.push(Node {
             child: NIL,
             next: NIL,
-            item: item,
+            item,
         });
         this
     }
@@ -72,7 +72,7 @@ impl<T> Tree<T> {
     /// Look at grandparent node.
     pub fn peek_grandparent(&mut self) -> Option<usize> {
         if self.spine.len() >= 2 {
-            Some(self.spine[self.spine.len() - 2].clone())
+            Some(self.spine[self.spine.len() - 2])
         } else {
             None
         }

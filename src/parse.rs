@@ -158,9 +158,9 @@ impl<'a> RawParser<'a> {
             callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>)
     -> RawParser<'a> {
         let mut ret = RawParser {
-            text: text,
+            text,
             off: if text.starts_with("\u{FEFF}") { 3 } else { 0 },
-            opts: opts,
+            opts,
             active_tab: [0; 256],
             state: State::StartBlock,
             leading_space: 0,
@@ -176,7 +176,7 @@ impl<'a> RawParser<'a> {
 
             // info, used in second pass
             loose_lists: HashSet::new(),
-            links: links,
+            links,
         };
         ret.init_active();
         ret.skip_blank_lines();
@@ -401,7 +401,7 @@ impl<'a> RawParser<'a> {
                     }
                 }
                 self.off += n;
-                if let Some(_) = self.at_list(2) {
+                if self.at_list(2).is_some() {
                     self.last_line_was_empty = true;
                 }
                 continue;
@@ -415,7 +415,7 @@ impl<'a> RawParser<'a> {
                 }
             }
 
-            if self.leading_space >= 4 && !self.at_list(1).is_some() {
+            if self.leading_space >= 4 && self.at_list(1).is_none() {
                 // see below
                 if let Some(&Container::List(_, _)) = self.containers.last() {
                     return Some(self.end());
@@ -1277,9 +1277,8 @@ impl<'a> RawParser<'a> {
             i += self.scan_whitespace_inline(&data[i..]);
             if i >= size { return None; }
 
-            let linkdest = scan_link_dest(&data[i..]);
-            if linkdest.is_none() { return None; }
-            let (n, raw_dest) = linkdest.unwrap();
+            let linkdest = scan_link_dest(&data[i..])?;
+            let (n, raw_dest) = linkdest;
             let dest = unescape(raw_dest);
             i += n;
 

@@ -217,7 +217,7 @@ impl<'a> FirstPass<'a> {
                 if n_containers == self.tree.spine.len() {
                     if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
                         self.tree.nodes[node].item.body = ItemBody::Header(level);
-                        if let Some(Item { start, end: _, body: ItemBody::HardBreak }) = brk {
+                        if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
                             if self.text.as_bytes()[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
                             }
@@ -284,7 +284,7 @@ impl<'a> FirstPass<'a> {
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        &self.pop(end_ix);
+        self.pop(end_ix);
         ix
     }
 
@@ -424,7 +424,7 @@ impl<'a> FirstPass<'a> {
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
             self.tree.append(Item {
-                start: start,
+                start,
                 end: start,
                 body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
             });
@@ -452,19 +452,19 @@ impl<'a> FirstPass<'a> {
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
-                start: start,
+                start,
                 end: end - 2,
                 body: ItemBody::Html,
             });
             self.tree.append(Item {
                 start: end - 1,
-                end: end,
+                end,
                 body: ItemBody::Html,
             });
         } else {
             self.tree.append(Item {
-                start: start,
-                end: end,
+                start,
+                end,
                 body: ItemBody::Html,
             });
         }
@@ -544,7 +544,7 @@ impl<'a> FirstPass<'a> {
             self.finish_list(start);
         }
         self.tree.append(Item {
-            start: start,
+            start,
             end: 0,  // will get set later
             body: ItemBody::List(true, ch, index),
         });
@@ -629,8 +629,8 @@ impl Tree<Item> {
     fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             self.append(Item {
-                start: start,
-                end: end,
+                start,
+                end,
                 body: ItemBody::Text,
             });
         }
@@ -639,13 +639,13 @@ impl Tree<Item> {
     fn append_html_line(&mut self, start: usize, end: usize) {
         if end >= start {
             self.append(Item {
-                start: start,
-                end: end,
+                start,
+                end,
                 body: ItemBody::Html,
             });
             self.append(Item {
                 start: end,
-                end: end,
+                end,
                 body: ItemBody::SynthesizeNewLine,
             });
         }
@@ -661,7 +661,7 @@ impl Tree<Item> {
 }
 
 #[allow(dead_code)]
-fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
+fn dump_tree(nodes: &[Node<Item>], mut ix: usize, level: usize) {
     while ix != NIL {
         let node = &nodes[ix];
         for _ in 0..level {
@@ -684,7 +684,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
         match bytes[ix] {
             b'\n' | b'\r' => {
                 let mut i = ix;
-                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' {
+                if ix > begin_text && bytes[ix - 1] == b'\\' {
                     i -= 1;
                     tree.append_text(begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
@@ -803,7 +803,7 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
 
     // record the last nonblank child so that we can remove
     // trailing blanklines during tree parsing
-    if let None = scan_blank_line(&s[ix..]) {
+    if scan_blank_line(&s[ix..]).is_none() {
         let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
         if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree.nodes[parent_icb].item.body {
             *last_nonblank_child = tree.cur;
@@ -841,7 +841,7 @@ fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_html_line(ix, ix+htmlline_end_offset);
-    if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
+    if scan_blank_line(&s[ix+nextline_offset..]).is_some() {
         tree.pop();
     }
     ix += nextline_offset;
@@ -881,10 +881,8 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
        
         let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
         // setext headers can't be lazy paragraph continuations
-        if !container_scan.1 {
-            if setext_bytes > 0 && leading_spaces < 4 {
-                break; 
-            }
+        if !container_scan.1 && setext_bytes > 0 && leading_spaces < 4 {
+            break;
         }
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
@@ -968,7 +966,7 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
             _ => (),
         }
     }
-    return (i, true);
+    (i, true)
 }
 
 // Used on a new line, after scan_containers_old
@@ -1013,11 +1011,11 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
             let listitem_start;
             // handle ordered lists
-            if listitem_delimiter == b'.' || listitem_delimiter == b')' {
-                listitem_start = Some(listitem_start_index);
+            listitem_start = if listitem_delimiter == b'.' || listitem_delimiter == b')' {
+                 Some(listitem_start_index)
             } else {
-                listitem_start = None;
-            }
+                None
+            };
 
             let mut need_push = true; // Are we starting a new list?
             if let Some(parent) = tree.peek_up() {
@@ -1062,9 +1060,9 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     }
 
     if ix > leading_bytes + begin {
-        return ix;
+        ix
     } else {
-        return begin;
+        begin
     }
 }
 
@@ -1192,7 +1190,7 @@ fn first_pass_old(s: &str) -> Tree<Item> {
     let mut ix = 0;
     while ix < s.len() {
         // start of a new line
-        let (container_offset, are_containers_closed) = scan_containers_old(&mut tree, &s[ix..]);
+        let (container_offset, are_containers_closed) = scan_containers_old(&tree, &s[ix..]);
         if !are_containers_closed {
             tree.pop();
             continue; }
@@ -1210,9 +1208,9 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
     // TODO: Consider using `strcasecmp` here
     'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-        if text.len() >= beg_tag.len() && text.starts_with("<") {
+        if text.len() >= beg_tag.len() && text.starts_with('<') {
             for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (&text.as_bytes()[i+1] == c || &text.as_bytes()[i+1] == &(c - 32)) {
+                if ! (&text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == (c - 32)) {
                     continue 'type_1;
                 }
             }
@@ -1750,6 +1748,7 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
                     if cur != NIL {
                         tree.nodes[cur].item.start = ix;
                     }
+                    continue;
                 } else {
                     tree.nodes[cur].item.body = ItemBody::Text;
                 }
@@ -1783,7 +1782,7 @@ fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
                     if let Some((url, title)) = link_info {
                         tree.nodes[prev].next = NIL;
                         cur = tos.node;
-                        tree.nodes[cur].item.body = ItemBody::Link(url.into(), title.into());
+                        tree.nodes[cur].item.body = ItemBody::Link(url, title);
                         tree.nodes[cur].child = tree.nodes[cur].next;
                         tree.nodes[cur].next = next_node;
                         if next_node != NIL {
@@ -1849,7 +1848,7 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
                             start: el.start,
                             count: el.count - match_count,
                             c: el.c,
-                            both: both,
+                            both,
                         })
                     }
                     count -= match_count;
@@ -1862,9 +1861,9 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
                 if can_open {
                     stack.push(InlineEl {
                         start: cur,
-                        count: count,
-                        c: c,
-                        both: both,
+                        count,
+                        c,
+                        both,
                     });
                 } else {
                     for i in 0..count {
@@ -1909,10 +1908,7 @@ impl<'a> Parser<'a> {
         let mut tree = first_pass.run();
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
-        Parser {
-            text: text,
-            tree: tree,
-        }
+        Parser { text, tree }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -1983,7 +1979,7 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
                     if let ItemBody::BlankLine = tree.nodes[this_listitem_child].item.body {
                         // If the first line is blank, this does not trigger looseness.
                         // Blanklines at the very end of a list also do not trigger looseness.
-                        if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
+                        if !(on_lastborn_child && on_lastborn_grandchild || on_firstborn_grandchild) {  
                             return false;
                         }
                     }
@@ -1995,7 +1991,7 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
 
         this_listitem = tree.nodes[this_listitem].next;
     }
-    return true;
+    true
 }
 
 // https://english.stackexchange.com/a/285573

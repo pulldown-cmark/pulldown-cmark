@@ -1720,7 +1720,6 @@ fn scan_autolink(scanner: &mut InlineScanner) -> Option<String> {
 // must return scanner to original state
 // TODO: such invariants should probably be captured by the type system
 fn scan_uri(scanner: &mut InlineScanner) -> Option<String> {
-    // FIXME: don't use strings?
     let mut uri = String::new();
 
     // scheme's first byte must be an ascii letter
@@ -1766,23 +1765,20 @@ fn scan_uri(scanner: &mut InlineScanner) -> Option<String> {
 
 fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
     // using a regex library would be convenient, but doing it by hand is not too bad
-
-    // FIXME: don't use strings?
     let mut uri: String = "mailto:".into();
 
     while let Some(c) = scanner.next() {
+        uri.push(c as char);
         match c {
-            c if is_ascii_alphanumeric(c) => uri.push(c as char),
+            c if is_ascii_alphanumeric(c) => (),
             b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
-            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => uri.push(c as char),
-            b'@' => {
-                uri.push('@');
-                break;
-            }
-            _ => {
-                return None;
-            }
+            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
+            _ => break,
         }
+    }
+
+    if uri.as_bytes()[uri.len() - 1] != b'@' {
+        return None;
     }
 
     loop {
@@ -1805,7 +1801,7 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
         }
 
         if uri.len() == label_start || uri.len() - label_start > 63
-            || uri.chars().last() == Some('-') {
+            || uri.as_bytes()[uri.len() - 1] == b'-' {
             return None;
         }
 

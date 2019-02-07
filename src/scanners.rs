@@ -464,8 +464,6 @@ pub struct RefDefScan<'a> {
 }
 
 pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
-    let bytes = data.as_bytes();
-    let size = data.len();
     let mut i = scan_whitespace_no_nl(data);
 
     // defs can only be indented up to three spaces
@@ -502,8 +500,7 @@ pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
     }
 
     // scan link dest
-    let dest_length = scan_link_dest(&data[i..])?.0;
-    let dest = &data[i..(i + dest_length)];
+    let (dest_length, dest) = scan_link_dest(&data[i..])?;
     i += dest_length;
 
     // scan whitespace between dest and label
@@ -516,23 +513,34 @@ pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
             c == b' '
         }        
     });
-    if newlines > 1 {
-        // no title
-        return Some(RefDefScan {
-            bytecount: i,
-            label,
-            dest,
-            title: None,
-        });
+    if whitespace_bytes == 0 {
+        return None;
     }
-    
-    i += whitespace_bytes;
+
+    // no title
+    let backup = Some(RefDefScan {
+        bytecount: i,
+        label,
+        dest,
+        title: None,
+    });
+
+    if newlines > 1 {
+        return backup;
+    } else {
+        i += whitespace_bytes;
+    }
 
     // scan title
-    // FIXME: if this fails but newline == 1, return also a refdef without title
-    let title_length = scan_refdef_title(&data[i..])?;
-    let title = Some(&data[i..(i + title_length)]);
-    i += title_length;
+    // if this fails but newline == 1, return also a refdef without title
+    let title = if let Some((title_length, title)) = scan_refdef_title(&data[i..]) {
+        i += title_length;
+        title
+    } else if newlines > 0 {
+        return backup;
+    } else {
+        return None;
+    };
 
     // scan EOL
     let bytecount = i + scan_blank_line(&data[i..])?;
@@ -541,18 +549,48 @@ pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
         bytecount,
         label,
         dest,
-        title,
+        title: Some(title),
     })
 }
 
-pub fn scan_refdef_title(data: &str) -> Option<usize> {
+// returns (bytelength, title_str)
+pub fn scan_refdef_title(data: &str) -> Option<(usize, &str)> {
     let bytes = data.as_bytes();
-    let i = match bytes.get(0)? {
-        delim @ b'\'' | delim @ b'"' => 2 + bytes[1..].iter().position(|c| c == delim)?,
+    match bytes.get(0)? {
+        delim @ b'\'' | delim @ b'"' => {
+            // TODO: this implementation isn't great
+            let mut saw_non_whitespace_since_last_nl = true;
+            let mut i = 1;
+            for &c in &bytes[1..] {
+                // all of this business is to prevent blank lines
+                if !is_ascii_whitespace(c) {
+                    saw_non_whitespace_since_last_nl = true;
+                }
+                if c == b'\n' {
+                    if saw_non_whitespace_since_last_nl {
+                        saw_non_whitespace_since_last_nl = false;
+                    } else {
+                        return None;
+                    }
+                }
+                if c == *delim {
+                    break;
+                }
+                i += 1;
+            };
+            if bytes[i] == *delim {
+                eprintln!("indexed label: {}", &data[1..i]);
+                Some((1 + i, &data[1..i]))
+            } else {
+                None
+            }
+        }
         // no explicit delimiters, in which case we'll use whitespace/EOL
-        _ => scan_while(&data, |c| !is_ascii_whitespace(c)),
-    };
-    Some(i)
+        _ => {
+            let len = scan_while(&data, |c| !is_ascii_whitespace(c));
+            Some((len, &data[..len]))
+        }
+    }
 }
 
 // return size of line containing hrule, including trailing newline, or 0

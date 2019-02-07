@@ -2001,21 +2001,40 @@ impl<'a> Parser<'a> {
                             // but since the number of defined refs are usually small, this
                             // shouldn't be too bad. we can always switch to hashmaps or sorted
                             // vecs
-                            let scanner = &mut InlineScanner::new(&self.tree, self.text, tos.node);
-                            let mut label = String::new();
-                            scanner.scan_while(|c| match c {
-                                // FIXME: this is very crude
-                                b']' => false,
-                                c => {
-                                    label.push(c as char);
-                                    true
-                                }
-                            });
+                            let label_node = self.tree.nodes[tos.node].next;
+                            let label_item = &self.tree.nodes[label_node].item;
+                            let link_close_node = self.tree.nodes[label_node].next;
+                            let link_close_item = &self.tree.nodes[link_close_node].item;
 
-                            if let Some(matching_def) =
-                                self.refdefs.iter().find(|refdef| refdef.label == &label[..]) {
-                                // found a matching definition!
-                                // lets do some tree surgery to add the link to the tree
+                            if let ItemBody::MaybeLinkClose = link_close_item.body {
+                                let label = &self.text[label_item.start..label_item.end];                            
+
+                                eprintln!("label: {}", &label[..]);
+
+                                if let Some(matching_def) =
+                                    self.refdefs.iter().find(|refdef| refdef.label == label) {
+                                    // found a matching definition!
+                                    eprintln!("found matching def!");
+
+                                    let title = matching_def.title.unwrap_or("").into();
+                                    let url = matching_def.dest.into();
+                                    self.tree.nodes[tos.node].item.body = if tos.is_image {
+                                        ItemBody::Image(url, title)
+                                    } else {
+                                        ItemBody::Link(url, title)
+                                    };
+
+                                    // lets do some tree surgery to add the link to the tree
+                                    // 1st: skip the label node and close node
+                                    self.tree.nodes[tos.node].next = self.tree.nodes[link_close_node].next;
+
+                                    // then, add the label node as a child to the link node
+                                    self.tree.nodes[label_node].next = NIL;
+                                    self.tree.nodes[tos.node].child = label_node;
+                                } else {
+                                    // FIXME: coalesce all these failure modes
+                                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                                }
                             } else {
                                 self.tree.nodes[cur].item.body = ItemBody::Text;
                             }

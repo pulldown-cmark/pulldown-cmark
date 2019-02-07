@@ -93,7 +93,7 @@ impl<'a> FirstPass<'a> {
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> Tree<Item> {
+    fn run(mut self) -> (Tree<Item>, Vec<RefDefScan<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -102,7 +102,7 @@ impl<'a> FirstPass<'a> {
             self.pop(ix);
         }
         //dump_tree(&self.tree.nodes, 0, 0);
-        self.tree
+        (self.tree, self.references)
     }
 
     /// Returns offset after block.
@@ -1860,206 +1860,10 @@ struct LinkStackEl {
     is_image: bool,
 }
 
-/// Handle inline HTML, code spans, and links.
-///
-/// This function handles both inline HTML and code spans, because they have
-/// the same precedence. It also handles links, even though they have lower
-/// precedence, because the URL of links must not be processed.
-fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
-    let mut link_stack = Vec::new();
-    let mut cur = tree.cur;
-    let mut prev = NIL;
-
-    while cur != NIL {
-        match tree.nodes[cur].item.body {
-            ItemBody::MaybeHtml => {
-                let next = tree.nodes[cur].next;
-                let scanner = &mut InlineScanner::new(tree, s, next);
-
-                if let Some(uri) = scan_autolink(scanner) {
-                    // FIXME: all this tree surgery is pretty bad. i have no
-                    // idea what's going on here, and i wrote this. we should
-                    // probably use a tree with a proper interface that abstracts
-                    // this
-                    let (node, ix) = scanner.to_node_and_ix();
-                    tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
-                    tree.nodes[cur].item.end = ix;
-                    tree.nodes[cur].next = node;
-                    let old_cur = tree.cur;
-                    tree.cur = cur;
-                    tree.push();
-                    tree.append_text(tree.nodes[cur].item.start + 1, ix - 1);
-                    tree.cur = old_cur;
-                    cur = node;
-                    continue;
-                } else if scan_inline_html(scanner) {
-                    let (node, ix) = scanner.to_node_and_ix();
-                    // TODO: this logic isn't right if the replaced chain has
-                    // tricky stuff (skipped containers, replaced nulls).
-                    tree.nodes[cur].item.body = ItemBody::InlineHtml;
-                    tree.nodes[cur].item.end = ix;
-                    tree.nodes[cur].next = node;
-                    cur = node;
-                    if cur != NIL {
-                        tree.nodes[cur].item.start = ix;
-                    }
-                    continue;
-                }
-                tree.nodes[cur].item.body = ItemBody::Text;
-            }
-            ItemBody::MaybeCode(count) => {
-                // TODO(performance): this has quadratic pathological behavior, I think
-                let first = tree.nodes[cur].next;
-                let mut scan = first;
-                while scan != NIL {
-                    if tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
-                        make_code_span(tree, s, cur, scan);
-                        break;
-                    }
-                    scan = tree.nodes[scan].next;
-                }
-                if scan == NIL {
-                    tree.nodes[cur].item.body = ItemBody::Text;
-                }
-            }
-            ItemBody::MaybeLinkOpen => {
-                tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur, is_image: false });
-            }
-            ItemBody::MaybeImage => {
-                tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur, is_image: true });
-            }
-            ItemBody::MaybeLinkClose => {
-                if let Some(tos) = link_stack.last() {
-                    let next = tree.nodes[cur].next;
-                    let scanner = &mut InlineScanner::new(tree, s, next);
-
-                    if let Some((url, title)) = scan_inline_link(scanner) {
-                        let (next_node, next_ix) = scanner.to_node_and_ix();
-                        tree.nodes[prev].next = NIL;
-                        cur = tos.node;
-                        tree.nodes[cur].item.body = if tos.is_image {
-                            ItemBody::Image(url.into(), title.into())
-                        } else {
-                            ItemBody::Link(url.into(), title.into())
-                        };
-                        tree.nodes[cur].child = tree.nodes[cur].next;
-                        tree.nodes[cur].next = next_node;
-                        if next_node != NIL {
-                            tree.nodes[next_node].item.start = next_ix;
-                        }
-
-                        let inside_image_alt = link_stack.iter().position(|e| e.is_image)
-                            .map(|i| i != link_stack.len() - 1)
-                            .unwrap_or(false);
-
-                        if tos.is_image || inside_image_alt {
-                            link_stack.pop();
-                        } else {
-                            link_stack.clear();
-                        }
-                    } else {
-                        tree.nodes[cur].item.body = ItemBody::Text;
-                    }
-                } else {
-                    tree.nodes[cur].item.body = ItemBody::Text;
-                }
-            }
-            _ => (),
-        }
-        prev = cur;
-        cur = tree.nodes[cur].next;
-    }
-}
-
-fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
-    let mut stack = InlineStack::new();
-    let mut prev = NIL;
-    let mut cur = tree.cur;
-    while cur != NIL {
-        if let ItemBody::Inline(mut count, can_open, can_close) = tree.nodes[cur].item.body {
-            let c = s.as_bytes()[tree.nodes[cur].item.start];
-            let both = can_open && can_close;
-            if can_close {
-                while let Some((j, el)) = stack.find_match(c, count, both) {
-                    // have a match!
-                    tree.nodes[prev].next = NIL;
-                    let match_count = ::std::cmp::min(count, el.count);
-                    let mut end = cur + match_count;
-                    cur = tree.nodes[end - 1].next;
-                    let mut next = cur;
-                    let mut start = el.start + el.count - match_count;
-                    prev = start;
-                    while start < el.start + el.count {
-                        let (inc, ty) = if el.start + el.count - start > 1 {
-                            (2, ItemBody::Strong)
-                        } else {
-                            (1, ItemBody::Emphasis)
-                        };
-                        let root = start + inc;
-                        end -= inc;
-                        tree.nodes[start].item.body = ty;
-                        tree.nodes[start].item.end = tree.nodes[end].item.end;
-                        tree.nodes[start].child = root;
-                        tree.nodes[start].next = next;
-                        start = root;
-                        next = NIL;
-                    }
-                    stack.pop_to(tree, j + 1);
-                    let _ = stack.pop();
-                    if el.count > match_count {
-                        stack.push(InlineEl {
-                            start: el.start,
-                            count: el.count - match_count,
-                            c: el.c,
-                            both: both,
-                        })
-                    }
-                    count -= match_count;
-                    if count == 0 {
-                        break;
-                    }
-                }
-            }
-            if count > 0 {
-                if can_open {
-                    stack.push(InlineEl {
-                        start: cur,
-                        count: count,
-                        c: c,
-                        both: both,
-                    });
-                } else {
-                    for i in 0..count {
-                        tree.nodes[cur + i].item.body = ItemBody::Text;
-                    }
-                }
-                prev = cur + count - 1;
-                cur = tree.nodes[prev].next;
-            }
-        } else {
-            prev = cur;
-            cur = tree.nodes[cur].next;
-        }
-    }
-    stack.pop_to(tree, 0);
-}
-
-/// Handle inline markup.
-///
-/// When the parser encounters any item indicating potential inline markup, all
-/// inline markup passes are run on the remainder of the chain.
-///
-/// Note: there's some potential for optimization here, but that's future work.
-fn handle_inline(tree: &mut Tree<Item>, s: &str) {
-    handle_inline_pass1(tree, s);
-    handle_emphasis(tree, s);
-}
-
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
+    refdefs: Vec<RefDefScan<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2070,17 +1874,234 @@ impl<'a> Parser<'a> {
     #[allow(unused_variables)]
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
-        let mut tree = first_pass.run();
+        let (mut tree, refdefs) = first_pass.run();
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
-        Parser {
-            text: text,
-            tree: tree,
-        }
+        Parser { text, tree, refdefs }
     }
 
     pub fn get_offset(&self) -> usize {
         0  // TODO
+    }
+
+    /// Handle inline markup.
+    ///
+    /// When the parser encounters any item indicating potential inline markup, all
+    /// inline markup passes are run on the remainder of the chain.
+    ///
+    /// Note: there's some potential for optimization here, but that's future work.
+    fn handle_inline(&mut self) {
+        self.handle_inline_pass1();
+        self.handle_emphasis();
+    }
+
+    /// Handle inline HTML, code spans, and links.
+    ///
+    /// This function handles both inline HTML and code spans, because they have
+    /// the same precedence. It also handles links, even though they have lower
+    /// precedence, because the URL of links must not be processed.
+    fn handle_inline_pass1(&mut self) {
+        let mut link_stack = Vec::new();
+        let mut cur = self.tree.cur;
+        let mut prev = NIL;
+
+        while cur != NIL {
+            match self.tree.nodes[cur].item.body {
+                ItemBody::MaybeHtml => {
+                    let next = self.tree.nodes[cur].next;
+                    let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+
+                    if let Some(uri) = scan_autolink(scanner) {
+                        // FIXME: all this tree surgery is pretty bad. i have no
+                        // idea what's going on here, and i wrote this. we should
+                        // probably use a tree with a proper interface that abstracts
+                        // this
+                        let (node, ix) = scanner.to_node_and_ix();
+                        self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
+                        self.tree.nodes[cur].item.end = ix;
+                        self.tree.nodes[cur].next = node;
+                        let old_cur = self.tree.cur;
+                        self.tree.cur = cur;
+                        self.tree.push();
+                        self.tree.append_text(self.tree.nodes[cur].item.start + 1, ix - 1);
+                        self.tree.cur = old_cur;
+                        cur = node;
+                        continue;
+                    } else if scan_inline_html(scanner) {
+                        let (node, ix) = scanner.to_node_and_ix();
+                        // TODO: this logic isn't right if the replaced chain has
+                        // tricky stuff (skipped containers, replaced nulls).
+                        self.tree.nodes[cur].item.body = ItemBody::InlineHtml;
+                        self.tree.nodes[cur].item.end = ix;
+                        self.tree.nodes[cur].next = node;
+                        cur = node;
+                        if cur != NIL {
+                            self.tree.nodes[cur].item.start = ix;
+                        }
+                        continue;
+                    }
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                }
+                ItemBody::MaybeCode(count) => {
+                    // TODO(performance): this has quadratic pathological behavior, I think
+                    let first = self.tree.nodes[cur].next;
+                    let mut scan = first;
+                    while scan != NIL {
+                        if self.tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
+                            make_code_span(&mut self.tree, self.text, cur, scan);
+                            break;
+                        }
+                        scan = self.tree.nodes[scan].next;
+                    }
+                    if scan == NIL {
+                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                    }
+                }
+                ItemBody::MaybeLinkOpen => {
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    link_stack.push( LinkStackEl { node: cur, is_image: false });
+                }
+                ItemBody::MaybeImage => {
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    link_stack.push( LinkStackEl { node: cur, is_image: true });
+                }
+                ItemBody::MaybeLinkClose => {
+                    if let Some(tos) = link_stack.last() {
+                        let next = self.tree.nodes[cur].next;
+                        let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+
+                        if let Some((url, title)) = scan_inline_link(scanner) {
+                            let (next_node, next_ix) = scanner.to_node_and_ix();
+                            self.tree.nodes[prev].next = NIL;
+                            cur = tos.node;
+                            self.tree.nodes[cur].item.body = if tos.is_image {
+                                ItemBody::Image(url.into(), title.into())
+                            } else {
+                                ItemBody::Link(url.into(), title.into())
+                            };
+                            self.tree.nodes[cur].child = self.tree.nodes[cur].next;
+                            self.tree.nodes[cur].next = next_node;
+                            if next_node != NIL {
+                                self.tree.nodes[next_node].item.start = next_ix;
+                            }
+
+                            let inside_image_alt = link_stack.iter().position(|e| e.is_image)
+                                .map(|i| i != link_stack.len() - 1)
+                                .unwrap_or(false);
+
+                            if tos.is_image || inside_image_alt {
+                                link_stack.pop();
+                            } else {
+                                link_stack.clear();
+                            }
+                        } else {
+                            // ok, so its not an inline link. maybe it is a reference
+                            // to a defined link? let's perform a linear scan over definitions
+                            // we found during the first pass. this is not theoretically optimal,
+                            // but since the number of defined refs are usually small, this
+                            // shouldn't be too bad. we can always switch to hashmaps or sorted
+                            // vecs
+                            let scanner = &mut InlineScanner::new(&self.tree, self.text, tos.node);
+                            let mut label = String::new();
+                            scanner.scan_while(|c| match c {
+                                // FIXME: this is very crude
+                                b']' => false,
+                                c => {
+                                    label.push(c as char);
+                                    true
+                                }
+                            });
+
+                            if let Some(matching_def) =
+                                self.refdefs.iter().find(|refdef| refdef.label == &label[..]) {
+                                // found a matching definition!
+                                // lets do some tree surgery to add the link to the tree
+                            } else {
+                                self.tree.nodes[cur].item.body = ItemBody::Text;
+                            }
+                        }
+                    } else {
+                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                    }
+                }
+                _ => (),
+            }
+            prev = cur;
+            cur = self.tree.nodes[cur].next;
+        }
+    }
+
+    fn handle_emphasis(&mut self) {
+        let mut stack = InlineStack::new();
+        let mut prev = NIL;
+        let mut cur = self.tree.cur;
+        while cur != NIL {
+            if let ItemBody::Inline(mut count, can_open, can_close) = self.tree.nodes[cur].item.body {
+                let c = self.text.as_bytes()[self.tree.nodes[cur].item.start];
+                let both = can_open && can_close;
+                if can_close {
+                    while let Some((j, el)) = stack.find_match(c, count, both) {
+                        // have a match!
+                        self.tree.nodes[prev].next = NIL;
+                        let match_count = ::std::cmp::min(count, el.count);
+                        let mut end = cur + match_count;
+                        cur = self.tree.nodes[end - 1].next;
+                        let mut next = cur;
+                        let mut start = el.start + el.count - match_count;
+                        prev = start;
+                        while start < el.start + el.count {
+                            let (inc, ty) = if el.start + el.count - start > 1 {
+                                (2, ItemBody::Strong)
+                            } else {
+                                (1, ItemBody::Emphasis)
+                            };
+                            let root = start + inc;
+                            end -= inc;
+                            self.tree.nodes[start].item.body = ty;
+                            self.tree.nodes[start].item.end = self.tree.nodes[end].item.end;
+                            self.tree.nodes[start].child = root;
+                            self.tree.nodes[start].next = next;
+                            start = root;
+                            next = NIL;
+                        }
+                        stack.pop_to(&mut self.tree, j + 1);
+                        let _ = stack.pop();
+                        if el.count > match_count {
+                            stack.push(InlineEl {
+                                start: el.start,
+                                count: el.count - match_count,
+                                c: el.c,
+                                both: both,
+                            })
+                        }
+                        count -= match_count;
+                        if count == 0 {
+                            break;
+                        }
+                    }
+                }
+                if count > 0 {
+                    if can_open {
+                        stack.push(InlineEl {
+                            start: cur,
+                            count: count,
+                            c: c,
+                            both: both,
+                        });
+                    } else {
+                        for i in 0..count {
+                            self.tree.nodes[cur + i].item.body = ItemBody::Text;
+                        }
+                    }
+                    prev = cur + count - 1;
+                    cur = self.tree.nodes[prev].next;
+                }
+            } else {
+                prev = cur;
+                cur = self.tree.nodes[cur].next;
+            }
+        }
+        stack.pop_to(&mut self.tree, 0);
     }
 }
 
@@ -2222,7 +2243,7 @@ impl<'a> Iterator for Parser<'a> {
         match self.tree.nodes[self.tree.cur].item.body {
             ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
-                handle_inline(&mut self.tree, self.text),
+                self.handle_inline(),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),
         }

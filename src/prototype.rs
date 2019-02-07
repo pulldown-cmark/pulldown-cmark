@@ -82,13 +82,15 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
+    references: Vec<RefDefScan<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
     fn new(text: &str) -> FirstPass {
         let tree = Tree::new();
         let last_line_blank = false;
-        FirstPass { text, tree, last_line_blank }
+        let references = Vec::new();
+        FirstPass { text, tree, last_line_blank, references }
     }
 
     fn run(mut self) -> Tree<Item> {
@@ -184,6 +186,14 @@ impl<'a> FirstPass<'a> {
         let n = scan_hrule(&self.text[ix..]);
         if n > 0 {
             return self.parse_hrule(n, ix);
+        }
+
+        // Reference definitions of the form
+        // [foo]: /url "title"
+        if let Some(refdef) = scan_refdef(&self.text[ix..]) {
+            let bytecount = refdef.bytecount;
+            self.references.push(refdef);
+            return ix + bytecount + 1; // FIXME: is the +1 necessary?
         }
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {

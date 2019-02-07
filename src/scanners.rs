@@ -285,8 +285,8 @@ pub fn scan_ch(data: &str, c: u8) -> usize {
     if !data.is_empty() && data.as_bytes()[0] == c { 1 } else { 0 }
 }
 
-pub fn scan_while<F>(data: &str, f: F) -> usize
-        where F: Fn(u8) -> bool {
+pub fn scan_while<F>(data: &str, mut f: F) -> usize
+        where F: FnMut(u8) -> bool {
     match data.as_bytes().iter().position(|&c| !f(c)) {
         Some(i) => i,
         None => data.len()
@@ -454,6 +454,105 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
         i += 1;
     }
     (i, spaces)
+}
+
+pub struct RefDefScan<'a> {
+    pub(crate) bytecount: usize,
+    pub(crate) label: &'a str,
+    pub(crate) dest: &'a str,
+    pub(crate) title: Option<&'a str>
+}
+
+pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
+    let bytes = data.as_bytes();
+    let size = data.len();
+    let mut i = scan_whitespace_no_nl(data);
+
+    // defs can only be indented up to three spaces
+    if i > 3 {
+        return None;
+    }
+
+    // scan label
+    if scan_ch(&data[i..], b'[') == 0 {
+        return None;
+    }
+    i += 1;
+    let label_length = scan_while(&data[i..], |c| c != b']');
+    let label = &data[i..(i + label_length)];
+    i += label_length;
+    // FIXME: out of bounds possibly?
+    if scan_ch(&data[i..], b']') == 0 || scan_ch(&data[(i + 1)..], b':') == 0 {
+        return None;
+    }
+    i += 2;
+
+    // whitespace between label and url (including up to one newline)
+    let mut newlines = 0;
+    i += scan_while(&data[i..], |c| {
+        if c == b'\n' {
+            newlines += 1;
+            true
+        } else {
+            c == b' '
+        }        
+    });
+    if newlines > 1 {
+        return None;
+    }
+
+    // scan link dest
+    let dest_length = scan_link_dest(&data[i..])?.0;
+    let dest = &data[i..(i + dest_length)];
+    i += dest_length;
+
+    // scan whitespace between dest and label
+    newlines = 0;
+    let whitespace_bytes = scan_while(&data[i..], |c| {
+        if c == b'\n' {
+            newlines += 1;
+            true
+        } else {
+            c == b' '
+        }        
+    });
+    if newlines > 1 {
+        // no title
+        return Some(RefDefScan {
+            bytecount: i,
+            label,
+            dest,
+            title: None,
+        });
+    }
+    
+    i += whitespace_bytes;
+
+    // scan title
+    // FIXME: if this fails but newline == 1, return also a refdef without title
+    let title_length = scan_refdef_title(&data[i..])?;
+    let title = Some(&data[i..(i + title_length)]);
+    i += title_length;
+
+    // scan EOL
+    let bytecount = i + scan_blank_line(&data[i..])?;
+
+    Some(RefDefScan {
+        bytecount,
+        label,
+        dest,
+        title,
+    })
+}
+
+pub fn scan_refdef_title(data: &str) -> Option<usize> {
+    let bytes = data.as_bytes();
+    let i = match bytes.get(0)? {
+        delim @ b'\'' | delim @ b'"' => 2 + bytes[1..].iter().position(|c| c == delim)?,
+        // no explicit delimiters, in which case we'll use whitespace/EOL
+        _ => scan_while(&data, |c| !is_ascii_whitespace(c)),
+    };
+    Some(i)
 }
 
 // return size of line containing hrule, including trailing newline, or 0
@@ -1053,5 +1152,24 @@ mod test {
     #[test]
     fn overflow_list() {
         assert_eq!((0, 0, 0, 0), scan_listitem("4444444444444444444444444444444444444444444444444444444444!"));
+    }
+
+    #[test]
+    fn parse_double_refdef() {
+        let data = r##"[foo]: /url1
+
+[foo]: /url2
+
+[bar][foo]
+"##;
+
+        assert_eq!(12, scan_refdef(data).unwrap().bytecount);
+    }
+
+    #[test]
+    fn parse_simple_refdef() {
+        let data = r#"[foo]: /url "title""#;
+
+        assert_eq!(data.len(), scan_refdef(data).expect("wth").bytecount);
     }
 }

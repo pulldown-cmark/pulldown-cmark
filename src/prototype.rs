@@ -767,17 +767,22 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 ix += 1;
                 begin_text = ix;
             }
-            b'[' => {
-                let (link_type, start) = if ix >= begin_text + 1 && bytes[ix - 1] == b'!' {
-                    (ItemBody::MaybeImage, ix - 1)
-                } else {
-                    (ItemBody::MaybeLinkOpen, ix)
-                };
-                tree.append_text(begin_text, start);
+            b'!' if ix + 1 < s.len() && bytes[ix + 1] == b'[' => {
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
-                    start,
+                    start: ix,
+                    end: ix + 2,
+                    body: ItemBody::MaybeImage,
+                });
+                ix += 2;
+                begin_text = ix;
+            }
+            b'[' => {
+                tree.append_text(begin_text, ix);
+                tree.append(Item {
+                    start: ix,
                     end: ix + 1,
-                    body: link_type,
+                    body: ItemBody::MaybeLinkOpen,
                 });
                 ix += 1;
                 begin_text = ix;

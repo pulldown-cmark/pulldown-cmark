@@ -19,6 +19,7 @@ doc = false
 
 [dependencies]
 bitflags = "1.0"
+caseless = "0.2"
 getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]

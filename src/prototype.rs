@@ -27,6 +27,8 @@ use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
 
+use caseless::default_caseless_match_str;
+
 #[derive(Debug)]
 struct Item {
     start: usize,
@@ -2012,7 +2014,7 @@ impl<'a> Parser<'a> {
                                 eprintln!("label: {}", &label[..]);
 
                                 if let Some(matching_def) =
-                                    self.refdefs.iter().find(|refdef| refdef.label == label) {
+                                    self.refdefs.iter().find(|refdef| default_caseless_match_str(refdef.label, label)) {
                                     // found a matching definition!
                                     eprintln!("found matching def!");
 

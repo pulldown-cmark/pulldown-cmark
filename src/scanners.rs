@@ -554,6 +554,7 @@ pub fn scan_refdef(data: &str) -> Option<(usize, RefDef)> {
     )
 }
 
+// FIXME: use prototype::scan_link_title ?
 // returns (bytelength, title_str)
 pub fn scan_refdef_title(data: &str) -> Option<(usize, &str)> {
     let bytes = data.as_bytes();
@@ -580,7 +581,6 @@ pub fn scan_refdef_title(data: &str) -> Option<(usize, &str)> {
                 i += 1;
             };
             if bytes[i] == *delim {
-                eprintln!("indexed label: {}", &data[1..i]);
                 Some((1 + i, &data[1..i]))
             } else {
                 None

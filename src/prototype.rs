@@ -1838,6 +1838,39 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
     Some(uri)
 }
 
+#[derive(Debug, Clone, Copy)]
+enum RefScan<'a> {
+    // contains label, next node index
+    Label(&'a str, usize),
+    // contains next node index
+    Collapsed(usize),
+    Failed,
+}
+
+// TODO: possible dedup opportunities with scan_inline_link?
+fn scan_reference<'a>(scanner: &'a mut InlineScanner) -> RefScan<'a> {
+    if !scanner.scan_ch(b'[') {
+        return RefScan::Failed;
+    }
+    scanner.scan_while(is_ascii_whitespace);
+    let start = scanner.ix;
+    scanner.scan_while(|c| {
+        // FIXME: super naive!
+        c != b']'
+    });
+    if !scanner.scan_ch(b']') {
+        return RefScan::Failed;
+    }
+
+    let end = scanner.ix - 1;
+    let next_node = scanner.tree.nodes[scanner.cur].next;
+    if end - start == 0 {
+        RefScan::Collapsed(next_node)
+    } else {
+        RefScan::Label(&scanner.text[start..end], next_node)
+    }
+}
+
 // TODO: Cows more efficient?
 fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
     if !scanner.scan_ch(b'(') {
@@ -2002,45 +2035,51 @@ impl<'a> Parser<'a> {
                             }
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
-                            // to a defined link? let's perform a linear scan over definitions
-                            // we found during the first pass. this is not theoretically optimal,
-                            // but since the number of defined refs are usually small, this
-                            // shouldn't be too bad. we can always switch to hashmaps or sorted
-                            // vecs
+                            // to a defined link?
+                            let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+                            let scan_result = scan_reference(scanner);
                             let label_node = self.tree.nodes[tos.node].next;
-                            let label_item = &self.tree.nodes[label_node].item;
-                            let link_close_node = self.tree.nodes[label_node].next;
-                            let link_close_item = &self.tree.nodes[link_close_node].item;
-
-                            if let ItemBody::MaybeLinkClose = link_close_item.body {
-                                let label = &self.text[label_item.start..label_item.end];                            
-
-                                eprintln!("label: {}", &label[..]);
-
-                                if let Some(matching_def) =
-                                    self.refdefs.iter().find(|refdef| default_caseless_match_str(refdef.label, label)) {
-                                    // found a matching definition!
-                                    eprintln!("found matching def!");
-
-                                    let title = matching_def.title.unwrap_or("").into();
-                                    let url = matching_def.dest.into();
-                                    self.tree.nodes[tos.node].item.body = if tos.is_image {
-                                        ItemBody::Image(url, title)
-                                    } else {
-                                        ItemBody::Link(url, title)
-                                    };
-
-                                    // lets do some tree surgery to add the link to the tree
-                                    // 1st: skip the label node and close node
-                                    self.tree.nodes[tos.node].next = self.tree.nodes[link_close_node].next;
-
-                                    // then, add the label node as a child to the link node
-                                    self.tree.nodes[label_node].next = NIL;
-                                    self.tree.nodes[tos.node].child = label_node;
-                                } else {
-                                    // FIXME: coalesce all these failure modes
-                                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                            let next_node_after_link = match scan_result {
+                                RefScan::Label(_, next_node) =>
+                                    next_node,
+                                RefScan::Collapsed(next_node) =>
+                                    next_node,
+                                RefScan::Failed =>
+                                    self.tree.nodes[cur].next,
+                            };
+                            let label = match scan_result {
+                                RefScan::Label(l, ..) => l,
+                                RefScan::Collapsed(..) | RefScan::Failed => {
+                                    // No label? maybe it is a shortcut reference
+                                    let start = self.tree.nodes[label_node].item.start;
+                                    let end = self.tree.nodes[cur].item.start;
+                                    &self.text[start..end]
                                 }
+                            };
+
+                            if let Some(matching_def) = self.refdefs.iter().find(|refdef| default_caseless_match_str(refdef.label, label)) {
+                                // found a matching definition!
+                                let title = matching_def.title.unwrap_or("").into();
+                                let url = matching_def.dest.into();
+                                self.tree.nodes[tos.node].item.body = if tos.is_image {
+                                    ItemBody::Image(url, title)
+                                } else {
+                                    ItemBody::Link(url, title)
+                                };
+
+                                // lets do some tree surgery to add the link to the tree
+                                // 1st: skip the label node and close node
+                                self.tree.nodes[tos.node].next = next_node_after_link;
+
+                                // then, add the label node as a child to the link node
+                                let mut child = label_node;
+                                self.tree.nodes[tos.node].child = child;
+
+                                // finally: disconnect list of children
+                                while self.tree.nodes[child].next != cur {
+                                    child = self.tree.nodes[child].next;
+                                }
+                                self.tree.nodes[child].next = NIL;
                             } else {
                                 self.tree.nodes[cur].item.body = ItemBody::Text;
                             }

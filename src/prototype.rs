@@ -192,7 +192,7 @@ impl<'a> FirstPass<'a> {
 
         // Reference definitions of the form
         // [foo]: /url "title"
-        if let Some((bytecount, refdef)) = scan_refdef(&self.text[ix..]) {
+        if let Some((bytecount, refdef)) = self.scan_refdef(ix) {
             self.references.push(refdef);
             return ix + bytecount + 1; // FIXME: is the +1 necessary?
         }
@@ -635,6 +635,160 @@ impl<'a> FirstPass<'a> {
 
         self.tree.pop();
         ix
+    }
+
+    // returns # of bytes, and definition
+    fn scan_refdef(&self, mut i: usize) -> Option<(usize, RefDef<'a>)> {
+        let start = i;
+
+        // scan label
+        // FIXME: reuse parse::RawParser::scan_link_label? it doesnt seem to do the
+        // whitespace check tho
+        if scan_ch(&self.text[i..], b'[') == 0 {
+            return None;
+        }
+        i += 1;
+        let mut only_white_space = true;
+        let label_length = scan_while(&self.text[i..], |c| {
+            only_white_space = only_white_space && (is_ascii_whitespace(c) || c == b']');
+            c != b']'
+        });
+        if only_white_space {
+            return None;
+        }
+        let label = &self.text[i..(i + label_length)];
+        i += label_length;
+        // FIXME: out of bounds possibly?
+        if scan_ch(&self.text[i..], b']') == 0 || scan_ch(&self.text[(i + 1)..], b':') == 0 {
+            return None;
+        }
+        i += 2;
+
+        // whitespace between label and url (including up to one newline)
+        let mut newlines = 0;
+        for c in self.text[i..].bytes() {
+            if c == b'\n' {
+                i += 1;
+                newlines += 1;
+                if newlines > 1 {
+                    return None;
+                } else {
+                    let mut line_start = LineStart::new(&self.text[i..]);
+                    let _n_containers = self.scan_containers(&mut line_start);
+                    // TODO: what to do with these containers?
+                }
+            } else if is_ascii_whitespace_no_nl(c) {
+                i += 1;
+            } else {
+                break;
+            }
+        }
+
+        // scan link dest
+        let (dest_length, dest) = scan_link_dest(&self.text[i..])?;
+        i += dest_length;
+
+        // scan whitespace between dest and label
+        // FIXME: dedup with similar block above
+        newlines = 0;
+        let mut whitespace_bytes = 0;
+        for c in self.text[i..].bytes() {
+            if c == b'\n' {
+                whitespace_bytes += 1;
+                newlines += 1;
+                let mut line_start = LineStart::new(&self.text[(i + whitespace_bytes)..]);
+                let _n_containers = self.scan_containers(&mut line_start);
+            } else if is_ascii_whitespace_no_nl(c) {
+                whitespace_bytes += 1;
+            } else {
+                break;
+            }
+        }
+        if whitespace_bytes == 0 && newlines == 0 {
+            return None;
+        }
+
+        // no title
+        let backup = Some((i - start, RefDef {
+            label,
+            dest,
+            title: None,
+        }));
+
+        if newlines > 1 {
+            return backup;
+        } else {
+            i += whitespace_bytes;
+        }
+
+        // scan title
+        // if this fails but newline == 1, return also a refdef without title
+        let title = if let Some((title_length, title)) = self.scan_refdef_title(i) {
+            i += title_length;
+            title
+        } else if newlines > 0 {
+            return backup;
+        } else {
+            return None;
+        };
+
+        // scan EOL
+        i += if let Some(bytes) = scan_blank_line(&self.text[i..]) {
+            bytes
+        } else if newlines > 0 {
+            return backup;
+        } else {
+            return None;
+        };
+
+        Some(
+            (i - start,
+            RefDef {
+                label,
+                dest,
+                title: Some(title),
+            })
+        )
+    }
+
+    // FIXME: use prototype::scan_link_title ?
+    // FIXME: no, reuse scanner::scan_link_title
+    // returns (bytelength, title_str)
+    fn scan_refdef_title(&self, start: usize) -> Option<(usize, &'a str)> {
+        let bytes = &self.text.as_bytes()[start..];
+        match bytes.get(0)? {
+            delim @ b'\'' | delim @ b'"' | delim @ b'(' => {
+                let closing_delim = match delim {
+                    b'\'' => b'\'', b'"' => b'"', b'(' => b')', _ => unreachable!(),
+                };
+                // TODO: this implementation isn't great
+                let mut saw_non_whitespace_since_last_nl = true;
+                let mut i = 1;
+                for &c in &bytes[1..] {
+                    // all of this business is to prevent blank lines
+                    if !is_ascii_whitespace(c) {
+                        saw_non_whitespace_since_last_nl = true;
+                    }
+                    if c == b'\n' {
+                        if saw_non_whitespace_since_last_nl {
+                            saw_non_whitespace_since_last_nl = false;
+                        } else {
+                            return None;
+                        }
+                    }
+                    if c == closing_delim {
+                        break;
+                    }
+                    i += 1;
+                };
+                if bytes[i] == closing_delim {
+                    Some((1 + i, &self.text[(start + 1)..(start + i)]))
+                } else {
+                    None
+                }
+            }
+            _ => None
+        }
     }
 }
 
@@ -1897,6 +2051,12 @@ fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
 struct LinkStackEl {
     node: usize,
     is_image: bool,
+}
+
+struct RefDef<'a> {
+    label: &'a str,
+    dest: &'a str,
+    title: Option<&'a str>
 }
 
 pub struct Parser<'a> {

@@ -20,14 +20,14 @@
 
 //! Prototype of tree-based two pass parser.
 
-use std::borrow::Cow;
-use std::borrow::Cow::Borrowed;
+use std::borrow::Cow::{self, Borrowed};
+use std::collections::HashMap;
 
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
 
-use caseless::default_caseless_match_str;
+use unicase::UniCase;
 
 #[derive(Debug)]
 struct Item {
@@ -84,18 +84,18 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
-    references: Vec<RefDef<'a>>,
+    references: HashMap<UniCase<&'a str>, RefDef<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
     fn new(text: &str) -> FirstPass {
         let tree = Tree::new();
         let last_line_blank = false;
-        let references = Vec::new();
+        let references = HashMap::new();
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item>, Vec<RefDef<'a>>) {
+    fn run(mut self) -> (Tree<Item>, HashMap<UniCase<&'a str>, RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -193,7 +193,8 @@ impl<'a> FirstPass<'a> {
         // Reference definitions of the form
         // [foo]: /url "title"
         if let Some((bytecount, refdef)) = self.scan_refdef(ix) {
-            self.references.push(refdef);
+            let unicased = UniCase::new(refdef.label);
+            self.references.entry(unicased).or_insert(refdef);
             return ix + bytecount + 1; // FIXME: is the +1 necessary?
         }
 
@@ -2062,7 +2063,7 @@ struct RefDef<'a> {
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
-    refdefs: Vec<RefDef<'a>>,
+    refdefs: HashMap<UniCase<&'a str>, RefDef<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2193,19 +2194,17 @@ impl<'a> Parser<'a> {
                             } else {
                                 link_stack.clear();
                             }
-                        } else {
+                        } else if link_stack.len() == 1 {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
+                            let tos = link_stack.pop().unwrap();
                             let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
                             let scan_result = scan_reference(scanner);
                             let label_node = self.tree.nodes[tos.node].next;
                             let next_node_after_link = match scan_result {
-                                RefScan::Label(_, next_node) =>
-                                    next_node,
-                                RefScan::Collapsed(next_node) =>
-                                    next_node,
-                                RefScan::Failed =>
-                                    self.tree.nodes[cur].next,
+                                RefScan::Label(_, next_node) => next_node,
+                                RefScan::Collapsed(next_node) => next_node,
+                                RefScan::Failed => self.tree.nodes[cur].next,
                             };
                             let label = match scan_result {
                                 RefScan::Label(l, ..) => l,
@@ -2217,7 +2216,7 @@ impl<'a> Parser<'a> {
                                 }
                             };
 
-                            if let Some(matching_def) = self.refdefs.iter().find(|refdef| default_caseless_match_str(refdef.label, label)) {
+                            if let Some(matching_def) = self.refdefs.get(&UniCase::new(label)) {
                                 // found a matching definition!
                                 let title = matching_def.title.unwrap_or("").into();
                                 let url = matching_def.dest.into();
@@ -2243,6 +2242,8 @@ impl<'a> Parser<'a> {
                             } else {
                                 self.tree.nodes[cur].item.body = ItemBody::Text;
                             }
+                        } else {
+                            link_stack.pop();
                         }
                     } else {
                         self.tree.nodes[cur].item.body = ItemBody::Text;
@@ -2308,9 +2309,9 @@ impl<'a> Parser<'a> {
                     if can_open {
                         stack.push(InlineEl {
                             start: cur,
-                            count: count,
-                            c: c,
-                            both: both,
+                            count,
+                            c,
+                            both,
                         });
                     } else {
                         for i in 0..count {

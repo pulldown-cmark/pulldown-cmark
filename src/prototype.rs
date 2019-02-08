@@ -103,7 +103,6 @@ impl<'a> FirstPass<'a> {
         for _ in 0..self.tree.spine.len() {
             self.pop(ix);
         }
-        //dump_tree(&self.tree.nodes, 0, 0);
         (self.tree, self.references)
     }
 
@@ -195,7 +194,7 @@ impl<'a> FirstPass<'a> {
         if let Some((bytecount, refdef)) = self.scan_refdef(ix) {
             let unicased = UniCase::new(refdef.label);
             self.references.entry(unicased).or_insert(refdef);
-            return ix + bytecount + 1; // FIXME: is the +1 necessary?
+            return ix + bytecount;
         }
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
@@ -833,9 +832,9 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     while ix != NIL {
         let node = &nodes[ix];
         for _ in 0..level {
-            print!("  ");
+            eprint!("  ");
         }
-        println!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
+        eprintln!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
@@ -2112,19 +2111,16 @@ impl<'a> Parser<'a> {
                     let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
                     if let Some(uri) = scan_autolink(scanner) {
-                        // FIXME: all this tree surgery is pretty bad. i have no
-                        // idea what's going on here, and i wrote this. we should
-                        // probably use a tree with a proper interface that abstracts
-                        // this
                         let (node, ix) = scanner.to_node_and_ix();
+                        let text_node = self.tree.create_node(Item {
+                            start: self.tree.nodes[cur].item.start + 1,
+                            end: ix - 1,
+                            body: ItemBody::Text,
+                        });
                         self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
                         self.tree.nodes[cur].item.end = ix;
                         self.tree.nodes[cur].next = node;
-                        let old_cur = self.tree.cur;
-                        self.tree.cur = cur;
-                        self.tree.push();
-                        self.tree.append_text(self.tree.nodes[cur].item.start + 1, ix - 1);
-                        self.tree.cur = old_cur;
+                        self.tree.nodes[cur].child = text_node;
                         cur = node;
                         continue;
                     } else if scan_inline_html(scanner) {
@@ -2144,8 +2140,7 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeCode(count) => {
                     // TODO(performance): this has quadratic pathological behavior, I think
-                    let first = self.tree.nodes[cur].next;
-                    let mut scan = first;
+                    let mut scan = self.tree.nodes[cur].next;
                     while scan != NIL {
                         if self.tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur, scan);

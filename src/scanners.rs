@@ -456,14 +456,14 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
     (i, spaces)
 }
 
-pub struct RefDefScan<'a> {
-    pub(crate) bytecount: usize,
+pub struct RefDef<'a> {
     pub(crate) label: &'a str,
     pub(crate) dest: &'a str,
     pub(crate) title: Option<&'a str>
 }
 
-pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
+// returns # of bytes, and definition
+pub fn scan_refdef(data: &str) -> Option<(usize, RefDef)> {
     let mut i = scan_whitespace_no_nl(data);
 
     // defs can only be indented up to three spaces
@@ -518,12 +518,11 @@ pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
     }
 
     // no title
-    let backup = Some(RefDefScan {
-        bytecount: i,
+    let backup = Some((i, RefDef {
         label,
         dest,
         title: None,
-    });
+    }));
 
     if newlines > 1 {
         return backup;
@@ -543,14 +542,16 @@ pub fn scan_refdef(data: &str) -> Option<RefDefScan> {
     };
 
     // scan EOL
-    let bytecount = i + scan_blank_line(&data[i..])?;
+    i += scan_blank_line(&data[i..])?;
 
-    Some(RefDefScan {
-        bytecount,
-        label,
-        dest,
-        title: Some(title),
-    })
+    Some(
+        (i,
+        RefDef {
+            label,
+            dest,
+            title: Some(title),
+        })
+    )
 }
 
 // returns (bytelength, title_str)
@@ -1201,13 +1202,13 @@ mod test {
 [bar][foo]
 "##;
 
-        assert_eq!(12, scan_refdef(data).unwrap().bytecount);
+        assert_eq!(12, scan_refdef(data).unwrap().0);
     }
 
     #[test]
     fn parse_simple_refdef() {
         let data = r#"[foo]: /url "title""#;
 
-        assert_eq!(data.len(), scan_refdef(data).expect("wth").bytecount);
+        assert_eq!(data.len(), scan_refdef(data).expect("wth").0);
     }
 }

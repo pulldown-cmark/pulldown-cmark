@@ -84,7 +84,7 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
-    references: Vec<RefDefScan<'a>>,
+    references: Vec<RefDef<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
@@ -95,7 +95,7 @@ impl<'a> FirstPass<'a> {
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item>, Vec<RefDefScan<'a>>) {
+    fn run(mut self) -> (Tree<Item>, Vec<RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -192,8 +192,7 @@ impl<'a> FirstPass<'a> {
 
         // Reference definitions of the form
         // [foo]: /url "title"
-        if let Some(refdef) = scan_refdef(&self.text[ix..]) {
-            let bytecount = refdef.bytecount;
+        if let Some((bytecount, refdef)) = scan_refdef(&self.text[ix..]) {
             self.references.push(refdef);
             return ix + bytecount + 1; // FIXME: is the +1 necessary?
         }
@@ -1865,7 +1864,7 @@ struct LinkStackEl {
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
-    refdefs: Vec<RefDefScan<'a>>,
+    refdefs: Vec<RefDef<'a>>,
 }
 
 impl<'a> Parser<'a> {

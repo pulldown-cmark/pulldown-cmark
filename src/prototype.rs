@@ -84,7 +84,7 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
-    references: HashMap<UniCase<&'a str>, RefDef<'a>>,
+    references: HashMap<UniCase<String>, RefDef<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
@@ -95,7 +95,7 @@ impl<'a> FirstPass<'a> {
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item>, HashMap<UniCase<&'a str>, RefDef<'a>>) {
+    fn run(mut self) -> (Tree<Item>, HashMap<UniCase<String>, RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -191,8 +191,8 @@ impl<'a> FirstPass<'a> {
 
         // Reference definitions of the form
         // [foo]: /url "title"
-        if let Some((bytecount, refdef)) = self.scan_refdef(ix) {
-            let unicased = UniCase::new(refdef.label);
+        if let Some((bytecount, label, refdef)) = self.scan_refdef(ix) {
+            let unicased = UniCase::new(label);
             self.references.entry(unicased).or_insert(refdef);
             return ix + bytecount;
         }
@@ -637,13 +637,10 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    // returns # of bytes, and definition
-    fn scan_refdef(&self, mut i: usize) -> Option<(usize, RefDef<'a>)> {
-        let start = i;
-
-        // scan label
-        // FIXME: reuse parse::RawParser::scan_link_label? it doesnt seem to do the
-        // whitespace check tho
+    // returns number of bytes and label on success. note that we can't (always)
+    // return a &str since we need to collapse whitespaces.
+    // TODO: we could do Cows though
+    fn scan_link_label(&self, mut i: usize) -> Option<(usize, String)> {
         if scan_ch(&self.text[i..], b'[') == 0 {
             return None;
         }
@@ -658,11 +655,24 @@ impl<'a> FirstPass<'a> {
         }
         let label = &self.text[i..(i + label_length)];
         i += label_length;
-        // FIXME: out of bounds possibly?
-        if scan_ch(&self.text[i..], b']') == 0 || scan_ch(&self.text[(i + 1)..], b':') == 0 {
+        if scan_ch(&self.text[i..], b']') == 0 {
+            None
+        } else {
+            Some((label_length, label.into()))
+        }
+    }
+
+    // returns # of bytes, label and definition
+    fn scan_refdef(&self, mut i: usize) -> Option<(usize, String, RefDef<'a>)> {
+        let start = i;
+
+        // scan label
+        let (label_length, label) = self.scan_link_label(i)?;
+        i += label_length + 2; // 2 for [ and ]
+        if scan_ch(&self.text[i..], b':') == 0 {
             return None;
         }
-        i += 2;
+        i += 1;
 
         // whitespace between label and url (including up to one newline)
         let mut newlines = 0;
@@ -709,46 +719,40 @@ impl<'a> FirstPass<'a> {
         }
 
         // no title
-        let backup = Some((i - start, RefDef {
+        let mut backup = 
+            (i - start,
             label,
-            dest,
-            title: None,
-        }));
+            RefDef {
+                dest,
+                title: None,
+            });
 
         if newlines > 1 {
-            return backup;
+            return Some(backup);
         } else {
             i += whitespace_bytes;
         }
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
-        let title = if let Some((title_length, title)) = self.scan_refdef_title(i) {
+        if let Some((title_length, title)) = self.scan_refdef_title(i) {
             i += title_length;
-            title
+            backup.2.title = Some(title);
         } else if newlines > 0 {
-            return backup;
+            return Some(backup);
         } else {
             return None;
         };
 
         // scan EOL
-        i += if let Some(bytes) = scan_blank_line(&self.text[i..]) {
-            bytes
+        if let Some(bytes) = scan_blank_line(&self.text[i..]) {
+            backup.0 = i + bytes - start;
+            Some(backup)
         } else if newlines > 0 {
-            return backup;
+            Some(backup)
         } else {
-            return None;
-        };
-
-        Some(
-            (i - start,
-            RefDef {
-                label,
-                dest,
-                title: Some(title),
-            })
-        )
+            None
+        }
     }
 
     // FIXME: use prototype::scan_link_title ?
@@ -973,7 +977,6 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
 fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    
     let codeline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(ix, codeline_end_offset + ix);
     tree.append_newline(codeline_end_offset);
@@ -1100,7 +1103,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
 fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     let mut i = 0;
     for &vertebra in &(tree.spine) {
-        let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
+        let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
         
         match tree.nodes[vertebra].item.body {
             ItemBody::BlockQuote => {
@@ -2054,7 +2057,6 @@ struct LinkStackEl {
 }
 
 struct RefDef<'a> {
-    label: &'a str,
     dest: &'a str,
     title: Option<&'a str>
 }
@@ -2062,7 +2064,7 @@ struct RefDef<'a> {
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
-    refdefs: HashMap<UniCase<&'a str>, RefDef<'a>>,
+    refdefs: HashMap<UniCase<String>, RefDef<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2211,7 +2213,8 @@ impl<'a> Parser<'a> {
                                 }
                             };
 
-                            if let Some(matching_def) = self.refdefs.get(&UniCase::new(label)) {
+                            // TODO(performance): make sure we aren't doing unnecessary allocaitons
+                            if let Some(matching_def) = self.refdefs.get(&UniCase::new(label.into())) {
                                 // found a matching definition!
                                 let title = matching_def.title.unwrap_or("").into();
                                 let url = matching_def.dest.into();

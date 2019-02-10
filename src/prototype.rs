@@ -26,7 +26,7 @@ use std::collections::HashMap;
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
-use crate::linklabel::{LinkLabelBuilder, LinkLabel};
+use crate::linklabel::{scan_link_label, LinkLabel}; //{LinkLabelBuilder, ;
 
 #[derive(Debug)]
 struct Item {
@@ -638,9 +638,7 @@ impl<'a> FirstPass<'a> {
     // returns # of bytes, label and definition
     fn scan_refdef(&self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
         // scan label
-        let mut builder = LinkLabelBuilder::new();
-        let mut i = builder.add_text(&self.text[start..])?;
-        let label = builder.build();
+        let (mut i, label) = scan_link_label(&self.text[start..])?;
         i += start;
         if scan_ch(&self.text[i..], b':') == 0 {
             return None;
@@ -1981,19 +1979,16 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> Re
     if cur == NIL {
         return RefScan::Failed;
     }
-
     let start = tree.nodes[cur].item.start;
-    let mut builder = LinkLabelBuilder::new();
-
-    if let Some(ix) = builder.add_text(&text[start..]) {
+    
+    if text[start..].starts_with("[]") {
+        let closing_node = tree.nodes[cur].next;
+        RefScan::Collapsed(tree.nodes[closing_node].next)
+    } else if let Some((ix, label)) = scan_link_label(&text[start..]) {
         let mut scanner = InlineScanner::new(tree, text, cur);
         for _ in 0..ix { scanner.next(); } // move to right node in tree
         let next_node = tree.nodes[scanner.cur].next;
-        if ix == 2 {
-            RefScan::Collapsed(next_node)
-        } else {
-            RefScan::Label(builder.build(), next_node)
-        }
+        RefScan::Label(label, next_node)
     } else {
         RefScan::Failed
     }
@@ -2179,12 +2174,10 @@ impl<'a> Parser<'a> {
                                     let start = self.tree.nodes[tos.node].item.end - 1;
                                     let end = self.tree.nodes[cur].item.end;
                                     let search_text = &self.text[start..end];
-
-                                    let mut builder = LinkLabelBuilder::new();
-                                    builder.add_text(search_text).map(|_| builder.build())
+                                    scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
                             };
-                            // TODO: actually validate link text if let RefScan::Label(..) = scan_result
+                            // TODO?: actually validate link text if let RefScan::Label(..) = scan_result
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
@@ -2214,7 +2207,7 @@ impl<'a> Parser<'a> {
                                 self.tree.nodes[cur].item.body = ItemBody::Text;
                             }
 
-                            link_stack.clear();
+                            link_stack.pop();
                         }
                     } else {
                         self.tree.nodes[cur].item.body = ItemBody::Text;

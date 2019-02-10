@@ -24,192 +24,67 @@ use std::borrow::Cow;
 
 use unicase::UniCase;
 
-use crate::scanners::is_ascii_whitespace;
-
-pub struct LinkLabelBuilder<'a> {
-    text: Cow<'a, str>,
-    nest: usize,
-    cp: usize,
-    backslash: bool,
-    ws: bool,
-}
+use crate::scanners::{scan_ch, is_ascii_whitespace, scan_while};
 
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
-impl<'a> LinkLabelBuilder<'a> {
-    pub fn new() -> LinkLabelBuilder<'a> {
-        LinkLabelBuilder { text: "".into(), nest: 0, cp: 0, backslash: false, ws: true }
+pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>)> {
+    if scan_ch(text, b'[') == 0 {
+        return None;
     }
+    let mut i = 1;
+    let mut only_white_space = true;
+    let mut still_borrowed = true;
+    let bytes = text.as_bytes();
+    // no worries, doesnt allocate until we push things onto it
+    let mut label = String::new();
 
-    /// Add text to the link.
-    ///
-    /// If the text contains the closing bracket, return the offset after that.
-    pub fn add_text(&mut self, text: &'a str) -> Option<usize> {
-        let mut start = 0;
-        let mut i = start;
-        while i < text.len() {
-            let b = text.as_bytes()[i];
-            if (b as i8) >= -0x40 {
-                self.cp += 1;
-                // TODO: should we bail on overflow here?
+    // TODO: loop over chars instead of bytes to be more utf-8 compatible?
+    loop {
+        if i >= bytes.len() || i >= 1000 { return None; }
+        let mut c = bytes[i];
+        match c {
+            b'[' => return None,
+            b']' => break,
+            b'\\' => {
+                let _next_byte = *bytes.get(i + 1)?;
+                // TODO: does it matter what the next byte is?
+                i += 2;
             }
-            i += 1;
-            if self.backslash {
-                self.backslash = false;
-                // TODO(spec clarification): is this guard necessary? It's here to match dingus
-                if !is_ascii_whitespace(b) {
-                    continue;
+            _ if is_ascii_whitespace(c) => {
+                // normalize labels by collapsing whitespaces, including linebreaks
+                let whitespaces = scan_while(&text[i..], is_ascii_whitespace);
+                if whitespaces > 1 || c != b' ' {
+                    if still_borrowed {
+                        label.push_str(&text[1..i]);
+                    }
+                    still_borrowed = false;
+                    c = b' ';
                 }
+                i += whitespaces;
             }
-            match b {
-                b' ' => {
-                    if self.ws {
-                        self.append(&text[start..i - 1]);
-                        start = i;
-                    }
-                    self.ws = true;
-                }
-                0x09..=0x0d => {
-                    self.append(&text[start..i - 1]);
-                    start = i;
-                    if !self.ws {
-                        self.append(" ");
-                    }
-                    self.ws = true;
-                }
-                b'\\' => {
-                    self.backslash = true;
-                    self.ws = false;
-                }
-                b'[' => {
-                    self.ws = false;
-                    self.nest += 1;
-                }
-                b']' => {
-                    if self.nest == 0 {
-                        self.append(&text[start..i - 1]);
-                        return Some(i);
-                    }
-                    self.ws = false;
-                    self.nest -= 1;
-                }
-                _ => self.ws = false,
+            _ => {
+                only_white_space = false;
+                i += 1;
             }
         }
-        self.append(&text[start..i]);
+
+        if !still_borrowed {
+            label.push(c as char);
+        }
+    }
+
+    if only_white_space {
+        return None;
+    }
+    if scan_ch(&text[i..], b']') == 0 {
         None
-    }
-
-    /// Build a link label, representing the normalized text.
-    pub fn build(mut self) -> LinkLabel<'a> {
-        if self.ws {
-            let len = self.text.len() - 1;
-            match self.text {
-                Cow::Borrowed(s) => self.text = s[..len].into(),
-                Cow::Owned(ref mut s) => s.truncate(len),
-            }
-        }
-        UniCase::new(self.text)
-    }
-
-    /// Get the number of codepoints (including close bracket).
-    pub fn codepoint_count(&self) -> usize {
-        self.cp
-    }
-
-    /// Append text, trying to preserve borrow-ness.
-    ///
-    /// Note: if the borrowed strings are actually contiguous, we could be more
-    /// aggressive about the result also being borrowed.
-    fn append(&mut self, text: &'a str) {
-        if text.is_empty() {
-            return;
-        }
-        if self.text.is_empty() {
-            self.text = text.into();
-        } else if let Cow::Owned(ref mut s) = self.text {
-            s.push_str(text);
+    } else {
+        let cow = if still_borrowed {
+            text[1..i].into()
         } else {
-            self.text = [&self.text, text].concat().into();
-        }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    fn ll(text: &str) -> LinkLabel {
-        let mut builder = LinkLabelBuilder::new();
-        builder.add_text(text);
-        builder.build()
-    }
-
-    fn lcp(text: &str) -> usize {
-        let mut builder = LinkLabelBuilder::new();
-        builder.add_text(text);
-        builder.codepoint_count()
-    }
-
-    fn lix(text: &str) -> Option<usize> {
-        let mut builder = LinkLabelBuilder::new();
-        builder.add_text(text)
-    }
-
-    fn u<'a>(text: &str) -> LinkLabel {
-        LinkLabel::new(text.into())
-    }
-
-    #[test]
-    fn link_label_normalize() {
-        assert_eq!(ll("abc]"), u("abc"));
-        assert_eq!(ll(" abc ]"), u("abc"));
-        assert_eq!(ll("abc def]"), u("abc def"));
-        assert_eq!(ll("abc\tdef]"), u("abc def"));
-        assert_eq!(ll("abc  def]"), u("abc def"));
-        assert_eq!(ll("\tabc\tdef\t]"), u("abc def"));
-        assert_eq!(ll("ABC]"), u("abc"));
-        assert_eq!(ll("Толпой]"), u("ТОЛПОЙ"));
-    }
-
-    #[test]
-    fn link_label_count() {
-        assert_eq!(lcp("abc]"), 4);
-        assert_eq!(lcp(" abc ]"), 6);
-        assert_eq!(lcp("Толпой]"), 7);
-    }
-
-    #[test]
-    fn link_label_backslash() {
-        assert_eq!(ll("abc\\]]"), u("abc\\]"));
-        // Note: this one is tricky, we strip trailing whitespace even if escaped.
-        assert_eq!(ll("abc\\ ]"), u("abc\\"));
-        assert_eq!(ll("abc\\\\]"), u("abc\\\\"));
-    }
-
-    #[test]
-    fn link_label_backslash_ws() {
-        assert_eq!(ll("abc\\  def]"), u("abc\\ def"));
-        assert_eq!(ll("abc\\\tdef]"), u("abc\\ def"));
-    }
-
-    #[test]
-    fn link_label_nest() {
-        assert_eq!(ll("[abc]]"), u("[abc]"));
-        assert_eq!(ll("link [foo [bar]]]"), u("link [foo [bar]]"));
-    }
-
-    #[test]
-    fn link_label_close() {
-        assert_eq!(lix("abc"), None);
-        assert_eq!(lix("abc]"), Some(4));
-        assert_eq!(lix("abc][def]"), Some(4));
-    }
-
-    #[test]
-    fn link_label_multi_add() {
-        let mut builder = LinkLabelBuilder::new();
-        assert_eq!(builder.add_text("abc"), None);
-        assert_eq!(builder.add_text("]"), Some(1));
-        assert_eq!(builder.build(), u("abc"));
+            label.into()
+        };
+        Some((i + 1, UniCase::new(cow)))
     }
 }

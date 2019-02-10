@@ -964,38 +964,48 @@ pub fn is_html_tag(tag: &str) -> bool {
 pub fn scan_html_type_7(data: &str) -> Option<usize> {
     let mut i = scan_ch(data, b'<');
     if i == 0 {
-        return None; }
-    i += scan_ch(&data[i..], b'/');
+        return None;
+    }
+
+    let close_tag_bytes = scan_ch(&data[i..], b'/');
+    i += close_tag_bytes;
+
     let l = scan_while(&data[i..], is_ascii_alpha);
-    if l == 0 {
-        return None; }
+    if l == 0  {
+        return None;
+    }
     i += l;
     let n = scan_while(&data[i..], is_ascii_letterdigitdash);
     i += n;
 
-    loop {
-        i += scan_whitespace_no_nl(&data[i..]);
-        let c = data.as_bytes()[i];
-        match c {
-            b'/' | b'>' => { 
-                break; },
-            _ => {},
-        }
-        if let Some(a) = scan_attribute(&data[i..]) {
-            if a == 0 {break;}
-            i += a;
-        } else {
-            return None;
+    if close_tag_bytes == 0 {
+        loop {
+            i += scan_whitespace_no_nl(&data[i..]);
+            let c = data.as_bytes()[i];
+            match c {
+                b'/' | b'>' => { 
+                    break; },
+                _ => {},
+            }
+            if let Some(a) = scan_attribute(&data[i..]) {
+                if a == 0 {break;}
+                i += a;
+            } else {
+                return None;
+            }
         }
     }
 
     i += scan_whitespace_no_nl(&data[i..]);
 
-    i += scan_ch(&data[i..], b'/');
+    if close_tag_bytes == 0 {
+        i += scan_ch(&data[i..], b'/');
+    }
 
     let c = scan_ch(&data[i..], b'>');
     if c == 0 {
-        return None;}
+        return None;
+    }
     i += c;
 
     if let Some(_) = scan_blank_line(&data[i..]) {

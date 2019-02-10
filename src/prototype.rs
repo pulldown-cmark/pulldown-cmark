@@ -702,7 +702,7 @@ impl<'a> FirstPass<'a> {
             return Some(backup);
         } else {
             i += whitespace_bytes;
-        }
+        }        
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
@@ -726,44 +726,60 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    // FIXME: use prototype::scan_link_title ?
-    // FIXME: no, reuse scanner::scan_link_title
+
+
+    // FIXME: use prototype::scan_link_title ? but we need an inline scanner
+    // and that fn seems to allow blank lines.
+    // FIXME: or, reuse scanner::scan_link_title ?
+    // TODO: rename. this isnt just for refdef_titles, but all titles
     // returns (bytelength, title_str)
-    fn scan_refdef_title(&self, start: usize) -> Option<(usize, &'a str)> {
-        let bytes = &self.text.as_bytes()[start..];
-        match bytes.get(0)? {
-            delim @ b'\'' | delim @ b'"' | delim @ b'(' => {
-                let closing_delim = match delim {
-                    b'\'' => b'\'', b'"' => b'"', b'(' => b')', _ => unreachable!(),
-                };
-                // TODO: this implementation isn't great
-                let mut saw_non_whitespace_since_last_nl = true;
-                let mut i = 1;
-                for &c in &bytes[1..] {
-                    // all of this business is to prevent blank lines
-                    if !is_ascii_whitespace(c) {
-                        saw_non_whitespace_since_last_nl = true;
+    fn scan_refdef_title(&self, start: usize) -> Option<(usize, String)> {
+        let mut title = String::new();
+        let text = &self.text[start..];
+        let mut chars = text.chars().peekable();
+        let closing_delim = match chars.next()? {
+            '\'' => '\'',
+            '"' => '"',
+            '(' => ')',
+            _ => return None,
+        };
+        let mut bytecount = 1;
+
+        while let Some(c) = chars.next() {
+            match c {
+                '\n' => {
+                    title.push(c);
+                    bytecount += 1;
+                    let mut next = *chars.peek()?;
+                    while is_ascii_whitespace_no_nl(next as u8) {
+                        title.push(next);
+                        bytecount += chars.next()?.len_utf8();
+                        next = *chars.peek()?;
                     }
-                    if c == b'\n' {
-                        if saw_non_whitespace_since_last_nl {
-                            saw_non_whitespace_since_last_nl = false;
-                        } else {
-                            return None;
-                        }
+                    if *chars.peek()? == '\n' {
+                        // blank line - not allowed
+                        return None;
                     }
-                    if c == closing_delim {
-                        break;
+                }
+                '\\' => {
+                    let next_char = chars.next()?;
+                    bytecount += 1;
+                    if next_char != closing_delim {
+                        title.push('\\');
                     }
-                    i += 1;
-                };
-                if bytes[i] == closing_delim {
-                    Some((1 + i, &self.text[(start + 1)..(start + i)]))
-                } else {
-                    None
+                    title.push(next_char);
+                    bytecount += next_char.len_utf8();
+                }
+                c if c == closing_delim => {
+                    return Some((bytecount + 1, title));
+                }
+                c => {
+                    title.push(c);
+                    bytecount += c.len_utf8();
                 }
             }
-            _ => None
         }
+        None
     }
 }
 
@@ -2024,7 +2040,7 @@ struct LinkStackEl {
 
 struct RefDef<'a> {
     dest: &'a str,
-    title: Option<&'a str>
+    title: Option<String> // FIXME: should be Cow?
 }
 
 pub struct Parser<'a> {
@@ -2183,7 +2199,7 @@ impl<'a> Parser<'a> {
                             // for the label
                             if let Some(matching_def) = label.and_then(|l| self.refdefs.get(&l)) {
                                 // found a matching definition!
-                                let title = matching_def.title.unwrap_or("").into();
+                                let title = matching_def.title.as_ref().cloned().unwrap_or(String::new()).into();
                                 let url = matching_def.dest.into();
                                 self.tree.nodes[tos.node].item.body = if tos.is_image {
                                     ItemBody::Image(url, title)

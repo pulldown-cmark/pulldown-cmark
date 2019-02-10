@@ -2193,7 +2193,6 @@ impl<'a> Parser<'a> {
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
                             };
-                            // TODO?: actually validate link text if let RefScan::Label(..) = scan_result
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
@@ -2219,11 +2218,19 @@ impl<'a> Parser<'a> {
 
                                 // set up cur so next node will be node_after_link
                                 cur = tos.node;
+
+                                if tos.is_image {
+                                    link_stack.pop();
+                                } else {
+                                    link_stack.clear();
+                                }
                             } else {
                                 self.tree.nodes[cur].item.body = ItemBody::Text;
+                                
+                                // not actually a link, so remove just its matching
+                                // opening tag
+                                link_stack.pop();
                             }
-
-                            link_stack.pop();
                         }
                     } else {
                         self.tree.nodes[cur].item.body = ItemBody::Text;

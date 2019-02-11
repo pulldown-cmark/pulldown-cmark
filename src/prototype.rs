@@ -678,8 +678,9 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec.
-fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
+/// left-flanking, as defined by the commonmark spec (and isn't introword
+/// for _ delims)
+fn delim_run_can_open(bytes: &[u8], run_len: usize, ix: usize) -> bool {
     if ix + run_len >= bytes.len() {
         return false;
     }
@@ -696,8 +697,6 @@ fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
         return true;
     }
 
-    // FIXME: is_left_flanking function names don't fit any more because
-    // we also check intra word emphasis
     // FIXME: we really should get the prev char!
     let prev_byte = bytes[ix - 1];
 
@@ -705,8 +704,9 @@ fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec.
-fn is_right_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
+/// left-flanking, as defined by the commonmark spec (and isn't introword
+/// for _ delims)
+fn delim_run_can_close(bytes: &[u8], run_len: usize, ix: usize) -> bool {
     if ix == 0 {
         return false;
     }
@@ -787,16 +787,16 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 // know there's either an * or _ there
                 let string_suffix = &s[(ix + 1)..];
                 let count = 1 + scan_ch_repeat(string_suffix, c);
-                let left_flanking = is_left_flanking(bytes, count, ix);
-                let right_flanking = is_right_flanking(bytes, count, ix);
+                let can_open = delim_run_can_open(bytes, count, ix);
+                let can_close = delim_run_can_close(bytes, count, ix);
                 
-                if left_flanking || right_flanking {
+                if can_open || can_close {
                     tree.append_text(begin_text, ix);
                     for i in 0..count {
                         tree.append(Item {
                             start: ix + i,
                             end: ix + i + 1,
-                            body: ItemBody::MaybeEmphasis(count - i, left_flanking, right_flanking),
+                            body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
                         });
                     }
                     ix += count;
@@ -2043,28 +2043,32 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
                     // have a match!
                     tree.nodes[prev].next = NIL;
                     let match_count = ::std::cmp::min(count, el.count);
-                    eprintln!("found match of size: {}", match_count);
+                    // start, end are tree node indices
+                    let mut end = cur - 1;
+                    let mut start = el.start + el.count;
 
-                    let mut end = cur + match_count;
-                    cur = tree.nodes[end - 1].next;
-                    let mut next = cur;
-                    let mut start = el.start + el.count - match_count;
-                    prev = start;
-                    while start < el.start + el.count {
-                        let (inc, ty) = if el.start + el.count - start > 1 {
+                    // work from the inside out
+                    while start > el.start + el.count - match_count {
+                        let (inc, ty) = if start > el.start + el.count - match_count + 1 {
                             (2, ItemBody::Strong)
                         } else {
                             (1, ItemBody::Emphasis)
                         };
-                        let root = start + inc;
-                        end -= inc;
-                        tree.nodes[start].item.body = ty;
-                        tree.nodes[start].item.end = tree.nodes[end].item.end;
-                        tree.nodes[start].child = root;
-                        tree.nodes[start].next = next;
+
+                        let root = start - inc;
+                        end += inc;
+                        tree.nodes[root].item.body = ty;
+                        tree.nodes[root].item.end = tree.nodes[end].item.end;
+                        tree.nodes[root].child = start;
+                        tree.nodes[root].next = NIL;
                         start = root;
-                        next = NIL;
                     }
+
+                    // set next for top most emph level
+                    prev = el.start + el.count - match_count;
+                    cur = tree.nodes[cur + match_count - 1].next;
+                    tree.nodes[prev].next = cur;
+
                     stack.pop_to(tree, j + 1);
                     let _ = stack.pop();
                     if el.count > match_count {

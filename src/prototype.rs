@@ -692,22 +692,12 @@ fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
         return true;
     }
     let delim = bytes[ix];
-    if delim == b'*' {
-        if !is_ascii_punctuation(next_byte) {
-            return true;
-        }
-    } else {
-        // delim must be b'_'
-        if !is_ascii_punctuation(next_byte) {
-            // this mess is to prevent intra word emphasis with _
-            // TODO: function name no longer representative
-            let prev_byte = bytes[ix - 1];
-            if !(is_ascii_whitespace(prev_byte) || is_ascii_punctuation(prev_byte)) {
-                return false;
-            }
-        }
+    if delim == b'*' && !is_ascii_punctuation(next_byte) {
+        return true;
     }
 
+    // FIXME: is_left_flanking function names don't fit any more because
+    // we also check intra word emphasis
     // FIXME: we really should get the prev char!
     let prev_byte = bytes[ix - 1];
 
@@ -722,17 +712,15 @@ fn is_right_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
     }
     // FIXME: we really should get the prev char!
     let prev_byte = bytes[ix - 1];
-
-    // TODO: prevent intra-word emphasis with _
-
     if is_ascii_whitespace(prev_byte) {
         return false;
     }
-    if !is_ascii_punctuation(prev_byte) {
+    if ix + run_len >= bytes.len() {
         return true;
     }
-    if ix + run_len >= bytes.len() {
-        return false;
+    let delim = bytes[ix];
+    if delim == b'*' && !is_ascii_punctuation(prev_byte) {
+        return true;
     }
     let next_byte = bytes[ix + run_len];
 
@@ -793,12 +781,14 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 ix += 2;
             }
             c @ b'*' | c @b'_' => {
-                // FIXME: it looks like we're mixing byte indices with char indices here
-                let count = 1 + scan_ch_repeat(&s[ix+1..], c);
+                // FIXME: it looks like we're mixing byte indices with char indices here.
+                // we should be able to get a proper suffix quickly (without revalidating utf-8)
+                // and without unsafe by providing a byte offset into a string since we
+                // know there's either an * or _ there
+                let string_suffix = &s[(ix + 1)..];
+                let count = 1 + scan_ch_repeat(string_suffix, c);
                 let left_flanking = is_left_flanking(bytes, count, ix);
                 let right_flanking = is_right_flanking(bytes, count, ix);
-
-                eprintln!("left: {:?}, right: {:?}", left_flanking, right_flanking);
                 
                 if left_flanking || right_flanking {
                     tree.append_text(begin_text, ix);
@@ -2053,6 +2043,8 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
                     // have a match!
                     tree.nodes[prev].next = NIL;
                     let match_count = ::std::cmp::min(count, el.count);
+                    eprintln!("found match of size: {}", match_count);
+
                     let mut end = cur + match_count;
                     cur = tree.nodes[end - 1].next;
                     let mut next = cur;

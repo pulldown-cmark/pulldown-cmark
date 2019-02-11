@@ -688,12 +688,30 @@ fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
     if is_ascii_whitespace(next_byte) {
         return false;
     }
-    if !is_ascii_punctuation(next_byte) {
-        return true;
+    let delim = bytes[ix];
+    if delim == b'*' {
+        if !is_ascii_punctuation(next_byte) {
+            return true;
+        }
+        if ix == 0 {
+            return false;
+        }
+    } else {
+        // delim must be b'_'
+        if !is_ascii_punctuation(next_byte) {
+            if ix == 0 {
+                return true;
+            }
+
+            // this mess is to prevent intra word emphasis with _
+            // TODO: function name no longer representative
+            let prev_byte = bytes[ix - 1];
+            if !(is_ascii_whitespace(prev_byte) || is_ascii_punctuation(prev_byte)) {
+                return false;
+            }
+        }
     }
-    if ix == 0 {
-        return false;
-    }
+
     // FIXME: we really should get the prev char!
     let prev_byte = bytes[ix - 1];
 

@@ -42,7 +42,9 @@ enum ItemBody {
     HardBreak,
 
     // These are possible inline items, need to be resolved in second pass.
-    Inline(usize, bool, bool), // Perhaps this should be MaybeEmphasis?
+
+    // repeats, can_open, can_close
+    MaybeEmphasis(usize, bool, bool),
     MaybeCode(usize),
     MaybeHtml,
     MaybeLinkOpen,
@@ -675,6 +677,52 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     }
 }
 
+/// Determines whether the delimiter run starting at given index is
+/// left-flanking, as defined by the commonmark spec.
+fn is_left_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
+    if ix + run_len >= bytes.len() {
+        return false;
+    }
+    let next_byte = bytes[ix + run_len];
+
+    if is_ascii_whitespace(next_byte) {
+        return false;
+    }
+    if !is_ascii_punctuation(next_byte) {
+        return true;
+    }
+    if ix == 0 {
+        return false;
+    }
+    // FIXME: we really should get the prev char!
+    let prev_byte = bytes[ix - 1];
+
+    is_ascii_whitespace(prev_byte) || is_ascii_punctuation(prev_byte)
+}
+
+/// Determines whether the delimiter run starting at given index is
+/// left-flanking, as defined by the commonmark spec.
+fn is_right_flanking(bytes: &[u8], run_len: usize, ix: usize) -> bool {
+    if ix == 0 {
+        return false;
+    }
+    // FIXME: we really should get the prev char!
+    let prev_byte = bytes[ix - 1];
+
+    if is_ascii_whitespace(prev_byte) {
+        return false;
+    }
+    if !is_ascii_punctuation(prev_byte) {
+        return true;
+    }
+    if ix + run_len >= bytes.len() {
+        return false;
+    }
+    let next_byte = bytes[ix + run_len];
+
+    is_ascii_whitespace(next_byte) || is_ascii_punctuation(next_byte)
+}
+
 /// Parse a line of input, appending text and items to tree.
 ///
 /// Returns: index after line and an item representing the break.
@@ -729,20 +777,25 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 ix += 2;
             }
             c @ b'*' | c @b'_' => {
-                tree.append_text(begin_text, ix);
+                // FIXME: it looks like we're mixing byte indices with char indices here
                 let count = 1 + scan_ch_repeat(&s[ix+1..], c);
-                let can_open = ix + count < s.len() && !is_ascii_whitespace(bytes[ix + count]);
-                let can_close = ix > start && !is_ascii_whitespace(bytes[ix - 1]);
-                // TODO: can skip if neither can_open nor can_close
-                for i in 0..count {
-                    tree.append(Item {
-                        start: ix + i,
-                        end: ix + i + 1,
-                        body: ItemBody::Inline(count - i, can_open, can_close),
-                    });
+                let left_flanking = is_left_flanking(bytes, count, ix);
+                let right_flanking = is_right_flanking(bytes, count, ix);
+                
+                if left_flanking || right_flanking {
+                    tree.append_text(begin_text, ix);
+                    for i in 0..count {
+                        tree.append(Item {
+                            start: ix + i,
+                            end: ix + i + 1,
+                            body: ItemBody::MaybeEmphasis(count - i, left_flanking, right_flanking),
+                        });
+                    }
+                    ix += count;
+                    begin_text = ix;
+                } else {
+                    ix += count;
                 }
-                ix += count;
-                begin_text = ix;
             }
             b'`' => {
                 tree.append_text(begin_text, ix);
@@ -1281,8 +1334,7 @@ impl InlineStack {
     }
 
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
-        while self.stack.len() > new_len {
-            let el = self.stack.pop().unwrap();
+        for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
                 tree.nodes[el.start + i].item.body = ItemBody::Text;
             }
@@ -1290,12 +1342,14 @@ impl InlineStack {
     }
 
     fn find_match(&self, c: u8, count: usize, both: bool) -> Option<(usize, InlineEl)> {
-        for (j, el) in self.stack.iter().enumerate().rev() {
-            if el.c == c && !((both || el.both) && (count + el.count) % 3 == 0) {
-                return Some((j, *el));
-            }
-        }
-        None
+        self.stack
+            .iter()
+            .cloned()
+            .enumerate()
+            .rev()
+            .find(|(_, el)| {
+                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0)
+            })
     }
 
     fn push(&mut self, el: InlineEl) {
@@ -1973,7 +2027,7 @@ fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
     let mut prev = NIL;
     let mut cur = tree.cur;
     while cur != NIL {
-        if let ItemBody::Inline(mut count, can_open, can_close) = tree.nodes[cur].item.body {
+        if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = tree.nodes[cur].item.body {
             let c = s.as_bytes()[tree.nodes[cur].item.start];
             let both = can_open && can_close;
             if can_close {
@@ -2215,7 +2269,7 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
         match self.tree.nodes[self.tree.cur].item.body {
-            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
+            ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                 handle_inline(&mut self.tree, self.text),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,

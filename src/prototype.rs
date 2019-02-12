@@ -678,53 +678,54 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec (and isn't introword
-/// for _ delims)
-fn delim_run_can_open(bytes: &[u8], run_len: usize, ix: usize) -> bool {
-    if ix + run_len >= bytes.len() {
+/// left-flanking, as defined by the commonmark spec (and isn't intraword
+/// for _ delims).
+/// suffix is &s[ix..], which is passed in as an optimization, since taking
+/// a string subslice is O(n).
+fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
+    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+        c
+    } else {
         return false;
-    }
-    let next_byte = bytes[ix + run_len];
-
-    if is_ascii_whitespace(next_byte) {
+    };
+    if next_char.is_whitespace() {
         return false;
     }
     if ix == 0 {
         return true;
     }
-    let delim = bytes[ix];
-    if delim == b'*' && !is_ascii_punctuation(next_byte) {
+    let delim = suffix.chars().next().unwrap();
+    if delim == '*' && !next_char.is_ascii_punctuation() {
         return true;
     }
 
-    // FIXME: we really should get the prev char!
-    let prev_byte = bytes[ix - 1];
+    let prev_char = s[..ix].chars().rev().next().unwrap();
 
-    is_ascii_whitespace(prev_byte) || is_ascii_punctuation(prev_byte)
+    prev_char.is_whitespace() || prev_char.is_ascii_punctuation()
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec (and isn't introword
+/// left-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
-fn delim_run_can_close(bytes: &[u8], run_len: usize, ix: usize) -> bool {
+fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
     if ix == 0 {
         return false;
     }
-    // FIXME: we really should get the prev char!
-    let prev_byte = bytes[ix - 1];
-    if is_ascii_whitespace(prev_byte) {
+    let prev_char = s[..ix].chars().rev().next().unwrap();
+    if prev_char.is_whitespace() {
         return false;
     }
-    if ix + run_len >= bytes.len() {
+    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+        c
+    } else {
+        return true;
+    };
+    let delim = suffix.chars().next().unwrap();
+    if delim == '*' && !prev_char.is_ascii_punctuation() {
         return true;
     }
-    let delim = bytes[ix];
-    if delim == b'*' && !is_ascii_punctuation(prev_byte) {
-        return true;
-    }
-    let next_byte = bytes[ix + run_len];
 
-    is_ascii_whitespace(next_byte) || is_ascii_punctuation(next_byte)
+    next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
 /// Parse a line of input, appending text and items to tree.
@@ -781,14 +782,10 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 ix += 2;
             }
             c @ b'*' | c @b'_' => {
-                // FIXME: it looks like we're mixing byte indices with char indices here.
-                // we should be able to get a proper suffix quickly (without revalidating utf-8)
-                // and without unsafe by providing a byte offset into a string since we
-                // know there's either an * or _ there
-                let string_suffix = &s[(ix + 1)..];
-                let count = 1 + scan_ch_repeat(string_suffix, c);
-                let can_open = delim_run_can_open(bytes, count, ix);
-                let can_close = delim_run_can_close(bytes, count, ix);
+                let string_suffix = &s[ix..];
+                let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
+                let can_open = delim_run_can_open(s, string_suffix, count, ix);
+                let can_close = delim_run_can_close(s, string_suffix, count, ix);
                 
                 if can_open || can_close {
                     tree.append_text(begin_text, ix);

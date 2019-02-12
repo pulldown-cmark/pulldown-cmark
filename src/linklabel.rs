@@ -24,67 +24,75 @@ use std::borrow::Cow;
 
 use unicase::UniCase;
 
-use crate::scanners::{scan_ch, is_ascii_whitespace, scan_while};
-
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
 pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>)> {
-    if scan_ch(text, b'[') == 0 {
-        return None;
-    }
-    let mut i = 1;
+    let mut char_iter = text.chars().peekable();
+    if let Some('[') = char_iter.next() {} else { return None; }
     let mut only_white_space = true;
     let mut still_borrowed = true;
-    let bytes = text.as_bytes();
+    let mut codepoints = 0;
+    let mut byte_index = 1;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
 
-    // TODO: loop over chars instead of bytes to be more utf-8 compatible?
     loop {
-        if i >= bytes.len() || i >= 1000 { return None; }
-        let mut c = bytes[i];
+        if codepoints >= 1000 { return None; }
+        let mut c = char_iter.next()?;
+        byte_index += c.len_utf8();
+
         match c {
-            b'[' => return None,
-            b']' => break,
-            b'\\' => {
-                let _next_byte = *bytes.get(i + 1)?;
-                // TODO: does it matter what the next byte is?
-                i += 2;
+            '[' => return None,
+            ']' => break,
+            '\\' => {
+                let next = char_iter.next()?;
+                byte_index += next.len_utf8();
+                codepoints += 2;
             }
-            _ if is_ascii_whitespace(c) => {
+            _ if c.is_whitespace() => {
                 // normalize labels by collapsing whitespaces, including linebreaks
-                let whitespaces = scan_while(&text[i..], is_ascii_whitespace);
-                if whitespaces > 1 || c != b' ' {
-                    if still_borrowed {
-                        label.push_str(&text[1..i]);
+                let mut whitespaces = 1;
+                let mut byte_addition = 0;
+                loop {
+                    match char_iter.peek() {
+                        Some(w) if w.is_whitespace() => {
+                            whitespaces += 1;
+                            byte_addition += w.len_utf8();
+                            let _ = char_iter.next();
+                        }
+                        _ => break,
                     }
-                    still_borrowed = false;
-                    c = b' ';
                 }
-                i += whitespaces;
+                if whitespaces > 1 || c != ' ' {
+                    byte_index -= c.len_utf8();
+                    if still_borrowed {
+                        label.push_str(&text[1..byte_index]);
+                        still_borrowed = false;
+                    }
+                    c = ' ';
+                    byte_index += c.len_utf8();
+                }
+                byte_index += byte_addition;
+                codepoints += whitespaces;
             }
             _ => {
                 only_white_space = false;
-                i += 1;
+                codepoints += 1;
             }
         }
 
         if !still_borrowed {
-            label.push(c as char);
+            label.push(c);
         }
     }
 
     if only_white_space {
         return None;
     }
-    if scan_ch(&text[i..], b']') == 0 {
-        None
+    let cow = if still_borrowed {
+        text[1..(byte_index - 1)].into()
     } else {
-        let cow = if still_borrowed {
-            text[1..i].into()
-        } else {
-            label.into()
-        };
-        Some((i + 1, UniCase::new(cow)))
-    }
+        label.into()
+    };
+    Some((byte_index, UniCase::new(cow)))
 }

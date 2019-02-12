@@ -285,8 +285,8 @@ pub fn scan_ch(data: &str, c: u8) -> usize {
     if !data.is_empty() && data.as_bytes()[0] == c { 1 } else { 0 }
 }
 
-pub fn scan_while<F>(data: &str, f: F) -> usize
-        where F: Fn(u8) -> bool {
+pub fn scan_while<F>(data: &str, mut f: F) -> usize
+        where F: FnMut(u8) -> bool {
     match data.as_bytes().iter().position(|&c| !f(c)) {
         Some(i) => i,
         None => data.len()

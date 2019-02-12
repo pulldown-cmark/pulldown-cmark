@@ -20,12 +20,13 @@
 
 //! Prototype of tree-based two pass parser.
 
-use std::borrow::Cow;
-use std::borrow::Cow::Borrowed;
+use std::borrow::Cow::{self, Borrowed};
+use std::collections::HashMap;
 
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
+use crate::linklabel::{scan_link_label, LinkLabel}; //{LinkLabelBuilder, ;
 
 #[derive(Debug)]
 struct Item {
@@ -84,16 +85,18 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item>,
     last_line_blank: bool,
+    references: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
 
 impl<'a> FirstPass<'a> {
     fn new(text: &str) -> FirstPass {
         let tree = Tree::new();
         let last_line_blank = false;
-        FirstPass { text, tree, last_line_blank }
+        let references = HashMap::new();
+        FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> Tree<Item> {
+    fn run(mut self) -> (Tree<Item>, HashMap<LinkLabel<'a>, RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -101,8 +104,7 @@ impl<'a> FirstPass<'a> {
         for _ in 0..self.tree.spine.len() {
             self.pop(ix);
         }
-        //dump_tree(&self.tree.nodes, 0, 0);
-        self.tree
+        (self.tree, self.references)
     }
 
     /// Returns offset after block.
@@ -186,6 +188,13 @@ impl<'a> FirstPass<'a> {
         let n = scan_hrule(&self.text[ix..]);
         if n > 0 {
             return self.parse_hrule(n, ix);
+        }
+
+        // Reference definitions of the form
+        // [foo]: /url "title"
+        if let Some((bytecount, label, refdef)) = self.scan_refdef(ix) {
+            self.references.entry(label).or_insert(refdef);
+            return ix + bytecount;
         }
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
@@ -627,6 +636,153 @@ impl<'a> FirstPass<'a> {
         self.tree.pop();
         ix
     }
+
+    // returns # of bytes, label and definition
+    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
+        // scan label
+        let (mut i, label) = scan_link_label(&self.text[start..])?;
+        i += start;
+        if scan_ch(&self.text[i..], b':') == 0 {
+            return None;
+        }
+        i += 1;
+
+        // whitespace between label and url (including up to one newline)
+        let mut newlines = 0;
+        for c in self.text[i..].bytes() {
+            if c == b'\n' {
+                i += 1;
+                newlines += 1;
+                if newlines > 1 {
+                    return None;
+                } else {
+                    let mut line_start = LineStart::new(&self.text[i..]);
+                    let _n_containers = self.scan_containers(&mut line_start);
+                    // TODO: what to do with these containers?
+                }
+            } else if is_ascii_whitespace_no_nl(c) {
+                i += 1;
+            } else {
+                break;
+            }
+        }
+
+        // scan link dest
+        let (dest_length, dest) = scan_link_dest(&self.text[i..])?;
+        i += dest_length;
+
+        // scan whitespace between dest and label
+        // FIXME: dedup with similar block above
+        newlines = 0;
+        let mut whitespace_bytes = 0;
+        for c in self.text[i..].bytes() {
+            if c == b'\n' {
+                whitespace_bytes += 1;
+                newlines += 1;
+                let mut line_start = LineStart::new(&self.text[(i + whitespace_bytes)..]);
+                let _n_containers = self.scan_containers(&mut line_start);
+            } else if is_ascii_whitespace_no_nl(c) {
+                whitespace_bytes += 1;
+            } else {
+                break;
+            }
+        }
+        if whitespace_bytes == 0 && newlines == 0 {
+            return None;
+        }
+
+        // no title
+        let mut backup = 
+            (i - start,
+            label,
+            RefDef {
+                dest,
+                title: None,
+            });
+
+        if newlines > 1 {
+            return Some(backup);
+        } else {
+            i += whitespace_bytes;
+        }        
+
+        // scan title
+        // if this fails but newline == 1, return also a refdef without title
+        if let Some((title_length, title)) = self.scan_refdef_title(i) {
+            i += title_length;
+            backup.2.title = Some(title);
+        } else if newlines > 0 {
+            return Some(backup);
+        } else {
+            return None;
+        };
+
+        // scan EOL
+        if let Some(bytes) = scan_blank_line(&self.text[i..]) {
+            backup.0 = i + bytes - start;
+            Some(backup)
+        } else if newlines > 0 {
+            Some(backup)
+        } else {
+            None
+        }
+    }
+
+
+
+    // FIXME: use prototype::scan_link_title ? but we need an inline scanner
+    // and that fn seems to allow blank lines.
+    // FIXME: or, reuse scanner::scan_link_title ?
+    // TODO: rename. this isnt just for refdef_titles, but all titles
+    // returns (bytelength, title_str)
+    fn scan_refdef_title(&self, start: usize) -> Option<(usize, String)> {
+        let mut title = String::new();
+        let text = &self.text[start..];
+        let mut chars = text.chars().peekable();
+        let closing_delim = match chars.next()? {
+            '\'' => '\'',
+            '"' => '"',
+            '(' => ')',
+            _ => return None,
+        };
+        let mut bytecount = 1;
+
+        while let Some(c) = chars.next() {
+            match c {
+                '\n' => {
+                    title.push(c);
+                    bytecount += 1;
+                    let mut next = *chars.peek()?;
+                    while is_ascii_whitespace_no_nl(next as u8) {
+                        title.push(next);
+                        bytecount += chars.next()?.len_utf8();
+                        next = *chars.peek()?;
+                    }
+                    if *chars.peek()? == '\n' {
+                        // blank line - not allowed
+                        return None;
+                    }
+                }
+                '\\' => {
+                    let next_char = chars.next()?;
+                    bytecount += 1;
+                    if next_char != closing_delim {
+                        title.push('\\');
+                    }
+                    title.push(next_char);
+                    bytecount += next_char.len_utf8();
+                }
+                c if c == closing_delim => {
+                    return Some((bytecount + 1, title));
+                }
+                c => {
+                    title.push(c);
+                    bytecount += c.len_utf8();
+                }
+            }
+        }
+        None
+    }
 }
 
 impl Tree<Item> {
@@ -669,9 +825,9 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     while ix != NIL {
         let node = &nodes[ix];
         for _ in 0..level {
-            print!("  ");
+            eprint!("  ");
         }
-        println!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
+        eprintln!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
@@ -866,7 +1022,6 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
 fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
-    
     let codeline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(ix, codeline_end_offset + ix);
     tree.append_newline(codeline_end_offset);
@@ -993,7 +1148,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
 fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     let mut i = 0;
     for &vertebra in &(tree.spine) {
-        let (space_bytes, num_spaces) = scan_leading_space(&text[i..],0);
+        let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
         
         match tree.nodes[vertebra].item.body {
             ItemBody::BlockQuote => {
@@ -1886,6 +2041,34 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
     Some(uri)
 }
 
+#[derive(Debug, Clone)]
+enum RefScan<'a> {
+    // contains label, next node index
+    Label(LinkLabel<'a>, usize),
+    // contains next node index
+    Collapsed(usize),
+    Failed,
+}
+
+fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> RefScan<'b> {
+    if cur == NIL {
+        return RefScan::Failed;
+    }
+    let start = tree.nodes[cur].item.start;
+    
+    if text[start..].starts_with("[]") {
+        let closing_node = tree.nodes[cur].next;
+        RefScan::Collapsed(tree.nodes[closing_node].next)
+    } else if let Some((ix, label)) = scan_link_label(&text[start..]) {
+        let mut scanner = InlineScanner::new(tree, text, cur);
+        for _ in 0..ix { scanner.next(); } // move to right node in tree
+        let next_node = tree.nodes[scanner.cur].next;
+        RefScan::Label(label, next_node)
+    } else {
+        RefScan::Failed
+    }
+}
+
 // TODO: Cows more efficient?
 fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
     if !scanner.scan_ch(b'(') {
@@ -1914,212 +2097,15 @@ struct LinkStackEl {
     is_image: bool,
 }
 
-/// Handle inline HTML, code spans, and links.
-///
-/// This function handles both inline HTML and code spans, because they have
-/// the same precedence. It also handles links, even though they have lower
-/// precedence, because the URL of links must not be processed.
-fn handle_inline_pass1(tree: &mut Tree<Item>, s: &str) {
-    let mut link_stack = Vec::new();
-    let mut cur = tree.cur;
-    let mut prev = NIL;
-
-    while cur != NIL {
-        match tree.nodes[cur].item.body {
-            ItemBody::MaybeHtml => {
-                let next = tree.nodes[cur].next;
-                let scanner = &mut InlineScanner::new(tree, s, next);
-
-                if let Some(uri) = scan_autolink(scanner) {
-                    // FIXME: all this tree surgery is pretty bad. i have no
-                    // idea what's going on here, and i wrote this. we should
-                    // probably use a tree with a proper interface that abstracts
-                    // this
-                    let (node, ix) = scanner.to_node_and_ix();
-                    tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
-                    tree.nodes[cur].item.end = ix;
-                    tree.nodes[cur].next = node;
-                    let old_cur = tree.cur;
-                    tree.cur = cur;
-                    tree.push();
-                    tree.append_text(tree.nodes[cur].item.start + 1, ix - 1);
-                    tree.cur = old_cur;
-                    cur = node;
-                    continue;
-                } else if scan_inline_html(scanner) {
-                    let (node, ix) = scanner.to_node_and_ix();
-                    // TODO: this logic isn't right if the replaced chain has
-                    // tricky stuff (skipped containers, replaced nulls).
-                    tree.nodes[cur].item.body = ItemBody::InlineHtml;
-                    tree.nodes[cur].item.end = ix;
-                    tree.nodes[cur].next = node;
-                    cur = node;
-                    if cur != NIL {
-                        tree.nodes[cur].item.start = ix;
-                    }
-                    continue;
-                }
-                tree.nodes[cur].item.body = ItemBody::Text;
-            }
-            ItemBody::MaybeCode(count) => {
-                // TODO(performance): this has quadratic pathological behavior, I think
-                let first = tree.nodes[cur].next;
-                let mut scan = first;
-                while scan != NIL {
-                    if tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
-                        make_code_span(tree, s, cur, scan);
-                        break;
-                    }
-                    scan = tree.nodes[scan].next;
-                }
-                if scan == NIL {
-                    tree.nodes[cur].item.body = ItemBody::Text;
-                }
-            }
-            ItemBody::MaybeLinkOpen => {
-                tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur, is_image: false });
-            }
-            ItemBody::MaybeImage => {
-                tree.nodes[cur].item.body = ItemBody::Text;
-                link_stack.push( LinkStackEl { node: cur, is_image: true });
-            }
-            ItemBody::MaybeLinkClose => {
-                if let Some(tos) = link_stack.last() {
-                    let next = tree.nodes[cur].next;
-                    let scanner = &mut InlineScanner::new(tree, s, next);
-
-                    if let Some((url, title)) = scan_inline_link(scanner) {
-                        let (next_node, next_ix) = scanner.to_node_and_ix();
-                        tree.nodes[prev].next = NIL;
-                        cur = tos.node;
-                        tree.nodes[cur].item.body = if tos.is_image {
-                            ItemBody::Image(url.into(), title.into())
-                        } else {
-                            ItemBody::Link(url.into(), title.into())
-                        };
-                        tree.nodes[cur].child = tree.nodes[cur].next;
-                        tree.nodes[cur].next = next_node;
-                        if next_node != NIL {
-                            tree.nodes[next_node].item.start = next_ix;
-                        }
-
-                        let inside_image_alt = link_stack.iter().position(|e| e.is_image)
-                            .map(|i| i != link_stack.len() - 1)
-                            .unwrap_or(false);
-
-                        if tos.is_image || inside_image_alt {
-                            link_stack.pop();
-                        } else {
-                            link_stack.clear();
-                        }
-                    } else {
-                        tree.nodes[cur].item.body = ItemBody::Text;
-                    }
-                } else {
-                    tree.nodes[cur].item.body = ItemBody::Text;
-                }
-            }
-            _ => (),
-        }
-        prev = cur;
-        cur = tree.nodes[cur].next;
-    }
-}
-
-fn handle_emphasis(tree: &mut Tree<Item>, s: &str) {
-    let mut stack = InlineStack::new();
-    let mut prev = NIL;
-    let mut cur = tree.cur;
-    while cur != NIL {
-        if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = tree.nodes[cur].item.body {
-            let c = s.as_bytes()[tree.nodes[cur].item.start];
-            let both = can_open && can_close;
-            if can_close {
-                while let Some((j, el)) = stack.find_match(c, count, both) {
-                    // have a match!
-                    tree.nodes[prev].next = NIL;
-                    let match_count = ::std::cmp::min(count, el.count);
-                    // start, end are tree node indices
-                    let mut end = cur - 1;
-                    let mut start = el.start + el.count;
-
-                    // work from the inside out
-                    while start > el.start + el.count - match_count {
-                        let (inc, ty) = if start > el.start + el.count - match_count + 1 {
-                            (2, ItemBody::Strong)
-                        } else {
-                            (1, ItemBody::Emphasis)
-                        };
-
-                        let root = start - inc;
-                        end += inc;
-                        tree.nodes[root].item.body = ty;
-                        tree.nodes[root].item.end = tree.nodes[end].item.end;
-                        tree.nodes[root].child = start;
-                        tree.nodes[root].next = NIL;
-                        start = root;
-                    }
-
-                    // set next for top most emph level
-                    prev = el.start + el.count - match_count;
-                    cur = tree.nodes[cur + match_count - 1].next;
-                    tree.nodes[prev].next = cur;
-
-                    stack.pop_to(tree, j + 1);
-                    let _ = stack.pop();
-                    if el.count > match_count {
-                        stack.push(InlineEl {
-                            start: el.start,
-                            count: el.count - match_count,
-                            c: el.c,
-                            both: both,
-                        })
-                    }
-                    count -= match_count;
-                    if count == 0 {
-                        break;
-                    }
-                }
-            }
-            if count > 0 {
-                if can_open {
-                    stack.push(InlineEl {
-                        start: cur,
-                        count: count,
-                        c: c,
-                        both: both,
-                    });
-                } else {
-                    for i in 0..count {
-                        tree.nodes[cur + i].item.body = ItemBody::Text;
-                    }
-                }
-                prev = cur + count - 1;
-                cur = tree.nodes[prev].next;
-            }
-        } else {
-            prev = cur;
-            cur = tree.nodes[cur].next;
-        }
-    }
-    stack.pop_to(tree, 0);
-}
-
-/// Handle inline markup.
-///
-/// When the parser encounters any item indicating potential inline markup, all
-/// inline markup passes are run on the remainder of the chain.
-///
-/// Note: there's some potential for optimization here, but that's future work.
-fn handle_inline(tree: &mut Tree<Item>, s: &str) {
-    handle_inline_pass1(tree, s);
-    handle_emphasis(tree, s);
+struct RefDef<'a> {
+    dest: &'a str,
+    title: Option<String> // FIXME: should be Cow?
 }
 
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
+    refdefs: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2130,17 +2116,269 @@ impl<'a> Parser<'a> {
     #[allow(unused_variables)]
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
-        let mut tree = first_pass.run();
+        let (mut tree, refdefs) = first_pass.run();
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
-        Parser {
-            text: text,
-            tree: tree,
-        }
+        Parser { text, tree, refdefs }
     }
 
     pub fn get_offset(&self) -> usize {
         0  // TODO
+    }
+
+    /// Handle inline markup.
+    ///
+    /// When the parser encounters any item indicating potential inline markup, all
+    /// inline markup passes are run on the remainder of the chain.
+    ///
+    /// Note: there's some potential for optimization here, but that's future work.
+    fn handle_inline(&mut self) {
+        self.handle_inline_pass1();
+        self.handle_emphasis();
+    }
+
+    /// Handle inline HTML, code spans, and links.
+    ///
+    /// This function handles both inline HTML and code spans, because they have
+    /// the same precedence. It also handles links, even though they have lower
+    /// precedence, because the URL of links must not be processed.
+    fn handle_inline_pass1(&mut self) {
+        let mut link_stack = Vec::new();
+        let mut cur = self.tree.cur;
+        let mut prev = NIL;
+
+        while cur != NIL {
+            match self.tree.nodes[cur].item.body {
+                ItemBody::MaybeHtml => {
+                    let next = self.tree.nodes[cur].next;
+                    let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+
+                    if let Some(uri) = scan_autolink(scanner) {
+                        let (node, ix) = scanner.to_node_and_ix();
+                        let text_node = self.tree.create_node(Item {
+                            start: self.tree.nodes[cur].item.start + 1,
+                            end: ix - 1,
+                            body: ItemBody::Text,
+                        });
+                        self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
+                        self.tree.nodes[cur].item.end = ix;
+                        self.tree.nodes[cur].next = node;
+                        self.tree.nodes[cur].child = text_node;
+                        cur = node;
+                        continue;
+                    } else if scan_inline_html(scanner) {
+                        let (node, ix) = scanner.to_node_and_ix();
+                        // TODO: this logic isn't right if the replaced chain has
+                        // tricky stuff (skipped containers, replaced nulls).
+                        self.tree.nodes[cur].item.body = ItemBody::InlineHtml;
+                        self.tree.nodes[cur].item.end = ix;
+                        self.tree.nodes[cur].next = node;
+                        cur = node;
+                        if cur != NIL {
+                            self.tree.nodes[cur].item.start = ix;
+                        }
+                        continue;
+                    }
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                }
+                ItemBody::MaybeCode(count) => {
+                    // TODO(performance): this has quadratic pathological behavior, I think
+                    let mut scan = self.tree.nodes[cur].next;
+                    while scan != NIL {
+                        if self.tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
+                            make_code_span(&mut self.tree, self.text, cur, scan);
+                            break;
+                        }
+                        scan = self.tree.nodes[scan].next;
+                    }
+                    if scan == NIL {
+                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                    }
+                }
+                ItemBody::MaybeLinkOpen => {
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    link_stack.push( LinkStackEl { node: cur, is_image: false });
+                }
+                ItemBody::MaybeImage => {
+                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    link_stack.push( LinkStackEl { node: cur, is_image: true });
+                }
+                ItemBody::MaybeLinkClose => {
+                    if let Some(tos) = link_stack.last() {
+                        let next = self.tree.nodes[cur].next;
+                        let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+
+                        if let Some((url, title)) = scan_inline_link(scanner) {
+                            let (next_node, next_ix) = scanner.to_node_and_ix();
+                            self.tree.nodes[prev].next = NIL;
+                            cur = tos.node;
+                            self.tree.nodes[cur].item.body = if tos.is_image {
+                                ItemBody::Image(url.into(), title.into())
+                            } else {
+                                ItemBody::Link(url.into(), title.into())
+                            };
+                            self.tree.nodes[cur].child = self.tree.nodes[cur].next;
+                            self.tree.nodes[cur].next = next_node;
+                            if next_node != NIL {
+                                self.tree.nodes[next_node].item.start = next_ix;
+                            }
+
+                            let inside_image_alt = link_stack.iter().position(|e| e.is_image)
+                                .map(|i| i != link_stack.len() - 1)
+                                .unwrap_or(false);
+
+                            if tos.is_image || inside_image_alt {
+                                link_stack.pop();
+                            } else {
+                                link_stack.clear();
+                            }
+                        } else {
+                            // ok, so its not an inline link. maybe it is a reference
+                            // to a defined link?
+                            let scan_result = scan_reference(&self.tree, &self.text, next);
+                            let label_node = self.tree.nodes[tos.node].next;
+                            let node_after_link = match scan_result {
+                                RefScan::Label(_, next_node) => next_node,
+                                RefScan::Collapsed(next_node) => next_node,
+                                RefScan::Failed => next,
+                            };
+                            let label: Option<LinkLabel<'a>> = match scan_result {
+                                RefScan::Label(l, ..) => Some(l),
+                                RefScan::Collapsed(..) | RefScan::Failed => {
+                                    // No label? maybe it is a shortcut reference
+                                    let start = self.tree.nodes[tos.node].item.end - 1;
+                                    let end = self.tree.nodes[cur].item.end;
+                                    let search_text = &self.text[start..end];
+                                    scan_link_label(search_text).map(|(_ix, label)| label)
+                                }
+                            };
+
+                            // TODO(performance): make sure we aren't doing unnecessary allocations
+                            // for the label
+                            if let Some(matching_def) = label.and_then(|l| self.refdefs.get(&l)) {
+                                // found a matching definition!
+                                let title = matching_def.title.as_ref().cloned().unwrap_or(String::new()).into();
+                                let url = matching_def.dest.into();
+                                self.tree.nodes[tos.node].item.body = if tos.is_image {
+                                    ItemBody::Image(url, title)
+                                } else {
+                                    ItemBody::Link(url, title)
+                                };
+
+                                // lets do some tree surgery to add the link to the tree
+                                // 1st: skip the label node and close node
+                                self.tree.nodes[tos.node].next = node_after_link;
+
+                                // then, add the label node as a child to the link node
+                                self.tree.nodes[tos.node].child = label_node;
+
+                                // finally: disconnect list of children
+                                self.tree.nodes[prev].next = NIL;
+
+                                // set up cur so next node will be node_after_link
+                                cur = tos.node;
+
+                                if tos.is_image {
+                                    link_stack.pop();
+                                } else {
+                                    link_stack.clear();
+                                }
+                            } else {
+                                self.tree.nodes[cur].item.body = ItemBody::Text;
+                                
+                                // not actually a link, so remove just its matching
+                                // opening tag
+                                link_stack.pop();
+                            }
+                        }
+                    } else {
+                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                    }
+                }
+                _ => (),
+            }
+            prev = cur;
+            cur = self.tree.nodes[cur].next;
+        }
+    }
+
+    fn handle_emphasis(&mut self) {
+        let mut stack = InlineStack::new();
+        let mut prev = NIL;
+        let mut cur = self.tree.cur;
+        while cur != NIL {
+            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree.nodes[cur].item.body {
+                let c = self.text.as_bytes()[self.tree.nodes[cur].item.start];
+                let both = can_open && can_close;
+                if can_close {
+                    while let Some((j, el)) = stack.find_match(c, count, both) {
+                        // have a match!
+                        self.tree.nodes[prev].next = NIL;
+                        let match_count = ::std::cmp::min(count, el.count);
+                        // start, end are tree node indices
+                        let mut end = cur - 1;
+                        let mut start = el.start + el.count;
+
+                        // work from the inside out
+                        while start > el.start + el.count - match_count {
+                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
+                                (2, ItemBody::Strong)
+                            } else {
+                                (1, ItemBody::Emphasis)
+                            };
+
+                            let root = start - inc;
+                            end += inc;
+                            self.tree.nodes[root].item.body = ty;
+                            self.tree.nodes[root].item.end = self.tree.nodes[end].item.end;
+                            self.tree.nodes[root].child = start;
+                            self.tree.nodes[root].next = NIL;
+                            start = root;
+                        }
+
+                        // set next for top most emph level
+                        prev = el.start + el.count - match_count;
+                        cur = self.tree.nodes[cur + match_count - 1].next;
+                        self.tree.nodes[prev].next = cur;
+
+                        stack.pop_to(&mut self.tree, j + 1);
+                        let _ = stack.pop();
+                        if el.count > match_count {
+                            stack.push(InlineEl {
+                                start: el.start,
+                                count: el.count - match_count,
+                                c: el.c,
+                                both: both,
+                            })
+                        }
+                        count -= match_count;
+                        if count == 0 {
+                            break;
+                        }
+                    }
+                }
+                if count > 0 {
+                    if can_open {
+                        stack.push(InlineEl {
+                            start: cur,
+                            count: count,
+                            c: c,
+                            both: both,
+                        });
+                    } else {
+                        for i in 0..count {
+                            self.tree.nodes[cur + i].item.body = ItemBody::Text;
+                        }
+                    }
+                    prev = cur + count - 1;
+                    cur = self.tree.nodes[prev].next;
+                }
+            } else {
+                prev = cur;
+                cur = self.tree.nodes[cur].next;
+            }
+        }
+        stack.pop_to(&mut self.tree, 0);
     }
 }
 
@@ -2282,7 +2520,7 @@ impl<'a> Iterator for Parser<'a> {
         match self.tree.nodes[self.tree.cur].item.body {
             ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
-                handle_inline(&mut self.tree, self.text),
+                self.handle_inline(),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),
         }

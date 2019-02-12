@@ -43,7 +43,9 @@ enum ItemBody {
     HardBreak,
 
     // These are possible inline items, need to be resolved in second pass.
-    Inline(usize, bool, bool), // Perhaps this should be MaybeEmphasis?
+
+    // repeats, can_open, can_close
+    MaybeEmphasis(usize, bool, bool),
     MaybeCode(usize),
     MaybeHtml,
     MaybeLinkOpen,
@@ -831,6 +833,57 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
     }
 }
 
+/// Determines whether the delimiter run starting at given index is
+/// left-flanking, as defined by the commonmark spec (and isn't intraword
+/// for _ delims).
+/// suffix is &s[ix..], which is passed in as an optimization, since taking
+/// a string subslice is O(n).
+fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
+    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+        c
+    } else {
+        return false;
+    };
+    if next_char.is_whitespace() {
+        return false;
+    }
+    if ix == 0 {
+        return true;
+    }
+    let delim = suffix.chars().next().unwrap();
+    if delim == '*' && !next_char.is_ascii_punctuation() {
+        return true;
+    }
+
+    let prev_char = s[..ix].chars().rev().next().unwrap();
+
+    prev_char.is_whitespace() || prev_char.is_ascii_punctuation()
+}
+
+/// Determines whether the delimiter run starting at given index is
+/// left-flanking, as defined by the commonmark spec (and isn't intraword
+/// for _ delims)
+fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
+    if ix == 0 {
+        return false;
+    }
+    let prev_char = s[..ix].chars().rev().next().unwrap();
+    if prev_char.is_whitespace() {
+        return false;
+    }
+    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+        c
+    } else {
+        return true;
+    };
+    let delim = suffix.chars().next().unwrap();
+    if delim == '*' && !prev_char.is_ascii_punctuation() {
+        return true;
+    }
+
+    next_char.is_whitespace() || next_char.is_ascii_punctuation()
+}
+
 /// Parse a line of input, appending text and items to tree.
 ///
 /// Returns: index after line and an item representing the break.
@@ -885,20 +938,25 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                 ix += 2;
             }
             c @ b'*' | c @b'_' => {
-                tree.append_text(begin_text, ix);
-                let count = 1 + scan_ch_repeat(&s[ix+1..], c);
-                let can_open = ix + count < s.len() && !is_ascii_whitespace(bytes[ix + count]);
-                let can_close = ix > start && !is_ascii_whitespace(bytes[ix - 1]);
-                // TODO: can skip if neither can_open nor can_close
-                for i in 0..count {
-                    tree.append(Item {
-                        start: ix + i,
-                        end: ix + i + 1,
-                        body: ItemBody::Inline(count - i, can_open, can_close),
-                    });
+                let string_suffix = &s[ix..];
+                let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
+                let can_open = delim_run_can_open(s, string_suffix, count, ix);
+                let can_close = delim_run_can_close(s, string_suffix, count, ix);
+                
+                if can_open || can_close {
+                    tree.append_text(begin_text, ix);
+                    for i in 0..count {
+                        tree.append(Item {
+                            start: ix + i,
+                            end: ix + i + 1,
+                            body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
+                        });
+                    }
+                    ix += count;
+                    begin_text = ix;
+                } else {
+                    ix += count;
                 }
-                ix += count;
-                begin_text = ix;
             }
             b'`' => {
                 tree.append_text(begin_text, ix);
@@ -1436,8 +1494,7 @@ impl InlineStack {
     }
 
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
-        while self.stack.len() > new_len {
-            let el = self.stack.pop().unwrap();
+        for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
                 tree.nodes[el.start + i].item.body = ItemBody::Text;
             }
@@ -1445,12 +1502,14 @@ impl InlineStack {
     }
 
     fn find_match(&self, c: u8, count: usize, both: bool) -> Option<(usize, InlineEl)> {
-        for (j, el) in self.stack.iter().enumerate().rev() {
-            if el.c == c && !((both || el.both) && (count + el.count) % 3 == 0) {
-                return Some((j, *el));
-            }
-        }
-        None
+        self.stack
+            .iter()
+            .cloned()
+            .enumerate()
+            .rev()
+            .find(|(_, el)| {
+                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0)
+            })
     }
 
     fn push(&mut self, el: InlineEl) {
@@ -2248,7 +2307,7 @@ impl<'a> Parser<'a> {
         let mut prev = NIL;
         let mut cur = self.tree.cur;
         while cur != NIL {
-            if let ItemBody::Inline(mut count, can_open, can_close) = self.tree.nodes[cur].item.body {
+            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree.nodes[cur].item.body {
                 let c = self.text.as_bytes()[self.tree.nodes[cur].item.start];
                 let both = can_open && can_close;
                 if can_close {
@@ -2256,26 +2315,32 @@ impl<'a> Parser<'a> {
                         // have a match!
                         self.tree.nodes[prev].next = NIL;
                         let match_count = ::std::cmp::min(count, el.count);
-                        let mut end = cur + match_count;
-                        cur = self.tree.nodes[end - 1].next;
-                        let mut next = cur;
-                        let mut start = el.start + el.count - match_count;
-                        prev = start;
-                        while start < el.start + el.count {
-                            let (inc, ty) = if el.start + el.count - start > 1 {
+                        // start, end are tree node indices
+                        let mut end = cur - 1;
+                        let mut start = el.start + el.count;
+
+                        // work from the inside out
+                        while start > el.start + el.count - match_count {
+                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
                                 (2, ItemBody::Strong)
                             } else {
                                 (1, ItemBody::Emphasis)
                             };
-                            let root = start + inc;
-                            end -= inc;
-                            self.tree.nodes[start].item.body = ty;
-                            self.tree.nodes[start].item.end = self.tree.nodes[end].item.end;
-                            self.tree.nodes[start].child = root;
-                            self.tree.nodes[start].next = next;
+
+                            let root = start - inc;
+                            end += inc;
+                            self.tree.nodes[root].item.body = ty;
+                            self.tree.nodes[root].item.end = self.tree.nodes[end].item.end;
+                            self.tree.nodes[root].child = start;
+                            self.tree.nodes[root].next = NIL;
                             start = root;
-                            next = NIL;
                         }
+
+                        // set next for top most emph level
+                        prev = el.start + el.count - match_count;
+                        cur = self.tree.nodes[cur + match_count - 1].next;
+                        self.tree.nodes[prev].next = cur;
+
                         stack.pop_to(&mut self.tree, j + 1);
                         let _ = stack.pop();
                         if el.count > match_count {
@@ -2296,9 +2361,9 @@ impl<'a> Parser<'a> {
                     if can_open {
                         stack.push(InlineEl {
                             start: cur,
-                            count,
-                            c,
-                            both,
+                            count: count,
+                            c: c,
+                            both: both,
                         });
                     } else {
                         for i in 0..count {
@@ -2453,7 +2518,7 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
         match self.tree.nodes[self.tree.cur].item.body {
-            ItemBody::Inline(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
+            ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                 self.handle_inline(),
             ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,

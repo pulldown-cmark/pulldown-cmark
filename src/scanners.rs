@@ -193,7 +193,7 @@ impl<'a> LineStart<'a> {
                         val = val * 10 + (c - b'0') as u64;
                     } else if c == b')' || c == b'.' {
                         self.ix = ix + 1;
-                        indent += ix - start_ix;
+                        indent += ix + 1 - start_ix;
                         let val_usize = val as usize;
                         // This will cause some failures on 32 bit arch.
                         // TODO (breaking API change): should be u64, not usize.

@@ -170,7 +170,7 @@ impl<'a> LineStart<'a> {
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
     pub fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
         let save = self.clone();
-        let mut indent = self.scan_space_upto(3);
+        let indent = self.scan_space_upto(3);
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
@@ -192,13 +192,14 @@ impl<'a> LineStart<'a> {
                     if c >= b'0' && c <= b'9' {
                         val = val * 10 + (c - b'0') as u64;
                     } else if c == b')' || c == b'.' {
-                        self.ix = ix + 1;
-                        indent += ix + 1 - start_ix;
+                        self.ix = ix;
                         let val_usize = val as usize;
                         // This will cause some failures on 32 bit arch.
                         // TODO (breaking API change): should be u64, not usize.
-                        if val_usize as u64 != val { return None; }
-                        return self.finish_list_marker(c, val_usize, indent);
+                        if val_usize as u64 != val { return None; }                        
+                        if self.scan_space(1) || self.is_at_eol() {
+                            return self.finish_list_marker(c, val_usize, self.ix - start_ix);
+                        }
                     }
                 }
             }

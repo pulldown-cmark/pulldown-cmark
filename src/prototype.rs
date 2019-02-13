@@ -245,7 +245,7 @@ impl<'a> FirstPass<'a> {
                 // interrupt or not?)
                 let suffix = &self.text[ix_new..];
                 let grandparent_node = self.tree.peek_grandparent();
-                let ix = scan_listitem(suffix).0;
+                let (ix, delim, index, _) = scan_listitem(suffix);
                 if {
                     ix > 0 &&
                     (grandparent_node.is_some() &&
@@ -254,7 +254,8 @@ impl<'a> FirstPass<'a> {
                     } else {
                         false
                     }
-                    || !scan_empty_list(&suffix[ix..]))
+                    || (!scan_empty_list(&suffix[ix..]))
+                    && (delim == b'*' || delim == b'-' || index == 1))
                 } || scan_paragraph_interrupt(suffix) {
                     break;
                 }

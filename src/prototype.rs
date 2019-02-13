@@ -147,8 +147,7 @@ impl<'a> FirstPass<'a> {
             return ix + n;
         }
 
-        if self.finish_list(start_ix) {
-        }
+        self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
@@ -240,7 +239,23 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
-                if scan_paragraph_interrupt(&self.text[ix_new..]) {
+                // first check for non-empty lists, then for other interrupts
+                // FIXME: this code is a disaster and possibly incorrect (what if we are in
+                // a list but the indent of the scanned listitem is incorrect - should we
+                // interrupt or not?)
+                let suffix = &self.text[ix_new..];
+                let grandparent_node = self.tree.peek_grandparent();
+                let ix = scan_listitem(suffix).0;
+                if {
+                    ix > 0 &&
+                    (grandparent_node.is_some() &&
+                    if let ItemBody::ListItem(..) = self.tree.nodes[grandparent_node.unwrap()].item.body {
+                        true
+                    } else {
+                        false
+                    }
+                    || !scan_empty_list(&suffix[ix..]))
+                } || scan_paragraph_interrupt(suffix) {
                     break;
                 }
             }
@@ -524,12 +539,10 @@ impl<'a> FirstPass<'a> {
 
     /// Close a list if it's open. Also set loose if last line was blank.
     /// Returns bool indicating whether we closed a list.
-    fn finish_list(&mut self, ix: usize) -> bool {
-        let mut closed = false;
+    fn finish_list(&mut self, ix: usize) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
                 self.pop(ix);
-                closed = true;
             }
         }
         if self.last_line_blank {
@@ -542,7 +555,6 @@ impl<'a> FirstPass<'a> {
             }
             self.last_line_blank = false;
         }
-        closed
     }
 
     /// Continue an existing list or start a new one if there's not an open
@@ -1087,7 +1099,6 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_code_fence(s).0 > 0 ||
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||
-    scan_listitem(s).0 > 0 ||  // TODO: be stricter with ordered lists
     is_html_tag(scan_html_block_tag(s).1)
 }
 
@@ -1240,16 +1251,16 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
         let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
         if listitem_bytes > 0 {
-            // thematic breaks take precedence over listitems
+            // thematic breaks take precedence over listitems. FIXME: shouldnt we do this before
+            // we scan_listitem? or should offset by ix + listitem_bytes?
             if scan_hrule(&s[ix..]) > 0 { break; }
 
-            let listitem_start;
             // handle ordered lists
-            if listitem_delimiter == b'.' || listitem_delimiter == b')' {
-                listitem_start = Some(listitem_start_index);
+            let listitem_start = if listitem_delimiter == b'.' || listitem_delimiter == b')' {
+                Some(listitem_start_index)
             } else {
-                listitem_start = None;
-            }
+                None
+            };
 
             let mut need_push = true; // Are we starting a new list?
             if let Some(parent) = tree.peek_up() {

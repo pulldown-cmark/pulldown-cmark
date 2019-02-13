@@ -198,7 +198,7 @@ impl<'a> LineStart<'a> {
                         // TODO (breaking API change): should be u64, not usize.
                         if val_usize as u64 != val { return None; }                        
                         if self.scan_space(1) || self.is_at_eol() {
-                            return self.finish_list_marker(c, val_usize, self.ix - start_ix);
+                            return self.finish_list_marker(c, val_usize, indent + self.ix - start_ix);
                         }
                     }
                 }
@@ -621,6 +621,19 @@ pub fn scan_blockquote_start(data: &str) -> usize {
     } else {
         0
     }
+}
+
+/// This already assumes the list item has been scanned.
+pub fn scan_empty_list(data: &str) -> bool {
+    let mut ix = 0;
+    for _ in 0..2 {
+        if let Some(bytes) = scan_blank_line(&data[ix..]) {
+            ix += bytes;
+        } else {
+            return false;
+        }
+    }
+    true
 }
 
 // return number of bytes scanned, delimiter, start index, and indent

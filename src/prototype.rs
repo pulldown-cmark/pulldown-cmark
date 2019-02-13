@@ -147,7 +147,8 @@ impl<'a> FirstPass<'a> {
             return ix + n;
         }
 
-        self.finish_list(start_ix);
+        if self.finish_list(start_ix) {
+        }
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
@@ -495,7 +496,9 @@ impl<'a> FirstPass<'a> {
                 }
                 ItemBody::List(_, _, _) => (),
                 ItemBody::ListItem(indent) => {
+                    let save = line_start.clone();
                     if !(line_start.scan_space(indent) || line_start.is_at_eol()) {
+                        *line_start = save;
                         break;
                     }
                 }
@@ -520,10 +523,13 @@ impl<'a> FirstPass<'a> {
     }
 
     /// Close a list if it's open. Also set loose if last line was blank.
-    fn finish_list(&mut self, ix: usize) {
+    /// Returns bool indicating whether we closed a list.
+    fn finish_list(&mut self, ix: usize) -> bool {
+        let mut closed = false;
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
                 self.pop(ix);
+                closed = true;
             }
         }
         if self.last_line_blank {
@@ -536,6 +542,7 @@ impl<'a> FirstPass<'a> {
             }
             self.last_line_blank = false;
         }
+        closed
     }
 
     /// Continue an existing list or start a new one if there's not an open

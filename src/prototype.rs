@@ -154,19 +154,16 @@ impl<'a> FirstPass<'a> {
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        //eprintln!("Got here. Remaining: {}", &self.text[ix..]);
-
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
             self.last_line_blank = true;
             return ix + n;
         }
 
-        //eprintln!("Finishing list");
-
         self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
+
         let indent = line_start.scan_space_upto(4);
         if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
@@ -276,14 +273,13 @@ impl<'a> FirstPass<'a> {
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
     fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
-
         // FIXME: this code is a disaster and possibly incorrect (what if we are in
         // a list but the indent of the scanned listitem is incorrect - should we
         // interrupt or not?)
         let grandparent_node = self.tree.peek_grandparent();
         let (ix, delim, index, _) = scan_listitem(suffix);
 
-        let res = ix > 0 &&
+        ix > 0 &&
             (grandparent_node.is_some() &&
             if let ItemBody::ListItem(..) = self.tree.nodes[grandparent_node.unwrap()].item.body {
                 true
@@ -291,11 +287,7 @@ impl<'a> FirstPass<'a> {
                 false
             }
             || !scan_empty_list(&suffix[ix..])
-            && (delim == b'*' || delim == b'-' || index == 1));
-
-        //eprintln!("Trying to determine whether to interrupt list. Suffix: {}, \n-----\nRes: {:?}", suffix, res);
-
-        res
+            && (delim == b'*' || delim == b'-' || index == 1))
     }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
@@ -473,8 +465,13 @@ impl<'a> FirstPass<'a> {
             self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
+
+        // read until the next line until there's stuff in between,
+        // or it will register as a completely blank line
+        let nextline_ix = ix + scan_blank_line(&self.text[ix..]).unwrap_or(0);
+
         self.pop(ix);
-        ix
+        nextline_ix
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -566,25 +563,16 @@ impl<'a> FirstPass<'a> {
 
     /// Close a list if it's open. Also set loose if last line was blank
     fn finish_list(&mut self, ix: usize) {
-        //eprintln!("called finish list");
-
         if let Some(node_ix) = self.tree.peek_up() {
-            //eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
                 self.pop(ix);
             }
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
-                // let first_list_item_ix = self.tree.nodes[node_ix].child;
-                // let is_single_item_list = first_list_item_ix != NIL &&
-                //     self.tree.nodes[first_list_item_ix].child != NIL;
-
                 if let ItemBody::List(ref mut is_tight, _, _) =
                     self.tree.nodes[node_ix].item.body
                 {
-                    
-                    // *is_tight = !is_single_item_list;
                     *is_tight = false;
                 }
             }
@@ -595,14 +583,10 @@ impl<'a> FirstPass<'a> {
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
-        //eprintln!("called continue list");
-        //dump_tree(&self.tree.nodes, 0, 0);
         if let Some(node_ix) = self.tree.peek_up() {
-            //eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
             if let ItemBody::List(ref mut is_tight, existing_ch, _) =
                 self.tree.nodes[node_ix].item.body
             {
-                //eprintln!("existing_ch: {}, ch: {}", existing_ch, ch);
                 if existing_ch == ch {
                     if self.last_line_blank {
                         *is_tight = false;

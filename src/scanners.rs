@@ -222,7 +222,7 @@ impl<'a> LineStart<'a> {
                 // a completely blank line - let's revert
                 self.ix = ix;
             } else {
-                indent = 0;
+                indent = self.scan_space_upto(3);
             }
         }
 
@@ -232,8 +232,6 @@ impl<'a> LineStart<'a> {
         } else {
             *self = save;
         }
-        eprintln!("found marker with indent: {}", indent);
-
         Some((c, start, indent))
     }
 

@@ -129,23 +129,31 @@ impl<'a> FirstPass<'a> {
                 self.tree.push();
             } else if let Some((ch, index, indent)) = line_start.scan_list_marker() {
                 let opt_index = if ch == b'.' || ch == b')' { Some(index) } else { None };
+                let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.continue_list(container_start, ch, opt_index);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: after_marker_index, // will get set later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
-                self.tree.push();
+                if !scan_empty_list(&self.text[after_marker_index..]) {
+                    self.tree.push();
+                }
             } else {
                 break;
             }
         }
 
         let ix = start_ix + line_start.bytes_scanned();
+
+        eprintln!("Got here. Remaining: {}", &self.text[ix..]);
+
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
             self.last_line_blank = true;
             return ix + n;
         }
+
+        eprintln!("Finishing list");
 
         self.finish_list(start_ix);
 
@@ -254,7 +262,7 @@ impl<'a> FirstPass<'a> {
                     } else {
                         false
                     }
-                    || (!scan_empty_list(&suffix[ix..]))
+                    || !scan_empty_list(&suffix[ix..])
                     && (delim == b'*' || delim == b'-' || index == 1))
                 } || scan_paragraph_interrupt(suffix) {
                     break;
@@ -538,19 +546,27 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    /// Close a list if it's open. Also set loose if last line was blank.
-    /// Returns bool indicating whether we closed a list.
+    /// Close a list if it's open. Also set loose if last line was blank
     fn finish_list(&mut self, ix: usize) {
+        eprintln!("called finish list");
+
         if let Some(node_ix) = self.tree.peek_up() {
+            eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
                 self.pop(ix);
             }
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
+                // let first_list_item_ix = self.tree.nodes[node_ix].child;
+                // let is_single_item_list = first_list_item_ix != NIL &&
+                //     self.tree.nodes[first_list_item_ix].child != NIL;
+
                 if let ItemBody::List(ref mut is_tight, _, _) =
                     self.tree.nodes[node_ix].item.body
                 {
+                    
+                    // *is_tight = !is_single_item_list;
                     *is_tight = false;
                 }
             }
@@ -561,6 +577,7 @@ impl<'a> FirstPass<'a> {
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
+        eprintln!("called continue list");
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) =
                 self.tree.nodes[node_ix].item.body

@@ -212,12 +212,28 @@ impl<'a> LineStart<'a> {
         -> Option<(u8, usize, usize)>
     {
         let save = self.clone();
+
+        // skip the rest of the line if it's blank
+        if let Some(n) = scan_blank_line(&self.text[self.ix..]) {
+            let ix = self.ix;
+            self.ix += n;
+
+            if let Some(_) = scan_blank_line(&self.text[self.ix..]) {
+                // a completely blank line - let's revert
+                self.ix = ix;
+            } else {
+                indent = 0;
+            }
+        }
+
         let post_indent = self.scan_space_upto(4);
         if post_indent < 4 {
             indent += post_indent;
         } else {
             *self = save;
         }
+        eprintln!("found marker with indent: {}", indent);
+
         Some((c, start, indent))
     }
 

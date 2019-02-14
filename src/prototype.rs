@@ -136,24 +136,32 @@ impl<'a> FirstPass<'a> {
                     end: after_marker_index, // will get set later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
+                // try to scan empty items -- FIXME: THIS IS HACKY!
+                if self.text[(after_marker_index - 1)..].starts_with('\n') {
+                    let mut new_scanner = LineStart::new(&self.text[(after_marker_index)..]);
+                    if new_scanner.scan_list_marker().is_some() {
+                        continue;
+                    }
+                }
                 if !scan_empty_list(&self.text[after_marker_index..]) {
                     self.tree.push();
                 }
-            } else {
+            }
+            else {
                 break;
             }
         }
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        eprintln!("Got here. Remaining: {}", &self.text[ix..]);
+        //eprintln!("Got here. Remaining: {}", &self.text[ix..]);
 
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
             self.last_line_blank = true;
             return ix + n;
         }
 
-        eprintln!("Finishing list");
+        //eprintln!("Finishing list");
 
         self.finish_list(start_ix);
 
@@ -247,24 +255,9 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
-                // first check for non-empty lists, then for other interrupts
-                // FIXME: this code is a disaster and possibly incorrect (what if we are in
-                // a list but the indent of the scanned listitem is incorrect - should we
-                // interrupt or not?)
-                let suffix = &self.text[ix_new..];
-                let grandparent_node = self.tree.peek_grandparent();
-                let (ix, delim, index, _) = scan_listitem(suffix);
-                if {
-                    ix > 0 &&
-                    (grandparent_node.is_some() &&
-                    if let ItemBody::ListItem(..) = self.tree.nodes[grandparent_node.unwrap()].item.body {
-                        true
-                    } else {
-                        false
-                    }
-                    || !scan_empty_list(&suffix[ix..])
-                    && (delim == b'*' || delim == b'-' || index == 1))
-                } || scan_paragraph_interrupt(suffix) {
+                // first check for non-empty lists, then for other interrupts    
+                let suffix = &self.text[ix_new..];            
+                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }
             }
@@ -278,6 +271,31 @@ impl<'a> FirstPass<'a> {
         self.tree.pop();
         self.tree.nodes[self.tree.cur].item.end = ix;
         ix
+    }
+
+    /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
+    /// lists are allowed.
+    fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
+
+        // FIXME: this code is a disaster and possibly incorrect (what if we are in
+        // a list but the indent of the scanned listitem is incorrect - should we
+        // interrupt or not?)
+        let grandparent_node = self.tree.peek_grandparent();
+        let (ix, delim, index, _) = scan_listitem(suffix);
+
+        let res = ix > 0 &&
+            (grandparent_node.is_some() &&
+            if let ItemBody::ListItem(..) = self.tree.nodes[grandparent_node.unwrap()].item.body {
+                true
+            } else {
+                false
+            }
+            || !scan_empty_list(&suffix[ix..])
+            && (delim == b'*' || delim == b'-' || index == 1));
+
+        //eprintln!("Trying to determine whether to interrupt list. Suffix: {}, \n-----\nRes: {:?}", suffix, res);
+
+        res
     }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
@@ -548,10 +566,10 @@ impl<'a> FirstPass<'a> {
 
     /// Close a list if it's open. Also set loose if last line was blank
     fn finish_list(&mut self, ix: usize) {
-        eprintln!("called finish list");
+        //eprintln!("called finish list");
 
         if let Some(node_ix) = self.tree.peek_up() {
-            eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
+            //eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
                 self.pop(ix);
             }
@@ -577,11 +595,14 @@ impl<'a> FirstPass<'a> {
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
-        eprintln!("called continue list");
+        //eprintln!("called continue list");
+        //dump_tree(&self.tree.nodes, 0, 0);
         if let Some(node_ix) = self.tree.peek_up() {
+            //eprintln!("parent: {:?}", self.tree.nodes[node_ix].item.body);
             if let ItemBody::List(ref mut is_tight, existing_ch, _) =
                 self.tree.nodes[node_ix].item.body
             {
+                //eprintln!("existing_ch: {}, ch: {}", existing_ch, ch);
                 if existing_ch == ch {
                     if self.last_line_blank {
                         *is_tight = false;

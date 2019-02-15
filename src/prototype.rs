@@ -64,6 +64,7 @@ enum ItemBody<'a> {
     // TODO: get lifetime in type so these strings can be cows
     Link(String, String),
     Image(String, String),
+    FootnoteReference(Cow<'a, str>), // definition label, use to get details from firstpass?
 
     Rule,
     Header(i32), // header level
@@ -2274,6 +2275,8 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
+                            // TODO: make this method on RefScan
+                            let scan_failed = match scan_result { RefScan::Failed => true, _ => false, };
                             let label: Option<Cow<'a, str>> = match scan_result {
                                 RefScan::Label(l, ..) => Some(l),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
@@ -2284,6 +2287,33 @@ impl<'a> Parser<'a> {
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
                             };
+
+                            // see if it's a footnote reference
+                            if scan_failed {
+                                if let Some(ref l) = label {
+                                    eprintln!("searching for footnote");
+                                    // TODO: implement self.get_link_ref and self.get_footnote_ref
+                                    let found = self.refdefs.get(&UniCase::new(l.as_ref().into())).map_or(false, |def| {
+                                        if let RefDef::Footnote(_) = def {
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    });
+
+                                    if found {
+                                        eprintln!("Found a valid reference to a footnote!");
+                                        self.tree.nodes[tos.node].next = node_after_link;
+                                        self.tree.nodes[tos.node].child = NIL;
+                                        // FIXME: this clone may not be necessary
+                                        self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l.clone());
+                                        prev = tos.node;
+                                        cur = node_after_link;
+                                        link_stack.clear();
+                                        continue;
+                                    }
+                                }
+                            }
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
@@ -2470,6 +2500,8 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
+        // FIXME: should we clone here?
+        ItemBody::FootnoteReference(ref l) => Event::FootnoteReference(l.clone()),
         _ => panic!("unexpected item body {:?}", item.body)
     }
 }

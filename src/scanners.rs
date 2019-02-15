@@ -142,7 +142,7 @@ impl<'a> LineStart<'a> {
         c == b'\r' || c == b'\n'
     }
 
-    pub fn scan_ch(&mut self, c: u8) -> bool {
+    fn scan_ch(&mut self, c: u8) -> bool {
         if self.ix < self.text.len() && self.text.as_bytes()[self.ix] == c {
             self.ix += 1;
             true

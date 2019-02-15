@@ -6248,10 +6248,12 @@ bar
     fn spec_test_243() {
         let original = r##"-
   foo
-- ```
+-
+  ```
   bar
   ```
--     baz
+-
+      baz
 "##;
         let expected = r##"<ul>
 <li>foo</li>

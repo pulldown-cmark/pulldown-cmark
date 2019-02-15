@@ -269,21 +269,25 @@ impl<'a> FirstPass<'a> {
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
     fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
-        // FIXME: this code is a disaster and possibly incorrect (what if we are in
-        // a list but the indent of the scanned listitem is incorrect - should we
-        // interrupt or not?)
-        let grandparent_node = self.tree.peek_grandparent();
         let (ix, delim, index, _) = scan_listitem(suffix);
 
-        ix > 0 &&
-            (grandparent_node.is_some() &&
-            if let ItemBody::ListItem(..) = self.tree.nodes[grandparent_node.unwrap()].item.body {
-                true
-            } else {
-                false
+        if ix == 0 {
+            return false;
+        }
+
+        // we don't allow interruption by either empty lists or
+        // numbered lists starting at an index other than 1
+        if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
+            return true;
+        }
+
+        // check if we are currently in a list
+        self.tree.peek_grandparent().map_or(false, |gp_ix| {
+            match self.tree.nodes[gp_ix].item.body {
+                ItemBody::ListItem(..) => true,
+                _ => false,
             }
-            || !scan_empty_list(&suffix[ix..])
-            && (delim == b'*' || delim == b'-' || index == 1))
+        })
     }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
@@ -462,12 +466,10 @@ impl<'a> FirstPass<'a> {
             ix = next_ix;
         }
 
-        // read until the next line until there's stuff in between,
-        // or it will register as a completely blank line
-        let nextline_ix = ix + scan_blank_line(&self.text[ix..]).unwrap_or(0);
-
         self.pop(ix);
-        nextline_ix
+
+        // try to read trailing whitespace or it will register as a completely blank line
+        ix + scan_blank_line(&self.text[ix..]).unwrap_or(0)
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {

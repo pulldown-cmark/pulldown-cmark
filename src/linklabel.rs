@@ -24,17 +24,33 @@ use std::borrow::Cow;
 
 use unicase::UniCase;
 
+pub enum ReferenceLabel<'a> {
+    Link(Cow<'a, str>),
+    Footnote(Cow<'a, str>),
+}
+
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
-pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)> {
+pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabel<'a>)> {
     let mut char_iter = text.chars().peekable();
-    if let Some('[') = char_iter.next() {} else { return None; }
     let mut only_white_space = true;
     let mut still_borrowed = true;
     let mut codepoints = 0;
     let mut byte_index = 1;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
+
+    if let Some('[') = char_iter.next() {} else { return None; }
+
+    let is_footnote = if let Some(&'^') = char_iter.peek() {
+        // consume ^, but don't make it part of the label
+        let _ = char_iter.next();
+        byte_index += 1;
+        true
+    } else {
+        false
+    };
+    let start_byte = byte_index;
 
     loop {
         if codepoints >= 1000 { return None; }
@@ -66,7 +82,7 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)
                 if whitespaces > 1 || c != ' ' {
                     byte_index -= c.len_utf8();
                     if still_borrowed {
-                        label.push_str(&text[1..byte_index]);
+                        label.push_str(&text[start_byte..byte_index]);
                         still_borrowed = false;
                     }
                     c = ' ';
@@ -90,9 +106,15 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)
         return None;
     }
     let cow = if still_borrowed {
-        text[1..(byte_index - 1)].into()
+        text[start_byte..(byte_index - 1)].into()
     } else {
         label.into()
     };
-    Some((byte_index, cow))
+
+    let reference = if is_footnote {
+        ReferenceLabel::Footnote(cow)
+    } else {
+        ReferenceLabel::Link(cow)
+    };
+    Some((byte_index, reference))
 }

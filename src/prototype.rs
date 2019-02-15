@@ -28,7 +28,7 @@ use unicase::UniCase;
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{NIL, Node, Tree};
-use crate::linklabel::{scan_link_label, LinkLabel};
+use crate::linklabel::{scan_link_label, LinkLabel, ReferenceLabel};
 
 #[derive(Debug)]
 struct Item<'a> {
@@ -89,7 +89,8 @@ struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     last_line_blank: bool,
-    references: HashMap<LinkLabel<'a>, RefDef<'a>>,
+    references: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    footnotes: HashMap<LinkLabel<'a>, usize>,
 }
 
 impl<'a> FirstPass<'a> {
@@ -97,10 +98,11 @@ impl<'a> FirstPass<'a> {
         let tree = Tree::new();
         let last_line_blank = false;
         let references = HashMap::new();
-        FirstPass { text, tree, last_line_blank, references }
+        let footnotes = HashMap::new();
+        FirstPass { text, tree, last_line_blank, references, footnotes }
     }
 
-    fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, RefDef<'a>>) {
+    fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, LinkDef<'a>>, HashMap<LinkLabel<'a>, usize>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -108,7 +110,7 @@ impl<'a> FirstPass<'a> {
         for _ in 0..self.tree.spine.len() {
             self.pop(ix);
         }
-        (self.tree, self.references)
+        (self.tree, self.references, self.footnotes)
     }
 
     /// Returns offset after block.
@@ -198,12 +200,13 @@ impl<'a> FirstPass<'a> {
         // [foo]: /url "title"
         // and footnote definitions
         if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(ix) {
-            // FIXME: too hacky
-            if let RefDef::Link(..) = &refdef {
-                self.references.entry(label).or_insert(refdef);
+            if let RefDef::Link(link_def) = refdef {
+                self.references.entry(label).or_insert(link_def);
                 return ix + bytecount;
             } else {
-                self.references.entry(label).or_insert(refdef);
+                // TODO: double check that we actually need it
+                let footnote_index = 1 + self.footnotes.len();
+                self.footnotes.entry(label).or_insert(footnote_index);
                 ix += bytecount;
             }            
         }
@@ -655,19 +658,20 @@ impl<'a> FirstPass<'a> {
         }
         i += 1;
 
-        if label.starts_with('^') {
-            self.tree.append(Item {
-                start: start,
-                end: 0,  // will get set later
-                body: ItemBody::FootnoteDefinition(label.as_ref().to_owned().into()), // TODO: check whether the label here is strictly necessary
-            });
-            self.tree.push();
-            // TODO: don't parse paragraph here, but simply return?
-            //i += self.parse_paragraph(i);
-            Some((i, UniCase::new(label.clone()), RefDef::Footnote(label)))
-        } else {
-            let (bytes, link_def) = self.scan_refdef(start + i)?;
-            Some((bytes + i, UniCase::new(label), RefDef::Link(link_def)))
+        match label {
+            ReferenceLabel::Footnote(label) => {
+                self.tree.append(Item {
+                    start: start,
+                    end: 0,  // will get set later
+                    body: ItemBody::FootnoteDefinition(label.clone()), // TODO: check whether the label here is strictly necessary
+                });
+                self.tree.push();
+                Some((i, UniCase::new(label), RefDef::Footnote))
+            }
+            ReferenceLabel::Link(label) => {
+                let (bytes, link_def) = self.scan_refdef(start + i)?;
+                Some((bytes + i, UniCase::new(label), RefDef::Link(link_def)))
+            }
         }
     }
 
@@ -2071,8 +2075,8 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
 
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
-    // contains label, next node index
-    Label(Cow<'a, str>, usize),
+    // label, next node index
+    LinkLabel(Cow<'a, str>, usize),
     // contains next node index
     Collapsed(usize),
     Failed,
@@ -2087,11 +2091,11 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item<'a>>, text: &'b str, cur: usize) -
     if text[start..].starts_with("[]") {
         let closing_node = tree.nodes[cur].next;
         RefScan::Collapsed(tree.nodes[closing_node].next)
-    } else if let Some((ix, label)) = scan_link_label(&text[start..]) {
+    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(&text[start..]) {
         let mut scanner = InlineScanner::new(tree, text, cur);
         for _ in 0..ix { scanner.next(); } // move to right node in tree
         let next_node = tree.nodes[scanner.cur].next;
-        RefScan::Label(label, next_node)
+        RefScan::LinkLabel(label, next_node)
     } else {
         RefScan::Failed
     }
@@ -2132,13 +2136,14 @@ struct LinkDef<'a> {
 
 enum RefDef<'a> {
     Link(LinkDef<'a>),
-    Footnote(Cow<'a, str>), // label, kind of double?
+    Footnote, // label, kind of double?
 }
 
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
-    refdefs: HashMap<LinkLabel<'a>, RefDef<'a>>,
+    refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    footnotes: HashMap<LinkLabel<'a>, usize>,
 }
 
 impl<'a> Parser<'a> {
@@ -2149,10 +2154,10 @@ impl<'a> Parser<'a> {
     #[allow(unused_variables)]
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
-        let (mut tree, refdefs) = first_pass.run();
+        let (mut tree, refdefs, footnotes) = first_pass.run();
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
-        Parser { text, tree, refdefs }
+        Parser { text, tree, refdefs, footnotes }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2271,58 +2276,46 @@ impl<'a> Parser<'a> {
                             let scan_result = scan_reference(&self.tree, &self.text, next);
                             let label_node = self.tree.nodes[tos.node].next;
                             let node_after_link = match scan_result {
-                                RefScan::Label(_, next_node) => next_node,
+                                RefScan::LinkLabel(_, next_node) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
-                            // TODO: make this method on RefScan
-                            let scan_failed = match scan_result { RefScan::Failed => true, _ => false, };
-                            let label: Option<Cow<'a, str>> = match scan_result {
-                                RefScan::Label(l, ..) => Some(l),
+                            let label: Option<ReferenceLabel<'a>> = match scan_result {
+                                RefScan::LinkLabel(l, ..) => Some(ReferenceLabel::Link(l)),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let start = self.tree.nodes[tos.node].item.end - 1;
                                     let end = self.tree.nodes[cur].item.end;
                                     let search_text = &self.text[start..end];
+
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
                             };
 
                             // see if it's a footnote reference
-                            if scan_failed {
-                                if let Some(ref l) = label {
-                                    eprintln!("searching for footnote");
-                                    // TODO: implement self.get_link_ref and self.get_footnote_ref
-                                    let found = self.refdefs.get(&UniCase::new(l.as_ref().into())).map_or(false, |def| {
-                                        if let RefDef::Footnote(_) = def {
-                                            true
-                                        } else {
-                                            false
-                                        }
-                                    });
+                            if let Some(ReferenceLabel::Footnote(ref l)) = label {
+                                eprintln!("searching for footnote");
+                                // TODO: implement self.get_link_ref and self.get_footnote_ref
+                                let found = self.footnotes
+                                    .contains_key(&UniCase::new(l.as_ref().into()));
 
-                                    if found {
-                                        eprintln!("Found a valid reference to a footnote!");
-                                        self.tree.nodes[tos.node].next = node_after_link;
-                                        self.tree.nodes[tos.node].child = NIL;
-                                        // FIXME: this clone may not be necessary
-                                        self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l.clone());
-                                        prev = tos.node;
-                                        cur = node_after_link;
-                                        link_stack.clear();
-                                        continue;
-                                    }
+                                if found {
+                                    eprintln!("Found a valid reference to a footnote!");
+                                    self.tree.nodes[tos.node].next = node_after_link;
+                                    self.tree.nodes[tos.node].child = NIL;
+                                    // FIXME: this clone may not be necessary
+                                    self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l.clone());
+                                    prev = tos.node;
+                                    cur = node_after_link;
+                                    link_stack.clear();
+                                    continue;
                                 }
                             }
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
-                            if let Some(matching_def) = label.and_then(|l| self.refdefs.get(&UniCase::new(l))).and_then(|def| {
-                                match def {
-                                    RefDef::Link(link_def) => Some(link_def),
-                                    _ => None,
-                                }
-                            }) {
+                            if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
+                                .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
                                 // found a matching definition!
                                 let title = matching_def.title.as_ref().cloned().unwrap_or(String::new()).into();
                                 let url = matching_def.dest.into();

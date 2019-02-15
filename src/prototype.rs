@@ -29,14 +29,14 @@ use crate::tree::{NIL, Node, Tree};
 use crate::linklabel::{scan_link_label, LinkLabel}; //{LinkLabelBuilder, ;
 
 #[derive(Debug)]
-struct Item {
+struct Item<'a> {
     start: usize,
     end: usize,
-    body: ItemBody,
+    body: ItemBody<'a>,
 }
 
 #[derive(Debug, PartialEq)]
-enum ItemBody {
+enum ItemBody<'a> {
     Paragraph,
     Text,
     SoftBreak,
@@ -75,6 +75,7 @@ enum ItemBody {
     ListItem(usize), // indent level
     SynthesizeText(Cow<'static, str>),
     BlankLine,
+    FootnoteDefinition(LinkLabel<'a>), // definition label, use to get details from firstpass?
 }
 
 /// State for the first parsing pass.
@@ -83,7 +84,7 @@ enum ItemBody {
 /// are in a linear chain with potential inline markup identified.
 struct FirstPass<'a> {
     text: &'a str,
-    tree: Tree<Item>,
+    tree: Tree<Item<'a>>,
     last_line_blank: bool,
     references: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
@@ -96,7 +97,7 @@ impl<'a> FirstPass<'a> {
         FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item>, HashMap<LinkLabel<'a>, RefDef<'a>>) {
+    fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, RefDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -192,7 +193,7 @@ impl<'a> FirstPass<'a> {
 
         // Reference definitions of the form
         // [foo]: /url "title"
-        if let Some((bytecount, label, refdef)) = self.scan_refdef(ix) {
+        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(ix) {
             self.references.entry(label).or_insert(refdef);
             return ix + bytecount;
         }
@@ -637,8 +638,7 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    // returns # of bytes, label and definition
-    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
+    fn parse_refdef_or_footnote(&self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
         // scan label
         let (mut i, label) = scan_link_label(&self.text[start..])?;
         i += start;
@@ -646,6 +646,21 @@ impl<'a> FirstPass<'a> {
             return None;
         }
         i += 1;
+
+        if label.starts_with('^') {
+            // it's a footnote
+            eprintln!("Found footnote!");
+            None
+        } else {
+            let (bytes, def) = self.scan_refdef(i)?;
+            Some((bytes + i, label, def))
+        }
+    }
+
+    /// Returns # of bytes and definition.
+    /// Assumes the label of the reference including colon has already been scanned.
+    fn scan_refdef(&self, start: usize) -> Option<(usize, RefDef<'a>)> {
+        let mut i = start;
 
         // whitespace between label and url (including up to one newline)
         let mut newlines = 0;
@@ -694,7 +709,6 @@ impl<'a> FirstPass<'a> {
         // no title
         let mut backup = 
             (i - start,
-            label,
             RefDef {
                 dest,
                 title: None,
@@ -710,7 +724,7 @@ impl<'a> FirstPass<'a> {
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = self.scan_refdef_title(i) {
             i += title_length;
-            backup.2.title = Some(title);
+            backup.1.title = Some(title);
         } else if newlines > 0 {
             return Some(backup);
         } else {
@@ -785,7 +799,7 @@ impl<'a> FirstPass<'a> {
     }
 }
 
-impl Tree<Item> {
+impl<'a> Tree<Item<'a>> {
     fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             self.append(Item {
@@ -887,7 +901,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
 /// Parse a line of input, appending text and items to tree.
 ///
 /// Returns: index after line and an item representing the break.
-fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<Item>) {
+fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &str, mut ix: usize) -> (usize, Option<Item<'a>>) {
     let bytes = s.as_bytes();
     let start = ix;
     let mut begin_text = start;
@@ -1021,7 +1035,7 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
 
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
-fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_indented_code_line<'a>(tree: &mut Tree<Item<'a>>, s: &str, mut ix: usize) -> usize {
     let codeline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_text(ix, codeline_end_offset + ix);
     tree.append_newline(codeline_end_offset);
@@ -1041,7 +1055,7 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
 }
 
 // Returns index of start of next line.
-fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize {
+fn parse_hrule<'a>(tree: &mut Tree<Item<'a>>, hrule_size: usize, mut ix: usize) -> usize {
     tree.append(Item {
         start: ix,
         end: ix + hrule_size,
@@ -1051,7 +1065,7 @@ fn parse_hrule(tree: &mut Tree<Item>, hrule_size: usize, mut ix: usize) -> usize
     ix
 }
 
-fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
+fn parse_html_line_type_1_to_5<'a>(tree : &mut Tree<Item<'a>>, s : &str, mut ix : usize, html_end_tag: &'static str) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_html_line(ix, ix+htmlline_end_offset);
@@ -1062,7 +1076,7 @@ fn parse_html_line_type_1_to_5(tree : &mut Tree<Item>, s : &str, mut ix : usize,
     ix
 }
 
-fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_html_line_type_6or7<'a>(tree : &mut Tree<Item<'a>>, s : &str, mut ix : usize) -> usize {
     let nextline_offset = scan_nextline(&s[ix..]);
     let htmlline_end_offset = scan_line_ending(&s[ix..]);
     tree.append_html_line(ix, ix+htmlline_end_offset);
@@ -1085,7 +1099,7 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 }
 
 #[allow(unused)]
-fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
+fn parse_paragraph_old<'a>(mut tree : &mut Tree<Item<'a>>, s : &str, mut ix : usize) -> usize {
     tree.append(Item {
         start: ix,
         end: 0,  // will get set later
@@ -1145,7 +1159,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
 // Scan markers and indentation for current container stack
 // Scans to the first character after the container marks
 // Return: bytes scanned, and whether containers were closed
-fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
+fn scan_containers_old<'a>(tree: &Tree<Item<'a>>, text: &str) -> (usize, bool) {
     let mut i = 0;
     for &vertebra in &(tree.spine) {
         let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
@@ -1198,7 +1212,7 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
 
 // Used on a new line, after scan_containers_old
 // scans to first character after new container markers
-fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_new_containers<'a>(tree: &mut Tree<Item<'a>>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
     // check if parent is a leaf block, which makes new containers illegal
     if let Some(parent) = tree.peek_up() {
@@ -1295,7 +1309,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
 // Used on a new line, after scan_containers_old and scan_new_containers.
 // Mutates tree as needed, and returns the start of the next line.
-fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
+fn parse_blocks<'a>(mut tree: &mut Tree<Item<'a>>, s: &str, mut ix: usize) -> usize {
     if ix >= s.len() { return ix; }
 
     if let Some(parent) = tree.peek_up() {
@@ -1412,7 +1426,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
 #[allow(unused)]
 // Root is node 0
-fn first_pass_old(s: &str) -> Tree<Item> {
+fn first_pass_old<'a>(s: &str) -> Tree<Item<'a>> {
     let mut tree = Tree::new();
     let mut ix = 0;
     while ix < s.len() {
@@ -1493,7 +1507,7 @@ impl InlineStack {
         }
     }
 
-    fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
+    fn pop_to<'a>(&mut self, tree: &mut Tree<Item<'a>>, new_len: usize) {
         for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
                 tree.nodes[el.start + i].item.body = ItemBody::Text;
@@ -1524,14 +1538,14 @@ impl InlineStack {
 /// An iterator for text in an inline chain.
 #[derive(Clone)]
 struct InlineScanner<'a> {
-    tree: &'a Tree<Item>,
+    tree: &'a Tree<Item<'a>>,
     text: &'a str,
     cur: usize,
     ix: usize,
 }
 
 impl<'a> InlineScanner<'a> {
-    fn new(tree: &'a Tree<Item>, text: &'a str, cur: usize) -> InlineScanner<'a> {
+    fn new(tree: &'a Tree<Item<'a>>, text: &'a str, cur: usize) -> InlineScanner<'a> {
         let ix = if cur == NIL { !0 } else { tree.nodes[cur].item.start };
         InlineScanner { tree, text, cur, ix }
     }
@@ -1753,7 +1767,7 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 /// Make a code span.
 ///
 /// Both `open` and `close` are matching MaybeCode items.
-fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
+fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: usize, close: usize) {
     tree.nodes[open].item.end = tree.nodes[close].item.end;
     tree.nodes[open].item.body = ItemBody::Code;
     let first = tree.nodes[open].next;
@@ -2050,7 +2064,7 @@ enum RefScan<'a> {
     Failed,
 }
 
-fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> RefScan<'b> {
+fn scan_reference<'a, 'b>(tree: &'a Tree<Item<'a>>, text: &'b str, cur: usize) -> RefScan<'b> {
     if cur == NIL {
         return RefScan::Failed;
     }
@@ -2097,6 +2111,7 @@ struct LinkStackEl {
     is_image: bool,
 }
 
+#[derive(Debug)]
 struct RefDef<'a> {
     dest: &'a str,
     title: Option<String> // FIXME: should be Cow?
@@ -2104,7 +2119,7 @@ struct RefDef<'a> {
 
 pub struct Parser<'a> {
     text: &'a str,
-    tree: Tree<Item>,
+    tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, RefDef<'a>>,
 }
 
@@ -2434,7 +2449,7 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
 
 #[allow(unused)]
 // tree.cur points to a List<_, _, _> Item Node
-fn detect_tight_list(tree: &Tree<Item>) -> bool {
+fn detect_tight_list<'a>(tree: &Tree<Item<'a>>) -> bool {
     let mut this_listitem = tree.nodes[tree.cur].child;
     while this_listitem != NIL {
         let on_lastborn_child = tree.nodes[this_listitem].next == NIL;
@@ -2464,7 +2479,7 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
 
 // https://english.stackexchange.com/a/285573
 // tree.cur points to a List<_, _, _, false> Item Node
-fn surgerize_tight_list(tree : &mut Tree<Item>) {
+fn surgerize_tight_list<'a>(tree : &mut Tree<Item<'a>>) {
     let mut this_listitem = tree.nodes[tree.cur].child;
     while this_listitem != NIL {
         if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {

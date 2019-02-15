@@ -90,7 +90,6 @@ struct FirstPass<'a> {
     tree: Tree<Item<'a>>,
     last_line_blank: bool,
     references: HashMap<LinkLabel<'a>, LinkDef<'a>>,
-    footnotes: HashMap<LinkLabel<'a>, usize>,
 }
 
 impl<'a> FirstPass<'a> {
@@ -98,11 +97,10 @@ impl<'a> FirstPass<'a> {
         let tree = Tree::new();
         let last_line_blank = false;
         let references = HashMap::new();
-        let footnotes = HashMap::new();
-        FirstPass { text, tree, last_line_blank, references, footnotes }
+        FirstPass { text, tree, last_line_blank, references }
     }
 
-    fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, LinkDef<'a>>, HashMap<LinkLabel<'a>, usize>) {
+    fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, LinkDef<'a>>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -110,7 +108,7 @@ impl<'a> FirstPass<'a> {
         for _ in 0..self.tree.spine.len() {
             self.pop(ix);
         }
-        (self.tree, self.references, self.footnotes)
+        (self.tree, self.references)
     }
 
     /// Returns offset after block.
@@ -204,8 +202,6 @@ impl<'a> FirstPass<'a> {
                 self.references.entry(label).or_insert(link_def);
                 return ix + bytecount;
             } else {
-                let footnote_index = 1 + self.footnotes.len();
-                self.footnotes.entry(label).or_insert(footnote_index);
                 ix += bytecount;
             }            
         }
@@ -2142,7 +2138,6 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
-    footnotes: HashMap<LinkLabel<'a>, usize>,
 }
 
 impl<'a> Parser<'a> {
@@ -2153,10 +2148,10 @@ impl<'a> Parser<'a> {
     #[allow(unused_variables)]
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
-        let (mut tree, refdefs, footnotes) = first_pass.run();
+        let (mut tree, refdefs) = first_pass.run();
         tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
-        Parser { text, tree, refdefs, footnotes }
+        Parser { text, tree, refdefs }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2293,8 +2288,6 @@ impl<'a> Parser<'a> {
 
                             // see if it's a footnote reference
                             if let Some(ReferenceLabel::Footnote(l)) = label {
-                                let footnote_index = 1 + self.footnotes.len();
-                                self.footnotes.entry(UniCase::new(l.clone())).or_insert(footnote_index);
                                 self.tree.nodes[tos.node].next = node_after_link;
                                 self.tree.nodes[tos.node].child = NIL;
                                 self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l);

@@ -112,12 +112,38 @@ impl<'a> FirstPass<'a> {
     }
 
     /// Returns offset after block.
-    fn parse_block(&mut self, start_ix: usize) -> usize {
+    fn parse_block(&mut self, mut start_ix: usize) -> usize {
         let mut line_start = LineStart::new(&self.text[start_ix..]);
 
         let i = self.scan_containers(&mut line_start);
         for _ in i..self.tree.spine.len() {
             self.pop(start_ix);
+        }
+
+        // finish footnote if it's still open and was preceeded by blank line
+        if let Some(node_ix) = self.tree.peek_up() {
+            if let ItemBody::FootnoteDefinition(..) = self.tree.nodes[node_ix].item.body {
+                if self.last_line_blank {
+                    self.pop(start_ix);
+                }
+            }
+        }
+        
+        // Reference definitions of the form
+        // [foo]: /url "title"
+        // and footnote definitions of the form
+        // [^bar]:
+        // * anything really
+        let container_start = start_ix + line_start.bytes_scanned();
+        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(container_start) {
+            if let RefDef::Link(link_def) = refdef {
+                self.references.entry(label).or_insert(link_def);
+                return container_start + bytecount;
+            } else {
+                start_ix = container_start + bytecount;
+                start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
+                line_start = LineStart::new(&self.text[start_ix..]);
+            }            
         }
 
         // Process new containers
@@ -153,13 +179,6 @@ impl<'a> FirstPass<'a> {
 
         self.finish_list(start_ix);
 
-        // finish footnote if it's still open
-        if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::FootnoteDefinition(..) = self.tree.nodes[node_ix].item.body {
-                self.pop(start_ix);
-            }
-        }
-
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
         let indent = line_start.scan_space_upto(4);
@@ -194,23 +213,11 @@ impl<'a> FirstPass<'a> {
         }
 
         // Advance `ix` after HTML blocks have been scanned
-        let mut ix = start_ix + line_start.bytes_scanned();
+        let ix = start_ix + line_start.bytes_scanned();
 
         let n = scan_hrule(&self.text[ix..]);
         if n > 0 {
             return self.parse_hrule(n, ix);
-        }
-
-        // Reference definitions of the form
-        // [foo]: /url "title"
-        // and footnote definitions
-        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(ix) {
-            if let RefDef::Link(link_def) = refdef {
-                self.references.entry(label).or_insert(link_def);
-                return ix + bytecount;
-            } else {
-                ix += bytecount;
-            }            
         }
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {

@@ -123,7 +123,7 @@ impl<'a> FirstPass<'a> {
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: 0, // will get set later
                     body: ItemBody::BlockQuote,
                 });
                 self.tree.push();
@@ -133,17 +133,12 @@ impl<'a> FirstPass<'a> {
                 self.continue_list(container_start, ch, opt_index);
                 self.tree.append(Item {
                     start: container_start,
-                    end: after_marker_index, // will get set later if item not empty
+                    end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
-                // try to scan empty items -- FIXME: THIS IS HACKY!
-                if self.text[(after_marker_index - 1)..].starts_with('\n') {
-                    let mut new_scanner = LineStart::new(&self.text[(after_marker_index)..]);
-                    if new_scanner.scan_list_marker().is_some() {
-                        continue;
-                    }
-                }
-                if !scan_empty_list(&self.text[after_marker_index..]) {
+                // if the list marker is immediately followed by a newline, it is empty
+                // and we need not go into it
+                if self.text.as_bytes()[after_marker_index - 1] != b'\n' {
                     self.tree.push();
                 }
             }
@@ -218,6 +213,7 @@ impl<'a> FirstPass<'a> {
         if n > 0 {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
+        
         self.parse_paragraph(ix)
     }
 
@@ -253,7 +249,7 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 // first check for non-empty lists, then for other interrupts    
-                let suffix = &self.text[ix_new..];            
+                let suffix = &self.text[ix_new..];
                 if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }

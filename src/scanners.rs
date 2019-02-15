@@ -142,7 +142,7 @@ impl<'a> LineStart<'a> {
         c == b'\r' || c == b'\n'
     }
 
-    fn scan_ch(&mut self, c: u8) -> bool {
+    pub fn scan_ch(&mut self, c: u8) -> bool {
         if self.ix < self.text.len() && self.text.as_bytes()[self.ix] == c {
             self.ix += 1;
             true
@@ -219,8 +219,8 @@ impl<'a> LineStart<'a> {
             self.ix += n;
 
             if let Some(_) = scan_blank_line(&self.text[self.ix..]) {
-                // a completely blank line - let's revert
-                self.ix = ix;
+                // a completely blank line - let's revert to beginning of the line
+                self.ix = ix + 1;
             } else {
                 indent = self.scan_space_upto(3);
             }
@@ -324,9 +324,10 @@ pub fn scan_attr_value_chars(data: &str) -> usize {
 // Maybe returning Option<usize> would be more Rustic?
 pub fn scan_eol(s: &str) -> (usize, bool) {
     if s.is_empty() { return (0, true); }
-    match s.as_bytes()[0] {
+    let bytes = s.as_bytes();
+    match bytes[0] {
         b'\n' => (1, true),
-        b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
+        b'\r' => (if bytes[1] == b'\n' { 2 } else { 1 }, true),
         _ => (0, false)
     }
 }

@@ -26,7 +26,7 @@ use unicase::UniCase;
 
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
-pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>)> {
+pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)> {
     let mut char_iter = text.chars().peekable();
     if let Some('[') = char_iter.next() {} else { return None; }
     let mut only_white_space = true;
@@ -94,5 +94,5 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>
     } else {
         label.into()
     };
-    Some((byte_index, UniCase::new(cow)))
+    Some((byte_index, cow))
 }

@@ -33,15 +33,13 @@ pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
 pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabel<'a>)> {
     let mut char_iter = text.chars().peekable();
+    if let Some('[') = char_iter.next() {} else { return None; }
     let mut only_white_space = true;
     let mut still_borrowed = true;
     let mut codepoints = 0;
     let mut byte_index = 1;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
-
-    if let Some('[') = char_iter.next() {} else { return None; }
-
     let is_footnote = if let Some(&'^') = char_iter.peek() {
         // consume ^, but don't make it part of the label
         let _ = char_iter.next();
@@ -110,7 +108,6 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabe
     } else {
         label.into()
     };
-
     let reference = if is_footnote {
         ReferenceLabel::Footnote(cow)
     } else {

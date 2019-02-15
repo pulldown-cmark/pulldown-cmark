@@ -61,10 +61,10 @@ enum ItemBody<'a> {
     Code,
     InlineHtml,
     // Link params: destination, title.
-    // TODO: get lifetime in type so these strings can be cows
+    // TODO: these strings could be cows
     Link(String, String),
     Image(String, String),
-    FootnoteReference(Cow<'a, str>), // definition label, use to get details from firstpass?
+    FootnoteReference(Cow<'a, str>), // label
 
     Rule,
     Header(i32), // header level
@@ -78,7 +78,7 @@ enum ItemBody<'a> {
     ListItem(usize), // indent level
     SynthesizeText(Cow<'static, str>),
     BlankLine,
-    FootnoteDefinition(Cow<'a, str>), // definition label, use to get details from firstpass?
+    FootnoteDefinition(Cow<'a, str>), // label
 }
 
 /// State for the first parsing pass.
@@ -2135,7 +2135,7 @@ struct LinkDef<'a> {
 
 enum RefDef<'a> {
     Link(LinkDef<'a>),
-    Footnote, // label, kind of double?
+    Footnote,
 }
 
 pub struct Parser<'a> {
@@ -2454,10 +2454,8 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
         ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
-        ItemBody::FootnoteDefinition(ref label) => {
-            let label_owned: String = label.as_ref().to_owned();
-            Some(Tag::FootnoteDefinition(label_owned.into()))
-        }
+        ItemBody::FootnoteDefinition(ref label) =>
+            Some(Tag::FootnoteDefinition(label.clone().into_owned().into())),
         _ => None,
     }
 }
@@ -2485,7 +2483,6 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
         },
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
-        // FIXME: should we clone here?
         ItemBody::FootnoteReference(ref l) => Event::FootnoteReference(l.clone()),
         _ => panic!("unexpected item body {:?}", item.body)
     }

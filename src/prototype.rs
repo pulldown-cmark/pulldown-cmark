@@ -204,7 +204,6 @@ impl<'a> FirstPass<'a> {
                 self.references.entry(label).or_insert(link_def);
                 return ix + bytecount;
             } else {
-                // TODO: double check that we actually need it
                 let footnote_index = 1 + self.footnotes.len();
                 self.footnotes.entry(label).or_insert(footnote_index);
                 ix += bytecount;
@@ -2293,28 +2292,21 @@ impl<'a> Parser<'a> {
                             };
 
                             // see if it's a footnote reference
-                            if let Some(ReferenceLabel::Footnote(ref l)) = label {
-                                eprintln!("searching for footnote");
-                                // TODO: implement self.get_link_ref and self.get_footnote_ref
-                                let found = self.footnotes
-                                    .contains_key(&UniCase::new(l.as_ref().into()));
-
-                                if found {
-                                    eprintln!("Found a valid reference to a footnote!");
-                                    self.tree.nodes[tos.node].next = node_after_link;
-                                    self.tree.nodes[tos.node].child = NIL;
-                                    // FIXME: this clone may not be necessary
-                                    self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l.clone());
-                                    prev = tos.node;
-                                    cur = node_after_link;
-                                    link_stack.clear();
-                                    continue;
-                                }
+                            if let Some(ReferenceLabel::Footnote(l)) = label {
+                                let footnote_index = 1 + self.footnotes.len();
+                                self.footnotes.entry(UniCase::new(l.clone())).or_insert(footnote_index);
+                                self.tree.nodes[tos.node].next = node_after_link;
+                                self.tree.nodes[tos.node].child = NIL;
+                                self.tree.nodes[tos.node].item.body = ItemBody::FootnoteReference(l);
+                                prev = tos.node;
+                                cur = node_after_link;
+                                link_stack.clear();
+                                continue;
                             }
 
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
-                            if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
+                            else if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
                                 .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
                                 // found a matching definition!
                                 let title = matching_def.title.as_ref().cloned().unwrap_or(String::new()).into();

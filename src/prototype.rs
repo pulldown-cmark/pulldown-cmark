@@ -153,6 +153,13 @@ impl<'a> FirstPass<'a> {
 
         self.finish_list(start_ix);
 
+        // finish footnote if it's still open
+        if let Some(node_ix) = self.tree.peek_up() {
+            if let ItemBody::FootnoteDefinition(..) = self.tree.nodes[node_ix].item.body {
+                self.pop(start_ix);
+            }
+        }
+
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
         let indent = line_start.scan_space_upto(4);

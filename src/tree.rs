@@ -70,7 +70,7 @@ impl<T> Tree<T> {
     }
 
     /// Look at grandparent node.
-    pub fn peek_grandparent(&mut self) -> Option<usize> {
+    pub fn peek_grandparent(&self) -> Option<usize> {
         if self.spine.len() >= 2 {
             Some(self.spine[self.spine.len() - 2].clone())
         } else {

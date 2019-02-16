@@ -123,25 +123,32 @@ impl<'a> FirstPass<'a> {
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: 0, // will get set later
                     body: ItemBody::BlockQuote,
                 });
                 self.tree.push();
             } else if let Some((ch, index, indent)) = line_start.scan_list_marker() {
                 let opt_index = if ch == b'.' || ch == b')' { Some(index) } else { None };
+                let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.continue_list(container_start, ch, opt_index);
                 self.tree.append(Item {
                     start: container_start,
-                    end: 0,  // will get set later
+                    end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
-                self.tree.push();
-            } else {
+                // if the list marker is immediately followed by a newline, it is empty
+                // and we need not go into it
+                if self.text.as_bytes()[after_marker_index - 1] != b'\n' {
+                    self.tree.push();
+                }
+            }
+            else {
                 break;
             }
         }
 
         let ix = start_ix + line_start.bytes_scanned();
+
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
             self.last_line_blank = true;
             return ix + n;
@@ -151,6 +158,7 @@ impl<'a> FirstPass<'a> {
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
+
         let indent = line_start.scan_space_upto(4);
         if indent == 4 {
             let ix = start_ix + line_start.bytes_scanned();
@@ -205,6 +213,7 @@ impl<'a> FirstPass<'a> {
         if n > 0 {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
+        
         self.parse_paragraph(ix)
     }
 
@@ -239,7 +248,9 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
-                if scan_paragraph_interrupt(&self.text[ix_new..]) {
+                // first check for non-empty lists, then for other interrupts    
+                let suffix = &self.text[ix_new..];
+                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }
             }
@@ -253,6 +264,30 @@ impl<'a> FirstPass<'a> {
         self.tree.pop();
         self.tree.nodes[self.tree.cur].item.end = ix;
         ix
+    }
+
+    /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
+    /// lists are allowed.
+    fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
+        let (ix, delim, index, _) = scan_listitem(suffix);
+
+        if ix == 0 {
+            return false;
+        }
+
+        // we don't allow interruption by either empty lists or
+        // numbered lists starting at an index other than 1
+        if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
+            return true;
+        }
+
+        // check if we are currently in a list
+        self.tree.peek_grandparent().map_or(false, |gp_ix| {
+            match self.tree.nodes[gp_ix].item.body {
+                ItemBody::ListItem(..) => true,
+                _ => false,
+            }
+        })
     }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
@@ -430,8 +465,11 @@ impl<'a> FirstPass<'a> {
             self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
+
         self.pop(ix);
-        ix
+
+        // try to read trailing whitespace or it will register as a completely blank line
+        ix + scan_blank_line(&self.text[ix..]).unwrap_or(0)
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -489,13 +527,17 @@ impl<'a> FirstPass<'a> {
         for &node_ix in &self.tree.spine {
             match self.tree.nodes[node_ix].item.body {
                 ItemBody::BlockQuote => {
+                    let save = line_start.clone();
                     if !line_start.scan_blockquote_marker() {
+                        *line_start = save;
                         break;
                     }
                 }
                 ItemBody::List(_, _, _) => (),
                 ItemBody::ListItem(indent) => {
+                    let save = line_start.clone();
                     if !(line_start.scan_space(indent) || line_start.is_at_eol()) {
+                        *line_start = save;
                         break;
                     }
                 }
@@ -519,7 +561,7 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    /// Close a list if it's open. Also set loose if last line was blank.
+    /// Close a list if it's open. Also set loose if last line was blank
     fn finish_list(&mut self, ix: usize) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
@@ -1073,6 +1115,9 @@ fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
     ix
 }
 
+/// Checks whether we should break a paragraph on the given input.
+/// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
+/// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_eol(s).1 ||
     scan_hrule(s) > 0 ||
@@ -1080,7 +1125,6 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_code_fence(s).0 > 0 ||
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||
-    scan_listitem(s).0 > 0 ||  // TODO: be stricter with ordered lists
     is_html_tag(scan_html_block_tag(s).1)
 }
 
@@ -1233,16 +1277,16 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
         let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
         if listitem_bytes > 0 {
-            // thematic breaks take precedence over listitems
+            // thematic breaks take precedence over listitems. FIXME: shouldnt we do this before
+            // we scan_listitem? or should offset by ix + listitem_bytes?
             if scan_hrule(&s[ix..]) > 0 { break; }
 
-            let listitem_start;
             // handle ordered lists
-            if listitem_delimiter == b'.' || listitem_delimiter == b')' {
-                listitem_start = Some(listitem_start_index);
+            let listitem_start = if listitem_delimiter == b'.' || listitem_delimiter == b')' {
+                Some(listitem_start_index)
             } else {
-                listitem_start = None;
-            }
+                None
+            };
 
             let mut need_push = true; // Are we starting a new list?
             if let Some(parent) = tree.peek_up() {

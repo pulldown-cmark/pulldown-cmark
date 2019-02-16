@@ -937,10 +937,11 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
         match bytes[ix] {
             b'\n' | b'\r' => {
                 let mut i = ix;
-                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' {
+                let eol_bytes = scan_eol(&s[ix..]).0;
+                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < s.len() {
                     i -= 1;
                     tree.append_text(begin_text, i);
-                    ix += scan_eol(&s[ix..]).0;
+                    ix += eol_bytes;
                     return (ix, Some(Item {
                         start: i,
                         end: ix,

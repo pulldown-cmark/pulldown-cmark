@@ -129,17 +129,12 @@ impl<'a> FirstPass<'a> {
             }
         }
         
-        // Reference definitions of the form
-        // [foo]: /url "title"
-        // and footnote definitions of the form
+        // Footnote definitions of the form
         // [^bar]:
         // * anything really
         let container_start = start_ix + line_start.bytes_scanned();
-        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(container_start) {
-            if let RefDef::Link(link_def) = refdef {
-                self.references.entry(label).or_insert(link_def);
-                return container_start + bytecount;
-            } else {
+        if let Some((bytecount, _, refdef)) = self.parse_refdef_or_footnote(container_start) {
+            if let RefDef::Footnote = refdef {
                 start_ix = container_start + bytecount;
                 start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&self.text[start_ix..]);
@@ -222,6 +217,14 @@ impl<'a> FirstPass<'a> {
 
         if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
             return self.parse_atx_heading(ix, atx_level, atx_size);
+        }
+
+        // parse refdef
+        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(ix) {
+            if let RefDef::Link(link_def) = refdef {
+                self.references.entry(label).or_insert(link_def);
+                return ix + bytecount;
+            }
         }
 
         let (n, fence_ch) = scan_code_fence(&self.text[ix..]);

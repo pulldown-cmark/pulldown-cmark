@@ -130,7 +130,7 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
 /// Returns None if s does not start with something of the form &#\d+;
 /// Otherwise it returns the number of bytes in s and the unicode character.
 fn parse_unicode_lit(bytes: &[u8]) -> Option<(usize, char)> {
-    let mut iter = bytes.into_iter();
+    let mut iter = bytes.into_iter().peekable();
     let mut byte_counter = 2;
     let mut val: u32 = 0;
     let mut next;
@@ -141,13 +141,27 @@ fn parse_unicode_lit(bytes: &[u8]) -> Option<(usize, char)> {
     if *iter.next()? != b'#' {
         return None;
     }
+
+    let (prefix_bytes, base) = if *iter.peek()? & !0x20 == b'X' {
+        let _ = iter.next();
+        byte_counter += 1;
+        (3, 16)
+    } else {
+        (2, 10)
+    };
+
     loop {
         next = *iter.next()?;
         byte_counter += 1;
         if next >= b'0' && next <= b'9' {
-            val = (next - b'0') as u32 + 10 * val;
+            val = (next - b'0') as u32 + base * val;
         } else {
-            break;
+            let uppercase = next & !0x20;
+            if base == 16 && uppercase >= b'A' && uppercase <= b'F' {
+                val = (uppercase - b'A' + 10) as u32 + 16 * val;
+            } else {
+                break;
+            }
         }
     }
 
@@ -156,7 +170,7 @@ fn parse_unicode_lit(bytes: &[u8]) -> Option<(usize, char)> {
         val = 65533;
     }
 
-    if next == b';' && byte_counter > 3 {
+    if next == b';' && byte_counter - prefix_bytes > 1 {
         Some((byte_counter, std::char::from_u32(val)?))
     } else {
         None

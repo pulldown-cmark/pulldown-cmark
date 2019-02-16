@@ -970,6 +970,16 @@ fn parse_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> (usize, Option<I
                     body: ItemBody::SoftBreak,
                 }));
             }
+            b'\\' if ix + 1 < s.len() && bytes[ix + 1] == b'`' => {
+                tree.append_text(begin_text, ix);
+                tree.append(Item {
+                    start: ix,
+                    end: ix + 1,
+                    body: ItemBody::Backslash,
+                });
+                begin_text = ix + 1;
+                ix += 1;
+            }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                 tree.append_text(begin_text, ix);
                 tree.append(Item {
@@ -2226,9 +2236,12 @@ impl<'a> Parser<'a> {
                     }
                     self.tree.nodes[cur].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(count) => {
+                ItemBody::MaybeCode(mut count) => {
+                    if prev != NIL && self.tree.nodes[prev].item.body == ItemBody::Backslash {
+                        count -= 1;
+                    }
+                    let mut scan = if count > 0 { self.tree.nodes[cur].next } else { NIL };
                     // TODO(performance): this has quadratic pathological behavior, I think
-                    let mut scan = self.tree.nodes[cur].next;
                     while scan != NIL {
                         if self.tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur, scan);
@@ -2562,11 +2575,14 @@ impl<'a> Iterator for Parser<'a> {
                 return None;
             }
         }
+
+        if let ItemBody::Backslash = self.tree.nodes[self.tree.cur].item.body {
+            self.tree.cur = self.tree.nodes[self.tree.cur].next;
+        }
         match self.tree.nodes[self.tree.cur].item.body {
             ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                 self.handle_inline(),
-            ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
             _ => (),
         }
         let item = &self.tree.nodes[self.tree.cur].item;

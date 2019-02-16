@@ -527,7 +527,9 @@ impl<'a> FirstPass<'a> {
         for &node_ix in &self.tree.spine {
             match self.tree.nodes[node_ix].item.body {
                 ItemBody::BlockQuote => {
+                    let save = line_start.clone();
                     if !line_start.scan_blockquote_marker() {
+                        *line_start = save;
                         break;
                     }
                 }
@@ -1113,6 +1115,9 @@ fn parse_html_line_type_6or7(tree : &mut Tree<Item>, s : &str, mut ix : usize) -
     ix
 }
 
+/// Checks whether we should break a paragraph on the given input.
+/// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
+/// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_eol(s).1 ||
     scan_hrule(s) > 0 ||

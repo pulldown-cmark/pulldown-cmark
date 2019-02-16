@@ -327,7 +327,7 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
     let bytes = s.as_bytes();
     match bytes[0] {
         b'\n' => (1, true),
-        b'\r' => (if bytes[1] == b'\n' { 2 } else { 1 }, true),
+        b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
         _ => (0, false)
     }
 }

@@ -40,6 +40,9 @@ struct Ctx<'b, I> {
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
+    // number of code blocks we're in. this may never become
+    // larger than 1? in which case we could replace by bool
+    code_nesting: usize,
 }
 
 impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
@@ -55,7 +58,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             match event {
                 Start(tag) => self.start_tag(tag, &mut numbers),
                 End(tag) => self.end_tag(tag),
-                Text(text) => escape_html(self.buf, &text, false),
+                Text(text) => escape_html(self.buf, &text, self.code_nesting > 0),
                 Html(html) |
                 InlineHtml(html) => self.buf.push_str(&html),
                 SoftBreak => self.buf.push('\n'),
@@ -63,7 +66,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;
                     self.buf.push_str("<sup class=\"footnote-reference\"><a href=\"#");
-                    escape_html(self.buf, &*name, false);
+                    escape_html(self.buf, &*name, self.code_nesting > 0);
                     self.buf.push_str("\">");
                     let number = numbers.entry(name).or_insert(len);
                     self.buf.push_str(&*format!("{}", number));
@@ -120,6 +123,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::CodeBlock(info) => {
                 self.fresh_line();
+                self.code_nesting += 1;
                 let lang = info.split(' ').next().unwrap();
                 if lang.is_empty() {
                     self.buf.push_str("<pre><code>");
@@ -147,13 +151,16 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::Emphasis => self.buf.push_str("<em>"),
             Tag::Strong => self.buf.push_str("<strong>"),
-            Tag::Code => self.buf.push_str("<code>"),
+            Tag::Code => {
+                self.code_nesting += 1;
+                self.buf.push_str("<code>")
+            }
             Tag::Link(dest, title) => {
                 self.buf.push_str("<a href=\"");
                 escape_href(self.buf, &dest);
                 if !title.is_empty() {
                     self.buf.push_str("\" title=\"");
-                    escape_html(self.buf, &title, false);
+                    escape_html(self.buf, &title, true);
                 }
                 self.buf.push_str("\">");
             }
@@ -164,7 +171,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.raw_text(numbers);
                 if !title.is_empty() {
                     self.buf.push_str("\" title=\"");
-                    escape_html(self.buf, &title, false);
+                    escape_html(self.buf, &title, self.code_nesting > 0);
                 }
                 self.buf.push_str("\" />")
             }
@@ -172,7 +179,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.fresh_line();
                 let len = numbers.len() + 1;
                 self.buf.push_str("<div class=\"footnote-definition\" id=\"");
-                escape_html(self.buf, &*name, false);
+                escape_html(self.buf, &*name, self.code_nesting > 0);
                 self.buf.push_str("\"><sup class=\"footnote-definition-label\">");
                 let number = numbers.entry(name).or_insert(len);
                 self.buf.push_str(&*format!("{}", number));
@@ -209,13 +216,19 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.table_cell_index += 1;
             }
             Tag::BlockQuote => self.buf.push_str("</blockquote>\n"),
-            Tag::CodeBlock(_) => self.buf.push_str("</code></pre>\n"),
+            Tag::CodeBlock(_) => {
+                self.code_nesting -= 1;
+                self.buf.push_str("</code></pre>\n");
+            }
             Tag::List(Some(_)) => self.buf.push_str("</ol>\n"),
             Tag::List(None) => self.buf.push_str("</ul>\n"),
             Tag::Item => self.buf.push_str("</li>\n"),
             Tag::Emphasis => self.buf.push_str("</em>"),
             Tag::Strong => self.buf.push_str("</strong>"),
-            Tag::Code => self.buf.push_str("</code>"),
+            Tag::Code => {
+                self.code_nesting -= 1;
+                self.buf.push_str("</code>");
+            }
             Tag::Link(_, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
@@ -233,9 +246,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                     if nest == 0 { break; }
                     nest -= 1;
                 }
-                Text(text) => escape_html(self.buf, &text, false),
+                Text(text) => escape_html(self.buf, &text, self.code_nesting > 0),
                 Html(_) => (),
-                InlineHtml(html) => escape_html(self.buf, &html, false),
+                InlineHtml(html) => escape_html(self.buf, &html, self.code_nesting > 0),
                 SoftBreak | HardBreak => self.buf.push(' '),
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;
@@ -281,6 +294,7 @@ pub fn push_html<'a, I: Iterator<Item=Event<'a>>>(buf: &mut String, iter: I) {
         table_state: TableState::Head,
         table_alignments: vec![],
         table_cell_index: 0,
+        code_nesting: 0,
     };
     ctx.run();
 }

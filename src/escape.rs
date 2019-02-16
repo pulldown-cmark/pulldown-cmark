@@ -22,6 +22,8 @@
 
 use std::str::from_utf8;
 
+use crate::entities;
+
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -95,7 +97,8 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&gt;"
     ];
 
-pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
+/// What does secure mean?
+pub fn escape_html(ob: &mut String, s: &str, skip_unescape: bool) {
     let size = s.len();
     let bytes = s.as_bytes();
     let mut mark = 0;
@@ -108,16 +111,26 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
             }
             None => break
         }
-        if let Some((bytes, c)) = parse_unicode_lit(&bytes[i..]) {
-            ob.push_str(&s[mark..i]);
-            ob.push(c);
-            i += bytes;
-            mark = i;
-            continue;
+        if !skip_unescape {
+            // don't unescape inside code blocks and titles
+            if let Some((bytes, c)) = parse_unicode_lit(&bytes[i..]) {
+                ob.push_str(&s[mark..i]);
+                ob.push(c);
+                i += bytes;
+                mark = i;
+                continue;
+            }
+            if let Some((bytes, replacement)) = parse_entity(&s[i..]) {
+                ob.push_str(&s[mark..i]);
+                ob.push_str(replacement);
+                mark = i + bytes;
+                i += bytes;
+                continue;
+            }
         }
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
-        if escape != 0 && (secure || c != b'/') {
+        if escape != 0 && c != b'/' {
             ob.push_str(&s[mark..i]);
             ob.push_str(HTML_ESCAPES[escape as usize]);
             mark = i + 1;  // all escaped characters are ASCII
@@ -125,6 +138,26 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
         i += 1;
     }
     ob.push_str(&s[mark..]);
+}
+
+fn parse_entity(s: &str) -> Option<(usize, &'static str)> {
+    let bytes = s.as_bytes();
+    let mut iter = bytes.into_iter();
+    if *iter.next()? != b'&' {
+        return None;
+    }
+
+    // CounterClockwiseContourIntegral is currently the longest entity,
+    // but this may change
+    let subslice = if bytes.len() > 32 {
+        &bytes[1..32]
+    } else {
+        &bytes[1..]
+    };
+    let end = 1 + subslice.iter().position(|&b| b == b';')?;
+    let replacement = entities::get_entity(&s[1..end])?;
+
+    Some((end + 1, replacement))
 }
 
 /// Returns None if s does not start with something of the form &#\d+;

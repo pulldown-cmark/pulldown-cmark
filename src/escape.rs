@@ -100,12 +100,20 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
+
     while i < size {
         match bytes[i..].iter().position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0) {
             Some(pos) => {
                 i += pos;
             }
             None => break
+        }
+        if let Some((bytes, c)) = parse_unicode_lit(&bytes[i..]) {
+            ob.push_str(&s[mark..i]);
+            ob.push(c);
+            i += bytes;
+            mark = i;
+            continue;
         }
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
@@ -117,4 +125,40 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
         i += 1;
     }
     ob.push_str(&s[mark..]);
+}
+
+/// Returns None if s does not start with something of the form &#\d+;
+/// Otherwise it returns the number of bytes in s and the unicode character.
+fn parse_unicode_lit(bytes: &[u8]) -> Option<(usize, char)> {
+    let mut iter = bytes.into_iter();
+    let mut byte_counter = 2;
+    let mut val: u32 = 0;
+    let mut next;
+
+    if *iter.next()? != b'&' {
+        return None;
+    }
+    if *iter.next()? != b'#' {
+        return None;
+    }
+    loop {
+        next = *iter.next()?;
+        byte_counter += 1;
+        if next >= b'0' && next <= b'9' {
+            val = (next - b'0') as u32 + 10 * val;
+        } else {
+            break;
+        }
+    }
+
+    // replace 0 chars by replacement char
+    if val == 0 {
+        val = 65533;
+    }
+
+    if next == b';' && byte_counter > 3 {
+        Some((byte_counter, std::char::from_u32(val)?))
+    } else {
+        None
+    }
 }

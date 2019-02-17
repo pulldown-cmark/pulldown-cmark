@@ -125,7 +125,7 @@ pub enum Tag<'a> {
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
-    Text(Cow<'a, str>),
+    Text(Cow<'a, str>, bool), // bool = true -> block backslash escapes
     Html(Cow<'a, str>),
     InlineHtml(Cow<'a, str>),
     FootnoteReference(Cow<'a, str>),
@@ -702,7 +702,7 @@ impl<'a> RawParser<'a> {
             // TODO: might try to combine spaces in text, for fewer events
             let space = self.leading_space;
             self.leading_space = 0;
-            return Event::Text(spaces(space - self.fence_indent));
+            return Event::Text(spaces(space - self.fence_indent), true);
         }
         let bytes = self.text.as_bytes();
         let mut beg = self.off;
@@ -731,7 +731,7 @@ impl<'a> RawParser<'a> {
             i += 1;
         }
         self.off = i;
-        Event::Text(Borrowed(&self.text[beg..i]))
+        Event::Text(Borrowed(&self.text[beg..i]), true)
     }
 
     fn is_code_block_end(&self, loc: usize, space: usize) -> bool {
@@ -981,7 +981,7 @@ impl<'a> RawParser<'a> {
                 let end = i - n;
                 if end > beg {
                     self.off = end;
-                    return Event::Text(Borrowed(&self.text[beg..end]));
+                    return Event::Text(Borrowed(&self.text[beg..end]), false);
                 }
                 if c == b'\r' && i + 1 < limit && self.text.as_bytes()[i + 1] == b'\n' {
                     i += 1;
@@ -1000,7 +1000,7 @@ impl<'a> RawParser<'a> {
             }
             self.off = i;
             if i > beg {
-                return Event::Text(Borrowed(&self.text[beg..i]));
+                return Event::Text(Borrowed(&self.text[beg..i]), false);
             }
             if let Some(event) = self.active_char(c) {
                 return event;
@@ -1010,7 +1010,7 @@ impl<'a> RawParser<'a> {
         }
         if i > beg {
             self.off = i;
-            Event::Text(Borrowed(&self.text[beg..i]))
+            Event::Text(Borrowed(&self.text[beg..i]), false)
         } else {
             self.end()
         }
@@ -1034,7 +1034,7 @@ impl<'a> RawParser<'a> {
 
     fn char_null(&mut self) -> Event<'a> {
         self.off += 1;
-        Event::Text(Borrowed("\u{fffd}"))
+        Event::Text(Borrowed("\u{fffd}"), false)
     }
 
     // expand tab in content (used for code and inline)
@@ -1042,7 +1042,7 @@ impl<'a> RawParser<'a> {
     fn char_tab(&mut self) -> Event<'a> {
         let count = count_tab(&self.text.as_bytes()[.. self.off]);
         self.off += 1;
-        Event::Text(Borrowed(&"    "[..count]))
+        Event::Text(Borrowed(&"    "[..count]), false)
     }
 
     fn char_backslash(&mut self) -> Option<Event<'a>> {
@@ -1059,7 +1059,7 @@ impl<'a> RawParser<'a> {
             let c = self.text.as_bytes()[self.off + 1];
             if is_ascii_punctuation(c) {
                 self.off += 2;
-                return Some(Event::Text(Borrowed(&self.text[self.off - 1 .. self.off])));
+                return Some(Event::Text(Borrowed(&self.text[self.off - 1 .. self.off]), false));
             }
         }
         None
@@ -1069,7 +1069,7 @@ impl<'a> RawParser<'a> {
         match scan_entity(&self.text[self.off ..]) {
             (n, Some(value)) => {
                 self.off += n;
-                Some(Event::Text(value))
+                Some(Event::Text(value, false))
             }
             _ => None
         }
@@ -1637,7 +1637,7 @@ impl<'a> RawParser<'a> {
         let beg = self.off;
         let end = self.limit();
         self.off = end;
-        Event::Text(Borrowed(&self.text[beg..end]))
+        Event::Text(Borrowed(&self.text[beg..end]), false)
     }
 
     // second return value is number of backticks even if not closed
@@ -1712,7 +1712,7 @@ impl<'a> RawParser<'a> {
                     }
                     i += n;
                     self.off = i;
-                    return Event::Text(Borrowed(" "));
+                    return Event::Text(Borrowed(" "), true);
                 }
             } else {
                 i += 1;
@@ -1720,7 +1720,7 @@ impl<'a> RawParser<'a> {
         }
         if i > beg {
             self.off = i;
-            Event::Text(Borrowed(&self.text[beg..i]))
+            Event::Text(Borrowed(&self.text[beg..i]), true)
         } else {
             self.end()
         }

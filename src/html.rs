@@ -58,7 +58,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             match event {
                 Start(tag) => self.start_tag(tag, &mut numbers),
                 End(tag) => self.end_tag(tag),
-                Text(text) => escape_html(self.buf, &text, self.code_nesting > 0),
+                Text(text, block_backslash_escapes) =>
+                    escape_html(self.buf, &text, block_backslash_escapes || self.code_nesting > 0),
                 Html(html) |
                 InlineHtml(html) => self.buf.push_str(&html),
                 SoftBreak => self.buf.push('\n'),
@@ -160,7 +161,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 escape_href(self.buf, &dest);
                 if !title.is_empty() {
                     self.buf.push_str("\" title=\"");
-                    escape_html(self.buf, &title, true);
+                    escape_html(self.buf, &title, false);
                 }
                 self.buf.push_str("\">");
             }
@@ -246,9 +247,10 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                     if nest == 0 { break; }
                     nest -= 1;
                 }
-                Text(text) => escape_html(self.buf, &text, self.code_nesting > 0),
+                Text(text, block_backslash_escapes) =>
+                    escape_html(self.buf, &text, block_backslash_escapes || self.code_nesting > 0),
                 Html(_) => (),
-                InlineHtml(html) => escape_html(self.buf, &html, self.code_nesting > 0),
+                InlineHtml(html) => escape_html(self.buf, &html, true),
                 SoftBreak | HardBreak => self.buf.push(' '),
                 FootnoteReference(name) => {
                     let len = numbers.len() + 1;

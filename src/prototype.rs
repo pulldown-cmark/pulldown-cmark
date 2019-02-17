@@ -39,6 +39,7 @@ struct Item {
 enum ItemBody {
     Paragraph,
     Text,
+    NoEscapeText,
     SoftBreak,
     HardBreak,
 
@@ -2213,7 +2214,7 @@ impl<'a> Parser<'a> {
                         let text_node = self.tree.create_node(Item {
                             start: self.tree.nodes[cur].item.start + 1,
                             end: ix - 1,
-                            body: ItemBody::Text,
+                            body: ItemBody::NoEscapeText,
                         });
                         self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
                         self.tree.nodes[cur].item.end = ix;
@@ -2466,27 +2467,30 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
 // leaf items only
 fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
     match item.body {
+        ItemBody::NoEscapeText => {
+            Event::Text(Cow::from(&text[item.start..item.end]), true)
+        }
         ItemBody::Text => {
-            Event::Text(Cow::from(&text[item.start..item.end]))
-        },
+            Event::Text(Cow::from(&text[item.start..item.end]), false)
+        }
         ItemBody::SynthesizeText(ref text) => {
-            Event::Text(text.clone())
+            Event::Text(text.clone(), false)
         }
         ItemBody::SynthesizeNewLine => {
-            Event::Text(Cow::from("\n"))
-        },
+            Event::Text(Cow::from("\n"), false)
+        }
         ItemBody::BlankLine => {
-            Event::Text(Cow::from(""))
-        },
+            Event::Text(Cow::from(""), false)
+        }
         ItemBody::Html => {
             Event::Html(Cow::from(&text[item.start..item.end]))
-        },
+        }
         ItemBody::InlineHtml => {
             Event::InlineHtml(Cow::from(&text[item.start..item.end]))
-        },
+        }
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
-        _ => panic!("unexpected item body {:?}", item.body)
+        _ => panic!("unexpected item body {:?}", item.body),
     }
 }
 

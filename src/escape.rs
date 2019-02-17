@@ -23,6 +23,7 @@
 use std::str::from_utf8;
 
 use crate::entities;
+use crate::puncttable::is_ascii_punctuation;
 
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -75,7 +76,7 @@ static HTML_ESCAPE_TABLE: [u8; 256] = [
         0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 5, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -88,13 +89,14 @@ static HTML_ESCAPE_TABLE: [u8; 256] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
-static HTML_ESCAPES: [&'static str; 6] = [
+static HTML_ESCAPES: [&'static str; 7] = [
         "",
         "&quot;",
         "&amp;",
         "&#47;",
         "&lt;",
-        "&gt;"
+        "&gt;",
+        "\\",
     ];
 
 /// What does secure mean?
@@ -128,7 +130,15 @@ pub fn escape_html(ob: &mut String, s: &str, skip_unescape: bool) {
                 continue;
             }
         }
-        let c = bytes[i];
+        let mut c = bytes[i];
+
+        if c == b'\\' && !skip_unescape && i + 1 < size && is_ascii_punctuation(bytes[i + 1]) {
+            ob.push_str(&s[mark..i]);
+            i += 1;
+            mark = i;
+            c = bytes[i];
+        }
+
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 && c != b'/' {
             ob.push_str(&s[mark..i]);

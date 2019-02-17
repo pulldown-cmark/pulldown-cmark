@@ -135,9 +135,11 @@ pub fn escape_html(ob: &mut String, s: &str, skip_unescape: bool) {
                 continue;
             }
             if let Some((bytes, replacement)) = parse_entity(&s[i..]) {
-                ob.push_str(&s[mark..i]);
-                ob.push_str(replacement);
-                mark = i + bytes;
+                if replacement.len() != 1 || HTML_ESCAPE_TABLE[replacement.as_bytes()[0] as usize] == 0 {
+                    ob.push_str(&s[mark..i]);
+                    ob.push_str(replacement);
+                    mark = i + bytes;
+                }
                 i += bytes;
                 continue;
             }

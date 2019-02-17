@@ -1948,6 +1948,7 @@ fn scan_link_destination(scanner: &mut InlineScanner) -> Option<String> {
     scan_link_destination_plain(scanner)
 }
 
+// TODO: this should return a &str instead
 fn scan_link_title(scanner: &mut InlineScanner) -> Option<String> {
     let open = scanner.next_char()?;
     if !(open == '\'' || open == '\"' || open == '(') {
@@ -1971,11 +1972,8 @@ fn scan_link_title(scanner: &mut InlineScanner) -> Option<String> {
             }
         }
         if c == '\\' {
-            let c = scanner.next_char()?;
-            if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
-                title.push('\\');
-            }
-            title.push(c);
+            title.push('\\');
+            title.push(scanner.next_char()?);
         } else {
             title.push(c);
         }

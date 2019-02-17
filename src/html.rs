@@ -156,9 +156,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.code_nesting += 1;
                 self.buf.push_str("<code>")
             }
-            Tag::Link(dest, title) => {
+            Tag::Link(dest, title, is_autolink) => {
                 self.buf.push_str("<a href=\"");
-                escape_href(self.buf, &dest);
+                escape_href(self.buf, &dest, !is_autolink);
                 if !title.is_empty() {
                     self.buf.push_str("\" title=\"");
                     escape_html(self.buf, &title, false);
@@ -167,7 +167,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::Image(dest, title) => {
                 self.buf.push_str("<img src=\"");
-                escape_href(self.buf, &dest);
+                escape_href(self.buf, &dest, false);
                 self.buf.push_str("\" alt=\"");
                 self.raw_text(numbers);
                 if !title.is_empty() {
@@ -230,7 +230,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.code_nesting -= 1;
                 self.buf.push_str("</code>");
             }
-            Tag::Link(_, _) => self.buf.push_str("</a>"),
+            Tag::Link(..) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
             Tag::HtmlBlock => {}

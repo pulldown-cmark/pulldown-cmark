@@ -59,9 +59,9 @@ enum ItemBody {
     Strong,
     Code,
     InlineHtml,
-    // Link params: destination, title.
+    // Link params: destination, title, is_autolink.
     // TODO: get lifetime in type so these strings can be cows
-    Link(String, String),
+    Link(String, String, bool),
     Image(String, String),
 
     Rule,
@@ -2216,7 +2216,7 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::NoEscapeText,
                         });
-                        self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
+                        self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new(), true);
                         self.tree.nodes[cur].item.end = ix;
                         self.tree.nodes[cur].next = node;
                         self.tree.nodes[cur].child = text_node;
@@ -2274,7 +2274,7 @@ impl<'a> Parser<'a> {
                             self.tree.nodes[cur].item.body = if tos.is_image {
                                 ItemBody::Image(url.into(), title.into())
                             } else {
-                                ItemBody::Link(url.into(), title.into())
+                                ItemBody::Link(url.into(), title.into(), false)
                             };
                             self.tree.nodes[cur].child = self.tree.nodes[cur].next;
                             self.tree.nodes[cur].next = next_node;
@@ -2321,7 +2321,7 @@ impl<'a> Parser<'a> {
                                 self.tree.nodes[tos.node].item.body = if tos.is_image {
                                     ItemBody::Image(url, title)
                                 } else {
-                                    ItemBody::Link(url, title)
+                                    ItemBody::Link(url, title, false)
                                 };
 
                                 // lets do some tree surgery to add the link to the tree
@@ -2447,8 +2447,8 @@ fn item_to_tag(item: &Item) -> Option<Tag<'static>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
-        ItemBody::Link(ref url, ref title) =>
-            Some(Tag::Link(url.clone().into(), title.clone().into())),
+        ItemBody::Link(ref url, ref title, is_autolink) =>
+            Some(Tag::Link(url.clone().into(), title.clone().into(), is_autolink)),
         ItemBody::Image(ref url, ref title) =>
             Some(Tag::Image(url.clone().into(), title.clone().into())),
         ItemBody::Rule => Some(Tag::Rule),

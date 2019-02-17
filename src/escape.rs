@@ -38,10 +38,11 @@ static HREF_SAFE: [u8; 128] = [
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
 
-pub fn escape_href(ob: &mut String, s: &str) {
+pub fn escape_href(ob: &mut String, s: &str, backslash_escapes: bool) {
     let mut mark = 0;
+    let bytes = s.as_bytes();
     for i in 0..s.len() {
-        let c = s.as_bytes()[i];
+        let c = bytes[i];
         if c >= 0x80 || HREF_SAFE[c as usize] == 0 {
             // character needing escape
 
@@ -53,6 +54,9 @@ pub fn escape_href(ob: &mut String, s: &str) {
                 b'&' => {
                     ob.push_str("&amp;");
                 },
+                b'\\' if backslash_escapes && i + 1 < s.len() && is_ascii_punctuation(bytes[i + 1]) => {
+                    // skip \
+                }
                 b'\'' => {
                     ob.push_str("&#x27;");
                 },

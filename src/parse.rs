@@ -114,8 +114,8 @@ pub enum Tag<'a> {
     Strong,
     Code,
 
-    /// A link. The first field is the destination URL, the second is a title
-    Link(Cow<'a, str>, Cow<'a, str>),
+    /// A link. The first field is the destination URL, the second is a title, third is autolink indicator
+    Link(Cow<'a, str>, Cow<'a, str>, bool),
 
     /// An image. The first field is the destination URL, the second is a title
     Image(Cow<'a, str>, Cow<'a, str>),
@@ -1332,7 +1332,7 @@ impl<'a> RawParser<'a> {
         if is_image {
             Some((Tag::Image(dest, title), beg, end, next))
         } else {
-            Some((Tag::Link(dest, title), beg, end, next))
+            Some((Tag::Link(dest, title, false), beg, end, next))
         }
     }
 
@@ -1458,7 +1458,7 @@ impl<'a> RawParser<'a> {
             let next = self.off + n;
             self.off += 1;
             self.state = State::Literal;
-            return Some(self.start(Tag::Link(link, Borrowed("")), next - 1, next))
+            return Some(self.start(Tag::Link(link, Borrowed(""), true), next - 1, next))
         }
         let n = self.scan_inline_html(tail);
         if n != 0 {

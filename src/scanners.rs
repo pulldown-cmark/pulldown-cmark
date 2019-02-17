@@ -1004,20 +1004,21 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
         return None;
     }
     i += l;
-    let n = scan_while(&data[i..], is_ascii_letterdigitdash);
-    i += n;
+    i += scan_while(&data[i..], is_ascii_letterdigitdash);
 
     if close_tag_bytes == 0 {
         loop {
-            i += scan_whitespace_no_nl(&data[i..]);
+            let whitespace = scan_whitespace_no_nl(&data[i..]);
+            i += whitespace;
             let c = data.as_bytes()[i];
             match c {
                 b'/' | b'>' => { 
                     break; },
                 _ => {},
             }
+            if whitespace == 0 { return None; }
             if let Some(a) = scan_attribute(&data[i..]) {
-                if a == 0 {break;}
+                if a == 0 { break; }
                 i += a;
             } else {
                 return None;

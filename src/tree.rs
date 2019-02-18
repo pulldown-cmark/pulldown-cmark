@@ -17,7 +17,7 @@ pub struct Node<T> {
 
 /// A tree abstraction, intended for fast building as a preorder traversal.
 pub struct Tree<T> {
-    pub nodes: Vec<Node<T>>,
+    nodes: Vec<Node<T>>,
     pub spine: Vec<usize>, // indices of nodes on path to current node
     pub cur: usize,
 }
@@ -76,5 +76,24 @@ impl<T> Tree<T> {
         } else {
             None
         }
+    }
+
+    /// Returns true when there are no nodes in the tree, false otherwise.
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+}
+
+impl<T> std::ops::Index<usize> for Tree<T> {
+    type Output = Node<T>;
+
+    fn index(&self, ix: usize) -> &Self::Output {
+        self.nodes.index(ix)
+    }
+}
+
+impl<T> std::ops::IndexMut<usize> for Tree<T> {
+    fn index_mut(&mut self, ix: usize) -> &mut Node<T> {
+        self.nodes.index_mut(ix)
     }
 }

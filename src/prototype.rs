@@ -238,7 +238,7 @@ impl<'a> FirstPass<'a> {
                 let ix_new = ix + line_start.bytes_scanned();
                 if n_containers == self.tree.spine.len() {
                     if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
-                        self.tree.nodes[node].item.body = ItemBody::Header(level);
+                        self.tree[node].item.body = ItemBody::Header(level);
                         if let Some(Item { start, end: _, body: ItemBody::HardBreak }) = brk {
                             if self.text.as_bytes()[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
@@ -262,7 +262,8 @@ impl<'a> FirstPass<'a> {
         }
 
         self.tree.pop();
-        self.tree.nodes[self.tree.cur].item.end = ix;
+        let tree_cur = self.tree.cur;
+        self.tree[tree_cur].item.end = ix;
         ix
     }
 
@@ -283,7 +284,7 @@ impl<'a> FirstPass<'a> {
 
         // check if we are currently in a list
         self.tree.peek_grandparent().map_or(false, |gp_ix| {
-            match self.tree.nodes[gp_ix].item.body {
+            match self.tree[gp_ix].item.body {
                 ItemBody::ListItem(..) => true,
                 _ => false,
             }
@@ -420,7 +421,7 @@ impl<'a> FirstPass<'a> {
         }
 
         // Trim trailing blank lines.
-        self.tree.nodes[last_nonblank_child].next = NIL;
+        self.tree[last_nonblank_child].next = NIL;
         self.pop(end_ix);
         ix
     }
@@ -525,7 +526,7 @@ impl<'a> FirstPass<'a> {
     fn scan_containers(&self, line_start: &mut LineStart) -> usize {
         let mut i = 0;
         for &node_ix in &self.tree.spine {
-            match self.tree.nodes[node_ix].item.body {
+            match self.tree[node_ix].item.body {
                 ItemBody::BlockQuote => {
                     let save = line_start.clone();
                     if !line_start.scan_blockquote_marker() {
@@ -555,8 +556,9 @@ impl<'a> FirstPass<'a> {
     /// Pop a container, setting its end.
     fn pop(&mut self, ix: usize) {
         self.tree.pop();
-        self.tree.nodes[self.tree.cur].item.end = ix;
-        if let ItemBody::List(true, _, _) = self.tree.nodes[self.tree.cur].item.body {
+        let tree_cur = self.tree.cur;
+        self.tree[tree_cur].item.end = ix;
+        if let ItemBody::List(true, _, _) = self.tree[self.tree.cur].item.body {
             surgerize_tight_list(&mut self.tree);
         }
     }
@@ -564,14 +566,14 @@ impl<'a> FirstPass<'a> {
     /// Close a list if it's open. Also set loose if last line was blank
     fn finish_list(&mut self, ix: usize) {
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(_, _, _) = self.tree.nodes[node_ix].item.body {
+            if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
                 self.pop(ix);
             }
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
                 if let ItemBody::List(ref mut is_tight, _, _) =
-                    self.tree.nodes[node_ix].item.body
+                    self.tree[node_ix].item.body
                 {
                     *is_tight = false;
                 }
@@ -585,7 +587,7 @@ impl<'a> FirstPass<'a> {
     fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) =
-                self.tree.nodes[node_ix].item.body
+                self.tree[node_ix].item.body
             {
                 if existing_ch == ch {
                     if self.last_line_blank {
@@ -645,7 +647,7 @@ impl<'a> FirstPass<'a> {
         let header_node_idx = self.tree.cur; // so that we can set the endpoint later
         self.tree.push();
         ix = parse_line(&mut self.tree, &self.text, ix).0;
-        self.tree.nodes[header_node_idx].item.end = ix;
+        self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text
         // TODO: probably better to find limit before parsing; this makes assumptions
@@ -672,7 +674,8 @@ impl<'a> FirstPass<'a> {
             }
         } else if closer == 0 { limit = closer; }
         if self.tree.cur != NIL {
-            self.tree.nodes[self.tree.cur].item.end = limit + header_start;
+            let tree_cur = self.tree.cur;
+            self.tree[tree_cur].item.end = limit + header_start;
         }
 
         self.tree.pop();
@@ -1072,8 +1075,9 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
     // trailing blanklines during tree parsing
     if let None = scan_blank_line(&s[ix..]) {
         let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
-        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree.nodes[parent_icb].item.body {
-            *last_nonblank_child = tree.cur;
+        let tree_cur = tree.cur;
+        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree[parent_icb].item.body {
+            *last_nonblank_child = tree_cur;
         }
     }
 
@@ -1159,7 +1163,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         // but can't be preceded by an empty line. 
         if setext_bytes > 0 && leading_spaces < 4 && tree.cur != NIL {
             ix += setext_bytes;
-            tree.nodes[cur].item.body = ItemBody::Header(setext_level);
+            tree[cur].item.body = ItemBody::Header(setext_level);
             break;
         }
 
@@ -1182,7 +1186,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         }
     }
     tree.pop();
-    tree.nodes[cur].item.end = ix;
+    tree[cur].item.end = ix;
     ix
 }
 
@@ -1194,7 +1198,7 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     for &vertebra in &(tree.spine) {
         let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
         
-        match tree.nodes[vertebra].item.body {
+        match tree[vertebra].item.body {
             ItemBody::BlockQuote => {
                 i += space_bytes;
                 if num_spaces >= 4 { return (0, false); }
@@ -1209,8 +1213,8 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
                     return (i, false);
                 } else if scan_eol(&text[i..]).1 {
-                    if let ItemBody::BlankLine = tree.nodes[tree.cur].item.body {
-                        if tree.nodes[vertebra].child == tree.cur {
+                    if let ItemBody::BlankLine = tree[tree.cur].item.body {
+                        if tree[vertebra].child == tree.cur {
                             return (i, false);
                         }
                     }
@@ -1246,13 +1250,13 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     if ix >= s.len() { return ix; }
     // check if parent is a leaf block, which makes new containers illegal
     if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(_) = tree.nodes[parent].item.body {
+        if let ItemBody::FencedCodeBlock(_) = tree[parent].item.body {
             return ix;
         }
-        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
+        if let ItemBody::IndentCodeBlock(_) = tree[parent].item.body {
             return ix;
         }
-        if let ItemBody::HtmlBlock(_) = tree.nodes[parent].item.body {
+        if let ItemBody::HtmlBlock(_) = tree[parent].item.body {
             return ix;
         }
     }
@@ -1290,7 +1294,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
             let mut need_push = true; // Are we starting a new list?
             if let Some(parent) = tree.peek_up() {
-                match tree.nodes[parent].item.body {
+                match tree[parent].item.body {
                     ItemBody::List(_, delim, _) if delim == listitem_delimiter => {
                         need_push = false;
                     },
@@ -1325,7 +1329,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
     // If we are at a ListItem node, we didn't see a new ListItem,
     // so it's time to close the list.
     if tree.cur != NIL {
-        if let ItemBody::ListItem(_) = tree.nodes[tree.cur].item.body {
+        if let ItemBody::ListItem(_) = tree[tree.cur].item.body {
             tree.pop();
         }
     }
@@ -1344,17 +1348,17 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
 
     if let Some(parent) = tree.peek_up() {
         /*
-        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation, _) = tree.nodes[parent].item.body {
+        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation, _) = tree[parent].item.body {
             return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
         }
         */
-        if let ItemBody::IndentCodeBlock(_) = tree.nodes[parent].item.body {
+        if let ItemBody::IndentCodeBlock(_) = tree[parent].item.body {
             return parse_indented_code_line(&mut tree, s, ix);
         }
-        if let ItemBody::HtmlBlock(Some(html_end_tag)) = tree.nodes[parent].item.body {
+        if let ItemBody::HtmlBlock(Some(html_end_tag)) = tree[parent].item.body {
             return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
         }
-        if let ItemBody::HtmlBlock(None) = tree.nodes[parent].item.body {
+        if let ItemBody::HtmlBlock(None) = tree[parent].item.body {
             return parse_html_line_type_6or7(&mut tree, s, ix);
         }
     }
@@ -1540,7 +1544,7 @@ impl InlineStack {
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
         for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
-                tree.nodes[el.start + i].item.body = ItemBody::Text;
+                tree[el.start + i].item.body = ItemBody::Text;
             }
         }
     }
@@ -1576,7 +1580,7 @@ struct InlineScanner<'a> {
 
 impl<'a> InlineScanner<'a> {
     fn new(tree: &'a Tree<Item>, text: &'a str, cur: usize) -> InlineScanner<'a> {
-        let ix = if cur == NIL { !0 } else { tree.nodes[cur].item.start };
+        let ix = if cur == NIL { !0 } else { tree[cur].item.start };
         InlineScanner { tree, text, cur, ix }
     }
 
@@ -1631,18 +1635,18 @@ impl<'a> InlineScanner<'a> {
 
     fn to_node_and_ix(&self) -> (usize, usize) {
         let mut cur = self.cur;
-        if cur != NIL && self.tree.nodes[cur].item.end == self.ix {
-            cur = self.tree.nodes[cur].next;
+        if cur != NIL && self.tree[cur].item.end == self.ix {
+            cur = self.tree[cur].next;
         }
         (cur, self.ix)
     }
 
     fn next_char(&mut self) -> Option<char> {
         if self.cur == NIL { return None; }
-        while self.ix == self.tree.nodes[self.cur].item.end {
-            self.cur = self.tree.nodes[self.cur].next;
+        while self.ix == self.tree[self.cur].item.end {
+            self.cur = self.tree[self.cur].next;
             if self.cur == NIL { return None; }
-            self.ix = self.tree.nodes[self.cur].item.start;
+            self.ix = self.tree[self.cur].item.start;
         }
         self.text[self.ix..].chars().next().map(|c| {
             self.ix += c.len_utf8();
@@ -1656,10 +1660,10 @@ impl<'a> Iterator for InlineScanner<'a> {
 
     fn next(&mut self) -> Option<u8> {
         if self.cur == NIL { return None; }
-        while self.ix == self.tree.nodes[self.cur].item.end {
-            self.cur = self.tree.nodes[self.cur].next;
+        while self.ix == self.tree[self.cur].item.end {
+            self.cur = self.tree[self.cur].next;
             if self.cur == NIL { return None; }
-            self.ix = self.tree.nodes[self.cur].item.start;
+            self.ix = self.tree[self.cur].item.start;
         }
         let c = self.text.as_bytes()[self.ix];
         self.ix += 1;
@@ -1798,71 +1802,71 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 ///
 /// Both `open` and `close` are matching MaybeCode items.
 fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
-    tree.nodes[open].item.end = tree.nodes[close].item.end;
-    tree.nodes[open].item.body = ItemBody::Code;
-    let first = tree.nodes[open].next;
-    tree.nodes[open].next = tree.nodes[close].next;
-    tree.nodes[open].child = first;
+    tree[open].item.end = tree[close].item.end;
+    tree[open].item.body = ItemBody::Code;
+    let first = tree[open].next;
+    tree[open].next = tree[close].next;
+    tree[open].child = first;
     let mut node = first;
     let last;
     loop {
-        let next = tree.nodes[node].next;
-        match tree.nodes[node].item.body {
+        let next = tree[node].next;
+        match tree[node].item.body {
             ItemBody::SoftBreak => {
                 // TODO: trailing space is stripped in parse_line, and we don't want it
                 // stripped.
-                tree.nodes[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
             }
             ItemBody::HardBreak => {
-                let start = tree.nodes[node].item.start;
+                let start = tree[node].item.start;
                 if s.as_bytes()[start] == b'\\' {
-                    tree.nodes[node].item.body = ItemBody::Text;
-                    let end = tree.nodes[node].item.end;
+                    tree[node].item.body = ItemBody::Text;
+                    let end = tree[node].item.end;
                     let space = tree.create_node(Item {
                         start: start + 1,
                         end,
                         body: ItemBody::SynthesizeText(Borrowed(" "))
                     });
-                    tree.nodes[space].next = next;
-                    tree.nodes[node].next = space;
-                    tree.nodes[node].item.end = start + 1;
+                    tree[space].next = next;
+                    tree[node].next = space;
+                    tree[node].item.end = start + 1;
                 } else {
-                    tree.nodes[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                    tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
                 }
             }
-            _ => tree.nodes[node].item.body = ItemBody::Text,
+            _ => tree[node].item.body = ItemBody::Text,
         }
         if next == close {
             last = node;
-            tree.nodes[node].next = NIL;
+            tree[node].next = NIL;
             break;
         }
         node = next;
     }
     // Strip opening and closing space, if appropriate.
-    let opening = match &tree.nodes[first].item.body {
-        ItemBody::Text => s.as_bytes()[tree.nodes[first].item.start] == b' ',
+    let opening = match &tree[first].item.body {
+        ItemBody::Text => s.as_bytes()[tree[first].item.start] == b' ',
         ItemBody::SynthesizeText(text) => text.starts_with(' '),
         _ => unreachable!("unexpected item"),
     };
-    let closing = match &tree.nodes[last].item.body {
-        ItemBody::Text => s.as_bytes()[tree.nodes[last].item.end - 1] == b' ',
+    let closing = match &tree[last].item.body {
+        ItemBody::Text => s.as_bytes()[tree[last].item.end - 1] == b' ',
         ItemBody::SynthesizeText(text) => text.ends_with(' '),
         _ => unreachable!("unexpected item"),
     };
     // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
     if opening && closing {
-        if tree.nodes[first].item.body == ItemBody::SynthesizeText(Borrowed(" "))
-            || tree.nodes[first].item.end - tree.nodes[first].item.start == 1
+        if tree[first].item.body == ItemBody::SynthesizeText(Borrowed(" "))
+            || tree[first].item.end - tree[first].item.start == 1
         {
-            tree.nodes[open].child = tree.nodes[first].next;
+            tree[open].child = tree[first].next;
         } else {
-            tree.nodes[first].item.start += 1;
+            tree[first].item.start += 1;
         }
-        if tree.nodes[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
-            tree.nodes[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
+        if tree[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
+            tree[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
         } else {
-            tree.nodes[last].item.end -= 1;
+            tree[last].item.end -= 1;
         }
         // TODO: if last is now empty, remove it (we have size-0 items in the tree)
     }
@@ -2098,15 +2102,15 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> Re
     if cur == NIL {
         return RefScan::Failed;
     }
-    let start = tree.nodes[cur].item.start;
+    let start = tree[cur].item.start;
     
     if text[start..].starts_with("[]") {
-        let closing_node = tree.nodes[cur].next;
-        RefScan::Collapsed(tree.nodes[closing_node].next)
+        let closing_node = tree[cur].next;
+        RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, label)) = scan_link_label(&text[start..]) {
         let mut scanner = InlineScanner::new(tree, text, cur);
         for _ in 0..ix { scanner.next(); } // move to right node in tree
-        let next_node = tree.nodes[scanner.cur].next;
+        let next_node = tree[scanner.cur].next;
         RefScan::Label(label, next_node)
     } else {
         RefScan::Failed
@@ -2161,7 +2165,7 @@ impl<'a> Parser<'a> {
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
         let (mut tree, refdefs) = first_pass.run();
-        tree.cur = if tree.nodes.is_empty() { NIL } else { 0 };
+        tree.cur = if tree.is_empty() { NIL } else { 0 };
         tree.spine = vec![];
         Parser { text, tree, refdefs }
     }
@@ -2192,79 +2196,79 @@ impl<'a> Parser<'a> {
         let mut prev = NIL;
 
         while cur != NIL {
-            match self.tree.nodes[cur].item.body {
+            match self.tree[cur].item.body {
                 ItemBody::MaybeHtml => {
-                    let next = self.tree.nodes[cur].next;
+                    let next = self.tree[cur].next;
                     let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
                     if let Some(uri) = scan_autolink(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();
                         let text_node = self.tree.create_node(Item {
-                            start: self.tree.nodes[cur].item.start + 1,
+                            start: self.tree[cur].item.start + 1,
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        self.tree.nodes[cur].item.body = ItemBody::Link(uri, String::new());
-                        self.tree.nodes[cur].item.end = ix;
-                        self.tree.nodes[cur].next = node;
-                        self.tree.nodes[cur].child = text_node;
+                        self.tree[cur].item.body = ItemBody::Link(uri, String::new());
+                        self.tree[cur].item.end = ix;
+                        self.tree[cur].next = node;
+                        self.tree[cur].child = text_node;
                         cur = node;
                         continue;
                     } else if scan_inline_html(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();
                         // TODO: this logic isn't right if the replaced chain has
                         // tricky stuff (skipped containers, replaced nulls).
-                        self.tree.nodes[cur].item.body = ItemBody::InlineHtml;
-                        self.tree.nodes[cur].item.end = ix;
-                        self.tree.nodes[cur].next = node;
+                        self.tree[cur].item.body = ItemBody::InlineHtml;
+                        self.tree[cur].item.end = ix;
+                        self.tree[cur].next = node;
                         cur = node;
                         if cur != NIL {
-                            self.tree.nodes[cur].item.start = ix;
+                            self.tree[cur].item.start = ix;
                         }
                         continue;
                     }
-                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    self.tree[cur].item.body = ItemBody::Text;
                 }
                 ItemBody::MaybeCode(count) => {
                     // TODO(performance): this has quadratic pathological behavior, I think
-                    let mut scan = self.tree.nodes[cur].next;
+                    let mut scan = self.tree[cur].next;
                     while scan != NIL {
-                        if self.tree.nodes[scan].item.body == ItemBody::MaybeCode(count) {
+                        if self.tree[scan].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur, scan);
                             break;
                         }
-                        scan = self.tree.nodes[scan].next;
+                        scan = self.tree[scan].next;
                     }
                     if scan == NIL {
-                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                        self.tree[cur].item.body = ItemBody::Text;
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
-                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    self.tree[cur].item.body = ItemBody::Text;
                     link_stack.push( LinkStackEl { node: cur, is_image: false });
                 }
                 ItemBody::MaybeImage => {
-                    self.tree.nodes[cur].item.body = ItemBody::Text;
+                    self.tree[cur].item.body = ItemBody::Text;
                     link_stack.push( LinkStackEl { node: cur, is_image: true });
                 }
                 ItemBody::MaybeLinkClose => {
                     if let Some(tos) = link_stack.last() {
-                        let next = self.tree.nodes[cur].next;
+                        let next = self.tree[cur].next;
                         let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
                         if let Some((url, title)) = scan_inline_link(scanner) {
                             let (next_node, next_ix) = scanner.to_node_and_ix();
-                            self.tree.nodes[prev].next = NIL;
+                            self.tree[prev].next = NIL;
                             cur = tos.node;
-                            self.tree.nodes[cur].item.body = if tos.is_image {
+                            self.tree[cur].item.body = if tos.is_image {
                                 ItemBody::Image(url.into(), title.into())
                             } else {
                                 ItemBody::Link(url.into(), title.into())
                             };
-                            self.tree.nodes[cur].child = self.tree.nodes[cur].next;
-                            self.tree.nodes[cur].next = next_node;
+                            self.tree[cur].child = self.tree[cur].next;
+                            self.tree[cur].next = next_node;
                             if next_node != NIL {
-                                self.tree.nodes[next_node].item.start = next_ix;
+                                self.tree[next_node].item.start = next_ix;
                             }
 
                             let inside_image_alt = link_stack.iter().position(|e| e.is_image)
@@ -2280,7 +2284,7 @@ impl<'a> Parser<'a> {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
                             let scan_result = scan_reference(&self.tree, &self.text, next);
-                            let label_node = self.tree.nodes[tos.node].next;
+                            let label_node = self.tree[tos.node].next;
                             let node_after_link = match scan_result {
                                 RefScan::Label(_, next_node) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
@@ -2290,8 +2294,8 @@ impl<'a> Parser<'a> {
                                 RefScan::Label(l, ..) => Some(l),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
-                                    let start = self.tree.nodes[tos.node].item.end - 1;
-                                    let end = self.tree.nodes[cur].item.end;
+                                    let start = self.tree[tos.node].item.end - 1;
+                                    let end = self.tree[cur].item.end;
                                     let search_text = &self.text[start..end];
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
@@ -2303,7 +2307,7 @@ impl<'a> Parser<'a> {
                                 // found a matching definition!
                                 let title = matching_def.title.as_ref().cloned().unwrap_or(String::new()).into();
                                 let url = matching_def.dest.into();
-                                self.tree.nodes[tos.node].item.body = if tos.is_image {
+                                self.tree[tos.node].item.body = if tos.is_image {
                                     ItemBody::Image(url, title)
                                 } else {
                                     ItemBody::Link(url, title)
@@ -2311,13 +2315,13 @@ impl<'a> Parser<'a> {
 
                                 // lets do some tree surgery to add the link to the tree
                                 // 1st: skip the label node and close node
-                                self.tree.nodes[tos.node].next = node_after_link;
+                                self.tree[tos.node].next = node_after_link;
 
                                 // then, add the label node as a child to the link node
-                                self.tree.nodes[tos.node].child = label_node;
+                                self.tree[tos.node].child = label_node;
 
                                 // finally: disconnect list of children
-                                self.tree.nodes[prev].next = NIL;
+                                self.tree[prev].next = NIL;
 
                                 // set up cur so next node will be node_after_link
                                 cur = tos.node;
@@ -2328,7 +2332,7 @@ impl<'a> Parser<'a> {
                                     link_stack.clear();
                                 }
                             } else {
-                                self.tree.nodes[cur].item.body = ItemBody::Text;
+                                self.tree[cur].item.body = ItemBody::Text;
                                 
                                 // not actually a link, so remove just its matching
                                 // opening tag
@@ -2336,13 +2340,13 @@ impl<'a> Parser<'a> {
                             }
                         }
                     } else {
-                        self.tree.nodes[cur].item.body = ItemBody::Text;
+                        self.tree[cur].item.body = ItemBody::Text;
                     }
                 }
                 _ => (),
             }
             prev = cur;
-            cur = self.tree.nodes[cur].next;
+            cur = self.tree[cur].next;
         }
     }
 
@@ -2351,13 +2355,13 @@ impl<'a> Parser<'a> {
         let mut prev = NIL;
         let mut cur = self.tree.cur;
         while cur != NIL {
-            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree.nodes[cur].item.body {
-                let c = self.text.as_bytes()[self.tree.nodes[cur].item.start];
+            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur].item.body {
+                let c = self.text.as_bytes()[self.tree[cur].item.start];
                 let both = can_open && can_close;
                 if can_close {
                     while let Some((j, el)) = stack.find_match(c, count, both) {
                         // have a match!
-                        self.tree.nodes[prev].next = NIL;
+                        self.tree[prev].next = NIL;
                         let match_count = ::std::cmp::min(count, el.count);
                         // start, end are tree node indices
                         let mut end = cur - 1;
@@ -2373,17 +2377,17 @@ impl<'a> Parser<'a> {
 
                             let root = start - inc;
                             end += inc;
-                            self.tree.nodes[root].item.body = ty;
-                            self.tree.nodes[root].item.end = self.tree.nodes[end].item.end;
-                            self.tree.nodes[root].child = start;
-                            self.tree.nodes[root].next = NIL;
+                            self.tree[root].item.body = ty;
+                            self.tree[root].item.end = self.tree[end].item.end;
+                            self.tree[root].child = start;
+                            self.tree[root].next = NIL;
                             start = root;
                         }
 
                         // set next for top most emph level
                         prev = el.start + el.count - match_count;
-                        cur = self.tree.nodes[cur + match_count - 1].next;
-                        self.tree.nodes[prev].next = cur;
+                        cur = self.tree[cur + match_count - 1].next;
+                        self.tree[prev].next = cur;
 
                         stack.pop_to(&mut self.tree, j + 1);
                         let _ = stack.pop();
@@ -2411,15 +2415,15 @@ impl<'a> Parser<'a> {
                         });
                     } else {
                         for i in 0..count {
-                            self.tree.nodes[cur + i].item.body = ItemBody::Text;
+                            self.tree[cur + i].item.body = ItemBody::Text;
                         }
                     }
                     prev = cur + count - 1;
-                    cur = self.tree.nodes[prev].next;
+                    cur = self.tree[prev].next;
                 }
             } else {
                 prev = cur;
-                cur = self.tree.nodes[cur].next;
+                cur = self.tree[cur].next;
             }
         }
         stack.pop_to(&mut self.tree, 0);
@@ -2479,16 +2483,16 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
 #[allow(unused)]
 // tree.cur points to a List<_, _, _> Item Node
 fn detect_tight_list(tree: &Tree<Item>) -> bool {
-    let mut this_listitem = tree.nodes[tree.cur].child;
+    let mut this_listitem = tree[tree.cur].child;
     while this_listitem != NIL {
-        let on_lastborn_child = tree.nodes[this_listitem].next == NIL;
-        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
-            let mut this_listitem_child = tree.nodes[this_listitem].child;
+        let on_lastborn_child = tree[this_listitem].next == NIL;
+        if let ItemBody::ListItem(_) = tree[this_listitem].item.body {
+            let mut this_listitem_child = tree[this_listitem].child;
             let mut on_firstborn_grandchild = true; 
             if this_listitem_child != NIL {
                 while this_listitem_child != NIL {
-                    let on_lastborn_grandchild = tree.nodes[this_listitem_child].next == NIL;
-                    if let ItemBody::BlankLine = tree.nodes[this_listitem_child].item.body {
+                    let on_lastborn_grandchild = tree[this_listitem_child].next == NIL;
+                    if let ItemBody::BlankLine = tree[this_listitem_child].item.body {
                         // If the first line is blank, this does not trigger looseness.
                         // Blanklines at the very end of a list also do not trigger looseness.
                         if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
@@ -2496,12 +2500,12 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
                         }
                     }
                     on_firstborn_grandchild = false;
-                    this_listitem_child = tree.nodes[this_listitem_child].next;
+                    this_listitem_child = tree[this_listitem_child].next;
                 }
             } // the else should panic!
         }
 
-        this_listitem = tree.nodes[this_listitem].next;
+        this_listitem = tree[this_listitem].next;
     }
     return true;
 }
@@ -2509,42 +2513,42 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
 // https://english.stackexchange.com/a/285573
 // tree.cur points to a List<_, _, _, false> Item Node
 fn surgerize_tight_list(tree : &mut Tree<Item>) {
-    let mut this_listitem = tree.nodes[tree.cur].child;
+    let mut this_listitem = tree[tree.cur].child;
     while this_listitem != NIL {
-        if let ItemBody::ListItem(_) = tree.nodes[this_listitem].item.body {
+        if let ItemBody::ListItem(_) = tree[this_listitem].item.body {
             // first child is special, controls how we repoint this_listitem.child
-            let this_listitem_firstborn = tree.nodes[this_listitem].child;
+            let this_listitem_firstborn = tree[this_listitem].child;
             if this_listitem_firstborn != NIL {
-                if let ItemBody::Paragraph = tree.nodes[this_listitem_firstborn].item.body {
+                if let ItemBody::Paragraph = tree[this_listitem_firstborn].item.body {
                     // paragraphs should always have children
-                    tree.nodes[this_listitem].child = tree.nodes[this_listitem_firstborn].child;
+                    tree[this_listitem].child = tree[this_listitem_firstborn].child;
                 }
 
                 let mut this_listitem_child = this_listitem_firstborn;
                 let mut node_to_repoint = NIL;
                 while this_listitem_child != NIL {
                     // surgerize paragraphs
-                    if let ItemBody::Paragraph = tree.nodes[this_listitem_child].item.body {
-                        let this_listitem_child_firstborn = tree.nodes[this_listitem_child].child;
+                    if let ItemBody::Paragraph = tree[this_listitem_child].item.body {
+                        let this_listitem_child_firstborn = tree[this_listitem_child].child;
                         if node_to_repoint != NIL {
-                            tree.nodes[node_to_repoint].next = this_listitem_child_firstborn;
+                            tree[node_to_repoint].next = this_listitem_child_firstborn;
                         }
                         let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
-                        while tree.nodes[this_listitem_child_lastborn].next != NIL {
-                            this_listitem_child_lastborn = tree.nodes[this_listitem_child_lastborn].next;
+                        while tree[this_listitem_child_lastborn].next != NIL {
+                            this_listitem_child_lastborn = tree[this_listitem_child_lastborn].next;
                         }
                         node_to_repoint = this_listitem_child_lastborn;
                     } else {
                         node_to_repoint = this_listitem_child;
                     }
 
-                    tree.nodes[node_to_repoint].next = tree.nodes[this_listitem_child].next;
-                    this_listitem_child = tree.nodes[this_listitem_child].next;
+                    tree[node_to_repoint].next = tree[this_listitem_child].next;
+                    this_listitem_child = tree[this_listitem_child].next;
                 }
             } // listitems should always have children, let this pass during testing
         } // failure should be a panic, but I'll let it pass during testing
 
-        this_listitem = tree.nodes[this_listitem].next;
+        this_listitem = tree[this_listitem].next;
     }
 }
 
@@ -2554,29 +2558,30 @@ impl<'a> Iterator for Parser<'a> {
     fn next(&mut self) -> Option<Event<'a>> {
         if self.tree.cur == NIL {
             if let Some(cur) = self.tree.spine.pop() {
-                let tag = item_to_tag(&self.tree.nodes[cur].item).unwrap();
-                self.tree.cur = self.tree.nodes[cur].next;
+                let tag = item_to_tag(&self.tree[cur].item).unwrap();
+                self.tree.cur = self.tree[cur].next;
                 return Some(Event::End(tag));
             } else {
                 return None;
             }
         }
-        match self.tree.nodes[self.tree.cur].item.body {
+        match self.tree[self.tree.cur].item.body {
             ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                 self.handle_inline(),
-            ItemBody::Backslash => self.tree.cur = self.tree.nodes[self.tree.cur].next,
+            ItemBody::Backslash => self.tree.cur = self.tree[self.tree.cur].next,
             _ => (),
         }
-        let item = &self.tree.nodes[self.tree.cur].item;
-        if let Some(tag) = item_to_tag(item) {
-            let child = self.tree.nodes[self.tree.cur].child;
-            self.tree.spine.push(self.tree.cur);
+        let tree_cur = self.tree.cur;
+        if let Some(tag) = item_to_tag(&self.tree[tree_cur].item) {
+            let child = self.tree[tree_cur].child;
+            self.tree.spine.push(tree_cur);
             self.tree.cur = child;
             return Some(Event::Start(tag))
         } else {
-            self.tree.cur = self.tree.nodes[self.tree.cur].next;
-            return Some(item_to_event(item, self.text))
+            let next = self.tree[tree_cur].next;
+            self.tree.cur = next;
+            return Some(item_to_event(&self.tree[tree_cur].item, self.text))
         }
     }
 }

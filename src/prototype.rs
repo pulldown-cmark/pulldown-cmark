@@ -28,6 +28,8 @@ use crate::scanners::*;
 use crate::tree::{TreeIndex, Node, Tree};
 use crate::linklabel::{scan_link_label, LinkLabel};
 
+use std::num::NonZeroUsize;
+
 #[derive(Debug, Default)]
 struct Item {
     start: usize,
@@ -66,7 +68,7 @@ enum ItemBody {
     Rule,
     Header(i32), // header level
     FencedCodeBlock(String), // info string (maybe cow?)
-    IndentCodeBlock(usize), // last non-blank child
+    IndentCodeBlock(TreeIndex), // last non-blank child
     SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
@@ -391,7 +393,7 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
-            body: ItemBody::IndentCodeBlock(0), // TODO: probably remove arg
+            body: ItemBody::IndentCodeBlock(TreeIndex::Nil), // TODO: probably remove arg
         });
         self.tree.push();
         let mut last_nonblank_child = TreeIndex::Nil;
@@ -427,7 +429,9 @@ impl<'a> FirstPass<'a> {
         }
 
         // Trim trailing blank lines.
-        self.tree[last_nonblank_child].next = TreeIndex::Nil;
+        if let TreeIndex::Valid(child) = last_nonblank_child {
+            self.tree[child].next = TreeIndex::Nil;
+        }
         self.pop(end_ix);
         ix
     }
@@ -872,13 +876,13 @@ impl Tree<Item> {
 }
 
 #[allow(dead_code)]
-fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: usize, level: usize) {
-    while ix != TreeIndex::Nil {
-        let node = &nodes[ix];
+fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreeIndex, level: usize) {
+    while let TreeIndex::Valid(inner) = ix {
+        let node = &nodes[inner.get()];
         for _ in 0..level {
             eprint!("  ");
         }
-        eprintln!("{}: {:?} {} {}", ix, node.item.body, node.item.start, node.item.end);
+        eprintln!("{}: {:?} {} {}", inner, node.item.body, node.item.start, node.item.end);
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
@@ -1531,7 +1535,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
-    start: usize,  // offset of tree node
+    start: NonZeroUsize,  // offset of tree node
     count: usize,
     c: u8,  // b'*' or b'_'
     both: bool,  // can both open and close
@@ -1552,7 +1556,7 @@ impl InlineStack {
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
         for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text;
+                tree[NonZeroUsize::new(el.start.get() + i).unwrap()].item.body = ItemBody::Text;
             }
         }
     }
@@ -1582,13 +1586,13 @@ impl InlineStack {
 struct InlineScanner<'a> {
     tree: &'a Tree<Item>,
     text: &'a str,
-    cur: usize,
+    cur: TreeIndex,
     ix: usize,
 }
 
 impl<'a> InlineScanner<'a> {
-    fn new(tree: &'a Tree<Item>, text: &'a str, cur: usize) -> InlineScanner<'a> {
-        let ix = if let TreeIndex::Valid(cur_ix) {
+    fn new(tree: &'a Tree<Item>, text: &'a str, cur: TreeIndex) -> InlineScanner<'a> {
+        let ix = if let TreeIndex::Valid(cur_ix) = cur {
             tree[cur_ix].item.start
         } else {
             !0
@@ -1645,7 +1649,7 @@ impl<'a> InlineScanner<'a> {
         s.as_bytes().iter().all(|b| self.scan_ch(*b))
     }
 
-    fn to_node_and_ix(&self) -> (usize, usize) {
+    fn to_node_and_ix(&self) -> (TreeIndex, usize) {
         let mut cur = self.cur;
         if let TreeIndex::Valid(cur_ix) = cur {
             if self.tree[cur_ix].item.end == self.ix {
@@ -1680,7 +1684,7 @@ impl<'a> Iterator for InlineScanner<'a> {
                     self.cur = self.tree[cur_ix].next;
                     match self.cur {
                         TreeIndex::Nil => return None,
-                        TreeIndex::Valid(cur_ix) => self.ix = self.tree[self.cur].item.start,
+                        TreeIndex::Valid(cur_ix) => self.ix = self.tree[cur_ix].item.start,
                     }
                 }
                 let c = self.text.as_bytes()[self.ix];
@@ -1821,7 +1825,7 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 /// Make a code span.
 ///
 /// Both `open` and `close` are matching MaybeCode items.
-fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
+fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: NonZeroUsize) {
     tree[open].item.end = tree[close].item.end;
     tree[open].item.body = ItemBody::Code;
     let first = tree[open].next;
@@ -1856,7 +1860,7 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: usize, close: usize) {
             }
             _ => tree[node].item.body = ItemBody::Text,
         }
-        if next == close {
+        if next == TreeIndex::Valid(close) {
             last = node;
             tree[node].next = TreeIndex::Nil;
             break;
@@ -2112,17 +2116,17 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // contains label, next node index
-    Label(LinkLabel<'a>, usize),
+    Label(LinkLabel<'a>, TreeIndex),
     // contains next node index
-    Collapsed(usize),
+    Collapsed(TreeIndex),
     Failed,
 }
 
-fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: usize) -> RefScan<'b> {
+fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreeIndex) -> RefScan<'b> {
     let cur_ix = match cur {
         TreeIndex::Nil => return RefScan::Failed,
-        TreeIndex::Valid(cur_ix) => cur_ix;
-    }
+        TreeIndex::Valid(cur_ix) => cur_ix,
+    };
     let start = tree[cur_ix].item.start;
     
     if text[start..].starts_with("[]") {
@@ -2162,7 +2166,7 @@ fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
 }
 
 struct LinkStackEl {
-    node: usize,
+    node: NonZeroUsize,
     is_image: bool,
 }
 
@@ -2187,7 +2191,7 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text);
         let (mut tree, refdefs) = first_pass.run();
         // FIXME: don't hardcode first index
-        tree.cur = if tree.is_empty() { TreeIndex::Nil } else { 1 };
+        tree.cur = if tree.is_empty() { TreeIndex::Nil } else { TreeIndex::Valid(NonZeroUsize::new(1).unwrap()) };
         tree.spine = vec![];
         Parser { text, tree, refdefs }
     }
@@ -2254,9 +2258,9 @@ impl<'a> Parser<'a> {
                 ItemBody::MaybeCode(count) => {
                     // TODO(performance): this has quadratic pathological behavior, I think
                     let mut scan = self.tree[cur_ix].next;
-                    while scan != TreeIndex::Nil {
+                    while let TreeIndex::Valid(scan_ix) = scan {
                         if self.tree[scan].item.body == ItemBody::MaybeCode(count) {
-                            make_code_span(&mut self.tree, self.text, cur, scan);
+                            make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
                             break;
                         }
                         scan = self.tree[scan].next;
@@ -2267,11 +2271,11 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur, is_image: false });
+                    link_stack.push( LinkStackEl { node: cur_ix, is_image: false });
                 }
                 ItemBody::MaybeImage => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur, is_image: true });
+                    link_stack.push( LinkStackEl { node: cur_ix, is_image: true });
                 }
                 ItemBody::MaybeLinkClose => {
                     if let Some(tos) = link_stack.last() {
@@ -2281,7 +2285,7 @@ impl<'a> Parser<'a> {
                         if let Some((url, title)) = scan_inline_link(scanner) {
                             let (next_node, next_ix) = scanner.to_node_and_ix();
                             self.tree[prev].next = TreeIndex::Nil;
-                            cur = tos.node;
+                            cur = TreeIndex::Valid(tos.node);
                             self.tree[cur_ix].item.body = if tos.is_image {
                                 ItemBody::Image(url.into(), title.into())
                             } else {
@@ -2289,8 +2293,8 @@ impl<'a> Parser<'a> {
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
-                            if next_node != TreeIndex::Nil {
-                                self.tree[next_node].item.start = next_ix;
+                            if let TreeIndex::Valid(next_node_ix) = next_node {
+                                self.tree[next_node_ix].item.start = next_ix;
                             }
 
                             let inside_image_alt = link_stack.iter().position(|e| e.is_image)
@@ -2346,7 +2350,7 @@ impl<'a> Parser<'a> {
                                 self.tree[prev].next = TreeIndex::Nil;
 
                                 // set up cur so next node will be node_after_link
-                                cur = tos.node;
+                                cur = TreeIndex::Valid(tos.node);
 
                                 if tos.is_image {
                                     link_stack.pop();
@@ -2386,29 +2390,30 @@ impl<'a> Parser<'a> {
                         self.tree[prev].next = TreeIndex::Nil;
                         let match_count = ::std::cmp::min(count, el.count);
                         // start, end are tree node indices
-                        let mut end = cur - 1;
-                        let mut start = el.start + el.count;
+                        let mut end = NonZeroUsize::new(cur_ix.get() - 1).unwrap();
+                        let mut start = el.start.get() + el.count;
 
                         // work from the inside out
-                        while start > el.start + el.count - match_count {
-                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
+                        while start > el.start.get() + el.count - match_count {
+                            let (inc, ty) = if start > el.start.get() + el.count - match_count + 1 {
                                 (2, ItemBody::Strong)
                             } else {
                                 (1, ItemBody::Emphasis)
                             };
 
-                            let root = start - inc;
-                            end += inc;
+                            let root = NonZeroUsize::new(start - inc).unwrap();
+                            end = NonZeroUsize::new(end.get() + inc).unwrap();
                             self.tree[root].item.body = ty;
                             self.tree[root].item.end = self.tree[end].item.end;
-                            self.tree[root].child = start;
+                            self.tree[root].child = TreeIndex::Valid(NonZeroUsize::new(start).unwrap());
                             self.tree[root].next = TreeIndex::Nil;
-                            start = root;
+                            start = root.get();
                         }
 
                         // set next for top most emph level
-                        prev = el.start + el.count - match_count;
-                        cur = self.tree[cur + match_count - 1].next;
+                        // FIXME: don't do this
+                        prev = TreeIndex::Valid(NonZeroUsize::new(el.start.get() + el.count - match_count).unwrap());
+                        cur = self.tree[NonZeroUsize::new(cur_ix.get() + match_count - 1).unwrap()].next;
                         self.tree[prev].next = cur;
 
                         stack.pop_to(&mut self.tree, j + 1);
@@ -2430,17 +2435,19 @@ impl<'a> Parser<'a> {
                 if count > 0 {
                     if can_open {
                         stack.push(InlineEl {
-                            start: cur,
+                            start: cur_ix,
                             count: count,
                             c: c,
                             both: both,
                         });
                     } else {
                         for i in 0..count {
-                            self.tree[cur + i].item.body = ItemBody::Text;
+                            // FIXME: we should do such index juggling in the tree
+                            self.tree[NonZeroUsize::new(cur_ix.get() + i).unwrap()].item.body = ItemBody::Text;
                         }
                     }
-                    prev = cur + count - 1;
+                    // FIXME: we should do such index juggling in the tree
+                    prev = TreeIndex::Valid(NonZeroUsize::new(cur_ix.get() + count - 1).unwrap());
                     cur = self.tree[prev].next;
                 }
             } else {
@@ -2580,9 +2587,9 @@ impl<'a> Iterator for Parser<'a> {
     fn next(&mut self) -> Option<Event<'a>> {
         match self.tree.cur {
             TreeIndex::Nil => {
-                if let Some(cur) = self.tree.spine.pop() {
-                    let tag = item_to_tag(&self.tree[cur_ix].item).unwrap();
-                    self.tree.cur = self.tree[cur_ix].next;
+                if let Some(ix) = self.tree.spine.pop() {
+                    let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                    self.tree.cur = self.tree[ix].next;
                     return Some(Event::End(tag));
                 } else {
                     return None;

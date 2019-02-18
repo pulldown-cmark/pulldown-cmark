@@ -8,7 +8,7 @@
 
 use std::num::NonZeroUsize;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TreeIndex {
     Nil,
     Valid(NonZeroUsize),

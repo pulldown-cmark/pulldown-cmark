@@ -115,20 +115,6 @@ impl<T> std::ops::IndexMut<NonZeroUsize> for Tree<T> {
     }
 }
 
-impl<T> std::ops::Index<usize> for Tree<T> {
-    type Output = Node<T>;
-
-    fn index(&self, ix: usize) -> &Self::Output {
-        self.nodes.index(ix)
-    }
-}
-
-impl<T> std::ops::IndexMut<usize> for Tree<T> {
-    fn index_mut(&mut self, ix: usize) -> &mut Node<T> {
-        self.nodes.index_mut(ix)
-    }
-}
-
 impl<T> std::ops::Index<TreeIndex> for Tree<T> {
     type Output = Node<T>;
 

@@ -1679,12 +1679,15 @@ impl<'a> Iterator for InlineScanner<'a> {
     fn next(&mut self) -> Option<u8> {
         match self.cur {
             TreeIndex::Nil => None,
-            TreeIndex::Valid(cur_ix) => {
+            TreeIndex::Valid(mut cur_ix) => {
                 while self.ix == self.tree[cur_ix].item.end {
                     self.cur = self.tree[cur_ix].next;
                     match self.cur {
                         TreeIndex::Nil => return None,
-                        TreeIndex::Valid(cur_ix) => self.ix = self.tree[cur_ix].item.start,
+                        TreeIndex::Valid(new_cur_ix) => {
+                            cur_ix = new_cur_ix;
+                            self.ix = self.tree[cur_ix].item.start;
+                        }
                     }
                 }
                 let c = self.text.as_bytes()[self.ix];
@@ -2380,7 +2383,7 @@ impl<'a> Parser<'a> {
         let mut stack = InlineStack::new();
         let mut prev = TreeIndex::Nil;
         let mut cur = self.tree.cur;
-        while let TreeIndex::Valid(cur_ix) = TreeIndex::Nil {
+        while let TreeIndex::Valid(cur_ix) = cur {
             if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur_ix].item.body {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;

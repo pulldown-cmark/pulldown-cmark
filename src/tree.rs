@@ -45,8 +45,9 @@ impl<T: Default> Tree<T> {
     }
 
     /// Append one item to the current position in the tree.
-    pub fn append(&mut self, item: T) {
-        let this = self.create_node(item);
+    pub fn append(&mut self, item: T) -> NonZeroUsize {
+        let ix = self.create_node(item);
+        let this = TreeIndex::Valid(ix);
 
         if let TreeIndex::Valid(ix) = self.cur {
             self[ix].next = this;
@@ -54,17 +55,18 @@ impl<T: Default> Tree<T> {
             self[parent].child = this;
         }
         self.cur = this;
+        ix
     }
 
     /// Create an isolated node.
-    pub fn create_node(&mut self, item: T) -> TreeIndex {
+    pub fn create_node(&mut self, item: T) -> NonZeroUsize {
         let this = self.nodes.len();
         self.nodes.push(Node {
             child: TreeIndex::Nil,
             next: TreeIndex::Nil,
             item,
         });
-        TreeIndex::Valid(NonZeroUsize::new(this).unwrap())
+        NonZeroUsize::new(this).unwrap()
     }
 
     /// Push down one level, so that new items become children of the current node.

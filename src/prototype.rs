@@ -2224,7 +2224,7 @@ impl<'a> Parser<'a> {
         let mut cur = self.tree.cur;
         let mut prev = TreeIndex::Nil;
 
-        while let TreeIndex::Valid(cur_ix) = cur {
+        while let TreeIndex::Valid(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
@@ -2282,27 +2282,27 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkClose => {
                     if let Some(tos) = link_stack.last() {
-                        let next = self.tree[cur_ix].next;
+                        let next = self.tree[cur].next;
                         let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
                         if let Some((url, title)) = scan_inline_link(scanner) {
                             let (next_node, next_ix) = scanner.to_node_and_ix();
                             self.tree[prev].next = TreeIndex::Nil;
                             cur = TreeIndex::Valid(tos.node);
-                            self.tree[cur_ix].item.body = if tos.is_image {
+                            cur_ix = tos.node;
+                            self.tree[cur].item.body = if tos.is_image {
                                 ItemBody::Image(url.into(), title.into())
                             } else {
                                 ItemBody::Link(url.into(), title.into())
                             };
-                            self.tree[cur_ix].child = self.tree[cur_ix].next;
-                            self.tree[cur_ix].next = next_node;
+                            self.tree[cur].child = self.tree[cur].next;
+                            self.tree[cur].next = next_node;
                             if let TreeIndex::Valid(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start = next_ix;
                             }
 
                             let inside_image_alt = link_stack.iter().position(|e| e.is_image)
-                                .map(|i| i != link_stack.len() - 1)
-                                .unwrap_or(false);
+                                .map_or(false, |i| i != link_stack.len() - 1);
 
                             if tos.is_image || inside_image_alt {
                                 link_stack.pop();
@@ -2324,7 +2324,7 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let start = self.tree[tos.node].item.end - 1;
-                                    let end = self.tree[cur_ix].item.end;
+                                    let end = self.tree[cur].item.end;
                                     let search_text = &self.text[start..end];
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }
@@ -2354,6 +2354,7 @@ impl<'a> Parser<'a> {
 
                                 // set up cur so next node will be node_after_link
                                 cur = TreeIndex::Valid(tos.node);
+                                cur_ix = tos.node;
 
                                 if tos.is_image {
                                     link_stack.pop();
@@ -2361,7 +2362,7 @@ impl<'a> Parser<'a> {
                                     link_stack.clear();
                                 }
                             } else {
-                                self.tree[cur_ix].item.body = ItemBody::Text;
+                                self.tree[cur].item.body = ItemBody::Text;
                                 
                                 // not actually a link, so remove just its matching
                                 // opening tag
@@ -2369,13 +2370,13 @@ impl<'a> Parser<'a> {
                             }
                         }
                     } else {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
+                        self.tree[cur].item.body = ItemBody::Text;
                     }
                 }
                 _ => (),
             }
             prev = cur;
-            cur = self.tree[cur_ix].next;
+            cur = self.tree[cur].next;
         }
     }
 
@@ -2383,9 +2384,9 @@ impl<'a> Parser<'a> {
         let mut stack = InlineStack::new();
         let mut prev = TreeIndex::Nil;
         let mut cur = self.tree.cur;
-        while let TreeIndex::Valid(cur_ix) = cur {
-            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur_ix].item.body {
-                let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
+        while let TreeIndex::Valid(mut cur_ix) = cur {
+            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur].item.body {
+                let c = self.text.as_bytes()[self.tree[cur].item.start];
                 let both = can_open && can_close;
                 if can_close {
                     while let Some((j, el)) = stack.find_match(c, count, both) {
@@ -2433,6 +2434,11 @@ impl<'a> Parser<'a> {
                         if count == 0 {
                             break;
                         }
+
+                        cur_ix = match cur {
+                            TreeIndex::Valid(ix) => ix,
+                            _ => unreachable!(),
+                        };
                     }
                 }
                 if count > 0 {
@@ -2455,7 +2461,7 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 prev = cur;
-                cur = self.tree[cur_ix].next;
+                cur = self.tree[cur].next;
             }
         }
         stack.pop_to(&mut self.tree, 0);

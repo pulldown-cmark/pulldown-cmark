@@ -75,11 +75,14 @@ enum ItemBody {
     ListItem(usize), // indent level
     SynthesizeText(Cow<'static, str>),
     BlankLine,
+
+    // Dummy node at the top of the tree - should not be used otherwise!
+    Root,
 }
 
 impl Default for ItemBody {
     fn default() -> Self {
-        ItemBody::BlankLine
+        ItemBody::Root
     }
 }
 
@@ -1473,7 +1476,8 @@ fn first_pass_old(s: &str) -> Tree<Item> {
         let (container_offset, are_containers_closed) = scan_containers_old(&mut tree, &s[ix..]);
         if !are_containers_closed {
             tree.pop();
-            continue; }
+            continue;
+        }
         ix += container_offset;
         // ix is past all container marks
         ix = parse_new_containers(&mut tree, s, ix);

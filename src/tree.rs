@@ -33,7 +33,7 @@ pub struct Node<T> {
 /// A tree abstraction, intended for fast building as a preorder traversal.
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
-    pub spine: Vec<NonZeroUsize>, // indices of nodes on path to current node
+    spine: Vec<NonZeroUsize>, // indices of nodes on path to current node
     pub cur: TreeIndex,
 }
 
@@ -88,10 +88,10 @@ impl<T: Default> Tree<T> {
     }
 
     /// Pop back up a level.
-    pub fn pop(&mut self) -> NonZeroUsize {
-        let ix = self.spine.pop().unwrap();
+    pub fn pop(&mut self) -> Option<NonZeroUsize> {
+        let ix = self.spine.pop()?;
         self.cur = TreeIndex::Valid(ix);
-        ix
+        Some(ix)
     }
 
     /// Look at the parent node.
@@ -111,6 +111,26 @@ impl<T: Default> Tree<T> {
     /// Returns true when there are no nodes in the tree, false otherwise.
     pub fn is_empty(&self) -> bool {
         self.nodes.len() <= 1
+    }
+
+    /// Returns the length of the spine.
+    pub fn spine_len(&self) -> usize {
+        self.spine.len()
+    }
+
+    /// Resets the focus to the first node added to the tree, if it exists.
+    pub fn reset(&mut self) {
+        self.cur = if self.is_empty() {
+            TreeIndex::Nil
+        } else {
+            TreeIndex::Valid(NonZeroUsize::new(1).unwrap())
+        };
+        self.spine.truncate(0);
+    }
+
+    /// Walks the spine from a root node up to, but not including, the current node.
+    pub fn walk_spine(&self) -> impl Iterator<Item = &NonZeroUsize> {
+        self.spine.iter()
     }
 }
 

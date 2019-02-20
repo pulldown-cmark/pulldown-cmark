@@ -109,7 +109,7 @@ impl<'a> FirstPass<'a> {
         while ix < self.text.len() {
             ix = self.parse_block(ix);
         }
-        for _ in 0..self.tree.spine.len() {
+        for _ in 0..self.tree.spine_len() {
             self.pop(ix);
         }
         (self.tree, self.references)
@@ -120,7 +120,7 @@ impl<'a> FirstPass<'a> {
         let mut line_start = LineStart::new(&self.text[start_ix..]);
 
         let i = self.scan_containers(&mut line_start);
-        for _ in i..self.tree.spine.len() {
+        for _ in i..self.tree.spine_len() {
             self.pop(start_ix);
         }
 
@@ -243,7 +243,7 @@ impl<'a> FirstPass<'a> {
             let n_containers = self.scan_containers(&mut line_start);
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
-                if n_containers == self.tree.spine.len() {
+                if n_containers == self.tree.spine_len() {
                     if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
                         self.tree[node_ix].item.body = ItemBody::Header(level);
                         if let Some(Item { start, end: _, body: ItemBody::HardBreak }) = brk {
@@ -322,7 +322,7 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine.len() {
+            if n_containers < self.tree.spine_len() {
                 end_ix = ix;
                 break;
             }
@@ -366,7 +366,7 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine.len() || line_start.is_at_eol()
+            if n_containers < self.tree.spine_len() || line_start.is_at_eol()
             {
                 end_ix = ix;
                 break;
@@ -413,7 +413,7 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine.len()
+            if n_containers < self.tree.spine_len()
                 || !(line_start.scan_space(4) || line_start.is_at_eol())
             {
                 break;
@@ -455,7 +455,7 @@ impl<'a> FirstPass<'a> {
         loop {
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine.len() {
+            if n_containers < self.tree.spine_len() {
                 break;
             }
             line_start.scan_space(indent);
@@ -534,7 +534,7 @@ impl<'a> FirstPass<'a> {
     /// Returns number of containers scanned.
     fn scan_containers(&self, line_start: &mut LineStart) -> usize {
         let mut i = 0;
-        for &node_ix in &self.tree.spine {
+        for &node_ix in self.tree.walk_spine() {
             match self.tree[node_ix].item.body {
                 ItemBody::BlockQuote => {
                     let save = line_start.clone();
@@ -564,7 +564,7 @@ impl<'a> FirstPass<'a> {
 
     /// Pop a container, setting its end.
     fn pop(&mut self, ix: usize) {
-        let cur_ix = self.tree.pop();
+        let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
         if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
             surgerize_tight_list(&mut self.tree);
@@ -1203,7 +1203,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
 // Return: bytes scanned, and whether containers were closed
 fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
     let mut i = 0;
-    for &vertebra in &(tree.spine) {
+    for &vertebra in tree.walk_spine() {
         let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
         
         match tree[vertebra].item.body {
@@ -2190,9 +2190,7 @@ impl<'a> Parser<'a> {
     pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text);
         let (mut tree, refdefs) = first_pass.run();
-        // FIXME: don't hardcode first index
-        tree.cur = if tree.is_empty() { TreeIndex::Nil } else { TreeIndex::Valid(NonZeroUsize::new(1).unwrap()) };
-        tree.spine = vec![];
+        tree.reset();
         Parser { text, tree, refdefs }
     }
 
@@ -2602,7 +2600,7 @@ impl<'a> Iterator for Parser<'a> {
     fn next(&mut self) -> Option<Event<'a>> {
         match self.tree.cur {
             TreeIndex::Nil => {
-                if let Some(ix) = self.tree.spine.pop() {
+                if let Some(ix) = self.tree.pop() {
                     let tag = item_to_tag(&self.tree[ix].item).unwrap();
                     self.tree.cur = self.tree[ix].next;
                     return Some(Event::End(tag));
@@ -2624,7 +2622,7 @@ impl<'a> Iterator for Parser<'a> {
         if let TreeIndex::Valid(cur_ix) = self.tree.cur {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
                 let child = self.tree[cur_ix].child;
-                self.tree.spine.push(cur_ix);
+                self.tree.push();
                 self.tree.cur = child;
                 return Some(Event::Start(tag))
             } else {

@@ -9,24 +9,24 @@
 use std::num::NonZeroUsize;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum TreeIndex {
+pub enum TreePointer {
     Nil,
     Valid(NonZeroUsize),
 }
 
-impl TreeIndex {
+impl TreePointer {
     pub fn unwrap(self) -> NonZeroUsize {
         match self {
-            TreeIndex::Nil => panic!("Called unwrap on a Nil value"),
-            TreeIndex::Valid(ix) => ix,
+            TreePointer::Nil => panic!("Called unwrap on a Nil value"),
+            TreePointer::Valid(ix) => ix,
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Node<T> {
-    pub child: TreeIndex,
-    pub next: TreeIndex,
+    pub child: TreePointer,
+    pub next: TreePointer,
     pub item: T,
 }
 
@@ -34,7 +34,7 @@ pub struct Node<T> {
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<NonZeroUsize>, // indices of nodes on path to current node
-    cur: TreeIndex,
+    cur: TreePointer,
 }
 
 impl<T: Default> Tree<T> {
@@ -44,26 +44,26 @@ impl<T: Default> Tree<T> {
     pub fn new() -> Tree<T> {
         Tree {
             nodes: vec![Node {
-                child: TreeIndex::Nil,
-                next: TreeIndex::Nil,
+                child: TreePointer::Nil,
+                next: TreePointer::Nil,
                 item: <T as Default>::default(),
             }],
             spine: Vec::new(),
-            cur: TreeIndex::Nil,
+            cur: TreePointer::Nil,
         }
     }
 
     /// Returns the index of the element currently in focus.
-    pub fn cur(&self) -> TreeIndex {
+    pub fn cur(&self) -> TreePointer {
         self.cur
     }
 
     /// Append one item to the current position in the tree.
     pub fn append(&mut self, item: T) -> NonZeroUsize {
         let ix = self.create_node(item);
-        let this = TreeIndex::Valid(ix);
+        let this = TreePointer::Valid(ix);
 
-        if let TreeIndex::Valid(ix) = self.cur {
+        if let TreePointer::Valid(ix) = self.cur {
             self[ix].next = this;
         } else if let Some(&parent) = self.spine.last() {
             self[parent].child = this;
@@ -76,8 +76,8 @@ impl<T: Default> Tree<T> {
     pub fn create_node(&mut self, item: T) -> NonZeroUsize {
         let this = self.nodes.len();
         self.nodes.push(Node {
-            child: TreeIndex::Nil,
-            next: TreeIndex::Nil,
+            child: TreePointer::Nil,
+            next: TreePointer::Nil,
             item,
         });
         NonZeroUsize::new(this).unwrap()
@@ -94,7 +94,7 @@ impl<T: Default> Tree<T> {
     /// Pop back up a level.
     pub fn pop(&mut self) -> Option<NonZeroUsize> {
         let ix = self.spine.pop()?;
-        self.cur = TreeIndex::Valid(ix);
+        self.cur = TreePointer::Valid(ix);
         Some(ix)
     }
 
@@ -125,9 +125,9 @@ impl<T: Default> Tree<T> {
     /// Resets the focus to the first node added to the tree, if it exists.
     pub fn reset(&mut self) {
         self.cur = if self.is_empty() {
-            TreeIndex::Nil
+            TreePointer::Nil
         } else {
-            TreeIndex::Valid(NonZeroUsize::new(1).unwrap())
+            TreePointer::Valid(NonZeroUsize::new(1).unwrap())
         };
         self.spine.truncate(0);
     }

@@ -25,7 +25,7 @@ use std::collections::HashMap;
 
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
-use crate::tree::{TreeIndex, Node, Tree};
+use crate::tree::{TreePointer, Node, Tree};
 use crate::linklabel::{scan_link_label, LinkLabel};
 
 use std::num::NonZeroUsize;
@@ -68,7 +68,7 @@ enum ItemBody {
     Rule,
     Header(i32), // header level
     FencedCodeBlock(String), // info string (maybe cow?)
-    IndentCodeBlock(TreeIndex), // last non-blank child
+    IndentCodeBlock(TreePointer), // last non-blank child
     SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
@@ -391,10 +391,10 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
-            body: ItemBody::IndentCodeBlock(TreeIndex::Nil), // TODO: probably remove arg
+            body: ItemBody::IndentCodeBlock(TreePointer::Nil), // TODO: probably remove arg
         });
         self.tree.push();
-        let mut last_nonblank_child = TreeIndex::Nil;
+        let mut last_nonblank_child = TreePointer::Nil;
         let mut end_ix = 0;
         let mut last_line_blank = false;
 
@@ -427,8 +427,8 @@ impl<'a> FirstPass<'a> {
         }
 
         // Trim trailing blank lines.
-        if let TreeIndex::Valid(child) = last_nonblank_child {
-            self.tree[child].next = TreeIndex::Nil;
+        if let TreePointer::Valid(child) = last_nonblank_child {
+            self.tree[child].next = TreePointer::Nil;
         }
         self.pop(end_ix);
         ix
@@ -680,7 +680,7 @@ impl<'a> FirstPass<'a> {
                 limit -= 1;
             }
         } else if closer == 0 { limit = closer; }
-        if let TreeIndex::Valid(cur_ix) = self.tree.cur() {
+        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
             self.tree[cur_ix].item.end = limit + header_start;
         }
 
@@ -872,8 +872,8 @@ impl Tree<Item> {
 }
 
 #[allow(dead_code)]
-fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreeIndex, level: usize) {
-    while let TreeIndex::Valid(inner) = ix {
+fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreePointer, level: usize) {
+    while let TreePointer::Valid(inner) = ix {
         let node = &nodes[inner.get()];
         for _ in 0..level {
             eprint!("  ");
@@ -1166,7 +1166,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         }
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
-        if let TreeIndex::Valid(cur_ix) = tree.cur() {
+        if let TreePointer::Valid(cur_ix) = tree.cur() {
             if setext_bytes > 0 && leading_spaces < 4 {
                 ix += setext_bytes;
                 tree[cur_ix].item.body = ItemBody::Header(setext_level);
@@ -1335,7 +1335,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
     // If we are at a ListItem node, we didn't see a new ListItem,
     // so it's time to close the list.
-    if let TreeIndex::Valid(cur_ix) = tree.cur() {
+    if let TreePointer::Valid(cur_ix) = tree.cur() {
         if let ItemBody::ListItem(_) = tree[cur_ix].item.body {
             tree.pop();
         }
@@ -1387,7 +1387,7 @@ fn parse_blocks(mut tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize {
         tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::IndentCodeBlock(TreeIndex::Nil)
+            body: ItemBody::IndentCodeBlock(TreePointer::Nil)
         });
         tree.push();
         ix += codeline_start_offset;
@@ -1581,13 +1581,13 @@ impl InlineStack {
 struct InlineScanner<'a> {
     tree: &'a Tree<Item>,
     text: &'a str,
-    cur: TreeIndex,
+    cur: TreePointer,
     ix: usize,
 }
 
 impl<'a> InlineScanner<'a> {
-    fn new(tree: &'a Tree<Item>, text: &'a str, cur: TreeIndex) -> InlineScanner<'a> {
-        let ix = if let TreeIndex::Valid(cur_ix) = cur {
+    fn new(tree: &'a Tree<Item>, text: &'a str, cur: TreePointer) -> InlineScanner<'a> {
+        let ix = if let TreePointer::Valid(cur_ix) = cur {
             tree[cur_ix].item.start
         } else {
             !0
@@ -1644,9 +1644,9 @@ impl<'a> InlineScanner<'a> {
         s.as_bytes().iter().all(|b| self.scan_ch(*b))
     }
 
-    fn to_node_and_ix(&self) -> (TreeIndex, usize) {
+    fn to_node_and_ix(&self) -> (TreePointer, usize) {
         let mut cur = self.cur;
-        if let TreeIndex::Valid(cur_ix) = cur {
+        if let TreePointer::Valid(cur_ix) = cur {
             if self.tree[cur_ix].item.end == self.ix {
                 cur = self.tree[cur_ix].next;
             }
@@ -1655,10 +1655,10 @@ impl<'a> InlineScanner<'a> {
     }
 
     fn next_char(&mut self) -> Option<char> {
-        if let TreeIndex::Valid(mut cur_ix) = self.cur {
+        if let TreePointer::Valid(mut cur_ix) = self.cur {
             while self.ix == self.tree[cur_ix].item.end {
                 self.cur = self.tree[cur_ix].next;
-                if let TreeIndex::Valid(new_cur_ix) = self.cur {
+                if let TreePointer::Valid(new_cur_ix) = self.cur {
                     cur_ix = new_cur_ix;
                     self.ix = self.tree[cur_ix].item.start;
                 } else {
@@ -1680,13 +1680,13 @@ impl<'a> Iterator for InlineScanner<'a> {
 
     fn next(&mut self) -> Option<u8> {
         match self.cur {
-            TreeIndex::Nil => None,
-            TreeIndex::Valid(mut cur_ix) => {
+            TreePointer::Nil => None,
+            TreePointer::Valid(mut cur_ix) => {
                 while self.ix == self.tree[cur_ix].item.end {
                     self.cur = self.tree[cur_ix].next;
                     match self.cur {
-                        TreeIndex::Nil => return None,
-                        TreeIndex::Valid(new_cur_ix) => {
+                        TreePointer::Nil => return None,
+                        TreePointer::Valid(new_cur_ix) => {
                             cur_ix = new_cur_ix;
                             self.ix = self.tree[cur_ix].item.start;
                         }
@@ -1858,7 +1858,7 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: Non
                         body: ItemBody::SynthesizeText(Borrowed(" "))
                     });
                     tree[space].next = next;
-                    tree[node].next = TreeIndex::Valid(space);
+                    tree[node].next = TreePointer::Valid(space);
                     tree[node].item.end = start + 1;
                 } else {
                     tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
@@ -1866,9 +1866,9 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: Non
             }
             _ => tree[node].item.body = ItemBody::Text,
         }
-        if next == TreeIndex::Valid(close) {
+        if next == TreePointer::Valid(close) {
             last = node;
-            tree[node].next = TreeIndex::Nil;
+            tree[node].next = TreePointer::Nil;
             break;
         }
         node = next.unwrap(); // FIXME: isn't next Nil here?
@@ -2122,16 +2122,16 @@ fn scan_email(scanner: &mut InlineScanner) -> Option<String> {
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // contains label, next node index
-    Label(LinkLabel<'a>, TreeIndex),
+    Label(LinkLabel<'a>, TreePointer),
     // contains next node index
-    Collapsed(TreeIndex),
+    Collapsed(TreePointer),
     Failed,
 }
 
-fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreeIndex) -> RefScan<'b> {
+fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer) -> RefScan<'b> {
     let cur_ix = match cur {
-        TreeIndex::Nil => return RefScan::Failed,
-        TreeIndex::Valid(cur_ix) => cur_ix,
+        TreePointer::Nil => return RefScan::Failed,
+        TreePointer::Valid(cur_ix) => cur_ix,
     };
     let start = tree[cur_ix].item.start;
     
@@ -2223,9 +2223,9 @@ impl<'a> Parser<'a> {
     fn handle_inline_pass1(&mut self) {
         let mut link_stack = Vec::new();
         let mut cur = self.tree.cur();
-        let mut prev = TreeIndex::Nil;
+        let mut prev = TreePointer::Nil;
 
-        while let TreeIndex::Valid(mut cur_ix) = cur {
+        while let TreePointer::Valid(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
@@ -2241,7 +2241,7 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].item.body = ItemBody::Link(uri, String::new());
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
-                        self.tree[cur_ix].child = TreeIndex::Valid(text_node);
+                        self.tree[cur_ix].child = TreePointer::Valid(text_node);
                         cur = node;
                         continue;
                     } else if scan_inline_html(scanner) {
@@ -2252,7 +2252,7 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         cur = node;
-                        if let TreeIndex::Valid(node_ix) = cur {
+                        if let TreePointer::Valid(node_ix) = cur {
                             self.tree[node_ix].item.start = ix;
                         }
                         continue;
@@ -2262,14 +2262,14 @@ impl<'a> Parser<'a> {
                 ItemBody::MaybeCode(count) => {
                     // TODO(performance): this has quadratic pathological behavior, I think
                     let mut scan = self.tree[cur_ix].next;
-                    while let TreeIndex::Valid(scan_ix) = scan {
+                    while let TreePointer::Valid(scan_ix) = scan {
                         if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
                             break;
                         }
                         scan = self.tree[scan_ix].next;
                     }
-                    if scan == TreeIndex::Nil {
+                    if scan == TreePointer::Nil {
                         self.tree[cur_ix].item.body = ItemBody::Text;
                     }
                 }
@@ -2288,10 +2288,10 @@ impl<'a> Parser<'a> {
 
                         if let Some((url, title)) = scan_inline_link(scanner) {
                             let (next_node, next_ix) = scanner.to_node_and_ix();
-                            if let TreeIndex::Valid(prev_ix) = prev {
-                                self.tree[prev_ix].next = TreeIndex::Nil;
+                            if let TreePointer::Valid(prev_ix) = prev {
+                                self.tree[prev_ix].next = TreePointer::Nil;
                             }                            
-                            cur = TreeIndex::Valid(tos.node);
+                            cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
                             self.tree[cur_ix].item.body = if tos.is_image {
                                 ItemBody::Image(url.into(), title.into())
@@ -2300,7 +2300,7 @@ impl<'a> Parser<'a> {
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
-                            if let TreeIndex::Valid(next_node_ix) = next_node {
+                            if let TreePointer::Valid(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start = next_ix;
                             }
 
@@ -2353,12 +2353,12 @@ impl<'a> Parser<'a> {
                                 self.tree[tos.node].child = label_node;
 
                                 // finally: disconnect list of children
-                                if let TreeIndex::Valid(prev_ix) = prev {
-                                    self.tree[prev_ix].next = TreeIndex::Nil;
+                                if let TreePointer::Valid(prev_ix) = prev {
+                                    self.tree[prev_ix].next = TreePointer::Nil;
                                 }                                
 
                                 // set up cur so next node will be node_after_link
-                                cur = TreeIndex::Valid(tos.node);
+                                cur = TreePointer::Valid(tos.node);
                                 cur_ix = tos.node;
 
                                 if tos.is_image {
@@ -2387,18 +2387,18 @@ impl<'a> Parser<'a> {
 
     fn handle_emphasis(&mut self) {
         let mut stack = InlineStack::new();
-        let mut prev = TreeIndex::Nil;
+        let mut prev = TreePointer::Nil;
         let mut prev_ix: NonZeroUsize;
         let mut cur = self.tree.cur();
-        while let TreeIndex::Valid(mut cur_ix) = cur {
+        while let TreePointer::Valid(mut cur_ix) = cur {
             if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur_ix].item.body {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;
                 if can_close {
                     while let Some((j, el)) = stack.find_match(c, count, both) {
                         // have a match!
-                        if let TreeIndex::Valid(prev_ix) = prev {
-                            self.tree[prev_ix].next = TreeIndex::Nil;
+                        if let TreePointer::Valid(prev_ix) = prev {
+                            self.tree[prev_ix].next = TreePointer::Nil;
                         }                        
                         let match_count = ::std::cmp::min(count, el.count);
                         // start, end are tree node indices
@@ -2417,15 +2417,15 @@ impl<'a> Parser<'a> {
                             end = NonZeroUsize::new(end.get() + inc).unwrap();
                             self.tree[root].item.body = ty;
                             self.tree[root].item.end = self.tree[end].item.end;
-                            self.tree[root].child = TreeIndex::Valid(NonZeroUsize::new(start).unwrap());
-                            self.tree[root].next = TreeIndex::Nil;
+                            self.tree[root].child = TreePointer::Valid(NonZeroUsize::new(start).unwrap());
+                            self.tree[root].next = TreePointer::Nil;
                             start = root.get();
                         }
 
                         // set next for top most emph level
                         // FIXME: don't do this
                         prev_ix = NonZeroUsize::new(el.start.get() + el.count - match_count).unwrap();
-                        prev = TreeIndex::Valid(prev_ix);
+                        prev = TreePointer::Valid(prev_ix);
                         cur = self.tree[NonZeroUsize::new(cur_ix.get() + match_count - 1).unwrap()].next;
                         self.tree[prev_ix].next = cur;
 
@@ -2445,7 +2445,7 @@ impl<'a> Parser<'a> {
                         }
 
                         cur_ix = match cur {
-                            TreeIndex::Valid(ix) => ix,
+                            TreePointer::Valid(ix) => ix,
                             _ => unreachable!(),
                         };
                     }
@@ -2466,7 +2466,7 @@ impl<'a> Parser<'a> {
                     }
                     // FIXME: we should do such index juggling in the tree
                     prev_ix = NonZeroUsize::new(cur_ix.get() + count - 1).unwrap();
-                    prev = TreeIndex::Valid(prev_ix);
+                    prev = TreePointer::Valid(prev_ix);
                     cur = self.tree[prev_ix].next;
                 }
             } else {
@@ -2532,14 +2532,14 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
 // tree.cur points to a List<_, _, _> Item Node
 fn detect_tight_list(tree: &Tree<Item>) -> bool {
     // let mut this_listitem = tree[tree.cur].child;
-    // while let TreeIndex::Valid(listitem_ix) = this_listitem {
-    //     let on_lastborn_child = tree[listitem_ix].next == TreeIndex::Nil;
+    // while let TreePointer::Valid(listitem_ix) = this_listitem {
+    //     let on_lastborn_child = tree[listitem_ix].next == TreePointer::Nil;
     //     if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
     //         let mut this_listitem_child = tree[listitem_ix].child;
     //         let mut on_firstborn_grandchild = true; 
-    //         if this_listitem_child != TreeIndex::Nil {
-    //             while this_listitem_child != TreeIndex::Nil {
-    //                 let on_lastborn_grandchild = tree[this_listitem_child].next == TreeIndex::Nil;
+    //         if this_listitem_child != TreePointer::Nil {
+    //             while this_listitem_child != TreePointer::Nil {
+    //                 let on_lastborn_grandchild = tree[this_listitem_child].next == TreePointer::Nil;
     //                 if let ItemBody::BlankLine = tree[this_listitem_child].item.body {
     //                     // If the first line is blank, this does not trigger looseness.
     //                     // Blanklines at the very end of a list also do not trigger looseness.
@@ -2562,28 +2562,28 @@ fn detect_tight_list(tree: &Tree<Item>) -> bool {
 // tree.cur points to a List<_, _, _, false> Item Node
 fn surgerize_tight_list(tree : &mut Tree<Item>) {
     let mut this_listitem = tree[tree.cur().unwrap()].child;
-    while let TreeIndex::Valid(listitem_ix) = this_listitem {
+    while let TreePointer::Valid(listitem_ix) = this_listitem {
         if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
             // first child is special, controls how we repoint this_listitem.child
             let this_listitem_firstborn = tree[listitem_ix].child;
-            if let TreeIndex::Valid(firstborn_ix) = this_listitem_firstborn {
+            if let TreePointer::Valid(firstborn_ix) = this_listitem_firstborn {
                 if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
                     // paragraphs should always have children
                     tree[listitem_ix].child = tree[firstborn_ix].child;
                 }
 
-                let mut this_listitem_child = TreeIndex::Valid(firstborn_ix);
-                let mut node_to_repoint = TreeIndex::Nil;
-                while let TreeIndex::Valid(child_ix) = this_listitem_child {
+                let mut this_listitem_child = TreePointer::Valid(firstborn_ix);
+                let mut node_to_repoint = TreePointer::Nil;
+                while let TreePointer::Valid(child_ix) = this_listitem_child {
                     // surgerize paragraphs
                     if let ItemBody::Paragraph = tree[child_ix].item.body {
                         let this_listitem_child_firstborn = tree[child_ix].child;
-                        if let TreeIndex::Valid(repoint_ix) = node_to_repoint {
+                        if let TreePointer::Valid(repoint_ix) = node_to_repoint {
                             tree[repoint_ix].next = this_listitem_child_firstborn;
                         }
                         let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
-                        while let TreeIndex::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn.unwrap()].next {
-                            this_listitem_child_lastborn = TreeIndex::Valid(lastborn_next_ix);
+                        while let TreePointer::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn.unwrap()].next {
+                            this_listitem_child_lastborn = TreePointer::Valid(lastborn_next_ix);
                         }
                         node_to_repoint = this_listitem_child_lastborn;
                     } else {
@@ -2605,13 +2605,13 @@ impl<'a> Iterator for Parser<'a> {
 
     fn next(&mut self) -> Option<Event<'a>> {
         match self.tree.cur() {
-            TreeIndex::Nil => {
+            TreePointer::Nil => {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
                 self.tree.next_sibling();
                 return Some(Event::End(tag));
             }
-            TreeIndex::Valid(cur_ix) => {
+            TreePointer::Valid(cur_ix) => {
                 match self.tree[cur_ix].item.body {
                     ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
                     | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
@@ -2622,7 +2622,7 @@ impl<'a> Iterator for Parser<'a> {
             }
         }
 
-        if let TreeIndex::Valid(cur_ix) = self.tree.cur() {
+        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
                 self.tree.push();                
                 Some(Event::Start(tag))

@@ -34,7 +34,7 @@ pub struct Node<T> {
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<NonZeroUsize>, // indices of nodes on path to current node
-    pub cur: TreeIndex,
+    cur: TreeIndex,
 }
 
 impl<T: Default> Tree<T> {
@@ -84,12 +84,11 @@ impl<T: Default> Tree<T> {
     }
 
     /// Push down one level, so that new items become children of the current node.
+    /// The new focus index is returned.
     pub fn push(&mut self) {
-        match self.cur {
-            TreeIndex::Nil => panic!("Tried to push when cur was Nil!"),
-            TreeIndex::Valid(ix) => self.spine.push(ix),
-        }
-        self.cur = TreeIndex::Nil;
+        let cur_ix = self.cur.unwrap();
+        self.spine.push(cur_ix);
+        self.cur = self[cur_ix].child;
     }
 
     /// Pop back up a level.
@@ -136,6 +135,11 @@ impl<T: Default> Tree<T> {
     /// Walks the spine from a root node up to, but not including, the current node.
     pub fn walk_spine(&self) -> impl Iterator<Item = &NonZeroUsize> {
         self.spine.iter()
+    }
+
+    /// Moves focus to the next sibling of the current focus.
+    pub fn next_sibling(&mut self) {
+        self.cur = self[self.cur.unwrap()].next;
     }
 }
 

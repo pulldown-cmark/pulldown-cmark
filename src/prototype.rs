@@ -268,9 +268,8 @@ impl<'a> FirstPass<'a> {
             }
         }
 
-        self.tree.pop();
-        let tree_cur = self.tree.cur;
-        self.tree[tree_cur.unwrap()].item.end = ix;
+        let tree_cur_ix = self.tree.pop().unwrap();
+        self.tree[tree_cur_ix].item.end = ix;
         ix
     }
 
@@ -1336,7 +1335,7 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
     // If we are at a ListItem node, we didn't see a new ListItem,
     // so it's time to close the list.
-    if let TreeIndex::Valid(cur_ix) = tree.cur {
+    if let TreeIndex::Valid(cur_ix) = tree.cur() {
         if let ItemBody::ListItem(_) = tree[cur_ix].item.body {
             tree.pop();
         }
@@ -2223,7 +2222,7 @@ impl<'a> Parser<'a> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut link_stack = Vec::new();
-        let mut cur = self.tree.cur;
+        let mut cur = self.tree.cur();
         let mut prev = TreeIndex::Nil;
 
         while let TreeIndex::Valid(mut cur_ix) = cur {
@@ -2390,7 +2389,7 @@ impl<'a> Parser<'a> {
         let mut stack = InlineStack::new();
         let mut prev = TreeIndex::Nil;
         let mut prev_ix: NonZeroUsize;
-        let mut cur = self.tree.cur;
+        let mut cur = self.tree.cur();
         while let TreeIndex::Valid(mut cur_ix) = cur {
             if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur_ix].item.body {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
@@ -2605,39 +2604,34 @@ impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        match self.tree.cur {
+        match self.tree.cur() {
             TreeIndex::Nil => {
-                if let Some(ix) = self.tree.pop() {
-                    let tag = item_to_tag(&self.tree[ix].item).unwrap();
-                    self.tree.cur = self.tree[ix].next;
-                    return Some(Event::End(tag));
-                } else {
-                    return None;
-                }
+                let ix = self.tree.pop()?;
+                let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                self.tree.next_sibling();
+                return Some(Event::End(tag));
             }
             TreeIndex::Valid(cur_ix) => {
                 match self.tree[cur_ix].item.body {
                     ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
                     | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
                         self.handle_inline(),
-                    ItemBody::Backslash => self.tree.cur = self.tree[cur_ix].next,
+                    ItemBody::Backslash => self.tree.next_sibling(),
                     _ => (),
                 }
             }
         }
 
-        if let TreeIndex::Valid(cur_ix) = self.tree.cur {
+        if let TreeIndex::Valid(cur_ix) = self.tree.cur() {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                let child = self.tree[cur_ix].child;
-                self.tree.push();
-                self.tree.cur = child;
-                return Some(Event::Start(tag))
+                self.tree.push();                
+                Some(Event::Start(tag))
             } else {
-                let next = self.tree[cur_ix].next;
-                self.tree.cur = next;
-                return Some(item_to_event(&self.tree[cur_ix].item, self.text))
+                self.tree.next_sibling();
+                Some(item_to_event(&self.tree[cur_ix].item, self.text))
             }
+        } else {
+            None
         }
-        None
     }
 }

@@ -1873,7 +1873,7 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: TreeIndex, close: TreeIn
             tree[node].next = TreePointer::Nil;
             break;
         }
-        node = next.unwrap(); // FIXME: isn't next Nil here?
+        node = next.unwrap();
     }
     // Strip opening and closing space, if appropriate.
     let opening = match &tree[first_ix].item.body {
@@ -2441,14 +2441,11 @@ impl<'a> Parser<'a> {
                             })
                         }
                         count -= match_count;
-                        if count == 0 {
+                        if count > 0 {
+                            cur_ix = cur.unwrap();
+                        } else {
                             break;
                         }
-
-                        cur_ix = match cur {
-                            TreePointer::Valid(ix) => ix,
-                            _ => unreachable!(),
-                        };
                     }
                 }
                 if count > 0 {

@@ -53,6 +53,11 @@ impl<T: Default> Tree<T> {
         }
     }
 
+    /// Returns the index of the element currently in focus.
+    pub fn cur(&self) -> TreeIndex {
+        self.cur
+    }
+
     /// Append one item to the current position in the tree.
     pub fn append(&mut self, item: T) -> NonZeroUsize {
         let ix = self.create_node(item);
@@ -145,16 +150,5 @@ impl<T> std::ops::Index<NonZeroUsize> for Tree<T> {
 impl<T> std::ops::IndexMut<NonZeroUsize> for Tree<T> {
     fn index_mut(&mut self, ix: NonZeroUsize) -> &mut Node<T> {
         self.nodes.index_mut(ix.get())
-    }
-}
-
-impl<T> std::ops::Index<TreeIndex> for Tree<T> {
-    type Output = Node<T>;
-
-    fn index(&self, ix: TreeIndex) -> &Self::Output {
-        match ix {
-            TreeIndex::Nil => panic!("Indexing with Nil!"),
-            TreeIndex::Valid(good) => self.nodes.index(good.get())
-        }
     }
 }

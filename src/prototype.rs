@@ -407,7 +407,7 @@ impl<'a> FirstPass<'a> {
             // TODO(spec clarification): should we synthesize newline at EOF?
 
             if !last_line_blank {
-                last_nonblank_child = self.tree.cur;
+                last_nonblank_child = self.tree.cur();
                 end_ix = ix;
             }
 
@@ -652,7 +652,7 @@ impl<'a> FirstPass<'a> {
 
         // now handle the header text
         let header_start = ix;
-        let header_node_idx = self.tree.cur.unwrap(); // so that we can set the endpoint later
+        let header_node_idx = self.tree.cur().unwrap(); // so that we can set the endpoint later
         self.tree.push();
         ix = parse_line(&mut self.tree, &self.text, ix).0;
         self.tree[header_node_idx].item.end = ix;
@@ -681,7 +681,7 @@ impl<'a> FirstPass<'a> {
                 limit -= 1;
             }
         } else if closer == 0 { limit = closer; }
-        if let TreeIndex::Valid(cur_ix) = self.tree.cur {
+        if let TreeIndex::Valid(cur_ix) = self.tree.cur() {
             self.tree[cur_ix].item.end = limit + header_start;
         }
 
@@ -1082,7 +1082,7 @@ fn parse_indented_code_line(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> us
     // trailing blanklines during tree parsing
     if let None = scan_blank_line(&s[ix..]) {
         let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
-        let tree_cur = tree.cur;
+        let tree_cur = tree.cur();
         if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree[parent_icb].item.body {
             *last_nonblank_child = tree_cur;
         }
@@ -1167,7 +1167,7 @@ fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> 
         }
         // setext headers can interrupt paragraphs
         // but can't be preceded by an empty line. 
-        if let TreeIndex::Valid(cur_ix) = tree.cur {
+        if let TreeIndex::Valid(cur_ix) = tree.cur() {
             if setext_bytes > 0 && leading_spaces < 4 {
                 ix += setext_bytes;
                 tree[cur_ix].item.body = ItemBody::Header(setext_level);
@@ -1221,8 +1221,8 @@ fn scan_containers_old(tree: &Tree<Item>, text: &str) -> (usize, bool) {
                 if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
                     return (i, false);
                 } else if scan_eol(&text[i..]).1 {
-                    if let ItemBody::BlankLine = tree[tree.cur].item.body {
-                        if tree[vertebra].child == tree.cur {
+                    if let ItemBody::BlankLine = tree[tree.cur().unwrap()].item.body {
+                        if tree[vertebra].child == tree.cur() {
                             return (i, false);
                         }
                     }
@@ -1336,8 +1336,8 @@ fn parse_new_containers(tree: &mut Tree<Item>, s: &str, mut ix: usize) -> usize 
 
     // If we are at a ListItem node, we didn't see a new ListItem,
     // so it's time to close the list.
-    if tree.cur != TreeIndex::Nil {
-        if let ItemBody::ListItem(_) = tree[tree.cur].item.body {
+    if let TreeIndex::Valid(cur_ix) = tree.cur {
+        if let ItemBody::ListItem(_) = tree[cur_ix].item.body {
             tree.pop();
         }
     }
@@ -1656,16 +1656,23 @@ impl<'a> InlineScanner<'a> {
     }
 
     fn next_char(&mut self) -> Option<char> {
-        if self.cur == TreeIndex::Nil { return None; }
-        while self.ix == self.tree[self.cur].item.end {
-            self.cur = self.tree[self.cur].next;
-            if self.cur == TreeIndex::Nil { return None; }
-            self.ix = self.tree[self.cur].item.start;
+        if let TreeIndex::Valid(mut cur_ix) = self.cur {
+            while self.ix == self.tree[cur_ix].item.end {
+                self.cur = self.tree[cur_ix].next;
+                if let TreeIndex::Valid(new_cur_ix) = self.cur {
+                    cur_ix = new_cur_ix;
+                    self.ix = self.tree[cur_ix].item.start;
+                } else {
+                    return None;
+                }
+            }
+            self.text[self.ix..].chars().next().map(|c| {
+                self.ix += c.len_utf8();
+                c
+            })
+        } else {
+            None
         }
-        self.text[self.ix..].chars().next().map(|c| {
-            self.ix += c.len_utf8();
-            c
-        })
     }
 }
 
@@ -2130,12 +2137,12 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreeIndex) -
     let start = tree[cur_ix].item.start;
     
     if text[start..].starts_with("[]") {
-        let closing_node = tree[cur_ix].next;
+        let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, label)) = scan_link_label(&text[start..]) {
         let mut scanner = InlineScanner::new(tree, text, cur);
         for _ in 0..ix { scanner.next(); } // move to right node in tree
-        let next_node = tree[scanner.cur].next;
+        let next_node = tree[scanner.cur.unwrap()].next;
         RefScan::Label(label, next_node)
     } else {
         RefScan::Failed
@@ -2257,11 +2264,11 @@ impl<'a> Parser<'a> {
                     // TODO(performance): this has quadratic pathological behavior, I think
                     let mut scan = self.tree[cur_ix].next;
                     while let TreeIndex::Valid(scan_ix) = scan {
-                        if self.tree[scan].item.body == ItemBody::MaybeCode(count) {
+                        if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
                             break;
                         }
-                        scan = self.tree[scan].next;
+                        scan = self.tree[scan_ix].next;
                     }
                     if scan == TreeIndex::Nil {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2525,48 +2532,48 @@ fn item_to_event<'a>(item: &Item, text: &'a str) -> Event<'a> {
 #[allow(unused)]
 // tree.cur points to a List<_, _, _> Item Node
 fn detect_tight_list(tree: &Tree<Item>) -> bool {
-    let mut this_listitem = tree[tree.cur].child;
-    while let TreeIndex::Valid(listitem_ix) = this_listitem {
-        let on_lastborn_child = tree[listitem_ix].next == TreeIndex::Nil;
-        if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
-            let mut this_listitem_child = tree[listitem_ix].child;
-            let mut on_firstborn_grandchild = true; 
-            if this_listitem_child != TreeIndex::Nil {
-                while this_listitem_child != TreeIndex::Nil {
-                    let on_lastborn_grandchild = tree[this_listitem_child].next == TreeIndex::Nil;
-                    if let ItemBody::BlankLine = tree[this_listitem_child].item.body {
-                        // If the first line is blank, this does not trigger looseness.
-                        // Blanklines at the very end of a list also do not trigger looseness.
-                        if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
-                            return false;
-                        }
-                    }
-                    on_firstborn_grandchild = false;
-                    this_listitem_child = tree[this_listitem_child].next;
-                }
-            } // the else should panic!
-        }
+    // let mut this_listitem = tree[tree.cur].child;
+    // while let TreeIndex::Valid(listitem_ix) = this_listitem {
+    //     let on_lastborn_child = tree[listitem_ix].next == TreeIndex::Nil;
+    //     if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
+    //         let mut this_listitem_child = tree[listitem_ix].child;
+    //         let mut on_firstborn_grandchild = true; 
+    //         if this_listitem_child != TreeIndex::Nil {
+    //             while this_listitem_child != TreeIndex::Nil {
+    //                 let on_lastborn_grandchild = tree[this_listitem_child].next == TreeIndex::Nil;
+    //                 if let ItemBody::BlankLine = tree[this_listitem_child].item.body {
+    //                     // If the first line is blank, this does not trigger looseness.
+    //                     // Blanklines at the very end of a list also do not trigger looseness.
+    //                     if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
+    //                         return false;
+    //                     }
+    //                 }
+    //                 on_firstborn_grandchild = false;
+    //                 this_listitem_child = tree[this_listitem_child].next;
+    //             }
+    //         } // the else should panic!
+    //     }
 
-        this_listitem = tree[listitem_ix].next;
-    }
+    //     this_listitem = tree[listitem_ix].next;
+    // }
     return true;
 }
 
 // https://english.stackexchange.com/a/285573
 // tree.cur points to a List<_, _, _, false> Item Node
 fn surgerize_tight_list(tree : &mut Tree<Item>) {
-    let mut this_listitem = tree[tree.cur].child;
+    let mut this_listitem = tree[tree.cur().unwrap()].child;
     while let TreeIndex::Valid(listitem_ix) = this_listitem {
         if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
             // first child is special, controls how we repoint this_listitem.child
             let this_listitem_firstborn = tree[listitem_ix].child;
-            if this_listitem_firstborn != TreeIndex::Nil {
-                if let ItemBody::Paragraph = tree[this_listitem_firstborn].item.body {
+            if let TreeIndex::Valid(firstborn_ix) = this_listitem_firstborn {
+                if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
                     // paragraphs should always have children
-                    tree[listitem_ix].child = tree[this_listitem_firstborn].child;
+                    tree[listitem_ix].child = tree[firstborn_ix].child;
                 }
 
-                let mut this_listitem_child = this_listitem_firstborn;
+                let mut this_listitem_child = TreeIndex::Valid(firstborn_ix);
                 let mut node_to_repoint = TreeIndex::Nil;
                 while let TreeIndex::Valid(child_ix) = this_listitem_child {
                     // surgerize paragraphs
@@ -2576,7 +2583,7 @@ fn surgerize_tight_list(tree : &mut Tree<Item>) {
                             tree[repoint_ix].next = this_listitem_child_firstborn;
                         }
                         let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
-                        while let TreeIndex::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn].next {
+                        while let TreeIndex::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn.unwrap()].next {
                             this_listitem_child_lastborn = TreeIndex::Valid(lastborn_next_ix);
                         }
                         node_to_repoint = this_listitem_child_lastborn;

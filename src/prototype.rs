@@ -270,7 +270,7 @@ impl<'a> FirstPass<'a> {
 
         self.tree.pop();
         let tree_cur = self.tree.cur;
-        self.tree[tree_cur].item.end = ix;
+        self.tree[tree_cur.unwrap()].item.end = ix;
         ix
     }
 
@@ -564,10 +564,9 @@ impl<'a> FirstPass<'a> {
 
     /// Pop a container, setting its end.
     fn pop(&mut self, ix: usize) {
-        self.tree.pop();
-        let tree_cur = self.tree.cur;
-        self.tree[tree_cur].item.end = ix;
-        if let ItemBody::List(true, _, _) = self.tree[self.tree.cur].item.body {
+        let cur_ix = self.tree.pop();
+        self.tree[cur_ix].item.end = ix;
+        if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
             surgerize_tight_list(&mut self.tree);
         }
     }
@@ -653,7 +652,7 @@ impl<'a> FirstPass<'a> {
 
         // now handle the header text
         let header_start = ix;
-        let header_node_idx = self.tree.cur; // so that we can set the endpoint later
+        let header_node_idx = self.tree.cur.unwrap(); // so that we can set the endpoint later
         self.tree.push();
         ix = parse_line(&mut self.tree, &self.text, ix).0;
         self.tree[header_node_idx].item.end = ix;
@@ -682,9 +681,8 @@ impl<'a> FirstPass<'a> {
                 limit -= 1;
             }
         } else if closer == 0 { limit = closer; }
-        if self.tree.cur != TreeIndex::Nil {
-            let tree_cur = self.tree.cur;
-            self.tree[tree_cur].item.end = limit + header_start;
+        if let TreeIndex::Valid(cur_ix) = self.tree.cur {
+            self.tree[cur_ix].item.end = limit + header_start;
         }
 
         self.tree.pop();
@@ -1143,12 +1141,11 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 
 #[allow(unused)]
 fn parse_paragraph_old(mut tree : &mut Tree<Item>, s : &str, mut ix : usize) -> usize {
-    tree.append(Item {
+    let cur = tree.append(Item {
         start: ix,
         end: 0,  // will get set later
         body: ItemBody::Paragraph,
     });
-    let cur = tree.cur;
     tree.push();
     let mut last_soft_break = None;
     while ix < s.len() {
@@ -1831,9 +1828,10 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: Non
     tree[open].item.end = tree[close].item.end;
     tree[open].item.body = ItemBody::Code;
     let first = tree[open].next;
+    let first_ix = first.unwrap();
     tree[open].next = tree[close].next;
     tree[open].child = first;
-    let mut node = first;
+    let mut node = first_ix;
     let last;
     loop {
         let next = tree[node].next;
@@ -1867,11 +1865,11 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: Non
             tree[node].next = TreeIndex::Nil;
             break;
         }
-        node = next;
+        node = next.unwrap(); // FIXME: isn't next Nil here?
     }
     // Strip opening and closing space, if appropriate.
-    let opening = match &tree[first].item.body {
-        ItemBody::Text => s.as_bytes()[tree[first].item.start] == b' ',
+    let opening = match &tree[first_ix].item.body {
+        ItemBody::Text => s.as_bytes()[tree[first_ix].item.start] == b' ',
         ItemBody::SynthesizeText(text) => text.starts_with(' '),
         _ => unreachable!("unexpected item"),
     };
@@ -1882,12 +1880,12 @@ fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: Non
     };
     // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
     if opening && closing {
-        if tree[first].item.body == ItemBody::SynthesizeText(Borrowed(" "))
-            || tree[first].item.end - tree[first].item.start == 1
+        if tree[first_ix].item.body == ItemBody::SynthesizeText(Borrowed(" "))
+            || tree[first_ix].item.end - tree[first_ix].item.start == 1
         {
-            tree[open].child = tree[first].next;
+            tree[open].child = tree[first_ix].next;
         } else {
-            tree[first].item.start += 1;
+            tree[first_ix].item.start += 1;
         }
         if tree[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
             tree[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
@@ -2222,7 +2220,6 @@ impl<'a> Parser<'a> {
         let mut link_stack = Vec::new();
         let mut cur = self.tree.cur;
         let mut prev = TreeIndex::Nil;
-        let mut prev_ix;
 
         while let TreeIndex::Valid(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
@@ -2379,7 +2376,6 @@ impl<'a> Parser<'a> {
                 }
                 _ => (),
             }
-            prev_ix = cur_ix;
             prev = cur;
             cur = self.tree[cur_ix].next;
         }
@@ -2470,7 +2466,6 @@ impl<'a> Parser<'a> {
                     cur = self.tree[prev_ix].next;
                 }
             } else {
-                prev_ix = cur_ix;
                 prev = cur;
                 cur = self.tree[cur_ix].next;
             }
@@ -2591,7 +2586,7 @@ fn surgerize_tight_list(tree : &mut Tree<Item>) {
                         node_to_repoint = this_listitem_child;
                     }
 
-                    tree[node_to_repoint].next = tree[child_ix].next;
+                    tree[node_to_repoint.unwrap()].next = tree[child_ix].next;
                     this_listitem_child = tree[child_ix].next;
                 }
             } // listitems should always have children, let this pass during testing

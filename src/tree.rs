@@ -14,6 +14,15 @@ pub enum TreeIndex {
     Valid(NonZeroUsize),
 }
 
+impl TreeIndex {
+    pub fn unwrap(self) -> NonZeroUsize {
+        match self {
+            TreeIndex::Nil => panic!("Called unwrap on a Nil value"),
+            TreeIndex::Valid(ix) => ix,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Node<T> {
     pub child: TreeIndex,
@@ -79,8 +88,10 @@ impl<T: Default> Tree<T> {
     }
 
     /// Pop back up a level.
-    pub fn pop(&mut self) {
-        self.cur = TreeIndex::Valid(self.spine.pop().unwrap());
+    pub fn pop(&mut self) -> NonZeroUsize {
+        let ix = self.spine.pop().unwrap();
+        self.cur = TreeIndex::Valid(ix);
+        ix
     }
 
     /// Look at the parent node.
@@ -124,15 +135,6 @@ impl<T> std::ops::Index<TreeIndex> for Tree<T> {
         match ix {
             TreeIndex::Nil => panic!("Indexing with Nil!"),
             TreeIndex::Valid(good) => self.nodes.index(good.get())
-        }
-    }
-}
-
-impl<T> std::ops::IndexMut<TreeIndex> for Tree<T> {
-    fn index_mut(&mut self, ix: TreeIndex) -> &mut Node<T> {
-        match ix {
-            TreeIndex::Nil => panic!("Indexing with Nil!"),
-            TreeIndex::Valid(good) => self.nodes.index_mut(good.get())
         }
     }
 }

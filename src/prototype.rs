@@ -25,10 +25,8 @@ use std::collections::HashMap;
 
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
-use crate::tree::{TreePointer, Node, Tree};
+use crate::tree::{TreePointer, TreeIndex, Node, Tree};
 use crate::linklabel::{scan_link_label, LinkLabel};
-
-use std::num::NonZeroUsize;
 
 #[derive(Debug, Default)]
 struct Item {
@@ -878,7 +876,7 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreePointer, level: usize) {
         for _ in 0..level {
             eprint!("  ");
         }
-        eprintln!("{}: {:?} {} {}", inner, node.item.body, node.item.start, node.item.end);
+        eprintln!("{:?}: {:?} {} {}", inner, node.item.body, node.item.start, node.item.end);
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }
@@ -1530,7 +1528,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
-    start: NonZeroUsize,  // offset of tree node
+    start: TreeIndex,  // offset of tree node
     count: usize,
     c: u8,  // b'*' or b'_'
     both: bool,  // can both open and close
@@ -1551,7 +1549,7 @@ impl InlineStack {
     fn pop_to(&mut self, tree: &mut Tree<Item>, new_len: usize) {
         for el in self.stack.drain(new_len..) {
             for i in 0..el.count {
-                tree[NonZeroUsize::new(el.start.get() + i).unwrap()].item.body = ItemBody::Text;
+                tree[el.start + i].item.body = ItemBody::Text;
             }
         }
     }
@@ -1830,7 +1828,7 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 /// Make a code span.
 ///
 /// Both `open` and `close` are matching MaybeCode items.
-fn make_code_span(tree: &mut Tree<Item>, s: &str, open: NonZeroUsize, close: NonZeroUsize) {
+fn make_code_span(tree: &mut Tree<Item>, s: &str, open: TreeIndex, close: TreeIndex) {
     tree[open].item.end = tree[close].item.end;
     tree[open].item.body = ItemBody::Code;
     let first = tree[open].next;
@@ -2172,7 +2170,7 @@ fn scan_inline_link(scanner: &mut InlineScanner) -> Option<(String, String)> {
 }
 
 struct LinkStackEl {
-    node: NonZeroUsize,
+    node: TreeIndex,
     is_image: bool,
 }
 
@@ -2388,7 +2386,7 @@ impl<'a> Parser<'a> {
     fn handle_emphasis(&mut self) {
         let mut stack = InlineStack::new();
         let mut prev = TreePointer::Nil;
-        let mut prev_ix: NonZeroUsize;
+        let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
         while let TreePointer::Valid(mut cur_ix) = cur {
             if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) = self.tree[cur_ix].item.body {
@@ -2402,31 +2400,30 @@ impl<'a> Parser<'a> {
                         }                        
                         let match_count = ::std::cmp::min(count, el.count);
                         // start, end are tree node indices
-                        let mut end = NonZeroUsize::new(cur_ix.get() - 1).unwrap();
-                        let mut start = el.start.get() + el.count;
+                        let mut end = cur_ix - 1;
+                        let mut start = el.start + el.count;
 
                         // work from the inside out
-                        while start > el.start.get() + el.count - match_count {
-                            let (inc, ty) = if start > el.start.get() + el.count - match_count + 1 {
+                        while start > el.start + el.count - match_count {
+                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
                                 (2, ItemBody::Strong)
                             } else {
                                 (1, ItemBody::Emphasis)
                             };
 
-                            let root = NonZeroUsize::new(start - inc).unwrap();
-                            end = NonZeroUsize::new(end.get() + inc).unwrap();
+                            let root = start - inc;
+                            end = end + inc;
                             self.tree[root].item.body = ty;
                             self.tree[root].item.end = self.tree[end].item.end;
-                            self.tree[root].child = TreePointer::Valid(NonZeroUsize::new(start).unwrap());
+                            self.tree[root].child = TreePointer::Valid(start);
                             self.tree[root].next = TreePointer::Nil;
-                            start = root.get();
+                            start = root;
                         }
 
                         // set next for top most emph level
-                        // FIXME: don't do this
-                        prev_ix = NonZeroUsize::new(el.start.get() + el.count - match_count).unwrap();
+                        prev_ix = el.start + el.count - match_count;
                         prev = TreePointer::Valid(prev_ix);
-                        cur = self.tree[NonZeroUsize::new(cur_ix.get() + match_count - 1).unwrap()].next;
+                        cur = self.tree[cur_ix + match_count - 1].next;
                         self.tree[prev_ix].next = cur;
 
                         stack.pop_to(&mut self.tree, j + 1);
@@ -2460,12 +2457,10 @@ impl<'a> Parser<'a> {
                         });
                     } else {
                         for i in 0..count {
-                            // FIXME: we should do such index juggling in the tree
-                            self.tree[NonZeroUsize::new(cur_ix.get() + i).unwrap()].item.body = ItemBody::Text;
+                            self.tree[cur_ix + i].item.body = ItemBody::Text;
                         }
                     }
-                    // FIXME: we should do such index juggling in the tree
-                    prev_ix = NonZeroUsize::new(cur_ix.get() + count - 1).unwrap();
+                    prev_ix = cur_ix + count - 1;
                     prev = TreePointer::Valid(prev_ix);
                     cur = self.tree[prev_ix].next;
                 }

@@ -7,19 +7,51 @@
 //! A Vec-based container for a tree structure.
 
 use std::num::NonZeroUsize;
+use std::ops::{Add, Sub};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TreePointer {
     Nil,
-    Valid(NonZeroUsize),
+    Valid(TreeIndex),
 }
 
 impl TreePointer {
-    pub fn unwrap(self) -> NonZeroUsize {
+    pub fn unwrap(self) -> TreeIndex {
         match self {
             TreePointer::Nil => panic!("Called unwrap on a Nil value"),
             TreePointer::Valid(ix) => ix,
         }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd)]
+pub struct TreeIndex(NonZeroUsize);
+
+impl TreeIndex {
+    fn new(i: usize) -> Self {
+        TreeIndex(NonZeroUsize::new(i).unwrap())
+    }
+
+    pub fn get(&self) -> usize {
+        self.0.get()
+    }
+}
+
+impl Add<usize> for TreeIndex {
+    type Output = TreeIndex;
+ 
+    fn add(self, rhs: usize) -> Self {
+        let inner = self.0.get() + rhs;
+        TreeIndex::new(inner)
+    }
+}
+
+impl Sub<usize> for TreeIndex {
+    type Output = TreeIndex;
+
+    fn sub(self, rhs: usize) -> Self {
+        let inner = self.0.get().checked_sub(rhs).unwrap();
+        TreeIndex::new(inner)
     }
 }
 
@@ -33,13 +65,13 @@ pub struct Node<T> {
 /// A tree abstraction, intended for fast building as a preorder traversal.
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
-    spine: Vec<NonZeroUsize>, // indices of nodes on path to current node
+    spine: Vec<TreeIndex>, // indices of nodes on path to current node
     cur: TreePointer,
 }
 
 impl<T: Default> Tree<T> {
     // Indices start at one, so we place a dummy value at index zero.
-    // The alternative would be subtracting one from every NonZeroUsize
+    // The alternative would be subtracting one from every TreeIndex
     // every time we convert it to usize to index our nodes.
     pub fn new() -> Tree<T> {
         Tree {
@@ -59,7 +91,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Append one item to the current position in the tree.
-    pub fn append(&mut self, item: T) -> NonZeroUsize {
+    pub fn append(&mut self, item: T) -> TreeIndex {
         let ix = self.create_node(item);
         let this = TreePointer::Valid(ix);
 
@@ -73,14 +105,14 @@ impl<T: Default> Tree<T> {
     }
 
     /// Create an isolated node.
-    pub fn create_node(&mut self, item: T) -> NonZeroUsize {
+    pub fn create_node(&mut self, item: T) -> TreeIndex {
         let this = self.nodes.len();
         self.nodes.push(Node {
             child: TreePointer::Nil,
             next: TreePointer::Nil,
             item,
         });
-        NonZeroUsize::new(this).unwrap()
+        TreeIndex::new(this)
     }
 
     /// Push down one level, so that new items become children of the current node.
@@ -92,19 +124,19 @@ impl<T: Default> Tree<T> {
     }
 
     /// Pop back up a level.
-    pub fn pop(&mut self) -> Option<NonZeroUsize> {
+    pub fn pop(&mut self) -> Option<TreeIndex> {
         let ix = self.spine.pop()?;
         self.cur = TreePointer::Valid(ix);
         Some(ix)
     }
 
     /// Look at the parent node.
-    pub fn peek_up(&self) -> Option<NonZeroUsize> {
+    pub fn peek_up(&self) -> Option<TreeIndex> {
         self.spine.last().cloned()
     }
 
     /// Look at grandparent node.
-    pub fn peek_grandparent(&self) -> Option<NonZeroUsize> {
+    pub fn peek_grandparent(&self) -> Option<TreeIndex> {
         if self.spine.len() >= 2 {
             Some(self.spine[self.spine.len() - 2])
         } else {
@@ -127,13 +159,13 @@ impl<T: Default> Tree<T> {
         self.cur = if self.is_empty() {
             TreePointer::Nil
         } else {
-            TreePointer::Valid(NonZeroUsize::new(1).unwrap())
+            TreePointer::Valid(TreeIndex::new(1))
         };
         self.spine.truncate(0);
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
-    pub fn walk_spine(&self) -> impl Iterator<Item = &NonZeroUsize> {
+    pub fn walk_spine(&self) -> impl Iterator<Item = &TreeIndex> {
         self.spine.iter()
     }
 
@@ -143,16 +175,16 @@ impl<T: Default> Tree<T> {
     }
 }
 
-impl<T> std::ops::Index<NonZeroUsize> for Tree<T> {
+impl<T> std::ops::Index<TreeIndex> for Tree<T> {
     type Output = Node<T>;
 
-    fn index(&self, ix: NonZeroUsize) -> &Self::Output {
+    fn index(&self, ix: TreeIndex) -> &Self::Output {
         self.nodes.index(ix.get())
     }
 }
 
-impl<T> std::ops::IndexMut<NonZeroUsize> for Tree<T> {
-    fn index_mut(&mut self, ix: NonZeroUsize) -> &mut Node<T> {
+impl<T> std::ops::IndexMut<TreeIndex> for Tree<T> {
+    fn index_mut(&mut self, ix: TreeIndex) -> &mut Node<T> {
         self.nodes.index_mut(ix.get())
     }
 }

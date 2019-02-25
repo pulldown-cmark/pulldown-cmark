@@ -83,6 +83,16 @@ enum ItemBody<'a> {
     Root,
 }
 
+impl<'a> ItemBody<'a> {
+    fn is_inline(&self) -> bool {
+        match *self {
+            ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
+            | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage => true,
+            _ => false,
+        }
+    }
+}
+
 impl<'a> Default for ItemBody<'a> {
     fn default() -> Self {
         ItemBody::Root
@@ -1021,10 +1031,11 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
         match bytes[ix] {
             b'\n' | b'\r' => {
                 let mut i = ix;
-                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' {
+                let eol_bytes = scan_eol(&s[ix..]).0;
+                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < s.len() {
                     i -= 1;
                     unescape_and_append(tree, s, begin_text, i);
-                    ix += scan_eol(&s[ix..]).0;
+                    ix += eol_bytes;
                     return (ix, Some(Item {
                         start: i,
                         end: ix,
@@ -1052,6 +1063,16 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                     end: ix,
                     body: ItemBody::SoftBreak,
                 }));
+            }
+            b'\\' if ix + 1 < s.len() && bytes[ix + 1] == b'`' => {
+                unescape_and_append(tree, s, begin_text, ix);
+                tree.append(Item {
+                    start: ix,
+                    end: ix + 1,
+                    body: ItemBody::Backslash,
+                });
+                begin_text = ix + 1;
+                ix += 1;
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                 unescape_and_append(tree, s, begin_text, ix);
@@ -2342,9 +2363,14 @@ impl<'a> Parser<'a> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(count) => {
+                ItemBody::MaybeCode(mut count) => {
+                    if let TreePointer::Valid(prev_ix) = prev {
+                        if self.tree[prev_ix].item.body == ItemBody::Backslash {
+                            count -= 1;
+                        }
+                    }
+                    let mut scan = if count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
                     // TODO(performance): this has quadratic pathological behavior, I think
-                    let mut scan = self.tree[cur_ix].next;
                     while let TreePointer::Valid(scan_ix) = scan {
                         if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
@@ -2707,13 +2733,14 @@ impl<'a> Iterator for Parser<'a> {
                 self.tree.next_sibling();
                 return Some(Event::End(tag));
             }
-            TreePointer::Valid(cur_ix) => {
-                match self.tree[cur_ix].item.body {
-                    ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
-                    | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage =>
-                        self.handle_inline(),
-                    ItemBody::Backslash => self.tree.next_sibling(),
-                    _ => (),
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
+                        cur_ix = next;
+                    }
+                }
+                if self.tree[cur_ix].item.body.is_inline() {
+                    self.handle_inline();
                 }
             }
         }

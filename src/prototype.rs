@@ -468,7 +468,7 @@ impl<'a> FirstPass<'a> {
         while info_end > info_start && is_ascii_whitespace(self.text.as_bytes()[info_end - 1]) {
             info_end -= 1;
         }
-        let info_string = self.text[info_start..info_end].into();
+        let info_string = unescape(&self.text[info_start..info_end]);
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
@@ -2223,7 +2223,19 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<
     if !scanner.scan_ch(b')') {
         return None;
     }
-    Some((url, title))
+    // in the worst case, title is already owned, and we allocated
+    // *again* on unescaping. Can this be avoided?
+    let unescaped_title: Cow<'a, str> = if let Cow::Owned(s) = unescape(title.as_ref()) {
+        s.into()
+    } else {
+        title
+    };
+    let unescaped_url: Cow<'a, str> = if let Cow::Owned(s) = unescape(url.as_ref()) {
+        s.into()
+    } else {
+        url
+    };
+    Some((unescaped_url, unescaped_title))
 }
 
 struct LinkStackEl {

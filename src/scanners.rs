@@ -170,7 +170,7 @@ impl<'a> LineStart<'a> {
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
     pub fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
         let save = self.clone();
-        let mut indent = self.scan_space_upto(3);
+        let indent = self.scan_space_upto(3);
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
@@ -192,13 +192,14 @@ impl<'a> LineStart<'a> {
                     if c >= b'0' && c <= b'9' {
                         val = val * 10 + (c - b'0') as u64;
                     } else if c == b')' || c == b'.' {
-                        self.ix = ix + 1;
-                        indent += ix + 1 - start_ix;
+                        self.ix = ix;
                         let val_usize = val as usize;
                         // This will cause some failures on 32 bit arch.
                         // TODO (breaking API change): should be u64, not usize.
-                        if val_usize as u64 != val { return None; }
-                        return self.finish_list_marker(c, val_usize, indent);
+                        if val_usize as u64 != val { return None; }                        
+                        if self.scan_space(1) || self.is_at_eol() {
+                            return self.finish_list_marker(c, val_usize, indent + self.ix - start_ix);
+                        }
                     }
                 }
             }
@@ -211,6 +212,20 @@ impl<'a> LineStart<'a> {
         -> Option<(u8, usize, usize)>
     {
         let save = self.clone();
+
+        // skip the rest of the line if it's blank
+        if let Some(n) = scan_blank_line(&self.text[self.ix..]) {
+            let ix = self.ix;
+            self.ix += n;
+
+            if let Some(_) = scan_blank_line(&self.text[self.ix..]) {
+                // a completely blank line - let's revert to beginning of the line
+                self.ix = ix + 1;
+            } else {
+                indent = self.scan_space_upto(3);
+            }
+        }
+
         let post_indent = self.scan_space_upto(4);
         if post_indent < 4 {
             indent += post_indent;
@@ -309,7 +324,8 @@ pub fn scan_attr_value_chars(data: &str) -> usize {
 // Maybe returning Option<usize> would be more Rustic?
 pub fn scan_eol(s: &str) -> (usize, bool) {
     if s.is_empty() { return (0, true); }
-    match s.as_bytes()[0] {
+    let bytes = s.as_bytes();
+    match bytes[0] {
         b'\n' => (1, true),
         b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
         _ => (0, false)
@@ -620,6 +636,19 @@ pub fn scan_blockquote_start(data: &str) -> usize {
     } else {
         0
     }
+}
+
+/// This already assumes the list item has been scanned.
+pub fn scan_empty_list(data: &str) -> bool {
+    let mut ix = 0;
+    for _ in 0..2 {
+        if let Some(bytes) = scan_blank_line(&data[ix..]) {
+            ix += bytes;
+        } else {
+            return false;
+        }
+    }
+    true
 }
 
 // return number of bytes scanned, delimiter, start index, and indent

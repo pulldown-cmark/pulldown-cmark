@@ -1003,6 +1003,10 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
+// TODO: we could have a different ItemBody for this kind of text, 
+// producing a different node which makes getting either raw or unescaped
+// text explicit. This would eliminate an allocation/ copy when parsing
+// to HTML for example.
 fn unescape_and_append<'a>(tree: &mut Tree<Item<'a>>, text: &'a str, start: usize, end: usize) {
     if end > start {
         match unescape(&text[start..end]) {

@@ -31,23 +31,29 @@ pub enum ReferenceLabel<'a> {
 
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
+/// Returns number of bytes (including brackets) and label on success.
 pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabel<'a>)> {
+    if text.len() < 2 || text.as_bytes()[0] != b'[' { return None; }
+    let pair = if b'^' == text.as_bytes()[1] {
+        let (byte_index, cow) = scan_link_label_rest(&text[2..])?;
+        (byte_index + 2, ReferenceLabel::Footnote(cow))
+    } else {
+        let (byte_index, cow) = scan_link_label_rest(&text[1..])?;
+        (byte_index + 1, ReferenceLabel::Link(cow))
+    };
+    Some(pair)
+}
+
+/// Assumes the opening bracket has already been scanned.
+/// Returns the number of bytes read (including closing bracket) and label on success.
+pub(crate) fn scan_link_label_rest<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)> {
     let mut char_iter = text.chars().peekable();
-    if let Some('[') = char_iter.next() {} else { return None; }
+    let mut byte_index = 0;
     let mut only_white_space = true;
     let mut still_borrowed = true;
     let mut codepoints = 0;
-    let mut byte_index = 1;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
-    let is_footnote = if let Some(&'^') = char_iter.peek() {
-        // consume ^, but don't make it part of the label
-        let _ = char_iter.next();
-        byte_index += 1;
-        true
-    } else {
-        false
-    };
     let start_byte = byte_index;
 
     loop {
@@ -108,10 +114,5 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabe
     } else {
         label.into()
     };
-    let reference = if is_footnote {
-        ReferenceLabel::Footnote(cow)
-    } else {
-        ReferenceLabel::Link(cow)
-    };
-    Some((byte_index, reference))
-}
+    Some((byte_index, cow))
+} 

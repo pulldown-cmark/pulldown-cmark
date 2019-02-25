@@ -28,7 +28,7 @@ use unicase::UniCase;
 use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Node, Tree};
-use crate::linklabel::{scan_link_label, LinkLabel, ReferenceLabel};
+use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
 
 #[derive(Debug, Default)]
 struct Item<'a> {
@@ -144,12 +144,10 @@ impl<'a> FirstPass<'a> {
             // [^bar]:
             // * anything really
             let container_start = start_ix + line_start.bytes_scanned();
-            if let Some((bytecount, _, refdef)) = self.parse_refdef_or_footnote(container_start) {
-                if let RefDef::Footnote = refdef {
-                    start_ix = container_start + bytecount;
-                    start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
-                    line_start = LineStart::new(&self.text[start_ix..]);
-                }            
+            if let Some(bytecount) = self.parse_footnote(container_start) {
+                start_ix = container_start + bytecount;
+                start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
+                line_start = LineStart::new(&self.text[start_ix..]);      
             }
         }
 
@@ -240,11 +238,9 @@ impl<'a> FirstPass<'a> {
         }
 
         // parse refdef
-        if let Some((bytecount, label, refdef)) = self.parse_refdef_or_footnote(ix) {
-            if let RefDef::Link(link_def) = refdef {
-                self.references.entry(label).or_insert(link_def);
-                return ix + bytecount;
-            }
+        if let Some((bytecount, label, link_def)) = self.parse_refdef_total(ix) {
+            self.references.entry(label).or_insert(link_def);
+            return ix + bytecount;
         }
 
         let (n, fence_ch) = scan_code_fence(&self.text[ix..]);
@@ -716,30 +712,37 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    fn parse_refdef_or_footnote(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, RefDef<'a>)> {
-        // scan label
+    /// Returns the number of bytes scanned on success.
+    fn parse_footnote(&mut self, start: usize) -> Option<usize> {
         let tail = &self.text[start..];
-        let (mut i, label) = scan_link_label(tail)?;
+        if !tail.starts_with("[^") { return None; }
+        let (mut i, label) = scan_link_label_rest(&tail[2..])?;
+        i += 2;
         if scan_ch(&tail[i..], b':') == 0 {
             return None;
         }
         i += 1;
+        self.tree.append(Item {
+            start: start,
+            end: 0,  // will get set later
+            body: ItemBody::FootnoteDefinition(label.clone()), // TODO: check whether the label here is strictly necessary
+        });
+        self.tree.push();
+        Some(i)
+    }
 
-        match label {
-            ReferenceLabel::Footnote(label) => {
-                self.tree.append(Item {
-                    start: start,
-                    end: 0,  // will get set later
-                    body: ItemBody::FootnoteDefinition(label.clone()), // TODO: check whether the label here is strictly necessary
-                });
-                self.tree.push();
-                Some((i, UniCase::new(label), RefDef::Footnote))
-            }
-            ReferenceLabel::Link(label) => {
-                let (bytes, link_def) = self.scan_refdef(start + i)?;
-                Some((bytes + i, UniCase::new(label), RefDef::Link(link_def)))
-            }
+    /// Returns number of bytes scanned, label and definition on success.
+    fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
+        let tail = &self.text[start..];
+        if !tail.starts_with('[') { return None; }
+        let (mut i, label) = scan_link_label_rest(&tail[1..])?;
+        i += 1;
+        if scan_ch(&tail[i..], b':') == 0 {
+            return None;
         }
+        i += 1;
+        let (bytes, link_def) = self.scan_refdef(start + i)?;
+        Some((bytes + i, UniCase::new(label), link_def))
     }
 
     /// Returns # of bytes and definition.
@@ -826,8 +829,6 @@ impl<'a> FirstPass<'a> {
             None
         }
     }
-
-
 
     // FIXME: use prototype::scan_link_title ? but we need an inline scanner
     // and that fn seems to allow blank lines.
@@ -2228,11 +2229,6 @@ struct LinkStackEl {
 struct LinkDef<'a> {
     dest: &'a str,
     title: Option<String> // FIXME: should be Cow?
-}
-
-enum RefDef<'a> {
-    Link(LinkDef<'a>),
-    Footnote,
 }
 
 pub struct Parser<'a> {

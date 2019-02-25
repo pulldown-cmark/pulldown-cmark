@@ -99,14 +99,15 @@ struct FirstPass<'a> {
     tree: Tree<Item<'a>>,
     last_line_blank: bool,
     references: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    options: Options,
 }
 
 impl<'a> FirstPass<'a> {
-    fn new(text: &'a str) -> FirstPass {
+    fn new(text: &'a str, options: Options) -> FirstPass {
         let tree = Tree::new();
         let last_line_blank = false;
         let references = HashMap::new();
-        FirstPass { text, tree, last_line_blank, references }
+        FirstPass { text, tree, last_line_blank, references, options }
     }
 
     fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, LinkDef<'a>>) {
@@ -138,16 +139,18 @@ impl<'a> FirstPass<'a> {
             }
         }
         
-        // Footnote definitions of the form
-        // [^bar]:
-        // * anything really
-        let container_start = start_ix + line_start.bytes_scanned();
-        if let Some((bytecount, _, refdef)) = self.parse_refdef_or_footnote(container_start) {
-            if let RefDef::Footnote = refdef {
-                start_ix = container_start + bytecount;
-                start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
-                line_start = LineStart::new(&self.text[start_ix..]);
-            }            
+        if self.options.contains(Options::ENABLE_FOOTNOTES) {
+            // Footnote definitions of the form
+            // [^bar]:
+            // * anything really
+            let container_start = start_ix + line_start.bytes_scanned();
+            if let Some((bytecount, _, refdef)) = self.parse_refdef_or_footnote(container_start) {
+                if let RefDef::Footnote = refdef {
+                    start_ix = container_start + bytecount;
+                    start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
+                    line_start = LineStart::new(&self.text[start_ix..]);
+                }            
+            }
         }
 
         // Process new containers
@@ -2244,8 +2247,8 @@ impl<'a> Parser<'a> {
     }
 
     #[allow(unused_variables)]
-    pub fn new_ext(text: &'a str, opts: Options) -> Parser<'a> {
-        let first_pass = FirstPass::new(text);
+    pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+        let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
         tree.reset();
         Parser { text, tree, refdefs }

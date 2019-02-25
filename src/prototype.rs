@@ -771,6 +771,7 @@ impl<'a> FirstPass<'a> {
 
         // scan link dest
         let (dest_length, dest) = scan_link_dest(&self.text[i..])?;
+        let dest = unescape(dest);
         i += dest_length;
 
         // scan whitespace between dest and label
@@ -811,7 +812,7 @@ impl<'a> FirstPass<'a> {
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = self.scan_refdef_title(i) {
             i += title_length;
-            backup.1.title = Some(title);
+            backup.1.title = Some(unescape_cow(title));
         } else if newlines > 0 {
             return Some(backup);
         } else {
@@ -882,6 +883,14 @@ impl<'a> FirstPass<'a> {
             }
         }
         None
+    }
+}
+
+fn unescape_cow<'a>(c: Cow<'a, str>) -> Cow<'a, str> {
+    if let Cow::Owned(s) = unescape(c.as_ref()) {
+        s.into()
+    } else {
+        c
     }
 }
 
@@ -984,6 +993,23 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
+fn unescape_and_append<'a>(tree: &mut Tree<Item<'a>>, text: &'a str, start: usize, end: usize) {
+    if end > start {
+        match unescape(&text[start..end]) {
+            Cow::Borrowed(..) => {
+                tree.append_text(start, end);
+            }
+            Cow::Owned(s) => {
+                tree.append(Item {
+                    start,
+                    end,
+                    body: ItemBody::SynthesizeText(s.into()),
+                });
+            }
+        }
+    }
+}
+
 /// Parse a line of input, appending text and items to tree.
 ///
 /// Returns: index after line and an item representing the break.
@@ -997,7 +1023,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 let mut i = ix;
                 if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' {
                     i -= 1;
-                    tree.append_text(begin_text, i);
+                    unescape_and_append(tree, s, begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
                     return (ix, Some(Item {
                         start: i,
@@ -1011,7 +1037,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                     while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
                         i -= 1;
                     }
-                    tree.append_text(begin_text, i);
+                    unescape_and_append(tree, s, begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
                     return (ix, Some(Item {
                         start: i,
@@ -1019,7 +1045,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                         body: ItemBody::HardBreak,
                     }));
                 }
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 ix += scan_eol(&s[ix..]).0;
                 return (ix, Some(Item {
                     start: i,
@@ -1028,7 +1054,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 }));
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1044,7 +1070,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 let can_close = delim_run_can_close(s, string_suffix, count, ix);
                 
                 if can_open || can_close {
-                    tree.append_text(begin_text, ix);
+                    unescape_and_append(tree, s, begin_text, ix);
                     for i in 0..count {
                         tree.append(Item {
                             start: ix + i,
@@ -1059,7 +1085,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 }
             }
             b'`' => {
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 let count = 1 + scan_ch_repeat(&s[ix+1..], b'`');
                 tree.append(Item {
                     start: ix,
@@ -1072,7 +1098,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
             b'<' => {
                 // Note: could detect some non-HTML cases and early escape here, but not
                 // clear that's a win.
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1082,7 +1108,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b'!' if ix + 1 < s.len() && bytes[ix + 1] == b'[' => {
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 2,
@@ -1092,7 +1118,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b'[' => {
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1102,7 +1128,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b']' => {
-                tree.append_text(begin_text, ix);
+                unescape_and_append(tree, s, begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1115,7 +1141,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
         }
     }
     // need to close text at eof
-    tree.append_text(begin_text, ix);
+    unescape_and_append(tree, s, begin_text, ix);
     (ix, None)
 }
 
@@ -2223,19 +2249,9 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<
     if !scanner.scan_ch(b')') {
         return None;
     }
-    // in the worst case, title is already owned, and we allocated
+    // in the worst case, title/ url is already owned, and we allocated
     // *again* on unescaping. Can this be avoided?
-    let unescaped_title: Cow<'a, str> = if let Cow::Owned(s) = unescape(title.as_ref()) {
-        s.into()
-    } else {
-        title
-    };
-    let unescaped_url: Cow<'a, str> = if let Cow::Owned(s) = unescape(url.as_ref()) {
-        s.into()
-    } else {
-        url
-    };
-    Some((unescaped_url, unescaped_title))
+    Some((unescape_cow(url), unescape_cow(title)))
 }
 
 struct LinkStackEl {
@@ -2244,7 +2260,7 @@ struct LinkStackEl {
 }
 
 struct LinkDef<'a> {
-    dest: &'a str,
+    dest: Cow<'a, str>,
     title: Option<Cow<'a, str>>,
 }
 
@@ -2418,7 +2434,7 @@ impl<'a> Parser<'a> {
                                 .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
                                 // found a matching definition!
                                 let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
-                                let url = matching_def.dest.into();
+                                let url = matching_def.dest.clone();
                                 self.tree[tos.node].item.body = if tos.is_image {
                                     ItemBody::Image(url, title)
                                 } else {
@@ -2583,6 +2599,7 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
         ItemBody::Text => {
             Event::Text(Cow::from(&text[item.start..item.end]))
         },
+        // TODO: don't clone text!
         ItemBody::SynthesizeText(ref text) => {
             Event::Text(text.clone())
         }

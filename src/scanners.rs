@@ -946,7 +946,7 @@ pub fn unescape(input: &str) -> Cow<str> {
     let bytes = input.as_bytes();
     while i < input.len() {
         match bytes[i] {
-            b'\\' if (bytes[i + 1] as char).is_ascii_punctuation() => {
+            b'\\' if i + 1 < input.len() && (bytes[i + 1] as char).is_ascii_punctuation() => {
                 result.push_str(&input[mark..i]);
                 i += 1;
                 mark = i;

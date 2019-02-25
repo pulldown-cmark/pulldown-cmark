@@ -24,17 +24,37 @@ use std::borrow::Cow;
 
 use unicase::UniCase;
 
+pub enum ReferenceLabel<'a> {
+    Link(Cow<'a, str>),
+    Footnote(Cow<'a, str>),
+}
+
 pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
 
-pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>)> {
+/// Returns number of bytes (including brackets) and label on success.
+pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabel<'a>)> {
+    if text.len() < 2 || text.as_bytes()[0] != b'[' { return None; }
+    let pair = if b'^' == text.as_bytes()[1] {
+        let (byte_index, cow) = scan_link_label_rest(&text[2..])?;
+        (byte_index + 2, ReferenceLabel::Footnote(cow))
+    } else {
+        let (byte_index, cow) = scan_link_label_rest(&text[1..])?;
+        (byte_index + 1, ReferenceLabel::Link(cow))
+    };
+    Some(pair)
+}
+
+/// Assumes the opening bracket has already been scanned.
+/// Returns the number of bytes read (including closing bracket) and label on success.
+pub(crate) fn scan_link_label_rest<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)> {
     let mut char_iter = text.chars().peekable();
-    if let Some('[') = char_iter.next() {} else { return None; }
+    let mut byte_index = 0;
     let mut only_white_space = true;
     let mut still_borrowed = true;
     let mut codepoints = 0;
-    let mut byte_index = 1;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
+    let start_byte = byte_index;
 
     loop {
         if codepoints >= 1000 { return None; }
@@ -66,7 +86,7 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>
                 if whitespaces > 1 || c != ' ' {
                     byte_index -= c.len_utf8();
                     if still_borrowed {
-                        label.push_str(&text[1..byte_index]);
+                        label.push_str(&text[start_byte..byte_index]);
                         still_borrowed = false;
                     }
                     c = ' ';
@@ -90,9 +110,9 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, LinkLabel<'a>
         return None;
     }
     let cow = if still_borrowed {
-        text[1..(byte_index - 1)].into()
+        text[start_byte..(byte_index - 1)].into()
     } else {
         label.into()
     };
-    Some((byte_index, UniCase::new(cow)))
-}
+    Some((byte_index, cow))
+} 

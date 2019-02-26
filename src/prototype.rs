@@ -1003,27 +1003,6 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
-// TODO: we could have a different ItemBody for this kind of text, 
-// producing a different node which makes getting either raw or unescaped
-// text explicit. This would eliminate an allocation/ copy when parsing
-// to HTML for example.
-fn unescape_and_append<'a>(tree: &mut Tree<Item<'a>>, text: &'a str, start: usize, end: usize) {
-    if end > start {
-        match unescape(&text[start..end]) {
-            Cow::Borrowed(..) => {
-                tree.append_text(start, end);
-            }
-            Cow::Owned(s) => {
-                tree.append(Item {
-                    start,
-                    end,
-                    body: ItemBody::SynthesizeText(s.into()),
-                });
-            }
-        }
-    }
-}
-
 /// Parse a line of input, appending text and items to tree.
 ///
 /// Returns: index after line and an item representing the break.
@@ -1038,7 +1017,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 let eol_bytes = scan_eol(&s[ix..]).0;
                 if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < s.len() {
                     i -= 1;
-                    unescape_and_append(tree, s, begin_text, i);
+                    tree.append_text(begin_text, i);
                     ix += eol_bytes;
                     return (ix, Some(Item {
                         start: i,
@@ -1052,7 +1031,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                     while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
                         i -= 1;
                     }
-                    unescape_and_append(tree, s, begin_text, i);
+                    tree.append_text(begin_text, i);
                     ix += scan_eol(&s[ix..]).0;
                     return (ix, Some(Item {
                         start: i,
@@ -1060,7 +1039,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                         body: ItemBody::HardBreak,
                     }));
                 }
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 ix += scan_eol(&s[ix..]).0;
                 return (ix, Some(Item {
                     start: i,
@@ -1069,7 +1048,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 }));
             }
             b'\\' if ix + 1 < s.len() && bytes[ix + 1] == b'`' => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1079,7 +1058,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 ix += 1;
             }
             b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1095,7 +1074,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 let can_close = delim_run_can_close(s, string_suffix, count, ix);
                 
                 if can_open || can_close {
-                    unescape_and_append(tree, s, begin_text, ix);
+                    tree.append_text(begin_text, ix);
                     for i in 0..count {
                         tree.append(Item {
                             start: ix + i,
@@ -1110,7 +1089,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 }
             }
             b'`' => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 let count = 1 + scan_ch_repeat(&s[ix+1..], b'`');
                 tree.append(Item {
                     start: ix,
@@ -1123,7 +1102,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
             b'<' => {
                 // Note: could detect some non-HTML cases and early escape here, but not
                 // clear that's a win.
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1133,7 +1112,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b'!' if ix + 1 < s.len() && bytes[ix + 1] == b'[' => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 2,
@@ -1143,7 +1122,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b'[' => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1153,7 +1132,7 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 begin_text = ix;
             }
             b']' => {
-                unescape_and_append(tree, s, begin_text, ix);
+                tree.append_text(begin_text, ix);
                 tree.append(Item {
                     start: ix,
                     end: ix + 1,
@@ -1162,11 +1141,28 @@ fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usiz
                 ix += 1;
                 begin_text = ix;
             }
+            b'&' => {
+                // TODO(performance): if owned, entity will always just be a char,
+                // which we should be able to store without allocating
+                match scan_entity(&s[ix..]) {
+                    (n, Some(value)) => {
+                        tree.append_text(begin_text, ix);
+                        tree.append(Item {
+                            start: ix,
+                            end: ix + n,
+                            body: ItemBody::SynthesizeText(value),
+                        });
+                        ix += n;
+                        begin_text = ix;
+                    }
+                    _ => ix += 1
+                }
+            }
             _ => ix += 1,
         }
     }
     // need to close text at eof
-    unescape_and_append(tree, s, begin_text, ix);
+    tree.append_text(begin_text, ix);
     (ix, None)
 }
 

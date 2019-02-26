@@ -170,8 +170,10 @@ impl<T: Default> Tree<T> {
     }
 
     /// Moves focus to the next sibling of the current focus.
-    pub fn next_sibling(&mut self) {
-        self.cur = self[self.cur.unwrap()].next;
+    pub fn next_sibling(&mut self) -> TreePointer {
+        let next = self[self.cur.unwrap()].next;
+        self.cur = next;
+        next
     }
 }
 

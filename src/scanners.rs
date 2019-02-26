@@ -940,38 +940,39 @@ pub fn is_escaped(data: &str, loc: usize) -> bool {
 
 // Remove backslash escapes and resolve entities
 pub fn unescape(input: &str) -> Cow<str> {
-    if input.find(|c| c == '\\' || c == '&' || c == '\r').is_none() {
+    let mut result = String::new();
+    let mut mark = 0;
+    let mut i = 0;
+    let bytes = input.as_bytes();
+    while i < input.len() {
+        match bytes[i] {
+            b'\\' if i + 1 < input.len() && (bytes[i + 1] as char).is_ascii_punctuation() => {
+                result.push_str(&input[mark..i]);
+                i += 1;
+                mark = i;
+            }
+            b'&' => {
+                match scan_entity(&input[i..]) {
+                    (n, Some(value)) => {
+                        result.push_str(&input[mark..i]);
+                        result.push_str(&value);
+                        i += n;
+                        mark = i;
+                    }
+                    _ => i += 1
+                }
+            }
+            b'\r' => {
+                result.push_str(&input[mark..i]);
+                i += 1;
+                mark = i;
+            }
+            _ => i += 1
+        }
+    }
+    if mark == 0 {
         Borrowed(input)
     } else {
-        let mut result = String::new();
-        let mut mark = 0;
-        let mut i = 0;
-        while i < input.len() {
-            match input.as_bytes()[i] {
-                b'\\' => {
-                    result.push_str(&input[mark..i]);
-                    i += 1;
-                    mark = i;
-                }
-                b'&' => {
-                    match scan_entity(&input[i..]) {
-                        (n, Some(value)) => {
-                            result.push_str(&input[mark..i]);
-                            result.push_str(&value);
-                            i += n;
-                            mark = i;
-                        }
-                        _ => i += 1
-                    }
-                }
-                b'\r' => {
-                    result.push_str(&input[mark..i]);
-                    i += 1;
-                    mark = i;
-                }
-                _ => i += 1
-            }
-        }
         result.push_str(&input[mark..]);
         Owned(result)
     }
@@ -1004,20 +1005,21 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
         return None;
     }
     i += l;
-    let n = scan_while(&data[i..], is_ascii_letterdigitdash);
-    i += n;
+    i += scan_while(&data[i..], is_ascii_letterdigitdash);
 
     if close_tag_bytes == 0 {
         loop {
-            i += scan_whitespace_no_nl(&data[i..]);
+            let whitespace = scan_whitespace_no_nl(&data[i..]);
+            i += whitespace;
             let c = data.as_bytes()[i];
             match c {
                 b'/' | b'>' => { 
                     break; },
                 _ => {},
             }
+            if whitespace == 0 { return None; }
             if let Some(a) = scan_attribute(&data[i..]) {
-                if a == 0 {break;}
+                if a == 0 { break; }
                 i += a;
             } else {
                 return None;

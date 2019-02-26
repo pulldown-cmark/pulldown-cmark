@@ -2097,35 +2097,47 @@ fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<
     scan_link_destination_plain(scanner)
 }
 
-// TODO: don't return owned variant if not necessary
 fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
     let open = scanner.next_char()?;
     if !(open == '\'' || open == '\"' || open == '(') {
         return None;
     }
+    let underlying = &scanner.text[scanner.ix..];
     let mut title = String::new();
+    let mut still_borrowed = true;
+    let mut bytecount = 0;
     let mut nest = 0;
-    while let Some(c) = scanner.next_char() {
+    while let Some(mut c) = scanner.next_char() {
         if c == open {
             if open == '(' {
                 nest += 1;
             } else {
-                return Some(title.into());
+                return Some(if still_borrowed { underlying[..bytecount].into() } else { title.into() });
             }
         }
         if open == '(' && c == ')' {
             if nest == 0 {
-                return Some(title.into());
+                return Some(if still_borrowed { underlying[..bytecount].into() } else { title.into() });
             } else {
                 nest -= 1;
             }
         }
         if c == '\\' {
-            let c = scanner.next_char()?;
-            if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
-                title.push('\\');
+            let c_next = scanner.next_char()?;
+            if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
+                if !still_borrowed {
+                    title.push('\\');
+                } else {
+                    bytecount += '\\'.len_utf8()
+                }
+            } else if still_borrowed {
+                title.push_str(&underlying[..bytecount]);
+                still_borrowed = false;
             }
-            title.push(c);
+            c = c_next;
+        }
+        if still_borrowed {
+            bytecount += c.len_utf8();
         } else {
             title.push(c);
         }

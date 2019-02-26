@@ -1999,62 +1999,90 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     }
 }
 
-// TODO: don't return owned variant if not necessary
 fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
     let mut url = String::new();
     let mut nest = 0;
-    while let Some(c) = scanner.next_char() {
+    let mut bytecount = 0;
+    let mut still_borrowed = true;
+    let underlying = &scanner.text[scanner.ix..];
+    while let Some(mut c) = scanner.next_char() {
         match c {
             '(' => {
-                url.push(c);
                 nest += 1;
             }
             ')' => {
                 if nest == 0 {
                     scanner.unget();
-                    return Some(url.into());
+                    return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
                 }
-                url.push(c);
                 nest -= 1;
             }
             '\x00'..=' ' => {
                 scanner.unget();
-                return Some(url.into());
+                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
             },
             '\\' => {
-                if let Some(c) = scanner.next_char() {
-                    if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
-                        url.push('\\');
+                if let Some(c_next) = scanner.next_char() {
+                    if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
+                        if !still_borrowed {
+                            url.push('\\');
+                        } else {
+                            bytecount += '\\'.len_utf8();
+                        }
+                    } else if still_borrowed {
+                        url.push_str(&underlying[..bytecount]);
+                        still_borrowed = false;
                     }
-                    url.push(c);
+                    c = c_next;
                 } else {
                     return None;
                 }
             }
-            _ => url.push(c),
+            _ => {}
+        }
+        if still_borrowed {
+            bytecount += c.len_utf8();
+        } else {
+            url.push(c);
         }
     }
     None
 }
 
-// TODO: don't return owned variant if not necessary
 fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
     if !scanner.scan_ch(b'<') {
         return None;
     }
+    let underlying = &scanner.text[scanner.ix..];
     let mut url = String::new();
-    while let Some(c) = scanner.next_char() {
+    let mut still_borrowed = true;
+    let mut bytecount = 0;
+    while let Some(mut c) = scanner.next_char() {
         match c {
-            '>' => return Some(url.into()),
+            '>' => {
+                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
+            }
             '\x00'..='\x1f' | '<' => return None,
             '\\' => {
-                let c = scanner.next_char()?;
-                if !(c <= '\x7f' && is_ascii_punctuation(c as u8)) {
-                    url.push('\\');
+                let c_next = scanner.next_char()?;
+                if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
+                    if !still_borrowed {
+                        url.push('\\');
+                    } else {
+                        bytecount += '\\'.len_utf8()
+                    }
+                } else if still_borrowed {
+                    url.push_str(&underlying[..bytecount]);
+                    still_borrowed = false;
                 }
-                url.push(c);
+                c = c_next;
             }
-            _ => url.push(c),
+            _ => {}
+        }
+        if still_borrowed {
+            bytecount += c.len_utf8();
+        } else {
+            url.push(c);
         }
     }
     None

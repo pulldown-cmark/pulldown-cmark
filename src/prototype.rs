@@ -270,34 +270,16 @@ impl<'a> FirstPass<'a> {
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
     fn parse_table(&mut self, start_ix: usize, body_start: usize) -> usize {
-        let mut ix = start_ix;
-
-        let thead_ix = self.tree.append(Item {
-            start: start_ix,
-            end: ix,
-            body: ItemBody::TableHead,
-        });
-        self.tree.push();
-
-        // this shouldn't fail because we (should have) made sure the table
+        // parse header. this shouldn't fail because we (should have) made sure the table
         // header is ok
         self.parse_table_row(start_ix).unwrap();
-
-        self.tree[thead_ix].item.end = ix;
-        self.tree.pop();
+        let thead_ix = self.tree.cur().unwrap();
+        self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
-        ix = body_start;
-        while !scan_paragraph_interrupt(&self.text[ix..]) {
-            iters += 1;
-            let thead_ix = self.tree.append(Item {
-                start: start_ix,
-                end: ix,
-                body: ItemBody::TableRow,
-            });
-            self.tree.push();
-            ix = self.parse_table_row(ix).unwrap();
-            self.tree.pop();
+        let mut ix = body_start;
+        while let Some(next_ix) = self.parse_table_row(ix) {
+            ix = next_ix;
         }
 
         let table_ix = self.tree.pop().unwrap();
@@ -307,8 +289,25 @@ impl<'a> FirstPass<'a> {
 
     /// Returns first offset after the row.
     fn parse_table_row(&mut self, mut ix: usize) -> Option<usize> {
+        let mut line_start = LineStart::new(&self.text[ix..]);
+        let _n_containers = self.scan_containers(&mut line_start);
+        ix += line_start.bytes_scanned();
+
+        if scan_paragraph_interrupt(&self.text[ix..]) {
+            return None;
+        }
+
+        let row_ix = self.tree.append(Item {
+            start: ix,
+            end: 0, // set at end of this function
+            body: ItemBody::TableRow,
+        });
+        self.tree.push();
+
         loop {
             let (next_ix, text) = self.parse_table_cell(ix);
+            assert!(next_ix > ix);
+
             self.tree.append(Item {
                 start: ix,
                 end: next_ix,
@@ -328,6 +327,8 @@ impl<'a> FirstPass<'a> {
             }
         }
 
+        self.tree.pop();
+        self.tree[row_ix].item.end = ix;
         Some(ix)
     }
 
@@ -389,7 +390,7 @@ impl<'a> FirstPass<'a> {
             let (next_ix, brk) = self.parse_line(ix);
 
             // break out when we find a table
-            // rust's pattern matching saves us here!
+            // rust's pattern matching really shines here!
             if let Some(table @ Item { body: ItemBody::Table(..), .. }) = brk {
                 if let TreePointer::Nil = self.tree[node_ix].child {
                     // no content in paragraph yet, just replace by table
@@ -480,9 +481,14 @@ impl<'a> FirstPass<'a> {
                         // check if we may be parsing a table
                         // TODO: check that number of pipes in current line is equal to number we find in table_head
                         // NOTE: trailing and leading pipes don't count!
-                        let (table_head_bytes, alignment) = scan_table_head(&self.text[(ix + eol_bytes)..]);
+                        let next_line_ix = ix + eol_bytes;
+                        let mut line_start = LineStart::new(&self.text[next_line_ix..]);
+                        let _n_containers = self.scan_containers(&mut line_start);
+                        let table_head_ix = next_line_ix + line_start.bytes_scanned();
+                        let (table_head_bytes, alignment) = scan_table_head(&self.text[table_head_ix..]);
+
                         if table_head_bytes > 0 {
-                            ix += eol_bytes + table_head_bytes;
+                            ix = table_head_ix + table_head_bytes;
                             return (ix, Some(Item {
                                 start: i,
                                 end: ix, // must update later
@@ -898,11 +904,11 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
-                ItemBody::Table(..) |
+                ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
                 ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
                 ItemBody::Paragraph | ItemBody::IndentCodeBlock(_) |
                 ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
-                _ => panic!("unexpected node in tree"),
+                ref node => panic!("unexpected node in tree: {:?}", node),
             }
             i += 1;
         }

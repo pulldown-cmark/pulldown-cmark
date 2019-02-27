@@ -267,7 +267,8 @@ impl<'a> FirstPass<'a> {
     }
 
     /// Returns the offset of the first line after the table.
-    /// Assumptions: current focus is a table element.
+    /// Assumptions: current focus is a table element and the table header
+    /// matches the separator line (same number of columns).
     fn parse_table(&mut self, start_ix: usize, body_start: usize) -> usize {
         let mut ix = start_ix;
 
@@ -278,17 +279,47 @@ impl<'a> FirstPass<'a> {
         });
         self.tree.push();
 
-        while let Some((next_ix, text_start, text_end)) = self.parse_table_cell(ix) {
+        // this shouldn't fail because we (should have) made sure the table
+        // header is ok
+        self.parse_table_row(start_ix).unwrap();
+
+        self.tree[thead_ix].item.end = ix;
+        self.tree.pop();
+
+        // parse body
+        ix = body_start;
+        while !scan_paragraph_interrupt(&self.text[ix..]) {
+            iters += 1;
+            let thead_ix = self.tree.append(Item {
+                start: start_ix,
+                end: ix,
+                body: ItemBody::TableRow,
+            });
+            self.tree.push();
+            ix = self.parse_table_row(ix).unwrap();
+            self.tree.pop();
+        }
+
+        let table_ix = self.tree.pop().unwrap();
+        self.tree[table_ix].item.end = ix;
+        ix
+    }
+
+    /// Returns first offset after the row.
+    fn parse_table_row(&mut self, mut ix: usize) -> Option<usize> {
+        loop {
+            let (next_ix, text) = self.parse_table_cell(ix);
             self.tree.append(Item {
                 start: ix,
                 end: next_ix,
                 body: ItemBody::TableCell,
             });
-            self.tree.push();
-            self.tree.append_text(text_start, text_end);
-            self.tree.pop();
+            if let Some((text_start, text_end)) = text {
+                self.tree.push();
+                self.tree.append_text(text_start, text_end);
+                self.tree.pop();
+            }
             ix = next_ix;
-
             let eol_bytes = scan_eol(&self.text[ix..]).0;
             ix += eol_bytes;
 
@@ -297,19 +328,12 @@ impl<'a> FirstPass<'a> {
             }
         }
 
-        self.tree[thead_ix].item.end = ix;
-        self.tree.pop();
-
-        // TODO: implement body parsing
-        let end = body_start;
-        let table_ix = self.tree.pop().unwrap();
-        self.tree[table_ix].item.end = end;
-
-        end
+        Some(ix)
     }
 
-    /// Returns offset after done, text start, text end.
-    fn parse_table_cell(&mut self, start_ix: usize) -> Option<(usize, usize, usize)> {
+    /// Returns offset after done, text start, text end on non-empty,
+    /// Returns offset when completely empty.
+    fn parse_table_cell(&mut self, start_ix: usize) -> (usize, Option<(usize, usize)>) {
         assert!(self.options.contains(Options::ENABLE_TABLES));
         let bytes   = self.text.as_bytes();
         let mut beg = start_ix + scan_whitespace_no_nl(&self.text[start_ix..]);
@@ -323,20 +347,31 @@ impl<'a> FirstPass<'a> {
                 b'\\' if i + 1 < self.text.len() && bytes[i + 1] == b'|' => {
                     i += 2;
                 }
-                b'|' | b'\r' | b'\n' => {
+                b'|' => {
+                    i += 1;
+                    n += 1;
                     break;
                 }
-                _ => {
-                    n = scan_whitespace_no_nl(&self.text[i..]);
+                b'\r' | b'\n' => {
+                    break;
+                }
+                c => {
+                    // FIXME: does this work with unicode whitespace?
+                    n = if is_ascii_whitespace_no_nl(c) {
+                        scan_whitespace_no_nl(&self.text[i..])
+                    } else {
+                        0
+                    };                    
                     i += std::cmp::max(1, n);
                 }
             }
         }
         if i > beg {
             // ignore trailing whitespace
-            Some((i, beg, i - n))
+            (i, Some((beg, i - n)))
         } else {
-            None
+            // only whitespace
+            (i, None)
         }
     }
 
@@ -386,7 +421,7 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
-                // first check for non-empty lists, then for other interrupts    
+                // first check for non-empty lists, then for other interrupts
                 let suffix = &self.text[ix_new..];
                 if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
@@ -2775,6 +2810,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Table(ref alignment) => Some(Tag::Table(alignment.clone())),
         ItemBody::TableHead => Some(Tag::TableHead),
         ItemBody::TableCell => Some(Tag::TableCell),
+        ItemBody::TableRow => Some(Tag::TableRow),
         _ => None,
     }
 }

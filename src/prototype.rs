@@ -25,7 +25,7 @@ use std::collections::HashMap;
 
 use unicase::UniCase;
 
-use crate::parse::{Event, Tag, Options};
+use crate::parse::{Event, Tag, Options, Alignment};
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Node, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -78,6 +78,12 @@ enum ItemBody<'a> {
     SynthesizeText(Cow<'static, str>),
     BlankLine,
     FootnoteDefinition(Cow<'a, str>), // label
+
+    // Tables
+    Table(Vec<Alignment>),
+    TableHead,
+    TableRow,
+    TableCell,
 
     // Dummy node at the top of the tree - should not be used otherwise!
     Root,
@@ -260,7 +266,81 @@ impl<'a> FirstPass<'a> {
         self.parse_paragraph(ix)
     }
 
-    /// Return offset of line start after paragraph.
+    /// Returns the offset of the first line after the table.
+    /// Assumptions: current focus is a table element.
+    fn parse_table(&mut self, start_ix: usize, body_start: usize) -> usize {
+        let mut ix = start_ix;
+
+        let thead_ix = self.tree.append(Item {
+            start: start_ix,
+            end: ix,
+            body: ItemBody::TableHead,
+        });
+        self.tree.push();
+
+        while let Some((next_ix, text_start, text_end)) = self.parse_table_cell(ix) {
+            self.tree.append(Item {
+                start: ix,
+                end: next_ix,
+                body: ItemBody::TableCell,
+            });
+            self.tree.push();
+            self.tree.append_text(text_start, text_end);
+            self.tree.pop();
+            ix = next_ix;
+
+            let eol_bytes = scan_eol(&self.text[ix..]).0;
+            ix += eol_bytes;
+
+            if eol_bytes > 0 {
+                break;
+            }
+        }
+
+        self.tree[thead_ix].item.end = ix;
+        self.tree.pop();
+
+        // TODO: implement body parsing
+        let end = body_start;
+        let table_ix = self.tree.pop().unwrap();
+        self.tree[table_ix].item.end = end;
+
+        end
+    }
+
+    /// Returns offset after done, text start, text end.
+    fn parse_table_cell(&mut self, start_ix: usize) -> Option<(usize, usize, usize)> {
+        assert!(self.options.contains(Options::ENABLE_TABLES));
+        let bytes   = self.text.as_bytes();
+        let mut beg = start_ix + scan_whitespace_no_nl(&self.text[start_ix..]);
+        if beg < self.text.len() && bytes[beg] == b'|' {
+            beg += 1;
+        }
+        let mut i = beg;
+        let mut n = 0;
+        while i < self.text.len() {
+            match bytes[i] {
+                b'\\' if i + 1 < self.text.len() && bytes[i + 1] == b'|' => {
+                    i += 2;
+                }
+                b'|' | b'\r' | b'\n' => {
+                    break;
+                }
+                _ => {
+                    n = scan_whitespace_no_nl(&self.text[i..]);
+                    i += std::cmp::max(1, n);
+                }
+            }
+        }
+        if i > beg {
+            // ignore trailing whitespace
+            Some((i, beg, i - n))
+        } else {
+            None
+        }
+    }
+
+    /// Returns offset of line start after paragraph.
     fn parse_paragraph(&mut self, start_ix: usize) -> usize {
         let node_ix = self.tree.append(Item {
             start: start_ix,
@@ -271,9 +351,25 @@ impl<'a> FirstPass<'a> {
 
         let mut ix = start_ix;
         loop {
-            let (next_ix, brk) = parse_line(&mut self.tree, &self.text, ix);
-            ix = next_ix;
+            let (next_ix, brk) = self.parse_line(ix);
 
+            // break out when we find a table
+            // rust's pattern matching saves us here!
+            if let Some(table @ Item { body: ItemBody::Table(..), .. }) = brk {
+                if let TreePointer::Nil = self.tree[node_ix].child {
+                    // no content in paragraph yet, just replace by table
+                    self.tree[node_ix].item = table;
+                } else {
+                    // something in the paragraph, lets start a new container
+                    self.tree[node_ix].item.end = ix;
+                    self.tree.pop();
+                    self.tree.append(table);
+                    self.tree.push();
+                };
+                return self.parse_table(ix, next_ix);
+            }
+
+            ix = next_ix;
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if !line_start.scan_space(4) {
@@ -303,9 +399,192 @@ impl<'a> FirstPass<'a> {
             }
         }
 
-        let tree_cur_ix = self.tree.pop().unwrap();
-        self.tree[tree_cur_ix].item.end = ix;
+        self.tree.pop();
+        self.tree[node_ix].item.end = ix;
         ix
+    }
+
+    /// Parse a line of input, appending text and items to tree.
+    ///
+    /// Returns: index after line and an item representing the break.
+    fn parse_line(&mut self, mut ix: usize) -> (usize, Option<Item<'a>>) {
+        let bytes = &self.text.as_bytes();
+        let start = ix;
+        let mut pipes = 0;
+        let mut begin_text = start;
+        while ix < self.text.len() {
+            match bytes[ix] {
+                b'\n' | b'\r' => {
+                    let mut i = ix;
+                    let eol_bytes = scan_eol(&self.text[ix..]).0;
+                    if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
+                        i -= 1;
+                        self.tree.append_text(begin_text, i);
+                        ix += eol_bytes;
+                        return (ix, Some(Item {
+                            start: i,
+                            end: ix,
+                            body: ItemBody::HardBreak,
+                        }));
+                    } else if ix >= begin_text + 2
+                        && is_ascii_whitespace_no_nl(bytes[ix - 1])
+                        && is_ascii_whitespace_no_nl(bytes[ix - 2]) {
+                        i -= 2;
+                        while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
+                            i -= 1;
+                        }
+                        ix += eol_bytes;
+                        self.tree.append_text(begin_text, i);
+                        
+                        return (ix, Some(Item {
+                            start: i,
+                            end: ix,
+                            body: ItemBody::HardBreak,
+                        }));
+                    } else if self.options.contains(Options::ENABLE_TABLES) && pipes > 0 {
+                        // check if we may be parsing a table
+                        // TODO: check that number of pipes in current line is equal to number we find in table_head
+                        // NOTE: trailing and leading pipes don't count!
+                        let (table_head_bytes, alignment) = scan_table_head(&self.text[(ix + eol_bytes)..]);
+                        if table_head_bytes > 0 {
+                            ix += eol_bytes + table_head_bytes;
+                            return (ix, Some(Item {
+                                start: i,
+                                end: ix, // must update later
+                                body: ItemBody::Table(alignment),
+                            }));
+                        }
+                    }
+                
+                    self.tree.append_text(begin_text, ix);
+                    ix += eol_bytes;
+                    return (ix, Some(Item {
+                        start: i,
+                        end: ix,
+                        body: ItemBody::SoftBreak,
+                    }));
+                }
+                b'\\' if ix + 1 < self.text.len() && bytes[ix + 1] == b'`' => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::Backslash,
+                    });
+                    begin_text = ix + 1;
+                    ix += 1;
+                }
+                b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::Backslash,
+                    });
+                    begin_text = ix + 1;
+                    ix += 2;
+                }
+                c @ b'*' | c @b'_' => {
+                    let string_suffix = &self.text[ix..];
+                    let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
+                    let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
+                    let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
+                    
+                    if can_open || can_close {
+                        self.tree.append_text(begin_text, ix);
+                        for i in 0..count {
+                            self.tree.append(Item {
+                                start: ix + i,
+                                end: ix + i + 1,
+                                body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
+                            });
+                        }
+                        ix += count;
+                        begin_text = ix;
+                    } else {
+                        ix += count;
+                    }
+                }
+                b'`' => {
+                    self.tree.append_text(begin_text, ix);
+                    let count = 1 + scan_ch_repeat(&self.text[ix+1..], b'`');
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + count,
+                        body: ItemBody::MaybeCode(count),
+                    });
+                    ix += count;
+                    begin_text = ix;
+                }
+                b'<' => {
+                    // Note: could detect some non-HTML cases and early escape here, but not
+                    // clear that's a win.
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeHtml,
+                    });
+                    ix += 1;
+                    begin_text = ix;
+                }
+                b'!' if ix + 1 < self.text.len() && bytes[ix + 1] == b'[' => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 2,
+                        body: ItemBody::MaybeImage,
+                    });
+                    ix += 2;
+                    begin_text = ix;
+                }
+                b'[' => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeLinkOpen,
+                    });
+                    ix += 1;
+                    begin_text = ix;
+                }
+                b']' => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeLinkClose,
+                    });
+                    ix += 1;
+                    begin_text = ix;
+                }
+                b'&' => {
+                    // TODO(performance): if owned, entity will always just be a char,
+                    // which we should be able to store without allocating
+                    match scan_entity(&self.text[ix..]) {
+                        (n, Some(value)) => {
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + n,
+                                body: ItemBody::SynthesizeText(value),
+                            });
+                            ix += n;
+                            begin_text = ix;
+                        }
+                        _ => ix += 1
+                    }
+                }
+                b'|' => {
+                    pipes += 1;
+                    ix += 1;
+                }
+                _ => ix += 1,
+            }
+        }
+        // need to close text at eof
+        self.tree.append_text(begin_text, ix);
+        (ix, None)
     }
 
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
@@ -584,6 +863,7 @@ impl<'a> FirstPass<'a> {
                         break;
                     }
                 }
+                ItemBody::Table(..) |
                 ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
                 ItemBody::Paragraph | ItemBody::IndentCodeBlock(_) |
                 ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
@@ -686,7 +966,7 @@ impl<'a> FirstPass<'a> {
         let header_start = ix;
         let header_node_idx = self.tree.cur().unwrap(); // so that we can set the endpoint later
         self.tree.push();
-        ix = parse_line(&mut self.tree, &self.text, ix).0;
+        ix = self.parse_line(ix).0;
         self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text
@@ -1003,169 +1283,6 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
-/// Parse a line of input, appending text and items to tree.
-///
-/// Returns: index after line and an item representing the break.
-fn parse_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> (usize, Option<Item<'a>>) {
-    let bytes = s.as_bytes();
-    let start = ix;
-    let mut begin_text = start;
-    while ix < s.len() {
-        match bytes[ix] {
-            b'\n' | b'\r' => {
-                let mut i = ix;
-                let eol_bytes = scan_eol(&s[ix..]).0;
-                if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < s.len() {
-                    i -= 1;
-                    tree.append_text(begin_text, i);
-                    ix += eol_bytes;
-                    return (ix, Some(Item {
-                        start: i,
-                        end: ix,
-                        body: ItemBody::HardBreak,
-                    }));
-                } else if ix >= begin_text + 2
-                    && is_ascii_whitespace_no_nl(bytes[ix - 1])
-                    && is_ascii_whitespace_no_nl(bytes[ix - 2]) {
-                    i -= 2;
-                    while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
-                        i -= 1;
-                    }
-                    tree.append_text(begin_text, i);
-                    ix += scan_eol(&s[ix..]).0;
-                    return (ix, Some(Item {
-                        start: i,
-                        end: ix,
-                        body: ItemBody::HardBreak,
-                    }));
-                }
-                tree.append_text(begin_text, ix);
-                ix += scan_eol(&s[ix..]).0;
-                return (ix, Some(Item {
-                    start: i,
-                    end: ix,
-                    body: ItemBody::SoftBreak,
-                }));
-            }
-            b'\\' if ix + 1 < s.len() && bytes[ix + 1] == b'`' => {
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 1,
-                    body: ItemBody::Backslash,
-                });
-                begin_text = ix + 1;
-                ix += 1;
-            }
-            b'\\' if ix + 1 < s.len() && is_ascii_punctuation(bytes[ix + 1]) => {
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 1,
-                    body: ItemBody::Backslash,
-                });
-                begin_text = ix + 1;
-                ix += 2;
-            }
-            c @ b'*' | c @b'_' => {
-                let string_suffix = &s[ix..];
-                let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
-                let can_open = delim_run_can_open(s, string_suffix, count, ix);
-                let can_close = delim_run_can_close(s, string_suffix, count, ix);
-                
-                if can_open || can_close {
-                    tree.append_text(begin_text, ix);
-                    for i in 0..count {
-                        tree.append(Item {
-                            start: ix + i,
-                            end: ix + i + 1,
-                            body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
-                        });
-                    }
-                    ix += count;
-                    begin_text = ix;
-                } else {
-                    ix += count;
-                }
-            }
-            b'`' => {
-                tree.append_text(begin_text, ix);
-                let count = 1 + scan_ch_repeat(&s[ix+1..], b'`');
-                tree.append(Item {
-                    start: ix,
-                    end: ix + count,
-                    body: ItemBody::MaybeCode(count),
-                });
-                ix += count;
-                begin_text = ix;
-            }
-            b'<' => {
-                // Note: could detect some non-HTML cases and early escape here, but not
-                // clear that's a win.
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 1,
-                    body: ItemBody::MaybeHtml,
-                });
-                ix += 1;
-                begin_text = ix;
-            }
-            b'!' if ix + 1 < s.len() && bytes[ix + 1] == b'[' => {
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 2,
-                    body: ItemBody::MaybeImage,
-                });
-                ix += 2;
-                begin_text = ix;
-            }
-            b'[' => {
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 1,
-                    body: ItemBody::MaybeLinkOpen,
-                });
-                ix += 1;
-                begin_text = ix;
-            }
-            b']' => {
-                tree.append_text(begin_text, ix);
-                tree.append(Item {
-                    start: ix,
-                    end: ix + 1,
-                    body: ItemBody::MaybeLinkClose,
-                });
-                ix += 1;
-                begin_text = ix;
-            }
-            b'&' => {
-                // TODO(performance): if owned, entity will always just be a char,
-                // which we should be able to store without allocating
-                match scan_entity(&s[ix..]) {
-                    (n, Some(value)) => {
-                        tree.append_text(begin_text, ix);
-                        tree.append(Item {
-                            start: ix,
-                            end: ix + n,
-                            body: ItemBody::SynthesizeText(value),
-                        });
-                        ix += n;
-                        begin_text = ix;
-                    }
-                    _ => ix += 1
-                }
-            }
-            _ => ix += 1,
-        }
-    }
-    // need to close text at eof
-    tree.append_text(begin_text, ix);
-    (ix, None)
-}
-
 // ix is at the beginning of the code line text
 // returns the index of the start of the next line
 fn parse_indented_code_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> usize {
@@ -1236,60 +1353,60 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 
 #[allow(unused)]
 fn parse_paragraph_old<'a>(mut tree : &mut Tree<Item<'a>>, s : &'a str, mut ix : usize) -> usize {
-    let cur = tree.append(Item {
-        start: ix,
-        end: 0,  // will get set later
-        body: ItemBody::Paragraph,
-    });
-    tree.push();
-    let mut last_soft_break = None;
-    while ix < s.len() {
-        let line_start = ix;
+    // let cur = tree.append(Item {
+    //     start: ix,
+    //     end: 0,  // will get set later
+    //     body: ItemBody::Paragraph,
+    // });
+    // tree.push();
+    // let mut last_soft_break = None;
+    // while ix < s.len() {
+    //     let line_start = ix;
 
-        let container_scan = scan_containers_old(&tree, &s[ix..]);
-        ix += container_scan.0;
+    //     let container_scan = scan_containers_old(&tree, &s[ix..]);
+    //     ix += container_scan.0;
 
-        let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
-        ix += leading_bytes;
+    //     let (leading_bytes, leading_spaces) = scan_leading_space(&s[ix..], 0);
+    //     ix += leading_bytes;
 
        
-        let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
-        // setext headers can't be lazy paragraph continuations
-        if !container_scan.1 {
-            if setext_bytes > 0 && leading_spaces < 4 {
-                break; 
-            }
-        }
-        // setext headers can interrupt paragraphs
-        // but can't be preceded by an empty line. 
-        if let TreePointer::Valid(cur_ix) = tree.cur() {
-            if setext_bytes > 0 && leading_spaces < 4 {
-                ix += setext_bytes;
-                tree[cur_ix].item.body = ItemBody::Header(setext_level);
-                break;
-            }
-        }
+    //     let (setext_bytes, setext_level) = scan_setext_header(&s[ix..]);
+    //     // setext headers can't be lazy paragraph continuations
+    //     if !container_scan.1 {
+    //         if setext_bytes > 0 && leading_spaces < 4 {
+    //             break; 
+    //         }
+    //     }
+    //     // setext headers can interrupt paragraphs
+    //     // but can't be preceded by an empty line. 
+    //     if let TreePointer::Valid(cur_ix) = tree.cur() {
+    //         if setext_bytes > 0 && leading_spaces < 4 {
+    //             ix += setext_bytes;
+    //             tree[cur_ix].item.body = ItemBody::Header(setext_level);
+    //             break;
+    //         }
+    //     }
 
-        if leading_spaces < 4 && scan_paragraph_interrupt(&s[ix..]) {
-            ix = line_start; 
-            break; }
+    //     if leading_spaces < 4 && scan_paragraph_interrupt(&s[ix..]) {
+    //         ix = line_start; 
+    //         break; }
 
-        if let Some(pos) = last_soft_break {
-            tree.append(Item {
-                start: pos,
-                end: pos + 1,  // TODO: handle \r\n
-                body: ItemBody::SoftBreak,
-            });
-        }
-        let n = parse_line(&mut tree, s, ix).0;
-        ix += n;
-        if let (n, true) = scan_eol(&s[ix..]) {
-            last_soft_break = Some(ix);
-            ix += n;  // skip newline
-        }
-    }
-    tree.pop();
-    tree[cur].item.end = ix;
+    //     if let Some(pos) = last_soft_break {
+    //         tree.append(Item {
+    //             start: pos,
+    //             end: pos + 1,  // TODO: handle \r\n
+    //             body: ItemBody::SoftBreak,
+    //         });
+    //     }
+    //     let n = self.parse_line(&mut tree, s, ix).0;
+    //     ix += n;
+    //     if let (n, true) = scan_eol(&s[ix..]) {
+    //         last_soft_break = Some(ix);
+    //         ix += n;  // skip newline
+    //     }
+    // }
+    // tree.pop();
+    // tree[cur].item.end = ix;
     ix
 }
 
@@ -2655,6 +2772,9 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
         ItemBody::FootnoteDefinition(ref label) =>
             Some(Tag::FootnoteDefinition(label.clone())),
+        ItemBody::Table(ref alignment) => Some(Tag::Table(alignment.clone())),
+        ItemBody::TableHead => Some(Tag::TableHead),
+        ItemBody::TableCell => Some(Tag::TableCell),
         _ => None,
     }
 }

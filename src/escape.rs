@@ -165,3 +165,42 @@ fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callbac
     // do final bytes old fashioned way
     scan_simple(&bytes, offset, callback);        
 }
+
+#[cfg(test)]
+mod html_scan_tests {
+    use super::*;
+    
+    #[test]
+    fn scan_simd_works() {
+        let mut vec = Vec::new();
+        scan_simd("&aXa/aa\"".as_bytes(), 0, |ix| vec.push(ix));
+        assert_eq!(vec, vec![0, 4, 7]);
+    }
+    
+    #[test]
+    fn combined_scan_works() {
+        let mut vec = Vec::new();
+        scan_simd("&aXa/aa.a'aa9a<>aab&".as_bytes(), 0, |ix| vec.push(ix));
+        assert_eq!(vec, vec![0, 4, 14, 15, 19]);
+    }
+    
+    #[test]
+    fn scan_simpl_works() {
+        let mut vec = Vec::new();
+        scan_simple("&aXa/aa.a'aa9a<>".as_bytes(), 0, |ix| vec.push(ix));
+        assert_eq!(vec, vec![0, 4, 14, 15]);
+    }
+
+    // only match these bytes, and when we match them, match them 16 times
+    #[test]
+    fn only_right_bytes_matched() {
+        for b in 0..255u8 {
+            let right_byte = b == b'&' || b == b'/' || b == b'<' || b == b'>' || b == b'"';
+            let vek = vec![b; 16];
+            let mut match_count = 0;
+            scan_simd(&vek, 0, |_| { match_count += 1; });
+            assert!((match_count > 0) == (match_count == 16));
+            assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {}", match_count, b as char);
+        }
+    }
+}

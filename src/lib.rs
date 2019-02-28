@@ -35,7 +35,7 @@ extern crate unicase;
 mod parse;
 mod scanners;
 mod entities;
-mod escape;
+pub mod escape;
 mod puncttable;
 mod utils;
 mod prototype;

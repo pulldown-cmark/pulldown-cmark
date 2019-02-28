@@ -21,6 +21,8 @@
 //! Utility functions for HTML escaping
 
 use std::str::from_utf8;
+use std::arch::x86_64::*;
+use std::mem::transmute;
 
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -96,17 +98,10 @@ static HTML_ESCAPES: [&'static str; 6] = [
     ];
 
 pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
-    let size = s.len();
     let bytes = s.as_bytes();
     let mut mark = 0;
-    let mut i = 0;
-    while i < size {
-        match bytes[i..].iter().position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0) {
-            Some(pos) => {
-                i += pos;
-            }
-            None => break
-        }
+
+    scan_simd(bytes, 0, |i| {
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 && (secure || c != b'/') {
@@ -114,46 +109,59 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
             ob.push_str(HTML_ESCAPES[escape as usize]);
             mark = i + 1;  // all escaped characters are ASCII
         }
-        i += 1;
-    }
+    });
+
     ob.push_str(&s[mark..]);
 }
 
-use core::arch::x86_64::*;
-use std::mem::transmute;
-
-fn main() {
-    let test_bytes = [b'/', b'"', b'&', b'<', b'>'];
-
-    let mut lower_nibbles = [255u8; 16];
-    let mut upper_nibbles = [254u8; 16];
-
-    for &b in &test_bytes {
-        lower_nibbles[(b % 16) as usize] = b >> 4;
-        upper_nibbles[(b >> 4) as usize] = b >> 4;
-    }
-
-    println!("upper nibbles: {:?}", &upper_nibbles);
-    println!("lower nibbles: {:?}", &lower_nibbles);
-
-    let upper_vec = unsafe { _mm_loadu_si128(transmute(upper_nibbles.as_ptr())) };
-    let lower_vec = unsafe { _mm_loadu_si128(transmute(lower_nibbles.as_ptr())) };
-
-    let mut test_vec: Vec<u8> = "&aXa/aa.a'aa9a<>".as_bytes().into();
-    let raw_ptr: *mut _ = unsafe { transmute(test_vec.as_mut_ptr()) };
-
-    unsafe {
-        let v = _mm_loadu_si128(raw_ptr as *const _);
-        let shuffled_lower = _mm_shuffle_epi8(lower_vec, v);
-        let v = _mm_and_si128(_mm_set1_epi8(0x0f), _mm_srli_epi32(v, 4));
-        let shuffled_upper = _mm_shuffle_epi8(upper_vec, v);
-        let shuffled_total = _mm_cmpeq_epi8(shuffled_lower, shuffled_upper);
-        let mut mask = _mm_movemask_epi8(shuffled_total);
-
-        while mask.trailing_zeros() < 32 {
-            let ix = mask.trailing_zeros();
-            println!("Found a char at index {}", ix);
-            mask &= !(1<<ix);
+fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: F) {
+    let size = bytes.len();
+    while i < size {
+        match bytes[i..].iter().position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0) {
+            Some(pos) => {
+                i += pos;
+            }
+            None => break
         }
+        callback(i);
+        i += 1;
     }
+}
+
+fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) {
+    // hopefully the compiler sees these as constants??
+    let lower_vec = unsafe { _mm_set_epi8(
+        32, 48, 255u8 as i8, 48, 255u8 as i8,
+        255u8 as i8, 255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 
+        255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 255u8 as i8
+    ) };
+    let top_bits_mask = unsafe { _mm_set1_epi8(0xf0u8 as i8) };
+
+    let upperbound = bytes.len().saturating_sub(15);
+    while offset < upperbound {
+        let mut mask = unsafe {
+            let raw_ptr = transmute(bytes[offset..].as_ptr());
+            let v = _mm_loadu_si128(raw_ptr);
+            let expected_top_bits = _mm_shuffle_epi8(lower_vec, v);
+            let top_bit_v = _mm_and_si128(top_bits_mask, v);
+            let matches = _mm_cmpeq_epi8(expected_top_bits, top_bit_v);
+            _mm_movemask_epi8(matches)
+        };
+
+        loop {
+            let ix: u32 = mask.trailing_zeros();
+            if ix < 16 {
+                callback(offset + ix as usize);
+                mask &= !(1 << ix);
+            } else {
+                break;
+            }
+        }
+
+        offset += 16;
+    }
+
+    // we can only do simd if we can atleast 16 bytes at once
+    // do final bytes old fashioned way
+    scan_simple(&bytes, offset, callback);        
 }

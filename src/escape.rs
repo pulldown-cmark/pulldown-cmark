@@ -118,3 +118,42 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
     }
     ob.push_str(&s[mark..]);
 }
+
+use core::arch::x86_64::*;
+use std::mem::transmute;
+
+fn main() {
+    let test_bytes = [b'/', b'"', b'&', b'<', b'>'];
+
+    let mut lower_nibbles = [255u8; 16];
+    let mut upper_nibbles = [254u8; 16];
+
+    for &b in &test_bytes {
+        lower_nibbles[(b % 16) as usize] = b >> 4;
+        upper_nibbles[(b >> 4) as usize] = b >> 4;
+    }
+
+    println!("upper nibbles: {:?}", &upper_nibbles);
+    println!("lower nibbles: {:?}", &lower_nibbles);
+
+    let upper_vec = unsafe { _mm_loadu_si128(transmute(upper_nibbles.as_ptr())) };
+    let lower_vec = unsafe { _mm_loadu_si128(transmute(lower_nibbles.as_ptr())) };
+
+    let mut test_vec: Vec<u8> = "&aXa/aa.a'aa9a<>".as_bytes().into();
+    let raw_ptr: *mut _ = unsafe { transmute(test_vec.as_mut_ptr()) };
+
+    unsafe {
+        let v = _mm_loadu_si128(raw_ptr as *const _);
+        let shuffled_lower = _mm_shuffle_epi8(lower_vec, v);
+        let v = _mm_and_si128(_mm_set1_epi8(0x0f), _mm_srli_epi32(v, 4));
+        let shuffled_upper = _mm_shuffle_epi8(upper_vec, v);
+        let shuffled_total = _mm_cmpeq_epi8(shuffled_lower, shuffled_upper);
+        let mut mask = _mm_movemask_epi8(shuffled_total);
+
+        while mask.trailing_zeros() < 32 {
+            let ix = mask.trailing_zeros();
+            println!("Found a char at index {}", ix);
+            mask &= !(1<<ix);
+        }
+    }
+}

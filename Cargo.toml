@@ -12,6 +12,9 @@ edition = "2018"
 
 build = "build.rs"
 
+[profile.release]
+debug = true
+
 [[bin]]
 name = "pulldown-cmark"
 required-features = ["getopts"]

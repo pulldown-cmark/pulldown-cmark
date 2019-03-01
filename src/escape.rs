@@ -148,14 +148,10 @@ fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callbac
             _mm_movemask_epi8(matches)
         };
 
-        loop {
-            let ix: u32 = mask.trailing_zeros();
-            if ix < 16 {
-                callback(offset + ix as usize);
-                mask &= !(1 << ix);
-            } else {
-                break;
-            }
+        while mask != 0 {
+            let ix = mask.trailing_zeros();
+            callback(offset + ix as usize);
+            mask ^= mask & -mask;
         }
 
         offset += 16;

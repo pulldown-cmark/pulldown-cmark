@@ -2317,7 +2317,14 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<
 
 struct LinkStackEl {
     node: TreeIndex,
-    is_image: bool,
+    ty: LinkStackTy,
+}
+
+#[derive(PartialEq)]
+enum LinkStackTy {
+    Link,
+    Image,
+    Disabled,
 }
 
 struct LinkDef<'a> {
@@ -2424,14 +2431,19 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, is_image: false });
+                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
                 }
                 ItemBody::MaybeImage => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, is_image: true });
+                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
                     if let Some(tos) = link_stack.last() {
+                        if tos.ty == LinkStackTy::Disabled {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            link_stack.pop();
+                            continue;
+                        }
                         let next = self.tree[cur_ix].next;
                         let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
@@ -2442,7 +2454,7 @@ impl<'a> Parser<'a> {
                             }                            
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
-                            self.tree[cur_ix].item.body = if tos.is_image {
+                            self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(url.into(), title.into())
                             } else {
                                 ItemBody::Link(url.into(), title.into())
@@ -2453,14 +2465,15 @@ impl<'a> Parser<'a> {
                                 self.tree[next_node_ix].item.start = next_ix;
                             }
 
-                            let inside_image_alt = link_stack.iter().position(|e| e.is_image)
-                                .map_or(false, |i| i != link_stack.len() - 1);
-
-                            if tos.is_image || inside_image_alt {
-                                link_stack.pop();
-                            } else {
-                                link_stack.clear();
+                            if tos.ty == LinkStackTy::Link {
+                                for el in &mut link_stack {
+                                    if el.ty == LinkStackTy::Link {
+                                        el.ty = LinkStackTy::Disabled;
+                                    }
+                                }
                             }
+                            link_stack.pop();
+
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
@@ -2501,7 +2514,7 @@ impl<'a> Parser<'a> {
                                 // found a matching definition!
                                 let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
                                 let url = matching_def.dest.clone();
-                                self.tree[tos.node].item.body = if tos.is_image {
+                                self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
                                     ItemBody::Image(url, title)
                                 } else {
                                     ItemBody::Link(url, title)
@@ -2523,11 +2536,14 @@ impl<'a> Parser<'a> {
                                 cur = TreePointer::Valid(tos.node);
                                 cur_ix = tos.node;
 
-                                if tos.is_image {
-                                    link_stack.pop();
-                                } else {
-                                    link_stack.clear();
+                                if tos.ty == LinkStackTy::Link {
+                                    for el in &mut link_stack {
+                                        if el.ty == LinkStackTy::Link {
+                                            el.ty = LinkStackTy::Disabled;
+                                        }
+                                    }
                                 }
+                                link_stack.pop();
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
                                 

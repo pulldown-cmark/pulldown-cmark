@@ -214,16 +214,8 @@ impl<'a> LineStart<'a> {
         let save = self.clone();
 
         // skip the rest of the line if it's blank
-        if let Some(n) = scan_blank_line(&self.text[self.ix..]) {
-            let ix = self.ix;
-            self.ix += n;
-
-            if let Some(_) = scan_blank_line(&self.text[self.ix..]) {
-                // a completely blank line - let's revert to beginning of the line
-                self.ix = ix + 1;
-            } else {
-                indent = self.scan_space_upto(3);
-            }
+        if scan_blank_line(&self.text[self.ix..]).is_some() {
+            return Some((c, start, indent));
         }
 
         let post_indent = self.scan_space_upto(4);

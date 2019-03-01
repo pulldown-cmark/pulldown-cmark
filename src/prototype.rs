@@ -106,6 +106,7 @@ impl<'a> Default for ItemBody<'a> {
 struct FirstPass<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
+    begin_list_item: bool,
     last_line_blank: bool,
     references: HashMap<LinkLabel<'a>, LinkDef<'a>>,
     options: Options,
@@ -114,9 +115,10 @@ struct FirstPass<'a> {
 impl<'a> FirstPass<'a> {
     fn new(text: &'a str, options: Options) -> FirstPass {
         let tree = Tree::new();
+        let begin_list_item = false;
         let last_line_blank = false;
         let references = HashMap::new();
-        FirstPass { text, tree, last_line_blank, references, options }
+        FirstPass { text, tree, begin_list_item, last_line_blank, references, options }
     }
 
     fn run(mut self) -> (Tree<Item<'a>>, HashMap<LinkLabel<'a>, LinkDef<'a>>) {
@@ -180,10 +182,10 @@ impl<'a> FirstPass<'a> {
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
-                // if the list marker is immediately followed by a newline, it is empty
-                // and we need not go into it
-                if self.text.as_bytes()[after_marker_index - 1] != b'\n' {
-                    self.tree.push();
+                self.tree.push();
+                if let Some(n) = scan_blank_line(&self.text[after_marker_index..]) {
+                    self.begin_list_item = true;
+                    return after_marker_index + n;
                 }
             }
             else {
@@ -194,10 +196,22 @@ impl<'a> FirstPass<'a> {
         let ix = start_ix + line_start.bytes_scanned();
 
         if let Some(n) = scan_blank_line(&self.text[ix..]) {
-            self.last_line_blank = true;
+            if let Some(node_ix) = self.tree.peek_up() {
+                match self.tree[node_ix].item.body {
+                    ItemBody::BlockQuote => (),
+                    _ => {
+                        if self.begin_list_item {
+                            // A list item can begin with at most one blank line.
+                            self.pop(start_ix);
+                        }
+                        self.last_line_blank = true;
+                    }
+                }
+            }
             return ix + n;
         }
 
+        self.begin_list_item = false;
         self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
@@ -946,7 +960,6 @@ fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreePointer, level: usize) {
         for _ in 0..level {
             eprint!("  ");
         }
-        eprintln!("{:?}: {:?} {} {}", inner, node.item.body, node.item.start, node.item.end);
         dump_tree(nodes, node.child, level + 1);
         ix = node.next;
     }

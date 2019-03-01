@@ -101,7 +101,7 @@ pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
     let bytes = s.as_bytes();
     let mut mark = 0;
 
-    scan_simd(bytes, 0, |i| {
+    scan_simple(bytes, 0, |i| {
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 && (secure || c != b'/') {
@@ -131,16 +131,16 @@ fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: 
 fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) {
     // hopefully the compiler sees these as constants??
     let lower_vec = unsafe { _mm_set_epi8(
-        32, 48, 255u8 as i8, 48, 255u8 as i8,
-        255u8 as i8, 255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 
-        255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 255u8 as i8
+        32, 48, 255u8 as i8, 48, 255u8 as i8, 255u8 as i8,
+        255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 
+        255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 255u8 as i8
     ) };
     let top_bits_mask = unsafe { _mm_set1_epi8(0xf0u8 as i8) };
 
     let upperbound = bytes.len().saturating_sub(15);
     while offset < upperbound {
         let mut mask = unsafe {
-            let raw_ptr = transmute(bytes[offset..].as_ptr());
+            let raw_ptr = transmute(bytes.as_ptr().offset(offset as isize));
             let v = _mm_loadu_si128(raw_ptr);
             let expected_top_bits = _mm_shuffle_epi8(lower_vec, v);
             let top_bit_v = _mm_and_si128(top_bits_mask, v);

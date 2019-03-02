@@ -32,7 +32,6 @@ extern crate bitflags;
 
 extern crate unicase;
 
-mod parse;
 mod scanners;
 mod entities;
 mod escape;
@@ -42,5 +41,4 @@ mod prototype;
 mod tree;
 mod linklabel;
 
-pub use crate::prototype::Parser;
-pub use crate::parse::{Alignment, Event, Tag, Options};
+pub use crate::prototype::{Parser, Alignment, Event, Tag, Options};

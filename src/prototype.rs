@@ -25,10 +25,73 @@ use std::collections::HashMap;
 
 use unicase::UniCase;
 
-use crate::parse::{Event, Tag, Options};
 use crate::scanners::*;
-use crate::tree::{TreePointer, TreeIndex, Node, Tree};
+use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Tag<'a> {
+    // block-level tags
+    Paragraph,
+    Rule,
+
+    /// A heading. The field indicates the level of the heading.
+    Header(i32),
+
+    BlockQuote,
+    CodeBlock(Cow<'a, str>),
+
+    /// A list. If the list is ordered the field indicates the number of the first item.
+    List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
+    Item,
+    FootnoteDefinition(Cow<'a, str>),
+    HtmlBlock,
+
+    // tables
+    Table(Vec<Alignment>),
+    TableHead,
+    TableRow,
+    TableCell,
+
+    // span-level tags
+    Emphasis,
+    Strong,
+    Code,
+
+    /// A link. The first field is the destination URL, the second is a title
+    Link(Cow<'a, str>, Cow<'a, str>),
+
+    /// An image. The first field is the destination URL, the second is a title
+    Image(Cow<'a, str>, Cow<'a, str>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Event<'a> {
+    Start(Tag<'a>),
+    End(Tag<'a>),
+    Text(Cow<'a, str>),
+    Html(Cow<'a, str>),
+    InlineHtml(Cow<'a, str>),
+    FootnoteReference(Cow<'a, str>),
+    SoftBreak,
+    HardBreak,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Alignment {
+    None,
+    Left,
+    Center,
+    Right,
+}
+
+bitflags! {
+    pub struct Options: u32 {
+        const FIRST_PASS = 1 << 0;
+        const ENABLE_TABLES = 1 << 1;
+        const ENABLE_FOOTNOTES = 1 << 2;
+    }
+}
 
 #[derive(Debug, Default)]
 struct Item<'a> {
@@ -950,18 +1013,6 @@ impl<'a> Tree<Item<'a>> {
             end: ix,
             body: ItemBody::SynthesizeNewLine,
         });
-    }
-}
-
-#[allow(dead_code)]
-fn dump_tree(nodes: &Vec<Node<Item>>, mut ix: TreePointer, level: usize) {
-    while let TreePointer::Valid(inner) = ix {
-        let node = &nodes[inner.get()];
-        for _ in 0..level {
-            eprint!("  ");
-        }
-        dump_tree(nodes, node.child, level + 1);
-        ix = node.next;
     }
 }
 

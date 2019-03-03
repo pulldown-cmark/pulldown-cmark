@@ -37,8 +37,8 @@ mod entities;
 mod escape;
 mod puncttable;
 mod utils;
-mod prototype;
+mod parse;
 mod tree;
 mod linklabel;
 
-pub use crate::prototype::{Parser, Alignment, Event, Tag, Options};
+pub use crate::parse::{Parser, Alignment, Event, Tag, Options};

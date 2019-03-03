@@ -25,7 +25,7 @@ use crate::utils;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
-use crate::prototype::Alignment;
+use crate::parse::Alignment;
 
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 

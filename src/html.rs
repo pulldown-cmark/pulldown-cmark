@@ -24,8 +24,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use crate::prototype::{Event, Tag, Alignment};
-use crate::prototype::Event::*;
+use crate::parse::{Event, Tag, Alignment};
+use crate::parse::Event::*;
 use crate::escape::{escape_html, escape_href};
 
 enum TableState {

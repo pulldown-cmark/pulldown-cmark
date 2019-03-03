@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Prototype of tree-based two pass parser.
+//! Tree-based two pass parser.
 
 use std::borrow::Cow::{self, Borrowed};
 use std::collections::HashMap;

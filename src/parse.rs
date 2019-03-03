@@ -2833,6 +2833,10 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),
         ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
+        ItemBody::TableHead => Some(Tag::TableHead),
+        ItemBody::TableCell => Some(Tag::TableCell),
+        ItemBody::TableRow => Some(Tag::TableRow),
+        ItemBody::Table(ref alignment) => Some(Tag::Table(alignment.clone())),
         ItemBody::FootnoteDefinition(ref label) =>
             Some(Tag::FootnoteDefinition(label.clone())),
         _ => None,

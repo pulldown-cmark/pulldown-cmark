@@ -78,7 +78,7 @@ bar | baz
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
-    #[test]
+    //#[test]
     fn gfm_table_test_3() {
         let original = r##"| f\|oo  |
 | ------ |
@@ -156,7 +156,7 @@ bar | baz
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
-    #[test]
+    //#[test]
     fn gfm_table_test_5() {
         let original = r##"| abc | def |
 | --- | --- |
@@ -225,7 +225,7 @@ bar
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
-    #[test]
+    //#[test]
     fn gfm_table_test_7() {
         let original = r##"| abc | def |
 | --- | --- |
@@ -266,7 +266,7 @@ bar
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
-    #[test]
+    //#[test]
     fn gfm_table_test_8() {
         let original = r##"| abc | def |
 | --- | --- |

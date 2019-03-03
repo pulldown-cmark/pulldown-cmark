@@ -200,6 +200,7 @@ dependencies = [
  "html5ever 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "string_cache 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendril 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicase 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

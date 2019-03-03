@@ -27,6 +27,7 @@ html5ever = "0.20"
 lazy_static = "0.2"
 regex = "0.2"
 tendril = "0.4"
+string_cache = "*"
 
 [features]
 default = ["getopts"]

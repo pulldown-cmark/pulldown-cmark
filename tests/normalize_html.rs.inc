@@ -2,11 +2,12 @@
 #[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate tendril;
+extern crate string_cache;
 
 use html5ever::{driver as html, QualName};
 use html5ever::rcdom::{Handle, NodeData, RcDom};
 use html5ever::serialize::{serialize, SerializeOpts};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::mem;
 use std::rc::{Rc, Weak};
 use tendril::stream::TendrilSink;
@@ -84,6 +85,12 @@ lazy_static! {
     ].iter().cloned().collect();
     static ref PRE_TAGS: HashSet<&'static str> = [
         "pre"
+    ].iter().cloned().collect();
+    static ref TABLE_TAGS: HashSet<&'static str> = [
+        "table", "thead", "tbody", "tr"
+    ].iter().cloned().collect();
+    static ref TAG_RENAME_MAP: HashMap<&'static str, &'static str> = [
+        ("th", "td")
     ].iter().cloned().collect();
 }
 
@@ -204,7 +211,19 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                         }
                     }
                 };
-                *contents = WHITESPACE_RE.replace_all(&*contents, " ").as_ref().into();
+
+                let is_in_table = if let NodeData::Element{ ref name, .. } = parent.data {
+                    TABLE_TAGS.contains(&*name.local.to_ascii_lowercase())
+                } else {
+                    false
+                };
+                let whitespace_replacement = if is_in_table {
+                    ""
+                } else {
+                    " "
+                };
+                *contents = WHITESPACE_RE.replace_all(&*contents, whitespace_replacement).as_ref().into();
+
                 if is_first_in_block || is_preceeded_by_ws {
                     *contents = LEADING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
                 }
@@ -222,7 +241,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             }
             &**contents != ""
         }
-        NodeData::Element { ref attrs, .. } => {
+        NodeData::Element { ref attrs, ref name, .. } => {
             let mut attrs = attrs.borrow_mut();
             for a in attrs.iter_mut() {
                 a.name.local = a.name.local.to_ascii_lowercase().into();
@@ -230,6 +249,13 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             attrs.sort_by(|a: &html5ever::Attribute, b: &html5ever::Attribute| {
                 (&*a.name.local).cmp(&*b.name.local)
             });
+            if let Some(s) = TAG_RENAME_MAP.get(&*name.local.to_ascii_lowercase()) {
+                unsafe {
+                    let name = &name.local as *const _;
+                    let mut_ptr: *mut string_cache::atom::Atom<html5ever::LocalNameStaticSet> = name as *mut _;
+                    *mut_ptr = s.to_owned().into();
+                }
+            }
             true
         }
     }

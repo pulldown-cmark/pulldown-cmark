@@ -472,16 +472,12 @@ impl<'a> FirstPass<'a> {
             // break out when we find a table
             // rust's pattern matching really shines here!
             if let Some(table @ Item { body: ItemBody::Table(..), .. }) = brk {
-                if let TreePointer::Nil = self.tree[node_ix].child {
-                    // no content in paragraph yet, just replace by table
-                    self.tree[node_ix].item = table;
-                } else {
-                    // something in the paragraph, lets start a new container
-                    self.tree[node_ix].item.end = ix;
-                    self.tree.pop();
-                    self.tree.append(table);
-                    self.tree.push();
-                };
+                self.tree[node_ix].item = table;
+                // this clears out any stuff we may have appended - but there may
+                // be a cleaner way
+                self.tree[node_ix].child = TreePointer::Nil;
+                self.tree.pop();
+                self.tree.push();
                 return self.parse_table(ix, next_ix);
             }
 
@@ -526,6 +522,7 @@ impl<'a> FirstPass<'a> {
     fn parse_line(&mut self, mut ix: usize) -> (usize, Option<Item<'a>>) {
         let bytes = &self.text.as_bytes();
         let start = ix;
+        // TODO: this should probably a function argument instead.
         let inside_table = {
             let parent_ix = self.tree.peek_up().unwrap();
             ItemBody::TableCell == self.tree[parent_ix].item.body

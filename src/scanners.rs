@@ -526,11 +526,7 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
         cols.push(active_col);
     }
 
-    if cols.len() < 2 {
-        (0, vec![])
-    } else {
-        (i, cols)
-    }
+    (i, cols)
 }
 
 // TODO: change return type to Option.

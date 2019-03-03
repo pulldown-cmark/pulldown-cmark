@@ -343,21 +343,27 @@ impl<'a> FirstPass<'a> {
         self.parse_paragraph(ix)
     }
 
-    
-
     /// Returns the offset of the first line after the table.
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
     fn parse_table(&mut self, start_ix: usize, body_start: usize) -> usize {
         // parse header. this shouldn't fail because we (should have) made sure the table
         // header is ok
-        self.parse_table_row(start_ix).unwrap();
+        let row_cells = {
+            let table_ix = self.tree.peek_up().unwrap();
+            if let ItemBody::Table(ref alignment) = self.tree[table_ix].item.body {
+                alignment.len()
+            } else {
+                unreachable!()
+            }
+        };
+        self.parse_table_row(start_ix, row_cells).unwrap();
         let thead_ix = self.tree.cur().unwrap();
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
         let mut ix = body_start;
-        while let Some(next_ix) = self.parse_table_row(ix) {
+        while let Some(next_ix) = self.parse_table_row(ix, row_cells) {
             ix = next_ix;
         }
 
@@ -367,9 +373,11 @@ impl<'a> FirstPass<'a> {
     }
 
     /// Returns first offset after the row.
-    fn parse_table_row(&mut self, mut ix: usize) -> Option<usize> {
+    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<usize> {
         let mut line_start = LineStart::new(&self.text[ix..]);
         let _n_containers = self.scan_containers(&mut line_start);
+        let mut cells = 0;
+        let mut final_cell_ix = None;
         ix += line_start.bytes_scanned();
 
         if scan_paragraph_interrupt(&self.text[ix..]) {
@@ -384,26 +392,48 @@ impl<'a> FirstPass<'a> {
         self.tree.push();
 
         loop {
-            let (next_ix, text) = self.parse_table_cell(ix);
-            assert!(next_ix > ix);
-
-            self.tree.append(Item {
-                start: ix,
-                end: next_ix,
-                body: ItemBody::TableCell,
-            });
-            if let Some((text_start, text_end)) = text {
-                self.tree.push();
-                self.tree.append_text(text_start, text_end);
-                self.tree.pop();
-            }
-            ix = next_ix;
-            let eol_bytes = scan_eol(&self.text[ix..]).0;
-            ix += eol_bytes;
-
-            if eol_bytes > 0 {
+            ix += scan_ch(&self.text[ix..], b'|');
+            ix += scan_whitespace_no_nl(&self.text[ix..]);
+            let (eol_bytes, is_eol) = scan_eol(&self.text[ix..]);
+            
+            if is_eol {
+                ix += eol_bytes;
                 break;
             }
+
+            let cell_ix = self.tree.append(Item {
+                start: ix,
+                end: ix,
+                body: ItemBody::TableCell,
+            });
+            self.tree.push();
+
+            let (next_ix, _text) = self.parse_table_cell(ix);
+            self.tree[cell_ix].item.end = next_ix;
+            self.tree.pop();
+
+            ix = next_ix;
+            cells += 1;
+
+            if cells == row_cells {
+                final_cell_ix = Some(cell_ix);
+            }
+        }
+
+        // fill empty cells if needed
+        // note: this is where GFM and commonmark-extra diverge. we follow
+        // GFM here
+        for _ in cells..row_cells {
+            self.tree.append(Item {
+                start: ix,
+                end: ix,
+                body: ItemBody::TableCell,
+            });
+        }
+
+        // drop excess cells
+        if let Some(cell_ix) = final_cell_ix {
+            self.tree[cell_ix].next = TreePointer::Nil;
         }
 
         self.tree.pop();
@@ -415,40 +445,11 @@ impl<'a> FirstPass<'a> {
     /// Returns offset when completely empty.
     fn parse_table_cell(&mut self, start_ix: usize) -> (usize, Option<(usize, usize)>) {
         assert!(self.options.contains(Options::ENABLE_TABLES));
-        let bytes   = self.text.as_bytes();
-        let mut beg = start_ix + scan_whitespace_no_nl(&self.text[start_ix..]);
-        if beg < self.text.len() && bytes[beg] == b'|' {
-            beg += 1;
-        }
-        let mut i = beg;
-        let mut n = 0;
-        while i < self.text.len() {
-            match bytes[i] {
-                b'\\' if i + 1 < self.text.len() && bytes[i + 1] == b'|' => {
-                    i += 2;
-                }
-                b'|' => {
-                    i += 1;
-                    n += 1;
-                    break;
-                }
-                b'\r' | b'\n' => {
-                    break;
-                }
-                c => {
-                    // FIXME: does this work with unicode whitespace?
-                    n = if is_ascii_whitespace_no_nl(c) {
-                        scan_whitespace_no_nl(&self.text[i..])
-                    } else {
-                        0
-                    };                    
-                    i += std::cmp::max(1, n);
-                }
-            }
-        }
-        if i > beg {
+        let (i, _brk) = self.parse_line(start_ix);
+
+        if i > start_ix {
             // ignore trailing whitespace
-            (i, Some((beg, i - n)))
+            (i, Some((start_ix, i)))
         } else {
             // only whitespace
             (i, None)
@@ -484,6 +485,7 @@ impl<'a> FirstPass<'a> {
                 return self.parse_table(ix, next_ix);
             }
 
+            ix = next_ix;
             let mut line_start = LineStart::new(&self.text[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if !line_start.scan_space(4) {
@@ -524,10 +526,17 @@ impl<'a> FirstPass<'a> {
     fn parse_line(&mut self, mut ix: usize) -> (usize, Option<Item<'a>>) {
         let bytes = &self.text.as_bytes();
         let start = ix;
+        let inside_table = {
+            let parent_ix = self.tree.peek_up().unwrap();
+            ItemBody::TableCell == self.tree[parent_ix].item.body
+        };
         let mut pipes = 0;
         let mut begin_text = start;
         while ix < self.text.len() {
             match bytes[ix] {
+                b'\r' | b'\n' | b'|' if inside_table => {
+                    break;
+                }
                 b'\n' | b'\r' => {
                     let mut i = ix;
                     let eol_bytes = scan_eol(&self.text[ix..]).0;
@@ -555,7 +564,7 @@ impl<'a> FirstPass<'a> {
                             end: ix,
                             body: ItemBody::HardBreak,
                         }));
-                    } else if self.options.contains(Options::ENABLE_TABLES) && pipes > 0 {
+                    } else if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
                         // check if we may be parsing a table
                         // TODO: check that number of pipes in current line is equal to number we find in table_head
                         // NOTE: trailing and leading pipes don't count!
@@ -694,7 +703,7 @@ impl<'a> FirstPass<'a> {
                         _ => ix += 1
                     }
                 }
-                b'|' => {
+                b'|' if !inside_table => {
                     pipes += 1;
                     ix += 1;
                 }
@@ -983,6 +992,7 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
+                ItemBody::TableCell |
                 ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
                 ItemBody::Paragraph | ItemBody::IndentCodeBlock(_) |
                 ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),

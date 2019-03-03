@@ -21,8 +21,6 @@
 //! Utilities for manipulating strings.
 
 use std::cmp;
-use std::borrow::Cow;
-use std::borrow::Cow::Owned;
 
 fn ascii_tolower(c: u8) -> u8 {
     match c {
@@ -40,14 +38,4 @@ pub fn strcasecmp(a: &str, b: &str) -> cmp::Ordering {
         }
     }
     a.len().cmp(&b.len())
-}
-
-pub fn cow_append<'a>(a: Cow<'a, str>, b: Cow<'a, str>) -> Cow<'a, str> {
-    if a.is_empty() {
-        b
-    } else if b.is_empty() {
-        a
-    } else {
-        Owned(a.into_owned() + &b)
-    }
 }

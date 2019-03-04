@@ -589,25 +589,23 @@ impl<'a> FirstPass<'a> {
                         body: ItemBody::SoftBreak,
                     }));
                 }
-                b'\\' if ix + 1 < self.text.len() && bytes[ix + 1] == b'`' => {
-                    self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::Backslash,
-                    });
-                    begin_text = ix + 1;
-                    ix += 1;
-                }
                 b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                     self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::Backslash,
-                    });
+
+                    if !inside_table || bytes[ix + 1] != b'|' {
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + 1,
+                            body: ItemBody::Backslash,
+                        });
+                    }
+
                     begin_text = ix + 1;
-                    ix += 2;
+                    if bytes[ix + 1] == b'`' {
+                        ix += 1;
+                    } else {
+                        ix += 2;
+                    }
                 }
                 c @ b'*' | c @b'_' => {
                     let string_suffix = &self.text[ix..];

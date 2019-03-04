@@ -2,7 +2,6 @@
 #[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate tendril;
-extern crate string_cache;
 
 use html5ever::{driver as html, QualName};
 use html5ever::rcdom::{Handle, NodeData, RcDom};

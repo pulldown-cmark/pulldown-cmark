@@ -407,8 +407,7 @@ impl<'a> FirstPass<'a> {
                 body: ItemBody::TableCell,
             });
             self.tree.push();
-
-            let (next_ix, _text) = self.parse_table_cell(ix);
+            let (next_ix, _brk) = self.parse_line(ix);
             self.tree[cell_ix].item.end = next_ix;
             self.tree.pop();
 
@@ -439,21 +438,6 @@ impl<'a> FirstPass<'a> {
         self.tree.pop();
         self.tree[row_ix].item.end = ix;
         Some(ix)
-    }
-
-    /// Returns offset after done, text start, text end on non-empty,
-    /// Returns offset when completely empty.
-    fn parse_table_cell(&mut self, start_ix: usize) -> (usize, Option<(usize, usize)>) {
-        assert!(self.options.contains(Options::ENABLE_TABLES));
-        let (i, _brk) = self.parse_line(start_ix);
-
-        if i > start_ix {
-            // ignore trailing whitespace
-            (i, Some((start_ix, i)))
-        } else {
-            // only whitespace
-            (i, None)
-        }
     }
 
     /// Returns offset of line start after paragraph.

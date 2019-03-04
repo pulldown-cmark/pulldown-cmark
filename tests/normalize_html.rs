@@ -39,3 +39,14 @@ fn leaves_necessary_whitespace_alone_weird() {
 fn leaves_necessary_whitespace_all_nested() {
     assert_eq!("<u></u><u></u><u></u><u></u>", normalize_html("<u> </u><u> </u><u> </u><u> </u>"))
 }
+
+#[test]
+fn drops_empty_tbody() {
+    assert_eq!("<table><thead><tr><td>hi</td></tr></thead></table>", normalize_html("<table><thead><tr><td>hi</td></tr></thead><tbody>  </tbody></table>"))
+}
+
+#[test]
+fn leaves_nonempty_tbody() {
+    assert_eq!("<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>", normalize_html("<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>"))
+}
+

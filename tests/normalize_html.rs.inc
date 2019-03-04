@@ -58,13 +58,14 @@ fn normalize_dom(dom: RcDom) -> Handle {
             if !retain {
                 let mut siblings = parent.children.borrow_mut();
                 siblings.retain(|s| !Rc::ptr_eq(&node, s));
+            } else {
+                next_level.extend(
+                    node.children.borrow()
+                        .iter()
+                        .cloned()
+                        .rev(),
+                );
             }
-            next_level.extend(
-                node.children.borrow()
-                    .iter()
-                    .cloned()
-                    .rev(),
-            );
         }
         if next_level.is_empty() { break };
         mem::swap(&mut next_level, &mut current_level);
@@ -94,7 +95,7 @@ lazy_static! {
     ].iter().cloned().collect();
 }
 
-// Returns false if node is a text node and it ended up being empty.
+// Returns false if node is an empty text node or an empty tbody.
 // Returns true otherwise.
 fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
     match node.data {
@@ -249,14 +250,27 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             attrs.sort_by(|a: &html5ever::Attribute, b: &html5ever::Attribute| {
                 (&*a.name.local).cmp(&*b.name.local)
             });
-            if let Some(s) = TAG_RENAME_MAP.get(&*name.local.to_ascii_lowercase()) {
+            let ascii_name = &*name.local.to_ascii_lowercase();
+            if let Some(s) = TAG_RENAME_MAP.get(ascii_name) {
                 unsafe {
                     let name = &name.local as *const _;
                     let mut_ptr: *mut string_cache::atom::Atom<html5ever::LocalNameStaticSet> = name as *mut _;
                     *mut_ptr = s.to_owned().into();
                 }
             }
-            true
+            // drop empty tbody's
+            ascii_name != "tbody" ||
+                node.children.borrow().len() > 1 ||
+                node.children.borrow().iter().next().map(|only_child| match only_child.data {
+                    NodeData::Text { ref contents, .. } => {
+                        dbg!(contents);
+                        !contents.borrow().chars().all(|c| c.is_whitespace())
+                    }
+                    _ => {
+                        dbg!("smth else");
+                        true
+                    }
+                }).unwrap_or(false)
         }
     }
 }

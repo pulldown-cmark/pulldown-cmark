@@ -88,25 +88,22 @@ static HTML_ESCAPE_TABLE: [u8; 256] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
-static HTML_ESCAPES: [&'static str; 6] = [
-        "",
-        "&quot;",
-        "&amp;",
-        "&#47;",
-        "&lt;",
-        "&gt;"
-    ];
-
 pub fn escape_html(ob: &mut String, s: &str, secure: bool) {
     let bytes = s.as_bytes();
     let mut mark = 0;
 
-    scan_simple(bytes, 0, |i| {
-        let c = bytes[i];
-        let escape = HTML_ESCAPE_TABLE[c as usize];
-        if escape != 0 && (secure || c != b'/') {
+    scan_simd(bytes, 0, |i| {
+        let replacement = match bytes[i] {
+            b'"' => "&quot;",
+            b'&' => "&amp;",
+            b'/' => "&#47;",
+            b'<' => "&lt;",
+            b'>' => "&gt;",
+            _ => return,
+        };
+        if secure || replacement != "&#47;" {
             ob.push_str(&s[mark..i]);
-            ob.push_str(HTML_ESCAPES[escape as usize]);
+            ob.push_str(replacement);
             mark = i + 1;  // all escaped characters are ASCII
         }
     });
@@ -129,22 +126,14 @@ fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: 
 }
 
 fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) {
-    // hopefully the compiler sees these as constants??
-    let lower_vec = unsafe { _mm_set_epi8(
-        32, 48, 255u8 as i8, 48, 255u8 as i8, 255u8 as i8,
-        255u8 as i8, 255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 
-        255u8 as i8, 255u8 as i8, 32, 255u8 as i8, 255u8 as i8
-    ) };
-    let top_bits_mask = unsafe { _mm_set1_epi8(0xf0u8 as i8) };
-
+    let lower_vec = unsafe { _mm_set_epi8( 47, 62, 0, 60, 0, 0, 0, 0, 0, 38, 0, 0, 0, 34, 0, 127 ) };
     let upperbound = bytes.len().saturating_sub(15);
     while offset < upperbound {
         let mut mask = unsafe {
             let raw_ptr = transmute(bytes.as_ptr().offset(offset as isize));
             let v = _mm_loadu_si128(raw_ptr);
-            let expected_top_bits = _mm_shuffle_epi8(lower_vec, v);
-            let top_bit_v = _mm_and_si128(top_bits_mask, v);
-            let matches = _mm_cmpeq_epi8(expected_top_bits, top_bit_v);
+            let expected = _mm_shuffle_epi8(lower_vec, v);
+            let matches = _mm_cmpeq_epi8(expected, v);
             _mm_movemask_epi8(matches)
         };
 
@@ -196,7 +185,7 @@ mod html_scan_tests {
             let mut match_count = 0;
             scan_simd(&vek, 0, |_| { match_count += 1; });
             assert!((match_count > 0) == (match_count == 16));
-            assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {}", match_count, b as char);
+            assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
         }
     }
 }

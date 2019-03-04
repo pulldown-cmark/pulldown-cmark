@@ -7,7 +7,7 @@ extern crate string_cache;
 use html5ever::{driver as html, QualName};
 use html5ever::rcdom::{Handle, NodeData, RcDom};
 use html5ever::serialize::{serialize, SerializeOpts};
-use std::collections::{HashSet, HashMap};
+use std::collections::HashSet;
 use std::mem;
 use std::rc::{Rc, Weak};
 use tendril::stream::TendrilSink;
@@ -89,9 +89,6 @@ lazy_static! {
     ].iter().cloned().collect();
     static ref TABLE_TAGS: HashSet<&'static str> = [
         "table", "thead", "tbody", "tr"
-    ].iter().cloned().collect();
-    static ref TAG_RENAME_MAP: HashMap<&'static str, &'static str> = [
-        ("th", "td")
     ].iter().cloned().collect();
 }
 
@@ -251,13 +248,6 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                 (&*a.name.local).cmp(&*b.name.local)
             });
             let ascii_name = &*name.local.to_ascii_lowercase();
-            if let Some(s) = TAG_RENAME_MAP.get(ascii_name) {
-                unsafe {
-                    let name = &name.local as *const _;
-                    let mut_ptr: *mut string_cache::atom::Atom<html5ever::LocalNameStaticSet> = name as *mut _;
-                    *mut_ptr = s.to_owned().into();
-                }
-            }
             // drop empty tbody's
             ascii_name != "tbody" ||
                 node.children.borrow().len() > 1 ||

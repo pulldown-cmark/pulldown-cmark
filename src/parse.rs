@@ -528,6 +528,7 @@ impl<'a> FirstPass<'a> {
             ItemBody::TableCell == self.tree[parent_ix].item.body
         };
         let mut pipes = 0;
+        let mut last_pipe_ix = start;
         let mut begin_text = start;
         while ix < self.text.len() {
             match bytes[ix] {
@@ -563,8 +564,6 @@ impl<'a> FirstPass<'a> {
                         }));
                     } else if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
                         // check if we may be parsing a table
-                        // TODO: check that number of pipes in current line is equal to number we find in table_head
-                        // NOTE: trailing and leading pipes don't count!
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&self.text[next_line_ix..]);
                         let _n_containers = self.scan_containers(&mut line_start);
@@ -572,12 +571,18 @@ impl<'a> FirstPass<'a> {
                         let (table_head_bytes, alignment) = scan_table_head(&self.text[table_head_ix..]);
 
                         if table_head_bytes > 0 {
-                            ix = table_head_ix + table_head_bytes;
-                            return (ix, Some(Item {
-                                start: i,
-                                end: ix, // must update later
-                                body: ItemBody::Table(alignment),
-                            }));
+                            // computing header count from number of pipes
+                            let header_count = count_header_cols(&self.text, pipes, start, last_pipe_ix);
+
+                            // make sure they match the number of columns we find in separator line
+                            if alignment.len() == header_count {
+                                ix = table_head_ix + table_head_bytes;
+                                return (ix, Some(Item {
+                                    start: i,
+                                    end: ix, // must update later
+                                    body: ItemBody::Table(alignment),
+                                }));
+                            }
                         }
                     }
 
@@ -591,7 +596,6 @@ impl<'a> FirstPass<'a> {
                 }
                 b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                     self.tree.append_text(begin_text, ix);
-
                     if !inside_table || bytes[ix + 1] != b'|' {
                         self.tree.append(Item {
                             start: ix,
@@ -599,7 +603,6 @@ impl<'a> FirstPass<'a> {
                             body: ItemBody::Backslash,
                         });
                     }
-
                     begin_text = ix + 1;
                     if bytes[ix + 1] == b'`' {
                         ix += 1;
@@ -699,6 +702,7 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 b'|' if !inside_table => {
+                    last_pipe_ix = ix;
                     pipes += 1;
                     ix += 1;
                 }
@@ -1298,6 +1302,23 @@ impl<'a> FirstPass<'a> {
         }
         None
     }
+}
+
+/// Computes the number of header columns in a table line by computing the number of dividing pipes
+/// that aren't followed or preceeded by whitespace.
+fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_ix: usize) -> usize {
+    // was first pipe preceeded by whitespace? if so, subtract one
+    start += scan_whitespace_no_nl(&text[start..]);
+    if text.as_bytes()[start] == b'|' {
+        pipes -= 1;
+    }
+
+    // was last pipe followed by whitespace? if so, sub one
+    if scan_blank_line(&text[(last_pipe_ix + 1)..]).is_some() {
+        pipes -= 1;
+    }
+
+    pipes + 1
 }
 
 fn unescape_cow<'a>(c: Cow<'a, str>) -> Cow<'a, str> {

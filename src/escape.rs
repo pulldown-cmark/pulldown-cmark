@@ -101,23 +101,12 @@ pub fn escape_html_unsafe(ob: &mut String, s: &str) {
     let bytes = s.as_bytes();
     let mut mark = 0;
 
-    let ix = scan_simd_insecure(bytes, 0, |i| {
+    scan_simd_insecure(bytes, 0, |i| {
         let replacement = HTML_ESCAPES[HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
         ob.push_str(&s[mark..i]);
         ob.push_str(replacement);
         mark = i + 1;  // all escaped characters are ASCII
     });
-
-    // remainder bytes
-    for i in ix..bytes.len() {
-        let escape_ix = HTML_ESCAPE_TABLE[bytes[i] as usize] as usize;
-        if escape_ix == 0 || escape_ix == 3 {
-            continue;
-        }
-        ob.push_str(&s[mark..i]);
-        ob.push_str(HTML_ESCAPES[escape_ix]);
-        mark = i + 1;  // all escaped characters are ASCII
-    }
     ob.push_str(&s[mark..]);
 }
 
@@ -152,13 +141,9 @@ fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: 
 }
 
 // does not scan b'/' and does not do  
-fn scan_simd_insecure<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) -> usize {
+fn scan_simd_insecure<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) {
     let lower_vec = unsafe { _mm_set_epi8( 0, 62, 0, 60, 0, 0, 0, 0, 0, 38, 0, 0, 0, 34, 0, 127 ) };
-    let upperbound = bytes.len().saturating_sub(15);
-
-    // check alignment which is highly unlikely since we're mostly dealing
-    // with subslice of the original text
-    //assert_eq!(0, bytes.as_ptr() as usize % 16);
+    let upperbound = bytes.len().saturating_sub(16);
 
     while offset < upperbound {
         let mut mask = unsafe {
@@ -177,7 +162,26 @@ fn scan_simd_insecure<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mu
 
         offset += 16;
     }
-    offset
+
+    // final iteration - read past buffer. but it should be fine *most of the time*
+    // because we're reading from a larger slice or something that's aligned to 16 bytes.
+    // hopefully. YOLO
+    let mut mask = unsafe {
+        let raw_ptr = transmute(bytes.as_ptr().offset(offset as isize));
+        let v = _mm_loadu_si128(raw_ptr);
+        let expected = _mm_shuffle_epi8(lower_vec, v);
+        let matches = _mm_cmpeq_epi8(expected, v);
+        _mm_movemask_epi8(matches)
+    };
+
+    // zero out the bytes we read past end of buffer
+    mask &= (1 << (bytes.len() - offset)) - 1;
+
+    while mask != 0 {
+        let ix = mask.trailing_zeros();
+        callback(offset + ix as usize);
+        mask ^= mask & -mask;
+    }
 }
 
 fn scan_simd<F: FnMut(usize) -> ()>(bytes: &[u8], mut offset: usize, mut callback: F) {

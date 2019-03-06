@@ -405,7 +405,7 @@ impl<'a> FirstPass<'a> {
                 body: ItemBody::TableCell,
             });
             self.tree.push();
-            let (next_ix, _brk) = self.parse_line(ix);
+            let (next_ix, _brk) = self.parse_line(ix, true);
             self.tree[cell_ix].item.end = next_ix;
             self.tree.pop();
 
@@ -449,7 +449,7 @@ impl<'a> FirstPass<'a> {
 
         let mut ix = start_ix;
         loop {
-            let (next_ix, brk) = self.parse_line(ix);
+            let (next_ix, brk) = self.parse_line(ix, false);
 
             // break out when we find a table
             // rust's pattern matching really shines here!
@@ -501,14 +501,9 @@ impl<'a> FirstPass<'a> {
     /// Parse a line of input, appending text and items to tree.
     ///
     /// Returns: index after line and an item representing the break.
-    fn parse_line(&mut self, mut ix: usize) -> (usize, Option<Item<'a>>) {
+    fn parse_line(&mut self, mut ix: usize, inside_table: bool) -> (usize, Option<Item<'a>>) {
         let bytes = &self.text.as_bytes();
         let start = ix;
-        // TODO: this should probably a function argument instead.
-        let inside_table = {
-            let parent_ix = self.tree.peek_up().unwrap();
-            ItemBody::TableCell == self.tree[parent_ix].item.body
-        };
         let mut pipes = 0;
         let mut last_pipe_ix = start;
         let mut begin_text = start;
@@ -1076,7 +1071,7 @@ impl<'a> FirstPass<'a> {
         let header_start = ix;
         let header_node_idx = self.tree.cur().unwrap(); // so that we can set the endpoint later
         self.tree.push();
-        ix = self.parse_line(ix).0;
+        ix = self.parse_line(ix, false).0;
         self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text

@@ -38,12 +38,11 @@ static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &'static [u8] = b"&amp;";
 static SLASH_ESCAPE: &'static [u8] = b"&#x27;";
 
-pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<usize>
+pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
 where
     W: Write,
 {
     let bytes = s.as_bytes();
-    let mut bytes_written = 0;
     let mut mark = 0;
     for i in 0..bytes.len() {
         let c = bytes[i];
@@ -53,16 +52,13 @@ where
             // write partial substring up to mark
             if mark < i {
                 w.write_all(&bytes[mark..i])?;
-                bytes_written += &bytes[mark..i].len();
             }
             match c {
                 b'&' => {
                     w.write_all(AMP_ESCAPE)?;
-                    bytes_written += AMP_ESCAPE.len();
                 }
                 b'\'' => {
                     w.write_all(SLASH_ESCAPE)?;
-                    bytes_written += SLASH_ESCAPE.len();
                 }
                 _ => {
                     let mut buf = [0u8; 3];
@@ -71,15 +67,13 @@ where
                     buf[2] = HEX_CHARS[(c as usize) & 0xF];
                     let escaped = from_utf8(&buf).unwrap().as_bytes();
                     w.write_all(escaped)?;
-                    bytes_written += escaped.len();
                 }
             }
             mark = i + 1; // all escaped characters are ASCII
         }
     }
     w.write_all(&bytes[mark..])?;
-    bytes_written += &bytes[mark..].len();
-    Ok(bytes_written)
+    Ok(())
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -110,12 +104,11 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&gt;"
     ];
 
-pub fn escape_html<W>(mut w: W, s: &str, secure: bool) -> io::Result<usize>
+pub fn escape_html<W>(mut w: W, s: &str, secure: bool) -> io::Result<()>
 where
     W: Write,
 {
     let bytes = s.as_bytes();
-    let mut bytes_written = 0;
     let mut mark = 0;
     let mut i = 0;
     while i < s.len() {
@@ -134,12 +127,10 @@ where
             let escape_seq = HTML_ESCAPES[escape as usize];
             w.write_all(&bytes[mark..i])?;
             w.write_all(escape_seq.as_bytes())?;
-            bytes_written += &bytes[mark..i].len() + escape_seq.len();
             mark = i + 1; // all escaped characters are ASCII
         }
         i += 1;
     }
     w.write_all(&bytes[mark..])?;
-    bytes_written += &s[mark..].len();
-    Ok(bytes_written)
+    Ok(())
 }

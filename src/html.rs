@@ -22,7 +22,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::{self, Cursor, Write};
+use std::io::{self, Write};
 
 use crate::parse::{Event, Tag, Alignment};
 use crate::parse::Event::*;
@@ -63,8 +63,7 @@ where
         self.writer.write_all(&[b'\n'])
     }
 
-    /// Writes a buffer, and tracks the number of bytes written,
-    /// and whether or not a newline was written.
+    /// Writes a buffer, and tracks whether or not a newline was written.
     fn write(&mut self, bytes: &[u8], write_newline: bool) -> io::Result<()> {
         self.writer.write_all(bytes)?;
 
@@ -102,7 +101,6 @@ where
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;
-                    self.end_newline = html.ends_with('\n');
                 }
                 SoftBreak => {
                     self.write_newline()?;
@@ -117,11 +115,10 @@ where
                     self.write(b"\">", false)?;
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(format!("{}", number).as_bytes(), false)?;
-                    self.write(b"</a></sup>", false)?
+                    self.write(b"</a></sup>", false)?;
                 }
             }
         }
-
         Ok(())
     }
 
@@ -130,29 +127,29 @@ where
         match tag {
             Tag::Paragraph => {
                 self.fresh_line()?;
-                self.write(b"<p>", false)?;
+                self.write(b"<p>", false)
             }
             Tag::Rule => {
                 self.fresh_line()?;
-                self.write(b"<hr />", true)?;
+                self.write(b"<hr />", true)
             }
             Tag::Header(level) => {
                 self.fresh_line()?;
                 self.write(b"<h", false)?;
                 self.write(&[(b'0' + level as u8)], false)?;
-                self.write(b">", false)?;
+                self.write(b">", false)
             }
             Tag::Table(alignments) => {
                 self.table_alignments = alignments;
-                self.write(b"<table>", false)?;
+                self.write(b"<table>", false)
             }
             Tag::TableHead => {
                 self.table_state = TableState::Head;
-                self.write(b"<thead><tr>", false)?;
+                self.write(b"<thead><tr>", false)
             }
             Tag::TableRow => {
                 self.table_cell_index = 0;
-                self.write(b"<tr>", false)?;
+                self.write(b"<tr>", false)
             }
             Tag::TableCell => {
                 match self.table_state {
@@ -175,44 +172,44 @@ where
                     }
                     _ => (),
                 }
-                self.write(b">", false)?;
+                self.write(b">", false)
             }
             Tag::BlockQuote => {
                 self.fresh_line()?;
-                self.write(b"<blockquote>", true)?;
+                self.write(b"<blockquote>", true)
             }
             Tag::CodeBlock(info) => {
                 self.fresh_line()?;
                 let lang = info.split(' ').next().unwrap();
                 if lang.is_empty() {
-                    self.write(b"<pre><code>", false)?;
+                    self.write(b"<pre><code>", false)
                 } else {
                     self.write(b"<pre><code class=\"language-", false)?;
                     escape_html(&mut self.writer, lang, false)?;
-                    self.write(b"\">", false)?;
+                    self.write(b"\">", false)
                 }
             }
             Tag::List(Some(1)) => {
                 self.fresh_line()?;
-                self.write(b"<ol>", true)?;
+                self.write(b"<ol>", true)
             }
             Tag::List(Some(start)) => {
                 self.fresh_line()?;
                 self.write(b"<ol start=\"", false)?;
                 self.write(format!("{}", start).as_bytes(), false)?;
-                self.write(b"\">", true)?;
+                self.write(b"\">", true)
             }
             Tag::List(None) => {
                 self.fresh_line()?;
-                self.write(b"<ul>", true)?;
+                self.write(b"<ul>", true)
             }
             Tag::Item => {
                 self.fresh_line()?;
-                self.write(b"<li>", false)?;
+                self.write(b"<li>", false)
             }
-            Tag::Emphasis => self.write(b"<em>", false)?,
-            Tag::Strong => self.write(b"<strong>", false)?,
-            Tag::Code => self.write(b"<code>", false)?,
+            Tag::Emphasis => self.write(b"<em>", false),
+            Tag::Strong => self.write(b"<strong>", false),
+            Tag::Code => self.write(b"<code>", false),
             Tag::Link(dest, title) => {
                 self.write(b"<a href=\"", false)?;
                 escape_href(&mut self.writer, &dest)?;
@@ -220,7 +217,7 @@ where
                     self.write(b"\" title=\"", false)?;
                     escape_html(&mut self.writer, &title, false)?;
                 }
-                self.write(b"\">", false)?;
+                self.write(b"\">", false)
             }
             Tag::Image(dest, title) => {
                 self.write(b"<img src=\"", false)?;
@@ -231,7 +228,7 @@ where
                     self.write(b"\" title=\"", false)?;
                     escape_html(&mut self.writer, &title, false)?;
                 }
-                self.write(b"\" />", false)?;
+                self.write(b"\" />", false)
             }
             Tag::FootnoteDefinition(name) => {
                 self.fresh_line()?;
@@ -241,11 +238,10 @@ where
                 self.write(b"\"><sup class=\"footnote-definition-label\">", false)?;
                 let number = *self.numbers.entry(name).or_insert(len);
                 self.write(&*format!("{}", number).as_bytes(), false)?;
-                self.write(b"</sup>", false)?;
+                self.write(b"</sup>", false)
             }
-            Tag::HtmlBlock => {}
+            Tag::HtmlBlock => Ok(())
         }
-        Ok(())
     }
 
     fn end_tag(&mut self, tag: Tag) -> io::Result<()> {

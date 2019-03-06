@@ -132,14 +132,12 @@ enum ItemBody<'a> {
     Header(i32), // header level
     FencedCodeBlock(Cow<'a, str>), // info string
     IndentCodeBlock(TreePointer), // last non-blank child
-    SynthesizeNewLine,  // TODO: subsume under SynthesizeText, or delete
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
     SynthesizeText(Cow<'static, str>),
-    BlankLine,
     FootnoteDefinition(Cow<'a, str>), // label
 
     // Tables
@@ -1323,29 +1321,6 @@ impl<'a> Tree<Item<'a>> {
             });
         }
     }
-
-    fn append_html_line(&mut self, start: usize, end: usize) {
-        if end >= start {
-            self.append(Item {
-                start: start,
-                end: end,
-                body: ItemBody::Html,
-            });
-            self.append(Item {
-                start: end,
-                end: end,
-                body: ItemBody::SynthesizeNewLine,
-            });
-        }
-    }
-
-    fn append_newline(&mut self, ix: usize) {
-        self.append(Item {
-            start: ix,
-            end: ix,
-            body: ItemBody::SynthesizeNewLine,
-        });
-    }
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -1399,61 +1374,6 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || next_char.is_ascii_punctuation()
 }
 
-// ix is at the beginning of the code line text
-// returns the index of the start of the next line
-fn parse_indented_code_line<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> usize {
-    let codeline_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_text(ix, codeline_end_offset + ix);
-    tree.append_newline(codeline_end_offset);
-
-    // record the last nonblank child so that we can remove
-    // trailing blanklines during tree parsing
-    if let None = scan_blank_line(&s[ix..]) {
-        let parent_icb = tree.peek_up().unwrap(); // this line must have an icb parent
-        let tree_cur = tree.cur();
-        if let ItemBody::IndentCodeBlock(ref mut last_nonblank_child) = tree[parent_icb].item.body {
-            *last_nonblank_child = tree_cur;
-        }
-    }
-
-    ix += codeline_end_offset;
-    ix += scan_eol(&s[ix..]).0;
-    ix
-}
-
-// Returns index of start of next line.
-fn parse_hrule<'a>(tree: &mut Tree<Item<'a>>, hrule_size: usize, mut ix: usize) -> usize {
-    tree.append(Item {
-        start: ix,
-        end: ix + hrule_size,
-        body: ItemBody::Rule,
-    });
-    ix += hrule_size;
-    ix
-}
-
-fn parse_html_line_type_1_to_5<'a>(tree : &mut Tree<Item<'a>>, s : &'a str, mut ix : usize, html_end_tag: &'static str) -> usize {
-    let nextline_offset = scan_nextline(&s[ix..]);
-    let htmlline_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_html_line(ix, ix+htmlline_end_offset);
-    if (&s[ix..ix+htmlline_end_offset]).contains(html_end_tag) {
-        tree.pop(); // to HTML Block
-    }
-    ix += nextline_offset;
-    ix
-}
-
-fn parse_html_line_type_6or7<'a>(tree : &mut Tree<Item<'a>>, s : &'a str, mut ix : usize) -> usize {
-    let nextline_offset = scan_nextline(&s[ix..]);
-    let htmlline_end_offset = scan_line_ending(&s[ix..]);
-    tree.append_html_line(ix, ix+htmlline_end_offset);
-    if let Some(_) = scan_blank_line(&s[ix+nextline_offset..]) {
-        tree.pop();
-    }
-    ix += nextline_offset;
-    ix
-}
-
 /// Checks whether we should break a paragraph on the given input.
 /// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
 /// whether to break on a list requires additional context.
@@ -1465,294 +1385,6 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||
     is_html_tag(scan_html_block_tag(s).1)
-}
-
-// Scan markers and indentation for current container stack
-// Scans to the first character after the container marks
-// Return: bytes scanned, and whether containers were closed
-fn scan_containers_old<'a>(tree: &Tree<Item<'a>>, text: &'a str) -> (usize, bool) {
-    let mut i = 0;
-    for &vertebra in tree.walk_spine() {
-        let (space_bytes, num_spaces) = scan_leading_space(&text[i..], 0);
-        
-        match tree[vertebra].item.body {
-            ItemBody::BlockQuote => {
-                i += space_bytes;
-                if num_spaces >= 4 { return (0, false); }
-                let n = scan_blockquote_start(&text[i..]);
-                if n > 0 {
-                    i += n
-                } else {
-                    return (i, false);
-                }
-            },
-            ItemBody::ListItem(indent) => {
-                if !(num_spaces >= indent || scan_eol(&text[i..]).1) {
-                    return (i, false);
-                } else if scan_eol(&text[i..]).1 {
-                    if let ItemBody::BlankLine = tree[tree.cur().unwrap()].item.body {
-                        if tree[vertebra].child == tree.cur() {
-                            return (i, false);
-                        }
-                    }
-                    return (i, true);
-                }
-                i += indent;
-
-            },
-            ItemBody::IndentCodeBlock(_) => {
-                if let Some(codeline_start_offset) = scan_code_line(&text[i..]) {
-                    i += codeline_start_offset;
-                    return (i, true);
-                } else {
-                    return (0, false);
-                }
-            }
-            ItemBody::List(_, _, _) => {
-                // hrule interrupts list
-                let hrule_size = scan_hrule(&text[i..]);
-                if hrule_size > 0 {
-                    return (0, false);
-                }
-            }
-            _ => (),
-        }
-    }
-    return (i, true);
-}
-
-// Used on a new line, after scan_containers_old
-// scans to first character after new container markers
-fn parse_new_containers<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> usize {
-    if ix >= s.len() { return ix; }
-    // check if parent is a leaf block, which makes new containers illegal
-    if let Some(parent) = tree.peek_up() {
-        if let ItemBody::FencedCodeBlock(_) = tree[parent].item.body {
-            return ix;
-        }
-        if let ItemBody::IndentCodeBlock(_) = tree[parent].item.body {
-            return ix;
-        }
-        if let ItemBody::HtmlBlock(_) = tree[parent].item.body {
-            return ix;
-        }
-    }
-    let begin = ix;
-    let leading_bytes = scan_leading_space(s, ix).0;
-    loop {
-        let (leading_bytes, leading_spaces) = scan_leading_space(s, ix);
-        if leading_spaces >= 4 { break; }
-        ix += leading_bytes;
-        
-        let blockquote_bytes = scan_blockquote_start(&s[ix..]);
-        if blockquote_bytes > 0 {
-            tree.append(Item {
-                start: ix,
-                end: ix, // TODO: set this correctly
-                body: ItemBody::BlockQuote,
-            });
-            tree.push();
-            ix += blockquote_bytes;
-            continue;
-        }
-
-        let (listitem_bytes, listitem_delimiter, listitem_start_index, listitem_indent) = scan_listitem(&s[ix..]);
-        if listitem_bytes > 0 {
-            // thematic breaks take precedence over listitems. FIXME: shouldnt we do this before
-            // we scan_listitem? or should offset by ix + listitem_bytes?
-            if scan_hrule(&s[ix..]) > 0 { break; }
-
-            // handle ordered lists
-            let listitem_start = if listitem_delimiter == b'.' || listitem_delimiter == b')' {
-                Some(listitem_start_index)
-            } else {
-                None
-            };
-
-            let mut need_push = true; // Are we starting a new list?
-            if let Some(parent) = tree.peek_up() {
-                match tree[parent].item.body {
-                    ItemBody::List(_, delim, _) if delim == listitem_delimiter => {
-                        need_push = false;
-                    },
-                    ItemBody::List(_, _, _) => {
-                        // A different delimiter indicates a new list
-                        tree.pop();
-                    },
-                    _ => {},
-                }
-            }
-            if need_push {
-                tree.append(Item {
-                    start: ix,
-                    end: ix, // TODO: set this correctly
-                    body: ItemBody::List(false /* */, listitem_delimiter, listitem_start),
-                });
-                tree.push();
-            }
-
-            tree.append(Item {
-                start: ix,
-                end: ix, // TODO: set this correctly
-                body: ItemBody::ListItem(listitem_indent + leading_spaces),
-            });
-            tree.push();
-            ix += listitem_bytes;
-            continue;
-        }
-        break;
-    }
-
-    // If we are at a ListItem node, we didn't see a new ListItem,
-    // so it's time to close the list.
-    if let TreePointer::Valid(cur_ix) = tree.cur() {
-        if let ItemBody::ListItem(_) = tree[cur_ix].item.body {
-            tree.pop();
-        }
-    }
-
-    if ix > leading_bytes + begin {
-        return ix;
-    } else {
-        return begin;
-    }
-}
-
-// Used on a new line, after scan_containers_old and scan_new_containers.
-// Mutates tree as needed, and returns the start of the next line.
-fn parse_blocks<'a>(mut tree: &mut Tree<Item<'a>>, s: &'a str, mut ix: usize) -> usize {
-    if ix >= s.len() { return ix; }
-
-    if let Some(parent) = tree.peek_up() {
-        /*
-        if let ItemBody::FencedCodeBlock(num_fence_char, fence_char, indentation, _) = tree[parent].item.body {
-            return parse_fenced_code_line(&mut tree, s, ix, num_fence_char, fence_char, indentation);
-        }
-        */
-        if let ItemBody::IndentCodeBlock(_) = tree[parent].item.body {
-            return parse_indented_code_line(&mut tree, s, ix);
-        }
-        if let ItemBody::HtmlBlock(Some(html_end_tag)) = tree[parent].item.body {
-            return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
-        }
-        if let ItemBody::HtmlBlock(None) = tree[parent].item.body {
-            return parse_html_line_type_6or7(&mut tree, s, ix);
-        }
-    }
-
-    if let Some(blankline_size) = scan_blank_line(&s[ix..]) {
-        tree.append(Item {
-            start: ix,
-            end: ix + blankline_size,
-            body: ItemBody::BlankLine,
-        });
-
-        ix += blankline_size;
-        return ix;
-    }
-
-    let (leading_bytes, _leading_spaces) = scan_leading_space(&s[ix..], 0);
-    
-    if let Some(codeline_start_offset) = scan_code_line(&s[ix..]) {
-        tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::IndentCodeBlock(TreePointer::Nil)
-        });
-        tree.push();
-        ix += codeline_start_offset;
-        return parse_indented_code_line(&mut tree, s, ix);
-    }
-
-    // leading spaces are preserved in html blocks
-    if let Some(html_end_tag) = get_html_end_tag(&s[ix+leading_bytes..]) {
-        tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(Some(html_end_tag)),
-        });
-        tree.push();
-        return parse_html_line_type_1_to_5(&mut tree, s, ix, html_end_tag);
-    }
-
-    let possible_tag = scan_html_block_tag(&s[ix+leading_bytes..]).1;
-    if is_html_tag(possible_tag) {
-        tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
-        });
-        tree.push();
-        return parse_html_line_type_6or7(&mut tree, s, ix);
-    }
-
-    if let Some(html_bytes) = scan_html_type_7(&s[ix+leading_bytes..]) {
-        tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
-        });
-        tree.push();
-        tree.append_html_line(ix, ix+html_bytes);
-        ix += html_bytes;
-        let nextline_offset = scan_nextline(&s[ix..]);
-        return ix + nextline_offset;
-    }
-
-
-
-    ix += leading_bytes;
-
-    let (_atx_size, atx_level) = scan_atx_header(&s[ix..]);
-    if atx_level > 0 {
-        unimplemented!();
-        //return parse_atx_header(&mut tree, s, ix, atx_level, atx_size);
-    }
-
-    let hrule_size = scan_hrule(&s[ix..]);
-    if hrule_size > 0 {
-        return parse_hrule(&mut tree, hrule_size, ix);
-    }
-
-    let (num_code_fence_chars, _code_fence_char) = scan_code_fence(&s[ix..]);
-    if num_code_fence_chars > 0 {
-        let nextline_offset = scan_nextline(&s[ix..]);
-        let info_string = unescape(s[ix+num_code_fence_chars..ix+nextline_offset].trim());
-        tree.append(Item {
-            start: ix,
-            end: 0, // set later
-            body: ItemBody::FencedCodeBlock(info_string),
-        });
-        
-        ix += scan_nextline(&s[ix..]);
-
-        tree.push();
-        return ix;
-    }
-
-    unimplemented!();
-    //return parse_paragraph(&mut tree, s, ix);
-    // }
-}
-
-#[allow(unused)]
-// Root is node 0
-fn first_pass_old<'a>(s: &'a str) -> Tree<Item<'a>> {
-    let mut tree = Tree::new();
-    let mut ix = 0;
-    while ix < s.len() {
-        // start of a new line
-        let (container_offset, are_containers_closed) = scan_containers_old(&mut tree, &s[ix..]);
-        if !are_containers_closed {
-            tree.pop();
-            continue;
-        }
-        ix += container_offset;
-        // ix is past all container marks
-        ix = parse_new_containers(&mut tree, s, ix);
-        ix = parse_blocks(&mut tree, s, ix);
-    }
-    tree
 }
 
 fn get_html_end_tag(text : &str) -> Option<&'static str> {
@@ -2517,7 +2149,6 @@ impl<'a> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
 
-    #[allow(unused_variables)]
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
@@ -2858,58 +2489,22 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
     match item.body {
         ItemBody::Text => {
             Event::Text(Cow::from(&text[item.start..item.end]))
-        },
+        }
         // TODO: don't clone text!
         ItemBody::SynthesizeText(ref text) => {
             Event::Text(text.clone())
         }
-        ItemBody::SynthesizeNewLine => {
-            Event::Text(Cow::from("\n"))
-        },
-        ItemBody::BlankLine => {
-            Event::Text(Cow::from(""))
-        },
         ItemBody::Html => {
             Event::Html(Cow::from(&text[item.start..item.end]))
-        },
+        }
         ItemBody::InlineHtml => {
             Event::InlineHtml(Cow::from(&text[item.start..item.end]))
-        },
+        }
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
         ItemBody::FootnoteReference(ref l) => Event::FootnoteReference(l.clone()),
         _ => panic!("unexpected item body {:?}", item.body)
     }
-}
-
-#[allow(unused)]
-// tree.cur points to a List<_, _, _> Item Node
-fn detect_tight_list<'a>(tree: &Tree<Item<'a>>) -> bool {
-    // let mut this_listitem = tree[tree.cur].child;
-    // while let TreePointer::Valid(listitem_ix) = this_listitem {
-    //     let on_lastborn_child = tree[listitem_ix].next == TreePointer::Nil;
-    //     if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
-    //         let mut this_listitem_child = tree[listitem_ix].child;
-    //         let mut on_firstborn_grandchild = true; 
-    //         if this_listitem_child != TreePointer::Nil {
-    //             while this_listitem_child != TreePointer::Nil {
-    //                 let on_lastborn_grandchild = tree[this_listitem_child].next == TreePointer::Nil;
-    //                 if let ItemBody::BlankLine = tree[this_listitem_child].item.body {
-    //                     // If the first line is blank, this does not trigger looseness.
-    //                     // Blanklines at the very end of a list also do not trigger looseness.
-    //                     if !on_firstborn_grandchild && !(on_lastborn_child && on_lastborn_grandchild) {  
-    //                         return false;
-    //                     }
-    //                 }
-    //                 on_firstborn_grandchild = false;
-    //                 this_listitem_child = tree[this_listitem_child].next;
-    //             }
-    //         } // the else should panic!
-    //     }
-
-    //     this_listitem = tree[listitem_ix].next;
-    // }
-    return true;
 }
 
 // https://english.stackexchange.com/a/285573

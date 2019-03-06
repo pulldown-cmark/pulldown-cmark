@@ -294,13 +294,6 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
     }
 }
 
-pub fn scan_line_ending(s: &str) -> usize {
-    match s.as_bytes().iter().position(|&c| c == b'\r' || c == b'\n') {
-        Some(i) => i,
-        None => s.len()
-    }
-}
-
 pub fn scan_blank_line(text: &str) -> Option<usize> {
     let i = scan_whitespace_no_nl(text);
     if let (n, true) = scan_eol(&text[i..]) {
@@ -315,54 +308,6 @@ pub fn scan_nextline(s: &str) -> usize {
         Some(x) => x + 1,
         None => s.len()
     }
-}
-
-pub fn count_tab(bytes: &[u8]) -> usize {
-    let mut count = 0;
-    for &c in bytes.iter().rev() {
-        match c {
-            b'\t' | b'\n' => break,
-            x if (x & 0xc0) != 0x80 => count += 1,
-            _ => ()
-        }
-    }
-    4 - count % 4
-}
-
-// takes a loc because tabs might require left context
-// return: number of bytes, number of spaces
-pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
-    let bytes = text.as_bytes();
-    let mut i = 0;
-    let mut spaces = 0;
-    for &c in &bytes[loc..] {
-        match c {
-            b' ' => spaces += 1,
-            b'\t' => spaces += count_tab(&bytes[.. loc + i]),
-            _ => break
-        }
-        i += 1
-    }
-    (i, spaces)
-}
-
-// return: start byte for code text in indented code line, or None
-// for a non-code line
-pub fn scan_code_line(text: &str) -> Option<usize> {
-    let bytes = text.as_bytes();
-    let mut num_spaces = 0;
-    let mut i = 0;
-    for &c in bytes {
-        if num_spaces == 4 { return Some(4); }
-        match c {
-            b' ' => num_spaces += 1,
-            b'\t' => { return Some(i+1); },
-            b'\n' | b'\r' => { return Some(i); }, 
-            _ => { return None; },
-        }
-        i += 1;
-    }
-    return None;
 }
 
 // return: end byte for closing code fence, or None
@@ -426,11 +371,6 @@ pub fn scan_hrule(data: &str) -> usize {
     if n >= 3 { i } else { 0 }
 }
 
-// TODO: obsolete, remove in code cleanup
-pub fn scan_atx_header(_data: &str) -> (usize, i32) {
-    unimplemented!();
-}
-
 /// Scan an ATX heading opening sequence.
 ///
 /// Returns number of bytes in prefix and level.
@@ -449,10 +389,6 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     } else {
         None
     }
-}
-
-pub fn scan_setext_header(_data: &str) -> (usize, i32) {
-    unimplemented!();
 }
 
 /// Scan a setext heading underline.

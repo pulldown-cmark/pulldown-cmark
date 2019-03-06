@@ -211,7 +211,7 @@ where
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
             Tag::Code => self.write(b"<code>", false),
-            Tag::Link(dest, title) => {
+            Tag::Link(_link_type, dest, title) => {
                 self.write(b"<a href=\"", false)?;
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
@@ -220,7 +220,7 @@ where
                 }
                 self.write(b"\">", false)
             }
-            Tag::Image(dest, title) => {
+            Tag::Image(_link_type, dest, title) => {
                 self.write(b"<img src=\"", false)?;
                 escape_href(&mut self.writer, &dest)?;
                 self.write(b"\" alt=\"", false)?;
@@ -301,10 +301,10 @@ where
             Tag::Code => {
                 self.write(b"</code>", false)?;
             }
-            Tag::Link(_, _) => {
+            Tag::Link(_, _, _) => {
                 self.write(b"</a>", false)?;
             }
-            Tag::Image(_, _) => (), // shouldn't happen, handled in start
+            Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
                 self.write(b"</div>", true)?;
             }

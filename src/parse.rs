@@ -58,10 +58,10 @@ pub enum Tag<'a> {
     Strong,
     Code,
 
-    /// A link. The first field is the destination URL, the second is a title
+    /// A link. The first field is the destination URL and the second is a title
     Link(Cow<'a, str>, Cow<'a, str>),
 
-    /// An image. The first field is the destination URL, the second is a title
+    /// An image. The first field is the destination URL and the second is a title
     Image(Cow<'a, str>, Cow<'a, str>),
 }
 

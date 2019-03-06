@@ -29,18 +29,6 @@ use crate::parse::Alignment;
 
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
-// sorted for binary_search
-const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 
-    "basefont", "blockquote", "body", "button", "canvas", "caption", "center",
-    "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", 
-    "embed", "fieldset", "figcaption", "figure", "footer", "form", "frame", 
-    "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", 
-    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem", 
-    "meta", "map", "nav", "noframes", "object", "ol", "optgroup", "option", 
-    "output", "p", "param", "progress", "section", "source", "summary", 
-    "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", 
-    "ul", "video"];
-
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.
 #[derive(Clone)]
@@ -212,6 +200,15 @@ impl<'a> LineStart<'a> {
         self.spaces_remaining
     }
 }
+
+// sorted for binary search
+const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
+    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
+    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
+    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
+    "li", "map", "object", "ol", "output", "p", "pre", "progress", "script",
+    "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
+    "thead", "tr", "ul", "video"];
 
 pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
@@ -630,29 +627,6 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
     Some((i, &data[dest_beg..dest_end]))
 }
 
-pub fn scan_attribute_name(data: &str) -> Option<usize> {
-    let size = data.len();
-    if size == 0 { 
-        return None; }
-    match data.as_bytes()[0] {
-        c if is_ascii_alpha(c) => (),
-        b'_' | b':' => (),
-        _ => {
-   
-            return None;
-        }
-    }
-    let mut i = 1;
-    while i < size {
-        match data.as_bytes()[i] {
-            c if is_ascii_alphanumeric(c) => i += 1,
-            b'_' | b'.' | b':' | b'-' => i += 1,
-            _ => break
-        }
-    }
-    Some(i)
-}
-
 pub fn scan_attribute_value(data: &str) -> Option<usize> {
     let size = data.len();
     if size == 0 { return None; }
@@ -785,6 +759,29 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
     } else {
         return None;
     }
+}
+
+pub fn scan_attribute_name(data: &str) -> Option<usize> {
+    let size = data.len();
+    if size == 0 { 
+        return None; }
+    match data.as_bytes()[0] {
+        c if is_ascii_alpha(c) => (),
+        b'_' | b':' => (),
+        _ => {
+   
+            return None;
+        }
+    }
+    let mut i = 1;
+    while i < size {
+        match data.as_bytes()[i] {
+            c if is_ascii_alphanumeric(c) => i += 1,
+            b'_' | b'.' | b':' | b'-' => i += 1,
+            _ => break
+        }
+    }
+    Some(i)
 }
 
 pub fn scan_attribute(data: &str) -> Option<usize> {

@@ -252,7 +252,8 @@ pub fn main() {
         } else if matches.opt_present("dry-run") {
             dry_run(&input, opts);
         } else {
-            print!("{}", render_html(&input, opts));
+            let p = Parser::new_ext(&input, opts);
+            html::write_html(io::stdout(), p).unwrap();
         }
     }
 }

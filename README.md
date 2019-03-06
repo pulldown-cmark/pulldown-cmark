@@ -36,7 +36,7 @@ construct an AST. Another advantage is that source-map information (the mapping
 between parsed blocks and offsets within the source text) is readily available;
 you basically just call `get_offset()` as you consume events.
 
-While manipulating AST's is the most flexible way to transform documents,
+While manipulating ASTs is the most flexible way to transform documents,
 operating on iterators is surprisingly easy, and quite efficient. Here, for
 example, is the code to transform soft line breaks into hard breaks:
 

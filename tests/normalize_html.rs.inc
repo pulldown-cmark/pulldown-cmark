@@ -256,7 +256,6 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                         !contents.borrow().chars().all(|c| c.is_whitespace())
                     }
                     _ => {
-                        dbg!("smth else");
                         true
                     }
                 }).unwrap_or(false)

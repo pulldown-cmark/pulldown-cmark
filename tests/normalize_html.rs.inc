@@ -57,13 +57,14 @@ fn normalize_dom(dom: RcDom) -> Handle {
             if !retain {
                 let mut siblings = parent.children.borrow_mut();
                 siblings.retain(|s| !Rc::ptr_eq(&node, s));
+            } else {
+                next_level.extend(
+                    node.children.borrow()
+                        .iter()
+                        .cloned()
+                        .rev(),
+                );
             }
-            next_level.extend(
-                node.children.borrow()
-                    .iter()
-                    .cloned()
-                    .rev(),
-            );
         }
         if next_level.is_empty() { break };
         mem::swap(&mut next_level, &mut current_level);
@@ -85,9 +86,12 @@ lazy_static! {
     static ref PRE_TAGS: HashSet<&'static str> = [
         "pre"
     ].iter().cloned().collect();
+    static ref TABLE_TAGS: HashSet<&'static str> = [
+        "table", "thead", "tbody", "tr"
+    ].iter().cloned().collect();
 }
 
-// Returns false if node is a text node and it ended up being empty.
+// Returns false if node is an empty text node or an empty tbody.
 // Returns true otherwise.
 fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
     match node.data {
@@ -204,7 +208,19 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                         }
                     }
                 };
-                *contents = WHITESPACE_RE.replace_all(&*contents, " ").as_ref().into();
+
+                let is_in_table = if let NodeData::Element{ ref name, .. } = parent.data {
+                    TABLE_TAGS.contains(&*name.local.to_ascii_lowercase())
+                } else {
+                    false
+                };
+                let whitespace_replacement = if is_in_table {
+                    ""
+                } else {
+                    " "
+                };
+                *contents = WHITESPACE_RE.replace_all(&*contents, whitespace_replacement).as_ref().into();
+
                 if is_first_in_block || is_preceeded_by_ws {
                     *contents = LEADING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
                 }
@@ -222,7 +238,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             }
             &**contents != ""
         }
-        NodeData::Element { ref attrs, .. } => {
+        NodeData::Element { ref attrs, ref name, .. } => {
             let mut attrs = attrs.borrow_mut();
             for a in attrs.iter_mut() {
                 a.name.local = a.name.local.to_ascii_lowercase().into();
@@ -230,7 +246,20 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             attrs.sort_by(|a: &html5ever::Attribute, b: &html5ever::Attribute| {
                 (&*a.name.local).cmp(&*b.name.local)
             });
-            true
+            let ascii_name = &*name.local.to_ascii_lowercase();
+            // drop empty tbody's
+            ascii_name != "tbody" ||
+                node.children.borrow().len() > 1 ||
+                node.children.borrow().iter().next().map(|only_child| match only_child.data {
+                    NodeData::Text { ref contents, .. } => {
+                        dbg!(contents);
+                        !contents.borrow().chars().all(|c| c.is_whitespace())
+                    }
+                    _ => {
+                        dbg!("smth else");
+                        true
+                    }
+                }).unwrap_or(false)
         }
     }
 }

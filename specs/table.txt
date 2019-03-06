@@ -1,5 +1,8 @@
 Run this with `cargo run -- -T -s specs/table.txt`.
 
+Adapted from original by replacing `td` elements by `th` elements inside `thead`
+and disabling the third test.
+
 False match
 ===========
 
@@ -18,7 +21,7 @@ True match
 Test|Table
 ----|-----
 .
-<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
+<table><thead><tr><th>Test</th><th>Table</th></tr></thead>
 </table>
 ````````````````````````````````
 
@@ -26,7 +29,7 @@ Test|Table
 Actual rows in it
 =================
 
-```````````````````````````````` example
+```````````````````````````````` DISABLED example
 Test|Table
 ----|-----
 Test row
@@ -34,7 +37,7 @@ Test|2
 
 Test ending
 .
-<table><thead><tr><td>Test</td><td>Table</td></tr></thead>
+<table><thead><tr><th>Test</th><th>Table</th></tr></thead>
 <tr><td>Test row</td></tr>
 <tr><td>Test</td><td>2</td></tr>
 </table>
@@ -54,7 +57,7 @@ Test with quote
 > Paragraph
 .
 <blockquote>
-<table><thead><tr><td>Test  </td><td> Table</td></tr></thead>
+<table><thead><tr><th>Test  </th><th> Table</th></tr></thead>
 <tr><td>Row 1 </td><td> Every</td></tr>
 <tr><td>Row 2 </td><td> Day</td></tr>
 </table>
@@ -81,7 +84,7 @@ Test with list
 </li>
 <li>
 <p>Second entry</p>
-<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead>
 <tr><td>Row 1</td><td>Part 2</td></tr>
 <tr><td>Row 2</td><td>Part 2</td></tr>
 </table>
@@ -99,7 +102,7 @@ Test with border
 |R1C1 |R1C2 |
 |R2C1 |R2C2 |
 .
-<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead>
 <tr><td>R1C1 </td><td>R1C2 </td></tr>
 <tr><td>R2C1 </td><td>R2C2 </td></tr>
 </table>
@@ -117,7 +120,7 @@ Empty cells should work.
 |       |       |
 |       |       |
 .
-<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
+<table><thead><tr><th> Col 1 </th><th> Col 2 </th></tr></thead>
 <tr><td>       </td><td>       </td></tr>
 <tr><td>       </td><td>       </td></tr>
 </table>
@@ -131,7 +134,7 @@ Empty cells should work.
 |   x   |       |
 |       |    x  |
 .
-<table><thead><tr><td> Col 1 </td><td> Col 2 </td></tr></thead>
+<table><thead><tr><th> Col 1 </th><th> Col 2 </th></tr></thead>
 <tr><td>   x   </td><td>       </td></tr>
 <tr><td>       </td><td>    x  </td></tr>
 </table>
@@ -149,7 +152,7 @@ Basic example.
 |✓    |✓    |
 |✓    |✓    |
 .
-<table><thead><tr><td>Col 1</td><td>Col 2</td></tr></thead>
+<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead>
 <tr><td>✓    </td><td>✓    </td></tr>
 <tr><td>✓    </td><td>✓    </td></tr>
 </table>
@@ -168,7 +171,7 @@ More advanced example.
 | `mips-unknown-linux-gnu`      |  ✓  |     |     | MIPS Linux (2.6.18+)       |
 | `mipsel-unknown-linux-gnu`    |  ✓  |     |     | MIPS (LE) Linux (2.6.18+)  |
 .
-<table><thead><tr><td>  Target                       </td><td> std </td><td>rustc</td><td>cargo</td><td> notes                      </td></tr></thead>
+<table><thead><tr><th>  Target                       </th><th> std </th><th>rustc</th><th>cargo</th><th> notes                      </th></tr></thead>
 <tr><td> <code>x86_64-unknown-linux-musl</code>   </td><td>  ✓  </td><td>     </td><td>     </td><td> 64-bit Linux with MUSL     </td></tr>
 <tr><td> <code>arm-linux-androideabi</code>       </td><td>  ✓  </td><td>     </td><td>     </td><td> ARM Android                </td></tr>
 <tr><td> <code>arm-unknown-linux-gnueabi</code>   </td><td>  ✓  </td><td>  ✓  </td><td>     </td><td> ARM Linux (2.6.18+)        </td></tr>
@@ -196,7 +199,7 @@ Hiragana-containing actual table.
 |-|-|
 |ぃ|ぃ|
 .
-<table><thead><tr><td>ぁ</td><td>ぃ</td></tr></thead>
+<table><thead><tr><th>ぁ</th><th>ぃ</th></tr></thead>
 <tr><td>ぃ</td><td>ぃ</td></tr>
 </table>
 ````````````````````````````````
@@ -208,7 +211,7 @@ Test russian symbols.
 |---------|---------|
 |Ячейка 1 |Ячейка 2 |
 .
-<table><thead><tr><td>Колонка 1</td><td>Колонка 2</td></tr></thead>
+<table><thead><tr><th>Колонка 1</th><th>Колонка 2</th></tr></thead>
 <tr><td>Ячейка 1 </td><td>Ячейка 2 </td></tr>
 </table>
 ````````````````````````````````

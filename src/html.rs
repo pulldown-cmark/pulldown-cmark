@@ -46,9 +46,6 @@ where
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
 
-    /// Number of bytes written.
-    bytes_written: usize,
-
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -63,8 +60,6 @@ where
     /// Writes a new line.
     fn write_newline(&mut self) -> io::Result<()> {
         self.end_newline = true;
-        self.bytes_written += 1;
-
         self.writer.write_all(&[b'\n'])
     }
 
@@ -72,7 +67,6 @@ where
     /// and whether or not a newline was written.
     fn write(&mut self, bytes: &[u8], write_newline: bool) -> io::Result<()> {
         self.writer.write_all(bytes)?;
-        self.bytes_written += bytes.len();
 
         if write_newline {
             self.write_newline()
@@ -87,14 +81,14 @@ where
     /// Writes a newline if data was already written to the output stream,
     /// and the previous line did not end with a newline.
     fn fresh_line(&mut self) -> io::Result<()> {
-        if self.bytes_written > 0 && !self.end_newline {
+        if !self.end_newline {
             self.write_newline()
         } else {
             Ok(())
         }
     }
 
-    pub fn run(mut self) -> io::Result<usize> {
+    pub fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
@@ -104,7 +98,7 @@ where
                     self.end_tag(tag)?;
                 }
                 Text(text) => {
-                    self.bytes_written += escape_html(&mut self.writer, &text, false)?;
+                    escape_html(&mut self.writer, &text, false)?;
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;
@@ -119,7 +113,7 @@ where
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     self.write(b"<sup class=\"footnote-reference\"><a href=\"#", false)?;
-                    self.bytes_written += escape_html(&mut self.writer, &name, false)?;
+                    escape_html(&mut self.writer, &name, false)?;
                     self.write(b"\">", false)?;
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(format!("{}", number).as_bytes(), false)?;
@@ -128,7 +122,7 @@ where
             }
         }
 
-        Ok(self.bytes_written)
+        Ok(())
     }
 
     /// Writes the start of an HTML tag.
@@ -194,7 +188,7 @@ where
                     self.write(b"<pre><code>", false)?;
                 } else {
                     self.write(b"<pre><code class=\"language-", false)?;
-                    self.bytes_written += escape_html(&mut self.writer, lang, false)?;
+                    escape_html(&mut self.writer, lang, false)?;
                     self.write(b"\">", false)?;
                 }
             }
@@ -221,21 +215,21 @@ where
             Tag::Code => self.write(b"<code>", false)?,
             Tag::Link(dest, title) => {
                 self.write(b"<a href=\"", false)?;
-                self.bytes_written += escape_href(&mut self.writer, &dest)?;
+                escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
-                    self.bytes_written += escape_html(&mut self.writer, &title, false)?;
+                    escape_html(&mut self.writer, &title, false)?;
                 }
                 self.write(b"\">", false)?;
             }
             Tag::Image(dest, title) => {
                 self.write(b"<img src=\"", false)?;
-                self.bytes_written += escape_href(&mut self.writer, &dest)?;
+                escape_href(&mut self.writer, &dest)?;
                 self.write(b"\" alt=\"", false)?;
                 self.raw_text()?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
-                    self.bytes_written += escape_html(&mut self.writer, &title, false)?;
+                    escape_html(&mut self.writer, &title, false)?;
                 }
                 self.write(b"\" />", false)?;
             }
@@ -243,7 +237,7 @@ where
                 self.fresh_line()?;
                 let len = self.numbers.len() + 1;
                 self.write(b"<div class=\"footnote-definition\" id=\"", false)?;
-                self.bytes_written += escape_html(&mut self.writer, &*name, false)?;
+                escape_html(&mut self.writer, &*name, false)?;
                 self.write(b"\"><sup class=\"footnote-definition-label\">", false)?;
                 let number = *self.numbers.entry(name).or_insert(len);
                 self.write(&*format!("{}", number).as_bytes(), false)?;
@@ -335,11 +329,11 @@ where
                     nest -= 1;
                 }
                 Text(text) => {
-                    self.bytes_written += escape_html(&mut self.writer, &text, false)?;
+                    escape_html(&mut self.writer, &text, false)?;
                 }
                 Html(_) => (),
                 InlineHtml(html) => {
-                    self.bytes_written += escape_html(&mut self.writer, &html, false)?;
+                    escape_html(&mut self.writer, &html, false)?;
                 }
                 SoftBreak | HardBreak => {
                     self.write(b" ", false)?;
@@ -386,9 +380,9 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    let mut buf = Vec::with_capacity(s.capacity());
-    let _ = write_html(Cursor::new(&mut buf), iter).unwrap();
-    s.push_str(&String::from_utf8_lossy(&buf));
+    unsafe {
+        let _ = write_html(s.as_mut_vec(), iter).unwrap();
+    }
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -419,7 +413,7 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<usize>
+pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
     W: Write,
@@ -427,8 +421,7 @@ where
     let writer = HtmlWriter {
         iter: iter,
         writer: writer,
-        bytes_written: 0,
-        end_newline: false,
+        end_newline: true,
         table_state: TableState::Head,
         table_alignments: vec![],
         table_cell_index: 0,

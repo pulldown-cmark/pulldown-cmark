@@ -41,4 +41,4 @@ mod parse;
 mod tree;
 mod linklabel;
 
-pub use crate::parse::{Parser, Alignment, Event, Tag, Options};
+pub use crate::parse::{Parser, Alignment, Event, Tag, Options, LinkType};

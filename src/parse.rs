@@ -58,11 +58,32 @@ pub enum Tag<'a> {
     Strong,
     Code,
 
-    /// A link. The first field is the destination URL, the second is a title
-    Link(Cow<'a, str>, Cow<'a, str>),
+    /// A link. The first field is the link type, the second the destination URL and the third is a title
+    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
 
-    /// An image. The first field is the destination URL, the second is a title
-    Image(Cow<'a, str>, Cow<'a, str>),
+    /// An image. The first field is the link type, the second the destination URL and the third is a title
+    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
+}
+
+// FIXME: Unknown variants are currently unused!
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum LinkType {
+    /// Inline link like `[foo](bar)`
+    Inline,
+    /// Reference link like `[foo][bar]`
+    Reference,
+    /// Reference without destination in the document, but resolved by the broken_link_callback
+    ReferenceUnknown,
+    /// Collapsed link like `[foo][]`
+    Collapsed,
+    /// Collapsed link without destination in the document, but resolved by the broken_link_callback
+    CollapsedUnknown,
+    /// Shortcut link like `[foo]`
+    Shortcut,
+    /// Shortcut without destination in the document, but resolved by the broken_link_callback
+    ShortcutUnknown,
+    /// Autolink like `<http://foo.bar/baz>`
+    Autolink,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -124,8 +145,8 @@ enum ItemBody<'a> {
     Code,
     InlineHtml,
     // Link params: destination, title.
-    Link(Cow<'a, str>, Cow<'a, str>),
-    Image(Cow<'a, str>, Cow<'a, str>),
+    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
+    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
     FootnoteReference(Cow<'a, str>), // label
 
     Rule,
@@ -2189,7 +2210,7 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        self.tree[cur_ix].item.body = ItemBody::Link(uri, "".into());
+                        self.tree[cur_ix].item.body = ItemBody::Link(LinkType::Autolink, uri, "".into());
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
@@ -2255,9 +2276,9 @@ impl<'a> Parser<'a> {
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
-                                ItemBody::Image(url.into(), title.into())
+                                ItemBody::Image(LinkType::Inline, url.into(), title.into())
                             } else {
-                                ItemBody::Link(url.into(), title.into())
+                                ItemBody::Link(LinkType::Inline, url.into(), title.into())
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
@@ -2284,6 +2305,11 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
+                            let link_type = match &scan_result {
+                                RefScan::LinkLabel(..) => LinkType::Reference,
+                                RefScan::Collapsed(..) => LinkType::Collapsed,
+                                RefScan::Failed => LinkType::Shortcut,
+                            };
                             let label: Option<ReferenceLabel<'a>> = match scan_result {
                                 RefScan::LinkLabel(l, ..) => Some(ReferenceLabel::Link(l)),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
@@ -2306,7 +2332,6 @@ impl<'a> Parser<'a> {
                                 link_stack.clear();
                                 continue;
                             }
-
                             // TODO(performance): make sure we aren't doing unnecessary allocations
                             // for the label
                             else if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
@@ -2315,9 +2340,9 @@ impl<'a> Parser<'a> {
                                 let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
                                 let url = matching_def.dest.clone();
                                 self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                    ItemBody::Image(url, title)
+                                    ItemBody::Image(link_type, url, title)
                                 } else {
-                                    ItemBody::Link(url, title)
+                                    ItemBody::Link(link_type, url, title)
                                 };
 
                                 // lets do some tree surgery to add the link to the tree
@@ -2456,10 +2481,10 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
-        ItemBody::Link(ref url, ref title) =>
-            Some(Tag::Link(url.clone(), title.clone())),
-        ItemBody::Image(ref url, ref title) =>
-            Some(Tag::Image(url.clone(), title.clone())),
+        ItemBody::Link(ref link_type, ref url, ref title) =>
+            Some(Tag::Link(*link_type, url.clone(), title.clone())),
+        ItemBody::Image(ref link_type, ref url, ref title) =>
+            Some(Tag::Image(*link_type, url.clone(), title.clone())),
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(ref info_string) =>

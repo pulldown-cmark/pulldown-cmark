@@ -30,13 +30,12 @@ use crate::parse::Alignment;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary search
-const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
+const HTML_TAGS: [&'static str; 47] = ["article", "aside", "blockquote",
     "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
     "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
     "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
-    "li", "map", "object", "ol", "output", "p", "pre", "progress", "script",
-    "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
-    "thead", "tr", "ul", "video"];
+    "li", "map", "object", "ol", "output", "p", "progress","section", "table",
+    "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "ul", "video"];
 
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.

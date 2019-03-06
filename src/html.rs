@@ -98,6 +98,7 @@ where
                 }
                 Text(text) => {
                     escape_html(&mut self.writer, &text, false)?;
+                    self.end_newline = text.ends_with('\n');
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;
@@ -326,10 +327,12 @@ where
                 }
                 Text(text) => {
                     escape_html(&mut self.writer, &text, false)?;
+                    self.end_newline = text.ends_with('\n');
                 }
                 Html(_) => (),
                 InlineHtml(html) => {
                     escape_html(&mut self.writer, &html, false)?;
+                    self.end_newline = html.ends_with('\n');
                 }
                 SoftBreak | HardBreak => {
                     self.write(b" ", false)?;
@@ -377,7 +380,8 @@ where
     I: Iterator<Item = Event<'a>>,
 {
     unsafe {
-        let _ = write_html(s.as_mut_vec(), iter).unwrap();
+        // we only write utf-8, so this should be OK
+        write_html(s.as_mut_vec(), iter).unwrap();
     }
 }
 

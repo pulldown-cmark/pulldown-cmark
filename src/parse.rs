@@ -25,6 +25,7 @@ use std::collections::HashMap;
 
 use unicase::UniCase;
 
+use crate::strings::SmortStr;
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -90,7 +91,7 @@ pub enum LinkType {
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
-    Text(Cow<'a, str>),
+    Text(SmortStr<'a>),
     Html(Cow<'a, str>),
     InlineHtml(Cow<'a, str>),
     FootnoteReference(Cow<'a, str>),
@@ -158,7 +159,7 @@ enum ItemBody<'a> {
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
-    SynthesizeText(Cow<'static, str>),
+    SynthesizeText(SmortStr<'static>),
     FootnoteDefinition(Cow<'a, str>), // label
 
     // Tables
@@ -925,7 +926,7 @@ impl<'a> FirstPass<'a> {
             self.tree.append(Item {
                 start: start,
                 end: start,
-                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+                body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
             });
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
@@ -945,7 +946,7 @@ impl<'a> FirstPass<'a> {
                 start: start,
                 end: start,
                 // TODO: maybe this should synthesize to html rather than text?
-                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+                body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
             });
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
@@ -1764,7 +1765,7 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
             ItemBody::SoftBreak => {
                 // TODO: trailing space is stripped in parse_line, and we don't want it
                 // stripped.
-                tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                tree[node].item.body = ItemBody::SynthesizeText(" ".into());
             }
             ItemBody::HardBreak => {
                 let start = tree[node].item.start;
@@ -1774,13 +1775,13 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
                     let space = tree.create_node(Item {
                         start: start + 1,
                         end,
-                        body: ItemBody::SynthesizeText(Borrowed(" "))
+                        body: ItemBody::SynthesizeText(" ".into())
                     });
                     tree[space].next = next;
                     tree[node].next = TreePointer::Valid(space);
                     tree[node].item.end = start + 1;
                 } else {
-                    tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                    tree[node].item.body = ItemBody::SynthesizeText(" ".into());
                 }
             }
             _ => tree[node].item.body = ItemBody::Text,
@@ -1805,15 +1806,15 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     };
     // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
     if opening && closing {
-        if tree[first_ix].item.body == ItemBody::SynthesizeText(Borrowed(" "))
+        if tree[first_ix].item.body == ItemBody::SynthesizeText(" ".into())
             || tree[first_ix].item.end - tree[first_ix].item.start == 1
         {
             tree[open].child = tree[first_ix].next;
         } else {
             tree[first_ix].item.start += 1;
         }
-        if tree[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
-            tree[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
+        if tree[last].item.body == ItemBody::SynthesizeText(" ".into()) {
+            tree[last].item.body = ItemBody::SynthesizeText("".into());
         } else {
             tree[last].item.end -= 1;
         }
@@ -2508,9 +2509,8 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
 fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
     match item.body {
         ItemBody::Text => {
-            Event::Text(Cow::from(&text[item.start..item.end]))
+            Event::Text(text[item.start..item.end].into())
         }
-        // TODO: don't clone text!
         ItemBody::SynthesizeText(ref text) => {
             Event::Text(text.clone())
         }

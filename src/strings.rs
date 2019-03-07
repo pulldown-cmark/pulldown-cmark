@@ -1,8 +1,8 @@
 use std::ops::Deref;
-use std::borrow::Borrow;
+use std::borrow::{ToOwned, Borrow};
 use std::str::from_utf8_unchecked;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StackStr {
     inner: [u8; 4],
     len: usize,
@@ -29,10 +29,17 @@ impl Deref for StackStr {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum SmortStr<'a> {
     Boxed(Box<str>),
     Borrowed(&'a str),
     Stacked(StackStr),
+}
+
+impl<'a> std::cmp::PartialEq<SmortStr<'a>> for SmortStr<'a> {
+    fn eq(&self, other: &SmortStr) -> bool {
+        self.deref() == other.deref()
+    }
 }
 
 impl<'a> From<&'a str> for SmortStr<'a> {
@@ -71,6 +78,16 @@ impl<'a> Borrow<str> for SmortStr<'a> {
     }
 }
 
+impl<'a> SmortStr<'a> {
+    fn to_string(self) -> String {
+        match self {
+            SmortStr::Boxed(b) => b.into(),
+            SmortStr::Borrowed(b) => b.to_owned(),
+            SmortStr::Stacked(s) => s.deref().to_owned(),
+        }        
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -95,10 +112,10 @@ mod test {
     }
 
     #[test]
-    fn smortstr_char_to_owned() {
+    fn smortstr_char_to_string() {
         let c = '藏';
         let smort: SmortStr = c.into();
-        let owned: String = smort.to_owned();
+        let owned: String = smort.to_string();
         let expected = "藏".to_owned();
         assert_eq!(expected, owned);
     }

@@ -20,7 +20,7 @@
 
 //! Tree-based two pass parser.
 
-use std::borrow::Cow::{self, Borrowed};
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use unicase::UniCase;
@@ -684,8 +684,6 @@ impl<'a> FirstPass<'a> {
                     begin_text = ix;
                 }
                 b'&' => {
-                    // TODO(performance): if owned, entity will always just be a char,
-                    // which we should be able to store without allocating
                     match scan_entity(&self.text[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
@@ -2605,5 +2603,17 @@ impl<'a> Iterator for Parser<'a> {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::tree::Node;
+
+    #[test]
+    fn node_size() {
+        let node_size = std::mem::size_of::<Node<Item>>();
+        assert_eq!(104, node_size);
     }
 }

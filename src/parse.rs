@@ -152,7 +152,7 @@ enum ItemBody<'a> {
     Rule,
     Header(i32), // header level
     FencedCodeBlock(Cow<'a, str>), // info string
-    IndentCodeBlock(TreePointer), // last non-blank child
+    IndentCodeBlock,
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
@@ -830,10 +830,11 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
-            body: ItemBody::IndentCodeBlock(TreePointer::Nil), // TODO: probably remove arg
+            body: ItemBody::IndentCodeBlock,
         });
         self.tree.push();
         let mut last_nonblank_child = TreePointer::Nil;
+        let mut last_nonblank_ix = 0;
         let mut end_ix = 0;
         let mut last_line_blank = false;
 
@@ -846,6 +847,7 @@ impl<'a> FirstPass<'a> {
 
             if !last_line_blank {
                 last_nonblank_child = self.tree.cur();
+                last_nonblank_ix = ix;
                 end_ix = ix;
             }
 
@@ -868,6 +870,7 @@ impl<'a> FirstPass<'a> {
         // Trim trailing blank lines.
         if let TreePointer::Valid(child) = last_nonblank_child {
             self.tree[child].next = TreePointer::Nil;
+            self.tree[child].item.end = last_nonblank_ix;
         }
         self.pop(end_ix);
         ix
@@ -991,7 +994,7 @@ impl<'a> FirstPass<'a> {
                 ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
                 ItemBody::TableCell |
                 ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
-                ItemBody::Paragraph | ItemBody::IndentCodeBlock(_) |
+                ItemBody::Paragraph | ItemBody::IndentCodeBlock |
                 ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
                 ref node => panic!("unexpected node in tree: {:?}", node),
             }
@@ -2495,7 +2498,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(ref info_string) =>
             Some(Tag::CodeBlock(info_string.clone())),
-        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock("".into())),
+        ItemBody::IndentCodeBlock => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),

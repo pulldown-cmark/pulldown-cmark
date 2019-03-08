@@ -84,6 +84,8 @@ pub enum LinkType {
     ShortcutUnknown,
     /// Autolink like `<http://foo.bar/baz>`
     Autolink,
+    /// Email address in autolink like `<john@example.org>`
+    Email,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1993,11 +1995,11 @@ fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a
     None
 }
 
-fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a, str>, LinkType)> {
     let save = scanner.clone();
-    let scans = scan_uri(scanner).or_else(|| {
+    let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
         *scanner = save.clone();
-        scan_email(scanner)
+        scan_email(scanner).map(|s| (s, LinkType::Email))
     });
     if let Some(uri) = scans {
         if scanner.scan_ch(b'>') {
@@ -2008,7 +2010,7 @@ fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, 
     None
 }
 
-// must return scanner to original state
+// must return scanner to original state -- this doesnt seem true?
 // TODO: such invariants should probably be captured by the type system
 // TODO: don't return an owned variant if it's not necessary
 fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
@@ -2055,14 +2057,11 @@ fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>>
     Some(uri.into())
 }
 
-// TODO: this needn't always return an owned variant. we could flag instead that the link
-// is an email variant and only add the "mailto" during rendering
 fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
     // using a regex library would be convenient, but doing it by hand is not too bad
-    let mut uri: String = "mailto:".into();
+    let start_ix = scanner.ix;
 
     while let Some(c) = scanner.next() {
-        uri.push(c as char);
         match c {
             c if is_ascii_alphanumeric(c) => (),
             b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
@@ -2071,21 +2070,21 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
         }
     }
 
-    if uri.as_bytes()[uri.len() - 1] != b'@' {
+    if scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
         return None;
     }
 
     loop {
-        let label_start = uri.len();
+        let label_start_ix = scanner.ix;
         let mut fresh_label = true;
 
         while let Some(c) = scanner.next() {
             match c {
-                c if is_ascii_alphanumeric(c) => uri.push(c as char),
+                c if is_ascii_alphanumeric(c) => (),
                 b'-' if fresh_label => {
                     return None;
                 }
-                b'-' => uri.push('-'),
+                b'-' => (),
                 _ => {
                     scanner.unget();
                     break;
@@ -2093,20 +2092,18 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
             }
             fresh_label = false;
         }
-
-        if uri.len() == label_start || uri.len() - label_start > 63
-            || uri.as_bytes()[uri.len() - 1] == b'-' {
+    
+        if scanner.ix == label_start_ix || scanner.ix - label_start_ix > 63
+            || scanner.text.as_bytes()[scanner.ix - 1] == b'-' {
             return None;
         }
 
-        if scanner.scan_ch(b'.') {
-            uri.push('.');
-        } else {
+        if !scanner.scan_ch(b'.') {
             break;
         }
     }
 
-    Some(uri.into())
+    Some(scanner.text[start_ix..scanner.ix].into())
 }
 
 #[derive(Debug, Clone)]
@@ -2229,14 +2226,14 @@ impl<'a> Parser<'a> {
                     let next = self.tree[cur_ix].next;
                     let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
-                    if let Some(uri) = scan_autolink(scanner) {
+                    if let Some((uri, link_type)) = scan_autolink(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        self.tree[cur_ix].item.body = ItemBody::Link(LinkType::Autolink, uri, "".into());
+                        self.tree[cur_ix].item.body = ItemBody::Link(link_type, uri, "".into());
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);

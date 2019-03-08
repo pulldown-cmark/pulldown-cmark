@@ -20,6 +20,7 @@
 
 //! Utility functions for HTML escaping
 
+use std::io::{self, Write};
 use std::str::from_utf8;
 use std::arch::x86_64::*;
 use std::mem::transmute;
@@ -36,37 +37,45 @@ static HREF_SAFE: [u8; 128] = [
     ];
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
+static AMP_ESCAPE: &'static [u8] = b"&amp;";
+static SLASH_ESCAPE: &'static [u8] = b"&#x27;";
 
-pub fn escape_href(ob: &mut String, s: &str) {
+pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
+where
+    W: Write,
+{
+    let bytes = s.as_bytes();
     let mut mark = 0;
-    for i in 0..s.len() {
-        let c = s.as_bytes()[i];
+    for i in 0..bytes.len() {
+        let c = bytes[i];
         if c >= 0x80 || HREF_SAFE[c as usize] == 0 {
             // character needing escape
 
             // write partial substring up to mark
             if mark < i {
-                ob.push_str(&s[mark..i]);
+                w.write_all(&bytes[mark..i])?;
             }
             match c {
                 b'&' => {
-                    ob.push_str("&amp;");
-                },
+                    w.write_all(AMP_ESCAPE)?;
+                }
                 b'\'' => {
-                    ob.push_str("&#x27;");
-                },
+                    w.write_all(SLASH_ESCAPE)?;
+                }
                 _ => {
                     let mut buf = [0u8; 3];
                     buf[0] = b'%';
                     buf[1] = HEX_CHARS[((c as usize) >> 4) & 0xF];
                     buf[2] = HEX_CHARS[(c as usize) & 0xF];
-                    ob.push_str(from_utf8(&buf).unwrap());
+                    let escaped = from_utf8(&buf).unwrap().as_bytes();
+                    w.write_all(escaped)?;
                 }
             }
-            mark = i + 1;  // all escaped characters are ASCII
+            mark = i + 1; // all escaped characters are ASCII
         }
     }
-    ob.push_str(&s[mark..]);
+    w.write_all(&bytes[mark..])?;
+    Ok(())
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -110,21 +119,21 @@ pub fn escape_html_unsafe(ob: &mut String, s: &str) {
     ob.push_str(&s[mark..]);
 }
 
-pub fn escape_html_safe(ob: &mut String, s: &str, secure: bool) {
-    let bytes = s.as_bytes();
-    let mut mark = 0;
+// pub fn escape_html_safe(ob: &mut String, s: &str, secure: bool) {
+//     let bytes = s.as_bytes();
+//     let mut mark = 0;
 
-    scan_simple(bytes, 0, |i| {
-        let escape_ix = HTML_ESCAPE_TABLE[bytes[i] as usize] as usize;
-        if escape_ix != 0 && (secure || escape_ix != 3) {
-            ob.push_str(&s[mark..i]);
-            ob.push_str(HTML_ESCAPES[escape_ix]);
-            mark = i + 1;  // all escaped characters are ASCII
-        }
-    });
+//     scan_simple(bytes, 0, |i| {
+//         let escape_ix = HTML_ESCAPE_TABLE[bytes[i] as usize] as usize;
+//         if escape_ix != 0 && (secure || escape_ix != 3) {
+//             ob.push_str(&s[mark..i]);
+//             ob.push_str(HTML_ESCAPES[escape_ix]);
+//             mark = i + 1;  // all escaped characters are ASCII
+//         }
+//     });
 
-    ob.push_str(&s[mark..]);
-}
+//     ob.push_str(&s[mark..]);
+// }
 
 fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: F) {
     let size = bytes.len();
@@ -133,11 +142,42 @@ fn scan_simple<F: FnMut(usize) -> ()>(bytes: &[u8], mut i: usize, mut callback: 
             Some(pos) => {
                 i += pos;
             }
-            None => break
+            None => break,
         }
         callback(i);
         i += 1;
     }
+}
+
+pub fn escape_html_safe<W>(mut w: W, s: &str, secure: bool) -> io::Result<()>
+where
+    W: Write,
+{
+    let bytes = s.as_bytes();
+    let mut mark = 0;
+    let mut i = 0;
+    while i < s.len() {
+        match bytes[i..]
+            .iter()
+            .position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0)
+        {
+            Some(pos) => {
+                i += pos;
+            }
+            None => break,
+        }
+        let c = bytes[i];
+        let escape = HTML_ESCAPE_TABLE[c as usize];
+        if escape != 0 && (secure || c != b'/') {
+            let escape_seq = HTML_ESCAPES[escape as usize];
+            w.write_all(&bytes[mark..i])?;
+            w.write_all(escape_seq.as_bytes())?;
+            mark = i + 1; // all escaped characters are ASCII
+        }
+        i += 1;
+    }
+    w.write_all(&bytes[mark..])?;
+    Ok(())
 }
 
 // does not scan b'/' and does not do  

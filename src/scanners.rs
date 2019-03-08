@@ -29,40 +29,13 @@ use crate::parse::Alignment;
 
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
-// sorted for binary_search
-const HTML_TAGS: [&'static str; 72] = ["address", "article", "aside", "base", 
-    "basefont", "blockquote", "body", "button", "canvas", "caption", "center",
-    "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", 
-    "embed", "fieldset", "figcaption", "figure", "footer", "form", "frame", 
-    "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", 
-    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem", 
-    "meta", "map", "nav", "noframes", "object", "ol", "optgroup", "option", 
-    "output", "p", "param", "progress", "section", "source", "summary", 
-    "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", 
-    "ul", "video"];
-
-const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
-    "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
-    "bitcoin", "bolo", "callto", "cap", "chrome", "chrome-extension", "cid",
-    "coap", "com-eventbrite-attendee", "content", "crid", "cvs", "data", "dav",
-    "dict", "dlna-playcontainer", "dlna-playsingle", "dns", "doi", "dtn",
-    "dvb", "ed2k", "facetime", "feed", "file", "finger", "fish", "ftp", "geo",
-    "gg", "git", "gizmoproject", "go", "gopher", "gtalk", "h323", "hcp",
-    "http", "https", "iax", "icap", "icon", "im", "imap", "info", "ipn", "ipp",
-    "irc", "irc6", "ircs", "iris", "iris.beep", "iris.lwz", "iris.xpc",
-    "iris.xpcs", "itms", "jar", "javascript", "jms", "keyparc", "lastfm",
-    "ldap", "ldaps", "magnet", "mailto", "maps", "market", "message", "mid",
-    "mms", "ms-help", "msnim", "msrp", "msrps", "mtqp", "mumble", "mupdate",
-    "mvn", "news", "nfs", "ni", "nih", "nntp", "notes", "oid",
-    "opaquelocktoken", "palm", "paparazzi", "platform", "pop", "pres", "proxy",
-    "psyc", "query", "res", "resource", "rmi", "rsync", "rtmp", "rtsp",
-    "secondlife", "service", "session", "sftp", "sgn", "shttp", "sieve", "sip",
-    "sips", "skype", "smb", "sms", "snmp", "soap.beep", "soap.beeps", "soldat",
-    "spotify", "ssh", "steam", "svn", "tag", "teamspeak", "tel", "telnet",
-    "tftp", "things", "thismessage", "tip", "tn3270", "tv", "udp", "unreal",
-    "urn", "ut2004", "vemmi", "ventrilo", "view-source", "webcal", "ws", "wss",
-    "wtai", "wyciwyg", "xcon", "xcon-userid", "xfire", "xmlrpc.beep",
-    "xmlrpc.beeps", "xmpp", "xri", "ymsgr", "z39.50r", "z39.50s"];
+// sorted for binary search
+const HTML_TAGS: [&'static str; 47] = ["article", "aside", "blockquote",
+    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
+    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
+    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
+    "li", "map", "object", "ol", "output", "p", "progress","section", "table",
+    "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "ul", "video"];
 
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.
@@ -251,13 +224,6 @@ pub fn is_ascii_alpha(c: u8) -> bool {
     }
 }
 
-pub fn is_ascii_upper(c: u8) -> bool {
-    match c {
-        b'A' ... b'Z' => true,
-        _ => false
-    }
-}
-
 pub fn is_ascii_alphanumeric(c: u8) -> bool {
     match c {
         b'0' ... b'9' | b'a' ... b'z' | b'A' ... b'Z' => true,
@@ -324,46 +290,6 @@ pub fn scan_eol(s: &str) -> (usize, bool) {
     }
 }
 
-pub fn scan_line_ending(s: &str) -> usize {
-    match s.as_bytes().iter().position(|&c| c == b'\r' || c == b'\n') {
-        Some(i) => i,
-        None => s.len()
-    }
-}
-
-// unusual among "scan" functions in that it scans from the _back_ of the string
-// TODO: should also scan unicode whitespace?
-pub fn scan_trailing_whitespace(data: &str) -> usize {
-    match data.as_bytes().iter().rev().position(|&c| !is_ascii_whitespace_no_nl(c)) {
-        Some(i) => i,
-        None => data.len()
-    }
-}
-
-fn scan_codepoint(data: &str) -> Option<char> {
-    data.chars().next()
-}
-
-// get last codepoint in string
-fn scan_trailing_codepoint(data: &str) -> Option<char> {
-    // would just data.chars.next_back() be better?
-    let size = data.len();
-    if size == 0 {
-        None
-    } else {
-        let c = data.as_bytes()[size - 1];
-        if c < 0x80 {
-            Some(c as char)
-        } else {
-            let mut i = size - 2;
-            while (data.as_bytes()[i] & 0xc0) == 0x80 {
-                i -= 1;
-            }
-            data[i..].chars().next()
-        }
-    }
-}
-
 pub fn scan_blank_line(text: &str) -> Option<usize> {
     let i = scan_whitespace_no_nl(text);
     if let (n, true) = scan_eol(&text[i..]) {
@@ -378,54 +304,6 @@ pub fn scan_nextline(s: &str) -> usize {
         Some(x) => x + 1,
         None => s.len()
     }
-}
-
-pub fn count_tab(bytes: &[u8]) -> usize {
-    let mut count = 0;
-    for &c in bytes.iter().rev() {
-        match c {
-            b'\t' | b'\n' => break,
-            x if (x & 0xc0) != 0x80 => count += 1,
-            _ => ()
-        }
-    }
-    4 - count % 4
-}
-
-// takes a loc because tabs might require left context
-// return: number of bytes, number of spaces
-pub fn scan_leading_space(text: &str, loc: usize) -> (usize, usize) {
-    let bytes = text.as_bytes();
-    let mut i = 0;
-    let mut spaces = 0;
-    for &c in &bytes[loc..] {
-        match c {
-            b' ' => spaces += 1,
-            b'\t' => spaces += count_tab(&bytes[.. loc + i]),
-            _ => break
-        }
-        i += 1
-    }
-    (i, spaces)
-}
-
-// return: start byte for code text in indented code line, or None
-// for a non-code line
-pub fn scan_code_line(text: &str) -> Option<usize> {
-    let bytes = text.as_bytes();
-    let mut num_spaces = 0;
-    let mut i = 0;
-    for &c in bytes {
-        if num_spaces == 4 { return Some(4); }
-        match c {
-            b' ' => num_spaces += 1,
-            b'\t' => { return Some(i+1); },
-            b'\n' | b'\r' => { return Some(i); }, 
-            _ => { return None; },
-        }
-        i += 1;
-    }
-    return None;
 }
 
 // return: end byte for closing code fence, or None
@@ -489,11 +367,6 @@ pub fn scan_hrule(data: &str) -> usize {
     if n >= 3 { i } else { 0 }
 }
 
-// TODO: obsolete, remove in code cleanup
-pub fn scan_atx_header(_data: &str) -> (usize, i32) {
-    unimplemented!();
-}
-
 /// Scan an ATX heading opening sequence.
 ///
 /// Returns number of bytes in prefix and level.
@@ -512,10 +385,6 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     } else {
         None
     }
-}
-
-pub fn scan_setext_header(_data: &str) -> (usize, i32) {
-    unimplemented!();
 }
 
 /// Scan a setext heading underline.
@@ -589,11 +458,7 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
         cols.push(active_col);
     }
 
-    if cols.len() < 2 {
-        (0, vec![])
-    } else {
-        (i, cols)
-    }
+    (i, cols)
 }
 
 // TODO: change return type to Option.
@@ -615,10 +480,6 @@ pub fn scan_code_fence(data: &str) -> (usize, u8) {
         return (i, c);
     }
     (0, 0)
-}
-
-pub fn scan_backticks(data: &str) -> usize {
-    scan_ch_repeat(data, b'`')
 }
 
 pub fn scan_blockquote_start(data: &str) -> usize {
@@ -678,37 +539,6 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         postindent = 1;
     }
     (w + postn, c, start, w + postindent)
-}
-
-// return whether delimeter run can open or close
-pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
-    // TODO: handle Unicode, not just ASCII
-    let size = data.len();
-    let mut end = loc + 1;
-    while end < size && data.as_bytes()[end] == c {
-        end += 1;
-    }
-    let mut beg = loc;
-    while beg > 0 && data.as_bytes()[beg - 1] == c {
-        beg -= 1;
-    }
-    let (white_before, punc_before) = match scan_trailing_codepoint(&data[..beg]) {
-        None => (true, false),
-        Some(c) => (c.is_whitespace(), is_punctuation(c))
-    };
-    let (white_after, punc_after) = match scan_codepoint(&data[end..]) {
-        None => (true, false),
-        Some(c) => (c.is_whitespace(), is_punctuation(c))
-    };
-    let left_flanking = !white_after && (!punc_after || white_before || punc_before);
-    let right_flanking = !white_before && (!punc_before || white_after || punc_after);
-    let (can_open, can_close) = match c {
-        b'*' => (left_flanking, right_flanking),
-        b'_' => (left_flanking && (!right_flanking || punc_before),
-                right_flanking && (!left_flanking || punc_after)),
-        _ => (false, false)
-    };
-    (end - loc, can_open, can_close)
 }
 
 fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
@@ -796,83 +626,6 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
     Some((i, &data[dest_beg..dest_end]))
 }
 
-// return value is: total bytes, link uri
-pub fn scan_autolink(data: &str) -> Option<(usize, Cow<str>)> {
-    let mut i = 0;
-    let n = scan_ch(data, b'<');
-    if n == 0 { return None; }
-    i += n;
-    let link_beg = i;
-    let n_uri = scan_uri(&data[i..]);
-    let (n_link, link) = if n_uri != 0 {
-        (n_uri, Borrowed(&data[link_beg .. i + n_uri]))
-    } else {
-        let n_email = scan_email(&data[i..]);
-        if n_email == 0 { return None; }
-        (n_email, Owned("mailto:".to_owned() + &data[link_beg.. i + n_email]))
-    };
-    i += n_link;
-    if scan_ch(&data[i..], b'>') == 0 { return None; }
-    Some((i + 1, link))
-}
-
-fn scan_uri(data: &str) -> usize {
-    let mut i = 0;
-    while i < data.len() {
-        match data.as_bytes()[i] {
-            c if is_ascii_alphanumeric(c)  => i += 1,
-            b'.' | b'-' => i += 1,
-            b':' => break,
-            _ => return 0
-        }
-    }
-    if i == data.len() { return 0; }
-    let scheme = &data[..i];
-    if !URI_SCHEMES.binary_search_by(|probe| utils::strcasecmp(probe, scheme)).is_ok() {
-        return 0;
-    }
-    i += 1;  // scan the :
-    while i < data.len() {
-        match data.as_bytes()[i] {
-            b'\0' ... b' ' | b'<' | b'>' => break,
-            _ => i += 1
-        }
-    }
-    if i == data.len() { return 0; }
-    i
-}
-
-fn scan_email(data: &str) -> usize {
-    // using a regex library would be convenient, but doing it by hand is not too bad
-    let size = data.len();
-    let mut i = 0;
-    while i < size {
-        match data.as_bytes()[i] {
-            c if is_ascii_alphanumeric(c) => i += 1,
-            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
-            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => i += 1,
-            _ => break
-        }
-    }
-    if scan_ch(&data[i..], b'@') == 0 { return 0; }
-    i += 1;
-    loop {
-        let label_beg = i;
-        while i < size {
-            match data.as_bytes()[i] {
-                c if is_ascii_alphanumeric(c) => i += 1,
-                b'-' => i += 1,
-                _ => break,
-            }
-        }
-        if i == label_beg || i - label_beg > 63 ||
-                data.as_bytes()[label_beg] == b'-' || data.as_bytes()[i - 1] == b'-' { return 0; }
-        if scan_ch(&data[i..], b'.') == 0 { break; }
-        i += 1
-    }
-    i
-}
-
 pub fn scan_attribute_name(data: &str) -> Option<usize> {
     let size = data.len();
     if size == 0 { 
@@ -920,14 +673,6 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
     if i >= data.len() { return None; }
     return Some(i);
 
-}
-
-pub fn is_escaped(data: &str, loc: usize) -> bool {
-    let mut i = loc;
-    while i >= 1 && data.as_bytes()[i - 1] == b'\\' {
-        i -= 1;
-    }
-    ((loc - i) & 1) != 0
 }
 
 // Remove backslash escapes and resolve entities
@@ -1064,19 +809,6 @@ pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {
         return Some(i);
     } else {
         return None;
-    }
-}
-
-pub fn spaces(n: usize) -> Cow<'static, str> {
-    let a_bunch_of_spaces = "                                ";
-    if n <= a_bunch_of_spaces.len() {
-        Borrowed(&a_bunch_of_spaces[..n])
-    } else {
-        let mut result = String::new();
-        for _ in 0..n {
-            result.push(' ');
-        }
-        Owned(result)
     }
 }
 

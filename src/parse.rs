@@ -2012,32 +2012,28 @@ fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a,
 
 // must return scanner to original state -- this doesnt seem true?
 // TODO: such invariants should probably be captured by the type system
-// TODO: don't return an owned variant if it's not necessary
 fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
-    let mut uri = String::new();
+    let start_ix = scanner.ix;
 
     // scheme's first byte must be an ascii letter
     let first = scanner.next()?;
     if !is_ascii_alpha(first) {
         return None;
-    } else {
-        uri.push(first as char);
     }
 
     while let Some(c) = scanner.next() {
         match c {
-            c if is_ascii_alphanumeric(c) => uri.push(c as char),
-            c @ b'.' | c @ b'-' | c @ b'+' => uri.push(c as char),
-            b':' => { uri.push(c as char); break; }
-            _ => {
-                return None;
-            }
+            c if is_ascii_alphanumeric(c) => (),
+            c @ b'.' | c @ b'-' | c @ b'+' => (),
+            b':' => break,
+            _ => return None,
         }
     }
 
     // scheme length must be between 2 and 32 characters long. scheme
     // must be followed by colon
-    if uri.len() < 3 || uri.len() > 33  {
+    let uri_len = scanner.ix - start_ix;
+    if uri_len < 3 || uri_len > 33  {
         return None;
     }
 
@@ -2049,12 +2045,12 @@ fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>>
             }
             b'>' | b'<' => break,
             _ if ended => return None,
-            c => uri.push(c as char),
+            _ => (),
         }
     };
     scanner.unget();
 
-    Some(uri.into())
+    Some(scanner.text[start_ix..scanner.ix].into())
 }
 
 fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {

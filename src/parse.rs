@@ -84,6 +84,8 @@ pub enum LinkType {
     ShortcutUnknown,
     /// Autolink like `<http://foo.bar/baz>`
     Autolink,
+    /// Email address in autolink like `<john@example.org>`
+    Email,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -152,7 +154,7 @@ enum ItemBody<'a> {
     Rule,
     Header(i32), // header level
     FencedCodeBlock(Cow<'a, str>), // info string
-    IndentCodeBlock(TreePointer), // last non-blank child
+    IndentCodeBlock,
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
@@ -830,10 +832,11 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
-            body: ItemBody::IndentCodeBlock(TreePointer::Nil), // TODO: probably remove arg
+            body: ItemBody::IndentCodeBlock,
         });
         self.tree.push();
         let mut last_nonblank_child = TreePointer::Nil;
+        let mut last_nonblank_ix = 0;
         let mut end_ix = 0;
         let mut last_line_blank = false;
 
@@ -846,6 +849,7 @@ impl<'a> FirstPass<'a> {
 
             if !last_line_blank {
                 last_nonblank_child = self.tree.cur();
+                last_nonblank_ix = ix;
                 end_ix = ix;
             }
 
@@ -868,6 +872,7 @@ impl<'a> FirstPass<'a> {
         // Trim trailing blank lines.
         if let TreePointer::Valid(child) = last_nonblank_child {
             self.tree[child].next = TreePointer::Nil;
+            self.tree[child].item.end = last_nonblank_ix;
         }
         self.pop(end_ix);
         ix
@@ -991,7 +996,7 @@ impl<'a> FirstPass<'a> {
                 ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
                 ItemBody::TableCell |
                 ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
-                ItemBody::Paragraph | ItemBody::IndentCodeBlock(_) |
+                ItemBody::Paragraph | ItemBody::IndentCodeBlock |
                 ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
                 ref node => panic!("unexpected node in tree: {:?}", node),
             }
@@ -1246,16 +1251,16 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    // FIXME: use prototype::scan_link_title ? but we need an inline scanner
+    // FIXME: use scan_link_title ? but we need an inline scanner
     // and that fn seems to allow blank lines.
     // FIXME: or, reuse scanner::scan_link_title ?
-    // TODO: dont return owned variant unless strictly necessary
     // TODO: rename. this isnt just for refdef_titles, but all titles
     // returns (bytelength, title_str)
     fn scan_refdef_title(&self, start: usize) -> Option<(usize, Cow<'a, str>)> {
         let mut title = String::new();
         let text = &self.text[start..];
         let mut chars = text.chars().peekable();
+        let mut still_borrowed = true;
         let closing_delim = match chars.next()? {
             '\'' => '\'',
             '"' => '"',
@@ -1267,11 +1272,15 @@ impl<'a> FirstPass<'a> {
         while let Some(c) = chars.next() {
             match c {
                 '\n' => {
-                    title.push(c);
+                    if !still_borrowed {
+                        title.push(c);
+                    }                    
                     bytecount += 1;
                     let mut next = *chars.peek()?;
                     while is_ascii_whitespace_no_nl(next as u8) {
-                        title.push(next);
+                        if !still_borrowed {
+                            title.push(next);
+                        }
                         bytecount += chars.next()?.len_utf8();
                         next = *chars.peek()?;
                     }
@@ -1284,16 +1293,29 @@ impl<'a> FirstPass<'a> {
                     let next_char = chars.next()?;
                     bytecount += 1;
                     if next_char != closing_delim {
+                        if still_borrowed {
+                            title.push_str(&text[1..bytecount]);
+                        }
+                        still_borrowed = false;
                         title.push('\\');
                     }
-                    title.push(next_char);
+                    if !still_borrowed {
+                        title.push(next_char);
+                    }                    
                     bytecount += next_char.len_utf8();
                 }
                 c if c == closing_delim => {
-                    return Some((bytecount + 1, title.into()));
+                    let cow = if still_borrowed {
+                        text[1..bytecount].into()
+                    } else {
+                        title.into()
+                    };
+                    return Some((bytecount + 1, cow));
                 }
                 c => {
-                    title.push(c);
+                    if !still_borrowed {
+                        title.push(c);
+                    }
                     bytecount += c.len_utf8();
                 }
             }
@@ -1330,6 +1352,12 @@ fn unescape_cow<'a>(c: Cow<'a, str>) -> Cow<'a, str> {
 impl<'a> Tree<Item<'a>> {
     fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
+            if let TreePointer::Valid(ix) = self.cur() {
+                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
+                    self[ix].item.end = end;
+                    return;
+                }
+            }
             self.append(Item {
                 start: start,
                 end: end,
@@ -1967,11 +1995,11 @@ fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a
     None
 }
 
-fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a, str>, LinkType)> {
     let save = scanner.clone();
-    let scans = scan_uri(scanner).or_else(|| {
+    let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
         *scanner = save.clone();
-        scan_email(scanner)
+        scan_email(scanner).map(|s| (s, LinkType::Email))
     });
     if let Some(uri) = scans {
         if scanner.scan_ch(b'>') {
@@ -1982,34 +2010,30 @@ fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, 
     None
 }
 
-// must return scanner to original state
+// must return scanner to original state -- this doesnt seem true?
 // TODO: such invariants should probably be captured by the type system
-// TODO: don't return an owned variant if it's not necessary
 fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
-    let mut uri = String::new();
+    let start_ix = scanner.ix;
 
     // scheme's first byte must be an ascii letter
     let first = scanner.next()?;
     if !is_ascii_alpha(first) {
         return None;
-    } else {
-        uri.push(first as char);
     }
 
     while let Some(c) = scanner.next() {
         match c {
-            c if is_ascii_alphanumeric(c) => uri.push(c as char),
-            c @ b'.' | c @ b'-' | c @ b'+' => uri.push(c as char),
-            b':' => { uri.push(c as char); break; }
-            _ => {
-                return None;
-            }
+            c if is_ascii_alphanumeric(c) => (),
+            c @ b'.' | c @ b'-' | c @ b'+' => (),
+            b':' => break,
+            _ => return None,
         }
     }
 
     // scheme length must be between 2 and 32 characters long. scheme
     // must be followed by colon
-    if uri.len() < 3 || uri.len() > 33  {
+    let uri_len = scanner.ix - start_ix;
+    if uri_len < 3 || uri_len > 33  {
         return None;
     }
 
@@ -2021,22 +2045,19 @@ fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>>
             }
             b'>' | b'<' => break,
             _ if ended => return None,
-            c => uri.push(c as char),
+            _ => (),
         }
     };
     scanner.unget();
 
-    Some(uri.into())
+    Some(scanner.text[start_ix..scanner.ix].into())
 }
 
-// TODO: this needn't always return an owned variant. we could flag instead that the link
-// is an email variant and only add the "mailto" during rendering
 fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
     // using a regex library would be convenient, but doing it by hand is not too bad
-    let mut uri: String = "mailto:".into();
+    let start_ix = scanner.ix;
 
     while let Some(c) = scanner.next() {
-        uri.push(c as char);
         match c {
             c if is_ascii_alphanumeric(c) => (),
             b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
@@ -2045,21 +2066,21 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
         }
     }
 
-    if uri.as_bytes()[uri.len() - 1] != b'@' {
+    if scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
         return None;
     }
 
     loop {
-        let label_start = uri.len();
+        let label_start_ix = scanner.ix;
         let mut fresh_label = true;
 
         while let Some(c) = scanner.next() {
             match c {
-                c if is_ascii_alphanumeric(c) => uri.push(c as char),
+                c if is_ascii_alphanumeric(c) => (),
                 b'-' if fresh_label => {
                     return None;
                 }
-                b'-' => uri.push('-'),
+                b'-' => (),
                 _ => {
                     scanner.unget();
                     break;
@@ -2067,20 +2088,18 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
             }
             fresh_label = false;
         }
-
-        if uri.len() == label_start || uri.len() - label_start > 63
-            || uri.as_bytes()[uri.len() - 1] == b'-' {
+    
+        if scanner.ix == label_start_ix || scanner.ix - label_start_ix > 63
+            || scanner.text.as_bytes()[scanner.ix - 1] == b'-' {
             return None;
         }
 
-        if scanner.scan_ch(b'.') {
-            uri.push('.');
-        } else {
+        if !scanner.scan_ch(b'.') {
             break;
         }
     }
 
-    Some(uri.into())
+    Some(scanner.text[start_ix..scanner.ix].into())
 }
 
 #[derive(Debug, Clone)]
@@ -2203,14 +2222,14 @@ impl<'a> Parser<'a> {
                     let next = self.tree[cur_ix].next;
                     let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
 
-                    if let Some(uri) = scan_autolink(scanner) {
+                    if let Some((uri, link_type)) = scan_autolink(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        self.tree[cur_ix].item.body = ItemBody::Link(LinkType::Autolink, uri, "".into());
+                        self.tree[cur_ix].item.body = ItemBody::Link(link_type, uri, "".into());
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
@@ -2489,7 +2508,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(ref info_string) =>
             Some(Tag::CodeBlock(info_string.clone())),
-        ItemBody::IndentCodeBlock(_) => Some(Tag::CodeBlock("".into())),
+        ItemBody::IndentCodeBlock => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
         ItemBody::ListItem(_) => Some(Tag::Item),

@@ -104,7 +104,7 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&#47;",
         "&lt;",
         "&gt;"
-];
+    ];
 
 #[cfg(target_arch = "x86_64")]
 pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {

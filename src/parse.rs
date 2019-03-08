@@ -1330,6 +1330,12 @@ fn unescape_cow<'a>(c: Cow<'a, str>) -> Cow<'a, str> {
 impl<'a> Tree<Item<'a>> {
     fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
+            if let TreePointer::Valid(ix) = self.cur() {
+                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
+                    self[ix].item.end = end;
+                    return;
+                }
+            }
             self.append(Item {
                 start: start,
                 end: end,

@@ -2066,7 +2066,7 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
         }
     }
 
-    if scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
+    if scanner.ix == start_ix || scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
         return None;
     }
 
@@ -2624,5 +2624,16 @@ impl<'a> Iterator for Parser<'a> {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+
+    #[test]
+    fn single_open_fish_bracket() {
+        // dont crash
+        assert_eq!(3, Parser::new("<").count());
     }
 }

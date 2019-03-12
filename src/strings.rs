@@ -57,11 +57,23 @@ impl Deref for StackStr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum SmortStr<'a> {
     Boxed(Box<str>),
     Borrowed(&'a str),
     Stacked(StackStr),
+}
+
+impl<'a> std::clone::Clone for SmortStr<'a> {
+    fn clone(&self) -> Self {
+        match self {
+            SmortStr::Boxed(s) if s.len() < DOUBLE_WORD_SIZE
+                => SmortStr::Stacked(StackStr::try_from_str(&**s).unwrap()),
+            SmortStr::Boxed(s) => SmortStr::Boxed(s.clone()),
+            SmortStr::Borrowed(s) => SmortStr::Borrowed(s),
+            SmortStr::Stacked(s) => SmortStr::Stacked(*s),
+        }
+    }
 }
 
 impl<'a> std::cmp::PartialEq<SmortStr<'a>> for SmortStr<'a> {
@@ -162,4 +174,24 @@ mod test_special_string {
         let stack_str = StackStr::try_from_str(s).unwrap();
         assert_eq!(stack_str.deref(), s);
     }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn stackstr_not_fits_sixteen() {
+        let s = "0123456789abcdef";
+        let stack_str = StackStr::try_from_str(s).unwrap_err();
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn small_boxed_str_clones_to_stack() {
+        let s = "0123456789abcde".to_owned();
+        let smort: SmortStr = s.into();
+        let smort_clone = smort.clone();
+
+        if let SmortStr::Stacked(..) = smort_clone {} else {
+            panic!("Expected a stacked variant!");
+        }
+    }
 }
+

@@ -1,6 +1,6 @@
 use std::ops::Deref;
 use std::borrow::{ToOwned, Borrow};
-use std::str::from_utf8_unchecked;
+use std::str::from_utf8;
 
 const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
 
@@ -50,9 +50,7 @@ impl Deref for InlineStr {
 
     fn deref(&self) -> &str {
         let len = self.inner[DOUBLE_WORD_SIZE - 1] as usize;
-        unsafe {
-            from_utf8_unchecked(&self.inner[..len])
-        }
+        from_utf8(&self.inner[..len]).unwrap()
     }
 }
 
@@ -118,7 +116,7 @@ impl<'a> Borrow<str> for CowStr<'a> {
 }
 
 impl<'a> CowStr<'a> {
-    fn to_string(self) -> String {
+    pub fn to_string(self) -> String {
         match self {
             CowStr::Boxed(b) => b.into(),
             CowStr::Borrowed(b) => b.to_owned(),

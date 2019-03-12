@@ -24,7 +24,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use crate::parse::{Event, Tag, Alignment};
+use crate::parse::{LinkType, Event, Tag, Alignment};
 use crate::parse::Event::*;
 use crate::escape::{escape_html, escape_href};
 
@@ -211,6 +211,15 @@ where
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
             Tag::Code => self.write(b"<code>", false),
+            Tag::Link(LinkType::Email, dest, title) => {
+                self.write(b"<a href=\"mailto:", false)?;
+                escape_href(&mut self.writer, &dest)?;
+                if !title.is_empty() {
+                    self.write(b"\" title=\"", false)?;
+                    escape_html(&mut self.writer, &title, false)?;
+                }
+                self.write(b"\">", false)
+            }
             Tag::Link(_link_type, dest, title) => {
                 self.write(b"<a href=\"", false)?;
                 escape_href(&mut self.writer, &dest)?;

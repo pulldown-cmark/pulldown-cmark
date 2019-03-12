@@ -22,7 +22,6 @@
 
 use crate::entities;
 use crate::utils;
-use std::borrow::Cow::{self, Borrowed, Owned};
 use std::char;
 
 use crate::parse::Alignment;

@@ -20,7 +20,6 @@
 
 //! Tree-based two pass parser.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 use unicase::UniCase;
@@ -1342,33 +1341,23 @@ fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_i
 
 fn unescape_cow<'a>(c: CowStr<'a>) -> CowStr<'a> {
     match c {
-        CowStr::Inlined(s) => {
-            match unescape(s.as_ref()) {
-                CowStr::Borrowed(s) => {
-                    if let Ok(inline_str) = InlineStr::try_from_str(s) {
-                        CowStr::Inlined(inline_str)
-                    } else {
-                        s.to_owned().into()
-                    }
-                }
-                CowStr::Inlined(s) => CowStr::Inlined(s),
-                CowStr::Boxed(s) => CowStr::Boxed(s),
-            }
-        }
-        CowStr::Boxed(s) => {
-            match unescape(s.as_ref()) {
-                CowStr::Borrowed(s) => {
-                    if let Ok(inline_str) = InlineStr::try_from_str(s) {
-                        CowStr::Inlined(inline_str)
-                    } else {
-                        s.to_owned().into()
-                    }
-                }
-                CowStr::Inlined(s) => CowStr::Inlined(s),
-                CowStr::Boxed(s) => CowStr::Boxed(s),
-            }
-        }
+        CowStr::Inlined(s) => unescape_str_line(s),
+        CowStr::Boxed(s) => unescape_str_line(s),
         CowStr::Borrowed(s) => unescape(&s),
+    }
+}
+
+fn unescape_str_line<'a, S: AsRef<str>>(s: S) -> CowStr<'a> {
+    match unescape(s.as_ref()) {
+        CowStr::Borrowed(s) => {
+            if let Ok(inline_str) = InlineStr::try_from_str(s) {
+                CowStr::Inlined(inline_str)
+            } else {
+                s.to_owned().into()
+            }
+        }
+        CowStr::Inlined(s) => CowStr::Inlined(s),
+        CowStr::Boxed(s) => CowStr::Boxed(s),
     }
 }
 

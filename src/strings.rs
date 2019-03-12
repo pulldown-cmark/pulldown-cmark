@@ -16,6 +16,12 @@ pub struct InlineStr {
     inner: [u8; DOUBLE_WORD_SIZE],
 }
 
+impl<'a> AsRef<str> for InlineStr {
+    fn as_ref(&self) -> &str {
+        self.deref()
+    }
+}
+
 impl Hash for InlineStr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.deref().hash(state);

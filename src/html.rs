@@ -20,7 +20,6 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Write};
 

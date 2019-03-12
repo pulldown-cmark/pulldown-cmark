@@ -20,8 +20,6 @@
 
 //! Link label parsing and matching.
 
-use std::borrow::Cow;
-
 use unicase::UniCase;
 
 use crate::strings::CowStr;

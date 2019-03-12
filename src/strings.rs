@@ -2,19 +2,46 @@ use std::ops::Deref;
 use std::borrow::{ToOwned, Borrow};
 use std::str::from_utf8_unchecked;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
+
+/// Returned when trying to convert a &str into a StackStr
+/// but it fails because it doesn't fit.
+#[derive(Debug)]
+pub struct StringTooLongError;
+
+#[derive(Debug, Clone, Copy)]
 pub struct StackStr {
-    inner: [u8; 4],
-    len: usize,
+    inner: [u8; DOUBLE_WORD_SIZE],
 }
 
 impl From<char> for StackStr {
     fn from(c: char) -> Self {
-        let mut inner = [0u8; 4];
+        let mut inner = [0u8; DOUBLE_WORD_SIZE];
         c.encode_utf8(&mut inner);
-        Self {
-            inner,
-            len: c.len_utf8(),
+        inner[DOUBLE_WORD_SIZE - 1] = c.len_utf8() as u8;
+
+        Self { inner }
+    }
+}
+
+impl<'a> std::cmp::PartialEq<StackStr> for StackStr {
+    fn eq(&self, other: &StackStr) -> bool {
+        self.deref() == other.deref()
+    }
+}
+
+// This could be an implementation of TryFrom<&str>
+// when that trait is stabilized.
+impl StackStr {
+    pub fn try_from_str(s: &str) -> Result<StackStr, StringTooLongError> {
+        let len = s.len();
+        if len < DOUBLE_WORD_SIZE {
+            let mut inner = [0u8; DOUBLE_WORD_SIZE];
+            inner[..len].copy_from_slice(s.as_bytes());
+            inner[DOUBLE_WORD_SIZE - 1] = len as u8;
+            Ok(Self { inner })
+        } else {
+            Err(StringTooLongError)
         }
     }
 }
@@ -23,8 +50,9 @@ impl Deref for StackStr {
     type Target = str;
 
     fn deref(&self) -> &str {
+        let len = self.inner[DOUBLE_WORD_SIZE - 1] as usize;
         unsafe {
-            from_utf8_unchecked(&self.inner[..self.len])
+            from_utf8_unchecked(&self.inner[..len])
         }
     }
 }
@@ -89,7 +117,7 @@ impl<'a> SmortStr<'a> {
 }
 
 #[cfg(test)]
-mod test {
+mod test_special_string {
     use super::*;
 
     #[test]
@@ -118,5 +146,20 @@ mod test {
         let owned: String = smort.to_string();
         let expected = "藏".to_owned();
         assert_eq!(expected, owned);
+    }
+
+    #[test]
+    fn double_word_size_atleast_five() {
+        // we need 4 bytes to store a char and then one more to store
+        // its length
+        assert!(DOUBLE_WORD_SIZE >= 5);
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn stackstr_fits_fifteen() {
+        let s = "0123456789abcde";
+        let stack_str = StackStr::try_from_str(s).unwrap();
+        assert_eq!(stack_str.deref(), s);
     }
 }

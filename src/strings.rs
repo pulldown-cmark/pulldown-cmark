@@ -1,6 +1,8 @@
 use std::ops::Deref;
 use std::borrow::{ToOwned, Borrow};
 use std::str::from_utf8;
+use std::hash::{Hash, Hasher};
+use std::convert::AsRef;
 
 const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
 
@@ -9,9 +11,15 @@ const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
 #[derive(Debug)]
 pub struct StringTooLongError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq)]
 pub struct InlineStr {
     inner: [u8; DOUBLE_WORD_SIZE],
+}
+
+impl Hash for InlineStr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.deref().hash(state);
+    }
 }
 
 impl From<char> for InlineStr {
@@ -54,11 +62,23 @@ impl Deref for InlineStr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 pub enum CowStr<'a> {
     Boxed(Box<str>),
     Borrowed(&'a str),
     Inlined(InlineStr),
+}
+
+impl<'a> AsRef<str> for CowStr<'a> {
+    fn as_ref(&self) -> &str {
+        self.deref()
+    }
+}
+
+impl<'a> Hash for CowStr<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.deref().hash(state);
+    }
 }
 
 impl<'a> std::clone::Clone for CowStr<'a> {
@@ -176,7 +196,7 @@ mod test_special_string {
     #[cfg(target_pointer_width = "64")]
     fn inlinestr_not_fits_sixteen() {
         let s = "0123456789abcdef";
-        let stack_str = InlineStr::try_from_str(s).unwrap_err();
+        let _stack_str = InlineStr::try_from_str(s).unwrap_err();
     }
 
     #[test]

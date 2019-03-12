@@ -676,7 +676,7 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape(input: &str) -> Cow<str> {
+pub fn unescape<'a>(input: &'a str) -> CowStr<'a> {
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;
@@ -708,10 +708,10 @@ pub fn unescape(input: &str) -> Cow<str> {
         }
     }
     if mark == 0 {
-        Borrowed(input)
+        input.into()
     } else {
         result.push_str(&input[mark..]);
-        Owned(result)
+        result.into()
     }
 }
 

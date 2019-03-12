@@ -22,11 +22,10 @@
 
 use crate::entities;
 use crate::utils;
-use std::borrow::Cow;
-use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
-use crate::parse::Alignment;
 
+use crate::parse::Alignment;
+use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary search
@@ -541,16 +540,16 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     (w + postn, c, start, w + postindent)
 }
 
-fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
+fn char_from_codepoint_str(s: &str, radix: u32) -> char {
     let mut codepoint = u32::from_str_radix(s, radix).unwrap();
     if codepoint == 0 {
         codepoint = 0xFFFD;
     }
-    Owned(char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string())
+    char::from_u32(codepoint).unwrap_or('\u{FFFD}')
 }
 
 // doesn't bother to check data[0] == '&'
-pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
+pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     let size = data.len();
     let mut end = 1;
     if scan_ch(&data[end..], b'#') == 1 {
@@ -559,12 +558,12 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
             end += 1;
             end += scan_while(&data[end..], is_hexdigit);
             if end > 3 && end < 12 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(cow_from_codepoint_str(&data[3..end], 16)));
+                return (end + 1, Some(char_from_codepoint_str(&data[3..end], 16).into()));
             }
         } else {
             end += scan_while(&data[end..], is_digit);
             if end > 2 && end < 11 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(cow_from_codepoint_str(&data[2..end], 10)));
+                return (end + 1, Some(char_from_codepoint_str(&data[2..end], 10).into()));
             }
         }
         return (0, None);
@@ -572,7 +571,7 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
     end += scan_while(&data[end..], is_ascii_alphanumeric);
     if scan_ch(&data[end..], b';') == 1 {
         if let Some(value) = entities::get_entity(&data[1..end]) {
-            return (end + 1, Some(Borrowed(value)));
+            return (end + 1, Some(value.into()));
         }
     }
     (0, None)
@@ -676,7 +675,7 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape(input: &str) -> Cow<str> {
+pub fn unescape<'a>(input: &'a str) -> CowStr<'a> {
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;
@@ -708,10 +707,10 @@ pub fn unescape(input: &str) -> Cow<str> {
         }
     }
     if mark == 0 {
-        Borrowed(input)
+        input.into()
     } else {
         result.push_str(&input[mark..]);
-        Owned(result)
+        result.into()
     }
 }
 

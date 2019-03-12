@@ -20,11 +20,11 @@
 
 //! Tree-based two pass parser.
 
-use std::borrow::Cow::{self, Borrowed};
 use std::collections::HashMap;
 
 use unicase::UniCase;
 
+use crate::strings::{CowStr, InlineStr};
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -39,12 +39,12 @@ pub enum Tag<'a> {
     Header(i32),
 
     BlockQuote,
-    CodeBlock(Cow<'a, str>),
+    CodeBlock(CowStr<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
-    FootnoteDefinition(Cow<'a, str>),
+    FootnoteDefinition(CowStr<'a>),
     HtmlBlock,
 
     // tables
@@ -59,10 +59,10 @@ pub enum Tag<'a> {
     Code,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title
-    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
+    Link(LinkType, CowStr<'a>, CowStr<'a>),
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title
-    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
+    Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
 // FIXME: Unknown variants are currently unused!
@@ -92,10 +92,10 @@ pub enum LinkType {
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
-    Text(Cow<'a, str>),
-    Html(Cow<'a, str>),
-    InlineHtml(Cow<'a, str>),
-    FootnoteReference(Cow<'a, str>),
+    Text(CowStr<'a>),
+    Html(CowStr<'a>),
+    InlineHtml(CowStr<'a>),
+    FootnoteReference(CowStr<'a>),
     SoftBreak,
     HardBreak,
 }
@@ -147,21 +147,21 @@ enum ItemBody<'a> {
     Code,
     InlineHtml,
     // Link params: destination, title.
-    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
-    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
-    FootnoteReference(Cow<'a, str>), // label
+    Link(LinkType, CowStr<'a>, CowStr<'a>),
+    Image(LinkType, CowStr<'a>, CowStr<'a>),
+    FootnoteReference(CowStr<'a>), // label
 
     Rule,
     Header(i32), // header level
-    FencedCodeBlock(Cow<'a, str>), // info string
+    FencedCodeBlock(CowStr<'a>), // info string
     IndentCodeBlock,
     HtmlBlock(Option<&'static str>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
-    SynthesizeText(Cow<'static, str>),
-    FootnoteDefinition(Cow<'a, str>), // label
+    SynthesizeText(CowStr<'static>),
+    FootnoteDefinition(CowStr<'a>), // label
 
     // Tables
     Table(Vec<Alignment>),
@@ -685,8 +685,6 @@ impl<'a> FirstPass<'a> {
                     begin_text = ix;
                 }
                 b'&' => {
-                    // TODO(performance): if owned, entity will always just be a char,
-                    // which we should be able to store without allocating
                     match scan_entity(&self.text[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
@@ -930,7 +928,7 @@ impl<'a> FirstPass<'a> {
             self.tree.append(Item {
                 start: start,
                 end: start,
-                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+                body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
             });
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
@@ -950,7 +948,7 @@ impl<'a> FirstPass<'a> {
                 start: start,
                 end: start,
                 // TODO: maybe this should synthesize to html rather than text?
-                body: ItemBody::SynthesizeText(Borrowed(&"   "[..remaining_space])),
+                body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
             });
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
@@ -1256,7 +1254,7 @@ impl<'a> FirstPass<'a> {
     // FIXME: or, reuse scanner::scan_link_title ?
     // TODO: rename. this isnt just for refdef_titles, but all titles
     // returns (bytelength, title_str)
-    fn scan_refdef_title(&self, start: usize) -> Option<(usize, Cow<'a, str>)> {
+    fn scan_refdef_title(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
         let mut title = String::new();
         let text = &self.text[start..];
         let mut chars = text.chars().peekable();
@@ -1341,11 +1339,25 @@ fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_i
     pipes + 1
 }
 
-fn unescape_cow<'a>(c: Cow<'a, str>) -> Cow<'a, str> {
-    if let Cow::Owned(s) = unescape(c.as_ref()) {
-        s.into()
-    } else {
-        c
+fn unescape_cow<'a>(c: CowStr<'a>) -> CowStr<'a> {
+    match c {
+        CowStr::Inlined(s) => unescape_str_line(s),
+        CowStr::Boxed(s) => unescape_str_line(s),
+        CowStr::Borrowed(s) => unescape(&s),
+    }
+}
+
+fn unescape_str_line<'a, S: AsRef<str>>(s: S) -> CowStr<'a> {
+    match unescape(s.as_ref()) {
+        CowStr::Borrowed(s) => {
+            if let Ok(inline_str) = InlineStr::try_from_str(s) {
+                CowStr::Inlined(inline_str)
+            } else {
+                s.to_owned().into()
+            }
+        }
+        CowStr::Inlined(s) => CowStr::Inlined(s),
+        CowStr::Boxed(s) => CowStr::Boxed(s),
     }
 }
 
@@ -1792,7 +1804,7 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
             ItemBody::SoftBreak => {
                 // TODO: trailing space is stripped in parse_line, and we don't want it
                 // stripped.
-                tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                tree[node].item.body = ItemBody::SynthesizeText(" ".into());
             }
             ItemBody::HardBreak => {
                 let start = tree[node].item.start;
@@ -1802,13 +1814,13 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
                     let space = tree.create_node(Item {
                         start: start + 1,
                         end,
-                        body: ItemBody::SynthesizeText(Borrowed(" "))
+                        body: ItemBody::SynthesizeText(" ".into())
                     });
                     tree[space].next = next;
                     tree[node].next = TreePointer::Valid(space);
                     tree[node].item.end = start + 1;
                 } else {
-                    tree[node].item.body = ItemBody::SynthesizeText(Borrowed(" "));
+                    tree[node].item.body = ItemBody::SynthesizeText(" ".into());
                 }
             }
             _ => tree[node].item.body = ItemBody::Text,
@@ -1833,15 +1845,15 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     };
     // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
     if opening && closing {
-        if tree[first_ix].item.body == ItemBody::SynthesizeText(Borrowed(" "))
+        if tree[first_ix].item.body == ItemBody::SynthesizeText(" ".into())
             || tree[first_ix].item.end - tree[first_ix].item.start == 1
         {
             tree[open].child = tree[first_ix].next;
         } else {
             tree[first_ix].item.start += 1;
         }
-        if tree[last].item.body == ItemBody::SynthesizeText(Borrowed(" ")) {
-            tree[last].item.body = ItemBody::SynthesizeText(Borrowed(""));
+        if tree[last].item.body == ItemBody::SynthesizeText(" ".into()) {
+            tree[last].item.body = ItemBody::SynthesizeText("".into());
         } else {
             tree[last].item.end -= 1;
         }
@@ -1849,7 +1861,7 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     }
 }
 
-fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     let mut url = String::new();
     let mut nest = 0;
     let mut bytecount = 0;
@@ -1899,7 +1911,7 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
     None
 }
 
-fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     if !scanner.scan_ch(b'<') {
         return None;
     }
@@ -1938,7 +1950,7 @@ fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> 
     None
 }
 
-fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     let save = scanner.clone();
     if let Some(url) = scan_link_destination_pointy(scanner) {
         return Some(url);
@@ -1947,7 +1959,7 @@ fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<
     scan_link_destination_plain(scanner)
 }
 
-fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     let open = scanner.next_char()?;
     if !(open == '\'' || open == '\"' || open == '(') {
         return None;
@@ -1995,7 +2007,7 @@ fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a
     None
 }
 
-fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a, str>, LinkType)> {
+fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, LinkType)> {
     let save = scanner.clone();
     let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
         *scanner = save.clone();
@@ -2012,7 +2024,7 @@ fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a,
 
 // must return scanner to original state -- this doesnt seem true?
 // TODO: such invariants should probably be captured by the type system
-fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     let start_ix = scanner.ix;
 
     // scheme's first byte must be an ascii letter
@@ -2024,7 +2036,7 @@ fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>>
     while let Some(c) = scanner.next() {
         match c {
             c if is_ascii_alphanumeric(c) => (),
-            c @ b'.' | c @ b'-' | c @ b'+' => (),
+            b'.' | b'-' | b'+' => (),
             b':' => break,
             _ => return None,
         }
@@ -2053,7 +2065,7 @@ fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>>
     Some(scanner.text[start_ix..scanner.ix].into())
 }
 
-fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str>> {
+fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
     // using a regex library would be convenient, but doing it by hand is not too bad
     let start_ix = scanner.ix;
 
@@ -2105,7 +2117,7 @@ fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<Cow<'a, str
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // label, next node index
-    LinkLabel(Cow<'a, str>, TreePointer),
+    LinkLabel(CowStr<'a>, TreePointer),
     // contains next node index
     Collapsed(TreePointer),
     Failed,
@@ -2132,7 +2144,7 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item<'a>>, text: &'b str, cur: TreePoin
 }
 
 /// Returns url and title cows.
-fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(Cow<'a, str>, Cow<'a, str>)> {
+fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
     if !scanner.scan_ch(b'(') {
         return None;
     }
@@ -2169,8 +2181,8 @@ enum LinkStackTy {
 }
 
 struct LinkDef<'a> {
-    dest: Cow<'a, str>,
-    title: Option<Cow<'a, str>>,
+    dest: CowStr<'a>,
+    title: Option<CowStr<'a>>,
 }
 
 pub struct Parser<'a> {
@@ -2527,17 +2539,16 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
 fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
     match item.body {
         ItemBody::Text => {
-            Event::Text(Cow::from(&text[item.start..item.end]))
+            Event::Text(text[item.start..item.end].into())
         }
-        // TODO: don't clone text!
         ItemBody::SynthesizeText(ref text) => {
             Event::Text(text.clone())
         }
         ItemBody::Html => {
-            Event::Html(Cow::from(&text[item.start..item.end]))
+            Event::Html(text[item.start..item.end].into())
         }
         ItemBody::InlineHtml => {
-            Event::InlineHtml(Cow::from(&text[item.start..item.end]))
+            Event::InlineHtml(text[item.start..item.end].into())
         }
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
@@ -2628,8 +2639,16 @@ impl<'a> Iterator for Parser<'a> {
 }
 
 #[cfg(test)]
-mod regression_tests {
+mod test {
     use super::*;
+    use crate::tree::Node;
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn node_size() {
+        let node_size = std::mem::size_of::<Node<Item>>();
+        assert_eq!(88, node_size);
+    }
 
     #[test]
     fn single_open_fish_bracket() {

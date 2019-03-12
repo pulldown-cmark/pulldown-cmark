@@ -40,5 +40,6 @@ mod utils;
 mod parse;
 mod tree;
 mod linklabel;
+mod strings;
 
 pub use crate::parse::{Parser, Alignment, Event, Tag, Options, LinkType};

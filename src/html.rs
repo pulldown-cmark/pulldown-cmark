@@ -20,12 +20,12 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Write};
 
 use crate::parse::{LinkType, Event, Tag, Alignment};
 use crate::parse::Event::*;
+use crate::strings::CowStr;
 use crate::escape::{escape_html, escape_href};
 
 enum TableState {
@@ -49,7 +49,7 @@ where
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<Cow<'a, str>, usize>,
+    numbers: HashMap<CowStr<'a>, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>

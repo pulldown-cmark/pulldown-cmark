@@ -26,7 +26,7 @@ use std::borrow::Cow::{self, Borrowed, Owned};
 use std::char;
 
 use crate::parse::Alignment;
-use crate::strings::SmortStr;
+use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary search
@@ -550,7 +550,7 @@ fn char_from_codepoint_str(s: &str, radix: u32) -> char {
 }
 
 // doesn't bother to check data[0] == '&'
-pub fn scan_entity(data: &str) -> (usize, Option<SmortStr<'static>>) {
+pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     let size = data.len();
     let mut end = 1;
     if scan_ch(&data[end..], b'#') == 1 {

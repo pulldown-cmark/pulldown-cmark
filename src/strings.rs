@@ -4,36 +4,35 @@ use std::str::from_utf8_unchecked;
 
 const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
 
-/// Returned when trying to convert a &str into a StackStr
+/// Returned when trying to convert a &str into a InlineStr
 /// but it fails because it doesn't fit.
 #[derive(Debug)]
 pub struct StringTooLongError;
 
 #[derive(Debug, Clone, Copy)]
-pub struct StackStr {
+pub struct InlineStr {
     inner: [u8; DOUBLE_WORD_SIZE],
 }
 
-impl From<char> for StackStr {
+impl From<char> for InlineStr {
     fn from(c: char) -> Self {
         let mut inner = [0u8; DOUBLE_WORD_SIZE];
         c.encode_utf8(&mut inner);
         inner[DOUBLE_WORD_SIZE - 1] = c.len_utf8() as u8;
-
         Self { inner }
     }
 }
 
-impl<'a> std::cmp::PartialEq<StackStr> for StackStr {
-    fn eq(&self, other: &StackStr) -> bool {
+impl<'a> std::cmp::PartialEq<InlineStr> for InlineStr {
+    fn eq(&self, other: &InlineStr) -> bool {
         self.deref() == other.deref()
     }
 }
 
 // This could be an implementation of TryFrom<&str>
 // when that trait is stabilized.
-impl StackStr {
-    pub fn try_from_str(s: &str) -> Result<StackStr, StringTooLongError> {
+impl InlineStr {
+    pub fn try_from_str(s: &str) -> Result<InlineStr, StringTooLongError> {
         let len = s.len();
         if len < DOUBLE_WORD_SIZE {
             let mut inner = [0u8; DOUBLE_WORD_SIZE];
@@ -46,7 +45,7 @@ impl StackStr {
     }
 }
 
-impl Deref for StackStr {
+impl Deref for InlineStr {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -58,72 +57,72 @@ impl Deref for StackStr {
 }
 
 #[derive(Debug)]
-pub enum SmortStr<'a> {
+pub enum CowStr<'a> {
     Boxed(Box<str>),
     Borrowed(&'a str),
-    Stacked(StackStr),
+    Inlined(InlineStr),
 }
 
-impl<'a> std::clone::Clone for SmortStr<'a> {
+impl<'a> std::clone::Clone for CowStr<'a> {
     fn clone(&self) -> Self {
         match self {
-            SmortStr::Boxed(s) if s.len() < DOUBLE_WORD_SIZE
-                => SmortStr::Stacked(StackStr::try_from_str(&**s).unwrap()),
-            SmortStr::Boxed(s) => SmortStr::Boxed(s.clone()),
-            SmortStr::Borrowed(s) => SmortStr::Borrowed(s),
-            SmortStr::Stacked(s) => SmortStr::Stacked(*s),
+            CowStr::Boxed(s) if s.len() < DOUBLE_WORD_SIZE
+                => CowStr::Inlined(InlineStr::try_from_str(&**s).unwrap()),
+            CowStr::Boxed(s) => CowStr::Boxed(s.clone()),
+            CowStr::Borrowed(s) => CowStr::Borrowed(s),
+            CowStr::Inlined(s) => CowStr::Inlined(*s),
         }
     }
 }
 
-impl<'a> std::cmp::PartialEq<SmortStr<'a>> for SmortStr<'a> {
-    fn eq(&self, other: &SmortStr) -> bool {
+impl<'a> std::cmp::PartialEq<CowStr<'a>> for CowStr<'a> {
+    fn eq(&self, other: &CowStr) -> bool {
         self.deref() == other.deref()
     }
 }
 
-impl<'a> From<&'a str> for SmortStr<'a> {
+impl<'a> From<&'a str> for CowStr<'a> {
     fn from(s: &'a str) -> Self {
-        SmortStr::Borrowed(s)
+        CowStr::Borrowed(s)
     }
 }
 
-impl<'a> From<String> for SmortStr<'a> {
+impl<'a> From<String> for CowStr<'a> {
     fn from(s: String) -> Self {
-        SmortStr::Boxed(s.into_boxed_str())
+        CowStr::Boxed(s.into_boxed_str())
     }
 }
 
-impl<'a> From<char> for SmortStr<'a> {
+impl<'a> From<char> for CowStr<'a> {
     fn from(c: char) -> Self {
-        SmortStr::Stacked(c.into())
+        CowStr::Inlined(c.into())
     }
 }
 
-impl<'a> Deref for SmortStr<'a> {
+impl<'a> Deref for CowStr<'a> {
     type Target = str;
 
     fn deref(&self) -> &str {
         match self {
-            SmortStr::Boxed(ref b) => &*b,
-            SmortStr::Borrowed(b) => b,
-            SmortStr::Stacked(ref s) => s.deref(),
+            CowStr::Boxed(ref b) => &*b,
+            CowStr::Borrowed(b) => b,
+            CowStr::Inlined(ref s) => s.deref(),
         }
     }
 }
 
-impl<'a> Borrow<str> for SmortStr<'a> {
+impl<'a> Borrow<str> for CowStr<'a> {
     fn borrow(&self) -> &str {
         self.deref()
     }
 }
 
-impl<'a> SmortStr<'a> {
+impl<'a> CowStr<'a> {
     fn to_string(self) -> String {
         match self {
-            SmortStr::Boxed(b) => b.into(),
-            SmortStr::Borrowed(b) => b.to_owned(),
-            SmortStr::Stacked(s) => s.deref().to_owned(),
+            CowStr::Boxed(b) => b.into(),
+            CowStr::Borrowed(b) => b.to_owned(),
+            CowStr::Inlined(s) => s.deref().to_owned(),
         }        
     }
 }
@@ -133,28 +132,28 @@ mod test_special_string {
     use super::*;
 
     #[test]
-    fn stackstr_ascii() {
-        let s: StackStr = 'a'.into();
+    fn inlinestr_ascii() {
+        let s: InlineStr = 'a'.into();
         assert_eq!("a", s.deref());
     }
 
     #[test]
-    fn stackstr_unicode() {
-        let s: StackStr = '🍔'.into();
+    fn inlinestr_unicode() {
+        let s: InlineStr = '🍔'.into();
         assert_eq!("🍔", s.deref());
     }
 
     #[test]
-    fn smortstr_size() {
-        let size = std::mem::size_of::<SmortStr>();
+    fn cowstr_size() {
+        let size = std::mem::size_of::<CowStr>();
         let word_size = std::mem::size_of::<isize>();
         assert_eq!(3 * word_size, size);
     }
 
     #[test]
-    fn smortstr_char_to_string() {
+    fn cowstr_char_to_string() {
         let c = '藏';
-        let smort: SmortStr = c.into();
+        let smort: CowStr = c.into();
         let owned: String = smort.to_string();
         let expected = "藏".to_owned();
         assert_eq!(expected, owned);
@@ -169,28 +168,28 @@ mod test_special_string {
 
     #[test]
     #[cfg(target_pointer_width = "64")]
-    fn stackstr_fits_fifteen() {
+    fn inlinestr_fits_fifteen() {
         let s = "0123456789abcde";
-        let stack_str = StackStr::try_from_str(s).unwrap();
+        let stack_str = InlineStr::try_from_str(s).unwrap();
         assert_eq!(stack_str.deref(), s);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
-    fn stackstr_not_fits_sixteen() {
+    fn inlinestr_not_fits_sixteen() {
         let s = "0123456789abcdef";
-        let stack_str = StackStr::try_from_str(s).unwrap_err();
+        let stack_str = InlineStr::try_from_str(s).unwrap_err();
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn small_boxed_str_clones_to_stack() {
         let s = "0123456789abcde".to_owned();
-        let smort: SmortStr = s.into();
+        let smort: CowStr = s.into();
         let smort_clone = smort.clone();
 
-        if let SmortStr::Stacked(..) = smort_clone {} else {
-            panic!("Expected a stacked variant!");
+        if let CowStr::Inlined(..) = smort_clone {} else {
+            panic!("Expected a Inlined variant!");
         }
     }
 }

@@ -25,7 +25,7 @@ use std::collections::HashMap;
 
 use unicase::UniCase;
 
-use crate::strings::SmortStr;
+use crate::strings::CowStr;
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -91,7 +91,7 @@ pub enum LinkType {
 pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
-    Text(SmortStr<'a>),
+    Text(CowStr<'a>),
     Html(Cow<'a, str>),
     InlineHtml(Cow<'a, str>),
     FootnoteReference(Cow<'a, str>),
@@ -159,7 +159,7 @@ enum ItemBody<'a> {
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
-    SynthesizeText(SmortStr<'static>),
+    SynthesizeText(CowStr<'static>),
     FootnoteDefinition(Cow<'a, str>), // label
 
     // Tables

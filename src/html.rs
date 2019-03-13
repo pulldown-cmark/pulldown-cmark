@@ -146,6 +146,7 @@ where
             }
             Tag::TableHead => {
                 self.table_state = TableState::Head;
+                self.table_cell_index = 0;
                 self.write(b"<thead><tr>", false)
             }
             Tag::TableRow => {

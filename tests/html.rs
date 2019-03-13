@@ -207,6 +207,8 @@ console.log("fooooo");
     assert_eq!(expected, s);
 }
 
+// TODO: add broken link callback feature
+/*
 #[test]
 fn html_test_broken_callback() {
     let original = r##"[foo],
@@ -238,3 +240,4 @@ fn html_test_broken_callback() {
 
     assert_eq!(expected, s);
 }
+*/

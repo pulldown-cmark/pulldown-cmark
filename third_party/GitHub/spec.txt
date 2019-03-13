@@ -1,12 +1,28 @@
 ---
-title: CommonMark Spec
-author: John MacFarlane
+title: GitHub Flavored Markdown Spec
 version: 0.28
 date: '2017-08-01'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
 ...
 
 # Introduction
+
+## What is GitHub Flavored Markdown?
+
+GitHub Flavored Markdown, often shortened as GFM, is the dialect of Markdown
+that is currently supported for user content on GitHub.com and GitHub
+Enterprise.
+
+This formal specification, based on the CommonMark Spec, defines the syntax and
+semantics of this dialect.
+
+GFM is a strict superset of CommonMark. All the features which are supported in
+GitHub user content and that are not specified on the original CommonMark Spec
+are hence known as **extensions**, and highlighted as such.
+
+While GFM supports a wide range of inputs, it's worth noting that GitHub.com
+and GitHub Enterprise perform additional post-processing and sanitization after
+GFM is converted to HTML to ensure security and consistency of the website.
 
 ## What is Markdown?
 
@@ -3230,7 +3246,215 @@ aaa
 <h1>aaa</h1>
 ````````````````````````````````
 
+<div class="extension">
 
+## Tables (extension)
+
+GFM enables the `table` extension, where an additional leaf block type is
+available.
+
+A [table](@) is an arrangement of data with rows and columns, consisting of a
+single header row, a [delimiter row] separating the header from the data, and
+zero or more data rows.
+
+Each row consists of cells containing arbitrary text, in which [inlines] are
+parsed, separated by pipes (`|`).  A leading and trailing pipe is also
+recommended for clarity of reading, and if there's otherwise parsing ambiguity.
+Spaces between pipes and cell content are trimmed.  Block-level elements cannot
+be inserted in a table.
+
+The [delimiter row](@) consists of cells whose only content are hyphens (`-`),
+and optionally, a leading or trailing colon (`:`), or both, to indicate left,
+right, or center alignment respectively.
+
+```````````````````````````````` example table
+| foo | bar |
+| --- | --- |
+| baz | bim |
+.
+<table>
+<thead>
+<tr>
+<th>foo</th>
+<th>bar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>baz</td>
+<td>bim</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+Cells in one column don't need to match length, though it's easier to read if
+they are. Likewise, use of leading and trailing pipes may be inconsistent:
+
+```````````````````````````````` example table
+| abc | defghi |
+:-: | -----------:
+bar | baz
+.
+<table>
+<thead>
+<tr>
+<th align="center">abc</th>
+<th align="right">defghi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">bar</td>
+<td align="right">baz</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+Include a pipe in a cell's content by escaping it, including inside other
+inline spans:
+
+```````````````````````````````` example table
+| f\|oo  |
+| ------ |
+| b `\|` az |
+| b **\|** im |
+.
+<table>
+<thead>
+<tr>
+<th>f|oo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>b <code>|</code> az</td>
+</tr>
+<tr>
+<td>b <strong>|</strong> im</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+The table is broken at the first empty line, or beginning of another
+block-level structure:
+
+```````````````````````````````` example table
+| abc | def |
+| --- | --- |
+| bar | baz |
+> bar
+.
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>bar</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example table
+| abc | def |
+| --- | --- |
+| bar | baz |
+bar
+
+bar
+.
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+<tr>
+<td>bar</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>bar</p>
+````````````````````````````````
+
+The header row must match the [delimiter row] in the number of cells.  If not,
+a table will not be recognized:
+
+```````````````````````````````` example table
+| abc | def |
+| --- |
+| bar |
+.
+<p>| abc | def |
+| --- |
+| bar |</p>
+````````````````````````````````
+
+The remainder of the table's rows may vary in the number of cells.  If there
+are a number of cells fewer than the number of cells in the header row, empty
+cells are inserted.  If there are greater, the excess is ignored:
+
+```````````````````````````````` example table
+| abc | def |
+| --- | --- |
+| bar |
+| bar | baz | boo |
+.
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td></td>
+</tr>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+If there are no rows in the body, no `<tbody>` is generated in HTML output:
+
+```````````````````````````````` example table
+| abc | def |
+| --- | --- |
+.
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+</table>
+````````````````````````````````
+
+</div>
 
 # Container blocks
 
@@ -3709,10 +3933,10 @@ The following rules define [list items]:
     Exceptions:
 
     1. When the first list item in a [list] interrupts
-       a paragraph---that is, when it starts on a line that would
-       otherwise count as [paragraph continuation text]---then (a)
-       the lines *Ls* must not begin with a blank line, and (b) if
-       the list item is ordered, the start number must be 1.
+    a paragraph---that is, when it starts on a line that would
+    otherwise count as [paragraph continuation text]---then (a)
+    the lines *Ls* must not begin with a blank line, and (b) if
+    the list item is ordered, the start number must be 1.
     2. If any line is a [thematic break][thematic breaks] then
        that line is not a list item.
 
@@ -4801,6 +5025,63 @@ that in such cases, we require one space indentation from the list marker
 four-space rule in cases where the list marker plus its initial indentation
 takes four spaces (a common case), but diverge in other cases.
 
+<div class="extension">
+
+## Task list items (extension)
+
+GFM enables the `tasklist` extension, where an additional processing step is
+performed on [list items].
+
+A [task list item](@) is a [list item][list items] where the first block in it
+is a paragraph which begins with a [task list item marker] and at least one
+whitespace character before any other content.
+
+A [task list item marker](@) consists of an optional number of spaces, a left
+bracket (`[`), either a whitespace character or the letter `x` in either
+lowercase or uppercase, and then a right bracket (`]`).
+
+When rendered, the [task list item marker] is replaced with a semantic checkbox element;
+in an HTML output, this would be an `<input type="checkbox">` element.
+
+If the character between the brackets is a whitespace character, the checkbox
+is unchecked.  Otherwise, the checkbox is checked.
+
+This spec does not define how the checkbox elements are interacted with: in practice,
+implementors are free to render the checkboxes as disabled or inmutable elements,
+or they may dynamically handle dynamic interactions (i.e. checking, unchecking) in
+the final rendered document.
+
+```````````````````````````````` example disabled
+- [ ] foo
+- [x] bar
+.
+<ul>
+<li><input disabled="" type="checkbox"> foo</li>
+<li><input checked="" disabled="" type="checkbox"> bar</li>
+</ul>
+````````````````````````````````
+
+Task lists can be arbitrarily nested:
+
+```````````````````````````````` example disabled
+- [x] foo
+  - [ ] bar
+  - [x] baz
+- [ ] bim
+.
+<ul>
+<li><input checked="" disabled="" type="checkbox"> foo
+<ul>
+<li><input disabled="" type="checkbox"> bar</li>
+<li><input checked="" disabled="" type="checkbox"> baz</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> bim</li>
+</ul>
+````````````````````````````````
+
+</div>
+
 ## Lists
 
 A [list](@) is a sequence of one or more
@@ -5607,7 +5888,7 @@ references and their corresponding code points.
 &frac34; &HilbertSpace; &DifferentialD;
 &ClockwiseContourIntegral; &ngE;
 .
-<p>  &amp; © Æ Ď
+<p>  &amp; © Æ Ď
 ¾ ℋ ⅆ
 ∲ ≧̸</p>
 ````````````````````````````````
@@ -5800,9 +6081,9 @@ Only [spaces], and not [unicode whitespace] in general, are
 stripped in this way:
 
 ```````````````````````````````` example
-` b `
+` b `
 .
-<p><code> b </code></p>
+<p><code> b </code></p>
 ````````````````````````````````
 
 
@@ -6193,9 +6474,9 @@ a*"foo"*
 Unicode nonbreaking spaces count as whitespace, too:
 
 ```````````````````````````````` example
-* a *
+* a *
 .
-<p>* a *</p>
+<p>* a *</p>
 ````````````````````````````````
 
 
@@ -7279,6 +7560,34 @@ __a<http://foo.bar/?q=__>
 ````````````````````````````````
 
 
+<div class="extension">
+
+## Strikethrough (extension)
+
+GFM enables the `strikethrough` extension, where an additional emphasis type is
+available.
+
+Strikethrough text is any text wrapped in two tildes (`~`).
+
+```````````````````````````````` example strikethrough
+~~Hi~~ Hello, world!
+.
+<p><del>Hi</del> Hello, world!</p>
+````````````````````````````````
+
+As with regular emphasis delimiters, a new paragraph will cause strikethrough
+parsing to cease:
+
+```````````````````````````````` example strikethrough
+This ~~has a
+
+new paragraph~~.
+.
+<p>This ~~has a</p>
+<p>new paragraph~~.</p>
+````````````````````````````````
+
+</div>
 
 ## Links
 
@@ -7541,7 +7850,7 @@ Titles must be separated from the link using a [whitespace].
 Other [Unicode whitespace] like non-breaking space doesn't work.
 
 ```````````````````````````````` example
-[link](/url "title")
+[link](/url "title")
 .
 <p><a href="/url%C2%A0%22title%22">link</a></p>
 ````````````````````````````````
@@ -8704,6 +9013,167 @@ foo@bar.example.com
 <p>foo@bar.example.com</p>
 ````````````````````````````````
 
+<div class="extension">
+
+## Autolinks (extension)
+
+GFM enables the `autolink` extension, where autolinks will be recognised in a
+greater number of conditions.
+
+[Autolink]s can also be constructed without requiring the use of `<` and to `>`
+to delimit them, although they will be recognized under a smaller set of
+circumstances.  All such recognized autolinks can only come at the beginning of
+a line, after whitespace, or any of the delimiting characters `*`, `_`, `~`,
+and `(`.
+
+An [extended www autolink](@) will be recognized when the text `www.` is found
+followed by a [valid domain]. A [valid domain](@) consists of alphanumeric
+characters, underscores (`_`), hyphens (`-`) and periods (`.`).  There must be
+at least one period, and no underscores may be present in the last two segments
+of the domain.
+
+The scheme `http` will be inserted automatically:
+
+```````````````````````````````` example autolink
+www.commonmark.org
+.
+<p><a href="http://www.commonmark.org">www.commonmark.org</a></p>
+````````````````````````````````
+
+After a [valid domain], zero or more non-space non-`<` characters may follow:
+
+```````````````````````````````` example autolink
+Visit www.commonmark.org/help for more information.
+.
+<p>Visit <a href="http://www.commonmark.org/help">www.commonmark.org/help</a> for more information.</p>
+````````````````````````````````
+
+We then apply [extended autolink path validation](@) as follows:
+
+Trailing punctuation (specifically, `?`, `!`, `.`, `,`, `:`, `*`, `_`, and `~`)
+will not be considered part of the autolink, though they may be included in the
+interior of the link:
+
+```````````````````````````````` example autolink
+Visit www.commonmark.org.
+
+Visit www.commonmark.org/a.b.
+.
+<p>Visit <a href="http://www.commonmark.org">www.commonmark.org</a>.</p>
+<p>Visit <a href="http://www.commonmark.org/a.b">www.commonmark.org/a.b</a>.</p>
+````````````````````````````````
+
+When an autolink ends in `)`, we scan the entire autolink for the total number
+of parentheses.  If there is a greater number of closing parentheses than
+opening ones, we don't consider the last character part of the autolink, in
+order to facilitate including an autolink inside a parenthesis:
+
+```````````````````````````````` example autolink
+www.google.com/search?q=Markup+(business)
+
+(www.google.com/search?q=Markup+(business))
+.
+<p><a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a></p>
+<p>(<a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a>)</p>
+````````````````````````````````
+
+This check is only done when the link ends in a closing parentheses `)`, so if
+the only parentheses are in the interior of the autolink, no special rules are
+applied:
+
+```````````````````````````````` example autolink
+www.google.com/search?q=(business))+ok
+.
+<p><a href="http://www.google.com/search?q=(business))+ok">www.google.com/search?q=(business))+ok</a></p>
+````````````````````````````````
+
+If an autolink ends in a semicolon (`;`), we check to see if it appears to
+resemble an [entity reference][entity references]; if the preceding text is `&`
+followed by one or more alphanumeric characters.  If so, it is excluded from
+the autolink:
+
+```````````````````````````````` example autolink
+www.google.com/search?q=commonmark&hl=en
+
+www.google.com/search?q=commonmark&hl;
+.
+<p><a href="http://www.google.com/search?q=commonmark&amp;hl=en">www.google.com/search?q=commonmark&amp;hl=en</a></p>
+<p><a href="http://www.google.com/search?q=commonmark">www.google.com/search?q=commonmark</a>&amp;hl;</p>
+````````````````````````````````
+
+`<` immediately ends an autolink.
+
+```````````````````````````````` example autolink
+www.commonmark.org/he<lp
+.
+<p><a href="http://www.commonmark.org/he">www.commonmark.org/he</a>&lt;lp</p>
+````````````````````````````````
+
+An [extended url autolink](@) will be recognised when one of the schemes
+`http://`, `https://`, or `ftp://`, followed by a [valid domain], then zero or
+more non-space non-`<` characters according to
+[extended autolink path validation]:
+
+```````````````````````````````` example autolink
+http://commonmark.org
+
+(Visit https://encrypted.google.com/search?q=Markup+(business))
+
+Anonymous FTP is available at ftp://foo.bar.baz.
+.
+<p><a href="http://commonmark.org">http://commonmark.org</a></p>
+<p>(Visit <a href="https://encrypted.google.com/search?q=Markup+(business)">https://encrypted.google.com/search?q=Markup+(business)</a>)</p>
+<p>Anonymous FTP is available at <a href="ftp://foo.bar.baz">ftp://foo.bar.baz</a>.</p>
+````````````````````````````````
+
+
+An [extended email autolink](@) will be recognised when an email address is
+recognised within any text node.  Email addresses are recognised according to
+the following rules:
+
+* One ore more characters which are alphanumeric, or `.`, `-`, `_`, or `+`.
+* An `@` symbol.
+* One or more characters which are alphanumeric, or `.`, `-`, or `_`. At least
+  one of the characters here must be a period (`.`).  The last character must
+  not be one of `-` or `_`.  If the last character is a period (`.`), it will
+  be excluded from the autolink.
+
+The scheme `mailto:` will automatically be added to the generated link:
+
+```````````````````````````````` example autolink
+foo@bar.baz
+.
+<p><a href="mailto:foo@bar.baz">foo@bar.baz</a></p>
+````````````````````````````````
+
+`+` can occur before the `@`, but not after.
+
+```````````````````````````````` example autolink
+hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.
+.
+<p>hello@mail+xyz.example isn't valid, but <a href="mailto:hello+xyz@mail.example">hello+xyz@mail.example</a> is.</p>
+````````````````````````````````
+
+`.`, `-`, and `_` can occur on both sides of the `@`, but only `.` may occur at
+the end of the email address, in which case it will not be considered part of
+the address:
+
+```````````````````````````````` example autolink
+a.b-c_d@a.b
+
+a.b-c_d@a.b.
+
+a.b-c_d@a.b-
+
+a.b-c_d@a.b_
+.
+<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a></p>
+<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a>.</p>
+<p>a.b-c_d@a.b-</p>
+<p>a.b-c_d@a.b_</p>
+````````````````````````````````
+
+</div>
 
 ## Raw HTML
 
@@ -8978,6 +9448,45 @@ foo <a href="\*">
 <p>&lt;a href=&quot;&quot;&quot;&gt;</p>
 ````````````````````````````````
 
+
+<div class="extension">
+
+## Disallowed Raw HTML (extension)
+
+GFM enables the `tagfilter` extension, where the following HTML tags will be
+filtered when rendering HTML output:
+
+* `<title>`
+* `<textarea>`
+* `<style>`
+* `<xmp>`
+* `<iframe>`
+* `<noembed>`
+* `<noframes>`
+* `<script>`
+* `<plaintext>`
+
+Filtering is done by replacing the leading `<` with the entity `&lt;`.  These
+tags are chosen in particular as they change how HTML is interpreted in a way
+unique to them (i.e. nested HTML is interpreted differently), and this is
+usually undesireable in the context of other rendered Markdown content.
+
+All other HTML tags are left untouched.
+
+```````````````````````````````` example tagfilter
+<strong> <title> <style> <em>
+
+<blockquote>
+  <xmp> is disallowed.  <XMP> is also disallowed.
+</blockquote>
+.
+<p><strong> &lt;title> &lt;style> <em></p>
+<blockquote>
+  &lt;xmp> is disallowed.  &lt;XMP> is also disallowed.
+</blockquote>
+````````````````````````````````
+
+</div>
 
 ## Hard line breaks
 

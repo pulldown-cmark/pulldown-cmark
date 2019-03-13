@@ -3,6 +3,8 @@
 
 extern crate pulldown_cmark;
 
+include!("normalize_html.rs.inc");
+
 
     #[test]
     fn footnotes_test_1() {
@@ -27,7 +29,7 @@ extern crate pulldown_cmark;
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -57,7 +59,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -90,7 +92,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -116,7 +118,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -146,7 +148,7 @@ If a woodchuck could chuck wood.
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -177,7 +179,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -222,7 +224,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 
     #[test]
@@ -250,5 +252,5 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        assert_eq!(expected, s);
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
     }

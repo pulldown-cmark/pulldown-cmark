@@ -29,12 +29,13 @@ use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
 // sorted for binary search
-const HTML_TAGS: [&'static str; 47] = ["article", "aside", "blockquote",
-    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
-    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
-    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
-    "li", "map", "object", "ol", "output", "p", "progress","section", "table",
-    "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "ul", "video"];
+const HTML_TAGS: [&'static str; 63] = ["address", "article", "aside", "base", "basefont",
+    "blockquote", "body", "caption", "center", "col", "colgroup", "dd", "details", "dialog",
+    "dir", "div", "dl", "dt", "fieldset", "figcaption", "figure", "footer", "form", "frame",
+    "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hr", "html", "iframe",
+    "legend", "li", "link", "main", "menu", "menuitem", "meta", "nav", "noframes", "ol",
+    "optgroup", "option", "p", "param", "section", "source", "summary", "table", "tbody",
+    "td", "tfoot", "th", "thead", "title", "tr", "track", "ul"];
 
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.

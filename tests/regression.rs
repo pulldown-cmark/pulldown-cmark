@@ -32,3 +32,35 @@ This is a test of the details element.
 
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
+
+    #[test]
+    fn regression_test_2() {
+        let original = r##"|  Title A  |  Title B  |
+| --------- | --------- |
+| Content   | Content   |
+
+|  Title A  |  Title B  |  Title C  |  Title D  |
+| --------- | --------- | --------- | ---------:|
+| Content   | Content   | Conent    | Content   |
+"##;
+        let expected = r##"<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td></tr>
+</tbody></table>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th>Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+</tbody></table>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }

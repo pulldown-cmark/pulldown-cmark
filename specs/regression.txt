@@ -15,3 +15,22 @@ This is a test of the details element.
 <p>This is a test of the details element.</p>
 </details>
 ````````````````````````````````
+
+ISSUE #145
+
+```````````````````````````````` example
+|  Title A  |  Title B  |
+| --------- | --------- |
+| Content   | Content   |
+
+|  Title A  |  Title B  |  Title C  |  Title D  |
+| --------- | --------- | --------- | ---------:|
+| Content   | Content   | Conent    | Content   |
+.
+<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td></tr>
+</tbody></table>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th>Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+</tbody></table>
+````````````````````````````````

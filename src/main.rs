@@ -91,7 +91,7 @@ struct Spec<'a> {
 
 impl<'a> Spec<'a> {
     pub fn new(spec: &'a str) -> Self {
-        Spec{ spec: spec, test_n: 0 }
+        Spec{ spec, test_n: 0 }
     }
 }
 
@@ -103,7 +103,7 @@ struct TestCase<'a> {
 
 impl<'a> TestCase<'a> {
     pub fn new(n: usize, input: &'a str, expected: &'a str) -> Self {
-        TestCase { n: n, input: input, expected: expected }
+        TestCase { n, input, expected }
     }
 }
 

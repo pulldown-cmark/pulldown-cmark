@@ -2396,8 +2396,8 @@ impl<'a> Parser<'a> {
                                 } else if let Some(callback) = self.broken_link_callback {
                                     // looked for matching definition, but didn't find it. try to fix
                                     // link with callback, if it is defined
-                                    if let Some(val) = callback(link_label.as_ref(), link_label.as_ref()) {
-                                        Some((link_type.to_unknown(), val.0.into(), val.1.into()))
+                                    if let Some((url, title)) = callback(link_label.as_ref(), link_label.as_ref()) {
+                                        Some((link_type.to_unknown(), url.into(), title.into()))
                                     } else {
                                         None
                                     }

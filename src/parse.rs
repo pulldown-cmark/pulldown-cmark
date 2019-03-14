@@ -1407,13 +1407,13 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !next_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(next_char) {
         return true;
     }
 
     let prev_char = s[..ix].chars().rev().next().unwrap();
 
-    prev_char.is_whitespace() || prev_char.is_ascii_punctuation()
+    prev_char.is_whitespace() || is_punctuation(prev_char)
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -1433,11 +1433,11 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
         return true;
     };
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !prev_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(prev_char) {
         return true;
     }
 
-    next_char.is_whitespace() || next_char.is_ascii_punctuation()
+    next_char.is_whitespace() || is_punctuation(next_char)
 }
 
 /// Checks whether we should break a paragraph on the given input.

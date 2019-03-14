@@ -65,7 +65,6 @@ pub enum Tag<'a> {
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
-// FIXME: Unknown variants are currently unused!
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
@@ -2690,5 +2689,29 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn simple_broken_link_callback() {
+        let test_str = "This is a link w/o def: [hello][world]";
+        let parser = Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&|norm, raw| {
+            assert_eq!("world", raw);
+            assert_eq!("world", norm);
+            Some(("YOLO".to_owned(), "SWAG".to_owned()))
+        }));
+        let mut link_tag_count = 0;
+        for (typ, url, title) in parser.filter_map(|event| match event {
+            Event::Start(tag) | Event::End(tag) => match tag {
+                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                _ => None,
+            }
+            _ => None,
+        }) {
+            link_tag_count += 1;
+            assert_eq!(typ, LinkType::ReferenceUnknown);
+            assert_eq!(url.as_ref(), "YOLO");
+            assert_eq!(title.as_ref(), "SWAG");
+        }
+        assert!(link_tag_count > 0);
     }
 }

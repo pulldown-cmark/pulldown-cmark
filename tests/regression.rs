@@ -96,3 +96,24 @@ include!("normalize_html.rs.inc");
 
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
+
+    #[test]
+    fn regression_test_4() {
+        let original = r##"foo§__(bar)__
+"##;
+        let expected = r##"<p>foo§<strong>(bar)</strong></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }

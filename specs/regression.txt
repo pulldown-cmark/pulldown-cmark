@@ -53,3 +53,11 @@ ISSUE #145
 <tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
 </tbody></table>
 ````````````````````````````````
+
+Unicode punctuation and emphasis
+
+```````````````````````````````` example
+foo§__(bar)__
+.
+<p>foo§<strong>(bar)</strong></p>
+````````````````````````````````

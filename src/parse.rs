@@ -2200,6 +2200,7 @@ pub struct Parser<'a> {
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    offset: usize,
 }
 
 impl<'a> Parser<'a> {
@@ -2224,11 +2225,11 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
         tree.reset();
-        Parser { text, tree, refdefs, broken_link_callback }
+        Parser { text, tree, refdefs, broken_link_callback, offset: 0 }
     }
 
     pub fn get_offset(&self) -> usize {
-        0  // TODO
+        self.offset
     }
 
     /// Handle inline markup.
@@ -2644,6 +2645,7 @@ impl<'a> Iterator for Parser<'a> {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling();
                 return Some(Event::End(tag));
             }
@@ -2661,10 +2663,16 @@ impl<'a> Iterator for Parser<'a> {
 
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                    self.tree[child_ix].item.start
+                } else {
+                    self.tree[cur_ix].item.end
+                };
                 self.tree.push();                
                 Some(Event::Start(tag))
             } else {
                 self.tree.next_sibling();
+                self.offset = self.tree[cur_ix].item.end;
                 Some(item_to_event(&self.tree[cur_ix].item, self.text))
             }
         } else {

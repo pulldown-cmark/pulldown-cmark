@@ -14,6 +14,9 @@ It is designed to be:
 * Versatile; in particular source-maps are supported
 * Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
 
+Further, it optionally supports parsing footnotes and
+[Github flavored tables](https://github.github.com/gfm/#tables-extension-).
+
 ## Why a pull parser?
 
 There are many parsers for Markdown and its variants, but to my knowledge none
@@ -32,9 +35,7 @@ serialized string.
 
 Pull parsing is in some sense the most versatile architecture. It's possible to
 drive a push interface, also with minimal memory, and quite straightforward to
-construct an AST. Another advantage is that source-map information (the mapping
-between parsed blocks and offsets within the source text) is readily available;
-you basically just call `get_offset()` as you consume events.
+construct an AST.
 
 While manipulating ASTs is the most flexible way to transform documents,
 operating on iterators is surprisingly easy, and quite efficient. Here, for
@@ -51,7 +52,7 @@ Or expanding an abbreviation in text:
 
 ```rust
 let parser = parser.map(|event| match event {
-	Event::Text(text) => Event::Text(text.replace("abbr", "abbreviation")),
+	Event::Text(text) => Event::Text(text.replace("abbr", "abbreviation").into()),
 	_ => event
 });
 ```
@@ -86,8 +87,8 @@ full power and expressivity of Rust's iterator infrastructure, including
 for loops and `map` (as in the examples above), collecting the events into
 a vector (for recording, playback, and manipulation), and more.
 
-Further, the `Text` event (representing text) is a copy-on-write string (note:
-this isn't quite true yet). The vast majority of text fragments are just
+Further, the `Text` event (representing text) is a small copy-on-write string.
+The vast majority of text fragments are just
 slices of the source document. For these, copy-on-write gives a convenient
 representation that requires no allocation or copying, but allocated
 strings are available when they're needed. Thus, when rendering text to
@@ -105,7 +106,7 @@ By default, the binary is built as well. If you don't want/need it, then build l
 Or put in your `Cargo.toml` file:
 
 ```toml
-pulldown-cmark = { version = "0.0.11", default-features = false }
+pulldown-cmark = { version = "0.3", default-features = false }
 ```
 
 ## Authors

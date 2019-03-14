@@ -8,6 +8,34 @@ include!("normalize_html.rs.inc");
 
     #[test]
     fn regression_test_1() {
+        let original = r##"[![debug-stub-derive on crates.io][cratesio-image]][cratesio]
+[![debug-stub-derive on docs.rs][docsrs-image]][docsrs]
+
+[cratesio-image]: https://img.shields.io/crates/v/debug_stub_derive.svg
+[cratesio]: https://crates.io/crates/debug_stub_derive
+[docsrs-image]: https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0
+[docsrs]: https://docs.rs/debug_stub_derive/0.3.0/
+"##;
+        let expected = r##"<p><a href="https://crates.io/crates/debug_stub_derive"><img src="https://img.shields.io/crates/v/debug_stub_derive.svg" alt="debug-stub-derive on crates.io" /></a>
+<a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }
+
+    #[test]
+    fn regression_test_2() {
         let original = r##"|  Title A  |  Title B  |
 | --------- | --------- |
 | Content   | Content   |

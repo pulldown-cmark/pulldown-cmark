@@ -35,7 +35,9 @@ serialized string.
 
 Pull parsing is in some sense the most versatile architecture. It's possible to
 drive a push interface, also with minimal memory, and quite straightforward to
-construct an AST.
+construct an AST. Another advantage is that source-map information (the mapping
+between parsed blocks and offsets within the source text) is readily available;
+you basically just call `get_offset()` as you consume events.
 
 While manipulating ASTs is the most flexible way to transform documents,
 operating on iterators is surprisingly easy, and quite efficient. Here, for

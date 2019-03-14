@@ -88,6 +88,17 @@ pub enum LinkType {
     Email,
 }
 
+impl LinkType {
+    fn to_unknown(self) -> Self {
+        match self {
+            LinkType::Reference => LinkType::ReferenceUnknown,
+            LinkType::Collapsed => LinkType::CollapsedUnknown,
+            LinkType::Shortcut => LinkType::ShortcutUnknown,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
     Start(Tag<'a>),
@@ -2189,6 +2200,7 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
 }
 
 impl<'a> Parser<'a> {
@@ -2197,10 +2209,23 @@ impl<'a> Parser<'a> {
     }
 
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+        Parser::new_with_broken_link_callback(text, options, None)
+    }
+
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link name and title if not
+    /// None.
+    pub fn new_with_broken_link_callback(
+        text: &'a str,
+        options: Options,
+        broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>
+    ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
         tree.reset();
-        Parser { text, tree, refdefs }
+        Parser { text, tree, refdefs, broken_link_callback }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2363,50 +2388,61 @@ impl<'a> Parser<'a> {
                                 link_stack.clear();
                                 continue;
                             }
-                            // TODO(performance): make sure we aren't doing unnecessary allocations
-                            // for the label
-                            else if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
-                                .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
-                                // found a matching definition!
-                                let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
-                                let url = matching_def.dest.clone();
-                                self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                    ItemBody::Image(link_type, url, title)
+                            else if let Some(ReferenceLabel::Link(link_label)) = label {
+                                let type_url_title = if let Some(matching_def) = self.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
+                                    // found a matching definition!
+                                    let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
+                                    let url = matching_def.dest.clone();
+                                    Some((link_type, url, title))
+                                } else if let Some(callback) = self.broken_link_callback {
+                                    // looked for matching definition, but didn't find it. try to fix
+                                    // link with callback, if it is defined
+                                    if let Some(val) = callback(link_label.as_ref(), link_label.as_ref()) {
+                                        Some((link_type.to_unknown(), val.0.into(), val.1.into()))
+                                    } else {
+                                        None
+                                    }
                                 } else {
-                                    ItemBody::Link(link_type, url, title)
+                                    None
                                 };
 
-                                // lets do some tree surgery to add the link to the tree
-                                // 1st: skip the label node and close node
-                                self.tree[tos.node].next = node_after_link;
+                                if let Some((def_link_type, url, title)) = type_url_title {
+                                    self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
+                                        ItemBody::Image(def_link_type, url, title)
+                                    } else {
+                                        ItemBody::Link(def_link_type, url, title)
+                                    };
 
-                                // then, add the label node as a child to the link node
-                                self.tree[tos.node].child = label_node;
+                                    // lets do some tree surgery to add the link to the tree
+                                    // 1st: skip the label node and close node
+                                    self.tree[tos.node].next = node_after_link;
 
-                                // finally: disconnect list of children
-                                if let TreePointer::Valid(prev_ix) = prev {
-                                    self.tree[prev_ix].next = TreePointer::Nil;
-                                }                                
+                                    // then, add the label node as a child to the link node
+                                    self.tree[tos.node].child = label_node;
 
-                                // set up cur so next node will be node_after_link
-                                cur = TreePointer::Valid(tos.node);
-                                cur_ix = tos.node;
+                                    // finally: disconnect list of children
+                                    if let TreePointer::Valid(prev_ix) = prev {
+                                        self.tree[prev_ix].next = TreePointer::Nil;
+                                    }                                
 
-                                if tos.ty == LinkStackTy::Link {
-                                    for el in &mut link_stack {
-                                        if el.ty == LinkStackTy::Link {
-                                            el.ty = LinkStackTy::Disabled;
+                                    // set up cur so next node will be node_after_link
+                                    cur = TreePointer::Valid(tos.node);
+                                    cur_ix = tos.node;
+
+                                    if tos.ty == LinkStackTy::Link {
+                                        for el in &mut link_stack {
+                                            if el.ty == LinkStackTy::Link {
+                                                el.ty = LinkStackTy::Disabled;
+                                            }
                                         }
                                     }
+                                } else {
+                                    self.tree[cur_ix].item.body = ItemBody::Text;
                                 }
-                                link_stack.pop();
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
-                                
-                                // not actually a link, so remove just its matching
-                                // opening tag
-                                link_stack.pop();
                             }
+                            link_stack.pop();
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;

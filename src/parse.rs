@@ -2663,12 +2663,16 @@ impl<'a> Iterator for Parser<'a> {
 
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                self.offset = self.tree[cur_ix].item.end;
+                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                    self.tree[child_ix].item.start
+                } else {
+                    self.tree[cur_ix].item.end
+                };
                 self.tree.push();                
                 Some(Event::Start(tag))
             } else {
                 self.tree.next_sibling();
-                self.offset = self.tree[cur_ix].item.start;
+                self.offset = self.tree[cur_ix].item.end;
                 Some(item_to_event(&self.tree[cur_ix].item, self.text))
             }
         } else {

@@ -8,6 +8,33 @@ include!("normalize_html.rs.inc");
 
     #[test]
     fn regression_test_1() {
+        let original = r##"<details><summary>Testing 1..2..3..</summary>
+
+This is a test of the details element.
+
+</details>
+"##;
+        let expected = r##"<details><summary>Testing 1..2..3..</summary>
+<p>This is a test of the details element.</p>
+</details>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }
+
+    #[test]
+    fn regression_test_2() {
         let original = r##"see the [many] [articles] [on] [QuickCheck].
 
 [many]: https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6
@@ -38,7 +65,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn regression_test_2() {
+    fn regression_test_3() {
         let original = r##"[![debug-stub-derive on crates.io][cratesio-image]][cratesio]
 [![debug-stub-derive on docs.rs][docsrs-image]][docsrs]
 
@@ -66,7 +93,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn regression_test_3() {
+    fn regression_test_4() {
         let original = r##"|  Title A  |  Title B  |
 | --------- | --------- |
 | Content   | Content   |
@@ -98,7 +125,7 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn regression_test_4() {
+    fn regression_test_5() {
         let original = r##"foo§__(bar)__
 "##;
         let expected = r##"<p>foo§<strong>(bar)</strong></p>

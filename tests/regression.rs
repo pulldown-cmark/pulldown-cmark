@@ -146,7 +146,7 @@ This is a test of the details element.
     }
 
     #[test]
-    fn regression_test_5() {
+    fn regression_test_6() {
         let original = r##"<https://example.com> hello
 "##;
         let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>

@@ -211,6 +211,7 @@ where
             }
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
+            Tag::Strikethrough => self.write(b"<del>", false),
             Tag::Code => self.write(b"<code>", false),
             Tag::Link(LinkType::Email, dest, title) => {
                 self.write(b"<a href=\"mailto:", false)?;
@@ -307,6 +308,9 @@ where
             }
             Tag::Strong => {
                 self.write(b"</strong>", false)?;
+            }
+            Tag::Strikethrough => {
+                self.write(b"</del>", false)?;
             }
             Tag::Code => {
                 self.write(b"</code>", false)?;

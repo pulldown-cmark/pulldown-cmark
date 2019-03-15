@@ -82,6 +82,7 @@ fn generate_tests_from_spec() {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

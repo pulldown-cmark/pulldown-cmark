@@ -21,6 +21,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -44,6 +45,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -76,6 +78,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -114,6 +117,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -141,6 +145,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -168,6 +173,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -195,6 +201,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -222,6 +229,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -259,6 +267,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -282,6 +291,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -307,6 +317,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -332,6 +343,7 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

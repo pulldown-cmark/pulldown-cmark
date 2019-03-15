@@ -124,6 +124,7 @@ bitflags! {
         const FIRST_PASS = 1 << 0;
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
+        const ENABLE_STRIKETHROUGH = 1 << 3;
     }
 }
 
@@ -627,8 +628,9 @@ impl<'a> FirstPass<'a> {
                     let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
                     let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
                     let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
+                    let is_valid_seq = c != b'~' || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
 
-                    if (can_open || can_close) && (c != b'~' || count == 2) {
+                    if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix);
                         for i in 0..count {
                             self.tree.append(Item {

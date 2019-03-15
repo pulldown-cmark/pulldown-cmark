@@ -65,7 +65,6 @@ pub enum Tag<'a> {
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
-// FIXME: Unknown variants are currently unused!
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
@@ -86,6 +85,17 @@ pub enum LinkType {
     Autolink,
     /// Email address in autolink like `<john@example.org>`
     Email,
+}
+
+impl LinkType {
+    fn to_unknown(self) -> Self {
+        match self {
+            LinkType::Reference => LinkType::ReferenceUnknown,
+            LinkType::Collapsed => LinkType::CollapsedUnknown,
+            LinkType::Shortcut => LinkType::ShortcutUnknown,
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1397,13 +1407,13 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !next_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(next_char) {
         return true;
     }
 
     let prev_char = s[..ix].chars().rev().next().unwrap();
 
-    prev_char.is_whitespace() || prev_char.is_ascii_punctuation()
+    prev_char.is_whitespace() || is_punctuation(prev_char)
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -1423,11 +1433,11 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
         return true;
     };
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !prev_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(prev_char) {
         return true;
     }
 
-    next_char.is_whitespace() || next_char.is_ascii_punctuation()
+    next_char.is_whitespace() || is_punctuation(next_char)
 }
 
 /// Checks whether we should break a paragraph on the given input.
@@ -2189,6 +2199,8 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    offset: usize,
 }
 
 impl<'a> Parser<'a> {
@@ -2197,14 +2209,27 @@ impl<'a> Parser<'a> {
     }
 
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+        Parser::new_with_broken_link_callback(text, options, None)
+    }
+
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link name and title if not
+    /// None.
+    pub fn new_with_broken_link_callback(
+        text: &'a str,
+        options: Options,
+        broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>
+    ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
         tree.reset();
-        Parser { text, tree, refdefs }
+        Parser { text, tree, refdefs, broken_link_callback, offset: 0 }
     }
 
     pub fn get_offset(&self) -> usize {
-        0  // TODO
+        self.offset
     }
 
     /// Handle inline markup.
@@ -2363,50 +2388,61 @@ impl<'a> Parser<'a> {
                                 link_stack.clear();
                                 continue;
                             }
-                            // TODO(performance): make sure we aren't doing unnecessary allocations
-                            // for the label
-                            else if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
-                                .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
-                                // found a matching definition!
-                                let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
-                                let url = matching_def.dest.clone();
-                                self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                    ItemBody::Image(link_type, url, title)
+                            else if let Some(ReferenceLabel::Link(link_label)) = label {
+                                let type_url_title = if let Some(matching_def) = self.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
+                                    // found a matching definition!
+                                    let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
+                                    let url = matching_def.dest.clone();
+                                    Some((link_type, url, title))
+                                } else if let Some(callback) = self.broken_link_callback {
+                                    // looked for matching definition, but didn't find it. try to fix
+                                    // link with callback, if it is defined
+                                    if let Some((url, title)) = callback(link_label.as_ref(), link_label.as_ref()) {
+                                        Some((link_type.to_unknown(), url.into(), title.into()))
+                                    } else {
+                                        None
+                                    }
                                 } else {
-                                    ItemBody::Link(link_type, url, title)
+                                    None
                                 };
 
-                                // lets do some tree surgery to add the link to the tree
-                                // 1st: skip the label node and close node
-                                self.tree[tos.node].next = node_after_link;
+                                if let Some((def_link_type, url, title)) = type_url_title {
+                                    self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
+                                        ItemBody::Image(def_link_type, url, title)
+                                    } else {
+                                        ItemBody::Link(def_link_type, url, title)
+                                    };
 
-                                // then, add the label node as a child to the link node
-                                self.tree[tos.node].child = label_node;
+                                    // lets do some tree surgery to add the link to the tree
+                                    // 1st: skip the label node and close node
+                                    self.tree[tos.node].next = node_after_link;
 
-                                // finally: disconnect list of children
-                                if let TreePointer::Valid(prev_ix) = prev {
-                                    self.tree[prev_ix].next = TreePointer::Nil;
-                                }                                
+                                    // then, add the label node as a child to the link node
+                                    self.tree[tos.node].child = label_node;
 
-                                // set up cur so next node will be node_after_link
-                                cur = TreePointer::Valid(tos.node);
-                                cur_ix = tos.node;
+                                    // finally: disconnect list of children
+                                    if let TreePointer::Valid(prev_ix) = prev {
+                                        self.tree[prev_ix].next = TreePointer::Nil;
+                                    }                                
 
-                                if tos.ty == LinkStackTy::Link {
-                                    for el in &mut link_stack {
-                                        if el.ty == LinkStackTy::Link {
-                                            el.ty = LinkStackTy::Disabled;
+                                    // set up cur so next node will be node_after_link
+                                    cur = TreePointer::Valid(tos.node);
+                                    cur_ix = tos.node;
+
+                                    if tos.ty == LinkStackTy::Link {
+                                        for el in &mut link_stack {
+                                            if el.ty == LinkStackTy::Link {
+                                                el.ty = LinkStackTy::Disabled;
+                                            }
                                         }
                                     }
+                                } else {
+                                    self.tree[cur_ix].item.body = ItemBody::Text;
                                 }
-                                link_stack.pop();
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
-                                
-                                // not actually a link, so remove just its matching
-                                // opening tag
-                                link_stack.pop();
                             }
+                            link_stack.pop();
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2609,6 +2645,7 @@ impl<'a> Iterator for Parser<'a> {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling();
                 return Some(Event::End(tag));
             }
@@ -2626,10 +2663,16 @@ impl<'a> Iterator for Parser<'a> {
 
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
             if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                    self.tree[child_ix].item.start
+                } else {
+                    self.tree[cur_ix].item.end
+                };
                 self.tree.push();                
                 Some(Event::Start(tag))
             } else {
                 self.tree.next_sibling();
+                self.offset = self.tree[cur_ix].item.end;
                 Some(item_to_event(&self.tree[cur_ix].item, self.text))
             }
         } else {
@@ -2654,5 +2697,29 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn simple_broken_link_callback() {
+        let test_str = "This is a link w/o def: [hello][world]";
+        let parser = Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&|norm, raw| {
+            assert_eq!("world", raw);
+            assert_eq!("world", norm);
+            Some(("YOLO".to_owned(), "SWAG".to_owned()))
+        }));
+        let mut link_tag_count = 0;
+        for (typ, url, title) in parser.filter_map(|event| match event {
+            Event::Start(tag) | Event::End(tag) => match tag {
+                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                _ => None,
+            }
+            _ => None,
+        }) {
+            link_tag_count += 1;
+            assert_eq!(typ, LinkType::ReferenceUnknown);
+            assert_eq!(url.as_ref(), "YOLO");
+            assert_eq!(title.as_ref(), "SWAG");
+        }
+        assert!(link_tag_count > 0);
     }
 }

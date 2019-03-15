@@ -1,7 +1,6 @@
 [package]
 name = "pulldown-cmark"
-# Note: This not a valid release, intended to be filled in when it's ready.
-version = "0.0.0"
+version = "0.3.0"
 authors = [ "Raph Levien <raph.levien@gmail.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
@@ -23,9 +22,9 @@ unicase = "2.2.0"
 getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]
-html5ever = "0.20"
-lazy_static = "0.2"
-regex = "0.2"
+html5ever = "0.22"
+lazy_static = "1.3"
+regex = "1.1"
 tendril = "0.4"
 
 [features]

@@ -2271,6 +2271,9 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
                         cur = node;
+                        if let TreePointer::Valid(node_ix) = cur {
+                            self.tree[node_ix].item.start = ix;
+                        }
                         continue;
                     } else if scan_inline_html(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();

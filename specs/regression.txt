@@ -75,3 +75,13 @@ foo§__(bar)__
 .
 <p>foo§<strong>(bar)</strong></p>
 ````````````````````````````````
+
+ISSUE #213
+
+```````````````````````````````` example
+<https://example.com> hello
+.
+<p><a href="https://example.com">https://example.com</a> hello</p>
+
+````````````````````````````````
+

@@ -26,6 +26,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -57,6 +58,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -85,6 +87,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -117,6 +120,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -138,6 +142,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -146,7 +151,7 @@ This is a test of the details element.
     }
 
     #[test]
-    fn regression_test_5() {
+    fn regression_test_6() {
         let original = r##"<https://example.com> hello
 "##;
         let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
@@ -160,6 +165,7 @@ This is a test of the details element.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

@@ -56,6 +56,7 @@ pub enum Tag<'a> {
     // span-level tags
     Emphasis,
     Strong,
+    Strikethrough,
     Code,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title
@@ -123,6 +124,7 @@ bitflags! {
         const FIRST_PASS = 1 << 0;
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
+        const ENABLE_STRIKETHROUGH = 1 << 3;
     }
 }
 
@@ -154,6 +156,7 @@ enum ItemBody<'a> {
     // These are inline items after resolution.
     Emphasis,
     Strong,
+    Strikethrough,
     Code,
     InlineHtml,
     // Link params: destination, title.
@@ -620,13 +623,14 @@ impl<'a> FirstPass<'a> {
                         ix += 2;
                     }
                 }
-                c @ b'*' | c @b'_' => {
+                c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
                     let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
                     let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
+                    let is_valid_seq = c != b'~' || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
 
-                    if can_open || can_close {
+                    if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix);
                         for i in 0..count {
                             self.tree.append(Item {
@@ -2480,7 +2484,9 @@ impl<'a> Parser<'a> {
 
                         // work from the inside out
                         while start > el.start + el.count - match_count {
-                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
+                            let (inc, ty) = if c == b'~' {
+                                (2, ItemBody::Strikethrough)
+                            } else if start > el.start + el.count - match_count + 1 {
                                 (2, ItemBody::Strong)
                             } else {
                                 (1, ItemBody::Emphasis)
@@ -2551,6 +2557,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
+        ItemBody::Strikethrough => Some(Tag::Strikethrough),
         ItemBody::Link(ref link_type, ref url, ref title) =>
             Some(Tag::Link(*link_type, url.clone(), title.clone())),
         ItemBody::Image(ref link_type, ref url, ref title) =>

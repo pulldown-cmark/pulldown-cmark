@@ -117,3 +117,25 @@ include!("normalize_html.rs.inc");
 
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
+
+    #[test]
+    fn regression_test_5() {
+        let original = r##"<https://example.com> hello
+"##;
+        let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
+
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }

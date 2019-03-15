@@ -1223,6 +1223,9 @@ impl<'a> FirstPass<'a> {
                 break;
             }
         }
+        if i == self.text.len() {
+            newlines += 1;
+        }
         if whitespace_bytes == 0 && newlines == 0 {
             return None;
         }
@@ -2707,6 +2710,16 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn link_def_at_eof() {
+        let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
+        let expected = "<p><a href=\"https://vincentprouillet.com\">My site</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
     }
 
     #[test]

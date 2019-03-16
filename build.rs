@@ -29,7 +29,7 @@ fn generate_tests_from_spec() {
     // the specs/ directory. It's in an array to easily chain it to the other iterator
     // and make it easy to eventually add other hardcoded paths in the future if needed
     let hardcoded = ["./third_party/CommonMark/spec.txt", "./third_party/GitHub/gfm_table.txt",
-        "./third_party/GitHub/gfm_strikethrough.txt"];
+        "./third_party/GitHub/gfm_strikethrough.txt", "./third_party/GitHub/gfm_tasklist.txt"];
     let hardcoded_iter = hardcoded.into_iter()
                                   .map(PathBuf::from);
 

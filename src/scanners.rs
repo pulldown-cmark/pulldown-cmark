@@ -202,6 +202,41 @@ impl<'a> LineStart<'a> {
         Some((c, start, indent))
     }
 
+    /// Returns Some(is_checked) when a task list marker was found. Resets itself
+    /// to original state otherwise.
+    pub(crate) fn scan_task_list_marker(&mut self) -> Option<bool> {
+        let save = self.clone();
+        self.scan_space_upto(3);
+
+        if !self.scan_ch(b'[') {
+            *self = save;
+            return None;
+        }
+        let is_checked = match self.text[self.ix..].chars().next() {
+            Some(c) if c.is_whitespace() => {
+                self.ix += c.len_utf8();
+                false
+            }
+            Some('x') | Some('X') => {
+                self.ix += 1;
+                true
+            }
+            _ => {
+                *self = save;
+                return None;
+            }
+        };
+        if !self.scan_ch(b']') {
+            *self = save;
+            return None;
+        }
+        if !self.text[self.ix..].chars().next().map(char::is_whitespace).unwrap_or(false) {
+            *self = save;
+            return None;
+        }
+        Some(is_checked)
+    }
+
     pub fn bytes_scanned(&self) -> usize {
         self.ix
     }

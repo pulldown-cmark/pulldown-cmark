@@ -109,6 +109,8 @@ pub enum Event<'a> {
     FootnoteReference(CowStr<'a>),
     SoftBreak,
     HardBreak,
+    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked
+    TaskListMarker(bool),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -125,6 +127,7 @@ bitflags! {
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
+        const ENABLE_TASKLISTS = 1 << 4;
     }
 }
 
@@ -163,6 +166,7 @@ enum ItemBody<'a> {
     Link(LinkType, CowStr<'a>, CowStr<'a>),
     Image(LinkType, CowStr<'a>, CowStr<'a>),
     FootnoteReference(CowStr<'a>), // label
+    TaskListMarker(bool), // true for checked
 
     Rule,
     Header(i32), // header level
@@ -289,6 +293,15 @@ impl<'a> FirstPass<'a> {
                 if let Some(n) = scan_blank_line(&self.text[after_marker_index..]) {
                     self.begin_list_item = true;
                     return after_marker_index + n;
+                }
+                if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
+                    if let Some(is_checked) = line_start.scan_task_list_marker() {
+                        self.tree.append(Item {
+                            start: after_marker_index,
+                            end: start_ix + line_start.bytes_scanned(),
+                            body: ItemBody::TaskListMarker(is_checked),
+                        });
+                    }
                 }
             }
             else {
@@ -2602,6 +2615,7 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
         ItemBody::FootnoteReference(ref l) => Event::FootnoteReference(l.clone()),
+        ItemBody::TaskListMarker(checked) => Event::TaskListMarker(checked),
         _ => panic!("unexpected item body {:?}", item.body)
     }
 }

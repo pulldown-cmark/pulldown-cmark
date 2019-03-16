@@ -28,6 +28,8 @@ use crate::parse::Alignment;
 use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
+use memchr::memchr;
+
 // sorted for binary search
 const HTML_TAGS: [&'static str; 62] = ["address", "article", "aside", "base",
     "basefont", "blockquote", "body", "caption", "center", "col", "colgroup",
@@ -302,10 +304,7 @@ pub fn scan_blank_line(text: &str) -> Option<usize> {
 }
 
 pub fn scan_nextline(s: &str) -> usize {
-    match s.as_bytes().iter().position(|&c| c == b'\n') {
-        Some(x) => x + 1,
-        None => s.len()
-    }
+    memchr(b'\n', s.as_bytes()).map(|x| x + 1).unwrap_or(s.len())
 }
 
 // return: end byte for closing code fence, or None

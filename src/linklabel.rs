@@ -32,7 +32,7 @@ pub enum ReferenceLabel<'a> {
 pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Returns number of bytes (including brackets) and label on success.
-pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel)> {
+pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel<'_>)> {
     if text.len() < 2 || text.as_bytes()[0] != b'[' { return None; }
     let pair = if b'^' == text.as_bytes()[1] {
         let (byte_index, cow) = scan_link_label_rest(&text[2..])?;

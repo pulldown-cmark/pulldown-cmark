@@ -7,10 +7,14 @@ include!("normalize_html.rs.inc");
 
 
     #[test]
-    fn gfm_strikethrough_test_1() {
-        let original = r##"~~Hi~~ Hello, world!
+    fn gfm_tasklist_test_1() {
+        let original = r##"- [ ] foo
+- [x] bar
 "##;
-        let expected = r##"<p><del>Hi</del> Hello, world!</p>
+        let expected = r##"<ul>
+<li><input disabled="" type="checkbox"> foo</li>
+<li><input checked="" disabled="" type="checkbox"> bar</li>
+</ul>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -30,13 +34,21 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn gfm_strikethrough_test_2() {
-        let original = r##"This ~~has a
-
-new paragraph~~.
+    fn gfm_tasklist_test_2() {
+        let original = r##"- [x] foo
+  - [ ] bar
+  - [x] baz
+- [ ] bim
 "##;
-        let expected = r##"<p>This ~~has a</p>
-<p>new paragraph~~.</p>
+        let expected = r##"<ul>
+<li><input checked="" disabled="" type="checkbox"> foo
+<ul>
+<li><input disabled="" type="checkbox"> bar</li>
+<li><input checked="" disabled="" type="checkbox"> baz</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> bim</li>
+</ul>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};

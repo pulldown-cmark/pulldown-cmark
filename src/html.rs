@@ -118,6 +118,13 @@ where
                     self.write(format!("{}", number).as_bytes(), false)?;
                     self.write(b"</a></sup>", false)?;
                 }
+                TaskListMarker(is_checked) => {
+                    self.write(b"<input disabled=\"\" type=\"checkbox\"", false)?;
+                    if is_checked {
+                        self.write(b" checked=\"\"", false)?;
+                    }
+                    self.write(b"/>", true)?;
+                }
             }
         }
         Ok(())
@@ -356,6 +363,8 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(&*format!("[{}]", number).as_bytes(), false)?;
                 }
+                TaskListMarker(true) => self.write(b"[x]", false)?,
+                TaskListMarker(false) => self.write(b"[ ]", false)?,
             }
         }
         Ok(())

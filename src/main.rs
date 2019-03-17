@@ -206,6 +206,8 @@ pub fn main() {
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
+    opts.optflag("S", "enable-strikethrough", "enable GitHub-style strikethrough");
+    opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optopt("s", "spec", "run tests from spec file", "FILE");
     opts.optopt("b", "bench", "run benchmark", "FILE");
     let matches = match opts.parse(&args[1..]) {
@@ -234,6 +236,12 @@ pub fn main() {
     }
     if matches.opt_present("enable-footnotes") {
         opts.insert(Options::ENABLE_FOOTNOTES);
+    }
+    if matches.opt_present("enable-strikethrough") {
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+    }
+    if matches.opt_present("enable-tasklists") {
+        opts.insert(Options::ENABLE_TASKLISTS);
     }
     if let Some(filename) = matches.opt_str("spec") {
         run_spec(&read_file(&filename).replace("→", "\t"), &matches.free, opts);

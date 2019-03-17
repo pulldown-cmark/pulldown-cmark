@@ -411,7 +411,7 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    /// Returns first offset after the row and the index of the row.
+    /// Returns first offset after the row and the tree index of the row.
     fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
         let mut line_start = LineStart::new(&self.text[ix..]);
         let _n_containers = self.scan_containers(&mut line_start);
@@ -2581,12 +2581,12 @@ impl<'a> Parser<'a> {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
                 self.offset = self.tree[ix].item.end;
-                self.tree.next_sibling();
+                self.tree.next_sibling(ix);
                 return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
             }
             TreePointer::Valid(mut cur_ix) => {
                 if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
                         cur_ix = next;
                     }
                 }
@@ -2606,7 +2606,7 @@ impl<'a> Parser<'a> {
                 self.tree.push();                
                 Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
             } else {
-                self.tree.next_sibling();
+                self.tree.next_sibling(cur_ix);
                 let item = &self.tree[cur_ix].item;
                 self.offset = item.end;
                 Some((item_to_event(item, self.text), item.start..item.end))

@@ -2,6 +2,20 @@ Run this with `cargo run -- -T -F -s specs/regression.txt`.
 
 Regression tests for issues on the github issue tracker.
 
+ISSUE #162
+
+```````````````````````````````` example
+<details><summary>Testing 1..2..3..</summary>
+
+This is a test of the details element.
+
+</details>
+.
+<details><summary>Testing 1..2..3..</summary>
+<p>This is a test of the details element.</p>
+</details>
+````````````````````````````````
+
 ISSUE #133
 
 ```````````````````````````````` example
@@ -53,3 +67,21 @@ ISSUE #145
 <tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
 </tbody></table>
 ````````````````````````````````
+
+Unicode punctuation and emphasis
+
+```````````````````````````````` example
+foo§__(bar)__
+.
+<p>foo§<strong>(bar)</strong></p>
+````````````````````````````````
+
+ISSUE #213
+
+```````````````````````````````` example
+<https://example.com> hello
+.
+<p><a href="https://example.com">https://example.com</a> hello</p>
+
+````````````````````````````````
+

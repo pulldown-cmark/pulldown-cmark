@@ -3,6 +3,7 @@ use std::borrow::{ToOwned, Borrow};
 use std::str::from_utf8;
 use std::hash::{Hash, Hasher};
 use std::convert::AsRef;
+use std::fmt;
 
 const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
 
@@ -65,6 +66,12 @@ impl Deref for InlineStr {
     fn deref(&self) -> &str {
         let len = self.inner[DOUBLE_WORD_SIZE - 1] as usize;
         from_utf8(&self.inner[..len]).unwrap()
+    }
+}
+
+impl fmt::Display for InlineStr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
     }
 }
 
@@ -148,6 +155,12 @@ impl<'a> CowStr<'a> {
             CowStr::Borrowed(b) => b.to_owned(),
             CowStr::Inlined(s) => s.deref().to_owned(),
         }        
+    }
+}
+
+impl<'a> fmt::Display for CowStr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
     }
 }
 

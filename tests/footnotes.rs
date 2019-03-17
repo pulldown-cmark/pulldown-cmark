@@ -25,6 +25,8 @@ include!("normalize_html.rs.inc");
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -55,6 +57,8 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -88,6 +92,8 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -114,6 +120,8 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -144,6 +152,8 @@ If a woodchuck could chuck wood.
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -175,6 +185,8 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -220,6 +232,8 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -248,6 +262,8 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

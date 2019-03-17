@@ -118,6 +118,13 @@ where
                     self.write(format!("{}", number).as_bytes(), false)?;
                     self.write(b"</a></sup>", false)?;
                 }
+                TaskListMarker(is_checked) => {
+                    self.write(b"<input disabled=\"\" type=\"checkbox\"", false)?;
+                    if is_checked {
+                        self.write(b" checked=\"\"", false)?;
+                    }
+                    self.write(b"/>", true)?;
+                }
             }
         }
         Ok(())
@@ -211,6 +218,7 @@ where
             }
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
+            Tag::Strikethrough => self.write(b"<del>", false),
             Tag::Code => self.write(b"<code>", false),
             Tag::Link(LinkType::Email, dest, title) => {
                 self.write(b"<a href=\"mailto:", false)?;
@@ -308,6 +316,9 @@ where
             Tag::Strong => {
                 self.write(b"</strong>", false)?;
             }
+            Tag::Strikethrough => {
+                self.write(b"</del>", false)?;
+            }
             Tag::Code => {
                 self.write(b"</code>", false)?;
             }
@@ -352,6 +363,8 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(&*format!("[{}]", number).as_bytes(), false)?;
                 }
+                TaskListMarker(true) => self.write(b"[x]", false)?,
+                TaskListMarker(false) => self.write(b"[ ]", false)?,
             }
         }
         Ok(())

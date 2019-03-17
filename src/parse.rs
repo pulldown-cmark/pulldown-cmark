@@ -21,8 +21,10 @@
 //! Tree-based two pass parser.
 
 use std::collections::HashMap;
+use std::ops::Range;
 
 use unicase::UniCase;
+use memchr::memchr;
 
 use crate::strings::{CowStr, InlineStr};
 use crate::scanners::*;
@@ -56,6 +58,7 @@ pub enum Tag<'a> {
     // span-level tags
     Emphasis,
     Strong,
+    Strikethrough,
     Code,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title
@@ -65,7 +68,6 @@ pub enum Tag<'a> {
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
-// FIXME: Unknown variants are currently unused!
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
@@ -88,6 +90,17 @@ pub enum LinkType {
     Email,
 }
 
+impl LinkType {
+    fn to_unknown(self) -> Self {
+        match self {
+            LinkType::Reference => LinkType::ReferenceUnknown,
+            LinkType::Collapsed => LinkType::CollapsedUnknown,
+            LinkType::Shortcut => LinkType::ShortcutUnknown,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
     Start(Tag<'a>),
@@ -98,6 +111,8 @@ pub enum Event<'a> {
     FootnoteReference(CowStr<'a>),
     SoftBreak,
     HardBreak,
+    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked
+    TaskListMarker(bool),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -113,6 +128,8 @@ bitflags! {
         const FIRST_PASS = 1 << 0;
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
+        const ENABLE_STRIKETHROUGH = 1 << 3;
+        const ENABLE_TASKLISTS = 1 << 4;
     }
 }
 
@@ -144,12 +161,14 @@ enum ItemBody<'a> {
     // These are inline items after resolution.
     Emphasis,
     Strong,
+    Strikethrough,
     Code,
     InlineHtml,
     // Link params: destination, title.
     Link(LinkType, CowStr<'a>, CowStr<'a>),
     Image(LinkType, CowStr<'a>, CowStr<'a>),
     FootnoteReference(CowStr<'a>), // label
+    TaskListMarker(bool), // true for checked
 
     Rule,
     Header(i32), // header level
@@ -276,6 +295,15 @@ impl<'a> FirstPass<'a> {
                 if let Some(n) = scan_blank_line(&self.text[after_marker_index..]) {
                     self.begin_list_item = true;
                     return after_marker_index + n;
+                }
+                if self.options.contains(Options::ENABLE_TASKLISTS) {
+                    if let Some(is_checked) = line_start.scan_task_list_marker() {
+                        self.tree.append(Item {
+                            start: after_marker_index,
+                            end: start_ix + line_start.bytes_scanned(),
+                            body: ItemBody::TaskListMarker(is_checked),
+                        });
+                    }
                 }
             }
             else {
@@ -610,13 +638,14 @@ impl<'a> FirstPass<'a> {
                         ix += 2;
                     }
                 }
-                c @ b'*' | c @b'_' => {
+                c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
                     let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
                     let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
+                    let is_valid_seq = c != b'~' || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
 
-                    if can_open || can_close {
+                    if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix);
                         for i in 0..count {
                             self.tree.append(Item {
@@ -1209,6 +1238,9 @@ impl<'a> FirstPass<'a> {
                 break;
             }
         }
+        if i == self.text.len() {
+            newlines += 1;
+        }
         if whitespace_bytes == 0 && newlines == 0 {
             return None;
         }
@@ -1397,13 +1429,13 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !next_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(next_char) {
         return true;
     }
 
     let prev_char = s[..ix].chars().rev().next().unwrap();
 
-    prev_char.is_whitespace() || prev_char.is_ascii_punctuation()
+    prev_char.is_whitespace() || is_punctuation(prev_char)
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -1423,11 +1455,11 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
         return true;
     };
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !prev_char.is_ascii_punctuation() {
+    if delim == '*' && !is_punctuation(prev_char) {
         return true;
     }
 
-    next_char.is_whitespace() || next_char.is_ascii_punctuation()
+    next_char.is_whitespace() || is_punctuation(next_char)
 }
 
 /// Checks whether we should break a paragraph on the given input.
@@ -1564,9 +1596,26 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
         self.scan_if(|scanned| scanned == c)
     }
 
-    // Note(optimization): could use memchr
     fn scan_upto(&mut self, c: u8) -> usize {
-        self.scan_while(|scanned| scanned != c)
+        let upperbound = if let Some(parent_ix) = self.tree.peek_up() {
+           self.tree[parent_ix].item.end 
+        } else {
+            self.text.len()
+        };
+        let bytes = &self.text.as_bytes()[self.ix..upperbound];
+        let memchr_res = memchr(c, bytes);
+        self.ix = memchr_res.map(|ix| self.ix + ix).unwrap_or(bytes.len());
+
+        // jump to right node
+        while let TreePointer::Valid(cur_ix) = self.cur {
+            if self.ix <= self.tree[cur_ix].item.end {
+                break;
+            } else {
+                self.cur = self.tree[cur_ix].next;
+            }
+        }
+
+        memchr_res.unwrap_or(bytes.len())
     }
 
     fn scan_if<F>(&mut self, mut f: F) -> bool
@@ -2189,6 +2238,8 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    offset: usize,
 }
 
 impl<'a> Parser<'a> {
@@ -2197,14 +2248,27 @@ impl<'a> Parser<'a> {
     }
 
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+        Parser::new_with_broken_link_callback(text, options, None)
+    }
+
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link name and title if not
+    /// None.
+    pub fn new_with_broken_link_callback(
+        text: &'a str,
+        options: Options,
+        broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>
+    ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
         tree.reset();
-        Parser { text, tree, refdefs }
+        Parser { text, tree, refdefs, broken_link_callback, offset: 0 }
     }
 
     pub fn get_offset(&self) -> usize {
-        0  // TODO
+        self.offset
     }
 
     /// Handle inline markup.
@@ -2246,6 +2310,9 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
                         cur = node;
+                        if let TreePointer::Valid(node_ix) = cur {
+                            self.tree[node_ix].item.start = ix;
+                        }
                         continue;
                     } else if scan_inline_html(scanner) {
                         let (node, ix) = scanner.to_node_and_ix();
@@ -2362,51 +2429,61 @@ impl<'a> Parser<'a> {
                                 cur = node_after_link;
                                 link_stack.clear();
                                 continue;
-                            }
-                            // TODO(performance): make sure we aren't doing unnecessary allocations
-                            // for the label
-                            else if let Some(matching_def) = label.and_then(|l| match l { ReferenceLabel::Link(l) => Some(l), _ => None, })
-                                .and_then(|l| self.refdefs.get(&UniCase::new(l))) {
-                                // found a matching definition!
-                                let title = matching_def.title.as_ref().cloned().unwrap_or_else(|| "".into());
-                                let url = matching_def.dest.clone();
-                                self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                    ItemBody::Image(link_type, url, title)
+                            } else if let Some(ReferenceLabel::Link(link_label)) = label {
+                                let type_url_title = if let Some(matching_def) = self.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
+                                    // found a matching definition!
+                                    let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
+                                    let url = matching_def.dest.clone();
+                                    Some((link_type, url, title))
+                                } else if let Some(callback) = self.broken_link_callback {
+                                    // looked for matching definition, but didn't find it. try to fix
+                                    // link with callback, if it is defined
+                                    if let Some((url, title)) = callback(link_label.as_ref(), link_label.as_ref()) {
+                                        Some((link_type.to_unknown(), url.into(), title.into()))
+                                    } else {
+                                        None
+                                    }
                                 } else {
-                                    ItemBody::Link(link_type, url, title)
+                                    None
                                 };
 
-                                // lets do some tree surgery to add the link to the tree
-                                // 1st: skip the label node and close node
-                                self.tree[tos.node].next = node_after_link;
+                                if let Some((def_link_type, url, title)) = type_url_title {
+                                    self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
+                                        ItemBody::Image(def_link_type, url, title)
+                                    } else {
+                                        ItemBody::Link(def_link_type, url, title)
+                                    };
 
-                                // then, add the label node as a child to the link node
-                                self.tree[tos.node].child = label_node;
+                                    // lets do some tree surgery to add the link to the tree
+                                    // 1st: skip the label node and close node
+                                    self.tree[tos.node].next = node_after_link;
 
-                                // finally: disconnect list of children
-                                if let TreePointer::Valid(prev_ix) = prev {
-                                    self.tree[prev_ix].next = TreePointer::Nil;
-                                }                                
+                                    // then, add the label node as a child to the link node
+                                    self.tree[tos.node].child = label_node;
 
-                                // set up cur so next node will be node_after_link
-                                cur = TreePointer::Valid(tos.node);
-                                cur_ix = tos.node;
+                                    // finally: disconnect list of children
+                                    if let TreePointer::Valid(prev_ix) = prev {
+                                        self.tree[prev_ix].next = TreePointer::Nil;
+                                    }                                
 
-                                if tos.ty == LinkStackTy::Link {
-                                    for el in &mut link_stack {
-                                        if el.ty == LinkStackTy::Link {
-                                            el.ty = LinkStackTy::Disabled;
+                                    // set up cur so next node will be node_after_link
+                                    cur = TreePointer::Valid(tos.node);
+                                    cur_ix = tos.node;
+
+                                    if tos.ty == LinkStackTy::Link {
+                                        for el in &mut link_stack {
+                                            if el.ty == LinkStackTy::Link {
+                                                el.ty = LinkStackTy::Disabled;
+                                            }
                                         }
                                     }
+                                } else {
+                                    self.tree[cur_ix].item.body = ItemBody::Text;
                                 }
-                                link_stack.pop();
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
-                                
-                                // not actually a link, so remove just its matching
-                                // opening tag
-                                link_stack.pop();
                             }
+                            link_stack.pop();
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2441,7 +2518,9 @@ impl<'a> Parser<'a> {
 
                         // work from the inside out
                         while start > el.start + el.count - match_count {
-                            let (inc, ty) = if start > el.start + el.count - match_count + 1 {
+                            let (inc, ty) = if c == b'~' {
+                                (2, ItemBody::Strikethrough)
+                            } else if start > el.start + el.count - match_count + 1 {
                                 (2, ItemBody::Strong)
                             } else {
                                 (1, ItemBody::Emphasis)
@@ -2504,6 +2583,67 @@ impl<'a> Parser<'a> {
         }
         stack.pop_to(&mut self.tree, 0);
     }
+
+    /// Returns the next event in a pre-order AST walk, along with its
+    /// start and end offset in the source.
+    fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
+        match self.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.tree.pop()?;
+                let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                self.offset = self.tree[ix].item.end;
+                self.tree.next_sibling();
+                return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
+                        cur_ix = next;
+                    }
+                }
+                if self.tree[cur_ix].item.body.is_inline() {
+                    self.handle_inline();
+                }
+            }
+        }
+
+        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                    self.tree[child_ix].item.start
+                } else {
+                    self.tree[cur_ix].item.end
+                };
+                self.tree.push();                
+                Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
+            } else {
+                self.tree.next_sibling();
+                let item = &self.tree[cur_ix].item;
+                self.offset = item.end;
+                Some((item_to_event(item, self.text), item.start..item.end))
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn into_offset_iter(self) -> OffsetIter<'a> {
+        OffsetIter {
+            inner: self,
+        }
+    }
+}
+
+pub struct OffsetIter<'a> {
+    inner: Parser<'a>,
+}
+
+impl<'a> Iterator for OffsetIter<'a> {
+    type Item = (Event<'a>, Range<usize>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next_event()
+    }
 }
 
 fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
@@ -2512,6 +2652,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
+        ItemBody::Strikethrough => Some(Tag::Strikethrough),
         ItemBody::Link(ref link_type, ref url, ref title) =>
             Some(Tag::Link(*link_type, url.clone(), title.clone())),
         ItemBody::Image(ref link_type, ref url, ref title) =>
@@ -2553,6 +2694,7 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
         ItemBody::FootnoteReference(ref l) => Event::FootnoteReference(l.clone()),
+        ItemBody::TaskListMarker(checked) => Event::TaskListMarker(checked),
         _ => panic!("unexpected item body {:?}", item.body)
     }
 }
@@ -2602,39 +2744,8 @@ fn surgerize_tight_list<'a>(tree : &mut Tree<Item<'a>>) {
 impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
-    // TODO: this should probably be destructive. actually remove items from the tree
-    // so we don't have to clone owned items (Strings)
     fn next(&mut self) -> Option<Event<'a>> {
-        match self.tree.cur() {
-            TreePointer::Nil => {
-                let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item).unwrap();
-                self.tree.next_sibling();
-                return Some(Event::End(tag));
-            }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
-                        cur_ix = next;
-                    }
-                }
-                if self.tree[cur_ix].item.body.is_inline() {
-                    self.handle_inline();
-                }
-            }
-        }
-
-        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
-            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                self.tree.push();                
-                Some(Event::Start(tag))
-            } else {
-                self.tree.next_sibling();
-                Some(item_to_event(&self.tree[cur_ix].item, self.text))
-            }
-        } else {
-            None
-        }
+        self.next_event().map(|(ev, _range)| ev)
     }
 }
 
@@ -2654,5 +2765,56 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn offset_iter() {
+        let event_offsets: Vec<_> = Parser::new("*hello* world")
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .collect();
+        let expected_offsets = vec![
+            (0..13),
+                (0..7),
+                    (1..6),
+                (0..7),
+                (7..13),
+            (0..13)
+        ];
+        assert_eq!(expected_offsets, event_offsets);
+    }
+
+    #[test]
+    fn link_def_at_eof() {
+        let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
+        let expected = "<p><a href=\"https://vincentprouillet.com\">My site</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn simple_broken_link_callback() {
+        let test_str = "This is a link w/o def: [hello][world]";
+        let parser = Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&|norm, raw| {
+            assert_eq!("world", raw);
+            assert_eq!("world", norm);
+            Some(("YOLO".to_owned(), "SWAG".to_owned()))
+        }));
+        let mut link_tag_count = 0;
+        for (typ, url, title) in parser.filter_map(|event| match event {
+            Event::Start(tag) | Event::End(tag) => match tag {
+                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                _ => None,
+            }
+            _ => None,
+        }) {
+            link_tag_count += 1;
+            assert_eq!(typ, LinkType::ReferenceUnknown);
+            assert_eq!(url.as_ref(), "YOLO");
+            assert_eq!(title.as_ref(), "SWAG");
+        }
+        assert!(link_tag_count > 0);
     }
 }

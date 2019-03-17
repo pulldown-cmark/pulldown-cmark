@@ -294,7 +294,7 @@ impl<'a> FirstPass<'a> {
                     self.begin_list_item = true;
                     return after_marker_index + n;
                 }
-                if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
+                if self.options.contains(Options::ENABLE_TASKLISTS) {
                     if let Some(is_checked) = line_start.scan_task_list_marker() {
                         self.tree.append(Item {
                             start: after_marker_index,

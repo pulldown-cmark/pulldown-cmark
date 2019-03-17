@@ -21,6 +21,7 @@
 //! Tree-based two pass parser.
 
 use std::collections::HashMap;
+use std::ops::Range;
 
 use unicase::UniCase;
 
@@ -2552,6 +2553,67 @@ impl<'a> Parser<'a> {
         }
         stack.pop_to(&mut self.tree, 0);
     }
+
+    /// Returns the next event in a pre-order AST walk, along with its
+    /// start and end offset in the source.
+    fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
+        match self.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.tree.pop()?;
+                let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                self.offset = self.tree[ix].item.end;
+                self.tree.next_sibling();
+                return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
+                        cur_ix = next;
+                    }
+                }
+                if self.tree[cur_ix].item.body.is_inline() {
+                    self.handle_inline();
+                }
+            }
+        }
+
+        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                    self.tree[child_ix].item.start
+                } else {
+                    self.tree[cur_ix].item.end
+                };
+                self.tree.push();                
+                Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
+            } else {
+                self.tree.next_sibling();
+                let item = &self.tree[cur_ix].item;
+                self.offset = item.end;
+                Some((item_to_event(item, self.text), item.start..item.end))
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn into_offset_iter(self) -> OffsetIter<'a> {
+        OffsetIter {
+            inner: self,
+        }
+    }
+}
+
+pub struct OffsetIter<'a> {
+    inner: Parser<'a>,
+}
+
+impl<'a> Iterator for OffsetIter<'a> {
+    type Item = (Event<'a>, Range<usize>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next_event()
+    }
 }
 
 fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
@@ -2651,46 +2713,8 @@ fn surgerize_tight_list<'a>(tree : &mut Tree<Item<'a>>) {
 impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
-    // TODO: this should probably be destructive. actually remove items from the tree
-    // so we don't have to clone owned items (Strings)
     fn next(&mut self) -> Option<Event<'a>> {
-        match self.tree.cur() {
-            TreePointer::Nil => {
-                let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item).unwrap();
-                self.offset = self.tree[ix].item.end;
-                self.tree.next_sibling();
-                return Some(Event::End(tag));
-            }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling() {
-                        cur_ix = next;
-                    }
-                }
-                if self.tree[cur_ix].item.body.is_inline() {
-                    self.handle_inline();
-                }
-            }
-        }
-
-        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
-            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
-                    self.tree[child_ix].item.start
-                } else {
-                    self.tree[cur_ix].item.end
-                };
-                self.tree.push();                
-                Some(Event::Start(tag))
-            } else {
-                self.tree.next_sibling();
-                self.offset = self.tree[cur_ix].item.end;
-                Some(item_to_event(&self.tree[cur_ix].item, self.text))
-            }
-        } else {
-            None
-        }
+        self.next_event().map(|(ev, _range)| ev)
     }
 }
 
@@ -2710,6 +2734,23 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn offset_iter() {
+        let event_offsets: Vec<_> = Parser::new("*hello* world")
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .collect();
+        let expected_offsets = vec![
+            (0..13),
+                (0..7),
+                    (1..6),
+                (0..7),
+                (7..13),
+            (0..13)
+        ];
+        assert_eq!(expected_offsets, event_offsets);
     }
 
     #[test]

@@ -22,6 +22,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -45,6 +46,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -70,6 +72,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -99,6 +102,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -129,6 +133,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -154,6 +159,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -181,6 +187,7 @@ include!("normalize_html.rs.inc");
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -206,6 +213,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -240,6 +248,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -262,6 +271,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -284,6 +294,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -310,6 +321,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -336,6 +348,7 @@ ___
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -358,6 +371,7 @@ ___
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -380,6 +394,7 @@ ___
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -406,6 +421,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -432,6 +448,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -455,6 +472,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -479,6 +497,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -501,6 +520,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -523,6 +543,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -545,6 +566,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -567,6 +589,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -589,6 +612,7 @@ __</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -617,6 +641,7 @@ a------
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -639,6 +664,7 @@ a------
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -669,6 +695,7 @@ a------
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -695,6 +722,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -720,6 +748,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -750,6 +779,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -778,6 +808,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -810,6 +841,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -832,6 +864,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -857,6 +890,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -879,6 +913,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -901,6 +936,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -923,6 +959,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -949,6 +986,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -972,6 +1010,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -996,6 +1035,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1020,6 +1060,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1044,6 +1085,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1066,6 +1108,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1088,6 +1131,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1110,6 +1154,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1136,6 +1181,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1162,6 +1208,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1188,6 +1235,7 @@ Bar foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1214,6 +1262,7 @@ Bar foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1241,6 +1290,7 @@ Foo *bar*
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1266,6 +1316,7 @@ baz</em></h1>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1293,6 +1344,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1324,6 +1376,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1355,6 +1408,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1378,6 +1432,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1402,6 +1457,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1431,6 +1487,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1454,6 +1511,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1477,6 +1535,7 @@ Foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1508,6 +1567,7 @@ of dashes"/>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1534,6 +1594,7 @@ of dashes"/>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1562,6 +1623,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1588,6 +1650,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1613,6 +1676,7 @@ Bar</h2>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1643,6 +1707,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1666,6 +1731,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1690,6 +1756,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1716,6 +1783,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1741,6 +1809,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1767,6 +1836,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1790,6 +1860,7 @@ Baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1818,6 +1889,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1848,6 +1920,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1876,6 +1949,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1904,6 +1978,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1929,6 +2004,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1958,6 +2034,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -1989,6 +2066,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2018,6 +2096,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2053,6 +2132,7 @@ chunk3
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2080,6 +2160,7 @@ chunk3
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2105,6 +2186,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2130,6 +2212,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2163,6 +2246,7 @@ Heading
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2188,6 +2272,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2215,6 +2300,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2238,6 +2324,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2265,6 +2352,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2292,6 +2380,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2316,6 +2405,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2343,6 +2433,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2370,6 +2461,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2397,6 +2489,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2424,6 +2517,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2446,6 +2540,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2474,6 +2569,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2503,6 +2599,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2530,6 +2627,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2553,6 +2651,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2580,6 +2679,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2609,6 +2709,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2638,6 +2739,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2665,6 +2767,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2690,6 +2793,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2715,6 +2819,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2741,6 +2846,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2765,6 +2871,7 @@ aaa</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2791,6 +2898,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2820,6 +2928,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2850,6 +2959,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2879,6 +2989,7 @@ end
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2908,6 +3019,7 @@ end
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2931,6 +3043,7 @@ end
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2955,6 +3068,7 @@ foo</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -2980,6 +3094,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3005,6 +3120,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3038,6 +3154,7 @@ _world_.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3075,6 +3192,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3101,6 +3219,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3125,6 +3244,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3153,6 +3273,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3179,6 +3300,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3205,6 +3327,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3232,6 +3355,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3256,6 +3380,7 @@ okay.
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3280,6 +3405,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3304,6 +3430,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3326,6 +3453,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3352,6 +3480,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3380,6 +3509,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3406,6 +3536,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3432,6 +3563,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3458,6 +3590,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3482,6 +3615,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3508,6 +3642,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3536,6 +3671,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3558,6 +3694,7 @@ int x = 33;
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3592,6 +3729,7 @@ main = print $ parseTags tags
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3624,6 +3762,7 @@ document.getElementById("demo").innerHTML = "Hello JavaScript!";
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3658,6 +3797,7 @@ p {color:blue;}
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3686,6 +3826,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3715,6 +3856,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3743,6 +3885,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3767,6 +3910,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3791,6 +3935,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3817,6 +3962,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3847,6 +3993,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3879,6 +4026,7 @@ okay
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3901,6 +4049,7 @@ okay
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3947,6 +4096,7 @@ function matchwo(a,b)
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3973,6 +4123,7 @@ function matchwo(a,b)
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -3999,6 +4150,7 @@ function matchwo(a,b)
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4027,6 +4179,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4055,6 +4208,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4081,6 +4235,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4109,6 +4264,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4135,6 +4291,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4173,6 +4330,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4212,6 +4370,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4236,6 +4395,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4262,6 +4422,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4286,6 +4447,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4312,6 +4474,7 @@ Hi
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4344,6 +4507,7 @@ line2
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4372,6 +4536,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4397,6 +4562,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4422,6 +4588,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4447,6 +4614,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4471,6 +4639,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4495,6 +4664,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4520,6 +4690,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4544,6 +4715,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4568,6 +4740,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4589,6 +4762,7 @@ with blank line'
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4614,6 +4788,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4636,6 +4811,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4659,6 +4835,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4685,6 +4862,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4713,6 +4891,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4740,6 +4919,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4767,6 +4947,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4798,6 +4979,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4824,6 +5006,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4849,6 +5032,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4878,6 +5062,7 @@ ddd</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4904,6 +5089,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4928,6 +5114,7 @@ bbb</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4954,6 +5141,7 @@ ccc</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -4978,6 +5166,7 @@ bbb</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5003,6 +5192,7 @@ bbb
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5027,6 +5217,7 @@ bbb</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5057,6 +5248,7 @@ aaa
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5085,6 +5277,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5113,6 +5306,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5141,6 +5335,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5168,6 +5363,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5196,6 +5392,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5224,6 +5421,7 @@ foo</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5250,6 +5448,7 @@ foo</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5280,6 +5479,7 @@ foo</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5308,6 +5508,7 @@ foo</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5336,6 +5537,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5362,6 +5564,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5385,6 +5588,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5410,6 +5614,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5436,6 +5641,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5465,6 +5671,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5491,6 +5698,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5518,6 +5726,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5544,6 +5753,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5574,6 +5784,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5600,6 +5811,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5627,6 +5839,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5654,6 +5867,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5684,6 +5898,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5716,6 +5931,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5746,6 +5962,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5779,6 +5996,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5816,6 +6034,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5843,6 +6062,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5872,6 +6092,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5900,6 +6121,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5929,6 +6151,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5962,6 +6185,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -5993,6 +6217,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6018,6 +6243,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6048,6 +6274,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6088,6 +6315,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6124,6 +6352,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6148,6 +6377,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6170,6 +6400,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6194,6 +6425,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6218,6 +6450,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6240,6 +6473,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6270,6 +6504,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6300,6 +6535,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6330,6 +6566,7 @@ paragraph
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6364,6 +6601,7 @@ paragraph
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6398,6 +6636,7 @@ paragraph
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6423,6 +6662,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6450,6 +6690,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6479,6 +6720,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6518,6 +6760,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6543,6 +6786,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6570,6 +6814,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6598,6 +6843,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6626,6 +6872,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6654,6 +6901,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6678,6 +6926,7 @@ bar
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6707,6 +6956,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6744,6 +6994,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6781,6 +7032,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6818,6 +7070,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6851,6 +7104,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6888,6 +7142,7 @@ with two lines.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6914,6 +7169,7 @@ with two lines.</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6946,6 +7202,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -6978,6 +7235,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7017,6 +7275,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7047,6 +7306,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7076,6 +7336,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7104,6 +7365,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7132,6 +7394,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7164,6 +7427,7 @@ continued here.</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7196,6 +7460,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7226,6 +7491,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7256,6 +7522,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7284,6 +7551,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7308,6 +7576,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7334,6 +7603,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7371,6 +7641,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7411,6 +7682,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7447,6 +7719,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7488,6 +7761,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7524,6 +7798,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7560,6 +7835,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7592,6 +7868,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7627,6 +7904,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7662,6 +7940,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7695,6 +7974,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7732,6 +8012,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7768,6 +8049,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7805,6 +8087,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7841,6 +8124,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7873,6 +8157,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7909,6 +8194,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7933,6 +8219,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7962,6 +8249,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -7994,6 +8282,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8027,6 +8316,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8070,6 +8360,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8092,6 +8383,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8114,6 +8406,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8136,6 +8429,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8172,6 +8466,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8194,6 +8489,7 @@ baz</li>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8218,6 +8514,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8240,6 +8537,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8263,6 +8561,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8288,6 +8587,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8310,6 +8610,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8332,6 +8633,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8354,6 +8656,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8378,6 +8681,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8403,6 +8707,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8429,6 +8734,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8451,6 +8757,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8473,6 +8780,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8501,6 +8809,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8523,6 +8832,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8545,6 +8855,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8567,6 +8878,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8589,6 +8901,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8613,6 +8926,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8638,6 +8952,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8660,6 +8975,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8683,6 +8999,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8705,6 +9022,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8727,6 +9045,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8749,6 +9068,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8771,6 +9091,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8793,6 +9114,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8815,6 +9137,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8841,6 +9164,7 @@ baz
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8865,6 +9189,7 @@ foo
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8888,6 +9213,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8910,6 +9236,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8932,6 +9259,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8954,6 +9282,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8976,6 +9305,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -8998,6 +9328,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9020,6 +9351,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9042,6 +9374,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9064,6 +9397,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9086,6 +9420,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9108,6 +9443,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9130,6 +9466,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9152,6 +9489,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9174,6 +9512,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9196,6 +9535,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9218,6 +9558,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9240,6 +9581,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9262,6 +9604,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9284,6 +9627,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9306,6 +9650,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9328,6 +9673,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9350,6 +9696,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9372,6 +9719,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9394,6 +9742,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9416,6 +9765,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9438,6 +9788,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9460,6 +9811,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9482,6 +9834,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9504,6 +9857,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9528,6 +9882,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9550,6 +9905,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9572,6 +9928,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9594,6 +9951,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9616,6 +9974,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9638,6 +9997,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9660,6 +10020,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9682,6 +10043,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9704,6 +10066,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9726,6 +10089,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9748,6 +10112,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9770,6 +10135,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9792,6 +10158,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9814,6 +10181,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9836,6 +10204,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9858,6 +10227,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9880,6 +10250,7 @@ baz`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9904,6 +10275,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9926,6 +10298,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9948,6 +10321,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9970,6 +10344,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -9992,6 +10367,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10014,6 +10390,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10036,6 +10413,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10058,6 +10436,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10080,6 +10459,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10102,6 +10482,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10126,6 +10507,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10148,6 +10530,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10170,6 +10553,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10192,6 +10576,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10214,6 +10599,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10236,6 +10622,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10258,6 +10645,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10280,6 +10668,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10302,6 +10691,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10324,6 +10714,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10346,6 +10737,7 @@ foo bar__</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10370,6 +10762,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10392,6 +10785,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10414,6 +10808,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10436,6 +10831,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10458,6 +10854,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10480,6 +10877,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10502,6 +10900,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10524,6 +10923,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10546,6 +10946,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10568,6 +10969,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10590,6 +10992,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10612,6 +11015,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10634,6 +11038,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10656,6 +11061,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10678,6 +11084,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10700,6 +11107,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10724,6 +11132,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10746,6 +11155,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10768,6 +11178,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10790,6 +11201,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10812,6 +11224,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10834,6 +11247,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10856,6 +11270,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10878,6 +11293,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10900,6 +11316,7 @@ bar</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10924,6 +11341,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10946,6 +11364,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10968,6 +11387,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -10990,6 +11410,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11012,6 +11433,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11034,6 +11456,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11056,6 +11479,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11078,6 +11502,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11100,6 +11525,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11122,6 +11548,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11144,6 +11571,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11166,6 +11594,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11188,6 +11617,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11210,6 +11640,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11232,6 +11663,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11254,6 +11686,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11276,6 +11709,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11298,6 +11732,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11320,6 +11755,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11342,6 +11778,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11364,6 +11801,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11386,6 +11824,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11408,6 +11847,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11430,6 +11870,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11452,6 +11893,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11474,6 +11916,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11496,6 +11939,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11518,6 +11962,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11540,6 +11985,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11562,6 +12008,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11584,6 +12031,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11606,6 +12054,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11628,6 +12077,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11650,6 +12100,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11672,6 +12123,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11694,6 +12146,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11716,6 +12169,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11738,6 +12192,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11760,6 +12215,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11782,6 +12238,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11804,6 +12261,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11826,6 +12284,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11848,6 +12307,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11870,6 +12330,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11892,6 +12353,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11914,6 +12376,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11936,6 +12399,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11958,6 +12422,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -11980,6 +12445,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12002,6 +12468,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12024,6 +12491,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12046,6 +12514,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12068,6 +12537,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12090,6 +12560,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12112,6 +12583,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12134,6 +12606,7 @@ bim</em> bop</strong></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12158,6 +12631,7 @@ bar)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12182,6 +12656,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12204,6 +12679,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12226,6 +12702,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12248,6 +12725,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12270,6 +12748,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12292,6 +12771,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12320,6 +12800,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12342,6 +12823,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12364,6 +12846,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12386,6 +12869,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12412,6 +12896,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12434,6 +12919,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12456,6 +12942,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12478,6 +12965,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12500,6 +12988,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12523,6 +13012,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12545,6 +13035,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12567,6 +13058,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12589,6 +13081,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12611,6 +13104,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12633,6 +13127,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12655,6 +13150,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12677,6 +13173,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12699,6 +13196,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12721,6 +13219,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12743,6 +13242,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12765,6 +13265,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12787,6 +13288,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12809,6 +13311,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12831,6 +13334,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12853,6 +13357,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12875,6 +13380,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12899,6 +13405,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12923,6 +13430,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12947,6 +13455,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12971,6 +13480,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -12995,6 +13505,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13019,6 +13530,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13043,6 +13555,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13067,6 +13580,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13091,6 +13605,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13115,6 +13630,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13139,6 +13655,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13163,6 +13680,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13187,6 +13705,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13211,6 +13730,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13236,6 +13756,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13260,6 +13781,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13286,6 +13808,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13312,6 +13835,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13336,6 +13860,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13361,6 +13886,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13386,6 +13912,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13411,6 +13938,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13435,6 +13963,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13459,6 +13988,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13484,6 +14014,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13513,6 +14044,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13537,6 +14069,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13561,6 +14094,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13585,6 +14119,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13611,6 +14146,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13635,6 +14171,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13659,6 +14196,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13683,6 +14221,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13707,6 +14246,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13731,6 +14271,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13755,6 +14296,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13779,6 +14321,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13803,6 +14346,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13828,6 +14372,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13852,6 +14397,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13876,6 +14422,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13900,6 +14447,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13924,6 +14472,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13949,6 +14498,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13974,6 +14524,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -13996,6 +14547,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14020,6 +14572,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14042,6 +14595,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14064,6 +14618,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14088,6 +14643,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14112,6 +14668,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14134,6 +14691,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14156,6 +14714,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14178,6 +14737,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14200,6 +14760,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14224,6 +14785,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14248,6 +14810,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14272,6 +14835,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14296,6 +14860,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14320,6 +14885,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14346,6 +14912,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14370,6 +14937,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14394,6 +14962,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14419,6 +14988,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14443,6 +15013,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14467,6 +15038,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14491,6 +15063,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14513,6 +15086,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14535,6 +15109,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14557,6 +15132,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14579,6 +15155,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14601,6 +15178,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14623,6 +15201,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14645,6 +15224,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14667,6 +15247,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14689,6 +15270,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14711,6 +15293,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14733,6 +15316,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14755,6 +15339,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14777,6 +15362,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14799,6 +15385,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14821,6 +15408,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14843,6 +15431,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14865,6 +15454,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14887,6 +15477,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14909,6 +15500,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14931,6 +15523,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14953,6 +15546,7 @@ bar>)</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -14977,6 +15571,7 @@ data="foo" ></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15001,6 +15596,7 @@ _boolean zoop:33=zoop:33 /></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15023,6 +15619,7 @@ _boolean zoop:33=zoop:33 /></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15045,6 +15642,7 @@ _boolean zoop:33=zoop:33 /></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15067,6 +15665,7 @@ _boolean zoop:33=zoop:33 /></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15089,6 +15688,7 @@ _boolean zoop:33=zoop:33 /></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15117,6 +15717,7 @@ bim!bop /&gt;</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15139,6 +15740,7 @@ bim!bop /&gt;</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15161,6 +15763,7 @@ bim!bop /&gt;</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15183,6 +15786,7 @@ bim!bop /&gt;</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15207,6 +15811,7 @@ comment - with hyphen --></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15229,6 +15834,7 @@ comment - with hyphen --></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15254,6 +15860,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15276,6 +15883,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15298,6 +15906,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15320,6 +15929,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15342,6 +15952,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15364,6 +15975,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15386,6 +15998,7 @@ foo <!-- foo--->
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15410,6 +16023,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15434,6 +16048,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15458,6 +16073,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15482,6 +16098,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15506,6 +16123,7 @@ bar</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15530,6 +16148,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15554,6 +16173,7 @@ bar</em></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15577,6 +16197,7 @@ span`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15600,6 +16221,7 @@ span`
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15624,6 +16246,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15648,6 +16271,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15670,6 +16294,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15692,6 +16317,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15714,6 +16340,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15736,6 +16363,7 @@ bar"></p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15760,6 +16388,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15784,6 +16413,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15806,6 +16436,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15828,6 +16459,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
@@ -15850,6 +16482,7 @@ baz</p>
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

@@ -83,6 +83,7 @@ fn generate_tests_from_spec() {
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
 
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);

@@ -24,6 +24,7 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 use unicase::UniCase;
+use memchr::memchr;
 
 use crate::strings::{CowStr, InlineStr};
 use crate::scanners::*;
@@ -1595,9 +1596,26 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
         self.scan_if(|scanned| scanned == c)
     }
 
-    // Note(optimization): could use memchr
     fn scan_upto(&mut self, c: u8) -> usize {
-        self.scan_while(|scanned| scanned != c)
+        let upperbound = if let Some(parent_ix) = self.tree.peek_up() {
+           self.tree[parent_ix].item.end 
+        } else {
+            self.text.len()
+        };
+        let bytes = &self.text.as_bytes()[self.ix..upperbound];
+        let memchr_res = memchr(c, bytes);
+        self.ix = memchr_res.map(|ix| self.ix + ix).unwrap_or(bytes.len());
+
+        // jump to right node
+        while let TreePointer::Valid(cur_ix) = self.cur {
+            if self.ix <= self.tree[cur_ix].item.end {
+                break;
+            } else {
+                self.cur = self.tree[cur_ix].next;
+            }
+        }
+
+        memchr_res.unwrap_or(bytes.len())
     }
 
     fn scan_if<F>(&mut self, mut f: F) -> bool

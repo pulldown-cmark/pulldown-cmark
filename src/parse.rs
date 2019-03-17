@@ -21,6 +21,7 @@
 //! Tree-based two pass parser.
 
 use std::collections::HashMap;
+use std::ops::Range;
 
 use unicase::UniCase;
 
@@ -2555,16 +2556,14 @@ impl<'a> Parser<'a> {
 
     /// Returns the next event in a pre-order AST walk, along with its
     /// start and end offset in the source.
-    // TODO: this should probably be destructive. actually remove items from the tree
-    // so we don't have to clone owned items (Strings)
-    fn next_event(&mut self) -> Option<(Event<'a>, usize, usize)> {
+    fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
         match self.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
                 self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling();
-                return Some((Event::End(tag), self.tree[ix].item.start, self.tree[ix].item.end));
+                return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
             }
             TreePointer::Valid(mut cur_ix) => {
                 if let ItemBody::Backslash = self.tree[cur_ix].item.body {
@@ -2586,12 +2585,12 @@ impl<'a> Parser<'a> {
                     self.tree[cur_ix].item.end
                 };
                 self.tree.push();                
-                Some((Event::Start(tag), self.tree[cur_ix].item.start, self.tree[cur_ix].item.end))
+                Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
             } else {
                 self.tree.next_sibling();
                 let item = &self.tree[cur_ix].item;
                 self.offset = item.end;
-                Some((item_to_event(item, self.text), item.start, item.end))
+                Some((item_to_event(item, self.text), item.start..item.end))
             }
         } else {
             None
@@ -2610,7 +2609,7 @@ pub struct OffsetIter<'a> {
 }
 
 impl<'a> Iterator for OffsetIter<'a> {
-    type Item = (Event<'a>, usize, usize);
+    type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next_event()
@@ -2715,7 +2714,7 @@ impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        self.next_event().map(|(ev, _start, _end)| ev)
+        self.next_event().map(|(ev, _range)| ev)
     }
 }
 
@@ -2741,15 +2740,15 @@ mod test {
     fn offset_iter() {
         let event_offsets: Vec<_> = Parser::new("*hello* world")
             .into_offset_iter()
-            .map(|(_ev, start, end)| (start, end))
+            .map(|(_ev, range)| range)
             .collect();
         let expected_offsets = vec![
-            (0, 13),
-                (0, 7),
-                    (1, 6),
-                (0, 7),
-                (7, 13),
-            (0, 13)
+            (0..13),
+                (0..7),
+                    (1..6),
+                (0..7),
+                (7..13),
+            (0..13)
         ];
         assert_eq!(expected_offsets, event_offsets);
     }

@@ -395,34 +395,24 @@ impl<'a> FirstPass<'a> {
     /// Returns the offset of the first line after the table.
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
-    fn parse_table(&mut self, start_ix: usize, body_start: usize) -> usize {
+    fn parse_table(&mut self, table_cols: usize, head_start: usize, body_start: usize) -> usize {
         // parse header. this shouldn't fail because we (should have) made sure the table
         // header is ok
-        let row_cells = {
-            let table_ix = self.tree.peek_up().unwrap();
-            if let ItemBody::Table(ref alignment) = self.tree[table_ix].item.body {
-                alignment.len()
-            } else {
-                unreachable!()
-            }
-        };
-        self.parse_table_row(start_ix, row_cells).unwrap();
-        let thead_ix = self.tree.cur().unwrap();
+        let (_sep_start, thead_ix) = self.parse_table_row(head_start, table_cols).unwrap();
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
         let mut ix = body_start;
-        while let Some(next_ix) = self.parse_table_row(ix, row_cells) {
+        while let Some((next_ix, _row_ix)) = self.parse_table_row(ix, table_cols) {
             ix = next_ix;
         }
 
-        let table_ix = self.tree.pop().unwrap();
-        self.tree[table_ix].item.end = ix;
+        self.pop(ix);
         ix
     }
 
-    /// Returns first offset after the row.
-    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<usize> {
+    /// Returns first offset after the row and the index of the row.
+    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
         let mut line_start = LineStart::new(&self.text[ix..]);
         let _n_containers = self.scan_containers(&mut line_start);
         let mut cells = 0;
@@ -484,9 +474,8 @@ impl<'a> FirstPass<'a> {
             self.tree[cell_ix].next = TreePointer::Nil;
         }
 
-        self.tree.pop();
-        self.tree[row_ix].item.end = ix;
-        Some(ix)
+        self.pop(ix);
+        Some((ix, row_ix))
     }
 
     /// Returns offset of line start after paragraph.
@@ -503,15 +492,15 @@ impl<'a> FirstPass<'a> {
             let (next_ix, brk) = self.parse_line(ix, false);
 
             // break out when we find a table
-            // rust's pattern matching really shines here!
-            if let Some(table @ Item { body: ItemBody::Table(..), .. }) = brk {
-                self.tree[node_ix].item = table;
+            if let Some(Item { body: ItemBody::Table(alignment), start, end }) = brk {
+                let table_cols = alignment.len();
+                self.tree[node_ix].item = Item { body: ItemBody::Table(alignment), start, end };
                 // this clears out any stuff we may have appended - but there may
                 // be a cleaner way
                 self.tree[node_ix].child = TreePointer::Nil;
                 self.tree.pop();
                 self.tree.push();
-                return self.parse_table(ix, next_ix);
+                return self.parse_table(table_cols, ix, next_ix);
             }
 
             ix = next_ix;
@@ -544,8 +533,7 @@ impl<'a> FirstPass<'a> {
             }
         }
 
-        self.tree.pop();
-        self.tree[node_ix].item.end = ix;
+        self.pop(ix);
         ix
     }
 

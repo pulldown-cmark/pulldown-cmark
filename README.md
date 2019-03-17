@@ -1,5 +1,9 @@
 # pulldown-cmark
 
+[![Build Status](https://dev.azure.com/raphlinus/pulldown-cmark/_apis/build/status/pulldown-cmark-CI?branchName=master)](https://dev.azure.com/raphlinus/pulldown-cmark/_build/latest?definitionId=2&branchName=master)
+[![Docs](https://docs.rs/pulldown-cmark/badge.svg)](https://docs.rs/pulldown-cmark)
+[![Crates.io](https://img.shields.io/crates/v/pulldown-cmark.svg?maxAge=2592000)](https://crates.io/crates/pulldown-cmark)
+
 [Documentation](https://docs.rs/pulldown-cmark/)
 
 This library is a pull parser for [CommonMark](http://commonmark.org/), written

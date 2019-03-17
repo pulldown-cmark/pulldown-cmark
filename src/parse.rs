@@ -1339,7 +1339,7 @@ fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_i
     pipes + 1
 }
 
-fn unescape_cow(c: CowStr) -> CowStr {
+fn unescape_cow(c: CowStr<'_>) -> CowStr<'_> {
     match c {
         CowStr::Inlined(s) => unescape_str_line(s),
         CowStr::Boxed(s) => unescape_str_line(s),

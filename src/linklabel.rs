@@ -46,7 +46,7 @@ pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel)> {
 
 /// Assumes the opening bracket has already been scanned.
 /// Returns the number of bytes read (including closing bracket) and label on success.
-pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr)> {
+pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
     let mut char_iter = text.chars().peekable();
     let mut byte_index = 0;
     let mut only_white_space = true;

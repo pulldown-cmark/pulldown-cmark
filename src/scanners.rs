@@ -674,7 +674,7 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape(input: &str) -> CowStr {
+pub fn unescape(input: &str) -> CowStr<'_> {
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;

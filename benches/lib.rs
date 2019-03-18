@@ -16,7 +16,7 @@ mod to_html {
 
     #[bench]
     fn crdt_empty_options(b: &mut test::Bencher) {
-        let input_bytes = include_bytes!("crdt.md");
+        let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
         let input = from_utf8(input_bytes).unwrap();
         let mut opts = Options::empty();
 

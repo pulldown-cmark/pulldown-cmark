@@ -112,7 +112,7 @@ By default, the binary is built as well. If you don't want/need it, then build l
 Or put in your `Cargo.toml` file:
 
 ```toml
-pulldown-cmark = { version = "0.3", default-features = false }
+pulldown-cmark = { version = "0.4", default-features = false }
 ```
 
 ## Authors

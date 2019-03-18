@@ -1482,8 +1482,8 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
     // TODO: Consider using `strcasecmp` here
     'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
         if text.len() >= beg_tag.len() && text.starts_with('<') {
-            for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (&text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
+            for (i, &c) in beg_tag.as_bytes()[1..].iter().enumerate() {
+                if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
                     continue 'type_1;
                 }
             }

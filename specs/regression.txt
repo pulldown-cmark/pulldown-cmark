@@ -85,3 +85,41 @@ ISSUE #213
 
 ````````````````````````````````
 
+ISSUE #43 (1)
+
+```````````````````````````````` example
+[foo][bar]
+
+<!-- foo -->
+[bar]: a
+.
+<p><a href="a">foo</a></p>
+<!-- foo -->
+````````````````````````````````
+
+ISSUE #43 (2)
+
+```````````````````````````````` example
+<!-- <dl> -->
+- **foo** (u8, u8)
+
+  make something
+
+- **bar** (u16, u16)
+
+  make something
+.
+<!-- <dl> -->
+<ul>
+<li>
+<p><strong>foo</strong> (u8, u8)</p>
+<p>make something</p>
+</li>
+<li>
+<p><strong>bar</strong> (u16, u16)</p>
+<p>make something</p>
+</li>
+</ul>
+
+````````````````````````````````
+

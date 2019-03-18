@@ -178,3 +178,71 @@ This is a test of the details element.
 
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
+
+    #[test]
+    fn regression_test_7() {
+        let original = r##"[foo][bar]
+
+<!-- foo -->
+[bar]: a
+"##;
+        let expected = r##"<p><a href="a">foo</a></p>
+<!-- foo -->
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }
+
+    #[test]
+    fn regression_test_8() {
+        let original = r##"<!-- <dl> -->
+- **foo** (u8, u8)
+
+  make something
+
+- **bar** (u16, u16)
+
+  make something
+"##;
+        let expected = r##"<!-- <dl> -->
+<ul>
+<li>
+<p><strong>foo</strong> (u8, u8)</p>
+<p>make something</p>
+</li>
+<li>
+<p><strong>bar</strong> (u16, u16)</p>
+<p>make something</p>
+</li>
+</ul>
+
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }

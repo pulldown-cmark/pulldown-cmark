@@ -149,7 +149,7 @@ impl<'a> Borrow<str> for CowStr<'a> {
 }
 
 impl<'a> CowStr<'a> {
-    pub fn to_string(self) -> String {
+    pub fn into_string(self) -> String {
         match self {
             CowStr::Boxed(b) => b.into(),
             CowStr::Borrowed(b) => b.to_owned(),

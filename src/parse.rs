@@ -522,7 +522,7 @@ impl<'a> FirstPass<'a> {
                 if n_containers == self.tree.spine_len() {
                     if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
                         self.tree[node_ix].item.body = ItemBody::Header(level);
-                        if let Some(Item { start, end: _, body: ItemBody::HardBreak }) = brk {
+                        if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
                             if self.text.as_bytes()[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
                             }
@@ -566,7 +566,7 @@ impl<'a> FirstPass<'a> {
                 b'\n' | b'\r' => {
                     let mut i = ix;
                     let eol_bytes = scan_eol(&self.text[ix..]).0;
-                    if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
+                    if ix > begin_text && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
                         ix += eol_bytes;
@@ -807,7 +807,7 @@ impl<'a> FirstPass<'a> {
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        &self.pop(end_ix);
+        self.pop(end_ix);
         ix
     }
 
@@ -955,7 +955,7 @@ impl<'a> FirstPass<'a> {
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
             self.tree.append(Item {
-                start: start,
+                start,
                 end: start,
                 body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
             });
@@ -974,7 +974,7 @@ impl<'a> FirstPass<'a> {
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
             self.tree.append(Item {
-                start: start,
+                start,
                 end: start,
                 // TODO: maybe this should synthesize to html rather than text?
                 body: ItemBody::SynthesizeText("   "[..remaining_space].into()),
@@ -983,19 +983,19 @@ impl<'a> FirstPass<'a> {
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
-                start: start,
+                start,
                 end: end - 2,
                 body: ItemBody::Html,
             });
             self.tree.append(Item {
                 start: end - 1,
-                end: end,
+                end,
                 body: ItemBody::Html,
             });
         } else {
             self.tree.append(Item {
-                start: start,
-                end: end,
+                start,
+                end,
                 body: ItemBody::Html,
             });
         }
@@ -1079,7 +1079,7 @@ impl<'a> FirstPass<'a> {
             self.finish_list(start);
         }
         self.tree.append(Item {
-            start: start,
+            start,
             end: 0,  // will get set later
             body: ItemBody::List(true, ch, index),
         });
@@ -1170,7 +1170,7 @@ impl<'a> FirstPass<'a> {
         }
         i += 1;
         self.tree.append(Item {
-            start: start,
+            start,
             end: 0,  // will get set later
             body: ItemBody::FootnoteDefinition(label.clone()), // TODO: check whether the label here is strictly necessary
         });
@@ -1371,7 +1371,7 @@ fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_i
     pipes + 1
 }
 
-fn unescape_cow<'a>(c: CowStr<'a>) -> CowStr<'a> {
+fn unescape_cow(c: CowStr<'_>) -> CowStr<'_> {
     match c {
         CowStr::Inlined(s) => unescape_str_line(s),
         CowStr::Boxed(s) => unescape_str_line(s),
@@ -1403,8 +1403,8 @@ impl<'a> Tree<Item<'a>> {
                 }
             }
             self.append(Item {
-                start: start,
-                end: end,
+                start,
+                end,
                 body: ItemBody::Text,
             });
         }
@@ -1481,9 +1481,9 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
     // TODO: Consider using `strcasecmp` here
     'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-        if text.len() >= beg_tag.len() && text.starts_with("<") {
-            for (i, c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (&text.as_bytes()[i+1] == c || &text.as_bytes()[i+1] == &(c - 32)) {
+        if text.len() >= beg_tag.len() && text.starts_with('<') {
+            for (i, &c) in beg_tag.as_bytes()[1..].iter().enumerate() {
+                if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
                     continue 'type_1;
                 }
             }
@@ -2374,9 +2374,9 @@ impl<'a> Parser<'a> {
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
-                                ItemBody::Image(LinkType::Inline, url.into(), title.into())
+                                ItemBody::Image(LinkType::Inline, url, title)
                             } else {
-                                ItemBody::Link(LinkType::Inline, url.into(), title.into())
+                                ItemBody::Link(LinkType::Inline, url, title)
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
@@ -2429,8 +2429,7 @@ impl<'a> Parser<'a> {
                                 cur = node_after_link;
                                 link_stack.clear();
                                 continue;
-                            }
-                            else if let Some(ReferenceLabel::Link(link_label)) = label {
+                            } else if let Some(ReferenceLabel::Link(link_label)) = label {
                                 let type_url_title = if let Some(matching_def) = self.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
                                     // found a matching definition!
                                     let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
@@ -2549,7 +2548,7 @@ impl<'a> Parser<'a> {
                                 start: el.start,
                                 count: el.count - match_count,
                                 c: el.c,
-                                both: both,
+                                both,
                             })
                         }
                         count -= match_count;
@@ -2564,9 +2563,9 @@ impl<'a> Parser<'a> {
                     if can_open {
                         stack.push(InlineEl {
                             start: cur_ix,
-                            count: count,
-                            c: c,
-                            both: both,
+                            count,
+                            c,
+                            both,
                         });
                     } else {
                         for i in 0..count {

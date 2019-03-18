@@ -70,7 +70,7 @@ where
         if write_newline {
             self.write_newline()
         } else {
-            if bytes.len() > 0 {
+            if !bytes.is_empty() {
                 self.end_newline = bytes[bytes.len() - 1] == b'\n';
             }
             Ok(())
@@ -335,7 +335,7 @@ where
     }
 
     // run raw text, consuming end tag
-    fn raw_text<'c>(&mut self) -> io::Result<()> {
+    fn raw_text(&mut self) -> io::Result<()> {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
@@ -442,8 +442,8 @@ where
     W: Write,
 {
     let writer = HtmlWriter {
-        iter: iter,
-        writer: writer,
+        iter,
+        writer,
         end_newline: true,
         table_state: TableState::Head,
         table_alignments: vec![],

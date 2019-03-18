@@ -31,7 +31,7 @@ pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use memchr::memchr;
 
 // sorted for binary search
-const HTML_TAGS: [&'static str; 62] = ["address", "article", "aside", "base",
+const HTML_TAGS: [&str; 62] = ["address", "article", "aside", "base",
     "basefont", "blockquote", "body", "caption", "center", "col", "colgroup",
     "dd", "details", "dialog", "dir", "div", "dl", "dt", "fieldset",
     "figcaption", "figure", "footer", "form", "frame", "frameset", "h1",
@@ -111,7 +111,7 @@ impl<'a> LineStart<'a> {
     }
 
     /// Determine whether we're at end of line (includes end of file).
-    pub fn is_at_eol(&mut self) -> bool {
+    pub fn is_at_eol(&self) -> bool {
         if self.ix == self.text.len() {
             return true;
         }
@@ -162,12 +162,12 @@ impl<'a> LineStart<'a> {
             } else if c >= b'0' && c <= b'9' {
                 let start_ix = self.ix;
                 let mut ix = self.ix + 1;
-                let mut val = (c - b'0') as u64;
+                let mut val = u64::from(c - b'0');
                 while ix < self.text.len() && ix - start_ix < 10 {
                     let c = self.text.as_bytes()[ix];
                     ix += 1;
                     if c >= b'0' && c <= b'9' {
-                        val = val * 10 + (c - b'0') as u64;
+                        val = val * 10 + u64::from(c - b'0');
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
                         let val_usize = val as usize;
@@ -352,8 +352,7 @@ pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) 
     i += num_fence_chars_found;
     let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
     i += num_trailing_spaces;
-    if scan_eol(&text[i..]).1 { return Some(i); }
-    return None;
+    if scan_eol(&text[i..]).1 { Some(i) } else { None }
 }
 
 // returned pair is (number of bytes, number of spaces)
@@ -570,7 +569,7 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
         postn = 1;
         postindent = 1;
     }
-    if let Some(_) = scan_blank_line(&data[w..]) {
+    if scan_blank_line(&data[w..]).is_some() {
         postn = 0;
         postindent = 1;
     }
@@ -707,12 +706,12 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
         }
     }
     if i >= data.len() { return None; }
-    return Some(i);
+    Some(i)
 
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape<'a>(input: &'a str) -> CowStr<'a> {
+pub fn unescape(input: &str) -> CowStr<'_> {
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;
@@ -812,11 +811,7 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
     }
     i += c;
 
-    if let Some(_) = scan_blank_line(&data[i..]) {
-        return Some(i);
-    } else {
-        return None;
-    }
+    scan_blank_line(&data[i..]).map(|_| i)
 }
 
 pub fn scan_attribute(data: &str) -> Option<usize> {
@@ -826,12 +821,7 @@ pub fn scan_attribute(data: &str) -> Option<usize> {
     } else {
         return None;
     }
-    if let Some(attr_valspec_bytes) = scan_attribute_value_spec(&data[i..]) {
-        i += attr_valspec_bytes;
-    } else {
-        return None;
-    }
-    return Some(i);
+    scan_attribute_value_spec(&data[i..]).map(|attr_valspec_bytes| attr_valspec_bytes + i)
 }
 
 pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {

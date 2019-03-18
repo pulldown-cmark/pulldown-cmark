@@ -8,6 +8,7 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2018"
+readme = "README.md"
 
 build = "build.rs"
 

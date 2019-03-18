@@ -18,8 +18,10 @@ It is designed to be:
 * Versatile; in particular source-maps are supported
 * Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
 
-Further, it optionally supports parsing footnotes and
-[Github flavored tables](https://github.github.com/gfm/#tables-extension-).
+Further, it optionally supports parsing footnotes,
+[Github flavored tables](https://github.github.com/gfm/#tables-extension-),
+[Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
+[strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
 ## Why a pull parser?
 
@@ -41,7 +43,9 @@ Pull parsing is in some sense the most versatile architecture. It's possible to
 drive a push interface, also with minimal memory, and quite straightforward to
 construct an AST. Another advantage is that source-map information (the mapping
 between parsed blocks and offsets within the source text) is readily available;
-you basically just call `get_offset()` as you consume events.
+you can call `into_offset_iter()` to create an iterator that yields `(Event, Range)`
+pairs, where the second element is the event's corresponding range in the source
+document.
 
 While manipulating ASTs is the most flexible way to transform documents,
 operating on iterators is surprisingly easy, and quite efficient. Here, for
@@ -79,6 +83,9 @@ for event in parser {
 	}
 }
 ```
+
+There are some basic but fully functional examples of the usage of the crate in the
+`examples` directory of this repository.
 
 ## Using Rust idiomatically
 

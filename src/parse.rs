@@ -1470,7 +1470,7 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_atx_heading(s).is_some() ||
     scan_code_fence(s).0 > 0 ||
     get_html_end_tag(s).is_some() ||
-    scan_blockquote_start(s) > 0 ||
+    scan_blockquote_start(s).is_some() ||
     is_html_tag(scan_html_block_tag(s).1)
 }
 

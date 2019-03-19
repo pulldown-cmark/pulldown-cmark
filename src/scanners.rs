@@ -151,7 +151,7 @@ impl<'a> LineStart<'a> {
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
-                if scan_hrule(&self.text[self.ix..]) > 0 {
+                if scan_hrule(&self.text[self.ix..]).is_some() {
                     *self = save;
                     return None;
                 }
@@ -319,6 +319,7 @@ pub fn scan_attr_value_chars(data: &str) -> usize {
 }
 
 // Maybe returning Option<usize> would be more Rustic?
+// TODO: change return type to Option<usize>.
 pub fn scan_eol(s: &str) -> (usize, bool) {
     if s.is_empty() { return (0, true); }
     let bytes = s.as_bytes();
@@ -377,15 +378,16 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
     (i, spaces)
 }
 
-// return size of line containing hrule, including trailing newline, or 0
-// TODO: switch to Option return type
-pub fn scan_hrule(data: &str) -> usize {
+/// Scan hrule opening sequence.
+///
+/// Returns size of line containing the hrule, including the trailing newline.
+pub fn scan_hrule(data: &str) -> Option<usize> {
     let bytes = data.as_bytes();
     let size = data.len();
     let mut i = 0;
-    if i + 2 >= size { return 0; }
+    if i + 2 >= size { return None; }
     let c = bytes[i];
-    if !(c == b'*' || c == b'-' || c == b'_') { return 0; }
+    if !(c == b'*' || c == b'-' || c == b'_') { return None; }
     let mut n = 0;
     while i < size {
         match bytes[i] {
@@ -395,11 +397,11 @@ pub fn scan_hrule(data: &str) -> usize {
             }
             c2 if c2 == c => n += 1,
             b' ' | b'\t' => (),
-            _ => return 0
+            _ => return None
         }
         i += 1;
     }
-    if n >= 3 { i } else { 0 }
+    if n >= 3 { Some(i) } else { None }
 }
 
 /// Scan an ATX heading opening sequence.
@@ -420,7 +422,7 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     } else {
         None
     }
-}
+    }
 
 /// Scan a setext heading underline.
 ///
@@ -517,6 +519,7 @@ pub fn scan_code_fence(data: &str) -> (usize, u8) {
     (0, 0)
 }
 
+// TODO: change return type to Option.
 pub fn scan_blockquote_start(data: &str) -> usize {
     if data.starts_with('>') {
         let n = 1;

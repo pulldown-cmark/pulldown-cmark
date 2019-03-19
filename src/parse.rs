@@ -383,11 +383,9 @@ impl<'a> FirstPass<'a> {
             return ix + bytecount;
         }
 
-        let (n, fence_ch) = scan_code_fence(&self.text[ix..]);
-        if n > 0 {
+        if let Some((n, fence_ch)) = scan_code_fence(&self.text[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
-        
         self.parse_paragraph(ix)
     }
 
@@ -1466,7 +1464,7 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_eol(s).is_some() ||
     scan_hrule(s).is_some() ||
     scan_atx_heading(s).is_some() ||
-    scan_code_fence(s).0 > 0 ||
+    scan_code_fence(s).is_some() ||
     get_html_end_tag(s).is_some() ||
     scan_blockquote_start(s) > 0 ||
     is_html_tag(scan_html_block_tag(s).1)

@@ -491,25 +491,26 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
     (i, cols)
 }
 
-// TODO: change return type to Option.
-// returns: number of bytes scanned, char
-pub fn scan_code_fence(data: &str) -> (usize, u8) {
+/// Scan code fence.
+///
+/// Returns number of bytes scanned and the char that is repeated to make the code fence.
+pub fn scan_code_fence(data: &str) -> Option<(usize, u8)> {
     if data.is_empty() {
-        return (0, 0);
+        return None;
     }
     let c = data.as_bytes()[0];
-    if !(c == b'`' || c == b'~') { return (0, 0); }
+    if !(c == b'`' || c == b'~') { return None; }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);
     if i >= 3 {
         if c == b'`' {
             let next_line = i + scan_nextline(&data[i..]);
             if data[i..next_line].find('`').is_some() {
-                return (0, 0);
+                return None;
             }
         }
-        return (i, c);
+        return Some((i, c));
     }
-    (0, 0)
+    None
 }
 
 // TODO: change return type to Option.

@@ -22,7 +22,9 @@
 
 use std::io::{self, Write};
 use std::str::from_utf8;
+#[cfg(all(target_arch = "x86_64", feature="simd"))]
 use std::arch::x86_64::*;
+#[cfg(all(target_arch = "x86_64", feature="simd"))]
 use std::mem::transmute;
 
 static HREF_SAFE: [u8; 128] = [
@@ -106,7 +108,7 @@ static HTML_ESCAPES: [&'static str; 6] = [
         "&gt;"
     ];
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", feature="simd"))]
 pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
@@ -121,8 +123,8 @@ pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
     w.write_all(&bytes[mark..])
 }
 
-#[cfg(not(target_arch = "x86_64"))]
-pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+#[cfg(not(all(target_arch = "x86_64", feature="simd")))]
+pub fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
     escape_html_secure(w, s, false)
 }
 
@@ -158,7 +160,7 @@ where
 
 /// Calls the given function with the index of every byte that is in
 /// [", &, <, >] and for no other byte.
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", feature="simd"))]
 fn scan_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
     where F: FnMut(usize) -> io::Result<()>
 {
@@ -235,31 +237,32 @@ fn scan_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<
 }
 
 #[cfg(test)]
-mod html_scan_tests {
-    use super::*;
-    
+mod html_scan_tests {    
     #[test]
+    #[cfg(all(target_arch = "x86_64", feature="simd"))]
     fn scan_simd_works() {
         let mut vec = Vec::new();
-        scan_simd("&aXaaa\"".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
+        super::scan_simd("&aXaaa\"".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
         assert_eq!(vec, vec![0, 6]);
     }
     
     #[test]
+    #[cfg(all(target_arch = "x86_64", feature="simd"))]
     fn combined_scan_works() {
         let mut vec = Vec::new();
-        scan_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
+        super::scan_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
         assert_eq!(vec, vec![0, 14, 15, 19]);
     }
 
     // only match these bytes, and when we match them, match them 16 times
     #[test]
+    #[cfg(all(target_arch = "x86_64", feature="simd"))]
     fn only_right_bytes_matched() {
         for b in 0..255u8 {
             let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
             let vek = vec![b; 16];
             let mut match_count = 0;
-            scan_simd(&vek, 0, |_| { match_count += 1; Ok(()) }).unwrap();
+            super::scan_simd(&vek, 0, |_| { match_count += 1; Ok(()) }).unwrap();
             assert!((match_count > 0) == (match_count == 16));
             assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
         }

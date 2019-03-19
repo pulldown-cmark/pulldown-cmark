@@ -78,7 +78,7 @@ mod to_html {
             buf.clear();
         });
     }
-}
+
     #[bench]
     fn paragraph_lots_unescapes(b: &mut test::Bencher) {
         let input = "This is by far my favourite unicode code point: &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
@@ -89,7 +89,7 @@ mod to_html {
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;";
-        let mut opts = Options::empty();
+        let opts = Options::empty();
 
         b.iter(|| render_html(&input, opts));
     }

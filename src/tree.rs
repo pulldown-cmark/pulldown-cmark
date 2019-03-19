@@ -39,7 +39,7 @@ impl TreeIndex {
 
 impl Add<usize> for TreeIndex {
     type Output = TreeIndex;
- 
+
     fn add(self, rhs: usize) -> Self {
         let inner = self.0.get() + rhs;
         TreeIndex::new(inner)
@@ -55,7 +55,7 @@ impl Sub<usize> for TreeIndex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node<T> {
     pub child: TreePointer,
     pub next: TreePointer,
@@ -63,6 +63,7 @@ pub struct Node<T> {
 }
 
 /// A tree abstraction, intended for fast building as a preorder traversal.
+#[derive(Clone)]
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<TreeIndex>, // indices of nodes on path to current node

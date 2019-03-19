@@ -133,14 +133,14 @@ bitflags! {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Item<'a> {
     start: usize,
     end: usize,
     body: ItemBody<'a>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum ItemBody<'a> {
     Paragraph,
     Text,
@@ -2224,11 +2224,13 @@ enum LinkStackTy {
     Disabled,
 }
 
+#[derive(Clone)]
 struct LinkDef<'a> {
     dest: CowStr<'a>,
     title: Option<CowStr<'a>>,
 }
 
+#[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,

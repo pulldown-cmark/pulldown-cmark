@@ -513,14 +513,11 @@ pub fn scan_code_fence(data: &str) -> Option<(usize, u8)> {
     None
 }
 
-// TODO: change return type to Option.
-pub fn scan_blockquote_start(data: &str) -> usize {
-    if data.starts_with('>') {
-        let n = 1;
-        n + scan_ch(&data[n..], b' ')
-    } else {
-        0
+pub fn scan_blockquote_start(data: &str) -> Option<usize> {
+    if !data.starts_with('>') {
+        return None;
     }
+    Some(scan_ch(&data[1..], b' ') + 1)
 }
 
 /// This already assumes the list item has been scanned.

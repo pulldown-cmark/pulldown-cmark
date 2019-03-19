@@ -7,25 +7,16 @@ include!("normalize_html.rs.inc");
 
 
     #[test]
-    fn gfm_table_test_1() {
-        let original = r##"| foo | bar |
-| --- | --- |
-| baz | bim |
+    fn regression_test_1() {
+        let original = r##"<details><summary>Testing 1..2..3..</summary>
+
+This is a test of the details element.
+
+</details>
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>foo</th>
-<th>bar</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>baz</td>
-<td>bim</td>
-</tr>
-</tbody>
-</table>
+        let expected = r##"<details><summary>Testing 1..2..3..</summary>
+<p>This is a test of the details element.</p>
+</details>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -45,25 +36,20 @@ include!("normalize_html.rs.inc");
     }
 
     #[test]
-    fn gfm_table_test_2() {
-        let original = r##"| abc | defghi |
-:-: | -----------:
-bar | baz
+    fn regression_test_2() {
+        let original = r##"see the [many] [articles] [on] [QuickCheck].
+
+[many]: https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6
+[articles]: http://www.quviq.com/products/erlang-quickcheck/
+[on]: https://wiki.haskell.org/Introduction_to_QuickCheck1
+[QuickCheck]: https://hackage.haskell.org/package/QuickCheck
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th align="center">abc</th>
-<th align="right">defghi</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">bar</td>
-<td align="right">baz</td>
-</tr>
-</tbody>
-</table>
+        let expected = r##"<p>see the 
+  <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> 
+  <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> 
+  <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> 
+  <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.
+</p>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -83,27 +69,17 @@ bar | baz
     }
 
     #[test]
-    fn gfm_table_test_3() {
-        let original = r##"| f\|oo  |
-| ------ |
-| b `\|` az |
-| b **\|** im |
+    fn regression_test_3() {
+        let original = r##"[![debug-stub-derive on crates.io][cratesio-image]][cratesio]
+[![debug-stub-derive on docs.rs][docsrs-image]][docsrs]
+
+[cratesio-image]: https://img.shields.io/crates/v/debug_stub_derive.svg
+[cratesio]: https://crates.io/crates/debug_stub_derive
+[docsrs-image]: https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0
+[docsrs]: https://docs.rs/debug_stub_derive/0.3.0/
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>f|oo</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>b <code>|</code> az</td>
-</tr>
-<tr>
-<td>b <strong>|</strong> im</td>
-</tr>
-</tbody>
-</table>
+        let expected = r##"<p><a href="https://crates.io/crates/debug_stub_derive"><img src="https://img.shields.io/crates/v/debug_stub_derive.svg" alt="debug-stub-derive on crates.io" /></a>
+<a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -123,29 +99,21 @@ bar | baz
     }
 
     #[test]
-    fn gfm_table_test_4() {
-        let original = r##"| abc | def |
-| --- | --- |
-| bar | baz |
-> bar
+    fn regression_test_4() {
+        let original = r##"|  Title A  |  Title B  |
+| --------- | --------- |
+| Content   | Content   |
+
+|  Title A  |  Title B  |  Title C  |  Title D  |
+| --------- | --------- | --------- | ---------:|
+| Content   | Content   | Conent    | Content   |
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>abc</th>
-<th>def</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>bar</td>
-<td>baz</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>bar</p>
-</blockquote>
+        let expected = r##"<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td></tr>
+</tbody></table>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th align="right">Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+</tbody></table>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -165,33 +133,10 @@ bar | baz
     }
 
     #[test]
-    fn gfm_table_test_5() {
-        let original = r##"| abc | def |
-| --- | --- |
-| bar | baz |
-bar
-
-bar
+    fn regression_test_5() {
+        let original = r##"foo§__(bar)__
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>abc</th>
-<th>def</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>bar</td>
-<td>baz</td>
-</tr>
-<tr>
-<td>bar</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<p>bar</p>
+        let expected = r##"<p>foo§<strong>(bar)</strong></p>
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -211,14 +156,11 @@ bar
     }
 
     #[test]
-    fn gfm_table_test_6() {
-        let original = r##"| abc | def |
-| --- |
-| bar |
+    fn regression_test_6() {
+        let original = r##"<https://example.com> hello
 "##;
-        let expected = r##"<p>| abc | def |
-| --- |
-| bar |</p>
+        let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
+
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -238,30 +180,14 @@ bar
     }
 
     #[test]
-    fn gfm_table_test_7() {
-        let original = r##"| abc | def |
-| --- | --- |
-| bar |
-| bar | baz | boo |
+    fn regression_test_7() {
+        let original = r##"[foo][bar]
+
+<!-- foo -->
+[bar]: a
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>abc</th>
-<th>def</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>bar</td>
-<td></td>
-</tr>
-<tr>
-<td>bar</td>
-<td>baz</td>
-</tr>
-</tbody>
-</table>
+        let expected = r##"<p><a href="a">foo</a></p>
+<!-- foo -->
 "##;
 
         use pulldown_cmark::{Parser, html, Options};
@@ -281,18 +207,28 @@ bar
     }
 
     #[test]
-    fn gfm_table_test_8() {
-        let original = r##"| abc | def |
-| --- | --- |
+    fn regression_test_8() {
+        let original = r##"<!-- <dl> -->
+- **foo** (u8, u8)
+
+  make something
+
+- **bar** (u16, u16)
+
+  make something
 "##;
-        let expected = r##"<table>
-<thead>
-<tr>
-<th>abc</th>
-<th>def</th>
-</tr>
-</thead>
-</table>
+        let expected = r##"<!-- <dl> -->
+<ul>
+<li>
+<p><strong>foo</strong> (u8, u8)</p>
+<p>make something</p>
+</li>
+<li>
+<p><strong>bar</strong> (u16, u16)</p>
+<p>make something</p>
+</li>
+</ul>
+
 "##;
 
         use pulldown_cmark::{Parser, html, Options};

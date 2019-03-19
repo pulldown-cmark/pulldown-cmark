@@ -1,0 +1,27 @@
+// This is a slightly modified (replaced example strikethrough by example) of the
+// table section from GitHub's spec.txt
+
+## Strikethrough (extension)
+
+GFM enables the `strikethrough` extension, where an additional emphasis type is
+available.
+
+Strikethrough text is any text wrapped in two tildes (`~`).
+
+```````````````````````````````` example
+~~Hi~~ Hello, world!
+.
+<p><del>Hi</del> Hello, world!</p>
+````````````````````````````````
+
+As with regular emphasis delimiters, a new paragraph will cause strikethrough
+parsing to cease:
+
+```````````````````````````````` example
+This ~~has a
+
+new paragraph~~.
+.
+<p>This ~~has a</p>
+<p>new paragraph~~.</p>
+````````````````````````````````

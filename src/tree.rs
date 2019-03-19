@@ -32,7 +32,7 @@ impl TreeIndex {
         TreeIndex(NonZeroUsize::new(i).unwrap())
     }
 
-    pub fn get(&self) -> usize {
+    pub fn get(self) -> usize {
         self.0.get()
     }
 }

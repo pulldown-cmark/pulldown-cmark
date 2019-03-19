@@ -18,7 +18,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Pull parser for commonmark.
+//! Pull parser for [CommonMark](https://commonmark.org). This crate provides a [Parser](struct.Parser.html) struct
+//! which is an iterator over [Event](enum.Event.html)s. This iterator can be used
+//! directly, or to output HTML using the [HTML module](html/index.html).
+//! 
+//! By default, only CommonMark features are enabled. To use extensions like tables,
+//! footnotes or task lists, enable by setting the corresponding flags in the
+//! [Options](struct.Options.html) struct.
+//!
+//! # Example
+//! ```rust
+//! use pulldown_cmark::{Parser, Options, html};
+//!
+//! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
+//! 
+//! // Set up options and parser. Strikethroughs are not part of the CommonMark standard
+//! // and we therefore must enable it explicitly.
+//! let mut options = Options::empty();
+//! options.insert(Options::ENABLE_STRIKETHROUGH); 
+//! let parser = Parser::new_ext(markdown_input, options);
+//! 
+//! // Write to String buffer.
+//! let mut html_output = String::new();
+//! html::push_html(&mut html_output, parser);
+//!
+//! // Check that the output is what we expected.
+//! let expected_html = "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";
+//! assert_eq!(expected_html, &html_output);
+//! ```
 
 // When compiled for the rustc compiler itself we want to make sure that this is
 // an unstable crate.
@@ -40,5 +67,7 @@ mod utils;
 mod parse;
 mod tree;
 mod linklabel;
+mod strings;
 
-pub use crate::parse::{Parser, Alignment, Event, Tag, Options, LinkType};
+pub use crate::parse::{Parser, OffsetIter, Alignment, Event, Tag, Options, LinkType};
+pub use crate::strings::{CowStr, InlineStr};

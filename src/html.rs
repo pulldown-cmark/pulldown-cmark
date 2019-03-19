@@ -20,12 +20,12 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use crate::parse::{Event, Tag, Alignment};
-use crate::parse::Event::{Start, End, Text, Html, InlineHtml, SoftBreak, HardBreak, FootnoteReference};
+use crate::parse::{LinkType, Event, Tag, Alignment};
+use crate::parse::Event::*;
+use crate::strings::CowStr;
 use crate::escape::{escape_html, escape_href};
 
 enum TableState {
@@ -49,7 +49,7 @@ where
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<Cow<'a, str>, usize>,
+    numbers: HashMap<CowStr<'a>, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>
@@ -70,7 +70,7 @@ where
         if write_newline {
             self.write_newline()
         } else {
-            if bytes.len() > 0 {
+            if !bytes.is_empty() {
                 self.end_newline = bytes[bytes.len() - 1] == b'\n';
             }
             Ok(())
@@ -118,6 +118,13 @@ where
                     self.write(format!("{}", number).as_bytes(), false)?;
                     self.write(b"</a></sup>", false)?;
                 }
+                TaskListMarker(is_checked) => {
+                    self.write(b"<input disabled=\"\" type=\"checkbox\"", false)?;
+                    if is_checked {
+                        self.write(b" checked=\"\"", false)?;
+                    }
+                    self.write(b"/>", true)?;
+                }
             }
         }
         Ok(())
@@ -146,6 +153,7 @@ where
             }
             Tag::TableHead => {
                 self.table_state = TableState::Head;
+                self.table_cell_index = 0;
                 self.write(b"<thead><tr>", false)
             }
             Tag::TableRow => {
@@ -210,7 +218,17 @@ where
             }
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
+            Tag::Strikethrough => self.write(b"<del>", false),
             Tag::Code => self.write(b"<code>", false),
+            Tag::Link(LinkType::Email, dest, title) => {
+                self.write(b"<a href=\"mailto:", false)?;
+                escape_href(&mut self.writer, &dest)?;
+                if !title.is_empty() {
+                    self.write(b"\" title=\"", false)?;
+                    escape_html(&mut self.writer, &title)?;
+                }
+                self.write(b"\">", false)
+            }
             Tag::Link(_link_type, dest, title) => {
                 self.write(b"<a href=\"", false)?;
                 escape_href(&mut self.writer, &dest)?;
@@ -298,6 +316,9 @@ where
             Tag::Strong => {
                 self.write(b"</strong>", false)?;
             }
+            Tag::Strikethrough => {
+                self.write(b"</del>", false)?;
+            }
             Tag::Code => {
                 self.write(b"</code>", false)?;
             }
@@ -314,7 +335,7 @@ where
     }
 
     // run raw text, consuming end tag
-    fn raw_text<'c>(&mut self) -> io::Result<()> {
+    fn raw_text(&mut self) -> io::Result<()> {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
@@ -342,6 +363,8 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(&*format!("[{}]", number).as_bytes(), false)?;
                 }
+                TaskListMarker(true) => self.write(b"[x]", false)?,
+                TaskListMarker(false) => self.write(b"[ ]", false)?,
             }
         }
         Ok(())
@@ -419,8 +442,8 @@ where
     W: Write,
 {
     let writer = HtmlWriter {
-        iter: iter,
-        writer: writer,
+        iter,
+        writer,
         end_newline: true,
         table_state: TableState::Head,
         table_alignments: vec![],

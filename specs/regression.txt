@@ -1,0 +1,125 @@
+Run this with `cargo run -- -T -F -s specs/regression.txt`.
+
+Regression tests for issues on the github issue tracker.
+
+ISSUE #162
+
+```````````````````````````````` example
+<details><summary>Testing 1..2..3..</summary>
+
+This is a test of the details element.
+
+</details>
+.
+<details><summary>Testing 1..2..3..</summary>
+<p>This is a test of the details element.</p>
+</details>
+````````````````````````````````
+
+ISSUE #133
+
+```````````````````````````````` example
+see the [many] [articles] [on] [QuickCheck].
+
+[many]: https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6
+[articles]: http://www.quviq.com/products/erlang-quickcheck/
+[on]: https://wiki.haskell.org/Introduction_to_QuickCheck1
+[QuickCheck]: https://hackage.haskell.org/package/QuickCheck
+.
+<p>see the 
+  <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> 
+  <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> 
+  <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> 
+  <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.
+</p>
+````````````````````````````````
+
+ISSUE #135
+
+```````````````````````````````` example
+[![debug-stub-derive on crates.io][cratesio-image]][cratesio]
+[![debug-stub-derive on docs.rs][docsrs-image]][docsrs]
+
+[cratesio-image]: https://img.shields.io/crates/v/debug_stub_derive.svg
+[cratesio]: https://crates.io/crates/debug_stub_derive
+[docsrs-image]: https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0
+[docsrs]: https://docs.rs/debug_stub_derive/0.3.0/
+.
+<p><a href="https://crates.io/crates/debug_stub_derive"><img src="https://img.shields.io/crates/v/debug_stub_derive.svg" alt="debug-stub-derive on crates.io" /></a>
+<a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
+````````````````````````````````
+
+ISSUE #145
+
+```````````````````````````````` example
+|  Title A  |  Title B  |
+| --------- | --------- |
+| Content   | Content   |
+
+|  Title A  |  Title B  |  Title C  |  Title D  |
+| --------- | --------- | --------- | ---------:|
+| Content   | Content   | Conent    | Content   |
+.
+<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td></tr>
+</tbody></table>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th align="right">Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+</tbody></table>
+````````````````````````````````
+
+Unicode punctuation and emphasis
+
+```````````````````````````````` example
+foo§__(bar)__
+.
+<p>foo§<strong>(bar)</strong></p>
+````````````````````````````````
+
+ISSUE #213
+
+```````````````````````````````` example
+<https://example.com> hello
+.
+<p><a href="https://example.com">https://example.com</a> hello</p>
+
+````````````````````````````````
+
+ISSUE #43 (1)
+
+```````````````````````````````` example
+[foo][bar]
+
+<!-- foo -->
+[bar]: a
+.
+<p><a href="a">foo</a></p>
+<!-- foo -->
+````````````````````````````````
+
+ISSUE #43 (2)
+
+```````````````````````````````` example
+<!-- <dl> -->
+- **foo** (u8, u8)
+
+  make something
+
+- **bar** (u16, u16)
+
+  make something
+.
+<!-- <dl> -->
+<ul>
+<li>
+<p><strong>foo</strong> (u8, u8)</p>
+<p>make something</p>
+</li>
+<li>
+<p><strong>bar</strong> (u16, u16)</p>
+<p>make something</p>
+</li>
+</ul>
+
+````````````````````````````````
+

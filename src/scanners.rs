@@ -22,20 +22,24 @@
 
 use crate::entities;
 use crate::utils;
-use std::borrow::Cow;
-use std::borrow::Cow::{Borrowed, Owned};
 use std::char;
-use crate::parse::Alignment;
 
+use crate::parse::Alignment;
+use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
+use memchr::memchr;
+
 // sorted for binary search
-const HTML_TAGS: [&'static str; 47] = ["article", "aside", "blockquote",
-    "body", "button", "canvas", "caption", "col", "colgroup", "dd", "div",
-    "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
-    "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "iframe",
-    "li", "map", "object", "ol", "output", "p", "progress","section", "table",
-    "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "ul", "video"];
+const HTML_TAGS: [&str; 62] = ["address", "article", "aside", "base",
+    "basefont", "blockquote", "body", "caption", "center", "col", "colgroup",
+    "dd", "details", "dialog", "dir", "div", "dl", "dt", "fieldset",
+    "figcaption", "figure", "footer", "form", "frame", "frameset", "h1",
+    "h2", "h3", "h4", "h5", "h6", "head", "header", "hr", "html", "iframe",
+    "legend", "li", "link", "main", "menu", "menuitem", "nav", "noframes",
+    "ol", "optgroup", "option", "p", "param", "section", "source", "summary",
+    "table", "tbody", "td", "tfoot", "th", "thead", "title", "tr", "track",
+    "ul"];
 
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.
@@ -107,7 +111,7 @@ impl<'a> LineStart<'a> {
     }
 
     /// Determine whether we're at end of line (includes end of file).
-    pub fn is_at_eol(&mut self) -> bool {
+    pub fn is_at_eol(&self) -> bool {
         if self.ix == self.text.len() {
             return true;
         }
@@ -147,7 +151,7 @@ impl<'a> LineStart<'a> {
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
-                if scan_hrule(&self.text[self.ix..]) > 0 {
+                if scan_hrule(&self.text[self.ix..]).is_some() {
                     *self = save;
                     return None;
                 }
@@ -158,12 +162,12 @@ impl<'a> LineStart<'a> {
             } else if c >= b'0' && c <= b'9' {
                 let start_ix = self.ix;
                 let mut ix = self.ix + 1;
-                let mut val = (c - b'0') as u64;
+                let mut val = u64::from(c - b'0');
                 while ix < self.text.len() && ix - start_ix < 10 {
                     let c = self.text.as_bytes()[ix];
                     ix += 1;
                     if c >= b'0' && c <= b'9' {
-                        val = val * 10 + (c - b'0') as u64;
+                        val = val * 10 + u64::from(c - b'0');
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
                         let val_usize = val as usize;
@@ -198,6 +202,41 @@ impl<'a> LineStart<'a> {
             *self = save;
         }
         Some((c, start, indent))
+    }
+
+    /// Returns Some(is_checked) when a task list marker was found. Resets itself
+    /// to original state otherwise.
+    pub(crate) fn scan_task_list_marker(&mut self) -> Option<bool> {
+        let save = self.clone();
+        self.scan_space_upto(3);
+
+        if !self.scan_ch(b'[') {
+            *self = save;
+            return None;
+        }
+        let is_checked = match self.text[self.ix..].chars().next() {
+            Some(c) if c.is_whitespace() => {
+                self.ix += c.len_utf8();
+                false
+            }
+            Some('x') | Some('X') => {
+                self.ix += 1;
+                true
+            }
+            _ => {
+                *self = save;
+                return None;
+            }
+        };
+        if !self.scan_ch(b']') {
+            *self = save;
+            return None;
+        }
+        if !self.text[self.ix..].chars().next().map(char::is_whitespace).unwrap_or(false) {
+            *self = save;
+            return None;
+        }
+        Some(is_checked)
     }
 
     pub fn bytes_scanned(&self) -> usize {
@@ -279,31 +318,23 @@ pub fn scan_attr_value_chars(data: &str) -> usize {
     scan_while(data, is_valid_unquoted_attr_value_char)
 }
 
-// Maybe returning Option<usize> would be more Rustic?
-pub fn scan_eol(s: &str) -> (usize, bool) {
-    if s.is_empty() { return (0, true); }
+pub fn scan_eol(s: &str) -> Option<usize> {
+    if s.is_empty() { return Some(0); }
     let bytes = s.as_bytes();
     match bytes[0] {
-        b'\n' => (1, true),
-        b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
-        _ => (0, false)
+        b'\n' => Some(1),
+        b'\r' => Some(if s[1..].starts_with('\n') { 2 } else { 1 }),
+        _ => None
     }
 }
 
 pub fn scan_blank_line(text: &str) -> Option<usize> {
     let i = scan_whitespace_no_nl(text);
-    if let (n, true) = scan_eol(&text[i..]) {
-        Some(i + n)
-    } else {
-        None
-    }
+    scan_eol(&text[i..]).map(|n| i + n)
 }
 
 pub fn scan_nextline(s: &str) -> usize {
-    match s.as_bytes().iter().position(|&c| c == b'\n') {
-        Some(x) => x + 1,
-        None => s.len()
-    }
+    memchr(b'\n', s.as_bytes()).map(|x| x + 1).unwrap_or(s.len())
 }
 
 // return: end byte for closing code fence, or None
@@ -316,8 +347,7 @@ pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) 
     i += num_fence_chars_found;
     let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
     i += num_trailing_spaces;
-    if scan_eol(&text[i..]).1 { return Some(i); }
-    return None;
+    scan_eol(&text[i..]).map(|_| i)
 }
 
 // returned pair is (number of bytes, number of spaces)
@@ -342,29 +372,30 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
     (i, spaces)
 }
 
-// return size of line containing hrule, including trailing newline, or 0
-// TODO: switch to Option return type
-pub fn scan_hrule(data: &str) -> usize {
+/// Scan hrule opening sequence.
+///
+/// Returns size of line containing the hrule, including the trailing newline.
+pub fn scan_hrule(data: &str) -> Option<usize> {
     let bytes = data.as_bytes();
     let size = data.len();
     let mut i = 0;
-    if i + 2 >= size { return 0; }
+    if i + 2 >= size { return None; }
     let c = bytes[i];
-    if !(c == b'*' || c == b'-' || c == b'_') { return 0; }
+    if !(c == b'*' || c == b'-' || c == b'_') { return None; }
     let mut n = 0;
     while i < size {
         match bytes[i] {
             b'\n' | b'\r' => {
-                i += scan_eol(&data[i..]).0;
+                i += scan_eol(&data[i..]).unwrap_or(0);
                 break;
             }
             c2 if c2 == c => n += 1,
             b' ' | b'\t' => (),
-            _ => return 0
+            _ => return None
         }
         i += 1;
     }
-    if n >= 3 { i } else { 0 }
+    if n >= 3 { Some(i) } else { None }
 }
 
 /// Scan an ATX heading opening sequence.
@@ -385,7 +416,7 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     } else {
         None
     }
-}
+    }
 
 /// Scan a setext heading underline.
 ///
@@ -420,9 +451,8 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
         i += 1;
     }
     for c in data.as_bytes()[i..].iter() {
-        let eol = scan_eol(&data[i..]);
-        if eol.1 {
-            i += eol.0;
+        if let Some(n) = scan_eol(&data[i..]) {
+            i += n;
             break;
         }
         match *c {
@@ -461,34 +491,33 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
     (i, cols)
 }
 
-// TODO: change return type to Option.
-// returns: number of bytes scanned, char
-pub fn scan_code_fence(data: &str) -> (usize, u8) {
+/// Scan code fence.
+///
+/// Returns number of bytes scanned and the char that is repeated to make the code fence.
+pub fn scan_code_fence(data: &str) -> Option<(usize, u8)> {
     if data.is_empty() {
-        return (0, 0);
+        return None;
     }
     let c = data.as_bytes()[0];
-    if !(c == b'`' || c == b'~') { return (0, 0); }
+    if !(c == b'`' || c == b'~') { return None; }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);
     if i >= 3 {
         if c == b'`' {
             let next_line = i + scan_nextline(&data[i..]);
             if data[i..next_line].find('`').is_some() {
-                return (0, 0);
+                return None;
             }
         }
-        return (i, c);
+        return Some((i, c));
     }
-    (0, 0)
+    None
 }
 
-pub fn scan_blockquote_start(data: &str) -> usize {
-    if data.starts_with('>') {
-        let n = 1;
-        n + scan_ch(&data[n..], b' ')
-    } else {
-        0
+pub fn scan_blockquote_start(data: &str) -> Option<usize> {
+    if !data.starts_with('>') {
+        return None;
     }
+    Some(scan_ch(&data[1..], b' ') + 1)
 }
 
 /// This already assumes the list item has been scanned.
@@ -528,29 +557,31 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&data[w.. ], 5);
     if postindent == 0 {
-        if !scan_eol(&data[w..]).1 { return (0, 0, 0, 0); }
+        if scan_eol(&data[w..]).is_none() {
+            return (0, 0, 0, 0);
+        }
         postindent += 1;
     } else if postindent > 4 {
         postn = 1;
         postindent = 1;
     }
-    if let Some(_) = scan_blank_line(&data[w..]) {
+    if scan_blank_line(&data[w..]).is_some() {
         postn = 0;
         postindent = 1;
     }
     (w + postn, c, start, w + postindent)
 }
 
-fn cow_from_codepoint_str(s: &str, radix: u32) -> Cow<'static, str> {
+fn char_from_codepoint_str(s: &str, radix: u32) -> char {
     let mut codepoint = u32::from_str_radix(s, radix).unwrap();
     if codepoint == 0 {
         codepoint = 0xFFFD;
     }
-    Owned(char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string())
+    char::from_u32(codepoint).unwrap_or('\u{FFFD}')
 }
 
 // doesn't bother to check data[0] == '&'
-pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
+pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     let size = data.len();
     let mut end = 1;
     if scan_ch(&data[end..], b'#') == 1 {
@@ -559,12 +590,12 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
             end += 1;
             end += scan_while(&data[end..], is_hexdigit);
             if end > 3 && end < 12 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(cow_from_codepoint_str(&data[3..end], 16)));
+                return (end + 1, Some(char_from_codepoint_str(&data[3..end], 16).into()));
             }
         } else {
             end += scan_while(&data[end..], is_digit);
             if end > 2 && end < 11 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(cow_from_codepoint_str(&data[2..end], 10)));
+                return (end + 1, Some(char_from_codepoint_str(&data[2..end], 10).into()));
             }
         }
         return (0, None);
@@ -572,7 +603,7 @@ pub fn scan_entity(data: &str) -> (usize, Option<Cow<'static, str>>) {
     end += scan_while(&data[end..], is_ascii_alphanumeric);
     if scan_ch(&data[end..], b';') == 1 {
         if let Some(value) = entities::get_entity(&data[1..end]) {
-            return (end + 1, Some(Borrowed(value)));
+            return (end + 1, Some(value.into()));
         }
     }
     (0, None)
@@ -671,12 +702,12 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
         }
     }
     if i >= data.len() { return None; }
-    return Some(i);
+    Some(i)
 
 }
 
 // Remove backslash escapes and resolve entities
-pub fn unescape(input: &str) -> Cow<str> {
+pub fn unescape(input: &str) -> CowStr<'_> {
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;
@@ -708,10 +739,10 @@ pub fn unescape(input: &str) -> Cow<str> {
         }
     }
     if mark == 0 {
-        Borrowed(input)
+        input.into()
     } else {
         result.push_str(&input[mark..]);
-        Owned(result)
+        result.into()
     }
 }
 
@@ -776,11 +807,7 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
     }
     i += c;
 
-    if let Some(_) = scan_blank_line(&data[i..]) {
-        return Some(i);
-    } else {
-        return None;
-    }
+    scan_blank_line(&data[i..]).map(|_| i)
 }
 
 pub fn scan_attribute(data: &str) -> Option<usize> {
@@ -790,12 +817,7 @@ pub fn scan_attribute(data: &str) -> Option<usize> {
     } else {
         return None;
     }
-    if let Some(attr_valspec_bytes) = scan_attribute_value_spec(&data[i..]) {
-        i += attr_valspec_bytes;
-    } else {
-        return None;
-    }
-    return Some(i);
+    scan_attribute_value_spec(&data[i..]).map(|attr_valspec_bytes| attr_valspec_bytes + i)
 }
 
 pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {

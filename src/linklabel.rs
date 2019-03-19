@@ -20,19 +20,19 @@
 
 //! Link label parsing and matching.
 
-use std::borrow::Cow;
-
 use unicase::UniCase;
 
+use crate::strings::CowStr;
+
 pub enum ReferenceLabel<'a> {
-    Link(Cow<'a, str>),
-    Footnote(Cow<'a, str>),
+    Link(CowStr<'a>),
+    Footnote(CowStr<'a>),
 }
 
-pub type LinkLabel<'a> = UniCase<Cow<'a, str>>;
+pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Returns number of bytes (including brackets) and label on success.
-pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabel<'a>)> {
+pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel<'_>)> {
     if text.len() < 2 || text.as_bytes()[0] != b'[' { return None; }
     let pair = if b'^' == text.as_bytes()[1] {
         let (byte_index, cow) = scan_link_label_rest(&text[2..])?;
@@ -46,7 +46,7 @@ pub(crate) fn scan_link_label<'a>(text: &'a str) -> Option<(usize, ReferenceLabe
 
 /// Assumes the opening bracket has already been scanned.
 /// Returns the number of bytes read (including closing bracket) and label on success.
-pub(crate) fn scan_link_label_rest<'a>(text: &'a str) -> Option<(usize, Cow<'a, str>)> {
+pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
     let mut char_iter = text.chars().peekable();
     let mut byte_index = 0;
     let mut only_white_space = true;

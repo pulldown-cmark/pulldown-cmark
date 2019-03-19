@@ -318,25 +318,19 @@ pub fn scan_attr_value_chars(data: &str) -> usize {
     scan_while(data, is_valid_unquoted_attr_value_char)
 }
 
-// Maybe returning Option<usize> would be more Rustic?
-// TODO: change return type to Option<usize>.
-pub fn scan_eol(s: &str) -> (usize, bool) {
-    if s.is_empty() { return (0, true); }
+pub fn scan_eol(s: &str) -> Option<usize> {
+    if s.is_empty() { return Some(0); }
     let bytes = s.as_bytes();
     match bytes[0] {
-        b'\n' => (1, true),
-        b'\r' => (if s[1..].starts_with('\n') { 2 } else { 1 }, true),
-        _ => (0, false)
+        b'\n' => Some(1),
+        b'\r' => Some(if s[1..].starts_with('\n') { 2 } else { 1 }),
+        _ => None
     }
 }
 
 pub fn scan_blank_line(text: &str) -> Option<usize> {
     let i = scan_whitespace_no_nl(text);
-    if let (n, true) = scan_eol(&text[i..]) {
-        Some(i + n)
-    } else {
-        None
-    }
+    scan_eol(&text[i..]).map(|n| i + n)
 }
 
 pub fn scan_nextline(s: &str) -> usize {
@@ -353,7 +347,7 @@ pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) 
     i += num_fence_chars_found;
     let num_trailing_spaces = scan_ch_repeat(&text[i..], b' ');
     i += num_trailing_spaces;
-    if scan_eol(&text[i..]).1 { Some(i) } else { None }
+    scan_eol(&text[i..]).map(|_| i)
 }
 
 // returned pair is (number of bytes, number of spaces)
@@ -392,7 +386,7 @@ pub fn scan_hrule(data: &str) -> Option<usize> {
     while i < size {
         match bytes[i] {
             b'\n' | b'\r' => {
-                i += scan_eol(&data[i..]).0;
+                i += scan_eol(&data[i..]).unwrap_or(0);
                 break;
             }
             c2 if c2 == c => n += 1,
@@ -457,9 +451,8 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
         i += 1;
     }
     for c in data.as_bytes()[i..].iter() {
-        let eol = scan_eol(&data[i..]);
-        if eol.1 {
-            i += eol.0;
+        if let Some(n) = scan_eol(&data[i..]) {
+            i += n;
             break;
         }
         match *c {
@@ -566,7 +559,9 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&data[w.. ], 5);
     if postindent == 0 {
-        if !scan_eol(&data[w..]).1 { return (0, 0, 0, 0); }
+        if scan_eol(&data[w..]).is_none() {
+            return (0, 0, 0, 0);
+        }
         postindent += 1;
     } else if postindent > 4 {
         postn = 1;

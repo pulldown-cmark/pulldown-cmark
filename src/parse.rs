@@ -442,9 +442,8 @@ impl<'a> FirstPass<'a> {
         loop {
             ix += scan_ch(&self.text[ix..], b'|');
             ix += scan_whitespace_no_nl(&self.text[ix..]);
-            let (eol_bytes, is_eol) = scan_eol(&self.text[ix..]);
             
-            if is_eol {
+            if let Some(eol_bytes) = scan_eol(&self.text[ix..]) {
                 ix += eol_bytes;
                 break;
             }
@@ -564,7 +563,7 @@ impl<'a> FirstPass<'a> {
                 }
                 b'\n' | b'\r' => {
                     let mut i = ix;
-                    let eol_bytes = scan_eol(&self.text[ix..]).0;
+                    let eol_bytes = scan_eol(&self.text[ix..]).unwrap_or(0);
                     if ix > begin_text && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
@@ -1112,8 +1111,7 @@ impl<'a> FirstPass<'a> {
         // (guaranteed by scan_atx_heading)
         let b = self.text.as_bytes()[ix];
         if b == b'\n' || b == b'\r' {
-            ix += scan_eol(&self.text[ix..]).0;
-            return ix;
+            return ix + scan_eol(&self.text[ix..]).unwrap_or(0);
         }
         // skip leading spaces
         let skip_spaces = scan_whitespace_no_nl(&self.text[ix..]);
@@ -1465,7 +1463,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
 /// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
 /// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(s: &str) -> bool {
-    scan_eol(s).1 ||
+    scan_eol(s).is_some() ||
     scan_hrule(s).is_some() ||
     scan_atx_heading(s).is_some() ||
     scan_code_fence(s).0 > 0 ||

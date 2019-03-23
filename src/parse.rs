@@ -2334,7 +2334,6 @@ impl<'a> Parser<'a> {
                         }
                     }
                     let mut scan = if count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
-                    // TODO(performance): this has quadratic pathological behavior, I think
                     while let TreePointer::Valid(scan_ix) = scan {
                         if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);

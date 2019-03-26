@@ -42,7 +42,7 @@ static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &'static [u8] = b"&amp;";
 static SLASH_ESCAPE: &'static [u8] = b"&#x27;";
 
-pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
+pub(crate) fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
 where
     W: Write,
 {
@@ -109,7 +109,7 @@ static HTML_ESCAPES: [&'static str; 6] = [
     ];
 
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
-pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
 
@@ -124,11 +124,11 @@ pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
 }
 
 #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
-pub fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
+pub(crate) fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
     escape_html_scalar(w, s)
 }
 
-pub fn escape_html_scalar<W>(mut w: W, s: &str) -> io::Result<()>
+pub(crate) fn escape_html_scalar<W>(mut w: W, s: &str) -> io::Result<()>
 where
     W: Write,
 {

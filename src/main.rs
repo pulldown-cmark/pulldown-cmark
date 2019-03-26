@@ -252,7 +252,7 @@ pub fn main() {
         }
     } else {
         let mut input = String::new();
-        if let Err(why) = io::stdin().read_to_string(&mut input) {
+        if let Err(why) = io::stdin().lock().read_to_string(&mut input) {
             panic!("couldn't read from stdin: {}", why)
         }
         if matches.opt_present("events") {
@@ -261,7 +261,9 @@ pub fn main() {
             dry_run(&input, opts);
         } else {
             let p = Parser::new_ext(&input, opts);
-            html::write_html(io::stdout(), p).unwrap();
+            let stdio = io::stdout();
+            let buffer = std::io::BufWriter::new(stdio.lock());
+            html::write_html(buffer, p).unwrap();
         }
     }
 }

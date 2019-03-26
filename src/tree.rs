@@ -170,11 +170,10 @@ impl<T: Default> Tree<T> {
         self.spine.iter()
     }
 
-    /// Moves focus to the next sibling of the current focus.
-    pub fn next_sibling(&mut self) -> TreePointer {
-        let next = self[self.cur.unwrap()].next;
-        self.cur = next;
-        next
+    /// Moves focus to the next sibling of the given node.
+    pub fn next_sibling(&mut self, cur_ix: TreeIndex) -> TreePointer {
+        self.cur = self[cur_ix].next;
+        self.cur
     }
 }
 

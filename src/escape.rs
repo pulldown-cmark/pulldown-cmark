@@ -176,7 +176,7 @@ fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> 
 
     while offset < upperbound {
         let mut mask = unsafe {
-            let raw_ptr = transmute(bytes.as_ptr().offset(offset as isize));
+            let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const _;
             let v = _mm_loadu_si128(raw_ptr);
             let expected = _mm_shuffle_epi8(lower_vec, v);
             let matches = _mm_cmpeq_epi8(expected, v);

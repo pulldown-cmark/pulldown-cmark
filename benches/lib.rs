@@ -64,7 +64,7 @@ mod to_html {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't
         // grow faster than that.
-        let size = 70;
+        let size = 150;
         let mut buf = String::new();
         for i in 1..size {
             for _ in 0..i {

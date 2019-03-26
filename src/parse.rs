@@ -2284,6 +2284,8 @@ impl<'a> Parser<'a> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut link_stack = Vec::new();
+        let mut codeblock_delims: Vec<(usize, TreeIndex)> = Vec::new();
+        let mut delim_offset = 1;
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
@@ -2324,22 +2326,50 @@ impl<'a> Parser<'a> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(mut count) => {
+                ItemBody::MaybeCode(mut search_count) => {
                     if let TreePointer::Valid(prev_ix) = prev {
                         if self.tree[prev_ix].item.body == ItemBody::Backslash {
-                            count -= 1;
+                            search_count -= 1;
                         }
                     }
-                    let mut scan = if count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
-                    while let TreePointer::Valid(scan_ix) = scan {
-                        if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
+
+                    if codeblock_delims.is_empty() {
+                        // we haven't previously scanned all codeblock delimiters,
+                        // so walk the AST
+                        let mut scan = if search_count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
+                        while let TreePointer::Valid(scan_ix) = scan {
+                            if let ItemBody::MaybeCode(delim_count) = self.tree[scan_ix].item.body {
+                                if search_count == delim_count {
+                                    make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
+                                    codeblock_delims.clear();
+                                    break;
+                                } else {
+                                    codeblock_delims.push((delim_count, scan_ix));
+                                }
+                            }
+                            scan = self.tree[scan_ix].next;
+                        }
+                        if scan == TreePointer::Nil {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                        }
+                    } else {
+                        // we have previously scanned all codeblock delimiters,
+                        // so we can reuse that work
+                        let search = codeblock_delims[delim_offset..]
+                            .iter()
+                            .position(|&(delim_count, _scan_ix)| {
+                                delim_count == search_count
+                            });
+
+                        if let Some(offset) = search {
+                            let real_offset = delim_offset + offset;
+                            delim_offset = real_offset + 1;
+                            let (_, scan_ix) = codeblock_delims[real_offset];
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
-                            break;
+                        } else {
+                            delim_offset += 1;
+                            self.tree[cur_ix].item.body = ItemBody::Text;
                         }
-                        scan = self.tree[scan_ix].next;
-                    }
-                    if scan == TreePointer::Nil {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
                     }
                 }
                 ItemBody::MaybeLinkOpen => {

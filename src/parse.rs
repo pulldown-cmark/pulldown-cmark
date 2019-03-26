@@ -2193,8 +2193,8 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowS
     scanner.scan_while(is_ascii_whitespace);
     let url = scan_link_destination(scanner)?;
     let mut title = "".into();
-    let save = scanner.clone();
     if scanner.scan_while(is_ascii_whitespace) > 0 {
+        let save = scanner.clone();
         if let Some(t) = scan_link_title(scanner) {
             title = t;
             scanner.scan_while(is_ascii_whitespace);

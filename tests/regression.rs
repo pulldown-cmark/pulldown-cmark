@@ -246,3 +246,30 @@ This is a test of the details element.
 
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
+
+    #[test]
+    fn regression_test_9() {
+        let original = r##"[`
+i8
+`](
+../../../std/primitive.i8.html
+)
+"##;
+        let expected = r##"<p><a href="../../../std/primitive.i8.html"><code>i8</code></a></p>
+"##;
+
+        use pulldown_cmark::{Parser, html, Options};
+
+        let mut s = String::new();
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let p = Parser::new_ext(&original, opts);
+        html::push_html(&mut s, p);
+
+        assert_eq!(normalize_html(&expected), normalize_html(&s));
+    }

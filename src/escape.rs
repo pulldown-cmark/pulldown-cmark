@@ -113,7 +113,7 @@ pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
 
-    scan_simd(bytes, 0, |i| {
+    foreach_special_simd(bytes, 0, |i| {
         let replacement = HTML_ESCAPES[HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
         w.write_all(&bytes[mark..i])?;
         w.write_all(replacement.as_bytes())?;
@@ -158,10 +158,10 @@ where
     w.write_all(&bytes[mark..])
 }
 
-/// Calls the given function with the index of every byte that is in
-/// [", &, <, >] and for no other byte.
+/// Calls the given function with the index of every byte in the given byteslice
+/// that is either ", &, <, or > and for no other byte.
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
-fn scan_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
+fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
     where F: FnMut(usize) -> io::Result<()>
 {
     if bytes.is_empty() {
@@ -240,17 +240,17 @@ fn scan_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<
 mod html_scan_tests {    
     #[test]
     #[cfg(all(target_arch = "x86_64", feature="simd"))]
-    fn scan_simd_works() {
+    fn simple() {
         let mut vec = Vec::new();
-        super::scan_simd("&aXaaa\"".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
+        super::foreach_special_simd("&aXaaa\"".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
         assert_eq!(vec, vec![0, 6]);
     }
     
     #[test]
     #[cfg(all(target_arch = "x86_64", feature="simd"))]
-    fn combined_scan_works() {
+    fn multichunk() {
         let mut vec = Vec::new();
-        super::scan_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
+        super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| { vec.push(ix); Ok(()) }).unwrap();
         assert_eq!(vec, vec![0, 14, 15, 19]);
     }
 
@@ -262,7 +262,7 @@ mod html_scan_tests {
             let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
             let vek = vec![b; 16];
             let mut match_count = 0;
-            super::scan_simd(&vek, 0, |_| { match_count += 1; Ok(()) }).unwrap();
+            super::foreach_special_simd(&vek, 0, |_| { match_count += 1; Ok(()) }).unwrap();
             assert!((match_count > 0) == (match_count == 16));
             assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
         }

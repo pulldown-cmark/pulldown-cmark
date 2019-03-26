@@ -5,7 +5,7 @@ extern crate test;
 
 mod to_html {
     use pulldown_cmark::{Parser, Options, html};
-    use pulldown_cmark::escape::{escape_html_secure, escape_html};
+    use pulldown_cmark::escape::escape_html;
     use std::str::from_utf8;
 
     fn render_html(text: &str, opts: Options) -> String {
@@ -29,22 +29,11 @@ mod to_html {
         very personal blog. hope u enjoy it. this is me &lt;img alt=&quot;holiday in greece&quot; src=&quot;holiday.jph&quot;/&gt;&lt;/body&gt;";
 
     #[bench]
-    fn escape_html_dense_insecure(b: &mut test::Bencher) {
+    fn escape_html_dense(b: &mut test::Bencher) {
         let mut buf = String::with_capacity(1000);
 
         b.iter(|| unsafe {
             escape_html(buf.as_mut_vec(), DENSE_TEST_STRING).unwrap();
-            assert_eq!(DENSE_EXPECTED, buf);
-            buf.clear();
-        });
-    }
-
-    #[bench]
-    fn escape_html_dense_secure(b: &mut test::Bencher) {
-        let mut buf = String::with_capacity(1000);
-
-        b.iter(|| unsafe {
-            escape_html_secure(buf.as_mut_vec(), DENSE_TEST_STRING, false).unwrap();
             assert_eq!(DENSE_EXPECTED, buf);
             buf.clear();
         });
@@ -57,22 +46,11 @@ mod to_html {
          and easy to distinguish.";
 
     #[bench]
-    fn escape_html_sparse_insecure(b: &mut test::Bencher) {
+    fn escape_html_sparse(b: &mut test::Bencher) {
         let mut buf = String::with_capacity(1000);
 
         b.iter(|| unsafe {
             escape_html(buf.as_mut_vec(), SPARSE_TEST_STRING).unwrap();
-            assert_eq!(buf, SPARSE_TEST_STRING);
-            buf.clear();
-        });
-    }
-
-    #[bench]
-    fn escape_html_sparse_secure(b: &mut test::Bencher) {
-        let mut buf = String::with_capacity(1000);
-
-        b.iter(|| unsafe {
-            escape_html_secure(buf.as_mut_vec(), SPARSE_TEST_STRING, false).unwrap();
             assert_eq!(buf, SPARSE_TEST_STRING);
             buf.clear();
         });

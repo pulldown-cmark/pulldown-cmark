@@ -125,10 +125,10 @@ pub fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
 
 #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
 pub fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
-    escape_html_secure(w, s, false)
+    escape_html_scalar(w, s)
 }
 
-pub fn escape_html_secure<W>(mut w: W, s: &str, secure: bool) -> io::Result<()>
+pub fn escape_html_scalar<W>(mut w: W, s: &str) -> io::Result<()>
 where
     W: Write,
 {
@@ -147,7 +147,7 @@ where
         }
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
-        if escape != 0 && (secure || c != b'/') {
+        if escape != 0 {
             let escape_seq = HTML_ESCAPES[escape as usize];
             w.write_all(&bytes[mark..i])?;
             w.write_all(escape_seq.as_bytes())?;

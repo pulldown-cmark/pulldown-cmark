@@ -31,6 +31,13 @@ use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
 
+// Allowing arbitrary depth nested parentheses inside link destinations
+// can create denial of service vulnerabilities if we're not careful.
+// The simplest countermeasure is to limit their depth, which is
+// explicitly allowed by the spec as long as the limit is at least 3:
+// https://spec.commonmark.org/0.28/#link-destination
+const LINK_MAX_NESTED_PARENS: usize = 5;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     // block-level tags
@@ -1903,6 +1910,9 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
         match c {
             '(' => {
                 nest += 1;
+                if nest > LINK_MAX_NESTED_PARENS {
+                    return None;
+                }
             }
             ')' => {
                 if nest == 0 {
@@ -2321,7 +2331,6 @@ impl<'a> Parser<'a> {
                         }
                     }
                     let mut scan = if count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
-                    // TODO(performance): this has quadratic pathological behavior, I think
                     while let TreePointer::Valid(scan_ix) = scan {
                         if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);

@@ -18,9 +18,8 @@ mod to_html {
     fn crdt_empty_options(b: &mut test::Bencher) {
         let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
         let input = from_utf8(input_bytes).unwrap();
-        let mut opts = Options::empty();
 
-        b.iter(|| render_html(&input, opts));
+        b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
@@ -33,8 +32,30 @@ mod to_html {
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;";
-        let mut opts = Options::empty();
 
-        b.iter(|| render_html(&input, opts));
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_links(b: &mut test::Bencher) {
+        let input = std::iter::repeat("[a](<").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_codeblocks(b: &mut test::Bencher) {
+        // Note that `buf` grows quadratically with number of
+        // iterations. The point here is that the render time shouldn't
+        // grow faster than that.
+        let mut buf = String::new();
+        for i in 1..1000 {
+            for _ in 0..i {
+                buf.push('`');
+            }
+            buf.push(' ');
+        }
+
+        b.iter(|| render_html(&buf, Options::empty()));
     }
 }

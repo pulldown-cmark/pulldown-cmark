@@ -262,8 +262,9 @@ pub fn main() {
         } else {
             let p = Parser::new_ext(&input, opts);
             let stdio = io::stdout();
-            let buffer = std::io::BufWriter::new(stdio.lock());
-            html::write_html(buffer, p).unwrap();
+            let mut buffer = Vec::with_capacity(input.len());
+            html::write_html(&mut buffer, p).unwrap();
+            std::io::BufWriter::new(stdio.lock()).write_all(&buffer).unwrap();
         }
     }
 }

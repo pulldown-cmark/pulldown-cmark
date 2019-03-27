@@ -262,7 +262,7 @@ pub fn main() {
         } else {
             let p = Parser::new_ext(&input, opts);
             let stdio = io::stdout();
-            let buffer = std::io::BufWriter::new(stdio.lock());
+            let buffer = std::io::BufWriter::with_capacity(1*1024*1024, stdio.lock());
             html::write_html(buffer, p).unwrap();
         }
     }

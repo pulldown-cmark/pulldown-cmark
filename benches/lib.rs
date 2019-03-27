@@ -61,7 +61,15 @@ mod to_html {
 
     #[bench]
     fn more_pathological_codeblocks(b: &mut test::Bencher) {
-        let input = std::iter::repeat("\\``").take(2000).collect::<String>();
+        let input = std::iter::repeat("\\``").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_hrules(b: &mut test::Bencher) {
+        let mut input = std::iter::repeat("* ").take(2000).collect::<String>();
+        input.push('a');
 
         b.iter(|| render_html(&input, Options::empty()));
     }

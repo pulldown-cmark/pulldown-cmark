@@ -376,7 +376,7 @@ impl<'a> FirstPass<'a> {
         // Advance `ix` after HTML blocks have been scanned
         let ix = start_ix + line_start.bytes_scanned();
 
-        if let Some(n) = scan_hrule(&self.text[ix..]) {
+        if let Ok(n) = scan_hrule(&self.text[ix..]) {
             return self.parse_hrule(n, ix);
         }
 
@@ -1457,7 +1457,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
 /// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(s: &str) -> bool {
     scan_eol(s).is_some() ||
-    scan_hrule(s).is_some() ||
+    scan_hrule(s).is_ok() ||
     scan_atx_heading(s).is_some() ||
     scan_code_fence(s).is_some() ||
     get_html_end_tag(s).is_some() ||

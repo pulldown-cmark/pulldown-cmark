@@ -2231,49 +2231,37 @@ struct LinkDef<'a> {
 }
 
 struct CodeDelims {
-    inner: Vec<(usize, TreeIndex)>,
-    offset: usize,
+    inner: HashMap<usize, Vec<TreeIndex>>,
 }
 
 impl CodeDelims {
     fn new() -> Self {
         Self {
             inner: Default::default(),
-            offset: 1,
         }
     }
 
     fn insert(&mut self, count: usize, ix: TreeIndex) {
-        self.inner.push((count, ix));
+        self.inner.entry(count).or_insert_with(|| Vec::new()).push(ix);
     }
 
     fn is_populated(&self) -> bool {
         !self.inner.is_empty()
     }
 
-    /// Only call after making sure it is populated,
-    /// or this will panic!
-    fn find(&mut self, count: usize) -> Option<TreeIndex> {
-        let search = self.inner[self.offset..]
+    fn find(&mut self, open_ix: TreeIndex, count: usize) -> Option<TreeIndex> {
+        // TODO(performance): if we stored queues instead of simpl Vecs, we could
+        // remove any indices that are lesser or equal to open_ix. This would
+        // speed up subsequent lookups.
+        self.inner
+            .get(&count)?
             .iter()
             .cloned()
-            .enumerate()
-            .find(|&(_ix, (delim_count, _scan_ix))| {
-                delim_count == count
-            });
-        if let Some((ix, (_delim_count, scan_ix))) = search {
-            dbg!(ix);
-            self.offset += ix + 1;
-            Some(scan_ix)
-        } else {
-            self.offset += 1;
-            None
-        }
+            .find(|&ix| ix > open_ix)
     }
 
     fn clear(&mut self) {
         self.inner.clear();
-        self.offset = 1;
     }
 }
 
@@ -2384,7 +2372,7 @@ impl<'a> Parser<'a> {
                     if code_delims.is_populated() {
                         // we have previously scanned all codeblock delimiters,
                         // so we can reuse that work
-                        if let Some(scan_ix) = code_delims.find(search_count) {
+                        if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
                         } else {
                             self.tree[cur_ix].item.body = ItemBody::Text;

@@ -49,11 +49,20 @@ pub struct LineStart<'a> {
     tab_start: usize,
     ix: usize,
     spaces_remaining: usize,
+    // no thematic breaks can occur before this offset.
+    // this prevents scanning over and over up to a certain point
+    min_hrule_offset: usize,
 }
 
 impl<'a> LineStart<'a> {
     pub fn new(text: &str) -> LineStart {
-        LineStart { text, tab_start: 0, ix: 0, spaces_remaining: 0 }
+        LineStart {
+            text,
+            tab_start: 0,
+            ix: 0,
+            spaces_remaining: 0,
+            min_hrule_offset: 0,
+        }
     }
 
     /// Try to scan a number of spaces.
@@ -151,9 +160,14 @@ impl<'a> LineStart<'a> {
         if self.ix < self.text.len() {
             let c = self.text.as_bytes()[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
-                if scan_hrule(&self.text[self.ix..]).is_some() {
-                    *self = save;
-                    return None;
+                if self.ix >= self.min_hrule_offset {
+                    // there could be an hrule here
+                    if let Err(min_offset) = scan_hrule(&self.text[self.ix..]) {
+                        self.min_hrule_offset = min_offset;
+                    } else {
+                        *self = save;
+                        return None;
+                    }
                 }
                 self.ix += 1;
                 if self.scan_space(1) || self.is_at_eol() {
@@ -374,14 +388,18 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 
 /// Scan hrule opening sequence.
 ///
-/// Returns size of line containing the hrule, including the trailing newline.
-pub fn scan_hrule(data: &str) -> Option<usize> {
+/// Returns Ok(x) when it finds an hrule, where x is the 
+/// size of line containing the hrule, including the trailing newline.
+/// 
+/// Returns Err(x) when it does not find an hrule and x is
+/// the offset in data before no hrule can appear.
+pub fn scan_hrule(data: &str) -> Result<usize, usize> {
     let bytes = data.as_bytes();
     let size = data.len();
     let mut i = 0;
-    if i + 2 >= size { return None; }
+    if i + 2 >= size { return Err(0); }
     let c = bytes[i];
-    if !(c == b'*' || c == b'-' || c == b'_') { return None; }
+    if !(c == b'*' || c == b'-' || c == b'_') { return Err(i); }
     let mut n = 0;
     while i < size {
         match bytes[i] {
@@ -391,11 +409,11 @@ pub fn scan_hrule(data: &str) -> Option<usize> {
             }
             c2 if c2 == c => n += 1,
             b' ' | b'\t' => (),
-            _ => return None
+            _ => return Err(i)
         }
         i += 1;
     }
-    if n >= 3 { Some(i) } else { None }
+    if n >= 3 { Ok(i) } else { Err(i) }
 }
 
 /// Scan an ATX heading opening sequence.

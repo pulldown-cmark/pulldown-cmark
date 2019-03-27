@@ -20,6 +20,12 @@ fn test_unterminated_link() {
 }
 
 #[test]
+fn test_unterminated_autolink() {
+    use pulldown_cmark::Parser;
+    let _ = Parser::new("<a");
+}
+
+#[test]
 fn test_infinite_loop() {
     let markdown = "[<!W\n\\\n";
     use pulldown_cmark::Parser;

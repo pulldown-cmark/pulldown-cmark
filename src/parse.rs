@@ -20,7 +20,7 @@
 
 //! Tree-based two pass parser.
 
-use std::collections::HashMap;
+use std::collections::{VecDeque, HashMap};
 use std::ops::Range;
 
 use unicase::UniCase;
@@ -2231,7 +2231,7 @@ struct LinkDef<'a> {
 }
 
 struct CodeDelims {
-    inner: HashMap<usize, Vec<TreeIndex>>,
+    inner: HashMap<usize, VecDeque<TreeIndex>>,
 }
 
 impl CodeDelims {
@@ -2242,7 +2242,7 @@ impl CodeDelims {
     }
 
     fn insert(&mut self, count: usize, ix: TreeIndex) {
-        self.inner.entry(count).or_insert_with(|| Vec::new()).push(ix);
+        self.inner.entry(count).or_insert_with(Default::default).push_back(ix);
     }
 
     fn is_populated(&self) -> bool {
@@ -2250,14 +2250,12 @@ impl CodeDelims {
     }
 
     fn find(&mut self, open_ix: TreeIndex, count: usize) -> Option<TreeIndex> {
-        // TODO(performance): if we stored queues instead of simpl Vecs, we could
-        // remove any indices that are lesser or equal to open_ix. This would
-        // speed up subsequent lookups.
-        self.inner
-            .get(&count)?
-            .iter()
-            .cloned()
-            .find(|&ix| ix > open_ix)
+        while let Some(ix) = self.inner.get_mut(&count)?.pop_front() {
+            if ix > open_ix {
+                return Some(ix);
+            }
+        }
+        None
     }
 
     fn clear(&mut self) {

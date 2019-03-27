@@ -779,10 +779,9 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
         loop {
             let whitespace = scan_whitespace_no_nl(&data[i..]);
             i += whitespace;
-            let c = data.as_bytes()[i];
+            let c = data.as_bytes().get(i);
             match c {
-                b'/' | b'>' => { 
-                    break; },
+                Some(b'/') | Some(b'>') => break,
                 _ => {},
             }
             if whitespace == 0 { return None; }

@@ -60,6 +60,13 @@ mod to_html {
     }
 
     #[bench]
+    fn more_pathological_codeblocks(b: &mut test::Bencher) {
+        let input = std::iter::repeat("\\``").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
     fn advanced_pathological_codeblocks(b: &mut test::Bencher) {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't
@@ -72,7 +79,7 @@ mod to_html {
             }
             buf.push(' ');
         }
-        for i in 1..(size * size) {
+        for i_ in 1..(size * size) {
             buf.push_str("*a* ");
         }
         eprintln!("str size: {}", buf.len());

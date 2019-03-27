@@ -1836,8 +1836,7 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     tree[open].next = tree[close].next;
     tree[open].child = first;
     let mut node = first_ix;
-    let last;
-    loop {
+    let last = loop {
         let next = tree[node].next;
         match tree[node].item.body {
             ItemBody::SoftBreak => {
@@ -1864,13 +1863,16 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
             }
             _ => tree[node].item.body = ItemBody::Text,
         }
-        if next == TreePointer::Valid(close) {
-            last = node;
-            tree[node].next = TreePointer::Nil;
-            break;
+        if let TreePointer::Valid(next_ix) = next {
+            if next_ix == close {
+                tree[node].next = TreePointer::Nil;
+                break node;
+            }
+            node = next_ix;
+        } else {
+            unreachable!("Couldn't find code span end!");
         }
-        node = next.unwrap();
-    }
+    };
     // Strip opening and closing space, if appropriate.
     let opening = match &tree[first_ix].item.body {
         ItemBody::Text => s.as_bytes()[tree[first_ix].item.start] == b' ',
@@ -2228,6 +2230,53 @@ struct LinkDef<'a> {
     title: Option<CowStr<'a>>,
 }
 
+struct CodeDelims {
+    inner: Vec<(usize, TreeIndex)>,
+    offset: usize,
+}
+
+impl CodeDelims {
+    fn new() -> Self {
+        Self {
+            inner: Default::default(),
+            offset: 1,
+        }
+    }
+
+    fn insert(&mut self, count: usize, ix: TreeIndex) {
+        self.inner.push((count, ix));
+    }
+
+    fn is_populated(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
+    /// Only call after making sure it is populated,
+    /// or this will panic!
+    fn find(&mut self, count: usize) -> Option<TreeIndex> {
+        let search = self.inner[self.offset..]
+            .iter()
+            .cloned()
+            .enumerate()
+            .find(|&(_ix, (delim_count, _scan_ix))| {
+                delim_count == count
+            });
+        if let Some((ix, (_delim_count, scan_ix))) = search {
+            dbg!(ix);
+            self.offset += ix + 1;
+            Some(scan_ix)
+        } else {
+            self.offset += 1;
+            None
+        }
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.offset = 1;
+    }
+}
+
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -2284,8 +2333,7 @@ impl<'a> Parser<'a> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut link_stack = Vec::new();
-        let mut codeblock_delims: Vec<(usize, TreeIndex)> = Vec::new();
-        let mut delim_offset = 1;
+        let mut code_delims = CodeDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
@@ -2333,7 +2381,15 @@ impl<'a> Parser<'a> {
                         }
                     }
 
-                    if codeblock_delims.is_empty() {
+                    if code_delims.is_populated() {
+                        // we have previously scanned all codeblock delimiters,
+                        // so we can reuse that work
+                        if let Some(scan_ix) = code_delims.find(search_count) {
+                            make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
+                        } else {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                        }
+                    } else {
                         // we haven't previously scanned all codeblock delimiters,
                         // so walk the AST
                         let mut scan = if search_count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
@@ -2341,33 +2397,15 @@ impl<'a> Parser<'a> {
                             if let ItemBody::MaybeCode(delim_count) = self.tree[scan_ix].item.body {
                                 if search_count == delim_count {
                                     make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
-                                    codeblock_delims.clear();
+                                    code_delims.clear();
                                     break;
                                 } else {
-                                    codeblock_delims.push((delim_count, scan_ix));
+                                    code_delims.insert(delim_count, scan_ix);
                                 }
                             }
                             scan = self.tree[scan_ix].next;
                         }
                         if scan == TreePointer::Nil {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
-                        }
-                    } else {
-                        // we have previously scanned all codeblock delimiters,
-                        // so we can reuse that work
-                        let search = codeblock_delims[delim_offset..]
-                            .iter()
-                            .position(|&(delim_count, _scan_ix)| {
-                                delim_count == search_count
-                            });
-
-                        if let Some(offset) = search {
-                            let real_offset = delim_offset + offset;
-                            delim_offset = real_offset + 1;
-                            let (_, scan_ix) = codeblock_delims[real_offset];
-                            make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
-                        } else {
-                            delim_offset += 1;
                             self.tree[cur_ix].item.body = ItemBody::Text;
                         }
                     }

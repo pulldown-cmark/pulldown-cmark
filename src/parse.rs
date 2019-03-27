@@ -2006,25 +2006,22 @@ fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr
     if !(open == '\'' || open == '\"' || open == '(') {
         return None;
     }
+    let close = if open == '(' { ')' } else { open };
     let underlying = &scanner.text[scanner.ix..];
     let mut title = String::new();
     let mut still_borrowed = true;
     let mut bytecount = 0;
-    let mut nest = 0;
     while let Some(mut c) = scanner.next_char() {
-        if c == open {
-            if open == '(' {
-                nest += 1;
+        if c == close {
+            let cow = if still_borrowed {
+                underlying[..bytecount].into()
             } else {
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { title.into() });
-            }
+                title.into()
+            };
+            return Some(cow);
         }
-        if open == '(' && c == ')' {
-            if nest == 0 {
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { title.into() });
-            } else {
-                nest -= 1;
-            }
+        if c == open {
+            return None;
         }
         if c == '\\' {
             let c_next = scanner.next_char()?;

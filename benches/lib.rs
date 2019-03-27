@@ -75,6 +75,13 @@ mod to_html {
     }
 
     #[bench]
+    fn pathological_link_titles(b: &mut test::Bencher) {
+        let input = std::iter::repeat("[ (](").take(2000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
     fn advanced_pathological_codeblocks(b: &mut test::Bencher) {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't

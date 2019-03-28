@@ -2232,17 +2232,25 @@ struct LinkDef<'a> {
 
 struct CodeDelims {
     inner: HashMap<usize, VecDeque<TreeIndex>>,
+    seen_first: bool,
 }
 
 impl CodeDelims {
     fn new() -> Self {
         Self {
             inner: Default::default(),
+            seen_first: false,
         }
     }
 
     fn insert(&mut self, count: usize, ix: TreeIndex) {
-        self.inner.entry(count).or_insert_with(Default::default).push_back(ix);
+        if self.seen_first {
+            self.inner.entry(count).or_insert_with(Default::default).push_back(ix);
+        } else {
+            // Skip the first insert, since that delimiter will always
+            // be an opener and not a closer.
+            self.seen_first = true;
+        }        
     }
 
     fn is_populated(&self) -> bool {
@@ -2260,6 +2268,7 @@ impl CodeDelims {
 
     fn clear(&mut self) {
         self.inner.clear();
+        self.seen_first = false;
     }
 }
 

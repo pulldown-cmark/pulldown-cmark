@@ -1,12 +1,11 @@
 #[macro_use] extern crate html5ever;
 #[macro_use] extern crate lazy_static;
 
-extern crate regex;
-extern crate tendril;
-
 use html5ever::{driver as html, QualName};
 use html5ever::rcdom::{Handle, NodeData, RcDom};
 use html5ever::serialize::{serialize, SerializeOpts};
+use pulldown_cmark::{Parser, Options};
+
 use std::collections::HashSet;
 use std::mem;
 use std::rc::{Rc, Weak};
@@ -17,8 +16,6 @@ mod suite;
 
 #[inline(never)]
 pub fn test_markdown_html(input: &str, output: &str) {
-    use pulldown_cmark::{Parser, html, Options};
-
     let mut s = String::new();
 
     let mut opts = Options::empty();
@@ -28,7 +25,7 @@ pub fn test_markdown_html(input: &str, output: &str) {
     opts.insert(Options::ENABLE_TASKLISTS);
 
     let p = Parser::new_ext(input, opts);
-    html::push_html(&mut s, p);
+    pulldown_cmark::html::push_html(&mut s, p);
 
     assert_eq!(normalize_html(output), normalize_html(&s));
 }

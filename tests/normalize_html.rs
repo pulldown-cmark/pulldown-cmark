@@ -1,4 +1,6 @@
-include!("normalize_html.rs.inc");
+
+mod utils;
+use utils::normalize_html;
 
 #[test]
 fn strip_div_newline() {

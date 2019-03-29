@@ -3,8 +3,8 @@
 
 extern crate pulldown_cmark;
 
-include!("normalize_html.rs.inc");
-
+mod utils;
+use utils::normalize_html;
 
     #[test]
     fn spec_test_1() {

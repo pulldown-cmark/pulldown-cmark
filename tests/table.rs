@@ -3,7 +3,8 @@
 
 extern crate pulldown_cmark;
 
-include!("normalize_html.rs.inc");
+mod utils;
+use utils::{normalize_html, test_markdown_html};
 
 
     #[test]
@@ -14,20 +15,7 @@ include!("normalize_html.rs.inc");
         let expected = r##"<h2>Test header</h2>
 "##;
 
-        use pulldown_cmark::{Parser, html, Options};
-
-        let mut s = String::new();
-
-        let mut opts = Options::empty();
-        opts.insert(Options::ENABLE_TABLES);
-        opts.insert(Options::ENABLE_FOOTNOTES);
-        opts.insert(Options::ENABLE_STRIKETHROUGH);
-        opts.insert(Options::ENABLE_TASKLISTS);
-
-        let p = Parser::new_ext(&original, opts);
-        html::push_html(&mut s, p);
-
-        assert_eq!(normalize_html(&expected), normalize_html(&s));
+        test_markdown_html(original, expected);
     }
 
     #[test]

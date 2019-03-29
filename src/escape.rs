@@ -107,7 +107,7 @@ static HTML_ESCAPES: [&'static str; 5] = [
 
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
 pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
-    if is_x86_feature_detected!("ssse3") {
+    if is_x86_feature_detected!("ssse3") && s.len() >= 16 {
         let bytes = s.as_bytes();
         let mut mark = 0;
 
@@ -175,28 +175,12 @@ unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
 
 /// Calls the given function with the index of every byte in the given byteslice
 /// that is either ", &, <, or > and for no other byte.
+/// Make sure to only call this when `bytes.len() >= 16`!
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
 #[target_feature(enable = "ssse3")]
 unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
     where F: FnMut(usize) -> io::Result<()>
 {
-    // total length less than 16, fall back to scalar code to be super safe.
-    if bytes.len() < 16 {
-        while offset < bytes.len() {
-            match bytes[offset..]
-                .iter()
-                .position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0)
-            {
-                Some(pos) => {
-                    callback(offset + pos)?;
-                    offset += pos + 1;
-                }
-                None => return Ok(()),
-            }
-        }
-        return Ok(());
-    }
-
     let upperbound = bytes.len() - 16;
     while offset < upperbound { 
         let mut mask = compute_mask(bytes, offset);
@@ -220,24 +204,9 @@ unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback:
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64", feature="simd"))]
 mod html_scan_tests {    
     #[test]
-    #[cfg(all(target_arch = "x86_64", feature="simd"))]
-    fn simple() {
-        let mut vec = Vec::new();
-        unsafe {
-            super::foreach_special_simd(
-                "&aXaaa\"".as_bytes(),
-                0,
-                |ix| Ok(vec.push(ix))
-            ).unwrap();
-        }
-        assert_eq!(vec, vec![0, 6]);
-    }
-    
-    #[test]
-    #[cfg(all(target_arch = "x86_64", feature="simd"))]
     fn multichunk() {
         let mut vec = Vec::new();
         unsafe {
@@ -252,7 +221,6 @@ mod html_scan_tests {
 
     // only match these bytes, and when we match them, match them 16 times
     #[test]
-    #[cfg(all(target_arch = "x86_64", feature="simd"))]
     fn only_right_bytes_matched() {
         for b in 0..255u8 {
             let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';

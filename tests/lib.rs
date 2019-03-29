@@ -1,4 +1,5 @@
 #[macro_use] extern crate html5ever;
+#[macro_use] extern crate lazy_static;
 
 extern crate regex;
 extern crate tendril;
@@ -14,17 +15,7 @@ use regex::Regex;
 
 mod suite;
 
-fn make_html_parser() -> html::Parser<RcDom> {
-    // let html = html5ever::Namespace { unsafe_data : 0x500000002u64 , phantom : ::std::marker::PhantomData , };
-    // let div = html5ever::LocalName { unsafe_data : 0xC000000002u64 , phantom : ::std::marker::PhantomData , };
-    html::parse_fragment(
-        RcDom::default(),
-        html::ParseOpts::default(),
-        QualName::new(None, ns!(html), local_name!("div")),
-        vec![],
-    )
-}
-
+#[inline(never)]
 pub fn test_markdown_html(input: &str, output: &str) {
     use pulldown_cmark::{Parser, html, Options};
 
@@ -42,7 +33,35 @@ pub fn test_markdown_html(input: &str, output: &str) {
     assert_eq!(normalize_html(output), normalize_html(&s));
 }
 
-pub fn normalize_html(s: &str) -> String {
+lazy_static! {
+    static ref WHITESPACE_RE: Regex = Regex::new(r"\s+").unwrap();
+    static ref LEADING_WHITESPACE_RE: Regex = Regex::new(r"\A\s+").unwrap();
+    static ref TRAILING_WHITESPACE_RE: Regex = Regex::new(r"\s+\z").unwrap();
+    static ref BLOCK_TAGS: HashSet<&'static str> = [
+        "article", "header", "aside", "hgroup", "blockquote", "hr", "iframe", "body", "li",
+        "map", "button", "object", "canvas", "ol", "caption", "output", "col", "p", "colgroup",
+        "pre", "dd", "progress", "div", "section", "dl", "table", "td", "dt", "tbody", "embed",
+        "textarea", "fieldset", "tfoot", "figcaption", "th", "figure", "thead", "footer", "tr",
+        "form", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "video", "script", "style"
+    ].iter().cloned().collect();
+    static ref PRE_TAGS: HashSet<&'static str> = [
+        "pre"
+    ].iter().cloned().collect();
+    static ref TABLE_TAGS: HashSet<&'static str> = [
+        "table", "thead", "tbody", "tr"
+    ].iter().cloned().collect();
+}
+
+fn make_html_parser() -> html::Parser<RcDom> {
+    html::parse_fragment(
+        RcDom::default(),
+        html::ParseOpts::default(),
+        QualName::new(None, ns!(html), local_name!("div")),
+        vec![],
+    )
+}
+
+fn normalize_html(s: &str) -> String {
     let parser = make_html_parser();
     let dom = parser.one(s);
     let body = normalize_dom(dom);
@@ -54,24 +73,7 @@ pub fn normalize_html(s: &str) -> String {
         .expect("html5ever should always produce UTF8")
 }
 
-struct Regexes {
-    whitespace_re: Regex,
-    leading_whitespace_re: Regex,
-    trailing_whitespace_re: Regex,
-}
-
-impl Regexes {
-    fn new() -> Self {
-        Self {
-            whitespace_re: Regex::new(r"\s+").unwrap(),
-            leading_whitespace_re: Regex::new(r"\A\s+").unwrap(),
-            trailing_whitespace_re: Regex::new(r"\s+\z").unwrap(),
-        }
-    }
-}
-
 fn normalize_dom(dom: RcDom) -> Handle {
-    let regexes = Regexes::new();
     let body = {
         let children = dom.document.children.borrow();
         children[0].clone()
@@ -91,7 +93,7 @@ fn normalize_dom(dom: RcDom) -> Handle {
             let parent = parent
                 .expect("a node in the DOM will have a parent, except the root, which is not processed")
                 .upgrade().expect("a node's parent will be pointed to by its parent (or the root pointer), and will not be dropped");
-            let retain = normalize_node(&parent, &mut node, &regexes);
+            let retain = normalize_node(&parent, &mut node);
             if !retain {
                 let mut siblings = parent.children.borrow_mut();
                 siblings.retain(|s| !Rc::ptr_eq(&node, s));
@@ -110,20 +112,10 @@ fn normalize_dom(dom: RcDom) -> Handle {
     body
 }
 
-// TODO: change lookups in these to binary searches
-static BLOCK_TAGS: &[&str] = &[
-    "article", "header", "aside", "hgroup", "blockquote", "hr", "iframe", "body", "li",
-    "map", "button", "object", "canvas", "ol", "caption", "output", "col", "p", "colgroup",
-    "pre", "dd", "progress", "div", "section", "dl", "table", "td", "dt", "tbody", "embed",
-    "textarea", "fieldset", "tfoot", "figcaption", "th", "figure", "thead", "footer", "tr",
-    "form", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "video", "script", "style"
-];
-static PRE_TAGS: &[&str] = &["pre"];
-static TABLE_TAGS: &[&str] = &["table", "thead", "tbody", "tr"];
 
 // Returns false if node is an empty text node or an empty tbody.
 // Returns true otherwise.
-fn normalize_node(parent: &Handle, node: &mut Handle, regexes: &Regexes) -> bool {
+fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
     match node.data {
         NodeData::Comment { .. } |
         NodeData::Doctype { .. } |
@@ -158,7 +150,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle, regexes: &Regexes) -> bool
                     let mut node = node.clone();
                     loop {
                         let reached_block = if let NodeData::Element{ ref name, .. } = parent.data {
-                            BLOCK_TAGS.binary_search(&&*name.local.to_ascii_lowercase()).is_ok()
+                            BLOCK_TAGS.contains(&&*name.local.to_ascii_lowercase())
                         } else {
                             false
                         };
@@ -231,7 +223,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle, regexes: &Regexes) -> bool
                                 };
                             }
                             if let NodeData::Text { ref contents, .. } = preceeding.data {
-                                break 'ascent regexes.trailing_whitespace_re.is_match(&*contents.borrow())
+                                break 'ascent TRAILING_WHITESPACE_RE.is_match(&*contents.borrow())
                             } else {
                                 break 'ascent false
                             }
@@ -249,13 +241,13 @@ fn normalize_node(parent: &Handle, node: &mut Handle, regexes: &Regexes) -> bool
                 } else {
                     " "
                 };
-                *contents = regexes.whitespace_re.replace_all(&*contents, whitespace_replacement).as_ref().into();
+                *contents = WHITESPACE_RE.replace_all(&*contents, whitespace_replacement).as_ref().into();
 
                 if is_first_in_block || is_preceeded_by_ws {
-                    *contents = regexes.leading_whitespace_re.replace_all(&*contents, "").as_ref().into();
+                    *contents = LEADING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
                 }
                 if is_last_in_block {
-                    *contents = regexes.trailing_whitespace_re.replace_all(&*contents, "").as_ref().into();
+                    *contents = TRAILING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
                 }
                 // TODO: collapse whitespace when adjacent to whitespace.
                 // For example, the whitespace in the span should be collapsed in all of these cases:
@@ -282,7 +274,6 @@ fn normalize_node(parent: &Handle, node: &mut Handle, regexes: &Regexes) -> bool
                 node.children.borrow().len() > 1 ||
                 node.children.borrow().iter().next().map(|only_child| match only_child.data {
                     NodeData::Text { ref contents, .. } => {
-                        dbg!(contents);
                         !contents.borrow().chars().all(|c| c.is_whitespace())
                     }
                     _ => {

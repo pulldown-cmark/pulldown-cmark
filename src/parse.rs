@@ -30,6 +30,7 @@ use crate::strings::{CowStr, InlineStr};
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
+use crate::simd::{iterate_special_bytes, LoopInstruction};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -543,27 +544,28 @@ impl<'a> FirstPass<'a> {
     /// Parse a line of input, appending text and items to tree.
     ///
     /// Returns: index after line and an item representing the break.
-    fn parse_line(&mut self, mut ix: usize, inside_table: bool) -> (usize, Option<Item<'a>>) {
+    fn parse_line(&mut self, start: usize, inside_table: bool) -> (usize, Option<Item<'a>>) {
         let bytes = &self.text.as_bytes();
-        let start = ix;
         let mut pipes = 0;
         let mut last_pipe_ix = start;
         let mut begin_text = start;
-        while ix < self.text.len() {
-            match bytes[ix] {
-                b'\r' | b'\n' | b'|' if inside_table => {
-                    break;
-                }
+
+        let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
+            match byte {
                 b'\n' | b'\r' => {
+                    if inside_table {
+                        return LoopInstruction::BreakAtWith(ix, None);
+                    }
+
                     let mut i = ix;
                     let eol_bytes = scan_eol(&self.text[ix..]).unwrap_or(0);
-                    if ix > begin_text && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
+                    let end_ix = ix + eol_bytes;
+                    if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
-                        ix += eol_bytes;
-                        return (ix, Some(Item {
+                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
                             start: i,
-                            end: ix,
+                            end: end_ix,
                             body: ItemBody::HardBreak,
                         }));
                     } else if ix >= begin_text + 2
@@ -573,12 +575,10 @@ impl<'a> FirstPass<'a> {
                         while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
                             i -= 1;
                         }
-                        ix += eol_bytes;
                         self.tree.append_text(begin_text, i);
-
-                        return (ix, Some(Item {
+                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
                             start: i,
-                            end: ix,
+                            end: end_ix,
                             body: ItemBody::HardBreak,
                         }));
                     } else if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
@@ -595,38 +595,37 @@ impl<'a> FirstPass<'a> {
 
                             // make sure they match the number of columns we find in separator line
                             if alignment.len() == header_count {
-                                ix = table_head_ix + table_head_bytes;
-                                return (ix, Some(Item {
+                                let end_ix = table_head_ix + table_head_bytes;
+                                return LoopInstruction::BreakAtWith(end_ix, Some(Item {
                                     start: i,
-                                    end: ix, // must update later
+                                    end: end_ix, // must update later
                                     body: ItemBody::Table(alignment),
                                 }));
                             }
                         }
                     }
-
+                        
                     self.tree.append_text(begin_text, ix);
-                    ix += eol_bytes;
-                    return (ix, Some(Item {
+                    LoopInstruction::BreakAtWith(end_ix, Some(Item {
                         start: i,
-                        end: ix,
+                        end: end_ix,
                         body: ItemBody::SoftBreak,
-                    }));
+                    }))
                 }
-                b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
-                    self.tree.append_text(begin_text, ix);
-                    if !inside_table || bytes[ix + 1] != b'|' {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 1,
-                            body: ItemBody::Backslash,
-                        });
-                    }
-                    begin_text = ix + 1;
-                    if bytes[ix + 1] == b'`' {
-                        ix += 1;
+                b'\\' => {
+                    if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) {
+                        self.tree.append_text(begin_text, ix);
+                        if !inside_table || bytes[ix + 1] != b'|' {
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 1,
+                                body: ItemBody::Backslash,
+                            });
+                        }
+                        begin_text = ix + 1;
+                        LoopInstruction::ContinueAndSkip(if bytes[ix + 1] == b'`' { 0 } else { 1 })
                     } else {
-                        ix += 2;
+                        LoopInstruction::ContinueAndSkip(0)
                     }
                 }
                 c @ b'*' | c @ b'_' | c @ b'~' => {
@@ -645,11 +644,9 @@ impl<'a> FirstPass<'a> {
                                 body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
                             });
                         }
-                        ix += count;
-                        begin_text = ix;
-                    } else {
-                        ix += count;
+                        begin_text = ix + count;
                     }
+                    LoopInstruction::ContinueAndSkip(count - 1)
                 }
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
@@ -659,8 +656,8 @@ impl<'a> FirstPass<'a> {
                         end: ix + count,
                         body: ItemBody::MaybeCode(count),
                     });
-                    ix += count;
-                    begin_text = ix;
+                    begin_text = ix + count;
+                    LoopInstruction::ContinueAndSkip(count - 1)
                 }
                 b'<' => {
                     // Note: could detect some non-HTML cases and early escape here, but not
@@ -671,18 +668,22 @@ impl<'a> FirstPass<'a> {
                         end: ix + 1,
                         body: ItemBody::MaybeHtml,
                     });
-                    ix += 1;
-                    begin_text = ix;
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
-                b'!' if ix + 1 < self.text.len() && bytes[ix + 1] == b'[' => {
-                    self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 2,
-                        body: ItemBody::MaybeImage,
-                    });
-                    ix += 2;
-                    begin_text = ix;
+                b'!' => {
+                    if ix + 1 < self.text.len() && bytes[ix + 1] == b'[' {
+                        self.tree.append_text(begin_text, ix);
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + 2,
+                            body: ItemBody::MaybeImage,
+                        });
+                        begin_text = ix + 2;
+                        LoopInstruction::ContinueAndSkip(1)
+                    } else {
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
                 }
                 b'[' => {
                     self.tree.append_text(begin_text, ix);
@@ -691,8 +692,8 @@ impl<'a> FirstPass<'a> {
                         end: ix + 1,
                         body: ItemBody::MaybeLinkOpen,
                     });
-                    ix += 1;
-                    begin_text = ix;
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
                 b']' => {
                     self.tree.append_text(begin_text, ix);
@@ -701,8 +702,8 @@ impl<'a> FirstPass<'a> {
                         end: ix + 1,
                         body: ItemBody::MaybeLinkClose,
                     });
-                    ix += 1;
-                    begin_text = ix;
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
                 b'&' => {
                     match scan_entity(&self.text[ix..]) {
@@ -713,23 +714,30 @@ impl<'a> FirstPass<'a> {
                                 end: ix + n,
                                 body: ItemBody::SynthesizeText(value),
                             });
-                            ix += n;
-                            begin_text = ix;
+                            begin_text = ix + n;
+                            LoopInstruction::ContinueAndSkip(n - 1)
                         }
-                        _ => ix += 1
+                        _ => LoopInstruction::ContinueAndSkip(0),
                     }
                 }
-                b'|' if !inside_table => {
-                    last_pipe_ix = ix;
-                    pipes += 1;
-                    ix += 1;
+                b'|' => {
+                    if inside_table {
+                        LoopInstruction::BreakAtWith(ix, None)
+                    } else {
+                        last_pipe_ix = ix;
+                        pipes += 1;
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
                 }
-                _ => ix += 1,
+                _ => LoopInstruction::ContinueAndSkip(0),
             }
+        });
+
+        if brk.is_none() {
+            // need to close text at eof
+            self.tree.append_text(begin_text, final_ix);
         }
-        // need to close text at eof
-        self.tree.append_text(begin_text, ix);
-        (ix, None)
+        (final_ix, brk)
     }
 
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty

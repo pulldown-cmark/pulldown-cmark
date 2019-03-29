@@ -68,6 +68,7 @@ mod parse;
 mod tree;
 mod linklabel;
 mod strings;
+mod simd;
 
 pub use crate::parse::{Parser, OffsetIter, Alignment, Event, Tag, Options, LinkType};
 pub use crate::strings::{CowStr, InlineStr};

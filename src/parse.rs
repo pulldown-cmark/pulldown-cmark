@@ -1829,84 +1829,23 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 ///
 /// Both `open` and `close` are matching MaybeCode items.
 fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, close: TreeIndex) {
-    let first = tree[open].next;
-    let first_ix = first.unwrap();
-    // let mut node = first_ix;
-    // let last;
-    // loop {
-    //     let next = tree[node].next;
-    //     match tree[node].item.body {
-    //         ItemBody::SoftBreak => {
-    //             // TODO: trailing space is stripped in parse_line, and we don't want it
-    //             // stripped.
-    //             tree[node].item.body = ItemBody::SynthesizeText(" ".into());
-    //         }
-    //         ItemBody::HardBreak => {
-    //             let start = tree[node].item.start;
-    //             if s.as_bytes()[start] == b'\\' {
-    //                 tree[node].item.body = ItemBody::Text;
-    //                 let end = tree[node].item.end;
-    //                 let space = tree.create_node(Item {
-    //                     start: start + 1,
-    //                     end,
-    //                     body: ItemBody::SynthesizeText(" ".into())
-    //                 });
-    //                 tree[space].next = next;
-    //                 tree[node].next = TreePointer::Valid(space);
-    //                 tree[node].item.end = start + 1;
-    //             } else {
-    //                 tree[node].item.body = ItemBody::SynthesizeText(" ".into());
-    //             }
-    //         }
-    //         _ => tree[node].item.body = ItemBody::Text,
-    //     }
-    //     if next == TreePointer::Valid(close) {
-    //         last = node;
-    //         tree[node].next = TreePointer::Nil;
-    //         break;
-    //     }
-    //     node = next.unwrap();
-    // }
-    // // Strip opening and closing space, if appropriate.
-    // let opening = match &tree[first_ix].item.body {
-    //     ItemBody::Text => s.as_bytes()[tree[first_ix].item.start] == b' ',
-    //     ItemBody::SynthesizeText(text) => text.starts_with(' '),
-    //     _ => unreachable!("unexpected item"),
-    // };
-    // let closing = match &tree[last].item.body {
-    //     ItemBody::Text => s.as_bytes()[tree[last].item.end - 1] == b' ',
-    //     ItemBody::SynthesizeText(text) => text.ends_with(' '),
-    //     _ => unreachable!("unexpected item"),
-    // };
-    // // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
-    // if opening && closing {
-    //     if tree[first_ix].item.body == ItemBody::SynthesizeText(" ".into())
-    //         || tree[first_ix].item.end - tree[first_ix].item.start == 1
-    //     {
-    //         tree[open].child = tree[first_ix].next;
-    //     } else {
-    //         tree[first_ix].item.start += 1;
-    //     }
-    //     if tree[last].item.body == ItemBody::SynthesizeText(" ".into()) {
-    //         tree[last].item.body = ItemBody::SynthesizeText("".into());
-    //     } else {
-    //         tree[last].item.end -= 1;
-    //     }
-    //     // TODO: if last is now empty, remove it (we have size-0 items in the tree)
-    // }
-    
-    if let ItemBody::Text = tree[first_ix].item.body {
-        let span_start = tree[first_ix].item.start;
-        let span_end = tree[first_ix].item.end;
-        tree[open].item.body = ItemBody::Code(s[span_start..span_end].into());
-    } else {
-        panic!("uh-oh. we cant deal with this yet");
+    let first_ix = tree[open].next.unwrap();
+    let mut span_start = tree[first_ix].item.start;
+    let mut span_end = tree[close].item.start;
+    let opening = s.as_bytes()[span_start] == b' ';
+    let closing = s.as_bytes()[span_end - 1] == b' ';
+
+    if opening && closing {
+        span_start += 1;
+        if span_start < span_end  {
+            span_end -= 1;
+        }
     }
-    
+
+    tree[open].item.body = ItemBody::Code(s[span_start..span_end].into());    
     tree[open].item.end = tree[close].item.end;
-    
     tree[open].next = tree[close].next;
-    tree[open].child = TreePointer::Nil; // first;
+    tree[open].child = TreePointer::Nil;
 }
 
 fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {

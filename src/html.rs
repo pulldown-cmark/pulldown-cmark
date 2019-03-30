@@ -103,12 +103,14 @@ where
                 Code(text) => {
                     self.write(b"<code>", false)?;
                     escape_html(&mut self.writer, &text, false)?;
+                    self.end_newline = text.ends_with('\n');
                     self.write(b"</code>", false)?;
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;
                 }
                 SoftBreak => {
+                    dbg!("got here");
                     self.write_newline()?;
                 }
                 HardBreak => {

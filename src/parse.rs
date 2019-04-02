@@ -30,7 +30,6 @@ use crate::strings::{CowStr, InlineStr};
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
-use crate::simd::{iterate_special_bytes, LoopInstruction};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -2634,6 +2633,39 @@ impl<'a> Parser<'a> {
             inner: self,
         }
     }
+}
+
+pub(crate) enum LoopInstruction<T> {
+    /// Continue looking for more special bytes, but skip next few bytes.
+    ContinueAndSkip(usize),
+    /// Break looping immediately, returning with the given index and value.
+    BreakAtWith(usize, T)
+}
+
+fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
+    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
+{
+    #[cfg(all(target_arch = "x86_64", feature="simd"))]
+    { crate::simd::iterate_special_bytes(bytes, ix, callback) }
+    #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
+    { scalar_iterate_special_bytes(bytes, ix, callback) }
+}
+
+pub(crate) fn scalar_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut callback: F) -> (usize, Option<T>)
+    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
+{
+    while ix < bytes.len() {
+        match callback(ix, bytes[ix]) {
+            LoopInstruction::ContinueAndSkip(skip) => {
+                ix += skip + 1;
+            }
+            LoopInstruction::BreakAtWith(ix, val) => {
+                return (ix, val);
+            }
+        }
+    }
+
+    (ix, None)
 }
 
 pub struct OffsetIter<'a> {

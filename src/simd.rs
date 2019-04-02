@@ -4,38 +4,41 @@
 //! fully generality of the universal algorithm and are hence able to skip a few
 //! instructions.
 
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
 use core::arch::x86_64::*;
+use crate::parse::LoopInstruction;
 
-pub(crate) enum LoopInstruction<T> {
-    /// Continue looking for more special bytes, but skip next few bytes.
-    ContinueAndSkip(usize),
-    /// Break looping immediately, returning with the given index and value.
-    BreakAtWith(usize, T)
+// Generates a lookup table containing the bitmaps for our
+// special marker bytes. This is effectively a 128 element 2d bitvector,
+// that can be indexed by a four bit row index (the lower nibble)
+// and a three bit column index (upper nibble).
+const fn compute_lookup() -> [u8; 16] {
+    let mut lookup = [0u8; 16];
+    lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
+    lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
+    lookup[(b'*'  & 0x0f) as usize] |= 1 << (b'*'  >> 4);
+    lookup[(b'_'  & 0x0f) as usize] |= 1 << (b'_'  >> 4);
+    lookup[(b'~'  & 0x0f) as usize] |= 1 << (b'~'  >> 4);
+    lookup[(b'|'  & 0x0f) as usize] |= 1 << (b'|'  >> 4);
+    lookup[(b'&'  & 0x0f) as usize] |= 1 << (b'&'  >> 4);
+    lookup[(b'\\' & 0x0f) as usize] |= 1 << (b'\\' >> 4);
+    lookup[(b'['  & 0x0f) as usize] |= 1 << (b'['  >> 4);
+    lookup[(b']'  & 0x0f) as usize] |= 1 << (b']'  >> 4);
+    lookup[(b'<'  & 0x0f) as usize] |= 1 << (b'<'  >> 4);
+    lookup[(b'!'  & 0x0f) as usize] |= 1 << (b'!'  >> 4);
+    lookup[(b'`'  & 0x0f) as usize] |= 1 << (b'`'  >> 4);
+    lookup
 }
 
-#[allow(overflowing_literals)]
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
 unsafe fn compute_mask(bytes: &[u8], ix: isize) -> i32 {
-    // constants. computed with the below code
-    // ```rust
-    // let chars = [b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`'];
-    // let mut lower_bitmap = [0u8; 16];
-    // for &c in &chars {
-    //     lower_bitmap[(c & 0x0f) as usize] |= 1 << (c >> 4);
-    // }
-    // let bitmap = unsafe { _mm_loadu_si128(lower_bitmap.as_ptr() as *const _) };
-    // ```
-    let bitmap = _mm_setr_epi8(
-        64, 4, 0, 0, 0, 0, 4, 0, 0, 0, 5, 32, 168, 33, 128, 32
-    );
+    let lookup = compute_lookup();
+    let bitmap = _mm_loadu_si128(lookup.as_ptr() as *const __m128i);
     let bitmask_lookup = _mm_setr_epi8(
         1, 2, 4, 8, 16, 32, 64, -128,
-        255, 255, 255, 255, 255, 255, 255, 255
+        -1, -1, -1, -1, -1, -1, -1, -1
     );
 
     // actual computation
-    let raw_ptr = bytes.as_ptr().offset(ix) as *const _;
+    let raw_ptr = bytes.as_ptr().offset(ix) as *const __m128i;
     let input = _mm_loadu_si128(raw_ptr);
     let bitset = _mm_shuffle_epi8(bitmap, input);
     let higher_nibbles = _mm_and_si128(_mm_srli_epi16(input, 4), _mm_set1_epi8(0x0f));
@@ -49,7 +52,6 @@ unsafe fn compute_mask(bytes: &[u8], ix: isize) -> i32 {
 /// Breaks when callback returns LoopInstruction::BreakAtWith(ix, val). And skips the
 /// number of bytes in callback return value otherwise.
 /// This method returns final index and a possible break value.
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
 pub(crate) fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
     where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
 {
@@ -58,19 +60,11 @@ pub(crate) fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) 
             simd_iterate_special_bytes(bytes, ix, callback)
         }
     } else {
-        scalar_iterate_special_bytes(bytes, ix, callback)
+        crate::parse::scalar_iterate_special_bytes(bytes, ix, callback)
     }
 }
 
-#[cfg(not(all(target_arch = "x86_64", feature="simd")))]
-pub(crate) fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
-    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
-{
-    scalar_iterate_special_bytes(bytes, ix, callback)
-}
-
 // Returns Ok to continue, Err to break
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
 unsafe fn process_mask<F, T>(mut mask: i32, bytes: &[u8], mut ix: usize, callback: &mut F)
     -> Result<usize, (usize, Option<T>)>
 where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
@@ -89,7 +83,6 @@ where F: FnMut(usize, u8) -> LoopInstruction<Option<T>>
     Ok(ix)
 }
 
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
 #[target_feature(enable = "ssse3")]
 /// Important: only call this function when `bytes.len() >= 16`. Doing
 /// so otherwise may exhibit undefined behaviour.
@@ -118,26 +111,8 @@ unsafe fn simd_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut call
     (bytes.len(), None)
 }
 
-/// Scalar fallback.
-fn scalar_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut callback: F) -> (usize, Option<T>)
-    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
-{
-    while ix < bytes.len() {
-        match callback(ix, bytes[ix]) {
-            LoopInstruction::ContinueAndSkip(skip) => {
-                ix += skip + 1;
-            }
-            LoopInstruction::BreakAtWith(ix, val) => {
-                return (ix, val);
-            }
-        }
-    }
 
-    (ix, None)
-}
-
-
-#[cfg(all(test, target_arch = "x86_64", feature="simd"))]
+#[cfg(test)]
 mod simd_test {
     use super::{iterate_special_bytes, LoopInstruction};
 

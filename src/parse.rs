@@ -2642,6 +2642,16 @@ pub(crate) enum LoopInstruction<T> {
     BreakAtWith(usize, T)
 }
 
+/// This function walks the byte slices from the given index and
+/// calls the callback function on all byte (and their indices) that are in the following set:
+/// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
+/// It may also call the callback on other bytes, but it is not guaranteed.
+/// Whenever `callback(ix, byte)` returns a `ContinueAndSkip(n)` value, the callback
+/// will not be called with an index that is lesser than `ix + n + 1`.
+/// When the callback returns a `BreakAtWith(end_ix, opt+val)`, no more callbacks will be
+/// called and the function returns immediately with the return value `(end_ix, opt_val)`.
+/// If `BreakAtWith(..)` is never returned, this function will return the first
+/// index that is outside the byteslice bound and a `None` value.
 fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
     where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
 {

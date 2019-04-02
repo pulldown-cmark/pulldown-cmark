@@ -173,10 +173,10 @@ mod simd {
     /// Creates the lookup table for use in `compute_mask`.
     const fn create_lookup() -> [u8; 16] {
         let mut table = [0; 16];
-        table[(b'<' >> 4) as usize] = b'<';
-        table[(b'>' >> 4) as usize] = b'>';
-        table[(b'&' >> 4) as usize] = b'&';
-        table[(b'"' >> 4) as usize] = b'"';
+        table[(b'<' & 0x0f) as usize] = b'<';
+        table[(b'>' & 0x0f) as usize] = b'>';
+        table[(b'&' & 0x0f) as usize] = b'&';
+        table[(b'"' & 0x0f) as usize] = b'"';
         table[0] = 0b0111_1111;
         table
     }
@@ -187,7 +187,7 @@ mod simd {
     /// `bytes[offset..]`. For example, the mask `(1 << 3)` states that there is an HTML byte
     /// at `offset + 3`. It is only safe to call this function when
     /// `bytes.len() >= offset + VECTOR_SIZE`.
-    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i16 {
+    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
         let table = create_lookup();
         let lookup = _mm_loadu_si128(table.as_ptr() as *const __m128i);
         let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const __m128i;
@@ -210,7 +210,7 @@ mod simd {
         
         // Translate matches to a bitmask, where every 1 corresponds to a HTML special character
         // and a 0 is a non-HTML byte.
-        _mm_movemask_epi8(matches) as i16
+        _mm_movemask_epi8(matches)
     }
 
     /// Calls the given function with the index of every byte in the given byteslice

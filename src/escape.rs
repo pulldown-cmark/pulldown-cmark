@@ -22,8 +22,6 @@
 
 use std::io::{self, Write};
 use std::str::from_utf8;
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
-use std::arch::x86_64::*;
 
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -74,8 +72,7 @@ where
             mark = i + 1; // all escaped characters are ASCII
         }
     }
-    w.write_all(&bytes[mark..])?;
-    Ok(())
+    w.write_all(&bytes[mark..])
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -105,36 +102,15 @@ static HTML_ESCAPES: [&'static str; 5] = [
         "&gt;"
     ];
 
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
-pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
-    if is_x86_feature_detected!("ssse3") && s.len() >= 16 {
-        let bytes = s.as_bytes();
-        let mut mark = 0;
 
-        unsafe {
-            foreach_special_simd(bytes, 0, |i| {
-                let replacement = HTML_ESCAPES[HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
-                w.write_all(&bytes[mark..i])?;
-                w.write_all(replacement.as_bytes())?;
-                mark = i + 1;  // all escaped characters are ASCII
-                Ok(())
-            })?;
-        }
-        w.write_all(&bytes[mark..])
-    } else {
-        escape_html_scalar(w, s)
-    }
-}
-
-#[cfg(not(all(target_arch = "x86_64", feature="simd")))]
 pub(crate) fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
-    escape_html_scalar(w, s)
+    #[cfg(all(target_arch = "x86_64", feature="simd"))]
+    { simd::escape_html(w, s) }
+    #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
+    { escape_html_scalar(w, s) }
 }
 
-pub(crate) fn escape_html_scalar<W>(mut w: W, s: &str) -> io::Result<()>
-where
-    W: Write,
-{
+fn escape_html_scalar<W: Write>(mut w: W, s: &str) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
@@ -162,79 +138,106 @@ where
 }
 
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
-#[target_feature(enable = "ssse3")]
-unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
-    let lookup = _mm_set_epi8(0, 62, 0, 60, 0, 0, 0, 0, 0, 38, 0, 0, 0, 34, 0, 127);
-    let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const _;
-    let v = _mm_loadu_si128(raw_ptr);
-    let expected = _mm_shuffle_epi8(lookup, v);
-    let matches = _mm_cmpeq_epi8(expected, v);
-    
-    _mm_movemask_epi8(matches)
-}
+mod simd {
+    use std::arch::x86_64::*;
+    use std::io::{self, Write};
+    use std::mem::size_of;
 
-/// Calls the given function with the index of every byte in the given byteslice
-/// that is either ", &, <, or > and for no other byte.
-/// Make sure to only call this when `bytes.len() >= 16`!
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
-#[target_feature(enable = "ssse3")]
-unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
-    where F: FnMut(usize) -> io::Result<()>
-{
-    let upperbound = bytes.len() - 16;
-    while offset < upperbound { 
-        let mut mask = compute_mask(bytes, offset);
+    const VECTOR_SIZE: usize = size_of::<__m128i>();
+
+    pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+        if is_x86_feature_detected!("ssse3") && s.len() >= VECTOR_SIZE {
+            let bytes = s.as_bytes();
+            let mut mark = 0;
+
+            unsafe {
+                foreach_special_simd(bytes, 0, |i| {
+                    let replacement = super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
+                    w.write_all(&bytes[mark..i])?;
+                    mark = i + 1; // all escaped characters are ASCII
+                    w.write_all(replacement.as_bytes())
+                })?;
+            }
+            w.write_all(&bytes[mark..])
+        } else {
+            super::escape_html_scalar(w, s)
+        }
+    }
+
+    #[target_feature(enable = "ssse3")]
+    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
+        let lookup = _mm_set_epi8(0, 62, 0, 60, 0, 0, 0, 0, 0, 38, 0, 0, 0, 34, 0, 127);
+        let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const _;
+        let v = _mm_loadu_si128(raw_ptr);
+        let expected = _mm_shuffle_epi8(lookup, v);
+        let matches = _mm_cmpeq_epi8(expected, v);
+        
+        _mm_movemask_epi8(matches)
+    }
+
+    /// Calls the given function with the index of every byte in the given byteslice
+    /// that is either ", &, <, or > and for no other byte.
+    /// Make sure to only call this when `bytes.len() >= 16`!
+    #[target_feature(enable = "ssse3")]
+    unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
+        where F: FnMut(usize) -> io::Result<()>
+    {
+        let upperbound = bytes.len() - VECTOR_SIZE;
+        while offset < upperbound { 
+            let mut mask = compute_mask(bytes, offset);
+            while mask != 0 {
+                let ix = mask.trailing_zeros();
+                callback(offset + ix as usize)?;
+                mask ^= mask & -mask;
+            }
+            offset += VECTOR_SIZE;
+        }
+
+        // final iteration - align read with the end of the slice and
+        // shift off the bytes at start we have already scanned
+        let mut mask = compute_mask(bytes, upperbound);
+        mask >>= offset - upperbound;
         while mask != 0 {
             let ix = mask.trailing_zeros();
             callback(offset + ix as usize)?;
             mask ^= mask & -mask;
         }
-        offset += 16;
+        Ok(())
     }
 
-    // final iteration - align read with the end of the slice and
-    // shift off the bytes at start we have already scanned
-    let mut mask = compute_mask(bytes, upperbound);
-    mask >>= offset - upperbound;
-    while mask != 0 {
-        let ix = mask.trailing_zeros();
-        callback(offset + ix as usize)?;
-        mask ^= mask & -mask;
-    }
-    Ok(())
-}
-
-#[cfg(all(test, target_arch = "x86_64", feature="simd"))]
-mod html_scan_tests {    
-    #[test]
-    fn multichunk() {
-        let mut vec = Vec::new();
-        unsafe {
-            super::foreach_special_simd(
-                "&aXaaaa.a'aa9a<>aab&".as_bytes(),
-                0,
-                |ix| Ok(vec.push(ix))
-            ).unwrap();
-        }
-        assert_eq!(vec, vec![0, 14, 15, 19]);
-    }
-
-    // only match these bytes, and when we match them, match them 16 times
-    #[test]
-    fn only_right_bytes_matched() {
-        for b in 0..255u8 {
-            let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
-            let vek = vec![b; 16];
-            let mut match_count = 0;
+    #[cfg(test)]
+    mod html_scan_tests {    
+        #[test]
+        fn multichunk() {
+            let mut vec = Vec::new();
             unsafe {
                 super::foreach_special_simd(
-                    &vek,
+                    "&aXaaaa.a'aa9a<>aab&".as_bytes(),
                     0,
-                    |_| { match_count += 1; Ok(()) }
+                    |ix| Ok(vec.push(ix))
                 ).unwrap();
             }
-            assert!((match_count > 0) == (match_count == 16));
-            assert_eq!((match_count == 16), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
+            assert_eq!(vec, vec![0, 14, 15, 19]);
+        }
+
+        // only match these bytes, and when we match them, match them 16 times
+        #[test]
+        fn only_right_bytes_matched() {
+            for b in 0..255u8 {
+                let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
+                let vek = vec![b; super::VECTOR_SIZE];
+                let mut match_count = 0;
+                unsafe {
+                    super::foreach_special_simd(
+                        &vek,
+                        0,
+                        |_| { match_count += 1; Ok(()) }
+                    ).unwrap();
+                }
+                assert!((match_count > 0) == (match_count == super::VECTOR_SIZE));
+                assert_eq!((match_count == super::VECTOR_SIZE), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
+            }
         }
     }
 }
+

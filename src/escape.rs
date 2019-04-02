@@ -102,7 +102,8 @@ static HTML_ESCAPES: [&'static str; 5] = [
         "&gt;"
     ];
 
-
+/// Writes the given string to the Write sink, replacing special HTML bytes
+/// (<, >, &, ") by escape sequences.
 pub(crate) fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
     #[cfg(all(target_arch = "x86_64", feature="simd"))]
     { simd::escape_html(w, s) }
@@ -146,6 +147,11 @@ mod simd {
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
     pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+        // The SIMD accelerated code uses the PSHUFB instruction, which is part
+        // of the SSSE3 instruction set. Further, we can only use this code if
+        // the buffer is at least one VECTOR_SIZE in length to prevent reading 
+        // out of bounds. If either of these conditions is not met, we fall back
+        // to scalar code.
         if is_x86_feature_detected!("ssse3") && s.len() >= VECTOR_SIZE {
             let bytes = s.as_bytes();
             let mut mark = 0;
@@ -164,24 +170,67 @@ mod simd {
         }
     }
 
+    /// Creates the lookup table for use in `compute_mask`.
+    const fn create_lookup() -> [u8; 16] {
+        let mut table = [0; 16];
+        table[(b'<' >> 4) as usize] = b'<';
+        table[(b'>' >> 4) as usize] = b'>';
+        table[(b'&' >> 4) as usize] = b'&';
+        table[(b'"' >> 4) as usize] = b'"';
+        table[0] = 0b0111_1111;
+        table
+    }
+
     #[target_feature(enable = "ssse3")]
-    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
-        let lookup = _mm_set_epi8(0, 62, 0, 60, 0, 0, 0, 0, 0, 38, 0, 0, 0, 34, 0, 127);
-        let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const _;
-        let v = _mm_loadu_si128(raw_ptr);
-        let expected = _mm_shuffle_epi8(lookup, v);
-        let matches = _mm_cmpeq_epi8(expected, v);
+    /// Computes a byte mask at given offset in the byte buffer. Its first 16 (least significant)
+    /// bits correspond to whether there is an HTML special byte (&, <, ", >) at the 16 bytes
+    /// `bytes[offset..]`. For example, the mask `(1 << 3)` states that there is an HTML byte
+    /// at `offset + 3`. It is only safe to call this function when
+    /// `bytes.len() >= offset + VECTOR_SIZE`.
+    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i16 {
+        let table = create_lookup();
+        let lookup = _mm_loadu_si128(table.as_ptr() as *const __m128i);
+        let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const __m128i;
+
+        // Load the vector from memory.
+        let vector = _mm_loadu_si128(raw_ptr);
+        // We take the least significant 4 bits of every byte and use them as indices
+        // to map into the lookup vector.
+        // Note that shuffle maps bytes with their most significant bit set to lookup[0].
+        // Bytes that share their lower nibble with an HTML special byte get mapped to that
+        // corresponding special byte. Note that all HTML special bytes have distinct lower
+        // nibbles. Other bytes either get mapped to 0 or 127. 
+        let expected = _mm_shuffle_epi8(lookup, vector);
+        // We compare the original vector to the mapped output. Bytes that shared a lower
+        // nibble with an HTML special byte match *only* if they are that special byte. Bytes
+        // that have either a 0 lower nibble or their most significant bit set were mapped to
+        // 127 and will hence never match. All other bytes have non-zero lower nibbles but
+        // were mapped to 0 and will therefore also not match.
+        let matches = _mm_cmpeq_epi8(expected, vector);
         
-        _mm_movemask_epi8(matches)
+        // Translate matches to a bitmask, where every 1 corresponds to a HTML special character
+        // and a 0 is a non-HTML byte.
+        _mm_movemask_epi8(matches) as i16
     }
 
     /// Calls the given function with the index of every byte in the given byteslice
     /// that is either ", &, <, or > and for no other byte.
-    /// Make sure to only call this when `bytes.len() >= 16`!
+    /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
+    /// occur otherwise.
     #[target_feature(enable = "ssse3")]
     unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
         where F: FnMut(usize) -> io::Result<()>
     {
+        // The strategy here is to walk the byte buffer in chunks of VECTOR_SIZE (16)
+        // bytes at a time starting at the given offset. For each chunk, we compute a
+        // a bitmask indicating whether the corresponding byte is a HTML special byte.
+        // We then iterate over all the 1 bits in this mask and call the callback function
+        // with the corresponding index in the buffer.
+        // When the number of HTML special bytes in the buffer is relatively low, this
+        // allows us to quickly go through the buffer without a lookup and for every
+        // single byte.
+
+        debug_assert!(bytes.len() >= VECTOR_SIZE);
         let upperbound = bytes.len() - VECTOR_SIZE;
         while offset < upperbound { 
             let mut mask = compute_mask(bytes, offset);
@@ -193,8 +242,8 @@ mod simd {
             offset += VECTOR_SIZE;
         }
 
-        // final iteration - align read with the end of the slice and
-        // shift off the bytes at start we have already scanned
+        // Final iteration. We align the read with the end of the slice and
+        // shift off the bytes at start we have already scanned.
         let mut mask = compute_mask(bytes, upperbound);
         mask >>= offset - upperbound;
         while mask != 0 {
@@ -220,7 +269,7 @@ mod simd {
             assert_eq!(vec, vec![0, 14, 15, 19]);
         }
 
-        // only match these bytes, and when we match them, match them 16 times
+        // only match these bytes, and when we match them, match them VECTOR_SIZE times
         #[test]
         fn only_right_bytes_matched() {
             for b in 0..255u8 {

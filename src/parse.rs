@@ -1829,11 +1829,12 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 ///
 /// Both `open` and `close` are matching MaybeCode items.
 fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, close: TreeIndex) {
-    let first_ix = tree[open].next.unwrap();
-    let mut span_start = tree[first_ix].item.start;
+    let mut span_start = tree[open].item.end;
     let mut span_end = tree[close].item.start;
-    let opening = s.as_bytes()[span_start] == b' ';
-    let closing = s.as_bytes()[span_end - 1] == b' ';
+
+    let opening = match s.as_bytes()[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
+    let closing = match s.as_bytes()[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
+    let drop_enclosing_whitespace = opening && closing;
 
     if opening && closing {
         span_start += 1;
@@ -1842,7 +1843,50 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, cl
         }
     }
 
-    tree[open].item.body = ItemBody::Code(s[span_start..span_end].into());    
+    let first_ix = open + 1;
+    let last_ix = close - 1;
+    let mut buf: Option<String> = None;
+    let mut ix = first_ix;
+
+    while ix < close {
+        match tree[ix].item.body {
+            ItemBody::HardBreak | ItemBody::SoftBreak => {
+                if drop_enclosing_whitespace &&
+                    (ix == first_ix && s.as_bytes()[tree[ix].item.start] != b'\\') ||
+                    (ix == last_ix && last_ix > first_ix) {
+                    // just ignore it
+                } else {
+                    if let Some(ref mut buf) = buf {
+                        buf.push_str(&s[tree[ix].item.start..(tree[ix].item.end - 1)]);
+                        buf.push(' ');
+                    } else {
+                        let mut new_buf = String::with_capacity(span_end - span_start);
+                        // FIXME: what about \r\n sequences?
+                        new_buf.push_str(&s[span_start..(tree[ix].item.end - 1)]);
+                        new_buf.push(' ');
+                        buf = Some(new_buf)
+                    }
+                }
+            }
+            _ => {
+                if let Some(ref mut buf) = buf {
+                    let end = if ix == last_ix {
+                        span_end
+                    } else {
+                        tree[ix].item.end
+                    };
+                    buf.push_str(&s[tree[ix].item.start..end]);
+                }
+            }
+        }
+        ix = ix + 1;
+    }
+
+    tree[open].item.body = if let Some(buf) = buf {
+        ItemBody::Code(buf.into())
+    } else {
+        ItemBody::Code(s[span_start..span_end].into())
+    };
     tree[open].item.end = tree[close].item.end;
     tree[open].next = tree[close].next;
     tree[open].child = TreePointer::Nil;

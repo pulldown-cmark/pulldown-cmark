@@ -615,13 +615,11 @@ impl<'a> FirstPass<'a> {
                 }
                 b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                     self.tree.append_text(begin_text, ix);
-                    if !inside_table || bytes[ix + 1] != b'|' {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 1,
-                            body: ItemBody::Backslash,
-                        });
-                    }
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::Backslash,
+                    });
                     begin_text = ix + 1;
                     if bytes[ix + 1] == b'`' {
                         ix += 1;
@@ -2590,26 +2588,22 @@ impl<'a> Parser<'a> {
                 if self.tree[cur_ix].item.body.is_inline() {
                     self.handle_inline();
                 }
-            }
-        }
 
-        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
-            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
-                    self.tree[child_ix].item.start
+                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                        self.tree[child_ix].item.start
+                    } else {
+                        self.tree[cur_ix].item.end
+                    };
+                    self.tree.push();                
+                    Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
                 } else {
-                    self.tree[cur_ix].item.end
-                };
-                self.tree.push();                
-                Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
-            } else {
-                self.tree.next_sibling(cur_ix);
-                let item = &self.tree[cur_ix].item;
-                self.offset = item.end;
-                Some((item_to_event(item, self.text), item.start..item.end))
+                    self.tree.next_sibling(cur_ix);
+                    let item = &self.tree[cur_ix].item;
+                    self.offset = item.end;
+                    Some((item_to_event(item, self.text), item.start..item.end))
+                }
             }
-        } else {
-            None
         }
     }
 

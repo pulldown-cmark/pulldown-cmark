@@ -1454,6 +1454,7 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 
 static HTML_END_TAGS: &'static [&'static str; 7] = &["</script>", "</pre>", "</style>", "-->", "?>", "]]>", ">"];
 
+<<<<<<< HEAD
 // Returns an index into HTML_END_TAGS
 fn get_html_end_tag(text : &str) -> Option<u32> {
     static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
@@ -1465,6 +1466,24 @@ fn get_html_end_tag(text : &str) -> Option<u32> {
                 if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
                     continue 'type_1;
                 }
+=======
+    if !text.starts_with('<') {
+        return None;
+    }
+
+    let bytes = &text.as_bytes()[1..];
+    'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+        if bytes.len() < beg_tag.len() {
+            // begin tags are only getting longer
+            break;
+        }
+
+        for (&tag_b, &text_b) in beg_tag.iter().zip(bytes.iter()) {
+            // We can do this because the begin tags are all lower
+            // case alphanumeric.
+            if text_b | 0x20 != tag_b {
+                continue 'type_1;
+>>>>>>> 761554d... Remove utils module
             }
 
             // Must either be the end of the line...

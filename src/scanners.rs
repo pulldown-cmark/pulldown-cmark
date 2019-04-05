@@ -20,10 +20,9 @@
 
 //! Scanners for fragments of CommonMark syntax
 
-use crate::entities;
-use crate::utils;
 use std::char;
 
+use crate::entities;
 use crate::parse::Alignment;
 use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
@@ -782,7 +781,21 @@ pub fn scan_html_block_tag(data: &str) -> (usize, &str) {
 }
 
 pub fn is_html_tag(tag: &str) -> bool {
-    HTML_TAGS.binary_search_by(|probe| utils::strcasecmp(probe, tag)).is_ok()
+    HTML_TAGS.binary_search_by(|probe| {
+        let probe_bytes_iter = probe.as_bytes().iter();
+        let tag_bytes_iter = tag.as_bytes().iter();
+
+        probe_bytes_iter.zip(tag_bytes_iter)
+            .find_map(|(&a, &b)| {
+                // We can compare case insensitively because the probes are
+                // all lower case alpha strings.
+                match a.cmp(&(b | 0x20)) {
+                    std::cmp::Ordering::Equal => None,
+                    inequality => Some(inequality),
+                }
+            })
+            .unwrap_or_else(|| probe.len().cmp(&tag.len()))
+    }).is_ok()
 }
 
 pub fn scan_html_type_7(data: &str) -> Option<usize> {

@@ -615,11 +615,13 @@ impl<'a> FirstPass<'a> {
                 }
                 b'\\' if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) => {
                     self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::Backslash,
-                    });
+                    if !inside_table || bytes[ix + 1] != b'|' {
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + 1,
+                            body: ItemBody::Backslash,
+                        });
+                    }
                     begin_text = ix + 1;
                     if bytes[ix + 1] == b'`' {
                         ix += 1;
@@ -1827,22 +1829,23 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 ///
 /// Both `open` and `close` are matching MaybeCode items.
 fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, close: TreeIndex) {
-    let mut span_start = tree[open].item.end;
+    let first_ix = open + 1;
+    let last_ix = close - 1;
+    let mut span_start = tree[first_ix].item.start;
     let mut span_end = tree[close].item.start;
 
-    let opening = match s.as_bytes()[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
-    let closing = match s.as_bytes()[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
+    let bytes = s.as_bytes();
+    let opening = match bytes[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
+    let closing = match bytes[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
     let drop_enclosing_whitespace = opening && closing;
 
-    if opening && closing {
+    if drop_enclosing_whitespace {
         span_start += 1;
         if span_start < span_end  {
             span_end -= 1;
         }
     }
 
-    let first_ix = open + 1;
-    let last_ix = close - 1;
     let mut buf: Option<String> = None;
     let mut ix = first_ix;
 
@@ -1850,19 +1853,23 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, cl
         match tree[ix].item.body {
             ItemBody::HardBreak | ItemBody::SoftBreak => {
                 if drop_enclosing_whitespace &&
-                    (ix == first_ix && s.as_bytes()[tree[ix].item.start] != b'\\') ||
+                    (ix == first_ix && bytes[tree[ix].item.start] != b'\\') ||
                     (ix == last_ix && last_ix > first_ix) {
                     // just ignore it
                 } else {
+                    let end = bytes[tree[ix].item.start..]
+                        .iter()
+                        .position(|&b| b == b'\r' || b == b'\n')
+                        .unwrap()
+                        + tree[ix].item.start;
                     if let Some(ref mut buf) = buf {
-                        buf.push_str(&s[tree[ix].item.start..(tree[ix].item.end - 1)]);
+                        buf.push_str(&s[tree[ix].item.start..end]);
                         buf.push(' ');
                     } else {
                         let mut new_buf = String::with_capacity(span_end - span_start);
-                        // FIXME: what about \r\n sequences?
-                        new_buf.push_str(&s[span_start..(tree[ix].item.end - 1)]);
+                        new_buf.push_str(&s[span_start..end]);
                         new_buf.push(' ');
-                        buf = Some(new_buf)
+                        buf = Some(new_buf);
                     }
                 }
             }
@@ -2570,6 +2577,7 @@ impl<'a> Parser<'a> {
 
     /// Returns the next event in a pre-order AST walk, along with its
     /// start and end offset in the source.
+    #[inline(always)]
     fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
         match self.tree.cur() {
             TreePointer::Nil => {
@@ -2577,7 +2585,7 @@ impl<'a> Parser<'a> {
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
                 self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling(ix);
-                return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
+                Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end))
             }
             TreePointer::Valid(mut cur_ix) => {
                 if let ItemBody::Backslash = self.tree[cur_ix].item.body {

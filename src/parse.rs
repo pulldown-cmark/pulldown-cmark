@@ -1454,7 +1454,6 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
 
 static HTML_END_TAGS: &'static [&'static str; 7] = &["</script>", "</pre>", "</style>", "-->", "?>", "]]>", ">"];
 
-<<<<<<< HEAD
 // Returns an index into HTML_END_TAGS
 fn get_html_end_tag(text : &str) -> Option<u32> {
     static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
@@ -1466,24 +1465,6 @@ fn get_html_end_tag(text : &str) -> Option<u32> {
                 if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
                     continue 'type_1;
                 }
-=======
-    if !text.starts_with('<') {
-        return None;
-    }
-
-    let bytes = &text.as_bytes()[1..];
-    'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
-        if bytes.len() < beg_tag.len() {
-            // begin tags are only getting longer
-            break;
-        }
-
-        for (&tag_b, &text_b) in beg_tag.iter().zip(bytes.iter()) {
-            // We can do this because the begin tags are all lower
-            // case alphanumeric.
-            if text_b | 0x20 != tag_b {
-                continue 'type_1;
->>>>>>> 761554d... Remove utils module
             }
 
             // Must either be the end of the line...
@@ -1525,7 +1506,7 @@ struct InlineEl {
     both: bool,  // can both open and close
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct InlineStack {
     stack: Vec<InlineEl>,
     // lower bounds for
@@ -1611,6 +1592,17 @@ impl InlineStack {
     fn push(&mut self, el: InlineEl) {
         self.stack.push(el)
     }
+<<<<<<< HEAD
+=======
+
+    fn pop(&mut self) -> Option<InlineEl> {
+        self.stack.pop()
+    }
+
+    fn clear(&mut self) {
+        self.stack.clear();
+    }
+>>>>>>> b195cb6... Reuse inline stacks
 }
 
 /// An iterator for text in an inline chain.
@@ -2185,12 +2177,13 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowS
     Some((unescape_cow(url), unescape_cow(title)))
 }
 
+#[derive(Clone, Debug)]
 struct LinkStackEl {
     node: TreeIndex,
     ty: LinkStackTy,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Debug)]
 enum LinkStackTy {
     Link,
     Image,
@@ -2324,6 +2317,10 @@ pub struct Parser<'a> {
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
+
+    // used by inline passes. store them here for reuse
+    inline_stack: InlineStack,
+    link_stack: Vec<LinkStackEl>,
 }
 
 impl<'a> Parser<'a> {
@@ -2348,7 +2345,13 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
+<<<<<<< HEAD
         Parser { text, tree, allocs, broken_link_callback, offset: 0 }
+=======
+        let inline_stack = InlineStack::new();
+        let link_stack = Vec::new();
+        Parser { text, tree, refdefs, broken_link_callback, offset: 0, inline_stack, link_stack }
+>>>>>>> b195cb6... Reuse inline stacks
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2372,8 +2375,12 @@ impl<'a> Parser<'a> {
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
+<<<<<<< HEAD
         let mut link_stack = Vec::new();
         let mut code_delims = CodeDelims::new();
+=======
+        self.link_stack.clear();
+>>>>>>> b195cb6... Reuse inline stacks
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
@@ -2453,16 +2460,23 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
+                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
                 }
                 ItemBody::MaybeImage => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
+                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
+<<<<<<< HEAD
                     if let Some(tos) = link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             self.tree[cur_ix].item.body = ItemBody::Text;
+=======
+                    if let Some(tos) = self.link_stack.last() {
+                        if tos.ty == LinkStackTy::Disabled {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.link_stack.pop();
+>>>>>>> b195cb6... Reuse inline stacks
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
@@ -2488,12 +2502,16 @@ impl<'a> Parser<'a> {
                             }
 
                             if tos.ty == LinkStackTy::Link {
-                                for el in &mut link_stack {
+                                for el in &mut self.link_stack {
                                     if el.ty == LinkStackTy::Link {
                                         el.ty = LinkStackTy::Disabled;
                                     }
                                 }
                             }
+<<<<<<< HEAD
+=======
+                            self.link_stack.pop();
+>>>>>>> b195cb6... Reuse inline stacks
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
@@ -2528,7 +2546,7 @@ impl<'a> Parser<'a> {
                                 self.tree[tos.node].item.body = ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
                                 prev = TreePointer::Valid(tos.node);
                                 cur = node_after_link;
-                                link_stack.clear();
+                                self.link_stack.clear();
                                 continue;
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
                                 let type_url_title = if let Some(matching_def) = self.allocs.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
@@ -2573,7 +2591,7 @@ impl<'a> Parser<'a> {
                                     cur_ix = tos.node;
 
                                     if tos.ty == LinkStackTy::Link {
-                                        for el in &mut link_stack {
+                                        for el in &mut self.link_stack {
                                             if el.ty == LinkStackTy::Link {
                                                 el.ty = LinkStackTy::Disabled;
                                             }
@@ -2585,6 +2603,10 @@ impl<'a> Parser<'a> {
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
                             }
+<<<<<<< HEAD
+=======
+                            self.link_stack.pop();
+>>>>>>> b195cb6... Reuse inline stacks
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2598,7 +2620,7 @@ impl<'a> Parser<'a> {
     }
 
     fn handle_emphasis(&mut self) {
-        let mut stack = InlineStack::new();
+        self.inline_stack.clear();
         let mut prev = TreePointer::Nil;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
@@ -2607,7 +2629,11 @@ impl<'a> Parser<'a> {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;
                 if can_close {
+<<<<<<< HEAD
                     while let Some(el) = stack.find_match(&mut self.tree, c, count, both) {
+=======
+                    while let Some((j, el)) = self.inline_stack.find_match(c, count, both) {
+>>>>>>> b195cb6... Reuse inline stacks
                         // have a match!
                         if let TreePointer::Valid(prev_ix) = prev {
                             self.tree[prev_ix].next = TreePointer::Nil;
@@ -2642,8 +2668,13 @@ impl<'a> Parser<'a> {
                         cur = self.tree[cur_ix + match_count - 1].next;
                         self.tree[prev_ix].next = cur;
 
+<<<<<<< HEAD
+=======
+                        self.inline_stack.pop_to(&mut self.tree, j + 1);
+                        let _ = self.inline_stack.pop();
+>>>>>>> b195cb6... Reuse inline stacks
                         if el.count > match_count {
-                            stack.push(InlineEl {
+                            self.inline_stack.push(InlineEl {
                                 start: el.start,
                                 count: el.count - match_count,
                                 c: el.c,
@@ -2660,7 +2691,7 @@ impl<'a> Parser<'a> {
                 }
                 if count > 0 {
                     if can_open {
-                        stack.push(InlineEl {
+                        self.inline_stack.push(InlineEl {
                             start: cur_ix,
                             count,
                             c,
@@ -2680,6 +2711,7 @@ impl<'a> Parser<'a> {
                 cur = self.tree[cur_ix].next;
             }
         }
+<<<<<<< HEAD
         stack.pop_all(&mut self.tree);
     }
 
@@ -2757,6 +2789,9 @@ impl<'a> Parser<'a> {
         self.tree[open].item.end = self.tree[close].item.end;
         self.tree[open].next = self.tree[close].next;
         self.tree[open].child = TreePointer::Nil;
+=======
+        self.inline_stack.pop_to(&mut self.tree, 0);
+>>>>>>> b195cb6... Reuse inline stacks
     }
 
     /// Returns the next event in a pre-order AST walk, along with its

@@ -365,12 +365,17 @@ pub fn scan_closing_code_fence(text: &str, fence_char: u8, n_fence_char: usize) 
 
 // returned pair is (number of bytes, number of spaces)
 pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
-    let bytes = text.as_bytes();
-    let mut i = 0;
     let mut spaces = 0;
-    while i < text.len() && spaces < max {
-        match bytes[i] {
-            b' ' => spaces += 1,
+    let mut offset = 0;
+
+    for (i, &b) in text.as_bytes().iter().enumerate() {
+        match b {
+            b' ' => {
+                spaces += 1;
+                if spaces == max {
+                    break;
+                }
+            }
             b'\t' => {
                 let new_spaces = spaces + 4 - (spaces & 3);
                 if new_spaces > max {
@@ -378,11 +383,12 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
                 }
                 spaces = new_spaces;
             },
-            _ => break
+            _ => break,
         }
-        i += 1;
+        offset = i;
     }
-    (i, spaces)
+
+    (offset, spaces)
 }
 
 /// Scan hrule opening sequence.
@@ -393,24 +399,26 @@ pub fn calc_indent(text: &str, max: usize) -> (usize, usize) {
 /// Returns Err(x) when it does not find an hrule and x is
 /// the offset in data before no hrule can appear.
 pub fn scan_hrule(data: &str) -> Result<usize, usize> {
+    if data.len() < 2 { return Err(0); }
     let bytes = data.as_bytes();
-    let size = data.len();
-    let mut i = 0;
-    if i + 2 >= size { return Err(0); }
-    let c = bytes[i];
-    if !(c == b'*' || c == b'-' || c == b'_') { return Err(i); }
+    let c = bytes[0];
+    if !(c == b'*' || c == b'-' || c == b'_') { return Err(0); }
     let mut n = 0;
-    while i < size {
-        match bytes[i] {
+    let mut i = 0;
+
+    for (offset, &b) in bytes.iter().enumerate() {
+        match b {
             b'\n' | b'\r' => {
-                i += scan_eol(&data[i..]).unwrap_or(0);
+                i = offset + scan_eol(&data[offset..]).unwrap_or(0);
                 break;
             }
-            c2 if c2 == c => n += 1,
+            c2 if c2 == c => {
+                n += 1;
+            }
             b' ' | b'\t' => (),
-            _ => return Err(i)
+            _ => return Err(offset)
         }
-        i += 1;
+        i = offset;
     }
     if n >= 3 { Ok(i) } else { Err(i) }
 }
@@ -419,20 +427,13 @@ pub fn scan_hrule(data: &str) -> Result<usize, usize> {
 ///
 /// Returns number of bytes in prefix and level.
 pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
-    let size = data.len();
     let level = scan_ch_repeat(data, b'#');
-    let i = level;
     if level >= 1 && level <= 6 {
-        if i < size {
-            match data.as_bytes()[i] {
-                b' ' | b'\t' ... b'\r' => (),
-                _ => return None
-            }
+        if let b' ' | b'\t' ... b'\r' = *data.as_bytes().get(level)? {
+            return Some((level, level as i32));
         }
-        Some((i, level as i32))
-    } else {
-        None
     }
+    None
 }
 
 /// Scan a setext heading underline.

@@ -439,17 +439,11 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
 pub fn scan_setext_heading(data: &str) -> Option<(usize, i32)> {
-    let size = data.len();
     let mut i = 0;
-    if i == size { return None; }
-    let c = data.as_bytes()[i];
+    let c = *data.as_bytes().get(i)?;
     if !(c == b'-' || c == b'=') { return None; }
     i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
-    if let Some(n) = scan_blank_line(&data[i..]) {
-        i += n;
-    } else {
-        return None;
-    }
+    i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' { 1 } else { 2 };
     Some((i, level))
 }
@@ -512,10 +506,7 @@ pub fn scan_table_head(data: &str) -> (usize, Vec<Alignment>) {
 ///
 /// Returns number of bytes scanned and the char that is repeated to make the code fence.
 pub fn scan_code_fence(data: &str) -> Option<(usize, u8)> {
-    if data.is_empty() {
-        return None;
-    }
-    let c = data.as_bytes()[0];
+    let c = *data.as_bytes().get(0)?;
     if !(c == b'`' || c == b'~') { return None; }
     let i = 1 + scan_ch_repeat(&data[1 ..], c);
     if i >= 3 {
@@ -525,16 +516,18 @@ pub fn scan_code_fence(data: &str) -> Option<(usize, u8)> {
                 return None;
             }
         }
-        return Some((i, c));
+        Some((i, c))
+    } else {
+        None
     }
-    None
 }
 
 pub fn scan_blockquote_start(data: &str) -> Option<usize> {
-    if !data.starts_with('>') {
-        return None;
+    if data.starts_with('>') {
+        Some(scan_ch(&data[1..], b' ') + 1)
+    } else {
+        None
     }
-    Some(scan_ch(&data[1..], b' ') + 1)
 }
 
 /// This already assumes the list item has been scanned.
@@ -684,13 +677,10 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
 
 pub fn scan_attribute_name(data: &str) -> Option<usize> {
     let size = data.len();
-    if size == 0 { 
-        return None; }
-    match data.as_bytes()[0] {
-        c if is_ascii_alpha(c) => (),
+    match data.as_bytes().get(0)? {
+        c if is_ascii_alpha(*c) => (),
         b'_' | b':' => (),
         _ => {
-   
             return None;
         }
     }
@@ -706,10 +696,8 @@ pub fn scan_attribute_name(data: &str) -> Option<usize> {
 }
 
 pub fn scan_attribute_value(data: &str) -> Option<usize> {
-    let size = data.len();
-    if size == 0 { return None; }
     let mut i = 0;
-    match data.as_bytes()[0] {
+    match *data.as_bytes().get(0)? {
         b'\'' => {
             i += 1;
             i += scan_while(&data[i..], |c| c != b'\'' && c != b'\n' && c != b'\r');
@@ -723,12 +711,13 @@ pub fn scan_attribute_value(data: &str) -> Option<usize> {
         b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => { return None; },
         _ => { // unquoted attribute value
             i += scan_attr_value_chars(&data[i..]);
-            // return Some(i);
         }
     }
-    if i >= data.len() { return None; }
-    Some(i)
-
+    if i < data.len() {
+        Some(i)
+    } else {
+        None
+    }
 }
 
 // Remove backslash escapes and resolve entities
@@ -824,12 +813,7 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
                 _ => {},
             }
             if whitespace == 0 { return None; }
-            if let Some(a) = scan_attribute(&data[i..]) {
-                if a == 0 { break; }
-                i += a;
-            } else {
-                return None;
-            }
+            i += scan_attribute(&data[i..])?;
         }
     }
 
@@ -850,11 +834,7 @@ pub fn scan_html_type_7(data: &str) -> Option<usize> {
 
 pub fn scan_attribute(data: &str) -> Option<usize> {
     let mut i = scan_whitespace_no_nl(data);
-    if let Some(attr_name_bytes) = scan_attribute_name(&data[i..]) {
-        i += attr_name_bytes;
-    } else {
-        return None;
-    }
+    i += scan_attribute_name(&data[i..])?;
     scan_attribute_value_spec(&data[i..]).map(|attr_valspec_bytes| attr_valspec_bytes + i)
 }
 
@@ -864,12 +844,8 @@ pub fn scan_attribute_value_spec(data: &str) -> Option<usize> {
     if eq == 0 { return None; }
     i += eq;
     i += scan_whitespace_no_nl(&data[i..]);
-    if let Some(attr_val_bytes) = scan_attribute_value(&data[i..]) {
-        i += attr_val_bytes;
-        return Some(i);
-    } else {
-        return None;
-    }
+    i += scan_attribute_value(&data[i..])?;
+    Some(i)
 }
 
 #[cfg(test)]

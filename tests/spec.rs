@@ -2876,9 +2876,6 @@ aaa</p>
         let p = Parser::new_ext(&original, opts);
         html::push_html(&mut s, p);
 
-        dbg!(&s);
-        dbg!(&expected);
-
         assert_eq!(normalize_html(&expected), normalize_html(&s));
     }
 

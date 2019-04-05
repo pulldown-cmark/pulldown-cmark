@@ -1471,6 +1471,7 @@ fn get_html_end_tag(text : &str) -> Option<u32> {
             if text.len() == beg_tag.len() {
                 return Some(end_tag_ix);
             }
+        }
 
             // ...or be followed by whitespace, newline, or '>'.
             let pos = beg_tag.len();

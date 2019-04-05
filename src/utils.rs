@@ -29,12 +29,12 @@ fn ascii_tolower(c: u8) -> u8 {
     }
 }
 
-// Compare two strings, with case folding for ASCII
+// Compare two strings, with case folding for ASCII *on the second argument only*
 pub fn strcasecmp(a: &str, b: &str) -> cmp::Ordering {
-    for i in 0..cmp::min(a.len(), b.len()) {
-        match ascii_tolower(a.as_bytes()[i]).cmp(&ascii_tolower(b.as_bytes()[i])) {
-            cmp::Ordering::Equal => (),
-            ordering => return ordering
+    for (&x, &y) in a.as_bytes().iter().zip(b.as_bytes().iter()) {
+        let ordering = x.cmp(&ascii_tolower(y));
+        if let cmp::Ordering::Less | cmp::Ordering::Greater = ordering {
+            return ordering;
         }
     }
     a.len().cmp(&b.len())

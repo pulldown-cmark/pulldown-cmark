@@ -110,7 +110,6 @@ where
                     self.write(html.as_bytes(), false)?;
                 }
                 SoftBreak => {
-                    dbg!("got here");
                     self.write_newline()?;
                 }
                 HardBreak => {

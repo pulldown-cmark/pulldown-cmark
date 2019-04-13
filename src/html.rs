@@ -103,8 +103,8 @@ where
                 Code(text) => {
                     self.write(b"<code>", false)?;
                     escape_html(&mut self.writer, &text)?;
-                    self.end_newline = text.ends_with('\n');
                     self.write(b"</code>", false)?;
+                    self.end_newline = false;
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;

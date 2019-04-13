@@ -2644,6 +2644,9 @@ impl<'a> Parser<'a> {
 
     /// Returns the next event in a pre-order AST walk, along with its
     /// start and end offset in the source.
+    // LLVM seems reluctant to inline this function without this attribute. It is thought to be
+    // beneficial as the call is hot and only called by the event iterators. Removing this
+    // attribute incurs a ~2% performance hit.
     #[inline(always)]
     fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
         match self.tree.cur() {

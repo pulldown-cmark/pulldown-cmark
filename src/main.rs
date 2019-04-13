@@ -28,9 +28,9 @@ use pulldown_cmark::Parser;
 use pulldown_cmark::Options;
 use pulldown_cmark::html;
 
+use std::mem;
 use std::env;
-use std::io;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::fs::File;
 
@@ -43,10 +43,6 @@ fn render_html(text: &str, opts: Options) -> String {
 
 fn dry_run(text:&str, opts: Options) {
     let p = Parser::new_ext(text, opts);
-    /*
-    let events = p.collect::<Vec<_>>();
-    let count = events.len();
-    */
     let count = p.count();
     println!("{} events", count);
 }
@@ -135,9 +131,7 @@ impl<'a> Iterator for Spec<'a> {
     }
 }
 
-
 fn run_spec(spec_text: &str, args: &[String], opts: Options) {
-    //println!("spec length={}, args={:?}", spec_text.len(), args);
     let (first, last) = if args.is_empty() {
         (None, None)
     } else {
@@ -260,10 +254,16 @@ pub fn main() {
         } else if matches.opt_present("dry-run") {
             dry_run(&input, opts);
         } else {
-            let p = Parser::new_ext(&input, opts);
+            let mut p = Parser::new_ext(&input, opts);
             let stdio = io::stdout();
             let buffer = std::io::BufWriter::with_capacity(1*1024*1024, stdio.lock());
-            html::write_html(buffer, p).unwrap();
+            html::write_html(buffer, &mut p).unwrap();
+            // Since the program will now terminate and the memory will be returned
+            // to the operating system anyway, there is no point in tidely cleaning
+            // up all the datastructures we have used. We shouldn't do this if we'd
+            // do other things after this, because this is basically intentionally
+            // leaking data. Skipping cleanup let's us return a bit (~5%) faster.
+            mem::forget(p);
         }
     }
 }

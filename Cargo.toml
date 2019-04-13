@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.4.0"
+version = "0.4.1"
 authors = [ "Raph Levien <raph.levien@gmail.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
@@ -32,3 +32,5 @@ tendril = "0.4"
 [features]
 default = ["getopts"]
 gen-tests = []
+simd = []
+

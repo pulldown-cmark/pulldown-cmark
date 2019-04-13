@@ -84,13 +84,12 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                     }
                 }
                 if whitespaces > 1 || c != ' ' {
-                    byte_index -= c.len_utf8();
                     if still_borrowed {
-                        label.push_str(&text[start_byte..byte_index]);
+                        let end_ix = byte_index - c.len_utf8();
+                        label.push_str(&text[start_byte..end_ix]);
                         still_borrowed = false;
                     }
                     c = ' ';
-                    byte_index += c.len_utf8();
                 }
                 byte_index += byte_addition;
                 codepoints += whitespaces;
@@ -116,3 +115,19 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
     };
     Some((byte_index, cow))
 } 
+
+
+#[cfg(test)]
+mod test {
+    use super::scan_link_label_rest;
+
+    #[test]
+    fn whitespace_normalization() {
+        let input = "«\u{00A0}Blurry Eyes\u{00A0}»][blurry_eyes]"; // non-breaking spaces
+        let expected_output = "« Blurry Eyes »"; // regular spaces!
+
+        let (bytes, normalized_label) = scan_link_label_rest(input).unwrap();
+        assert_eq!(20, bytes);
+        assert_eq!(expected_output, normalized_label.as_ref());
+    }
+}

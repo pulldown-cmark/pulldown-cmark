@@ -44,7 +44,7 @@ mod to_html {
     }
 
     #[bench]
-    fn pathological_codeblocks(b: &mut test::Bencher) {
+    fn pathological_codeblocks1(b: &mut test::Bencher) {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't
         // grow faster than that.
@@ -60,8 +60,16 @@ mod to_html {
     }
 
     #[bench]
-    fn more_pathological_codeblocks(b: &mut test::Bencher) {
+    fn pathological_codeblocks2(b: &mut test::Bencher) {
         let input = std::iter::repeat("\\``").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_codeblocks3(b: &mut test::Bencher) {
+        let mut input = std::iter::repeat("`a`").take(4000).collect::<String>();
+        input.push('`');
 
         b.iter(|| render_html(&input, Options::empty()));
     }
@@ -70,6 +78,13 @@ mod to_html {
     fn pathological_hrules(b: &mut test::Bencher) {
         let mut input = std::iter::repeat("* ").take(2000).collect::<String>();
         input.push('a');
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_link_titles(b: &mut test::Bencher) {
+        let input = std::iter::repeat("[ (](").take(2000).collect::<String>();
 
         b.iter(|| render_html(&input, Options::empty()));
     }

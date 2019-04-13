@@ -97,12 +97,12 @@ where
                     self.end_tag(tag)?;
                 }
                 Text(text) => {
-                    escape_html(&mut self.writer, &text, false)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
                     self.write(b"<code>", false)?;
-                    escape_html(&mut self.writer, &text, false)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                     self.write(b"</code>", false)?;
                 }
@@ -118,7 +118,7 @@ where
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     self.write(b"<sup class=\"footnote-reference\"><a href=\"#", false)?;
-                    escape_html(&mut self.writer, &name, false)?;
+                    escape_html(&mut self.writer, &name)?;
                     self.write(b"\">", false)?;
                     let number = *self.numbers.entry(name).or_insert(len);
                     self.write(format!("{}", number).as_bytes(), false)?;
@@ -200,7 +200,7 @@ where
                     self.write(b"<pre><code>", false)
                 } else {
                     self.write(b"<pre><code class=\"language-", false)?;
-                    escape_html(&mut self.writer, lang, false)?;
+                    escape_html(&mut self.writer, lang)?;
                     self.write(b"\">", false)
                 }
             }
@@ -230,7 +230,7 @@ where
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
-                    escape_html(&mut self.writer, &title, false)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write(b"\">", false)
             }
@@ -239,7 +239,7 @@ where
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
-                    escape_html(&mut self.writer, &title, false)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write(b"\">", false)
             }
@@ -250,7 +250,7 @@ where
                 self.raw_text()?;
                 if !title.is_empty() {
                     self.write(b"\" title=\"", false)?;
-                    escape_html(&mut self.writer, &title, false)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write(b"\" />", false)
             }
@@ -258,7 +258,7 @@ where
                 self.fresh_line()?;
                 let len = self.numbers.len() + 1;
                 self.write(b"<div class=\"footnote-definition\" id=\"", false)?;
-                escape_html(&mut self.writer, &*name, false)?;
+                escape_html(&mut self.writer, &*name)?;
                 self.write(b"\"><sup class=\"footnote-definition-label\">", false)?;
                 let number = *self.numbers.entry(name).or_insert(len);
                 self.write(&*format!("{}", number).as_bytes(), false)?;
@@ -350,7 +350,7 @@ where
                 }
                 Html(_) => (),
                 InlineHtml(text) | Code(text) | Text(text) => {
-                    escape_html(&mut self.writer, &text, false)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak => {

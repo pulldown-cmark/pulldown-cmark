@@ -11,7 +11,7 @@
 //! are no or few matches.
 //!
 //! The table lookup is inspired by this [great overview]. However, since all of the
-//! bytes we're interested in are ASCII, we don't quite need the fully generality of
+//! bytes we're interested in are ASCII, we don't quite need the full generality of
 //! the universal algorithm and are hence able to skip a few instructions.
 //!
 //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html

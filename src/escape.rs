@@ -188,6 +188,8 @@ mod simd {
     /// at `offset + 3`. It is only safe to call this function when
     /// `bytes.len() >= offset + VECTOR_SIZE`.
     unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
+        debug_assert!(bytes.len() >= offset + VECTOR_SIZE);
+
         let table = create_lookup();
         let lookup = _mm_loadu_si128(table.as_ptr() as *const __m128i);
         let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const __m128i;

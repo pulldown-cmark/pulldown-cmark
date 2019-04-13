@@ -32,3 +32,5 @@ tendril = "0.4"
 [features]
 default = ["getopts"]
 gen-tests = []
+simd = []
+

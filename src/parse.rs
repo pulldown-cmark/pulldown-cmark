@@ -20,7 +20,7 @@
 
 //! Tree-based two pass parser.
 
-use std::collections::HashMap;
+use std::collections::{VecDeque, HashMap};
 use std::ops::Range;
 
 use unicase::UniCase;
@@ -1843,8 +1843,7 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
     tree[open].next = tree[close].next;
     tree[open].child = first;
     let mut node = first_ix;
-    let last;
-    loop {
+    let last = loop {
         let next = tree[node].next;
         match tree[node].item.body {
             ItemBody::SoftBreak => {
@@ -1871,13 +1870,16 @@ fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close
             }
             _ => tree[node].item.body = ItemBody::Text,
         }
-        if next == TreePointer::Valid(close) {
-            last = node;
-            tree[node].next = TreePointer::Nil;
-            break;
+        if let TreePointer::Valid(next_ix) = next {
+            if next_ix == close {
+                tree[node].next = TreePointer::Nil;
+                break node;
+            }
+            node = next_ix;
+        } else {
+            unreachable!("Couldn't find code span end!");
         }
-        node = next.unwrap();
-    }
+    };
     // Strip opening and closing space, if appropriate.
     let opening = match &tree[first_ix].item.body {
         ItemBody::Text => s.as_bytes()[tree[first_ix].item.start] == b' ',
@@ -2232,6 +2234,50 @@ struct LinkDef<'a> {
     title: Option<CowStr<'a>>,
 }
 
+/// Tracks tree indices of code span delimiters of each length. It should prevent
+/// quadratic scanning behaviours by providing (amortized) constant time lookups.
+struct CodeDelims {
+    inner: HashMap<usize, VecDeque<TreeIndex>>,
+    seen_first: bool,
+}
+
+impl CodeDelims {
+    fn new() -> Self {
+        Self {
+            inner: Default::default(),
+            seen_first: false,
+        }
+    }
+
+    fn insert(&mut self, count: usize, ix: TreeIndex) {
+        if self.seen_first {
+            self.inner.entry(count).or_insert_with(Default::default).push_back(ix);
+        } else {
+            // Skip the first insert, since that delimiter will always
+            // be an opener and not a closer.
+            self.seen_first = true;
+        }        
+    }
+
+    fn is_populated(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
+    fn find(&mut self, open_ix: TreeIndex, count: usize) -> Option<TreeIndex> {
+        while let Some(ix) = self.inner.get_mut(&count)?.pop_front() {
+            if ix > open_ix {
+                return Some(ix);
+            }
+        }
+        None
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.seen_first = false;
+    }
+}
+
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -2288,6 +2334,7 @@ impl<'a> Parser<'a> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut link_stack = Vec::new();
+        let mut code_delims = CodeDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
@@ -2328,22 +2375,40 @@ impl<'a> Parser<'a> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(mut count) => {
+                ItemBody::MaybeCode(mut search_count) => {
                     if let TreePointer::Valid(prev_ix) = prev {
                         if self.tree[prev_ix].item.body == ItemBody::Backslash {
-                            count -= 1;
+                            search_count -= 1;
                         }
                     }
-                    let mut scan = if count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
-                    while let TreePointer::Valid(scan_ix) = scan {
-                        if self.tree[scan_ix].item.body == ItemBody::MaybeCode(count) {
+
+                    if code_delims.is_populated() {
+                        // we have previously scanned all codeblock delimiters,
+                        // so we can reuse that work
+                        if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
-                            break;
+                        } else {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
                         }
-                        scan = self.tree[scan_ix].next;
-                    }
-                    if scan == TreePointer::Nil {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
+                    } else {
+                        // we haven't previously scanned all codeblock delimiters,
+                        // so walk the AST
+                        let mut scan = if search_count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
+                        while let TreePointer::Valid(scan_ix) = scan {
+                            if let ItemBody::MaybeCode(delim_count) = self.tree[scan_ix].item.body {
+                                if search_count == delim_count {
+                                    make_code_span(&mut self.tree, self.text, cur_ix, scan_ix);
+                                    code_delims.clear();
+                                    break;
+                                } else {
+                                    code_delims.insert(delim_count, scan_ix);
+                                }
+                            }
+                            scan = self.tree[scan_ix].next;
+                        }
+                        if scan == TreePointer::Nil {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                        }
                     }
                 }
                 ItemBody::MaybeLinkOpen => {

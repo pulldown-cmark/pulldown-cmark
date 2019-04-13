@@ -2230,6 +2230,8 @@ struct LinkDef<'a> {
     title: Option<CowStr<'a>>,
 }
 
+/// Tracks tree indices of code span delimiters of each length. It should prevent
+/// quadratic scanning behaviours by providing (amortized) constant time lookups.
 struct CodeDelims {
     inner: HashMap<usize, VecDeque<TreeIndex>>,
     seen_first: bool,

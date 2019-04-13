@@ -49,6 +49,8 @@ const fn compute_lookup() -> [u8; 16] {
 /// corresponds to `bytes[ix]` and the most significant bit corresponds to
 /// `bytes[ix + 15]`.
 /// It is only safe to call this function when `bytes.len() >= ix + VECTOR_SIZE`.
+#[target_feature(enable = "ssse3")]
+#[inline]
 unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
     debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
 

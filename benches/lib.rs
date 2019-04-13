@@ -44,6 +44,33 @@ mod to_html {
     }
 
     #[bench]
+    fn pathological_emphasis(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a***").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_emphasis2(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a***_b__").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_emphasis3(b: &mut test::Bencher) {
+        let input = std::iter::repeat("[*_a").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_strikethrough(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a***b~~").take(2000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
     fn pathological_codeblocks1(b: &mut test::Bencher) {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't

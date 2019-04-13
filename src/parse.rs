@@ -22,6 +22,7 @@
 
 use std::collections::{VecDeque, HashMap};
 use std::ops::Range;
+use std::cmp::min;
 
 use unicase::UniCase;
 use memchr::memchr;
@@ -1527,40 +1528,88 @@ struct InlineEl {
 #[derive(Debug)]
 struct InlineStack {
     stack: Vec<InlineEl>,
+    // lower bounds for
+    // _, non_both, * (mod 3), ** (mod 3), *** (mod 3)
+    // for example an underscore empasis will never match
+    // with any element in the stack with index smaller than lowerbounds[0]
+    lower_bounds: [usize; 5],
 }
 
 impl InlineStack {
     fn new() -> InlineStack {
         InlineStack {
             stack: Vec::new(),
+            lower_bounds: [0; 5],
         }
     }
 
-    fn pop_to<'a>(&mut self, tree: &mut Tree<Item<'a>>, new_len: usize) {
-        for el in self.stack.drain(new_len..) {
+    fn pop_all<'a>(self, tree: &mut Tree<Item<'a>>) {
+        for el in self.stack {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
         }
     }
 
-    fn find_match(&self, c: u8, count: usize, both: bool) -> Option<(usize, InlineEl)> {
-        self.stack
+    // both implies *, i think. because _ can never be
+    // both opener and closer
+    fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
+        if c == b'_' {
+            self.lower_bounds[0]
+        } else if c == b'*' {
+            let mod3_lower = self.lower_bounds[2 + count % 3];
+            if both {
+                mod3_lower
+            } else {
+                min(mod3_lower, self.lower_bounds[1])
+            }
+        } else {
+            0
+        }
+    }
+
+    fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
+        if c == b'_' {
+            self.lower_bounds[0] = new_bound;
+        } else if c == b'*' {
+            self.lower_bounds[2 + count % 3] = new_bound;
+            if !both {
+                self.lower_bounds[1] = new_bound;
+            }
+        }
+    }
+
+    fn find_match<'a>(&mut self, tree: &mut Tree<Item<'a>>, c: u8, count: usize, both: bool)
+        -> Option<InlineEl>
+    {
+        let lowerbound = self.get_lowerbound(c, count, both);
+        let res = self.stack[lowerbound..]
             .iter()
             .cloned()
             .enumerate()
             .rev()
             .find(|(_, el)| {
                 el.c == c && (!both && !el.both || (count + el.count) % 3 != 0)
-            })
+            });
+
+        if let Some((matching_ix, matching_el)) = res {
+            for i in (matching_ix + 1)..self.stack.len() {
+                let el = self.stack[i];
+                self.set_lowerbound(el.c, el.count, el.both, matching_ix.saturating_sub(1));
+                for i in 0..el.count {
+                    tree[el.start + i].item.body = ItemBody::Text;
+                }
+            }
+            self.stack.truncate(matching_ix);
+            Some(matching_el)
+        } else {
+            self.set_lowerbound(c, count, both, self.stack.len().saturating_sub(1));
+            None
+        }
     }
 
     fn push(&mut self, el: InlineEl) {
         self.stack.push(el)
-    }
-
-    fn pop(&mut self) -> Option<InlineEl> {
-        self.stack.pop()
     }
 }
 
@@ -2420,10 +2469,9 @@ impl<'a> Parser<'a> {
                     link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
-                    if let Some(tos) = link_stack.last() {
+                    if let Some(tos) = link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             self.tree[cur_ix].item.body = ItemBody::Text;
-                            link_stack.pop();
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
@@ -2454,8 +2502,6 @@ impl<'a> Parser<'a> {
                                     }
                                 }
                             }
-                            link_stack.pop();
-
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
@@ -2546,7 +2592,6 @@ impl<'a> Parser<'a> {
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
                             }
-                            link_stack.pop();
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2569,12 +2614,12 @@ impl<'a> Parser<'a> {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;
                 if can_close {
-                    while let Some((j, el)) = stack.find_match(c, count, both) {
+                    while let Some(el) = stack.find_match(&mut self.tree, c, count, both) {
                         // have a match!
                         if let TreePointer::Valid(prev_ix) = prev {
                             self.tree[prev_ix].next = TreePointer::Nil;
                         }                        
-                        let match_count = ::std::cmp::min(count, el.count);
+                        let match_count = min(count, el.count);
                         // start, end are tree node indices
                         let mut end = cur_ix - 1;
                         let mut start = el.start + el.count;
@@ -2604,8 +2649,6 @@ impl<'a> Parser<'a> {
                         cur = self.tree[cur_ix + match_count - 1].next;
                         self.tree[prev_ix].next = cur;
 
-                        stack.pop_to(&mut self.tree, j + 1);
-                        let _ = stack.pop();
                         if el.count > match_count {
                             stack.push(InlineEl {
                                 start: el.start,
@@ -2644,7 +2687,7 @@ impl<'a> Parser<'a> {
                 cur = self.tree[cur_ix].next;
             }
         }
-        stack.pop_to(&mut self.tree, 0);
+        stack.pop_all(&mut self.tree);
     }
 
     /// Returns the next event in a pre-order AST walk, along with its

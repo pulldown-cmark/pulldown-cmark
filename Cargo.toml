@@ -12,9 +12,6 @@ readme = "README.md"
 
 build = "build.rs"
 
-[profile.release]
-debug = true
-
 [[bin]]
 name = "pulldown-cmark"
 required-features = ["getopts"]

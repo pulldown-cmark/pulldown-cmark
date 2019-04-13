@@ -434,7 +434,7 @@ pub fn scan_atx_heading(data: &str) -> Option<(usize, i32)> {
     } else {
         None
     }
-    }
+}
 
 /// Scan a setext heading underline.
 ///

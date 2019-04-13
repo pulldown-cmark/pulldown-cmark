@@ -56,7 +56,6 @@ pub mod html;
 
 #[macro_use]
 extern crate bitflags;
-
 extern crate unicase;
 
 mod scanners;
@@ -68,6 +67,9 @@ mod parse;
 mod tree;
 mod linklabel;
 mod strings;
+
+#[cfg(all(target_arch = "x86_64", feature="simd"))]
+mod simd;
 
 pub use crate::parse::{Parser, OffsetIter, Alignment, Event, Tag, Options, LinkType};
 pub use crate::strings::{CowStr, InlineStr};

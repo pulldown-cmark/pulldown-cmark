@@ -67,7 +67,6 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Strikethrough,
-    Code,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title
     Link(LinkType, CowStr<'a>, CowStr<'a>),
@@ -114,6 +113,7 @@ pub enum Event<'a> {
     Start(Tag<'a>),
     End(Tag<'a>),
     Text(CowStr<'a>),
+    Code(CowStr<'a>),
     Html(CowStr<'a>),
     InlineHtml(CowStr<'a>),
     FootnoteReference(CowStr<'a>),
@@ -170,7 +170,7 @@ enum ItemBody<'a> {
     Emphasis,
     Strong,
     Strikethrough,
-    Code,
+    Code(CowStr<'a>),
     InlineHtml,
     // Link params: destination, title.
     Link(LinkType, CowStr<'a>, CowStr<'a>),
@@ -1884,78 +1884,73 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
 /// Make a code span.
 ///
 /// Both `open` and `close` are matching MaybeCode items.
-fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &str, open: TreeIndex, close: TreeIndex) {
-    tree[open].item.end = tree[close].item.end;
-    tree[open].item.body = ItemBody::Code;
-    let first = tree[open].next;
-    let first_ix = first.unwrap();
-    tree[open].next = tree[close].next;
-    tree[open].child = first;
-    let mut node = first_ix;
-    let last = loop {
-        let next = tree[node].next;
-        match tree[node].item.body {
-            ItemBody::SoftBreak => {
-                // TODO: trailing space is stripped in parse_line, and we don't want it
-                // stripped.
-                tree[node].item.body = ItemBody::SynthesizeText(" ".into());
-            }
-            ItemBody::HardBreak => {
-                let start = tree[node].item.start;
-                if s.as_bytes()[start] == b'\\' {
-                    tree[node].item.body = ItemBody::Text;
-                    let end = tree[node].item.end;
-                    let space = tree.create_node(Item {
-                        start: start + 1,
-                        end,
-                        body: ItemBody::SynthesizeText(" ".into())
-                    });
-                    tree[space].next = next;
-                    tree[node].next = TreePointer::Valid(space);
-                    tree[node].item.end = start + 1;
+fn make_code_span<'a>(tree: &mut Tree<Item<'a>>, s: &'a str, open: TreeIndex, close: TreeIndex) {
+    let first_ix = open + 1;
+    let last_ix = close - 1;
+    let mut span_start = tree[first_ix].item.start;
+    let mut span_end = tree[close].item.start;
+
+    let bytes = s.as_bytes();
+    let opening = match bytes[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
+    let closing = match bytes[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
+    let drop_enclosing_whitespace = opening && closing;
+
+    if drop_enclosing_whitespace {
+        span_start += 1;
+        if span_start < span_end  {
+            span_end -= 1;
+        }
+    }
+
+    let mut buf: Option<String> = None;
+    let mut ix = first_ix;
+
+    while ix < close {
+        match tree[ix].item.body {
+            ItemBody::HardBreak | ItemBody::SoftBreak => {
+                if drop_enclosing_whitespace &&
+                    (ix == first_ix && bytes[tree[ix].item.start] != b'\\') ||
+                    (ix == last_ix && last_ix > first_ix) {
+                    // just ignore it
                 } else {
-                    tree[node].item.body = ItemBody::SynthesizeText(" ".into());
+                    let end = bytes[tree[ix].item.start..]
+                        .iter()
+                        .position(|&b| b == b'\r' || b == b'\n')
+                        .unwrap()
+                        + tree[ix].item.start;
+                    if let Some(ref mut buf) = buf {
+                        buf.push_str(&s[tree[ix].item.start..end]);
+                        buf.push(' ');
+                    } else {
+                        let mut new_buf = String::with_capacity(span_end - span_start);
+                        new_buf.push_str(&s[span_start..end]);
+                        new_buf.push(' ');
+                        buf = Some(new_buf);
+                    }
                 }
             }
-            _ => tree[node].item.body = ItemBody::Text,
-        }
-        if let TreePointer::Valid(next_ix) = next {
-            if next_ix == close {
-                tree[node].next = TreePointer::Nil;
-                break node;
+            _ => {
+                if let Some(ref mut buf) = buf {
+                    let end = if ix == last_ix {
+                        span_end
+                    } else {
+                        tree[ix].item.end
+                    };
+                    buf.push_str(&s[tree[ix].item.start..end]);
+                }
             }
-            node = next_ix;
-        } else {
-            unreachable!("Couldn't find code span end!");
         }
-    };
-    // Strip opening and closing space, if appropriate.
-    let opening = match &tree[first_ix].item.body {
-        ItemBody::Text => s.as_bytes()[tree[first_ix].item.start] == b' ',
-        ItemBody::SynthesizeText(text) => text.starts_with(' '),
-        _ => unreachable!("unexpected item"),
-    };
-    let closing = match &tree[last].item.body {
-        ItemBody::Text => s.as_bytes()[tree[last].item.end - 1] == b' ',
-        ItemBody::SynthesizeText(text) => text.ends_with(' '),
-        _ => unreachable!("unexpected item"),
-    };
-    // TODO(spec clarification): This makes n-2 spaces for n spaces input. Correct?
-    if opening && closing {
-        if tree[first_ix].item.body == ItemBody::SynthesizeText(" ".into())
-            || tree[first_ix].item.end - tree[first_ix].item.start == 1
-        {
-            tree[open].child = tree[first_ix].next;
-        } else {
-            tree[first_ix].item.start += 1;
-        }
-        if tree[last].item.body == ItemBody::SynthesizeText(" ".into()) {
-            tree[last].item.body = ItemBody::SynthesizeText("".into());
-        } else {
-            tree[last].item.end -= 1;
-        }
-        // TODO: if last is now empty, remove it (we have size-0 items in the tree)
+        ix = ix + 1;
     }
+
+    tree[open].item.body = if let Some(buf) = buf {
+        ItemBody::Code(buf.into())
+    } else {
+        ItemBody::Code(s[span_start..span_end].into())
+    };
+    tree[open].item.end = tree[close].item.end;
+    tree[open].next = tree[close].next;
+    tree[open].child = TreePointer::Nil;
 }
 
 fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
@@ -2692,6 +2687,10 @@ impl<'a> Parser<'a> {
 
     /// Returns the next event in a pre-order AST walk, along with its
     /// start and end offset in the source.
+    // LLVM seems reluctant to inline this function without this attribute. It is thought to be
+    // beneficial as the call is hot and only called by the event iterators. Removing this
+    // attribute incurs a ~2% performance hit.
+    #[inline(always)]
     fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
         match self.tree.cur() {
             TreePointer::Nil => {
@@ -2699,7 +2698,7 @@ impl<'a> Parser<'a> {
                 let tag = item_to_tag(&self.tree[ix].item).unwrap();
                 self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling(ix);
-                return Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end));
+                Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end))
             }
             TreePointer::Valid(mut cur_ix) => {
                 if let ItemBody::Backslash = self.tree[cur_ix].item.body {
@@ -2710,26 +2709,22 @@ impl<'a> Parser<'a> {
                 if self.tree[cur_ix].item.body.is_inline() {
                     self.handle_inline();
                 }
-            }
-        }
 
-        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
-            if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
-                self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
-                    self.tree[child_ix].item.start
+                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                        self.tree[child_ix].item.start
+                    } else {
+                        self.tree[cur_ix].item.end
+                    };
+                    self.tree.push();                
+                    Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
                 } else {
-                    self.tree[cur_ix].item.end
-                };
-                self.tree.push();                
-                Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
-            } else {
-                self.tree.next_sibling(cur_ix);
-                let item = &self.tree[cur_ix].item;
-                self.offset = item.end;
-                Some((item_to_event(item, self.text), item.start..item.end))
+                    self.tree.next_sibling(cur_ix);
+                    let item = &self.tree[cur_ix].item;
+                    self.offset = item.end;
+                    Some((item_to_event(item, self.text), item.start..item.end))
+                }
             }
-        } else {
-            None
         }
     }
 
@@ -2798,7 +2793,6 @@ impl<'a> Iterator for OffsetIter<'a> {
 fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
     match item.body {
         ItemBody::Paragraph => Some(Tag::Paragraph),
-        ItemBody::Code => Some(Tag::Code),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Strikethrough => Some(Tag::Strikethrough),
@@ -2830,6 +2824,9 @@ fn item_to_event<'a>(item: &Item<'a>, text: &'a str) -> Event<'a> {
     match item.body {
         ItemBody::Text => {
             Event::Text(text[item.start..item.end].into())
+        }
+        ItemBody::Code(ref cow) => {
+            Event::Code(cow.clone())
         }
         ItemBody::SynthesizeText(ref text) => {
             Event::Text(text.clone())

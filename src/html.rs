@@ -100,6 +100,12 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
+                Code(text) => {
+                    self.write(b"<code>", false)?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write(b"</code>", false)?;
+                    self.end_newline = false;
+                }
                 Html(html) | InlineHtml(html) => {
                     self.write(html.as_bytes(), false)?;
                 }
@@ -219,7 +225,6 @@ where
             Tag::Emphasis => self.write(b"<em>", false),
             Tag::Strong => self.write(b"<strong>", false),
             Tag::Strikethrough => self.write(b"<del>", false),
-            Tag::Code => self.write(b"<code>", false),
             Tag::Link(LinkType::Email, dest, title) => {
                 self.write(b"<a href=\"mailto:", false)?;
                 escape_href(&mut self.writer, &dest)?;
@@ -319,9 +324,6 @@ where
             Tag::Strikethrough => {
                 self.write(b"</del>", false)?;
             }
-            Tag::Code => {
-                self.write(b"</code>", false)?;
-            }
             Tag::Link(_, _, _) => {
                 self.write(b"</a>", false)?;
             }
@@ -346,14 +348,10 @@ where
                     }
                     nest -= 1;
                 }
-                Text(text) => {
+                Html(_) => (),
+                InlineHtml(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
-                }
-                Html(_) => (),
-                InlineHtml(html) => {
-                    escape_html(&mut self.writer, &html)?;
-                    self.end_newline = html.ends_with('\n');
                 }
                 SoftBreak | HardBreak => {
                     self.write(b" ", false)?;

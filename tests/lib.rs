@@ -42,7 +42,7 @@ lazy_static! {
         "form", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "video", "script", "style"
     ].iter().cloned().collect();
     static ref PRE_TAGS: HashSet<&'static str> = [
-        "pre"
+        "pre", "code"
     ].iter().cloned().collect();
     static ref TABLE_TAGS: HashSet<&'static str> = [
         "table", "thead", "tbody", "tr"
@@ -108,7 +108,6 @@ fn normalize_dom(dom: RcDom) -> Handle {
     }
     body
 }
-
 
 // Returns false if node is an empty text node or an empty tbody.
 // Returns true otherwise.

@@ -597,8 +597,7 @@ impl<'a> FirstPass<'a> {
 
                             // make sure they match the number of columns we find in separator line
                             if alignment.len() == header_count {
-                                let alignment_ix = self.allocs.alignments.len();
-                                self.allocs.alignments.push(alignment);
+                                let alignment_ix = self.allocs.allocate_alignment(alignment);
                                 let end_ix = table_head_ix + table_head_bytes;
                                 return LoopInstruction::BreakAtWith(end_ix, Some(Item {
                                     start: i,
@@ -712,13 +711,11 @@ impl<'a> FirstPass<'a> {
                 b'&' => {
                     match scan_entity(&self.text[ix..]) {
                         (n, Some(value)) => {
-                            let cow_ix = self.allocs.cows.len();
-                            self.allocs.cows.push(value);
                             self.tree.append_text(begin_text, ix);
                             self.tree.append(Item {
                                 start: ix,
                                 end: ix + n,
-                                body: ItemBody::SynthesizeText(cow_ix),
+                                body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
                             });
                             begin_text = ix + n;
                             LoopInstruction::ContinueAndSkip(n - 1)
@@ -922,12 +919,10 @@ impl<'a> FirstPass<'a> {
             info_end -= 1;
         }
         let info_string = unescape(&self.text[info_start..info_end]);
-        let cow_ix = self.allocs.cows.len();
-        self.allocs.cows.push(info_string);
         self.tree.append(Item {
             start: start_ix,
             end: 0,  // will get set later
-            body: ItemBody::FencedCodeBlock(cow_ix),
+            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
         self.tree.push();
         let mut ix = start_ix + scan_nextline(&self.text[start_ix..]);
@@ -963,8 +958,7 @@ impl<'a> FirstPass<'a> {
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
-            let cow_ix = self.allocs.cows.len();
-            self.allocs.cows.push("   "[..remaining_space].into());
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
                 start,
                 end: start,
@@ -984,8 +978,7 @@ impl<'a> FirstPass<'a> {
     /// Appends a line of HTML to the tree.
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
-            let cow_ix = self.allocs.cows.len();
-            self.allocs.cows.push("   "[..remaining_space].into());
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
                 start,
                 end: start,
@@ -1181,12 +1174,10 @@ impl<'a> FirstPass<'a> {
             return None;
         }
         i += 1;
-        let cow_ix = self.allocs.cows.len();
-        self.allocs.cows.push(label);
         self.tree.append(Item {
             start,
             end: 0,  // will get set later
-            body: ItemBody::FootnoteDefinition(cow_ix), // TODO: check whether the label here is strictly necessary
+            body: ItemBody::FootnoteDefinition(self.allocs.allocate_cow(label)), // TODO: check whether the label here is strictly necessary
         });
         self.tree.push();
         Some(i)
@@ -2279,10 +2270,28 @@ impl<'a> Allocations<'a> {
     fn new() -> Self {
         Self {
             refdefs: HashMap::new(),
-            links: Vec::new(),
-            cows: Vec::with_capacity(128),
+            links: Vec::with_capacity(128),
+            cows: Vec::new(),
             alignments: Vec::new(),
         }
+    }
+
+    fn allocate_cow(&mut self, cow: CowStr<'a>) -> usize {
+        let ix = self.cows.len();
+        self.cows.push(cow);
+        ix
+    }
+
+    fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> usize {
+        let ix = self.links.len();
+        self.links.push((ty, url, title));
+        ix
+    }
+
+    fn allocate_alignment(&mut self, alignment: Vec<Alignment>) -> usize {
+        let ix = self.alignments.len();
+        self.alignments.push(alignment);
+        ix
     }
 }
 
@@ -2359,8 +2368,7 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        let link_ix = self.allocs.links.len();
-                        self.allocs.links.push((link_type, uri, "".into()));
+                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -2445,12 +2453,10 @@ impl<'a> Parser<'a> {
                             }                            
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
-                            let link_ix = self.allocs.links.len();
+                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title);
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
-                                self.allocs.links.push((LinkType::Inline, url, title));
                                 ItemBody::Image(link_ix)
                             } else {
-                                self.allocs.links.push((LinkType::Inline, url, title));
                                 ItemBody::Link(link_ix)
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
@@ -2497,9 +2503,7 @@ impl<'a> Parser<'a> {
                             if let Some(ReferenceLabel::Footnote(l)) = label {
                                 self.tree[tos.node].next = node_after_link;
                                 self.tree[tos.node].child = TreePointer::Nil;
-                                let cow_ix = self.allocs.cows.len();
-                                self.allocs.cows.push(l);
-                                self.tree[tos.node].item.body = ItemBody::FootnoteReference(cow_ix);
+                                self.tree[tos.node].item.body = ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
                                 prev = TreePointer::Valid(tos.node);
                                 cur = node_after_link;
                                 link_stack.clear();
@@ -2523,12 +2527,10 @@ impl<'a> Parser<'a> {
                                 };
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
-                                    let link_ix = self.allocs.links.len();
+                                    let link_ix = self.allocs.allocate_link(def_link_type, url, title);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                        self.allocs.links.push((def_link_type, url, title));
                                         ItemBody::Image(link_ix)
                                     } else {
-                                        self.allocs.links.push((def_link_type, url, title));
                                         ItemBody::Link(link_ix)
                                     };
 
@@ -2726,9 +2728,7 @@ impl<'a> Parser<'a> {
         } else {
             self.text[span_start..span_end].into()
         };
-        let cow_ix = self.allocs.cows.len();
-        self.allocs.cows.push(cow);
-        self.tree[open].item.body = ItemBody::Code(cow_ix);
+        self.tree[open].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
         self.tree[open].item.end = self.tree[close].item.end;
         self.tree[open].next = self.tree[close].next;
         self.tree[open].child = TreePointer::Nil;

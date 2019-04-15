@@ -182,10 +182,10 @@ enum ItemBody {
     Header(i32), // header level
     FencedCodeBlock(usize), // cow index for info string
     IndentCodeBlock,
-    HtmlBlock(Option<&'static str>), // end tag, or none for type 6
+    HtmlBlock(Option<u32>), // end tag, or none for type 6
     Html,
     BlockQuote,
-    List(bool, u8, Option<usize>), // is_tight, list character, list start index
+    List(bool, u8, usize), // is_tight, list character, list start index
     ListItem(usize), // indent level
     SynthesizeText(usize), // cow index
     FootnoteDefinition(usize), // cow index for label
@@ -291,9 +291,8 @@ impl<'a> FirstPass<'a> {
                 });
                 self.tree.push();
             } else if let Some((ch, index, indent)) = line_start.scan_list_marker() {
-                let opt_index = if ch == b'.' || ch == b')' { Some(index) } else { None };
                 let after_marker_index = start_ix + line_start.bytes_scanned();
-                self.continue_list(container_start, ch, opt_index);
+                self.continue_list(container_start, ch, index);
                 self.tree.append(Item {
                     start: container_start,
                     end: after_marker_index, // will get updated later if item not empty
@@ -359,8 +358,8 @@ impl<'a> FirstPass<'a> {
 
         // Types 1-5 are all detected by one function and all end with the same
         // pattern
-        if let Some(html_end_tag) = get_html_end_tag(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
+        if let Some(html_end_tag_ix) = get_html_end_tag(&self.text[nonspace_ix..]) {
+            return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
         }
 
         // Detect type 6
@@ -773,13 +772,13 @@ impl<'a> FirstPass<'a> {
     /// tree and also keeping track of the lines of HTML within the block.
     ///
     /// The html_end_tag is the tag that must be found on a line to end the block.
-    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &'static str,
+    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag_ix: u32,
             mut remaining_space: usize) -> usize
     {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // set later
-            body: ItemBody::HtmlBlock(Some(html_end_tag)),
+            body: ItemBody::HtmlBlock(Some(html_end_tag_ix)),
         });
         self.tree.push();
 
@@ -796,6 +795,8 @@ impl<'a> FirstPass<'a> {
                 end_ix = ix;
                 break;
             }
+
+            let html_end_tag = HTML_END_TAGS[html_end_tag_ix as usize];
 
             if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
                 end_ix = ix;
@@ -1071,7 +1072,7 @@ impl<'a> FirstPass<'a> {
 
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
-    fn continue_list(&mut self, start: usize, ch: u8, index: Option<usize>) {
+    fn continue_list(&mut self, start: usize, ch: u8, index: usize) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) =
                 self.tree[node_ix].item.body
@@ -1485,12 +1486,14 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     is_html_tag(scan_html_block_tag(s).1)
 }
 
-fn get_html_end_tag(text : &str) -> Option<&'static str> {
-    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
-    static END_TAGS: &'static [&'static str; 3] = &["</script>", "</pre>", "</style>"];
+static HTML_END_TAGS: &'static [&'static str; 7] = &["</script>", "</pre>", "</style>", "-->", "?>", "]]>", ">"];
 
+// Returns an index into HTML_END_TAGS
+fn get_html_end_tag(text : &str) -> Option<u32> {
+    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
+    
     // TODO: Consider using `strcasecmp` here
-    'type_1: for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(END_TAGS.iter()) {
+    'type_1: for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
         if text.len() >= beg_tag.len() && text.starts_with('<') {
             for (i, &c) in beg_tag.as_bytes()[1..].iter().enumerate() {
                 if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
@@ -1500,7 +1503,7 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
 
             // Must either be the end of the line...
             if text.len() == beg_tag.len() {
-                return Some(end_tag);
+                return Some(end_tag_ix);
             }
 
             // ...or be followed by whitespace, newline, or '>'.
@@ -1508,22 +1511,21 @@ fn get_html_end_tag(text : &str) -> Option<&'static str> {
             let s = text.as_bytes()[pos] as char;
             // TODO: I think this should be ASCII whitespace only
             if s.is_whitespace() || s == '>' {
-                return Some(end_tag);
+                return Some(end_tag_ix);
             }
         }
     }
     static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
-    static ST_END_TAGS: &'static [&'static str; 3] = &["-->", "?>", "]]>"];
-    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(ST_END_TAGS.iter()) {
+    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
         if text.starts_with(&beg_tag[..]) {
-            return Some(end_tag);
+            return Some(end_tag_ix);
         }
     }
     if text.len() > 2 &&
         text.starts_with("<!") {
         let c = text[2..].chars().next().unwrap();
         if c >= 'A' && c <= 'Z' {
-            return Some(">");
+            return Some(6);
         }
     }
     None
@@ -2843,7 +2845,13 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Option<Tag<'a>> {
             Some(Tag::CodeBlock(allocs.cows[cow_ix].clone())),
         ItemBody::IndentCodeBlock => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
-        ItemBody::List(_, _, listitem_start) => Some(Tag::List(listitem_start)),
+        ItemBody::List(_, c, listitem_start) => {
+            if c == b'.' || c == b')' {
+                Some(Tag::List(Some(listitem_start)))
+            } else {
+                Some(Tag::List(None))
+            }
+        }
         ItemBody::ListItem(_) => Some(Tag::Item),
         ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
         ItemBody::TableHead => Some(Tag::TableHead),
@@ -2945,14 +2953,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = std::mem::size_of::<Node<Item>>();
-        assert_eq!(56, node_size);
+        assert_eq!(48, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = std::mem::size_of::<ItemBody>();
-        assert_eq!(24, body_size);
+        assert_eq!(16, body_size);
     }
 
     #[test]

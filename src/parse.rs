@@ -58,7 +58,7 @@ pub enum Tag<'a> {
     HtmlBlock,
 
     // tables
-    Table(Vec<Alignment>),
+    Table(Box<[Alignment]>),
     TableHead,
     TableRow,
     TableCell,
@@ -173,8 +173,8 @@ enum ItemBody<'a> {
     Code(CowStr<'a>),
     InlineHtml,
     // Link params: destination, title.
-    Link(LinkType, CowStr<'a>, CowStr<'a>),
-    Image(LinkType, CowStr<'a>, CowStr<'a>),
+    Link(usize), // indices into parser's links
+    Image(usize),
     FootnoteReference(CowStr<'a>), // label
     TaskListMarker(bool), // true for checked
 
@@ -187,7 +187,7 @@ enum ItemBody<'a> {
     BlockQuote,
     List(bool, u8, Option<usize>), // is_tight, list character, list start index
     ListItem(usize), // indent level
-    SynthesizeText(CowStr<'static>),
+    SynthesizeText(CowStr<'a>),
     FootnoteDefinition(CowStr<'a>), // label
 
     // Tables
@@ -2327,6 +2327,7 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item<'a>>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
 }
@@ -2352,8 +2353,9 @@ impl<'a> Parser<'a> {
     ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, refdefs) = first_pass.run();
+        let links = Vec::new();
         tree.reset();
-        Parser { text, tree, refdefs, broken_link_callback, offset: 0 }
+        Parser { text, tree, refdefs, broken_link_callback, offset: 0, links }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2395,7 +2397,9 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        self.tree[cur_ix].item.body = ItemBody::Link(link_type, uri, "".into());
+                        let link_ix = self.links.len();
+                        self.links.push((link_type, uri, "".into()));
+                        self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
@@ -2479,10 +2483,13 @@ impl<'a> Parser<'a> {
                             }                            
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
+                            let link_ix = self.links.len();
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
-                                ItemBody::Image(LinkType::Inline, url, title)
+                                self.links.push((LinkType::Inline, url, title));
+                                ItemBody::Image(link_ix)
                             } else {
-                                ItemBody::Link(LinkType::Inline, url, title)
+                                self.links.push((LinkType::Inline, url, title));
+                                ItemBody::Link(link_ix)
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
@@ -2552,10 +2559,13 @@ impl<'a> Parser<'a> {
                                 };
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
+                                    let link_ix = self.links.len();
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
-                                        ItemBody::Image(def_link_type, url, title)
+                                        self.links.push((def_link_type, url, title));
+                                        ItemBody::Image(link_ix)
                                     } else {
-                                        ItemBody::Link(def_link_type, url, title)
+                                        self.links.push((def_link_type, url, title));
+                                        ItemBody::Link(link_ix)
                                     };
 
                                     // lets do some tree surgery to add the link to the tree
@@ -2695,7 +2705,7 @@ impl<'a> Parser<'a> {
         match self.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item).unwrap();
+                let tag = item_to_tag(&self.tree[ix].item, &self.links).unwrap();
                 self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling(ix);
                 Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end))
@@ -2710,7 +2720,7 @@ impl<'a> Parser<'a> {
                     self.handle_inline();
                 }
 
-                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item) {
+                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.links) {
                     self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
                         self.tree[child_ix].item.start
                     } else {
@@ -2790,16 +2800,20 @@ impl<'a> Iterator for OffsetIter<'a> {
     }
 }
 
-fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
+fn item_to_tag<'a>(item: &Item<'a>, links: &Vec<(LinkType, CowStr<'a>, CowStr<'a>)>) -> Option<Tag<'a>> {
     match item.body {
         ItemBody::Paragraph => Some(Tag::Paragraph),
         ItemBody::Emphasis => Some(Tag::Emphasis),
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Strikethrough => Some(Tag::Strikethrough),
-        ItemBody::Link(ref link_type, ref url, ref title) =>
-            Some(Tag::Link(*link_type, url.clone(), title.clone())),
-        ItemBody::Image(ref link_type, ref url, ref title) =>
-            Some(Tag::Image(*link_type, url.clone(), title.clone())),
+        ItemBody::Link(link_ix) => {
+            let &(ref link_type, ref url, ref title) = links.get(link_ix).unwrap();
+            Some(Tag::Link(*link_type, url.clone(), title.clone()))
+        }
+        ItemBody::Image(link_ix) => {
+            let &(ref link_type, ref url, ref title) = links.get(link_ix).unwrap();
+            Some(Tag::Image(*link_type, url.clone(), title.clone()))
+        }
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(ref info_string) =>
@@ -2812,7 +2826,7 @@ fn item_to_tag<'a>(item: &Item<'a>) -> Option<Tag<'a>> {
         ItemBody::TableHead => Some(Tag::TableHead),
         ItemBody::TableCell => Some(Tag::TableCell),
         ItemBody::TableRow => Some(Tag::TableRow),
-        ItemBody::Table(ref alignment) => Some(Tag::Table(alignment.clone())),
+        ItemBody::Table(ref alignment) => Some(Tag::Table(alignment.clone().into_boxed_slice())),
         ItemBody::FootnoteDefinition(ref label) =>
             Some(Tag::FootnoteDefinition(label.clone())),
         _ => None,
@@ -2904,7 +2918,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = std::mem::size_of::<Node<Item>>();
-        assert_eq!(88, node_size);
+        assert_eq!(64, node_size);
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn body_size() {
+        let body_size = std::mem::size_of::<ItemBody>();
+        assert_eq!(32, body_size);
     }
 
     #[test]

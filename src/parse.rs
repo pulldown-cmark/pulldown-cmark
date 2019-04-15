@@ -141,7 +141,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 struct Item {
     start: usize,
     end: usize,
@@ -231,10 +231,13 @@ struct FirstPass<'a> {
 
 impl<'a> FirstPass<'a> {
     fn new(text: &'a str, options: Options) -> FirstPass {
-        let tree = Tree::new();
+        // This is a very naive heuristic for the number of nodes
+        // we'll need.
+        let start_capacity = std::cmp::max(128, text.len() / 32);
+        let tree = Tree::with_capacity(start_capacity);
         let begin_list_item = false;
         let last_line_blank = false;
-        let allocs = Default::default();
+        let allocs = Allocations::new();
         FirstPass { text, tree, begin_list_item, last_line_blank, allocs, options }
     }
 
@@ -2264,12 +2267,23 @@ impl CodeDelims {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 struct Allocations<'a> {
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
+}
+
+impl<'a> Allocations<'a> {
+    fn new() -> Self {
+        Self {
+            refdefs: HashMap::new(),
+            links: Vec::new(),
+            cows: Vec::with_capacity(128),
+            alignments: Vec::new(),
+        }
+    }
 }
 
 #[derive(Clone)]

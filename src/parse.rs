@@ -1261,7 +1261,7 @@ impl<'a> FirstPass<'a> {
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = self.scan_refdef_title(i) {
             i += title_length;
-            backup.1.title = Some(unescape_cow(title));
+            backup.1.title = Some(unescape(title));
         } else if newlines > 0 {
             return Some(backup);
         } else {
@@ -1284,11 +1284,9 @@ impl<'a> FirstPass<'a> {
     // FIXME: or, reuse scanner::scan_link_title ?
     // TODO: rename. this isnt just for refdef_titles, but all titles
     // returns (bytelength, title_str)
-    fn scan_refdef_title(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
-        let mut title = String::new();
+    fn scan_refdef_title(&self, start: usize) -> Option<(usize, &'a str)> {
         let text = &self.text[start..];
         let mut chars = text.chars().peekable();
-        let mut still_borrowed = true;
         let closing_delim = match chars.next()? {
             '\'' => '\'',
             '"' => '"',
@@ -1300,15 +1298,9 @@ impl<'a> FirstPass<'a> {
         while let Some(c) = chars.next() {
             match c {
                 '\n' => {
-                    if !still_borrowed {
-                        title.push(c);
-                    }                    
                     bytecount += 1;
                     let mut next = *chars.peek()?;
                     while is_ascii_whitespace_no_nl(next as u8) {
-                        if !still_borrowed {
-                            title.push(next);
-                        }
                         bytecount += chars.next()?.len_utf8();
                         next = *chars.peek()?;
                     }
@@ -1319,31 +1311,12 @@ impl<'a> FirstPass<'a> {
                 }
                 '\\' => {
                     let next_char = chars.next()?;
-                    bytecount += 1;
-                    if next_char != closing_delim {
-                        if still_borrowed {
-                            title.push_str(&text[1..bytecount]);
-                        }
-                        still_borrowed = false;
-                        title.push('\\');
-                    }
-                    if !still_borrowed {
-                        title.push(next_char);
-                    }                    
-                    bytecount += next_char.len_utf8();
+                    bytecount += 1 + next_char.len_utf8();
                 }
                 c if c == closing_delim => {
-                    let cow = if still_borrowed {
-                        text[1..bytecount].into()
-                    } else {
-                        title.into()
-                    };
-                    return Some((bytecount + 1, cow));
+                    return Some((bytecount + 1, &text[1..bytecount]));
                 }
                 c => {
-                    if !still_borrowed {
-                        title.push(c);
-                    }
                     bytecount += c.len_utf8();
                 }
             }

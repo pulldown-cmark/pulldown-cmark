@@ -184,7 +184,8 @@ fn regression_test_12() {
 
 [a]: /url (title))
 "##;
-    let expected = r##"<p>[a]</p>\n<p>[a]: /url (title))</p>
+    let expected = r##"<p>[a]</p>
+<p>[a]: /url (title))</p>
 "##;
 
     test_markdown_html(original, expected);

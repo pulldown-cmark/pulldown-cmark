@@ -153,3 +153,39 @@ i8
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_10() {
+    let original = r##"[a]
+
+[a]: /url (title\\*)
+"##;
+    let expected = r##"<p><a href="/url" title="title\*">a</a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_11() {
+    let original = r##"[a]
+
+[a]: /url (title\))
+"##;
+    let expected = r##"<p><a href="/url" title="title)">a</a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_12() {
+    let original = r##"[a]
+
+[a]: /url (title))
+"##;
+    let expected = r##"<p>[a]</p>\n<p>[a]: /url (title))</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

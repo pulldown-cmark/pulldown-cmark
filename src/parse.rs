@@ -21,7 +21,7 @@
 //! Tree-based two pass parser.
 
 use std::collections::{VecDeque, HashMap};
-use std::ops::Range;
+use std::ops::{Index, Range};
 use std::cmp::min;
 
 use unicase::UniCase;
@@ -159,7 +159,7 @@ enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
-    MaybeCode(usize),
+    MaybeCode(usize), // number of backticks
     MaybeHtml,
     MaybeLinkOpen,
     MaybeLinkClose,
@@ -170,28 +170,27 @@ enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
-    Code(usize), // cow index
+    Code(CowIndex),
     InlineHtml,
-    // Link params: destination, title.
-    Link(usize), // indices into parser's links
-    Image(usize),
-    FootnoteReference(usize), // cow index for label
+    Link(LinkIndex),
+    Image(LinkIndex),
+    FootnoteReference(CowIndex), 
     TaskListMarker(bool), // true for checked
 
     Rule,
     Header(i32), // header level
-    FencedCodeBlock(usize), // cow index for info string
+    FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     HtmlBlock(Option<u32>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(bool, u8, usize), // is_tight, list character, list start index
     ListItem(usize), // indent level
-    SynthesizeText(usize), // cow index
-    FootnoteDefinition(usize), // cow index for label
+    SynthesizeText(CowIndex),
+    FootnoteDefinition(CowIndex),
 
     // Tables
-    Table(usize),
+    Table(AlignmentIndex),
     TableHead,
     TableRow,
     TableCell,
@@ -499,7 +498,7 @@ impl<'a> FirstPass<'a> {
 
             // break out when we find a table
             if let Some(Item { body: ItemBody::Table(alignment_ix), start, end }) = brk {
-                let table_cols = self.allocs.alignments[alignment_ix].len();
+                let table_cols = self.allocs[alignment_ix].len();
                 self.tree[node_ix].item = Item { body: ItemBody::Table(alignment_ix), start, end };
                 // this clears out any stuff we may have appended - but there may
                 // be a cleaner way
@@ -2258,6 +2257,15 @@ impl CodeDelims {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+struct LinkIndex(usize);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+struct CowIndex(usize);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+struct AlignmentIndex(usize);
+
 #[derive(Clone)]
 struct Allocations<'a> {
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
@@ -2276,22 +2284,46 @@ impl<'a> Allocations<'a> {
         }
     }
 
-    fn allocate_cow(&mut self, cow: CowStr<'a>) -> usize {
+    fn allocate_cow(&mut self, cow: CowStr<'a>) -> CowIndex {
         let ix = self.cows.len();
         self.cows.push(cow);
-        ix
+        CowIndex(ix)
     }
 
-    fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> usize {
+    fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
         let ix = self.links.len();
         self.links.push((ty, url, title));
-        ix
+        LinkIndex(ix)
     }
 
-    fn allocate_alignment(&mut self, alignment: Vec<Alignment>) -> usize {
+    fn allocate_alignment(&mut self, alignment: Vec<Alignment>) -> AlignmentIndex {
         let ix = self.alignments.len();
         self.alignments.push(alignment);
-        ix
+        AlignmentIndex(ix)
+    }
+}
+
+impl<'a> Index<CowIndex> for Allocations<'a> {
+    type Output = CowStr<'a>;
+
+    fn index(&self, ix: CowIndex) -> &Self::Output {
+        self.cows.index(ix.0)
+    }
+}
+
+impl<'a> Index<LinkIndex> for Allocations<'a> {
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+
+    fn index(&self, ix: LinkIndex) -> &Self::Output {
+        self.links.index(ix.0)
+    }
+}
+
+impl<'a> Index<AlignmentIndex> for Allocations<'a> {
+    type Output = Vec<Alignment>;
+
+    fn index(&self, ix: AlignmentIndex) -> &Self::Output {
+        self.alignments.index(ix.0)
     }
 }
 
@@ -2846,17 +2878,17 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Option<Tag<'a>> {
         ItemBody::Strong => Some(Tag::Strong),
         ItemBody::Strikethrough => Some(Tag::Strikethrough),
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.links.get(link_ix).unwrap();
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Some(Tag::Link(*link_type, url.clone(), title.clone()))
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.links.get(link_ix).unwrap();
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Some(Tag::Image(*link_type, url.clone(), title.clone()))
         }
         ItemBody::Rule => Some(Tag::Rule),
         ItemBody::Header(level) => Some(Tag::Header(level)),
         ItemBody::FencedCodeBlock(cow_ix) =>
-            Some(Tag::CodeBlock(allocs.cows[cow_ix].clone())),
+            Some(Tag::CodeBlock(allocs[cow_ix].clone())),
         ItemBody::IndentCodeBlock => Some(Tag::CodeBlock("".into())),
         ItemBody::BlockQuote => Some(Tag::BlockQuote),
         ItemBody::List(_, c, listitem_start) => {
@@ -2872,10 +2904,10 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Option<Tag<'a>> {
         ItemBody::TableCell => Some(Tag::TableCell),
         ItemBody::TableRow => Some(Tag::TableRow),
         ItemBody::Table(alignment_ix) => {
-            Some(Tag::Table(allocs.alignments[alignment_ix].clone().into_boxed_slice()))
+            Some(Tag::Table(allocs[alignment_ix].clone().into_boxed_slice()))
         }
         ItemBody::FootnoteDefinition(cow_ix) =>
-            Some(Tag::FootnoteDefinition(allocs.cows[cow_ix].clone())),
+            Some(Tag::FootnoteDefinition(allocs[cow_ix].clone())),
         _ => None,
     }
 }
@@ -2887,10 +2919,10 @@ fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Ev
             Event::Text(text[item.start..item.end].into())
         }
         ItemBody::Code(cow_ix) => {
-            Event::Code(allocs.cows[cow_ix].clone())
+            Event::Code(allocs[cow_ix].clone())
         }
         ItemBody::SynthesizeText(cow_ix) => {
-            Event::Text(allocs.cows[cow_ix].clone())
+            Event::Text(allocs[cow_ix].clone())
         }
         ItemBody::Html => {
             Event::Html(text[item.start..item.end].into())
@@ -2901,7 +2933,7 @@ fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Ev
         ItemBody::SoftBreak => Event::SoftBreak,
         ItemBody::HardBreak => Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            Event::FootnoteReference(allocs.cows[cow_ix].clone())
+            Event::FootnoteReference(allocs[cow_ix].clone())
         }
         ItemBody::TaskListMarker(checked) => Event::TaskListMarker(checked),
         _ => panic!("unexpected item body {:?}", item.body)

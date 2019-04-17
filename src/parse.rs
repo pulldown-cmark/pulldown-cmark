@@ -58,7 +58,7 @@ pub enum Tag<'a> {
     HtmlBlock,
 
     // tables
-    Table(Box<[Alignment]>),
+    Table(Vec<Alignment>),
     TableHead,
     TableRow,
     TableCell,
@@ -2904,7 +2904,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Option<Tag<'a>> {
         ItemBody::TableCell => Some(Tag::TableCell),
         ItemBody::TableRow => Some(Tag::TableRow),
         ItemBody::Table(alignment_ix) => {
-            Some(Tag::Table(allocs[alignment_ix].clone().into_boxed_slice()))
+            Some(Tag::Table(allocs[alignment_ix].clone()))
         }
         ItemBody::FootnoteDefinition(cow_ix) =>
             Some(Tag::FootnoteDefinition(allocs[cow_ix].clone())),

@@ -154,7 +154,7 @@ where
                 self.write(b">", false)
             }
             Tag::Table(alignments) => {
-                self.table_alignments = alignments.into();
+                self.table_alignments = alignments;
                 self.write(b"<table>", false)
             }
             Tag::TableHead => {

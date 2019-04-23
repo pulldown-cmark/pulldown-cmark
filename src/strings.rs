@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::convert::AsRef;
 use std::fmt;
 
-const DOUBLE_WORD_SIZE: usize = 2 * std::mem::size_of::<isize>();
+const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
 
 /// Returned when trying to convert a &str into a InlineStr
 /// but it fails because it doesn't fit.
@@ -14,7 +14,7 @@ pub struct StringTooLongError;
 
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct InlineStr {
-    inner: [u8; DOUBLE_WORD_SIZE],
+    inner: [u8; MAX_INLINE_STR_LEN],
 }
 
 impl<'a> AsRef<str> for InlineStr {
@@ -31,9 +31,9 @@ impl Hash for InlineStr {
 
 impl From<char> for InlineStr {
     fn from(c: char) -> Self {
-        let mut inner = [0u8; DOUBLE_WORD_SIZE];
+        let mut inner = [0u8; MAX_INLINE_STR_LEN];
         c.encode_utf8(&mut inner);
-        inner[DOUBLE_WORD_SIZE - 1] = c.len_utf8() as u8;
+        inner[MAX_INLINE_STR_LEN - 1] = c.len_utf8() as u8;
         Self { inner }
     }
 }
@@ -49,10 +49,10 @@ impl<'a> std::cmp::PartialEq<InlineStr> for InlineStr {
 impl InlineStr {
     pub fn try_from_str(s: &str) -> Result<InlineStr, StringTooLongError> {
         let len = s.len();
-        if len < DOUBLE_WORD_SIZE {
-            let mut inner = [0u8; DOUBLE_WORD_SIZE];
+        if len < MAX_INLINE_STR_LEN {
+            let mut inner = [0u8; MAX_INLINE_STR_LEN];
             inner[..len].copy_from_slice(s.as_bytes());
-            inner[DOUBLE_WORD_SIZE - 1] = len as u8;
+            inner[MAX_INLINE_STR_LEN - 1] = len as u8;
             Ok(Self { inner })
         } else {
             Err(StringTooLongError)
@@ -64,7 +64,7 @@ impl Deref for InlineStr {
     type Target = str;
 
     fn deref(&self) -> &str {
-        let len = self.inner[DOUBLE_WORD_SIZE - 1] as usize;
+        let len = self.inner[MAX_INLINE_STR_LEN - 1] as usize;
         from_utf8(&self.inner[..len]).unwrap()
     }
 }
@@ -97,7 +97,7 @@ impl<'a> Hash for CowStr<'a> {
 impl<'a> std::clone::Clone for CowStr<'a> {
     fn clone(&self) -> Self {
         match self {
-            CowStr::Boxed(s) if s.len() < DOUBLE_WORD_SIZE
+            CowStr::Boxed(s) if s.len() < MAX_INLINE_STR_LEN
                 => CowStr::Inlined(InlineStr::try_from_str(&**s).unwrap()),
             CowStr::Boxed(s) => CowStr::Boxed(s.clone()),
             CowStr::Borrowed(s) => CowStr::Borrowed(s),
@@ -197,24 +197,24 @@ mod test_special_string {
     }
 
     #[test]
-    fn double_word_size_atleast_five() {
+    fn max_inline_str_len_atleast_five() {
         // we need 4 bytes to store a char and then one more to store
         // its length
-        assert!(DOUBLE_WORD_SIZE >= 5);
+        assert!(MAX_INLINE_STR_LEN >= 5);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
-    fn inlinestr_fits_fifteen() {
-        let s = "0123456789abcde";
+    fn inlinestr_fits_twentytwo() {
+        let s = "0123456789abcdefghijkl";
         let stack_str = InlineStr::try_from_str(s).unwrap();
         assert_eq!(stack_str.deref(), s);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
-    fn inlinestr_not_fits_sixteen() {
-        let s = "0123456789abcdef";
+    fn inlinestr_not_fits_twentythree() {
+        let s = "0123456789abcdefghijklm";
         let _stack_str = InlineStr::try_from_str(s).unwrap_err();
     }
 

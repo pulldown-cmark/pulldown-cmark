@@ -5,21 +5,12 @@ extern crate test;
 
 mod to_html {
     use pulldown_cmark::{Parser, Options, html};
-    use std::str::from_utf8;
 
     fn render_html(text: &str, opts: Options) -> String {
         let mut s = String::with_capacity(text.len() * 3 / 2);
         let p = Parser::new_ext(text, opts);
         html::push_html(&mut s, p);
         s
-    }
-
-    #[bench]
-    fn crdt_empty_options(b: &mut test::Bencher) {
-        let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
-        let input = from_utf8(input_bytes).unwrap();
-
-        b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
@@ -71,6 +62,7 @@ mod to_html {
         b.iter(|| render_html(&input, Options::empty()));
     }
 
+    #[bench]
     fn pathological_codeblocks1(b: &mut test::Bencher) {
         // Note that `buf` grows quadratically with number of
         // iterations. The point here is that the render time shouldn't

@@ -55,7 +55,7 @@ impl Sub<usize> for TreeIndex {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Node<T> {
     pub child: TreePointer,
     pub next: TreePointer,
@@ -74,13 +74,15 @@ impl<T: Default> Tree<T> {
     // Indices start at one, so we place a dummy value at index zero.
     // The alternative would be subtracting one from every TreeIndex
     // every time we convert it to usize to index our nodes.
-    pub fn new() -> Tree<T> {
+    pub fn with_capacity(cap: usize) -> Tree<T> {
+        let mut nodes = Vec::with_capacity(cap);
+        nodes.push(Node {
+            child: TreePointer::Nil,
+            next: TreePointer::Nil,
+            item: <T as Default>::default(),
+        });
         Tree {
-            nodes: vec![Node {
-                child: TreePointer::Nil,
-                next: TreePointer::Nil,
-                item: <T as Default>::default(),
-            }],
+            nodes,
             spine: Vec::new(),
             cur: TreePointer::Nil,
         }

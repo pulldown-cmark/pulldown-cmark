@@ -21,8 +21,8 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
-
+use std::io::{self, Write, ErrorKind};
+use std::fmt::{Arguments, Write as FmtWrite};
 
 use crate::parse::{LinkType, Event, Tag, Alignment};
 use crate::parse::Event::*;
@@ -39,37 +39,50 @@ enum TableState {
 /// We can't implement it for `String` directly as it could theoretically
 /// conflict with the blanket implementation if `std::io::Write` was
 /// ever implemented for `String`.
-struct StringWrap(String);
+struct StringWrap<'w>(&'w mut String);
 
 struct StrWriteMutRef<'w, W>(&'w mut W);
 
-pub(crate) trait StrWrite {
+// TODO: expose this
+pub trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
+
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
 }
 
-impl StrWrite for StringWrap {
-    #[inline]
+impl<'w> StrWrite for StringWrap<'w> {
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.0.push_str(s);
         Ok(())
+    }
+
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        // FIXME: translate fmt error to io error?
+        self.0.write_fmt(args).map_err(|_| ErrorKind::Other.into())
     }
 }
 
 impl<W> StrWrite for W
     where W: Write
 {
-    #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.write_all(s.as_bytes())
+    }
+
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        self.write_fmt(args)
     }
 }
 
 impl<W> StrWrite for StrWriteMutRef<'_, W>
     where W: StrWrite
 {
-    #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.0.write_str(s)
+    }
+
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        self.0.write_fmt(args)
     }
 }
 
@@ -186,9 +199,8 @@ where
             }
             Tag::Header(level) => {
                 self.fresh_line()?;
-                self.write("<h", false)?;
-                self.write(&[(b'0' + level as u8)], false)?;
-                self.write(">", false)
+                self.end_newline = false;
+                write!(&mut self.writer, "<h{}>", level)
             }
             Tag::Table(alignments) => {
                 self.table_alignments = alignments;
@@ -312,8 +324,7 @@ where
             }
             Tag::Rule => (),
             Tag::Header(level) => {
-                self.write("</h", false)?;
-                self.write(&[(b'0' + level as u8)], false)?;
+                write!(&mut self.writer, "</h{}", level)?;
                 self.write(">", true)?;
             }
             Tag::Table(_) => {
@@ -437,10 +448,7 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    unsafe {
-        // we only write utf-8, so this should be OK
-        write_html(s.as_mut_vec(), iter).unwrap();
-    }
+    write_html(StringWrap(s), iter).unwrap();
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and

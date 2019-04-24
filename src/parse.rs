@@ -1915,9 +1915,6 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
 }
 
 fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    if !scanner.scan_ch(b'<') {
-        return None;
-    }
     let underlying = &scanner.text[scanner.ix..];
     let mut url = String::new();
     let mut still_borrowed = true;
@@ -1925,6 +1922,7 @@ fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> 
     while let Some(mut c) = scanner.next_char() {
         match c {
             '>' => {
+                dbg!("got here");
                 return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
             }
             '\x00'..='\x1f' | '<' => return None,
@@ -1954,12 +1952,12 @@ fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> 
 }
 
 fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let save = scanner.clone();
-    if let Some(url) = scan_link_destination_pointy(scanner) {
-        return Some(url);
+    if scanner.scan_ch(b'<') {
+        scan_link_destination_pointy(scanner)
+    } else {
+        scan_link_destination_plain(scanner)
     }
-    *scanner = save;
-    scan_link_destination_plain(scanner)
+    
 }
 
 fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {

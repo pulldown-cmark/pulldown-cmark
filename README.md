@@ -108,7 +108,12 @@ strings are available when they're needed. Thus, when rendering text to
 HTML, most text is copied just once, from the source document to the
 HTML buffer.
 
-## Building only the pulldown-cmark library
+When using the pulldown-cmark's own HTML renderer, make sure to write to a buffered
+target like a `Vec<u8>` or `String`. Since it performs many (very) small writes, writing
+directly to stdout, files, or sockets is detrimental to performance. Such writers can
+be wrapped in a [`BufWriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html).
+
+## Build options
 
 By default, the binary is built as well. If you don't want/need it, then build like this:
 
@@ -119,7 +124,20 @@ By default, the binary is built as well. If you don't want/need it, then build l
 Or put in your `Cargo.toml` file:
 
 ```toml
-pulldown-cmark = { version = "0.4", default-features = false }
+pulldown-cmark = { version = "0.5", default-features = false }
+```
+
+SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
+enable them, build with simd feature:
+
+```bash
+> cargo build --release --features simd
+```
+
+Or add the feature to your project's `Cargo.toml`:
+
+```toml
+pulldown-cmark = { version = "0.5", default-features = false, features = ["simd"] }
 ```
 
 ## Authors

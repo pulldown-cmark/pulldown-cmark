@@ -409,6 +409,11 @@ where
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
 /// write it out to a writable stream.
 ///
+/// **Note**: using this function with an unbuffered writer like a file or socket
+/// will result in poor performance. Wrap these in a
+/// [`BufWriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html) to
+/// prevent unnecessary slowdowns.
+///
 /// # Examples
 ///
 /// ```

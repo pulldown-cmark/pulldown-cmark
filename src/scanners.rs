@@ -590,12 +590,12 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     (w + postn, c, start, w + postindent)
 }
 
-fn char_from_codepoint_str(s: &str, radix: u32) -> char {
-    let mut codepoint = u32::from_str_radix(s, radix).unwrap();
+fn char_from_codepoint_str(s: &str, radix: u32) -> Option<char> {
+    let mut codepoint = u32::from_str_radix(s, radix).ok()?;
     if codepoint == 0 {
         codepoint = 0xFFFD;
     }
-    char::from_u32(codepoint).unwrap_or('\u{FFFD}')
+    char::from_u32(codepoint)
 }
 
 // doesn't bother to check data[0] == '&'
@@ -604,16 +604,25 @@ pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     let mut end = 1;
     if scan_ch(&data[end..], b'#') == 1 {
         end += 1;
-        if end < size && (data.as_bytes()[end] == b'x' || data.as_bytes()[end] == b'X') {
+        let next_byte = data.as_bytes()[end];
+        if end < size && (next_byte == b'x' || next_byte == b'X') {
             end += 1;
             end += scan_while(&data[end..], is_hexdigit);
-            if end > 3 && end < 12 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(char_from_codepoint_str(&data[3..end], 16).into()));
+            if scan_ch(&data[end..], b';') == 1 {
+                return if let Some(c) = char_from_codepoint_str(&data[3..end], 16) {
+                    (end + 1, Some(c.into()))
+                } else {
+                    (0, None)
+                };
             }
         } else {
             end += scan_while(&data[end..], is_digit);
-            if end > 2 && end < 11 && scan_ch(&data[end..], b';') == 1 {
-                return (end + 1, Some(char_from_codepoint_str(&data[2..end], 10).into()));
+            if scan_ch(&data[end..], b';') == 1 {
+                return if let Some(c) = char_from_codepoint_str(&data[2..end], 10) {
+                    (end + 1, Some(c.into()))
+                } else {
+                    (0, None)
+                };
             }
         }
         return (0, None);

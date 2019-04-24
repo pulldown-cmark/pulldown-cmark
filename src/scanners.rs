@@ -604,8 +604,7 @@ pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     let mut end = 1;
     if scan_ch(&data[end..], b'#') == 1 {
         end += 1;
-        let next_byte = data.as_bytes()[end];
-        if end < size && (next_byte == b'x' || next_byte == b'X') {
+        if end < size && (data.as_bytes()[end] == b'x' || data.as_bytes()[end] == b'X') {
             end += 1;
             end += scan_while(&data[end..], is_hexdigit);
             if scan_ch(&data[end..], b';') == 1 {

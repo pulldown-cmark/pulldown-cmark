@@ -36,7 +36,7 @@ use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, Referen
 // can create denial of service vulnerabilities if we're not careful.
 // The simplest countermeasure is to limit their depth, which is
 // explicitly allowed by the spec as long as the limit is at least 3:
-// https://spec.commonmark.org/0.28/#link-destination
+// https://spec.commonmark.org/0.29/#link-destination
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
 #[derive(Clone, Debug, PartialEq)]

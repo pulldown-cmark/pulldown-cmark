@@ -23,6 +23,8 @@
 use std::io::{self, Write};
 use std::str::from_utf8;
 
+use crate::html::StrWrite;
+
 static HREF_SAFE: [u8; 128] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -35,12 +37,12 @@ static HREF_SAFE: [u8; 128] = [
     ];
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
-static AMP_ESCAPE: &'static [u8] = b"&amp;";
-static SLASH_ESCAPE: &'static [u8] = b"&#x27;";
+static AMP_ESCAPE: &'static str = "&amp;";
+static SLASH_ESCAPE: &'static str = "&#x27;";
 
 pub(crate) fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
 where
-    W: Write,
+    W: StrWrite,
 {
     let bytes = s.as_bytes();
     let mut mark = 0;
@@ -51,28 +53,28 @@ where
 
             // write partial substring up to mark
             if mark < i {
-                w.write_all(&bytes[mark..i])?;
+                w.write_str(&s[mark..i])?;
             }
             match c {
                 b'&' => {
-                    w.write_all(AMP_ESCAPE)?;
+                    w.write_str(AMP_ESCAPE)?;
                 }
                 b'\'' => {
-                    w.write_all(SLASH_ESCAPE)?;
+                    w.write_str(SLASH_ESCAPE)?;
                 }
                 _ => {
                     let mut buf = [0u8; 3];
                     buf[0] = b'%';
                     buf[1] = HEX_CHARS[((c as usize) >> 4) & 0xF];
                     buf[2] = HEX_CHARS[(c as usize) & 0xF];
-                    let escaped = from_utf8(&buf).unwrap().as_bytes();
-                    w.write_all(escaped)?;
+                    let escaped = from_utf8(&buf).unwrap();
+                    w.write_str(escaped)?;
                 }
             }
             mark = i + 1; // all escaped characters are ASCII
         }
     }
-    w.write_all(&bytes[mark..])
+    w.write_str(&s[mark..])
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = [
@@ -104,14 +106,14 @@ static HTML_ESCAPES: [&'static str; 5] = [
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.
-pub(crate) fn escape_html<W: Write>(w: W, s: &str) -> io::Result<()> {
+pub(crate) fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
     #[cfg(all(target_arch = "x86_64", feature="simd"))]
     { simd::escape_html(w, s) }
     #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
     { escape_html_scalar(w, s) }
 }
 
-fn escape_html_scalar<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
@@ -129,13 +131,13 @@ fn escape_html_scalar<W: Write>(mut w: W, s: &str) -> io::Result<()> {
         let escape = HTML_ESCAPE_TABLE[c as usize];
         if escape != 0 {
             let escape_seq = HTML_ESCAPES[escape as usize];
-            w.write_all(&bytes[mark..i])?;
-            w.write_all(escape_seq.as_bytes())?;
+            w.write_str(&s[mark..i])?;
+            w.write_str(escape_seq)?;
             mark = i + 1; // all escaped characters are ASCII
         }
         i += 1;
     }
-    w.write_all(&bytes[mark..])
+    w.write_str(&s[mark..])
 }
 
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
@@ -143,10 +145,11 @@ mod simd {
     use std::arch::x86_64::*;
     use std::io::{self, Write};
     use std::mem::size_of;
+    use crate::html::StrWrite;
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(crate) fn escape_html<W: Write>(mut w: W, s: &str) -> io::Result<()> {
+    pub(crate) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading 
@@ -182,6 +185,7 @@ mod simd {
     }
 
     #[target_feature(enable = "ssse3")]
+    #[inline]
     /// Computes a byte mask at given offset in the byte buffer. Its first 16 (least significant)
     /// bits correspond to whether there is an HTML special byte (&, <, ", >) at the 16 bytes
     /// `bytes[offset..]`. For example, the mask `(1 << 3)` states that there is an HTML byte

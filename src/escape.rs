@@ -162,12 +162,12 @@ mod simd {
             unsafe {
                 foreach_special_simd(bytes, 0, |i| {
                     let replacement = super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
-                    w.write_all(&bytes[mark..i])?;
+                    w.write_str(&s[mark..i])?;
                     mark = i + 1; // all escaped characters are ASCII
-                    w.write_all(replacement.as_bytes())
+                    w.write_str(replacement)
                 })?;
             }
-            w.write_all(&bytes[mark..])
+            w.write_str(&s[mark..])
         } else {
             super::escape_html_scalar(w, s)
         }

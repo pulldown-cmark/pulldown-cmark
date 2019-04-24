@@ -1569,7 +1569,7 @@ impl InlineStack {
             .enumerate()
             .rev()
             .find(|(_, el)| {
-                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0)
+                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
@@ -1922,7 +1922,6 @@ fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> 
     while let Some(mut c) = scanner.next_char() {
         match c {
             '>' => {
-                dbg!("got here");
                 return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
             }
             '\x00'..='\x1f' | '<' => return None,

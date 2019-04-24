@@ -131,7 +131,7 @@ SIMD accelerated scanners are available for the x64 platform from version 0.5 on
 enable them, build with simd feature:
 
 ```bash
-> cargo build --features simd
+> cargo build --release --features simd
 ```
 
 Or add the feature to your project's `Cargo.toml`:

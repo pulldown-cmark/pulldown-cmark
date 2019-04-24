@@ -411,7 +411,7 @@ where
 ///
 /// **Note**: using this function with an unbuffered writer like a file or socket
 /// will result in poor performance. Wrap these in a
-/// [`Bufwriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html) to
+/// [`BufWriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html) to
 /// prevent unnecessary slowdowns.
 ///
 /// # Examples

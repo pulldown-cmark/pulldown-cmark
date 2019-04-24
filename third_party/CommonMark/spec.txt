@@ -1,8 +1,8 @@
 ---
 title: CommonMark Spec
 author: John MacFarlane
-version: 0.28
-date: '2017-08-01'
+version: 0.29
+date: '2019-04-06'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
 ...
 
@@ -248,7 +248,7 @@ satisfactory replacement for a spec.
 
 Because there is no unambiguous spec, implementations have diverged
 considerably.  As a result, users are often surprised to find that
-a document that renders one way on one system (say, a github wiki)
+a document that renders one way on one system (say, a GitHub wiki)
 renders differently on another (say, converting to docbook using
 pandoc).  To make matters worse, because nothing in Markdown counts
 as a "syntax error," the divergence often isn't discovered right away.
@@ -328,8 +328,10 @@ that is not a [whitespace character].
 
 An [ASCII punctuation character](@)
 is `!`, `"`, `#`, `$`, `%`, `&`, `'`, `(`, `)`,
-`*`, `+`, `,`, `-`, `.`, `/`, `:`, `;`, `<`, `=`, `>`, `?`, `@`,
-`[`, `\`, `]`, `^`, `_`, `` ` ``, `{`, `|`, `}`, or `~`.
+`*`, `+`, `,`, `-`, `.`, `/` (U+0021–2F), 
+`:`, `;`, `<`, `=`, `>`, `?`, `@` (U+003A–0040),
+`[`, `\`, `]`, `^`, `_`, `` ` `` (U+005B–0060), 
+`{`, `|`, `}`, or `~` (U+007B–007E).
 
 A [punctuation character](@) is an [ASCII
 punctuation character] or anything in
@@ -825,7 +827,7 @@ Contents are parsed as inlines:
 ````````````````````````````````
 
 
-Leading and trailing blanks are ignored in parsing inline content:
+Leading and trailing [whitespace] is ignored in parsing inline content:
 
 ```````````````````````````````` example
 #                  foo                     
@@ -1018,6 +1020,20 @@ The content of the header may span more than one line:
 ```````````````````````````````` example
 Foo *bar
 baz*
+====
+.
+<h1>Foo <em>bar
+baz</em></h1>
+````````````````````````````````
+
+The contents are the result of parsing the headings's raw
+content as inlines.  The heading's raw content is formed by
+concatenating the lines and removing initial and final
+[whitespace].
+
+```````````````````````````````` example
+  Foo *bar
+baz*→
 ====
 .
 <h1>Foo <em>bar
@@ -1870,7 +1886,7 @@ Code fences (opening and closing) cannot contain internal spaces:
 ``` ```
 aaa
 .
-<p><code></code>
+<p><code> </code>
 aaa</p>
 ````````````````````````````````
 
@@ -1922,9 +1938,11 @@ bar
 
 
 An [info string] can be provided after the opening code fence.
-Opening and closing spaces will be stripped, and the first word, prefixed
-with `language-`, is used as the value for the `class` attribute of the
-`code` element within the enclosing `pre` element.
+Although this spec doesn't mandate any particular treatment of
+the info string, the first word is typically used to specify
+the language of the code block. In HTML output, the language is
+normally indicated by adding a class to the `code` element consisting
+of `language-` followed by the language name.
 
 ```````````````````````````````` example
 ```ruby
@@ -2003,15 +2021,15 @@ Closing code fences cannot have [info strings]:
 An [HTML block](@) is a group of lines that is treated
 as raw HTML (and will not be escaped in HTML output).
 
-There are seven kinds of [HTML block], which can be defined
-by their start and end conditions.  The block begins with a line that
-meets a [start condition](@) (after up to three spaces
-optional indentation).  It ends with the first subsequent line that
-meets a matching [end condition](@), or the last line of
-the document or other [container block](#container-blocks)), if no
-line is encountered that meets the [end condition].  If the first line
-meets both the [start condition] and the [end condition], the block
-will contain just that line.
+There are seven kinds of [HTML block], which can be defined by their
+start and end conditions.  The block begins with a line that meets a
+[start condition](@) (after up to three spaces optional indentation).
+It ends with the first subsequent line that meets a matching [end
+condition](@), or the last line of the document, or the last line of
+the [container block](#container-blocks) containing the current HTML
+block, if no line is encountered that meets the [end condition].  If
+the first line meets both the [start condition] and the [end
+condition], the block will contain just that line.
 
 1.  **Start condition:**  line begins with the string `<script`,
 `<pre`, or `<style` (case-insensitive), followed by whitespace,
@@ -2050,9 +2068,9 @@ the string `/>`.\
 **End condition:** line is followed by a [blank line].
 
 7.  **Start condition:**  line begins with a complete [open tag]
-or [closing tag] (with any [tag name] other than `script`,
-`style`, or `pre`) followed only by [whitespace]
-or the end of the line.\
+(with any [tag name] other than `script`,
+`style`, or `pre`) or a complete [closing tag],
+followed only by [whitespace] or the end of the line.\
 **End condition:** line is followed by a [blank line].
 
 HTML blocks continue until they are closed by their appropriate
@@ -2892,6 +2910,17 @@ The link destination may not be omitted:
 <p>[foo]</p>
 ````````````````````````````````
 
+ However, an empty link destination may be specified using
+ angle brackets:
+
+```````````````````````````````` example
+[foo]: <>
+
+[foo]
+.
+<p><a href="">foo</a></p>
+````````````````````````````````
+
 The title must be separated from the link destination by
 whitespace:
 
@@ -3061,6 +3090,25 @@ and thematic breaks, and it need not be followed by a blank line.
 </blockquote>
 ````````````````````````````````
 
+```````````````````````````````` example
+[foo]: /url
+bar
+===
+[foo]
+.
+<h1>bar</h1>
+<p><a href="/url">foo</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[foo]: /url
+===
+[foo]
+.
+<p>===
+<a href="/url">foo</a></p>
+````````````````````````````````
+
 
 Several [link reference definitions]
 can occur one after another, without intervening blank lines.
@@ -3096,6 +3144,17 @@ are defined:
 </blockquote>
 ````````````````````````````````
 
+
+Whether something is a [link reference definition] is
+independent of whether the link reference it defines is
+used in the document.  Thus, for example, the following
+document contains just a link reference definition, and
+no visible content:
+
+```````````````````````````````` example
+[foo]: /url
+.
+````````````````````````````````
 
 
 ## Paragraphs
@@ -3696,9 +3755,8 @@ in some browsers.)
 The following rules define [list items]:
 
 1.  **Basic case.**  If a sequence of lines *Ls* constitute a sequence of
-    blocks *Bs* starting with a [non-whitespace character] and not separated
-    from each other by more than one blank line, and *M* is a list
-    marker of width *W* followed by 1 ≤ *N* ≤ 4 spaces, then the result
+    blocks *Bs* starting with a [non-whitespace character], and *M* is a
+    list marker of width *W* followed by 1 ≤ *N* ≤ 4 spaces, then the result
     of prepending *M* and the following spaces to the first line of
     *Ls*, and indenting subsequent lines of *Ls* by *W + N* spaces, is a
     list item with *Bs* as its contents.  The type of the list item
@@ -4008,8 +4066,7 @@ A start number may not be negative:
 
 2.  **Item starting with indented code.**  If a sequence of lines *Ls*
     constitute a sequence of blocks *Bs* starting with an indented code
-    block and not separated from each other by more than one blank line,
-    and *M* is a list marker of width *W* followed by
+    block, and *M* is a list marker of width *W* followed by
     one space, then the result of prepending *M* and the following
     space to the first line of *Ls*, and indenting subsequent lines of
     *Ls* by *W + 1* spaces, is a list item with *Bs* as its contents.
@@ -5445,9 +5502,9 @@ Thus, for example, in
 <p><code>hi</code>lo`</p>
 ````````````````````````````````
 
-
 `hi` is parsed as code, leaving the backtick at the end as a literal
 backtick.
+
 
 ## Backslash escapes
 
@@ -5482,6 +5539,7 @@ not have their usual Markdown meanings:
 \* not a list
 \# not a heading
 \[foo]: /url "not a reference"
+\&ouml; not a character entity
 .
 <p>*not emphasized*
 &lt;br/&gt; not a tag
@@ -5490,7 +5548,8 @@ not have their usual Markdown meanings:
 1. not a list
 * not a list
 # not a heading
-[foo]: /url &quot;not a reference&quot;</p>
+[foo]: /url &quot;not a reference&quot;
+&amp;ouml; not a character entity</p>
 ````````````````````````````````
 
 
@@ -5588,13 +5647,23 @@ foo
 
 ## Entity and numeric character references
 
-All valid HTML entity references and numeric character
-references, except those occurring in code blocks and code spans,
-are recognized as such and treated as equivalent to the
-corresponding Unicode characters.  Conforming CommonMark parsers
-need not store information about whether a particular character
-was represented in the source using a Unicode character or
-an entity reference.
+Valid HTML entity references and numeric character references
+can be used in place of the corresponding Unicode character,
+with the following exceptions:
+
+- Entity and character references are not recognized in code
+  blocks and code spans.
+
+- Entity and character references cannot stand in place of
+  special characters that define structural elements in
+  CommonMark.  For example, although `&#42;` can be used
+  in place of a literal `*` character, `&#42;` cannot replace
+  `*` in emphasis delimiters, bullet list markers, or thematic
+  breaks.
+
+Conforming CommonMark parsers need not store information about
+whether a particular character was represented in the source
+using a Unicode character or an entity reference.
 
 [Entity references](@) consist of `&` + any of the valid
 HTML5 entity names + `;`. The
@@ -5645,12 +5714,12 @@ Here are some nonentities:
 
 ```````````````````````````````` example
 &nbsp &x; &#; &#x;
-&#987654321;
+&#87654321;
 &#abcdef0;
 &ThisIsNotDefined; &hi?;
 .
 <p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
-&amp;#987654321;
+&amp;#87654321;
 &amp;#abcdef0;
 &amp;ThisIsNotDefined; &amp;hi?;</p>
 ````````````````````````````````
@@ -5732,6 +5801,51 @@ text in code spans and code blocks:
 ````````````````````````````````
 
 
+Entity and numeric character references cannot be used
+in place of symbols indicating structure in CommonMark
+documents.
+
+```````````````````````````````` example
+&#42;foo&#42;
+*foo*
+.
+<p>*foo*
+<em>foo</em></p>
+````````````````````````````````
+
+```````````````````````````````` example
+&#42; foo
+
+* foo
+.
+<p>* foo</p>
+<ul>
+<li>foo</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+foo&#10;&#10;bar
+.
+<p>foo
+
+bar</p>
+````````````````````````````````
+
+```````````````````````````````` example
+&#9;foo
+.
+<p>→foo</p>
+````````````````````````````````
+
+
+```````````````````````````````` example
+[a](url &quot;tit&quot;)
+.
+<p>[a](url &quot;tit&quot;)</p>
+````````````````````````````````
+
+
 ## Code spans
 
 A [backtick string](@)
@@ -5745,7 +5859,8 @@ following ways:
 
 - First, [line endings] are converted to [spaces].
 - If the resulting string both begins *and* ends with a [space]
-  character, a single [space] character is removed from the
+  character, but does not consist entirely of [space]
+  characters, a single [space] character is removed from the
   front and back.  This allows you to include code that begins
   or ends with backtick characters, which must be separated by
   whitespace from the opening or closing backtick strings.
@@ -5803,6 +5918,16 @@ stripped in this way:
 ` b `
 .
 <p><code> b </code></p>
+````````````````````````````````
+
+No stripping occurs if the code span contains only spaces:
+
+```````````````````````````````` example
+` `
+`  `
+.
+<p><code> </code>
+<code>  </code></p>
 ````````````````````````````````
 
 
@@ -6109,7 +6234,8 @@ The following rules define emphasis and strong emphasis:
     [delimiter runs].  If one of the delimiters can both
     open and close emphasis, then the sum of the lengths of the
     delimiter runs containing the opening and closing delimiters
-    must not be a multiple of 3.
+    must not be a multiple of 3 unless both lengths are
+    multiples of 3.
 
 10. Strong emphasis begins with a delimiter that
     [can open strong emphasis] and ends with a delimiter that
@@ -6119,7 +6245,8 @@ The following rules define emphasis and strong emphasis:
     [delimiter runs].  If one of the delimiters can both open
     and close strong emphasis, then the sum of the lengths of
     the delimiter runs containing the opening and closing
-    delimiters must not be a multiple of 3.
+    delimiters must not be a multiple of 3 unless both lengths
+    are multiples of 3.
 
 11. A literal `*` character cannot occur at the beginning or end of
     `*`-delimited emphasis or `**`-delimited strong emphasis, unless it
@@ -6738,7 +6865,8 @@ is precluded by the condition that a delimiter that
 can both open and close (like the `*` after `foo`)
 cannot form emphasis if the sum of the lengths of
 the delimiter runs containing the opening and
-closing delimiters is a multiple of 3.
+closing delimiters is a multiple of 3 unless
+both lengths are multiples of 3.
 
 
 For the same reason, we don't get two consecutive
@@ -6775,6 +6903,23 @@ omitted:
 *foo**bar***
 .
 <p><em>foo<strong>bar</strong></em></p>
+````````````````````````````````
+
+
+When the lengths of the interior closing and opening
+delimiter runs are *both* multiples of 3, though,
+they can match to create emphasis:
+
+```````````````````````````````` example
+foo***bar***baz
+.
+<p>foo<em><strong>bar</strong></em>baz</p>
+````````````````````````````````
+
+```````````````````````````````` example
+foo******bar*********baz
+.
+<p>foo<strong><strong><strong>bar</strong></strong></strong>***baz</p>
 ````````````````````````````````
 
 
@@ -7316,12 +7461,13 @@ A [link destination](@) consists of either
   closing `>` that contains no line breaks or unescaped
   `<` or `>` characters, or
 
-- a nonempty sequence of characters that does not include
-  ASCII space or control characters, and includes parentheses
-  only if (a) they are backslash-escaped or (b) they are part of
-  a balanced pair of unescaped parentheses.  (Implementations
-  may impose limits on parentheses nesting to avoid performance
-  issues, but at least three levels of nesting should be supported.)
+- a nonempty sequence of characters that does not start with
+  `<`, does not include ASCII space or control characters, and
+  includes parentheses only if (a) they are backslash-escaped or
+  (b) they are part of a balanced pair of unescaped parentheses.
+  (Implementations may impose limits on parentheses nesting to
+  avoid performance issues, but at least three levels of nesting
+  should be supported.)
 
 A [link title](@)  consists of either
 
@@ -7334,7 +7480,8 @@ A [link title](@)  consists of either
   backslash-escaped, or
 
 - a sequence of zero or more characters between matching parentheses
-  (`(...)`), including a `)` character only if it is backslash-escaped.
+  (`(...)`), including a `(` or `)` character only if it is
+  backslash-escaped.
 
 Although [link titles] may span multiple lines, they may not contain
 a [blank line].
@@ -7416,6 +7563,36 @@ bar>)
 .
 <p>[link](<foo
 bar>)</p>
+````````````````````````````````
+
+The destination can contain `)` if it is enclosed
+in pointy brackets:
+
+```````````````````````````````` example
+[a](<b)c>)
+.
+<p><a href="b)c">a</a></p>
+````````````````````````````````
+
+Pointy brackets that enclose links must be unescaped:
+
+```````````````````````````````` example
+[link](<foo\>)
+.
+<p>[link](&lt;foo&gt;)</p>
+````````````````````````````````
+
+These are not links, because the opening pointy bracket
+is not matched properly:
+
+```````````````````````````````` example
+[a](<b)c
+[a](<b)c>
+[a](<b>c)
+.
+<p>[a](&lt;b)c
+[a](&lt;b)c&gt;
+[a](<b>c)</p>
 ````````````````````````````````
 
 Parentheses inside the link destination may be escaped:
@@ -8525,7 +8702,7 @@ If you want a link after a literal `!`, backslash-escape the
 as the link label.
 
 A [URI autolink](@) consists of `<`, followed by an
-[absolute URI] not containing `<`, followed by `>`.  It is parsed as
+[absolute URI] followed by `>`.  It is parsed as
 a link to the URI, with the URI as the link's label.
 
 An [absolute URI](@),
@@ -9483,7 +9660,8 @@ just above `stack_bottom` (or the first element if `stack_bottom`
 is NULL).
 
 We keep track of the `openers_bottom` for each delimiter
-type (`*`, `_`).  Initialize this to `stack_bottom`.
+type (`*`, `_`) and each length of the closing delimiter run
+(modulo 3).  Initialize this to `stack_bottom`.
 
 Then we repeat the following until we run out of potential
 closers:
@@ -9515,7 +9693,7 @@ closers:
     of the delimiter stack.  If the closing node is removed, reset
     `current_position` to the next element in the stack.
 
-- If none in found:
+- If none is found:
 
   + Set `openers_bottom` to the element before `current_position`.
     (We know that there are no openers for this kind of closer up to and

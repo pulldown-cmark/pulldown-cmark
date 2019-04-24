@@ -36,7 +36,7 @@ use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, Referen
 // can create denial of service vulnerabilities if we're not careful.
 // The simplest countermeasure is to limit their depth, which is
 // explicitly allowed by the spec as long as the limit is at least 3:
-// https://spec.commonmark.org/0.28/#link-destination
+// https://spec.commonmark.org/0.29/#link-destination
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1569,7 +1569,7 @@ impl InlineStack {
             .enumerate()
             .rev()
             .find(|(_, el)| {
-                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0)
+                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
@@ -1915,9 +1915,6 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
 }
 
 fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    if !scanner.scan_ch(b'<') {
-        return None;
-    }
     let underlying = &scanner.text[scanner.ix..];
     let mut url = String::new();
     let mut still_borrowed = true;
@@ -1954,12 +1951,12 @@ fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> 
 }
 
 fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let save = scanner.clone();
-    if let Some(url) = scan_link_destination_pointy(scanner) {
-        return Some(url);
+    if scanner.scan_ch(b'<') {
+        scan_link_destination_pointy(scanner)
+    } else {
+        scan_link_destination_plain(scanner)
     }
-    *scanner = save;
-    scan_link_destination_plain(scanner)
+    
 }
 
 fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
@@ -2672,60 +2669,63 @@ impl<'a> Parser<'a> {
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex) {
         let first_ix = open + 1;
         let last_ix = close - 1;
+        let bytes = self.text.as_bytes();
         let mut span_start = self.tree[first_ix].item.start;
         let mut span_end = self.tree[close].item.start;
-
-        let bytes = self.text.as_bytes();
-        let opening = match bytes[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
-        let closing = match bytes[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
-        let drop_enclosing_whitespace = opening && closing;
-
-        if drop_enclosing_whitespace {
-            span_start += 1;
-            if span_start < span_end  {
-                span_end -= 1;
-            }
-        }
-
         let mut buf: Option<String> = None;
-        let mut ix = first_ix;
 
-        while ix < close {
-            match self.tree[ix].item.body {
-                ItemBody::HardBreak | ItemBody::SoftBreak => {
-                    if drop_enclosing_whitespace &&
-                        (ix == first_ix && bytes[self.tree[ix].item.start] != b'\\') ||
-                        (ix == last_ix && last_ix > first_ix) {
-                        // just ignore it
-                    } else {
-                        let end = bytes[self.tree[ix].item.start..]
-                            .iter()
-                            .position(|&b| b == b'\r' || b == b'\n')
-                            .unwrap()
-                            + self.tree[ix].item.start;
-                        if let Some(ref mut buf) = buf {
-                            buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                            buf.push(' ');
+        // detect all-space sequences, since they are kept as-is as of commonmark 0.29
+        if ! bytes[span_start..span_end].iter().all(|&b| b == b' ') {
+            let opening = match bytes[span_start]   { b' ' | b'\r' | b'\n' => true, _ => false };
+            let closing = match bytes[span_end - 1] { b' ' | b'\r' | b'\n' => true, _ => false };
+            let drop_enclosing_whitespace = opening && closing;
+
+            if drop_enclosing_whitespace {
+                span_start += 1;
+                if span_start < span_end  {
+                    span_end -= 1;
+                }
+            }
+
+            let mut ix = first_ix;
+
+            while ix < close {
+                match self.tree[ix].item.body {
+                    ItemBody::HardBreak | ItemBody::SoftBreak => {
+                        if drop_enclosing_whitespace &&
+                            (ix == first_ix && bytes[self.tree[ix].item.start] != b'\\') ||
+                            (ix == last_ix && last_ix > first_ix) {
+                            // just ignore it
                         } else {
-                            let mut new_buf = String::with_capacity(span_end - span_start);
-                            new_buf.push_str(&self.text[span_start..end]);
-                            new_buf.push(' ');
-                            buf = Some(new_buf);
+                            let end = bytes[self.tree[ix].item.start..]
+                                .iter()
+                                .position(|&b| b == b'\r' || b == b'\n')
+                                .unwrap()
+                                + self.tree[ix].item.start;
+                            if let Some(ref mut buf) = buf {
+                                buf.push_str(&self.text[self.tree[ix].item.start..end]);
+                                buf.push(' ');
+                            } else {
+                                let mut new_buf = String::with_capacity(span_end - span_start);
+                                new_buf.push_str(&self.text[span_start..end]);
+                                new_buf.push(' ');
+                                buf = Some(new_buf);
+                            }
+                        }
+                    }
+                    _ => {
+                        if let Some(ref mut buf) = buf {
+                            let end = if ix == last_ix {
+                                span_end
+                            } else {
+                                self.tree[ix].item.end
+                            };
+                            buf.push_str(&self.text[self.tree[ix].item.start..end]);
                         }
                     }
                 }
-                _ => {
-                    if let Some(ref mut buf) = buf {
-                        let end = if ix == last_ix {
-                            span_end
-                        } else {
-                            self.tree[ix].item.end
-                        };
-                        buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                    }
-                }
+                ix = ix + 1;
             }
-            ix = ix + 1;
         }
 
         let cow = if let Some(buf) = buf {

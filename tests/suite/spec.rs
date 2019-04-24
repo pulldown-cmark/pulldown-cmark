@@ -4816,7 +4816,7 @@ fn spec_test_311() {
 &frac34; &HilbertSpace; &DifferentialD;
 &ClockwiseContourIntegral; &ngE;
 "##;
-    let expected = r##"<p>  &amp; © Æ Ď
+    let expected = r##"<p>  &amp; © Æ Ď
 ¾ ℋ ⅆ
 ∲ ≧̸</p>
 "##;
@@ -5059,7 +5059,7 @@ fn spec_test_332() {
 fn spec_test_333() {
     let original = r##"` b `
 "##;
-    let expected = r##"<p><code> b </code></p>
+    let expected = r##"<p><code> b </code></p>
 "##;
 
     test_markdown_html(original, expected);
@@ -5067,10 +5067,10 @@ fn spec_test_333() {
 
 #[test]
 fn spec_test_334() {
-    let original = r##"` `
+    let original = r##"` `
 `  `
 "##;
-    let expected = r##"<p><code> </code>
+    let expected = r##"<p><code> </code>
 <code>  </code></p>
 "##;
 
@@ -5266,9 +5266,9 @@ fn spec_test_352() {
 
 #[test]
 fn spec_test_353() {
-    let original = r##"* a *
+    let original = r##"* a *
 "##;
-    let expected = r##"<p>* a *</p>
+    let expected = r##"<p>* a *</p>
 "##;
 
     test_markdown_html(original, expected);
@@ -6796,7 +6796,7 @@ fn spec_test_502() {
 
 #[test]
 fn spec_test_503() {
-    let original = r##"[link](/url "title")
+    let original = r##"[link](/url "title")
 "##;
     let expected = r##"<p><a href="/url%C2%A0%22title%22">link</a></p>
 "##;

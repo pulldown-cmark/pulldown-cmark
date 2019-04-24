@@ -5676,7 +5676,7 @@ references and their corresponding code points.
 &frac34; &HilbertSpace; &DifferentialD;
 &ClockwiseContourIntegral; &ngE;
 .
-<p>  &amp; © Æ Ď
+<p>  &amp; © Æ Ď
 ¾ ℋ ⅆ
 ∲ ≧̸</p>
 ````````````````````````````````
@@ -5917,16 +5917,16 @@ stripped in this way:
 ```````````````````````````````` example
 ` b `
 .
-<p><code> b </code></p>
+<p><code> b </code></p>
 ````````````````````````````````
 
 No stripping occurs if the code span contains only spaces:
 
 ```````````````````````````````` example
-` `
+` `
 `  `
 .
-<p><code> </code>
+<p><code> </code>
 <code>  </code></p>
 ````````````````````````````````
 
@@ -6320,9 +6320,9 @@ a*"foo"*
 Unicode nonbreaking spaces count as whitespace, too:
 
 ```````````````````````````````` example
-* a *
+* a *
 .
-<p>* a *</p>
+<p>* a *</p>
 ````````````````````````````````
 
 
@@ -7718,7 +7718,7 @@ Titles must be separated from the link using a [whitespace].
 Other [Unicode whitespace] like non-breaking space doesn't work.
 
 ```````````````````````````````` example
-[link](/url "title")
+[link](/url "title")
 .
 <p><a href="/url%C2%A0%22title%22">link</a></p>
 ````````````````````````````````
@@ -9707,3 +9707,4 @@ closers:
 
 After we're done, we remove all delimiters above `stack_bottom` from the
 delimiter stack.
+

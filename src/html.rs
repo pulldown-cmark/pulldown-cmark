@@ -40,9 +40,14 @@ enum TableState {
 /// ever implemented for `String`.
 struct StringWrap<'w>(&'w mut String);
 
+/// Wrapper for mutable references to `StrWrite` objects. These should
+/// also implement `StrWrite`, but we can't add a blanket implementation
+/// for them as this conflicts with the blanket implementation of
+/// `std::io::Write` for `&'_ mut W` where `W: Write`.
 struct StrWriteMutRef<'w, W>(&'w mut W);
 
-// TODO: expose this?
+/// Trait that allows writing string slices. This is basically an extension
+/// of `std::io::Write` in order to include `String`.
 pub trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
 
@@ -50,13 +55,13 @@ pub trait StrWrite {
 }
 
 impl<'w> StrWrite for StringWrap<'w> {
-    #[inline(always)]
+    #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.0.push_str(s);
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
         // FIXME: translate fmt error to io error?
         self.0.write_fmt(args).map_err(|_| ErrorKind::Other.into())
@@ -66,12 +71,12 @@ impl<'w> StrWrite for StringWrap<'w> {
 impl<W> StrWrite for W
     where W: Write
 {
-    #[inline(always)]
+    #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.write_all(s.as_bytes())
     }
 
-    #[inline(always)]
+    #[inline]
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
         self.write_fmt(args)
     }
@@ -80,12 +85,12 @@ impl<W> StrWrite for W
 impl<W> StrWrite for StrWriteMutRef<'_, W>
     where W: StrWrite
 {
-    #[inline(always)]
+    #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.0.write_str(s)
     }
 
-    #[inline(always)]
+    #[inline]
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
         self.0.write_fmt(args)
     }
@@ -119,7 +124,7 @@ where
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
-    #[inline(always)]
+    #[inline]
     fn write(&mut self, s: &str) -> io::Result<()> {
         self.writer.write_str(s)?;
 

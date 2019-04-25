@@ -34,17 +34,11 @@ enum TableState {
     Body,
 }
 
-/// Wrapper for String for which we can implement `StrWrite`.
-/// We can't implement it for `String` directly as it could theoretically
-/// conflict with the blanket implementation if `std::io::Write` was
-/// ever implemented for `String`.
-struct StringWrap<'w>(&'w mut String);
-
-/// Wrapper for mutable references to `StrWrite` objects. These should
-/// also implement `StrWrite`, but we can't add a blanket implementation
-/// for them as this conflicts with the blanket implementation of
-/// `std::io::Write` for `&'_ mut W` where `W: Write`.
-struct StrWriteMutRef<'w, W>(&'w mut W);
+/// This wrapper exists because we can't have both a blanket implementation
+/// for all types implementing `Write` and types of the for `&mut W` where
+/// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
+/// `Write` types.
+struct WriteWrapper<W>(W);
 
 /// Trait that allows writing string slices. This is basically an extension
 /// of `std::io::Write` in order to include `String`.
@@ -54,45 +48,45 @@ pub trait StrWrite {
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
 }
 
-impl<'w> StrWrite for StringWrap<'w> {
+impl<W> StrWrite for WriteWrapper<W>
+    where W: Write
+{
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
-        self.0.push_str(s);
+        self.0.write_all(s.as_bytes())
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        self.0.write_fmt(args)
+    }
+}
+
+impl<'w> StrWrite for String {
+    #[inline]
+    fn write_str(&mut self, s: &str) -> io::Result<()> {
+        self.push_str(s);
         Ok(())
     }
 
     #[inline]
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
         // FIXME: translate fmt error to io error?
-        self.0.write_fmt(args).map_err(|_| ErrorKind::Other.into())
+        FmtWrite::write_fmt(self, args).map_err(|_| ErrorKind::Other.into())
     }
 }
 
-impl<W> StrWrite for W
-    where W: Write
-{
-    #[inline]
-    fn write_str(&mut self, s: &str) -> io::Result<()> {
-        self.write_all(s.as_bytes())
-    }
-
-    #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
-        self.write_fmt(args)
-    }
-}
-
-impl<W> StrWrite for StrWriteMutRef<'_, W>
+impl<W> StrWrite for &'_ mut W
     where W: StrWrite
 {
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
-        self.0.write_str(s)
+        (**self).write_str(s)
     }
 
     #[inline]
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
-        self.0.write_fmt(args)
+        (**self).write_fmt(args)
     }
 }
 
@@ -117,6 +111,18 @@ where
     I: Iterator<Item = Event<'a>>,
     W: StrWrite,
 {
+    fn new(iter: I, writer: W) -> Self {
+        Self {
+            iter,
+            writer,
+            end_newline: true,
+            table_state: TableState::Head,
+            table_alignments: vec![],
+            table_cell_index: 0,
+            numbers: HashMap::new(),
+        }
+    }
+
     /// Writes a new line.
     fn write_newline(&mut self) -> io::Result<()> {
         self.end_newline = true;
@@ -144,12 +150,12 @@ where
                     self.end_tag(tag)?;
                 }
                 Text(text) => {
-                    escape_html(StrWriteMutRef(&mut self.writer), &text)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
                     self.write("<code>")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), &text)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
                 Html(html) | InlineHtml(html) => {
@@ -164,7 +170,7 @@ where
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), &name)?;
+                    escape_html(&mut self.writer, &name)?;
                     self.write("\">")?;
                     let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "{}", number)?;
@@ -257,7 +263,7 @@ where
                     self.write("<pre><code>")
                 } else {
                     self.write("<pre><code class=\"language-")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), lang)?;
+                    escape_html(&mut self.writer, lang)?;
                     self.write("\">")
                 }
             }
@@ -296,30 +302,30 @@ where
             Tag::Strikethrough => self.write("<del>"),
             Tag::Link(LinkType::Email, dest, title) => {
                 self.write("<a href=\"mailto:")?;
-                escape_href(StrWriteMutRef(&mut self.writer), &dest)?;
+                escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), &title)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\">")
             }
             Tag::Link(_link_type, dest, title) => {
                 self.write("<a href=\"")?;
-                escape_href(StrWriteMutRef(&mut self.writer), &dest)?;
+                escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), &title)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\">")
             }
             Tag::Image(_link_type, dest, title) => {
                 self.write("<img src=\"")?;
-                escape_href(StrWriteMutRef(&mut self.writer), &dest)?;
+                escape_href(&mut self.writer, &dest)?;
                 self.write("\" alt=\"")?;
                 self.raw_text()?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
-                    escape_html(StrWriteMutRef(&mut self.writer), &title)?;
+                    escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\" />")
             }
@@ -329,7 +335,7 @@ where
                 } else {
                     self.write("\n<div class=\"footnote-definition\" id=\"")?;
                 }
-                escape_html(StrWriteMutRef(&mut self.writer), &*name)?;
+                escape_html(&mut self.writer, &*name)?;
                 self.write("\"><sup class=\"footnote-definition-label\">")?;
                 let len = self.numbers.len() + 1;
                 let number = *self.numbers.entry(name).or_insert(len);
@@ -422,7 +428,7 @@ where
                 }
                 Html(_) => (),
                 InlineHtml(text) | Code(text) | Text(text) => {
-                    escape_html(StrWriteMutRef(&mut self.writer), &text)?;
+                    escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak => {
@@ -472,7 +478,7 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    write_html(StringWrap(s), iter).unwrap();
+    HtmlWriter::new(iter, s).run().unwrap();
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -511,16 +517,7 @@ where
 pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
-    W: StrWrite,
+    W: Write,
 {
-    let writer = HtmlWriter {
-        iter,
-        writer,
-        end_newline: true,
-        table_state: TableState::Head,
-        table_alignments: vec![],
-        table_cell_index: 0,
-        numbers: HashMap::new(),
-    };
-    writer.run()
+    HtmlWriter::new(iter, WriteWrapper(writer)).run()
 }

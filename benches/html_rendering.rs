@@ -6,19 +6,34 @@ use criterion::Criterion;
 use pulldown_cmark::{Parser, Options, html};
 use std::str::from_utf8;
 
-fn render_html(text: &str, opts: Options) -> String {
-    let mut s = String::with_capacity(text.len() * 3 / 2);
-    let p = Parser::new_ext(text, opts);
-    html::push_html(&mut s, p);
-    s
-}
+static CRDT_BYTES: &[u8] = include_bytes!("../third_party/xi-editor/crdt.md");
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("crdt empty options", |b| {
-        let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
-        let input = from_utf8(input_bytes).unwrap();
+    c.bench_function("crdt_total", |b| {
+        let input = from_utf8(CRDT_BYTES).unwrap();
+        let mut buf = String::with_capacity(input.len() * 3 / 2);
 
-        b.iter(|| render_html(&input, Options::empty()))
+        b.iter(|| {
+            buf.clear();
+            html::push_html(&mut buf, Parser::new_ext(input, Options::empty()));
+        })
+    });
+
+    c.bench_function("crdt_html", |b| {
+        let input = from_utf8(CRDT_BYTES).unwrap();
+        let events: Vec<_> = Parser::new_ext(input, Options::empty()).collect();
+        let mut buf = String::with_capacity(input.len() * 3 / 2);
+
+        b.iter(|| {
+            buf.clear();
+            html::push_html(&mut buf, events.clone().into_iter());
+        })
+    });
+
+    c.bench_function("crdt_parse", |b| {
+        let input = from_utf8(CRDT_BYTES).unwrap();
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count())
     });
 }
 

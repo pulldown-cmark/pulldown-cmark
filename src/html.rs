@@ -21,7 +21,8 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::io::{self, Write, ErrorKind};
+use std::fmt::{Arguments, Write as FmtWrite};
 
 use crate::parse::{LinkType, Event, Tag, Alignment};
 use crate::parse::Event::*;
@@ -33,10 +34,63 @@ enum TableState {
     Body,
 }
 
-struct HtmlWriter<'a, I, W>
-where
-    W: Write,
+/// This wrapper exists because we can't have both a blanket implementation
+/// for all types implementing `Write` and types of the for `&mut W` where
+/// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
+/// `Write` types.
+struct WriteWrapper<W>(W);
+
+/// Trait that allows writing string slices. This is basically an extension
+/// of `std::io::Write` in order to include `String`.
+pub trait StrWrite {
+    fn write_str(&mut self, s: &str) -> io::Result<()>;
+
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
+}
+
+impl<W> StrWrite for WriteWrapper<W>
+    where W: Write
 {
+    #[inline]
+    fn write_str(&mut self, s: &str) -> io::Result<()> {
+        self.0.write_all(s.as_bytes())
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        self.0.write_fmt(args)
+    }
+}
+
+impl<'w> StrWrite for String {
+    #[inline]
+    fn write_str(&mut self, s: &str) -> io::Result<()> {
+        self.push_str(s);
+        Ok(())
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        // FIXME: translate fmt error to io error?
+        FmtWrite::write_fmt(self, args).map_err(|_| ErrorKind::Other.into())
+    }
+}
+
+impl<W> StrWrite for &'_ mut W
+    where W: StrWrite
+{
+    #[inline]
+    fn write_str(&mut self, s: &str) -> io::Result<()> {
+        (**self).write_str(s)
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+        (**self).write_fmt(args)
+    }
+}
+
+struct HtmlWriter<'a, I, W> {
     /// Iterator supplying events.
     iter: I,
 
@@ -55,36 +109,35 @@ where
 impl<'a, I, W> HtmlWriter<'a, I, W>
 where
     I: Iterator<Item = Event<'a>>,
-    W: Write,
+    W: StrWrite,
 {
+    fn new(iter: I, writer: W) -> Self {
+        Self {
+            iter,
+            writer,
+            end_newline: true,
+            table_state: TableState::Head,
+            table_alignments: vec![],
+            table_cell_index: 0,
+            numbers: HashMap::new(),
+        }
+    }
+
     /// Writes a new line.
     fn write_newline(&mut self) -> io::Result<()> {
         self.end_newline = true;
-        self.writer.write_all(&[b'\n'])
+        self.writer.write_str("\n")
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
-    fn write(&mut self, bytes: &[u8], write_newline: bool) -> io::Result<()> {
-        self.writer.write_all(bytes)?;
+    #[inline]
+    fn write(&mut self, s: &str) -> io::Result<()> {
+        self.writer.write_str(s)?;
 
-        if write_newline {
-            self.write_newline()
-        } else {
-            if !bytes.is_empty() {
-                self.end_newline = bytes[bytes.len() - 1] == b'\n';
-            }
-            Ok(())
+        if !s.is_empty() {
+            self.end_newline = s.ends_with('\n');
         }
-    }
-
-    /// Writes a newline if data was already written to the output stream,
-    /// and the previous line did not end with a newline.
-    fn fresh_line(&mut self) -> io::Result<()> {
-        if !self.end_newline {
-            self.write_newline()
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 
     pub fn run(mut self) -> io::Result<()> {
@@ -101,35 +154,33 @@ where
                     self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
-                    self.write(b"<code>", false)?;
+                    self.write("<code>")?;
                     escape_html(&mut self.writer, &text)?;
-                    self.write(b"</code>", false)?;
-                    self.end_newline = false;
+                    self.write("</code>")?;
                 }
                 Html(html) | InlineHtml(html) => {
-                    self.write(html.as_bytes(), false)?;
+                    self.write(&html)?;
                 }
                 SoftBreak => {
                     self.write_newline()?;
                 }
                 HardBreak => {
-                    self.write(b"<br />", true)?;
+                    self.write("<br />\n")?;
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
-                    self.write(b"<sup class=\"footnote-reference\"><a href=\"#", false)?;
+                    self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
                     escape_html(&mut self.writer, &name)?;
-                    self.write(b"\">", false)?;
+                    self.write("\">")?;
                     let number = *self.numbers.entry(name).or_insert(len);
-                    self.write(format!("{}", number).as_bytes(), false)?;
-                    self.write(b"</a></sup>", false)?;
+                    write!(&mut self.writer, "{}", number)?;
+                    self.write("</a></sup>")?;
                 }
-                TaskListMarker(is_checked) => {
-                    self.write(b"<input disabled=\"\" type=\"checkbox\"", false)?;
-                    if is_checked {
-                        self.write(b" checked=\"\"", false)?;
-                    }
-                    self.write(b"/>", true)?;
+                TaskListMarker(true) => {
+                    self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
+                }
+                TaskListMarker(false) => {
+                    self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
                 }
             }
         }
@@ -140,129 +191,156 @@ where
     fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
         match tag {
             Tag::Paragraph => {
-                self.fresh_line()?;
-                self.write(b"<p>", false)
+                if self.end_newline {
+                    self.write("<p>")
+                } else {
+                    self.write("\n<p>")
+                }
             }
             Tag::Rule => {
-                self.fresh_line()?;
-                self.write(b"<hr />", true)
+                if self.end_newline {
+                    self.write("<hr />\n")
+                } else {
+                    self.write("\n<hr />\n")
+                }
             }
             Tag::Header(level) => {
-                self.fresh_line()?;
-                self.write(b"<h", false)?;
-                self.write(&[(b'0' + level as u8)], false)?;
-                self.write(b">", false)
+                if self.end_newline {
+                    self.end_newline = false;
+                    write!(&mut self.writer, "<h{}>", level)
+                } else {
+                    write!(&mut self.writer, "\n<h{}>", level)
+                }
             }
             Tag::Table(alignments) => {
                 self.table_alignments = alignments;
-                self.write(b"<table>", false)
+                self.write("<table>")
             }
             Tag::TableHead => {
                 self.table_state = TableState::Head;
                 self.table_cell_index = 0;
-                self.write(b"<thead><tr>", false)
+                self.write("<thead><tr>")
             }
             Tag::TableRow => {
                 self.table_cell_index = 0;
-                self.write(b"<tr>", false)
+                self.write("<tr>")
             }
             Tag::TableCell => {
                 match self.table_state {
                     TableState::Head => {
-                        self.write(b"<th", false)?;
+                        self.write("<th")?;
                     }
                     TableState::Body => {
-                        self.write(b"<td", false)?;
+                        self.write("<td")?;
                     }
                 }
                 match self.table_alignments.get(self.table_cell_index) {
                     Some(&Alignment::Left) => {
-                        self.write(b" align=\"left\"", false)?;
+                        self.write(" align=\"left\">")
                     }
                     Some(&Alignment::Center) => {
-                        self.write(b" align=\"center\"", false)?;
+                        self.write(" align=\"center\">")
                     }
                     Some(&Alignment::Right) => {
-                        self.write(b" align=\"right\"", false)?;
+                        self.write(" align=\"right\">")
                     }
-                    _ => (),
+                    _ => self.write(">"),
                 }
-                self.write(b">", false)
             }
             Tag::BlockQuote => {
-                self.fresh_line()?;
-                self.write(b"<blockquote>", true)
+                if self.end_newline {
+                    self.write("<blockquote>\n")
+                } else {
+                    self.write("\n<blockquote>\n")
+                }
             }
             Tag::CodeBlock(info) => {
-                self.fresh_line()?;
+                if !self.end_newline {
+                    self.write_newline()?;
+                }
                 let lang = info.split(' ').next().unwrap();
                 if lang.is_empty() {
-                    self.write(b"<pre><code>", false)
+                    self.write("<pre><code>")
                 } else {
-                    self.write(b"<pre><code class=\"language-", false)?;
+                    self.write("<pre><code class=\"language-")?;
                     escape_html(&mut self.writer, lang)?;
-                    self.write(b"\">", false)
+                    self.write("\">")
                 }
             }
             Tag::List(Some(1)) => {
-                self.fresh_line()?;
-                self.write(b"<ol>", true)
+                if self.end_newline {
+                    self.write("<ol>\n")
+                } else {
+                    self.write("\n<ol>\n")
+                }
             }
             Tag::List(Some(start)) => {
-                self.fresh_line()?;
-                self.write(b"<ol start=\"", false)?;
-                self.write(format!("{}", start).as_bytes(), false)?;
-                self.write(b"\">", true)
+                if self.end_newline {
+                    self.write("<ol start=\"")?;
+                } else {
+                    self.write("\n<ol start=\"")?;
+                }
+                write!(&mut self.writer, "{}", start)?;
+                self.write("\">\n")
             }
             Tag::List(None) => {
-                self.fresh_line()?;
-                self.write(b"<ul>", true)
+                if self.end_newline {
+                    self.write("<ul>\n")
+                } else {
+                    self.write("\n<ul>\n")
+                }
             }
             Tag::Item => {
-                self.fresh_line()?;
-                self.write(b"<li>", false)
+                if self.end_newline {
+                    self.write("<li>")
+                } else {
+                    self.write("\n<li>")
+                }
             }
-            Tag::Emphasis => self.write(b"<em>", false),
-            Tag::Strong => self.write(b"<strong>", false),
-            Tag::Strikethrough => self.write(b"<del>", false),
+            Tag::Emphasis => self.write("<em>"),
+            Tag::Strong => self.write("<strong>"),
+            Tag::Strikethrough => self.write("<del>"),
             Tag::Link(LinkType::Email, dest, title) => {
-                self.write(b"<a href=\"mailto:", false)?;
+                self.write("<a href=\"mailto:")?;
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
-                    self.write(b"\" title=\"", false)?;
+                    self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
-                self.write(b"\">", false)
+                self.write("\">")
             }
             Tag::Link(_link_type, dest, title) => {
-                self.write(b"<a href=\"", false)?;
+                self.write("<a href=\"")?;
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
-                    self.write(b"\" title=\"", false)?;
+                    self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
-                self.write(b"\">", false)
+                self.write("\">")
             }
             Tag::Image(_link_type, dest, title) => {
-                self.write(b"<img src=\"", false)?;
+                self.write("<img src=\"")?;
                 escape_href(&mut self.writer, &dest)?;
-                self.write(b"\" alt=\"", false)?;
+                self.write("\" alt=\"")?;
                 self.raw_text()?;
                 if !title.is_empty() {
-                    self.write(b"\" title=\"", false)?;
+                    self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
-                self.write(b"\" />", false)
+                self.write("\" />")
             }
             Tag::FootnoteDefinition(name) => {
-                self.fresh_line()?;
-                let len = self.numbers.len() + 1;
-                self.write(b"<div class=\"footnote-definition\" id=\"", false)?;
+                if self.end_newline {
+                    self.write("<div class=\"footnote-definition\" id=\"")?;
+                } else {
+                    self.write("\n<div class=\"footnote-definition\" id=\"")?;
+                }
                 escape_html(&mut self.writer, &*name)?;
-                self.write(b"\"><sup class=\"footnote-definition-label\">", false)?;
+                self.write("\"><sup class=\"footnote-definition-label\">")?;
+                let len = self.numbers.len() + 1;
                 let number = *self.numbers.entry(name).or_insert(len);
-                self.write(&*format!("{}", number).as_bytes(), false)?;
-                self.write(b"</sup>", false)
+                write!(&mut self.writer, "{}", number)?;
+                self.write("</sup>")
             }
             Tag::HtmlBlock => Ok(())
         }
@@ -271,65 +349,65 @@ where
     fn end_tag(&mut self, tag: Tag) -> io::Result<()> {
         match tag {
             Tag::Paragraph => {
-                self.write(b"</p>", true)?;
+                self.write("</p>\n")?;
             }
             Tag::Rule => (),
             Tag::Header(level) => {
-                self.write(b"</h", false)?;
-                self.write(&[(b'0' + level as u8)], false)?;
-                self.write(b">", true)?;
+                self.write("</h")?;
+                write!(&mut self.writer, "{}", level)?;
+                self.write(">\n")?;
             }
             Tag::Table(_) => {
-                self.write(b"</tbody></table>", true)?;
+                self.write("</tbody></table>\n")?;
             }
             Tag::TableHead => {
-                self.write(b"</tr></thead><tbody>", true)?;
+                self.write("</tr></thead><tbody>\n")?;
                 self.table_state = TableState::Body;
             }
             Tag::TableRow => {
-                self.write(b"</tr>", true)?;
+                self.write("</tr>\n")?;
             }
             Tag::TableCell => {
                 match self.table_state {
                     TableState::Head => {
-                        self.write(b"</th>", false)?;
+                        self.write("</th>")?;
                     }
                     TableState::Body => {
-                        self.write(b"</td>", false)?;
+                        self.write("</td>")?;
                     }
                 }
                 self.table_cell_index += 1;
             }
             Tag::BlockQuote => {
-                self.write(b"</blockquote>", true)?;
+                self.write("</blockquote>\n")?;
             }
             Tag::CodeBlock(_) => {
-                self.write(b"</code></pre>", true)?;
+                self.write("</code></pre>\n")?;
             }
             Tag::List(Some(_)) => {
-                self.write(b"</ol>", true)?;
+                self.write("</ol>\n")?;
             }
             Tag::List(None) => {
-                self.write(b"</ul>", true)?;
+                self.write("</ul>\n")?;
             }
             Tag::Item => {
-                self.write(b"</li>", true)?;
+                self.write("</li>\n")?;
             }
             Tag::Emphasis => {
-                self.write(b"</em>", false)?;
+                self.write("</em>")?;
             }
             Tag::Strong => {
-                self.write(b"</strong>", false)?;
+                self.write("</strong>")?;
             }
             Tag::Strikethrough => {
-                self.write(b"</del>", false)?;
+                self.write("</del>")?;
             }
             Tag::Link(_, _, _) => {
-                self.write(b"</a>", false)?;
+                self.write("</a>")?;
             }
             Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
-                self.write(b"</div>", true)?;
+                self.write("</div>\n")?;
             }
             Tag::HtmlBlock => {}
         }
@@ -354,15 +432,15 @@ where
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak => {
-                    self.write(b" ", false)?;
+                    self.write(" ")?;
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     let number = *self.numbers.entry(name).or_insert(len);
-                    self.write(&*format!("[{}]", number).as_bytes(), false)?;
+                    write!(&mut self.writer, "[{}]", number)?;
                 }
-                TaskListMarker(true) => self.write(b"[x]", false)?,
-                TaskListMarker(false) => self.write(b"[ ]", false)?,
+                TaskListMarker(true) => self.write("[x]")?,
+                TaskListMarker(false) => self.write("[ ]")?,
             }
         }
         Ok(())
@@ -400,10 +478,7 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    unsafe {
-        // we only write utf-8, so this should be OK
-        write_html(s.as_mut_vec(), iter).unwrap();
-    }
+    HtmlWriter::new(iter, s).run().unwrap();
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -444,14 +519,5 @@ where
     I: Iterator<Item = Event<'a>>,
     W: Write,
 {
-    let writer = HtmlWriter {
-        iter,
-        writer,
-        end_newline: true,
-        table_state: TableState::Head,
-        table_alignments: vec![],
-        table_cell_index: 0,
-        numbers: HashMap::new(),
-    };
-    writer.run()
+    HtmlWriter::new(iter, WriteWrapper(writer)).run()
 }

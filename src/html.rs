@@ -34,7 +34,6 @@ enum TableState {
     Body,
 }
 
-// FIXME: find better name
 /// Wrapper for String for which we can implement `StrWrite`.
 /// We can't implement it for `String` directly as it could theoretically
 /// conflict with the blanket implementation if `std::io::Write` was
@@ -43,7 +42,7 @@ struct StringWrap<'w>(&'w mut String);
 
 struct StrWriteMutRef<'w, W>(&'w mut W);
 
-// TODO: expose this
+// TODO: expose this?
 pub trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
 
@@ -174,12 +173,11 @@ where
                     write!(&mut self.writer, "{}", number)?;
                     self.write("</a></sup>", false)?;
                 }
-                TaskListMarker(is_checked) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\"", false)?;
-                    if is_checked {
-                        self.write(" checked=\"\"", false)?;
-                    }
-                    self.write("/>", true)?;
+                TaskListMarker(true) => {
+                    self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>", true)?;
+                }
+                TaskListMarker(false) => {
+                    self.write("<input disabled=\"\" type=\"checkbox\"/>", true)?;
                 }
             }
         }

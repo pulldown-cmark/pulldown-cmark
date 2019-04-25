@@ -20,7 +20,7 @@
 
 //! Utility functions for HTML escaping
 
-use std::io::{self, Write};
+use std::io;
 use std::str::from_utf8;
 
 use crate::html::StrWrite;
@@ -143,7 +143,7 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
 #[cfg(all(target_arch = "x86_64", feature="simd"))]
 mod simd {
     use std::arch::x86_64::*;
-    use std::io::{self, Write};
+    use std::io;
     use std::mem::size_of;
     use crate::html::StrWrite;
 
@@ -161,13 +161,14 @@ mod simd {
 
             unsafe {
                 foreach_special_simd(bytes, 0, |i| {
-                    let replacement = super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[bytes[i] as usize] as usize];
-                    w.write_str(&s[mark..i])?;
+                    let escape_ix = *bytes.get_unchecked(i) as usize;
+                    let replacement = super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[escape_ix] as usize];
+                    w.write_str(&s.get_unchecked(mark..i))?;
                     mark = i + 1; // all escaped characters are ASCII
                     w.write_str(replacement)
                 })?;
+                w.write_str(&s.get_unchecked(mark..))
             }
-            w.write_str(&s[mark..])
         } else {
             super::escape_html_scalar(w, s)
         }
@@ -185,7 +186,6 @@ mod simd {
     }
 
     #[target_feature(enable = "ssse3")]
-    #[inline]
     /// Computes a byte mask at given offset in the byte buffer. Its first 16 (least significant)
     /// bits correspond to whether there is an HTML special byte (&, <, ", >) at the 16 bytes
     /// `bytes[offset..]`. For example, the mask `(1 << 3)` states that there is an HTML byte

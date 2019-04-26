@@ -36,41 +36,31 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| Parser::new_ext(input, Options::empty()).count())
     });
 
-//     #[bench]
-//     fn crdt_empty_options(b: &mut test::Bencher) {
-//         let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
-//         let input = from_utf8(input_bytes).unwrap();
+    c.bench_function("links_n_emphasis", |b| {
+        let input = r#"""This is a [link](example.com). **Cool!**
 
-//         b.iter(|| render_html(&input, Options::empty()));
-//     }
+This is a [link](example.com). **Cool!**
 
-//     #[bench]
-//     fn links_and_emphasis(b: &mut test::Bencher) {
-//         let input = r#"""This is a [link](example.com). **Cool!**
+This is a [link](example.com). **Cool!**
 
-// This is a [link](example.com). **Cool!**
+This is a [link](example.com). **Cool!**
+"""#;
 
-// This is a [link](example.com). **Cool!**
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
 
-// This is a [link](example.com). **Cool!**
-// """#;
+    c.bench_function("unescapes", |b| {
+        let input = "This is by far my favourite unicode code point: &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
+        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;";
 
-//         b.iter(|| render_html(input, Options::empty()));
-//     }
-
-//     #[bench]
-//     fn paragraph_lots_unescapes(b: &mut test::Bencher) {
-//         let input = "This is by far my favourite unicode code point: &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-//         &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;";
-
-//         b.iter(|| render_html(&input, Options::empty()));
-//     }
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

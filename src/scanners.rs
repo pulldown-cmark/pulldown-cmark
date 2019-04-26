@@ -109,13 +109,11 @@ impl<'a> LineStart<'a> {
     /// Scan all available ASCII whitespace (not including eol).
     pub fn scan_all_space(&mut self) {
         self.spaces_remaining = 0;
-        let bytes = self.text.as_bytes();
-        while self.ix < bytes.len() {
-            match bytes[self.ix] {
-                b' ' | b'\t' => self.ix += 1,
-                _ => break,
-            }
-        }
+        self.ix += self.text
+            .as_bytes()[self.ix..]
+            .iter()
+            .take_while(|&&b| b == b' ' || b == b'\t')
+            .count();
     }
 
     /// Determine whether we're at end of line (includes end of file).

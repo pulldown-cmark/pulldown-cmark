@@ -1125,36 +1125,30 @@ impl<'a> FirstPass<'a> {
 
         // now handle the header text
         let header_start = ix;
-        let header_node_idx = self.tree.cur().unwrap(); // so that we can set the endpoint later
-        self.tree.push();
+        let header_node_idx = self.tree.push(); // so that we can set the endpoint later
         ix = self.parse_line(ix, false).0;
         self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text
-        // TODO: probably better to find limit before parsing; this makes assumptions
-        // about the way the line is parsed.
-        let header_text = &self.text[header_start..];
-        let mut limit = ix - header_start;
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\n' {
-            limit -= 1;
-        }
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\r' {
-            limit -= 1;
-        }
-        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-            limit -= 1;
-        }
-        let mut closer = limit;
-        while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
-            closer -= 1;
-        }
-        if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
-            limit = closer;
-            while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-                limit -= 1;
-            }
-        } else if closer == 0 { limit = closer; }
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+            let header_text = &self.text.as_bytes()[header_start..ix];
+            let mut limit = header_text.iter()
+                .rposition(|&b| !(b == b'\n' || b == b'\r' || b == b' '))
+                .map_or(0, |i| i + 1);
+            let closer = header_text[..limit].iter()
+                .rposition(|&b| b != b'#')
+                .map_or(0, |i| i + 1);
+            if closer == 0 {
+                limit = closer;
+            } else {
+                let spaces = header_text[..closer].iter()
+                    .rev()
+                    .take_while(|&&b| b == b' ')
+                    .count();
+                if spaces > 0 {
+                    limit = closer - spaces;
+                }
+            }
             self.tree[cur_ix].item.end = limit + header_start;
         }
 
@@ -1409,7 +1403,7 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
 
-    let prev_char = s[..ix].chars().rev().next().unwrap();
+    let prev_char = s[..ix].chars().last().unwrap();
 
     prev_char.is_whitespace() || is_punctuation(prev_char)
 }
@@ -1421,7 +1415,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     if ix == 0 {
         return false;
     }
-    let prev_char = s[..ix].chars().rev().next().unwrap();
+    let prev_char = s[..ix].chars().last().unwrap();
     if prev_char.is_whitespace() {
         return false;
     }

@@ -1452,49 +1452,55 @@ fn scan_paragraph_interrupt(s: &str) -> bool {
     is_html_tag(scan_html_block_tag(s).1)
 }
 
-static HTML_END_TAGS: &'static [&'static str; 7] = &["</script>", "</pre>", "</style>", "-->", "?>", "]]>", ">"];
+static HTML_END_TAGS: &[&str; 7] = &["</pre>", "</style>", "</script>", "-->", "?>", "]]>", ">"];
 
 // Returns an index into HTML_END_TAGS
 fn get_html_end_tag(text : &str) -> Option<u32> {
-    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
-    
-    // TODO: Consider using `strcasecmp` here
-    'type_1: for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
-        if text.len() >= beg_tag.len() && text.starts_with('<') {
-            for (i, &c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
-                    continue 'type_1;
-                }
-            }
+    static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
+    static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-            // Must either be the end of the line...
-            if text.len() == beg_tag.len() {
-                return Some(end_tag_ix);
-            }
-
-            // ...or be followed by whitespace, newline, or '>'.
-            let pos = beg_tag.len();
-            let s = text.as_bytes()[pos] as char;
-            // TODO: I think this should be ASCII whitespace only
-            if s.is_whitespace() || s == '>' {
-                return Some(end_tag_ix);
-            }
-        }
+    if !text.starts_with('<') {
+        return None;
     }
-    static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
-    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
-        if text.starts_with(&beg_tag[..]) {
+    let text_bytes = &text.as_bytes()[1..];
+
+    for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
+        let tag_len = beg_tag.len();
+
+        if text_bytes.len() < tag_len {
+            // begin tags are increasing in size
+            break;
+        }
+
+        if !text_bytes[..tag_len].eq_ignore_ascii_case(beg_tag) {
+            continue;
+        }
+
+        // Must either be the end of the line...
+        if text_bytes.len() == tag_len {
+            return Some(end_tag_ix);
+        }
+
+        // ...or be followed by whitespace, newline, or '>'.
+        let s = text_bytes[tag_len] as char;
+        // TODO: I think this should be ASCII whitespace only
+        if s.is_whitespace() || s == '>' {
             return Some(end_tag_ix);
         }
     }
-    if text.len() > 2 &&
-        text.starts_with("<!") {
-        let c = text[2..].chars().next().unwrap();
-        if c >= 'A' && c <= 'Z' {
-            return Some(6);
+
+    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
+        if text_bytes.starts_with(beg_tag) {
+            return Some(end_tag_ix);
         }
     }
-    None
+
+    if text_bytes.len() > 1 && text_bytes[0] == b'!' 
+        && text_bytes[1] >= b'A' && text_bytes[1] <= b'Z' {
+        Some(6)
+    } else {
+        None
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -2744,49 +2750,6 @@ impl<'a> Parser<'a> {
         self.tree[open].child = TreePointer::Nil;
     }
 
-    /// Returns the next event in a pre-order AST walk, along with its
-    /// start and end offset in the source.
-    // LLVM seems reluctant to inline this function without this attribute. It is thought to be
-    // beneficial as the call is hot and only called by the event iterators. Removing this
-    // attribute incurs a ~2% performance hit.
-    #[inline(always)]
-    fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
-        match self.tree.cur() {
-            TreePointer::Nil => {
-                let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item, &self.allocs).unwrap();
-                self.offset = self.tree[ix].item.end;
-                self.tree.next_sibling(ix);
-                Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end))
-            }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
-                        cur_ix = next;
-                    }
-                }
-                if self.tree[cur_ix].item.body.is_inline() {
-                    self.handle_inline();
-                }
-
-                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.allocs) {
-                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
-                        self.tree[child_ix].item.start
-                    } else {
-                        self.tree[cur_ix].item.end
-                    };
-                    self.tree.push();                
-                    Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
-                } else {
-                    self.tree.next_sibling(cur_ix);
-                    let item = &self.tree[cur_ix].item;
-                    self.offset = item.end;
-                    Some((item_to_event(item, self.text, &self.allocs), item.start..item.end))
-                }
-            }
-        }
-    }
-
     pub fn into_offset_iter(self) -> OffsetIter<'a> {
         OffsetIter {
             inner: self,
@@ -2845,7 +2808,33 @@ impl<'a> Iterator for OffsetIter<'a> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next_event()
+        match self.inner.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.inner.tree.pop()?;
+                let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs).unwrap();
+                self.inner.tree.next_sibling(ix);
+                Some((Event::End(tag), self.inner.tree[ix].item.start..self.inner.tree[ix].item.end))
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.inner.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.inner.tree.next_sibling(cur_ix) {
+                        cur_ix = next;
+                    }
+                }
+                if self.inner.tree[cur_ix].item.body.is_inline() {
+                    self.inner.handle_inline();
+                }
+
+                if let Some(tag) = item_to_tag(&self.inner.tree[cur_ix].item, &self.inner.allocs) {
+                    self.inner.tree.push();                
+                    Some((Event::Start(tag), self.inner.tree[cur_ix].item.start..self.inner.tree[cur_ix].item.end))
+                } else {
+                    self.inner.tree.next_sibling(cur_ix);
+                    let item = &self.inner.tree[cur_ix].item;
+                    Some((item_to_event(item, self.inner.text, &self.inner.allocs), item.start..item.end))
+                }
+            }
+        }
     }
 }
 
@@ -2964,7 +2953,40 @@ impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        self.next_event().map(|(ev, _range)| ev)
+        match self.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.tree.pop()?;
+                let tag = item_to_tag(&self.tree[ix].item, &self.allocs).unwrap();
+                self.offset = self.tree[ix].item.end;
+                self.tree.next_sibling(ix);
+                Some(Event::End(tag))
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
+                        cur_ix = next;
+                    }
+                }
+                if self.tree[cur_ix].item.body.is_inline() {
+                    self.handle_inline();
+                }
+
+                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.allocs) {
+                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                        self.tree[child_ix].item.start
+                    } else {
+                        self.tree[cur_ix].item.end
+                    };
+                    self.tree.push();                
+                    Some(Event::Start(tag))
+                } else {
+                    self.tree.next_sibling(cur_ix);
+                    let item = &self.tree[cur_ix].item;
+                    self.offset = item.end;
+                    Some(item_to_event(item, self.text, &self.allocs))
+                }
+            }
+        }
     }
 }
 

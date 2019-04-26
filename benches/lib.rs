@@ -14,42 +14,6 @@ mod to_html {
     }
 
     #[bench]
-    fn crdt_empty_options(b: &mut test::Bencher) {
-        let input_bytes = include_bytes!("../third_party/xi-editor/crdt.md");
-        let input = from_utf8(input_bytes).unwrap();
-
-        b.iter(|| render_html(&input, Options::empty()));
-    }
-
-    #[bench]
-    fn links_and_emphasis(b: &mut test::Bencher) {
-        let input = r#"""This is a [link](example.com). **Cool!**
-
-This is a [link](example.com). **Cool!**
-
-This is a [link](example.com). **Cool!**
-
-This is a [link](example.com). **Cool!**
-"""#;
-
-        b.iter(|| render_html(input, Options::empty()));
-    }
-
-    #[bench]
-    fn paragraph_lots_unescapes(b: &mut test::Bencher) {
-        let input = "This is by far my favourite unicode code point: &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;
-        &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA; &#xAAA;";
-
-        b.iter(|| render_html(&input, Options::empty()));
-    }
-
-    #[bench]
     fn pathological_links(b: &mut test::Bencher) {
         let input = std::iter::repeat("[a](<").take(1000).collect::<String>();
 

@@ -358,21 +358,23 @@ impl<'a> FirstPass<'a> {
         // spaces present before the HTML block begins should be preserved.
         let nonspace_ix = start_ix + line_start.bytes_scanned();
 
-        // Types 1-5 are all detected by one function and all end with the same
-        // pattern
-        if let Some(html_end_tag_ix) = get_html_end_tag(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
-        }
+        if self.text.as_bytes()[nonspace_ix] == b'<' {
+            // Types 1-5 are all detected by one function and all end with the same
+            // pattern
+            if let Some(html_end_tag_ix) = get_html_end_tag(&self.text[nonspace_ix..]) {
+                return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
+            }
 
-        // Detect type 6
-        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
-        if is_html_tag(possible_tag) {
-            return self.parse_html_block_type_6_or_7(ix, remaining_space);
-        }
+            // Detect type 6
+            let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
+            if is_html_tag(possible_tag) {
+                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            }
 
-        // Detect type 7
-        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            // Detect type 7
+            if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
+                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            }
         }
 
         // Advance `ix` after HTML blocks have been scanned

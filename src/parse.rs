@@ -1471,7 +1471,6 @@ fn get_html_end_tag(text : &str) -> Option<u32> {
             if text.len() == beg_tag.len() {
                 return Some(end_tag_ix);
             }
-        }
 
             // ...or be followed by whitespace, newline, or '>'.
             let pos = beg_tag.len();
@@ -1524,8 +1523,8 @@ impl InlineStack {
         }
     }
 
-    fn pop_all<'a>(self, tree: &mut Tree<Item>) {
-        for el in self.stack {
+    fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
+        for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
@@ -1592,17 +1591,6 @@ impl InlineStack {
     fn push(&mut self, el: InlineEl) {
         self.stack.push(el)
     }
-<<<<<<< HEAD
-=======
-
-    fn pop(&mut self) -> Option<InlineEl> {
-        self.stack.pop()
-    }
-
-    fn clear(&mut self) {
-        self.stack.clear();
-    }
->>>>>>> b195cb6... Reuse inline stacks
 }
 
 /// An iterator for text in an inline chain.
@@ -2345,13 +2333,9 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
-<<<<<<< HEAD
-        Parser { text, tree, allocs, broken_link_callback, offset: 0 }
-=======
         let inline_stack = InlineStack::new();
         let link_stack = Vec::new();
-        Parser { text, tree, refdefs, broken_link_callback, offset: 0, inline_stack, link_stack }
->>>>>>> b195cb6... Reuse inline stacks
+        Parser { text, tree, allocs, broken_link_callback, offset: 0, inline_stack, link_stack }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2375,12 +2359,7 @@ impl<'a> Parser<'a> {
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
-<<<<<<< HEAD
-        let mut link_stack = Vec::new();
         let mut code_delims = CodeDelims::new();
-=======
-        self.link_stack.clear();
->>>>>>> b195cb6... Reuse inline stacks
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
@@ -2467,16 +2446,9 @@ impl<'a> Parser<'a> {
                     self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
-<<<<<<< HEAD
-                    if let Some(tos) = link_stack.pop() {
+                    if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             self.tree[cur_ix].item.body = ItemBody::Text;
-=======
-                    if let Some(tos) = self.link_stack.last() {
-                        if tos.ty == LinkStackTy::Disabled {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
-                            self.link_stack.pop();
->>>>>>> b195cb6... Reuse inline stacks
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
@@ -2508,10 +2480,6 @@ impl<'a> Parser<'a> {
                                     }
                                 }
                             }
-<<<<<<< HEAD
-=======
-                            self.link_stack.pop();
->>>>>>> b195cb6... Reuse inline stacks
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
@@ -2603,10 +2571,6 @@ impl<'a> Parser<'a> {
                             } else {
                                 self.tree[cur_ix].item.body = ItemBody::Text;
                             }
-<<<<<<< HEAD
-=======
-                            self.link_stack.pop();
->>>>>>> b195cb6... Reuse inline stacks
                         }
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2620,7 +2584,6 @@ impl<'a> Parser<'a> {
     }
 
     fn handle_emphasis(&mut self) {
-        self.inline_stack.clear();
         let mut prev = TreePointer::Nil;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
@@ -2629,11 +2592,7 @@ impl<'a> Parser<'a> {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;
                 if can_close {
-<<<<<<< HEAD
-                    while let Some(el) = stack.find_match(&mut self.tree, c, count, both) {
-=======
-                    while let Some((j, el)) = self.inline_stack.find_match(c, count, both) {
->>>>>>> b195cb6... Reuse inline stacks
+                    while let Some(el) = self.inline_stack.find_match(&mut self.tree, c, count, both) {
                         // have a match!
                         if let TreePointer::Valid(prev_ix) = prev {
                             self.tree[prev_ix].next = TreePointer::Nil;
@@ -2668,11 +2627,6 @@ impl<'a> Parser<'a> {
                         cur = self.tree[cur_ix + match_count - 1].next;
                         self.tree[prev_ix].next = cur;
 
-<<<<<<< HEAD
-=======
-                        self.inline_stack.pop_to(&mut self.tree, j + 1);
-                        let _ = self.inline_stack.pop();
->>>>>>> b195cb6... Reuse inline stacks
                         if el.count > match_count {
                             self.inline_stack.push(InlineEl {
                                 start: el.start,
@@ -2711,8 +2665,7 @@ impl<'a> Parser<'a> {
                 cur = self.tree[cur_ix].next;
             }
         }
-<<<<<<< HEAD
-        stack.pop_all(&mut self.tree);
+        self.inline_stack.pop_all(&mut self.tree);
     }
 
     /// Make a code span.
@@ -2789,9 +2742,6 @@ impl<'a> Parser<'a> {
         self.tree[open].item.end = self.tree[close].item.end;
         self.tree[open].next = self.tree[close].next;
         self.tree[open].child = TreePointer::Nil;
-=======
-        self.inline_stack.pop_to(&mut self.tree, 0);
->>>>>>> b195cb6... Reuse inline stacks
     }
 
     /// Returns the next event in a pre-order AST walk, along with its

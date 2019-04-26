@@ -154,10 +154,11 @@ impl<'a> LineStart<'a> {
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
     pub fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
+        let bytes = self.text.as_bytes();
         let save = self.clone();
         let indent = self.scan_space_upto(3);
         if self.ix < self.text.len() {
-            let c = self.text.as_bytes()[self.ix];
+            let c = bytes[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
                 if self.ix >= self.min_hrule_offset {
                     // there could be an hrule here
@@ -177,7 +178,7 @@ impl<'a> LineStart<'a> {
                 let mut ix = self.ix + 1;
                 let mut val = u64::from(c - b'0');
                 while ix < self.text.len() && ix - start_ix < 10 {
-                    let c = self.text.as_bytes()[ix];
+                    let c = bytes[ix];
                     ix += 1;
                     if c >= b'0' && c <= b'9' {
                         val = val * 10 + u64::from(c - b'0');

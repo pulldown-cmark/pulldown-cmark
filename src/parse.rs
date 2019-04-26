@@ -1021,18 +1021,15 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 ItemBody::ListItem(indent) => {
-                    let save = line_start.clone();
-                    if !(line_start.scan_space(indent) || line_start.is_at_eol()) {
-                        *line_start = save;
-                        break;
+                    if !line_start.is_at_eol() {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent){
+                            *line_start = save;
+                            break;
+                        }
                     }
                 }
-                ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
-                ItemBody::TableCell |
-                ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
-                ItemBody::Paragraph | ItemBody::IndentCodeBlock |
-                ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
-                ref node => panic!("unexpected node in tree: {:?}", node),
+                _ => (),
             }
             i += 1;
         }

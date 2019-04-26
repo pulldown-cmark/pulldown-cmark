@@ -1041,7 +1041,7 @@ impl<'a> FirstPass<'a> {
         let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
         if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
-            surgerize_tight_list(&mut self.tree);
+            surgerize_tight_list(&mut self.tree, cur_ix);
         }
     }
 
@@ -2901,44 +2901,45 @@ fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Ev
 }
 
 // https://english.stackexchange.com/a/285573
-// tree.cur points to a List<_, _, _, false> Item Node
-fn surgerize_tight_list<'a>(tree : &mut Tree<Item>) {
-    let mut this_listitem = tree[tree.cur().unwrap()].child;
-    while let TreePointer::Valid(listitem_ix) = this_listitem {
-        if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
-            // first child is special, controls how we repoint this_listitem.child
-            let this_listitem_firstborn = tree[listitem_ix].child;
-            if let TreePointer::Valid(firstborn_ix) = this_listitem_firstborn {
-                if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
-                    // paragraphs should always have children
-                    tree[listitem_ix].child = tree[firstborn_ix].child;
-                }
+fn surgerize_tight_list<'a>(tree : &mut Tree<Item>, list_ix: TreeIndex) {
+    let mut list_item = tree[list_ix].child;
+    while let TreePointer::Valid(listitem_ix) = list_item {
+        // first child is special, controls how we repoint list_item.child
+        let list_item_firstborn = tree[listitem_ix].child;
 
-                let mut this_listitem_child = TreePointer::Valid(firstborn_ix);
-                let mut node_to_repoint = TreePointer::Nil;
-                while let TreePointer::Valid(child_ix) = this_listitem_child {
-                    // surgerize paragraphs
-                    if let ItemBody::Paragraph = tree[child_ix].item.body {
-                        let this_listitem_child_firstborn = tree[child_ix].child;
-                        if let TreePointer::Valid(repoint_ix) = node_to_repoint {
-                            tree[repoint_ix].next = this_listitem_child_firstborn;
-                        }
-                        let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
-                        while let TreePointer::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn.unwrap()].next {
-                            this_listitem_child_lastborn = TreePointer::Valid(lastborn_next_ix);
-                        }
-                        node_to_repoint = this_listitem_child_lastborn;
-                    } else {
-                        node_to_repoint = this_listitem_child;
+        // Check that list item has children - this is not necessarily the case!
+        if let TreePointer::Valid(firstborn_ix) = list_item_firstborn {
+            if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
+                // paragraphs should always have children
+                tree[listitem_ix].child = tree[firstborn_ix].child;
+            }
+
+            let mut list_item_child = TreePointer::Valid(firstborn_ix);
+            let mut node_to_repoint = TreePointer::Nil;
+            while let TreePointer::Valid(child_ix) = list_item_child {
+                // surgerize paragraphs
+                let repoint_ix = if let ItemBody::Paragraph = tree[child_ix].item.body {
+                    // no empty paragraphs!
+                    let child_firstborn = tree[child_ix].child.unwrap();
+                    if let TreePointer::Valid(repoint_ix) = node_to_repoint {
+                        tree[repoint_ix].next = TreePointer::Valid(child_firstborn);
                     }
+                    let mut child_lastborn = child_firstborn;
+                    while let TreePointer::Valid(lastborn_next_ix) = tree[child_lastborn].next {
+                        child_lastborn = lastborn_next_ix;
+                    }
+                    child_lastborn
+                } else {
+                    child_ix
+                };
 
-                    tree[node_to_repoint.unwrap()].next = tree[child_ix].next;
-                    this_listitem_child = tree[child_ix].next;
-                }
-            } // listitems should always have children, let this pass during testing
-        } // failure should be a panic, but I'll let it pass during testing
+                node_to_repoint = TreePointer::Valid(repoint_ix);
+                tree[repoint_ix].next = tree[child_ix].next;
+                list_item_child = tree[child_ix].next;
+            }
+        }
 
-        this_listitem = tree[listitem_ix].next;
+        list_item = tree[listitem_ix].next;
     }
 }
 

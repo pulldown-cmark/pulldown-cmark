@@ -44,7 +44,7 @@ const HTML_TAGS: [&str; 62] = ["address", "article", "aside", "base",
 /// markers.
 #[derive(Clone)]
 pub struct LineStart<'a> {
-    text: &'a str,
+    bytes: &'a [u8],
     tab_start: usize,
     ix: usize,
     spaces_remaining: usize,
@@ -54,9 +54,9 @@ pub struct LineStart<'a> {
 }
 
 impl<'a> LineStart<'a> {
-    pub fn new(text: &str) -> LineStart {
+    pub fn new(bytes: &[u8]) -> LineStart {
         LineStart {
-            text,
+            bytes,
             tab_start: 0,
             ix: 0,
             spaces_remaining: 0,
@@ -85,9 +85,8 @@ impl<'a> LineStart<'a> {
         let n_from_remaining = self.spaces_remaining.min(n_space);
         self.spaces_remaining -= n_from_remaining;
         n_space -= n_from_remaining;
-        let bytes = self.text.as_bytes();
-        while n_space > 0 && self.ix < bytes.len() {
-            match bytes[self.ix] {
+        while n_space > 0 && self.ix < self.bytes.len() {
+            match self.bytes[self.ix] {
                 b' ' => {
                     self.ix += 1;
                     n_space -= 1;
@@ -109,8 +108,7 @@ impl<'a> LineStart<'a> {
     /// Scan all available ASCII whitespace (not including eol).
     pub fn scan_all_space(&mut self) {
         self.spaces_remaining = 0;
-        self.ix += self.text
-            .as_bytes()[self.ix..]
+        self.ix += self.bytes[self.ix..]
             .iter()
             .take_while(|&&b| b == b' ' || b == b'\t')
             .count();
@@ -118,15 +116,15 @@ impl<'a> LineStart<'a> {
 
     /// Determine whether we're at end of line (includes end of file).
     pub fn is_at_eol(&self) -> bool {
-        if self.ix == self.text.len() {
+        if self.ix >= self.bytes.len() {
             return true;
         }
-        let c = self.text.as_bytes()[self.ix];
+        let c = self.bytes[self.ix];
         c == b'\r' || c == b'\n'
     }
 
     fn scan_ch(&mut self, c: u8) -> bool {
-        if self.ix < self.text.len() && self.text.as_bytes()[self.ix] == c {
+        if self.ix < self.bytes.len() && self.bytes[self.ix] == c {
             self.ix += 1;
             true
         } else {
@@ -152,15 +150,14 @@ impl<'a> LineStart<'a> {
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
     pub fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
-        let bytes = self.text.as_bytes();
         let save = self.clone();
         let indent = self.scan_space_upto(3);
-        if self.ix < self.text.len() {
-            let c = bytes[self.ix];
+        if self.ix < self.bytes.len() {
+            let c = self.bytes[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
                 if self.ix >= self.min_hrule_offset {
                     // there could be an hrule here
-                    if let Err(min_offset) = scan_hrule(&bytes[self.ix..]) {
+                    if let Err(min_offset) = scan_hrule(&self.bytes[self.ix..]) {
                         self.min_hrule_offset = min_offset;
                     } else {
                         *self = save;
@@ -175,8 +172,8 @@ impl<'a> LineStart<'a> {
                 let start_ix = self.ix;
                 let mut ix = self.ix + 1;
                 let mut val = u64::from(c - b'0');
-                while ix < self.text.len() && ix - start_ix < 10 {
-                    let c = bytes[ix];
+                while ix < self.bytes.len() && ix - start_ix < 10 {
+                    let c = self.bytes[ix];
                     ix += 1;
                     if c >= b'0' && c <= b'9' {
                         val = val * 10 + u64::from(c - b'0');
@@ -203,7 +200,7 @@ impl<'a> LineStart<'a> {
         let save = self.clone();
 
         // skip the rest of the line if it's blank
-        if scan_blank_line(&self.text.as_bytes()[self.ix..]).is_some() {
+        if scan_blank_line(&self.bytes[self.ix..]).is_some() {
             return Some((c, start, indent));
         }
 
@@ -226,12 +223,12 @@ impl<'a> LineStart<'a> {
             *self = save;
             return None;
         }
-        let is_checked = match self.text[self.ix..].chars().next() {
-            Some(c) if c.is_whitespace() => {
-                self.ix += c.len_utf8();
+        let is_checked = match self.bytes.get(self.ix) {
+            Some(&c) if is_ascii_whitespace_no_nl(c) => {
+                self.ix += 1;
                 false
             }
-            Some('x') | Some('X') => {
+            Some(b'x') | Some(b'X') => {
                 self.ix += 1;
                 true
             }
@@ -244,7 +241,7 @@ impl<'a> LineStart<'a> {
             *self = save;
             return None;
         }
-        if !self.text[self.ix..].chars().next().map(char::is_whitespace).unwrap_or(false) {
+        if !self.bytes.get(self.ix).map(|&b| is_ascii_whitespace_no_nl(b)).unwrap_or(false) {
             *self = save;
             return None;
         }
@@ -311,7 +308,7 @@ pub fn scan_ch(data: &[u8], c: u8) -> usize {
 
 pub fn scan_while<F>(data: &[u8], mut f: F) -> usize
         where F: FnMut(u8) -> bool {
-    data.iter().position(|&c| !f(c)).unwrap_or(data.len())
+    data.iter().take_while(|&&c| f(c)).count()
 }
 
 pub fn scan_ch_repeat(data: &[u8], c: u8) -> usize {
@@ -627,15 +624,12 @@ pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
 
 // note: dest returned is raw, still needs to be unescaped
 pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
-    let size = data.len();
     let bytes = data.as_bytes();
-    let mut i = 0;
-    let pointy_n = scan_ch(bytes, b'<');
-    let pointy = pointy_n != 0;
-    i += pointy_n;
+    let mut i = scan_ch(bytes, b'<');
+    let pointy = i != 0;
     let dest_beg = i;
     let mut in_parens = false;
-    while i < size {
+    while i < bytes.len() {
         match bytes[i] {
             b'\n' | b'\r' => break,
             b' ' => {
@@ -725,9 +719,9 @@ pub fn unescape(input: &str) -> CowStr<'_> {
     let mut mark = 0;
     let mut i = 0;
     let bytes = input.as_bytes();
-    while i < input.len() {
+    while i < bytes.len() {
         match bytes[i] {
-            b'\\' if i + 1 < input.len() && is_ascii_punctuation(bytes[i + 1]) => {
+            b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
                 result.push_str(&input[mark..i]);
                 mark = i + 1;
                 i += 2;
@@ -806,11 +800,8 @@ pub fn scan_html_type_7(data: &[u8]) -> Option<usize> {
         loop {
             let whitespace = scan_whitespace_no_nl(&data[i..]);
             i += whitespace;
-            // TODO: replace by if let?
-            let c = data.get(i);
-            match c {
-                Some(b'/') | Some(b'>') => break,
-                _ => {},
+            if let Some(b'/') | Some(b'>') = data.get(i) {
+                break;
             }
             if whitespace == 0 { return None; }
             i += scan_attribute(&data[i..])?;

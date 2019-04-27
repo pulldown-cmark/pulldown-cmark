@@ -531,10 +531,8 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 // first check for non-empty lists, then for other interrupts    
-                let suffix = &self.text[ix_new..];
-                dbg!("scanning paragraph interrupt");
-                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix.as_bytes()) {
-                    dbg!("interrupting");
+                let suffix = &bytes[ix_new..];
+                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }
             }
@@ -752,7 +750,7 @@ impl<'a> FirstPass<'a> {
 
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
-    fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
+    fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
         let (ix, delim, index, _) = scan_listitem(suffix);
 
         if ix == 0 {
@@ -761,8 +759,7 @@ impl<'a> FirstPass<'a> {
 
         // we don't allow interruption by either empty lists or
         // numbered lists starting at an index other than 1
-        if !scan_empty_list(&suffix.as_bytes()[ix..])
-            && (delim == b'*' || delim == b'-' || index == 1) {
+        if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
             return true;
         }
 

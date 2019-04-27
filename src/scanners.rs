@@ -537,24 +537,19 @@ pub fn scan_empty_list(data: &[u8]) -> bool {
 }
 
 // return number of bytes scanned, delimiter, start index, and indent
-pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
-    if data.is_empty() { return (0, 0, 0, 0); }
-    let bytes = data.as_bytes();
+pub fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
+    if bytes.is_empty() { return (0, 0, 0, 0); }
     let mut c = bytes[0];
-    let mut start = 0;
-    let w = match c {
-        b'-' | b'+' | b'*' => 1,
+    let (w, start) = match c {
+        b'-' | b'+' | b'*' => (1, 0),
         b'0' ... b'9' => {
-            let mut i = 1;
-            i += scan_while(&bytes[i..], is_digit);
-            if i >= data.len() { return (0, 0, 0, 0); }
-            start = match data[..i].parse() {
-                Ok(start) => start,
-                Err(_) => return (0, 0, 0, 0),
-            };
-            c = bytes[i];
+            let (length, start) = bytes.iter()
+                .take_while(|&&b| is_digit(b))
+                .fold((0, 0), |(count, acc), c| (count + 1, acc + usize::from(c - b'0')));
+            if length >= bytes.len() { return (0, 0, 0, 0); }
+            c = bytes[length];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
-            i + 1
+            (length + 1, start)
         }
         _ => { return (0, 0, 0, 0); }
     };
@@ -844,6 +839,6 @@ mod test {
     use super::*;
     #[test]
     fn overflow_list() {
-        assert_eq!((0, 0, 0, 0), scan_listitem("4444444444444444444444444444444444444444444444444444444444!"));
+        assert_eq!((0, 0, 0, 0), scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!"));
     }
 }

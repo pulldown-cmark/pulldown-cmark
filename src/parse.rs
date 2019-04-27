@@ -923,10 +923,13 @@ impl<'a> FirstPass<'a> {
         let bytes = self.text.as_bytes();
         let mut info_start = start_ix + n_fence_char;
         info_start += scan_whitespace_no_nl(&bytes[info_start..]);
-        let mut info_end = info_start + scan_nextline(&bytes[info_start..]);
-        while info_end > info_start && is_ascii_whitespace(bytes[info_end - 1]) {
-            info_end -= 1;
-        }
+        // TODO: info strings are typically very short. wouldnt it be faster
+        // to just do a forward scan here?
+        let mut ix = info_start + scan_nextline(&bytes[info_start..]);
+        let info_end = ix - bytes[info_start..ix].iter()
+            .rev()
+            .take_while(|&&b| is_ascii_whitespace(b))
+            .count();
         let info_string = unescape(&self.text[info_start..info_end]);
         self.tree.append(Item {
             start: start_ix,
@@ -934,7 +937,6 @@ impl<'a> FirstPass<'a> {
             body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
         self.tree.push();
-        let mut ix = start_ix + scan_nextline(&bytes[start_ix..]);
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
@@ -1225,7 +1227,7 @@ impl<'a> FirstPass<'a> {
         }
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(&self.text[i..])?;
+        let (dest_length, dest) = scan_link_dest(&self.text, i)?;
         let dest = unescape(dest);
         i += dest_length;
 

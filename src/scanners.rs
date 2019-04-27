@@ -618,8 +618,8 @@ pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
 }
 
 // note: dest returned is raw, still needs to be unescaped
-pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
-    let bytes = data.as_bytes();
+pub fn scan_link_dest(data: &str, start_ix: usize) -> Option<(usize, &str)> {
+    let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
     let pointy = i != 0;
     let dest_beg = i;
@@ -651,7 +651,7 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
         i += 1;
     }
     let dest_end = i;
-    if dest_end > data.len() {
+    if dest_end > bytes.len() {
         return None;
     }
     if pointy {
@@ -660,7 +660,7 @@ pub fn scan_link_dest(data: &str) -> Option<(usize, &str)> {
         i += n;
     }
 
-    Some((i, &data[dest_beg..dest_end]))
+    Some((i, &data[(start_ix + dest_beg)..(start_ix + dest_end)]))
 }
 
 pub fn scan_attribute_name(data: &[u8]) -> Option<usize> {

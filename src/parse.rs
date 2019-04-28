@@ -27,7 +27,7 @@ use std::cmp::min;
 use unicase::UniCase;
 use memchr::memchr;
 
-use crate::strings::{CowStr, InlineStr};
+use crate::strings::CowStr;
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -1222,8 +1222,7 @@ impl<'a> FirstPass<'a> {
                     return None;
                 } else {
                     let mut line_start = LineStart::new(&bytes[i..]);
-                    let _n_containers = self.scan_containers(&mut line_start);
-                    // TODO: what to do with these containers?
+                    self.scan_containers(&mut line_start);
                 }
             } else if is_ascii_whitespace_no_nl(c) {
                 i += 1;
@@ -1233,7 +1232,7 @@ impl<'a> FirstPass<'a> {
         }
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(&self.text, i)?;
+        let (dest_length, dest) = scan_link_dest(&self.text, i, 1)?;
         let dest = unescape(dest);
         i += dest_length;
 
@@ -1296,7 +1295,7 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    // FIXME: use scan_link_title ? but we need an inline scanner
+    // FIXME: use scan_link_title?
     // and that fn seems to allow blank lines.
     // FIXME: or, reuse scanner::scan_link_title ?
     // TODO: rename. this isnt just for refdef_titles, but all titles
@@ -1357,28 +1356,6 @@ fn count_header_cols(bytes: &[u8], mut pipes: usize, mut start: usize, last_pipe
     }
 
     pipes + 1
-}
-
-fn unescape_cow(c: CowStr<'_>) -> CowStr<'_> {
-    match c {
-        CowStr::Inlined(s) => unescape_str_line(s),
-        CowStr::Boxed(s) => unescape_str_line(s),
-        CowStr::Borrowed(s) => unescape(&s),
-    }
-}
-
-fn unescape_str_line<'a, S: AsRef<str>>(s: S) -> CowStr<'a> {
-    match unescape(s.as_ref()) {
-        CowStr::Borrowed(s) => {
-            if let Ok(inline_str) = InlineStr::try_from_str(s) {
-                CowStr::Inlined(inline_str)
-            } else {
-                s.to_owned().into()
-            }
-        }
-        CowStr::Inlined(s) => CowStr::Inlined(s),
-        CowStr::Boxed(s) => CowStr::Boxed(s),
-    }
 }
 
 impl<'a> Tree<Item> {
@@ -1704,26 +1681,6 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
         }
         (cur, self.ix)
     }
-
-    fn next_char(&mut self) -> Option<char> {
-        if let TreePointer::Valid(mut cur_ix) = self.cur {
-            while self.ix == self.tree[cur_ix].item.end {
-                self.cur = self.tree[cur_ix].next;
-                if let TreePointer::Valid(new_cur_ix) = self.cur {
-                    cur_ix = new_cur_ix;
-                    self.ix = self.tree[cur_ix].item.start;
-                } else {
-                    return None;
-                }
-            }
-            self.text[self.ix..].chars().next().map(|c| {
-                self.ix += c.len_utf8();
-                c
-            })
-        } else {
-            None
-        }
-    }
 }
 
 impl<'t, 'a> Iterator for InlineScanner<'t, 'a> {
@@ -1878,120 +1835,6 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
     false
 }
 
-fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let pointy = scanner.scan_ch(b'<');
-    let not_pointy = !pointy;
-    
-    let mut url = String::new();
-    let mut nest = 0;
-    let mut bytecount = 0;
-    let mut still_borrowed = true;
-    let underlying = &scanner.text[scanner.ix..];
-    while let Some(mut c) = scanner.next_char() {
-        match c {
-            '(' if not_pointy => {
-                nest += 1;
-                if nest > LINK_MAX_NESTED_PARENS {
-                    return None;
-                }
-            }
-            ')' if not_pointy => {
-                if nest == 0 {
-                    scanner.unget();
-                    return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
-                }
-                nest -= 1;
-            }
-            '>' if pointy => {
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
-            }
-            '\x00'..='\x1f' | '<' if pointy => return None,
-            '\x00'..=' ' if not_pointy => {
-                scanner.unget();
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
-            },
-            '\\' => {
-                if let Some(c_next) = scanner.next_char() {
-                    if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                        if !still_borrowed {
-                            url.push('\\');
-                        } else {
-                            bytecount += '\\'.len_utf8();
-                        }
-                    } else if still_borrowed {
-                        url.push_str(&underlying[..bytecount]);
-                        still_borrowed = false;
-                    }
-                    c = c_next;
-                } else {
-                    return None;
-                }
-            }
-            _ => {}
-        }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            url.push(c);
-        }
-    }
-    None    
-}
-
-// returns (bytes scanned, title cow)
-fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
-    let bytes = text.as_bytes();
-    let open = match bytes.get(start_ix) {
-        Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
-        _ => return None,
-    };
-    let close = if open == b'(' { b')' } else { open };
-
-    let mut title = String::new();
-    let mut mark = start_ix + 1;
-    let mut i = start_ix + 1;
-
-    while i < bytes.len() {
-        let c = bytes[i];
-
-        if c == close {
-            let cow = if mark == 1 {
-                (i - start_ix + 1, text[mark..i].into())
-            } else {
-                title.push_str(&text[mark..i]);
-                (i - start_ix + 1, title.into())
-            };
-            
-            return Some(cow);
-        }
-        if c == open {
-            return None;
-        }
-
-        // TODO: do b'\r' as well?
-        if c == b'&' {
-            if let (n, Some(value)) = scan_entity(&bytes[i..]) {
-                title.push_str(&text[mark..i]);
-                title.push_str(&value);
-                i += n;
-                mark = i;
-                continue;
-            }
-        }
-        if c == b'\\' {
-            if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
-                title.push_str(&text[mark..i]);
-                i += 1;
-                mark = i;
-            }
-        }
-
-        i += 1;
-    }
-
-    None
-}
-
 fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, LinkType)> {
     let save = scanner.clone();
     let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
@@ -2129,16 +1972,18 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
     }
 }
 
-/// Returns url and title cows.
-fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
-    if !scanner.scan_ch(b'(') {
+/// Returns next byte index, url and title.
+fn scan_inline_link(underlying: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, CowStr<'_>)> {
+    let mut ix = start_ix;
+    if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
         return None;
     }
-    scanner.scan_while(is_ascii_whitespace);
-    let url = scan_link_destination(scanner)?;
+    ix += 1;
+    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
 
-    let underlying = scanner.text;
-    let mut ix = scanner.ix;
+    let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
+    let dest = unescape(dest);
+    ix += dest_length;
 
     ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
 
@@ -2150,17 +1995,11 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowS
         "".into()
     };
     if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
-        dbg!(&title);
         return None;
     }
-
-    // remove these lines later when we get rid of inline scanners
     ix += 1;
-    while scanner.ix < ix { scanner.next_char(); }
 
-    // in the worst case, title/ url is already owned, and we allocated
-    // *again* on unescaping. Can this be avoided?
-    Some((unescape_cow(url), title))
+    Some((ix, dest, title))
 }
 
 #[derive(Clone, Debug)]
@@ -2450,10 +2289,22 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+                        let start_ix = if let TreePointer::Valid(cur_ix) = next {
+                            Some(self.tree[cur_ix].item.start)
+                        } else {
+                            None
+                        };
 
-                        if let Some((url, title)) = scan_inline_link(scanner) {
-                            let (next_node, next_ix) = scanner.to_node_and_ix();
+                        if let Some((next_ix, url, title)) = start_ix.and_then(|start| scan_inline_link(self.text, start)) {
+                            let mut next_node = next;
+                            while let TreePointer::Valid(next_node_ix) = next_node {
+                                if self.tree[next_node_ix].item.end <= next_ix {
+                                    next_node = self.tree[next_node_ix].next;
+                                } else {
+                                    break;
+                                }
+                            }
+
                             if let TreePointer::Valid(prev_ix) = prev {
                                 self.tree[prev_ix].next = TreePointer::Nil;
                             }                            

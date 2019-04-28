@@ -644,33 +644,85 @@ pub fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     (0, None)
 }
 
+// returns (bytes scanned, title cow)
+pub(crate) fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+    let bytes = text.as_bytes();
+    let open = match bytes.get(start_ix) {
+        Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
+        _ => return None,
+    };
+    let close = if open == b'(' { b')' } else { open };
+
+    let mut title = String::new();
+    let mut mark = start_ix + 1;
+    let mut i = start_ix + 1;
+
+    while i < bytes.len() {
+        let c = bytes[i];
+
+        if c == close {
+            let cow = if mark == 1 {
+                (i - start_ix + 1, text[mark..i].into())
+            } else {
+                title.push_str(&text[mark..i]);
+                (i - start_ix + 1, title.into())
+            };
+            
+            return Some(cow);
+        }
+        if c == open {
+            return None;
+        }
+
+        // TODO: do b'\r' as well?
+        if c == b'&' {
+            if let (n, Some(value)) = scan_entity(&bytes[i..]) {
+                title.push_str(&text[mark..i]);
+                title.push_str(&value);
+                i += n;
+                mark = i;
+                continue;
+            }
+        }
+        if c == b'\\' {
+            if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
+                title.push_str(&text[mark..i]);
+                i += 1;
+                mark = i;
+            }
+        }
+
+        i += 1;
+    }
+
+    None
+}
+
 // note: dest returned is raw, still needs to be unescaped
-pub fn scan_link_dest(data: &str, start_ix: usize) -> Option<(usize, &str)> {
+// TODO: check that nested parens are really not allowed for refdefs
+pub fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Option<(usize, &str)> {
     let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
     let pointy = i != 0;
     let dest_beg = i;
-    let mut in_parens = false;
+    let mut nest = 0;
+
     while i < bytes.len() {
         match bytes[i] {
             b'\n' | b'\r' => break,
-            b' ' => {
-                if !pointy && !in_parens { break; }
+            b' ' if !pointy && nest == 0 => {
+                break;
             }
-            b'(' => {
-                if !pointy {
-                    if in_parens { return None; }
-                    in_parens = true;
-                }
+            b'(' if !pointy => {
+                if nest > max_next { return None; }
+                nest += 1;
             }
-            b')' => {
-                if !pointy {
-                    if !in_parens { break; }
-                    in_parens = false;
-                }
+            b')' if !pointy => {
+                if nest == 0 { break; }
+                nest -= 1;
             }
-            b'>' => {
-                if pointy { break; }
+            b'>' if pointy => {
+                break;
             }
             b'\\' => i += 1,
             _ => ()

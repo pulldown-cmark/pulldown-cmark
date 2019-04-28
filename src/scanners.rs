@@ -339,7 +339,7 @@ pub fn scan_blank_line(bytes: &[u8]) -> Option<usize> {
 }
 
 pub fn scan_nextline(bytes: &[u8]) -> usize {
-    memchr(b'\n', bytes).map(|x| x + 1).unwrap_or(bytes.len())
+    memchr(b'\n', bytes).map_or(bytes.len(), |x| x + 1)
 }
 
 // return: end byte for closing code fence, or None
@@ -610,7 +610,7 @@ pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
     if scan_ch(&bytes[end..], b';') == 1 {
-        if let Some(value) = entities::get_entity(&data[1..end]) {
+        if let Some(value) = entities::get_entity(&data.as_bytes()[1..end]) {
             return (end + 1, Some(value.into()));
         }
     }

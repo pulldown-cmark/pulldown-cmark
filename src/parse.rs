@@ -1976,48 +1976,57 @@ fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<
     
 }
 
-fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let open = scanner.next_char()?;
-    if !(open == '\'' || open == '\"' || open == '(') {
-        return None;
-    }
-    let close = if open == '(' { ')' } else { open };
-    let underlying = &scanner.text[scanner.ix..];
+// returns (bytes scanned, title cow)
+fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+    let bytes = text.as_bytes();
+    let open = match bytes.get(start_ix) {
+        Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
+        _ => return None,
+    };
+    let close = if open == b'(' { b')' } else { open };
+
     let mut title = String::new();
-    let mut still_borrowed = true;
-    let mut bytecount = 0;
-    while let Some(mut c) = scanner.next_char() {
+    let mut mark = start_ix + 1;
+    let mut i = start_ix + 1;
+
+    while i < bytes.len() {
+        let c = bytes[i];
+
         if c == close {
-            let cow = if still_borrowed {
-                underlying[..bytecount].into()
+            let cow = if mark == 1 {
+                (i - start_ix + 1, text[mark..i].into())
             } else {
-                title.into()
+                title.push_str(&text[mark..i]);
+                (i - start_ix + 1, title.into())
             };
+            
             return Some(cow);
         }
         if c == open {
             return None;
         }
-        if c == '\\' {
-            let c_next = scanner.next_char()?;
-            if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                if !still_borrowed {
-                    title.push('\\');
-                } else {
-                    bytecount += '\\'.len_utf8()
-                }
-            } else if still_borrowed {
-                title.push_str(&underlying[..bytecount]);
-                still_borrowed = false;
+
+        // TODO: do b'\r' as well?
+        if c == b'&' {
+            if let (n, Some(value)) = scan_entity(&bytes[i..]) {
+                title.push_str(&text[mark..i]);
+                title.push_str(&value);
+                i += n;
+                mark = i;
+                continue;
             }
-            c = c_next;
         }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            title.push(c);
+        if c == b'\\' {
+            if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
+                title.push_str(&text[mark..i]);
+                i += 1;
+                mark = i;
+            }
         }
+
+        i += 1;
     }
+
     None
 }
 
@@ -2165,22 +2174,31 @@ fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowS
     }
     scanner.scan_while(is_ascii_whitespace);
     let url = scan_link_destination(scanner)?;
-    let mut title = "".into();
-    if scanner.scan_while(is_ascii_whitespace) > 0 {
-        let save = scanner.clone();
-        if let Some(t) = scan_link_title(scanner) {
-            title = t;
-            scanner.scan_while(is_ascii_whitespace);
-        } else {
-            *scanner = save;
-        }
-    }
-    if !scanner.scan_ch(b')') {
+
+    let underlying = scanner.text;
+    let mut ix = scanner.ix;
+
+    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+    let title = if let Some((bytes_scanned, t)) = scan_link_title(underlying, ix) {
+        ix += bytes_scanned;
+        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+        t
+    } else {
+        "".into()
+    };
+    if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
+        dbg!(&title);
         return None;
     }
+
+    // remove these lines later when we get rid of inline scanners
+    ix += 1;
+    while scanner.ix < ix { scanner.next_char(); }
+
     // in the worst case, title/ url is already owned, and we allocated
     // *again* on unescaping. Can this be avoided?
-    Some((unescape_cow(url), unescape_cow(title)))
+    Some((unescape_cow(url), title))
 }
 
 #[derive(Clone, Debug)]

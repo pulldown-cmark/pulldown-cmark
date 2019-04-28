@@ -1878,7 +1878,10 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
     false
 }
 
-fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
+fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
+    let pointy = scanner.scan_ch(b'<');
+    let not_pointy = !pointy;
+    
     let mut url = String::new();
     let mut nest = 0;
     let mut bytecount = 0;
@@ -1886,20 +1889,24 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
     let underlying = &scanner.text[scanner.ix..];
     while let Some(mut c) = scanner.next_char() {
         match c {
-            '(' => {
+            '(' if not_pointy => {
                 nest += 1;
                 if nest > LINK_MAX_NESTED_PARENS {
                     return None;
                 }
             }
-            ')' => {
+            ')' if not_pointy => {
                 if nest == 0 {
                     scanner.unget();
                     return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
                 }
                 nest -= 1;
             }
-            '\x00'..=' ' => {
+            '>' if pointy => {
+                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
+            }
+            '\x00'..='\x1f' | '<' if pointy => return None,
+            '\x00'..=' ' if not_pointy => {
                 scanner.unget();
                 return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
             },
@@ -1928,52 +1935,7 @@ fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> O
             url.push(c);
         }
     }
-    None
-}
-
-fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let underlying = &scanner.text[scanner.ix..];
-    let mut url = String::new();
-    let mut still_borrowed = true;
-    let mut bytecount = 0;
-    while let Some(mut c) = scanner.next_char() {
-        match c {
-            '>' => {
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
-            }
-            '\x00'..='\x1f' | '<' => return None,
-            '\\' => {
-                let c_next = scanner.next_char()?;
-                if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                    if !still_borrowed {
-                        url.push('\\');
-                    } else {
-                        bytecount += '\\'.len_utf8()
-                    }
-                } else if still_borrowed {
-                    url.push_str(&underlying[..bytecount]);
-                    still_borrowed = false;
-                }
-                c = c_next;
-            }
-            _ => {}
-        }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            url.push(c);
-        }
-    }
-    None
-}
-
-fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    if scanner.scan_ch(b'<') {
-        scan_link_destination_pointy(scanner)
-    } else {
-        scan_link_destination_plain(scanner)
-    }
-    
+    None    
 }
 
 // returns (bytes scanned, title cow)

@@ -714,7 +714,7 @@ impl<'a> FirstPass<'a> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'&' => {
-                    match scan_entity(&self.text[ix..]) {
+                    match scan_entity(&bytes[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
                             self.tree.append(Item {
@@ -1169,11 +1169,14 @@ impl<'a> FirstPass<'a> {
 
     /// Returns the number of bytes scanned on success.
     fn parse_footnote(&mut self, start: usize) -> Option<usize> {
-        let tail = &self.text[start..];
-        if !tail.starts_with("[^") { return None; }
-        let (mut i, label) = scan_link_label_rest(&tail[2..])?;
+        // required bytes: [^]:
+        let bytes = &self.text.as_bytes()[start..];
+        if bytes.len() < 4 || bytes[0] != b'[' || bytes[1] != b'^' {
+            return None;
+        }
+        let (mut i, label) = scan_link_label_rest(&self.text[(start + 2)..])?;
         i += 2;
-        if scan_ch(&tail.as_bytes()[i..], b':') == 0 {
+        if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
@@ -1188,16 +1191,19 @@ impl<'a> FirstPass<'a> {
 
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
-        let tail = &self.text[start..];
-        if !tail.starts_with('[') { return None; }
-        let (mut i, label) = scan_link_label_rest(&tail[1..])?;
+        // required bytes: `[]:`
+        let bytes = &self.text.as_bytes()[start..];
+        if bytes.len() < 3 || bytes[0] != b'[' {
+            return None;
+        }
+        let (mut i, label) = scan_link_label_rest(&self.text[(start + 1)..])?;
         i += 1;
-        if scan_ch(&tail.as_bytes()[i..], b':') == 0 {
+        if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
-        let (bytes, link_def) = self.scan_refdef(start + i)?;
-        Some((bytes + i, UniCase::new(label), link_def))
+        let (bytecount, link_def) = self.scan_refdef(start + i)?;
+        Some((bytecount + i, UniCase::new(label), link_def))
     }
 
     /// Returns # of bytes and definition.
@@ -2137,8 +2143,9 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
         TreePointer::Valid(cur_ix) => cur_ix,
     };
     let start = tree[cur_ix].item.start;
+    let tail = &text.as_bytes()[start..];
     
-    if text[start..].starts_with("[]") {
+    if tail.len() >= 2 && tail[0] == b'[' && tail[1] == b']' {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(&text[start..]) {

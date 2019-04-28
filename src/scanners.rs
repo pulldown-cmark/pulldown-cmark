@@ -21,6 +21,7 @@
 //! Scanners for fragments of CommonMark syntax
 
 use std::char;
+use std::convert::TryInto;
 
 use crate::entities;
 use crate::parse::Alignment;
@@ -283,13 +284,6 @@ pub fn is_ascii_letterdigitdash(c: u8) -> bool {
     c == b'-' || is_ascii_alphanumeric(c)
 }
 
-fn is_hexdigit(c: u8) -> bool {
-    match c {
-        b'0' ... b'9' | b'a' ... b'f' | b'A' ... b'F' => true,
-        _ => false
-    }
-}
-
 fn is_digit(c: u8) -> bool {
     b'0' <= c && c <= b'9'
 }
@@ -500,12 +494,13 @@ pub fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
 pub fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
     let c = *data.get(0)?;
     if !(c == b'`' || c == b'~') { return None; }
-    let i = 1 + scan_ch_repeat(&data[1 ..], c);
+    let i = 1 + scan_ch_repeat(&data[1..], c);
     if i >= 3 {
         if c == b'`' {
-            let next_line = i + scan_nextline(&data[i..]);
+            let suffix = &data[i..];
+            let next_line = i + scan_nextline(suffix);
             // FIXME: make sure this is correct
-            if data[i..next_line].iter().any(|&b| b == b'`') {
+            if suffix[..(next_line - i)].iter().any(|&b| b == b'`') {
                 return None;
             }
         }
@@ -516,7 +511,7 @@ pub fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
 }
 
 pub fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.starts_with(b"> ") {
+    if data.len() >= 2 && data[0] == b'>' && data[1] == b' ' {
         Some(2)
     } else {
         None
@@ -543,9 +538,7 @@ pub fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
         b'0' ... b'9' => {
-            let (length, start) = bytes.iter()
-                .take_while(|&&b| is_digit(b))
-                .fold((0, 0), |(count, acc), c| (count + 1, acc + usize::from(c - b'0')));
+            let (length, start) = parse_decimal(bytes);
             if length >= bytes.len() { return (0, 0, 0, 0); }
             c = bytes[length];
             if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
@@ -571,8 +564,51 @@ pub fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
     (w + postn, c, start, w + postindent)
 }
 
-fn char_from_codepoint_str(s: &str, radix: u32) -> Option<char> {
-    let mut codepoint = u32::from_str_radix(s, radix).ok()?;
+// returns (number of bytes, parsed decimal)
+fn parse_decimal(bytes: &[u8]) -> (usize, usize) {
+    match bytes.iter()
+        .take_while(|&&b| is_digit(b))
+        .try_fold((0, 0usize), |(count, acc), c| {
+            match acc.checked_mul(10) {
+                Some(ten_acc) => Ok((count + 1, ten_acc + usize::from(c - b'0'))),
+                // stop early on overflow
+                None => Err((count, acc)),
+            }
+        })
+    {
+       Ok(p) | Err(p) => p,
+    }
+}
+
+// returns (number of bytes, parsed decimal)
+fn parse_hex(bytes: &[u8]) -> (usize, usize) {
+    match bytes.iter()
+        .try_fold((0, 0usize), |(count, acc), c| {
+            let mut c = *c;
+            let digit = if c >= b'0' && c <= b'9' {
+                usize::from(c - b'0')
+            } else {
+                // make lower case
+                c |= 0x20;
+                if c >= b'a' && c <= b'f' {
+                    usize::from(c - b'a' + 10)
+                } else {
+                    return Err((count, acc));
+                }
+            };
+            match acc.checked_mul(16) {
+                Some(sixteen_acc) => Ok((count + 1, sixteen_acc + digit)),
+                // stop early on overflow
+                None => Err((count, acc)),
+            }
+        })
+    {
+       Ok(p) | Err(p) => p,
+    }
+}
+
+fn char_from_codepoint(input: usize) -> Option<char> {
+    let mut codepoint = input.try_into().ok()?;
     if codepoint == 0 {
         codepoint = 0xFFFD;
     }
@@ -580,37 +616,28 @@ fn char_from_codepoint_str(s: &str, radix: u32) -> Option<char> {
 }
 
 // doesn't bother to check data[0] == '&'
-pub fn scan_entity(data: &str) -> (usize, Option<CowStr<'static>>) {
-    let size = data.len();
-    let bytes = data.as_bytes();
+pub fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     let mut end = 1;
     if scan_ch(&bytes[end..], b'#') == 1 {
         end += 1;
-        if end < size && (bytes[end] == b'x' || bytes[end] == b'X') {
+        let (bytecount, codepoint) = if end < bytes.len() && bytes[end] | 0x20 == b'x' {
             end += 1;
-            end += scan_while(&bytes[end..], is_hexdigit);
-            if scan_ch(&bytes[end..], b';') == 1 {
-                return if let Some(c) = char_from_codepoint_str(&data[3..end], 16) {
-                    (end + 1, Some(c.into()))
-                } else {
-                    (0, None)
-                };
-            }
+            parse_hex(&bytes[end..])
         } else {
-            end += scan_while(&bytes[end..], is_digit);
-            if scan_ch(&bytes[end..], b';') == 1 {
-                return if let Some(c) = char_from_codepoint_str(&data[2..end], 10) {
-                    (end + 1, Some(c.into()))
-                } else {
-                    (0, None)
-                };
-            }
-        }
-        return (0, None);
+            parse_decimal(&bytes[end..])
+        };
+        end += bytecount;
+        return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
+            (0, None)
+        } else if let Some(c) = char_from_codepoint(codepoint) {
+            (end + 1, Some(c.into()))
+        } else {
+            (0, None)
+        };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
     if scan_ch(&bytes[end..], b';') == 1 {
-        if let Some(value) = entities::get_entity(&data.as_bytes()[1..end]) {
+        if let Some(value) = entities::get_entity(&bytes[1..end]) {
             return (end + 1, Some(value.into()));
         }
     }
@@ -722,7 +749,7 @@ pub fn unescape(input: &str) -> CowStr<'_> {
                 i += 2;
             }
             b'&' => {
-                match scan_entity(&input[i..]) {
+                match scan_entity(&bytes[i..]) {
                     (n, Some(value)) => {
                         result.push_str(&input[mark..i]);
                         result.push_str(&value);

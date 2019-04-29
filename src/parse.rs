@@ -1636,13 +1636,22 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
         if dashes < 1 { return None; }
         // Saw "<!--", scan comment.
         ix += dashes;
-        ix = memchr(b'-', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-
-        if bytes[ix..].starts_with(b"-->") {
-            Some(ix + 3)
-        } else {
-            None
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            return None;
         }
+
+        while let Some(x) = memchr(b'-', &bytes[ix..]) {
+            ix += x + 1;
+            if scan_ch(&bytes[ix..], b'-') == 1 {
+                ix += 1;
+                return if scan_ch(&bytes[ix..], b'>') == 1 {
+                    Some(ix + 1)
+                } else {
+                    None
+                };
+            } 
+        }
+        None
     } else if c == b'[' {
         if !bytes[ix..].starts_with(b"CDATA[") { return None; }
         ix += b"CDATA[".len();
@@ -1678,31 +1687,41 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
     }
 }
 
-// /// Scan processing directive, with initial "<?" already consumed.
-// fn scan_inline_html_processing(scanner: &mut InlineScanner) -> bool {
-//     while let Some(c) = scanner.next() {
-//         if c == b'?' && scan_ch(b'>') { return true; }
-//     }
-//     false
-// }
+/// Scan processing directive, with initial "<?" already consumed.
+/// Returns the next byte offset on success.
+fn scan_inline_html_processing(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    while let Some(offset) = memchr(b'?', &bytes[ix..]) {
+        ix += offset + 1;
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            return Some(ix + 1);
+        }
+    }
+    None
+}
 
-/// Returns the next byte on success.
-fn scan_inline_html(bytes: &[u8], start_ix: usize) -> Option<usize> {
-    let c = *bytes.get(start_ix)?;
+/// Returns the next byte offset on success.
+fn scan_inline_html(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    let c = *bytes.get(ix)?;
+    ix += 1;
 
     // TODO: write as match?
     if c == b'!' {
-        scan_inline_html_comment(bytes, start_ix + 1)
-    // } 
-    // else if c == b'?' {
-    //     scan_inline_html_processing(bytes, start_ix + 1)
-    // } else if c == b'/' {
-    //     if !scanner.scan_if(is_ascii_alpha) {
-    //         return false;
-    //     }
-    //     scanner.scan_while(is_ascii_letterdigitdash);
-    //     scanner.scan_while(is_ascii_whitespace);
-    //     scan_ch(b'>')
+        scan_inline_html_comment(bytes, ix)
+    } else if c == b'?' {
+        scan_inline_html_processing(bytes, ix)
+    } else if c == b'/' {
+        let next_byte = *bytes.get(ix)?;
+        if !is_ascii_alpha(next_byte) {
+            return None;
+        }
+        ix += 1;
+        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+        ix += scan_while(&bytes[ix..], is_ascii_whitespace);
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            Some(ix + 1)
+        } else {
+            None
+        }
     // } else if is_ascii_alpha(c) {
     //     // open tag (first character of tag consumed)
     //     scanner.scan_while(is_ascii_letterdigitdash);

@@ -1585,47 +1585,6 @@ impl InlineStack {
     }
 }
 
-// fn scan_inline_attribute_name(scanner: &mut InlineScanner) -> bool {
-//     if !scanner.scan_if(|c| is_ascii_alpha(c) || c == b'_' || c == b':') {
-//         return false;
-//     }
-//     scanner.scan_while(|c| is_ascii_alphanumeric(c)
-//         || c == b'_' || c == b'.' || c == b':' || c == b'-');
-//     true
-// }
-
-// fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
-//     if let Some(c) = scanner.next() {
-//         if is_ascii_whitespace(c) || c == b'=' || c == b'<' || c == b'>' || c == b'`' {
-//             scanner.unget();
-//         } else if c == b'\'' {
-//             scanner.scan_while(|c| c != b'\'');
-//             return scan_ch(b'\'')
-//         } else if c == b'"' {
-//             scanner.scan_while(|c| c != b'"');
-//             return scan_ch(b'"')
-//         } else {
-//             scanner.scan_while(|c| !(is_ascii_whitespace(c)
-//                 || c == b'=' || c == b'<' || c == b'>' || c == b'`' || c == b'\'' || c == b'"'));
-//             return true;
-//         }
-//     }
-//     false
-// }
-
-// fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
-//     if !scan_inline_attribute_name(scanner) { return false; }
-//     let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-//     if scan_ch(b'=') {
-//         scanner.scan_while(is_ascii_whitespace);
-//         return scan_inline_attribute_value(scanner);
-//     } else if n_whitespace > 0 {
-//         // Leave whitespace for next attribute.
-//         scanner.unget();
-//     }
-//     true
-// }
-
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
 /// Returns byte offset on match.
 fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
@@ -1690,6 +1649,7 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
 /// Scan processing directive, with initial "<?" already consumed.
 /// Returns the next byte offset on success.
 fn scan_inline_html_processing(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    // FIXME: this is very likely to be a quadratic scaling bug
     while let Some(offset) = memchr(b'?', &bytes[ix..]) {
         ix += offset + 1;
         if scan_ch(&bytes[ix..], b'>') == 1 {
@@ -1722,28 +1682,32 @@ fn scan_inline_html(bytes: &[u8], mut ix: usize) -> Option<usize> {
         } else {
             None
         }
-    // } else if is_ascii_alpha(c) {
-    //     // open tag (first character of tag consumed)
-    //     scanner.scan_while(is_ascii_letterdigitdash);
-    //     loop {
-    //         let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-    //         if let Some(c) = scanner.next() {
-    //             if c == b'/' {
-    //                 break scan_ch(b'>');
-    //             } else if c == b'>' {
-    //                 break true;
-    //             } else if n_whitespace == 0 {
-    //                 break false;
-    //             } else {
-    //                 scanner.unget();
-    //                 if !scan_inline_attribute(scanner) {
-    //                     break false;
-    //                 }
-    //             }
-    //         } else {
-    //             break false;
-    //         }
-    //     }
+    } else if is_ascii_alpha(c) {
+        // open tag (first character of tag consumed)
+        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+        // TODO: check if we can share code with scanners::scan_html_type_7
+
+        loop {
+            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
+            ix += whitespace;
+            if let Some(b'/') | Some(b'>') = bytes.get(ix) {
+                break;
+            }
+            if whitespace == 0 {
+                return None;
+            }
+            ix += scan_attribute(&bytes[ix..])?;
+        }
+
+        ix += scan_whitespace_no_nl(&bytes[ix..]);
+        ix += scan_ch(&bytes[ix..], b'/');
+
+        let c = scan_ch(&bytes[ix..], b'>');
+        if c == 0 {
+            None
+        } else {
+            Some(ix + c)
+        }
     } else {
         None
     }

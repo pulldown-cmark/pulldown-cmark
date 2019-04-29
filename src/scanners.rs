@@ -309,7 +309,7 @@ pub fn scan_ch_repeat(data: &[u8], c: u8) -> usize {
     scan_while(data, |x| x == c)
 }
 
-// TODO: maybe should scan unicode whitespace too
+// TODO: maybe should scan unicode whitespace too. naaah
 pub fn scan_whitespace_no_nl(data: &[u8]) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
 }

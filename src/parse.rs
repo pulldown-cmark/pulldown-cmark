@@ -1713,10 +1713,10 @@ fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
             scanner.unget();
         } else if c == b'\'' {
             scanner.scan_while(|c| c != b'\'');
-            return scanner.scan_ch(b'\'')
+            return scan_ch(b'\'')
         } else if c == b'"' {
             scanner.scan_while(|c| c != b'"');
-            return scanner.scan_ch(b'"')
+            return scan_ch(b'"')
         } else {
             scanner.scan_while(|c| !(is_ascii_whitespace(c)
                 || c == b'=' || c == b'<' || c == b'>' || c == b'`' || c == b'\'' || c == b'"'));
@@ -1729,7 +1729,7 @@ fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
 fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
     if !scan_inline_attribute_name(scanner) { return false; }
     let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-    if scanner.scan_ch(b'=') {
+    if scan_ch(b'=') {
         scanner.scan_while(is_ascii_whitespace);
         return scan_inline_attribute_value(scanner);
     } else if n_whitespace > 0 {
@@ -1740,29 +1740,33 @@ fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
 }
 
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
-fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
-    if let Some(c) = scanner.next() {
+/// Returns byte offset on match.
+fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    while ix < bytes.len() {
+        c = bytes[ix];
         if c == b'-' {
-            if !scanner.scan_ch(b'-') { return false; }
+            let dashes = scan_ch_repeat(&bytes[ix..], b'-');
+            if dashes < 2 { return None; }
+            ix += dashes;
             // Saw "<!--", scan comment.
-            if scanner.scan_ch(b'>') { return false; }
-            if scanner.scan_ch(b'-') {
-                if scanner.scan_ch(b'>') {
+            if scan_ch(b'>') { return false; }
+            if scan_ch(b'-') {
+                if scan_ch(b'>') {
                     return false;
                 } else {
                     scanner.unget();
                 }
             }
             while scanner.scan_upto(b'-') > 0 {
-                scanner.scan_ch(b'-');
-                if scanner.scan_ch(b'-') { return scanner.scan_ch(b'>'); }
+                scan_ch(b'-');
+                if scan_ch(b'-') { return scan_ch(b'>'); }
             }
         } else if c == b'[' {
             if !scanner.scan_str(b"CDATA[") { return false; }
             loop {
                 scanner.scan_upto(b']');
-                if !scanner.scan_ch(b']') { return false; }
-                if scanner.scan_while(|c| c == b']') > 0 && scanner.scan_ch(b'>') {
+                if !scan_ch(b']') { return false; }
+                if scanner.scan_while(|c| c == b']') > 0 && scan_ch(b'>') {
                     return true;
                 }
             }
@@ -1771,7 +1775,7 @@ fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
             if scanner.scan_while(|c| c >= b'A' && c <= b'Z') == 0 { return false; }
             if scanner.scan_while(is_ascii_whitespace) == 0 { return false; }
             scanner.scan_upto(b'>');
-            return scanner.scan_ch(b'>');
+            return scan_ch(b'>');
         }
     }
     false
@@ -1780,49 +1784,52 @@ fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
 /// Scan processing directive, with initial "<?" already consumed.
 fn scan_inline_html_processing(scanner: &mut InlineScanner) -> bool {
     while let Some(c) = scanner.next() {
-        if c == b'?' && scanner.scan_ch(b'>') { return true; }
+        if c == b'?' && scan_ch(b'>') { return true; }
     }
     false
 }
 
-fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
-    if let Some(c) = scanner.next() {
-        if c == b'!' {
-            return scan_inline_html_comment(scanner);
-        } else if c == b'?' {
-            return scan_inline_html_processing(scanner);
-        } else if c == b'/' {
-            if !scanner.scan_if(is_ascii_alpha) {
-                return false;
-            }
-            scanner.scan_while(is_ascii_letterdigitdash);
-            scanner.scan_while(is_ascii_whitespace);
-            return scanner.scan_ch(b'>');
-        } else if is_ascii_alpha(c) {
-            // open tag (first character of tag consumed)
-            scanner.scan_while(is_ascii_letterdigitdash);
-            loop {
-                let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-                if let Some(c) = scanner.next() {
-                    if c == b'/' {
-                        return scanner.scan_ch(b'>');
-                    } else if c == b'>' {
-                        return true;
-                    } else if n_whitespace == 0 {
-                        return false;
-                    } else {
-                        scanner.unget();
-                        if !scan_inline_attribute(scanner) {
-                            return false;
-                        }
-                    }
+/// Returns the next byte on success.
+fn scan_inline_html(bytes: &[u8], start_ix: usize) -> Option<usize> {
+    let c = *bytes.get(start_ix)?;
+
+    // TODO: write as match?
+    if c == b'!' {
+        scan_inline_html_comment(bytes, start_ix + 1)
+    } else if c == b'?' {
+        scan_inline_html_processing(bytes, start_ix + 1)
+    } else if c == b'/' {
+        if !scanner.scan_if(is_ascii_alpha) {
+            return false;
+        }
+        scanner.scan_while(is_ascii_letterdigitdash);
+        scanner.scan_while(is_ascii_whitespace);
+        scan_ch(b'>')
+    } else if is_ascii_alpha(c) {
+        // open tag (first character of tag consumed)
+        scanner.scan_while(is_ascii_letterdigitdash);
+        loop {
+            let n_whitespace = scanner.scan_while(is_ascii_whitespace);
+            if let Some(c) = scanner.next() {
+                if c == b'/' {
+                    break scan_ch(b'>');
+                } else if c == b'>' {
+                    break true;
+                } else if n_whitespace == 0 {
+                    break false;
                 } else {
-                    return false;
+                    scanner.unget();
+                    if !scan_inline_attribute(scanner) {
+                        break false;
+                    }
                 }
+            } else {
+                break false;
             }
         }
+    } else {
+        None
     }
-    false
 }
 
 #[derive(Debug, Clone)]
@@ -2096,7 +2103,6 @@ impl<'a> Parser<'a> {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
-                    let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
                     let autolink = if let TreePointer::Valid(next_ix) = next {
                         scan_autolink(self.text, self.tree[next_ix].item.start)
                     } else {
@@ -2120,18 +2126,25 @@ impl<'a> Parser<'a> {
                             self.tree[node_ix].item.start = ix;
                         }
                         continue;
-                    } else if scan_inline_html(scanner) {
-                        let (node, ix) = scanner.to_node_and_ix();
-                        // TODO: this logic isn't right if the replaced chain has
-                        // tricky stuff (skipped containers, replaced nulls).
-                        self.tree[cur_ix].item.body = ItemBody::InlineHtml;
-                        self.tree[cur_ix].item.end = ix;
-                        self.tree[cur_ix].next = node;
-                        cur = node;
-                        if let TreePointer::Valid(node_ix) = cur {
-                            self.tree[node_ix].item.start = ix;
+                    } else {
+                        let inline_html = if let TreePointer::Valid(next_ix) = next {
+                            scan_inline_html(self.text, self.tree[next_ix].item.start)
+                        } else {
+                            None
+                        };
+                        if let Some(ix) = inline_html {
+                            let node = scan_nodes_to_ix(&self.tree, next, ix);
+                            // TODO: this logic isn't right if the replaced chain has
+                            // tricky stuff (skipped containers, replaced nulls).
+                            self.tree[cur_ix].item.body = ItemBody::InlineHtml;
+                            self.tree[cur_ix].item.end = ix;
+                            self.tree[cur_ix].next = node;
+                            cur = node;
+                            if let TreePointer::Valid(node_ix) = cur {
+                                self.tree[node_ix].item.start = ix;
+                            }
+                            continue;
                         }
-                        continue;
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }

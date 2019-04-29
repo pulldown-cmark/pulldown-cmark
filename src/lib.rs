@@ -62,7 +62,6 @@ mod scanners;
 mod entities;
 mod escape;
 mod puncttable;
-mod utils;
 mod parse;
 mod tree;
 mod linklabel;

@@ -27,7 +27,7 @@ use std::cmp::min;
 use unicase::UniCase;
 use memchr::memchr;
 
-use crate::strings::{CowStr, InlineStr};
+use crate::strings::CowStr;
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -253,7 +253,8 @@ impl<'a> FirstPass<'a> {
 
     /// Returns offset after block.
     fn parse_block(&mut self, mut start_ix: usize) -> usize {
-        let mut line_start = LineStart::new(&self.text[start_ix..]);
+        let bytes = self.text.as_bytes();
+        let mut line_start = LineStart::new(&bytes[start_ix..]);
 
         let i = self.scan_containers(&mut line_start);
         for _ in i..self.tree.spine_len() {
@@ -276,8 +277,8 @@ impl<'a> FirstPass<'a> {
             let container_start = start_ix + line_start.bytes_scanned();
             if let Some(bytecount) = self.parse_footnote(container_start) {
                 start_ix = container_start + bytecount;
-                start_ix += scan_blank_line(&self.text[start_ix..]).unwrap_or(0);
-                line_start = LineStart::new(&self.text[start_ix..]);      
+                start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
+                line_start = LineStart::new(&bytes[start_ix..]);      
             }
         }
 
@@ -301,7 +302,7 @@ impl<'a> FirstPass<'a> {
                     body: ItemBody::ListItem(indent),
                 });
                 self.tree.push();
-                if let Some(n) = scan_blank_line(&self.text[after_marker_index..]) {
+                if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
                     self.begin_list_item = true;
                     return after_marker_index + n;
                 }
@@ -322,7 +323,7 @@ impl<'a> FirstPass<'a> {
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        if let Some(n) = scan_blank_line(&self.text[ix..]) {
+        if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match self.tree[node_ix].item.body {
                     ItemBody::BlockQuote => (),
@@ -358,31 +359,33 @@ impl<'a> FirstPass<'a> {
         // spaces present before the HTML block begins should be preserved.
         let nonspace_ix = start_ix + line_start.bytes_scanned();
 
-        // Types 1-5 are all detected by one function and all end with the same
-        // pattern
-        if let Some(html_end_tag_ix) = get_html_end_tag(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
-        }
+        if self.text.as_bytes()[nonspace_ix] == b'<' {
+            // Types 1-5 are all detected by one function and all end with the same
+            // pattern
+            if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[nonspace_ix..]) {
+                return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
+            }
 
-        // Detect type 6
-        let possible_tag = scan_html_block_tag(&self.text[nonspace_ix..]).1;
-        if is_html_tag(possible_tag) {
-            return self.parse_html_block_type_6_or_7(ix, remaining_space);
-        }
+            // Detect type 6
+            let possible_tag = scan_html_block_tag(&bytes[nonspace_ix..]).1;
+            if is_html_tag(possible_tag) {
+                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            }
 
-        // Detect type 7
-        if let Some(_html_bytes) = scan_html_type_7(&self.text[nonspace_ix..]) {
-            return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            // Detect type 7
+            if let Some(_html_bytes) = scan_html_type_7(&bytes[nonspace_ix..]) {
+                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+            }
         }
 
         // Advance `ix` after HTML blocks have been scanned
         let ix = start_ix + line_start.bytes_scanned();
 
-        if let Ok(n) = scan_hrule(&self.text[ix..]) {
+        if let Ok(n) = scan_hrule(&bytes[ix..]) {
             return self.parse_hrule(n, ix);
         }
 
-        if let Some((atx_size, atx_level)) = scan_atx_heading(&self.text[ix..]) {
+        if let Some((atx_size, atx_level)) = scan_atx_heading(&bytes[ix..]) {
             return self.parse_atx_heading(ix, atx_level, atx_size);
         }
 
@@ -392,7 +395,7 @@ impl<'a> FirstPass<'a> {
             return ix + bytecount;
         }
 
-        if let Some((n, fence_ch)) = scan_code_fence(&self.text[ix..]) {
+        if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
         self.parse_paragraph(ix)
@@ -419,13 +422,14 @@ impl<'a> FirstPass<'a> {
 
     /// Returns first offset after the row and the tree index of the row.
     fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
-        let mut line_start = LineStart::new(&self.text[ix..]);
+        let bytes = self.text.as_bytes();
+        let mut line_start = LineStart::new(&bytes[ix..]);
         let _n_containers = self.scan_containers(&mut line_start);
         let mut cells = 0;
         let mut final_cell_ix = None;
         ix += line_start.bytes_scanned();
 
-        if scan_paragraph_interrupt(&self.text[ix..]) {
+        if scan_paragraph_interrupt(&bytes[ix..]) {
             return None;
         }
 
@@ -437,10 +441,10 @@ impl<'a> FirstPass<'a> {
         self.tree.push();
 
         loop {
-            ix += scan_ch(&self.text[ix..], b'|');
-            ix += scan_whitespace_no_nl(&self.text[ix..]);
+            ix += scan_ch(&bytes[ix..], b'|');
+            ix += scan_whitespace_no_nl(&bytes[ix..]);
             
-            if let Some(eol_bytes) = scan_eol(&self.text[ix..]) {
+            if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
                 ix += eol_bytes;
                 break;
             }
@@ -491,6 +495,7 @@ impl<'a> FirstPass<'a> {
             body: ItemBody::Paragraph,
         });
         self.tree.push();
+        let bytes = self.text.as_bytes();
 
         let mut ix = start_ix;
         loop {
@@ -509,15 +514,15 @@ impl<'a> FirstPass<'a> {
             }
 
             ix = next_ix;
-            let mut line_start = LineStart::new(&self.text[ix..]);
+            let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
                 if n_containers == self.tree.spine_len() {
-                    if let Some((n, level)) = scan_setext_heading(&self.text[ix_new..]) {
+                    if let Some((n, level)) = scan_setext_heading(&bytes[ix_new..]) {
                         self.tree[node_ix].item.body = ItemBody::Header(level);
                         if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
-                            if self.text.as_bytes()[start] == b'\\' {
+                            if bytes[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
                             }
                         }
@@ -526,7 +531,7 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 // first check for non-empty lists, then for other interrupts    
-                let suffix = &self.text[ix_new..];
+                let suffix = &bytes[ix_new..];
                 if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }
@@ -559,9 +564,9 @@ impl<'a> FirstPass<'a> {
                     }
 
                     let mut i = ix;
-                    let eol_bytes = scan_eol(&self.text[ix..]).unwrap_or(0);
+                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap_or(0);
                     let end_ix = ix + eol_bytes;
-                    if ix >= begin_text + 1 && bytes[ix - 1] == b'\\' && ix + eol_bytes < self.text.len() {
+                    if bytes.get(ix - 1) == Some(&b'\\') && end_ix < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
                         return LoopInstruction::BreakAtWith(end_ix, Some(Item {
@@ -569,30 +574,31 @@ impl<'a> FirstPass<'a> {
                             end: end_ix,
                             body: ItemBody::HardBreak,
                         }));
-                    } else if ix >= begin_text + 2
-                        && is_ascii_whitespace_no_nl(bytes[ix - 1])
-                        && is_ascii_whitespace_no_nl(bytes[ix - 2]) {
-                        i -= 2;
-                        while i > 0 && is_ascii_whitespace_no_nl(bytes[i - 1]) {
-                            i -= 1;
-                        }
+                    }
+                    let trailing_whitespace = bytes[..ix].iter()
+                        .rev()
+                        .take_while(|&&b| is_ascii_whitespace_no_nl(b))
+                        .count();
+                    if trailing_whitespace >= 2 {
+                        i -= trailing_whitespace;
                         self.tree.append_text(begin_text, i);
                         return LoopInstruction::BreakAtWith(end_ix, Some(Item {
                             start: i,
                             end: end_ix,
                             body: ItemBody::HardBreak,
                         }));
-                    } else if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
+                    }
+                    if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
-                        let mut line_start = LineStart::new(&self.text[next_line_ix..]);
+                        let mut line_start = LineStart::new(&bytes[next_line_ix..]);
                         let _n_containers = self.scan_containers(&mut line_start);
                         let table_head_ix = next_line_ix + line_start.bytes_scanned();
-                        let (table_head_bytes, alignment) = scan_table_head(&self.text[table_head_ix..]);
+                        let (table_head_bytes, alignment) = scan_table_head(&bytes[table_head_ix..]);
 
                         if table_head_bytes > 0 {
                             // computing header count from number of pipes
-                            let header_count = count_header_cols(&self.text, pipes, start, last_pipe_ix);
+                            let header_count = count_header_cols(bytes, pipes, start, last_pipe_ix);
 
                             // make sure they match the number of columns we find in separator line
                             if alignment.len() == header_count {
@@ -632,7 +638,7 @@ impl<'a> FirstPass<'a> {
                 }
                 c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
-                    let count = 1 + scan_ch_repeat(&string_suffix[1..], c);
+                    let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
                     let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
                     let is_valid_seq = c != b'~' || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
@@ -652,7 +658,7 @@ impl<'a> FirstPass<'a> {
                 }
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
-                    let count = 1 + scan_ch_repeat(&self.text[ix+1..], b'`');
+                    let count = 1 + scan_ch_repeat(&bytes[ix+1..], b'`');
                     self.tree.append(Item {
                         start: ix,
                         end: ix + count,
@@ -708,7 +714,7 @@ impl<'a> FirstPass<'a> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'&' => {
-                    match scan_entity(&self.text[ix..]) {
+                    match scan_entity(&bytes[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
                             self.tree.append(Item {
@@ -744,7 +750,7 @@ impl<'a> FirstPass<'a> {
 
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
-    fn interrupt_paragraph_by_list(&self, suffix: &str) -> bool {
+    fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
         let (ix, delim, index, _) = scan_listitem(suffix);
 
         if ix == 0 {
@@ -781,14 +787,15 @@ impl<'a> FirstPass<'a> {
         });
         self.tree.push();
 
+        let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         let end_ix;
         loop {
             let line_start_ix = ix;
-            ix += scan_nextline(&self.text[ix..]);
+            ix += scan_nextline(&bytes[ix..]);
             self.append_html_line(remaining_space, line_start_ix, ix);
 
-            let mut line_start = LineStart::new(&self.text[ix..]);
+            let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() {
                 end_ix = ix;
@@ -827,14 +834,15 @@ impl<'a> FirstPass<'a> {
         });
         self.tree.push();
 
+        let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         let end_ix;
         loop {
             let line_start_ix = ix;
-            ix += scan_nextline(&self.text[ix..]);
+            ix += scan_nextline(&bytes[ix..]);
             self.append_html_line(remaining_space, line_start_ix, ix);
 
-            let mut line_start = LineStart::new(&self.text[ix..]);
+            let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() || line_start.is_at_eol()
             {
@@ -844,7 +852,7 @@ impl<'a> FirstPass<'a> {
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len()
-                || scan_blank_line(&self.text[next_line_ix..]).is_some()
+                || scan_blank_line(&bytes[next_line_ix..]).is_some()
             {
                 end_ix = next_line_ix;
                 break;
@@ -865,6 +873,7 @@ impl<'a> FirstPass<'a> {
             body: ItemBody::IndentCodeBlock,
         });
         self.tree.push();
+        let bytes = self.text.as_bytes();
         let mut last_nonblank_child = TreePointer::Nil;
         let mut last_nonblank_ix = 0;
         let mut end_ix = 0;
@@ -873,7 +882,7 @@ impl<'a> FirstPass<'a> {
         let mut ix = start_ix;
         loop {
             let line_start_ix = ix;
-            ix += scan_nextline(&self.text[ix..]);
+            ix += scan_nextline(&bytes[ix..]);
             self.append_code_text(remaining_space, line_start_ix, ix);
             // TODO(spec clarification): should we synthesize newline at EOF?
 
@@ -883,7 +892,7 @@ impl<'a> FirstPass<'a> {
                 end_ix = ix;
             }
 
-            let mut line_start = LineStart::new(&self.text[ix..]);
+            let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len()
                 || !(line_start.scan_space(4) || line_start.is_at_eol())
@@ -896,7 +905,7 @@ impl<'a> FirstPass<'a> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
-            last_line_blank = scan_blank_line(&self.text[ix..]).is_some();
+            last_line_blank = scan_blank_line(&bytes[ix..]).is_some();
         }
 
         // Trim trailing blank lines.
@@ -911,12 +920,16 @@ impl<'a> FirstPass<'a> {
     fn parse_fenced_code_block(&mut self, start_ix: usize, indent: usize,
         fence_ch: u8, n_fence_char: usize) -> usize
     {
+        let bytes = self.text.as_bytes();
         let mut info_start = start_ix + n_fence_char;
-        info_start += scan_whitespace_no_nl(&self.text[info_start..]);
-        let mut info_end = info_start + scan_nextline(&self.text[info_start..]);
-        while info_end > info_start && is_ascii_whitespace(self.text.as_bytes()[info_end - 1]) {
-            info_end -= 1;
-        }
+        info_start += scan_whitespace_no_nl(&bytes[info_start..]);
+        // TODO: info strings are typically very short. wouldnt it be faster
+        // to just do a forward scan here?
+        let mut ix = info_start + scan_nextline(&bytes[info_start..]);
+        let info_end = ix - bytes[info_start..ix].iter()
+            .rev()
+            .take_while(|&&b| is_ascii_whitespace(b))
+            .count();
         let info_string = unescape(&self.text[info_start..info_end]);
         self.tree.append(Item {
             start: start_ix,
@@ -924,9 +937,8 @@ impl<'a> FirstPass<'a> {
             body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
         self.tree.push();
-        let mut ix = start_ix + scan_nextline(&self.text[start_ix..]);
         loop {
-            let mut line_start = LineStart::new(&self.text[ix..]);
+            let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() {
                 break;
@@ -936,7 +948,7 @@ impl<'a> FirstPass<'a> {
             if !close_line_start.scan_space(4) {
                 let close_ix = ix + close_line_start.bytes_scanned();
                 if let Some(n) =
-                    scan_closing_code_fence(&self.text[close_ix..], fence_ch, n_fence_char)
+                    scan_closing_code_fence(&bytes[close_ix..], fence_ch, n_fence_char)
                 {
                     ix = close_ix + n;
                     break;
@@ -944,7 +956,7 @@ impl<'a> FirstPass<'a> {
             }
             let remaining_space = line_start.remaining_space();
             ix += line_start.bytes_scanned();
-            let next_ix = ix + scan_nextline(&self.text[ix..]);
+            let next_ix = ix + scan_nextline(&bytes[ix..]);
             self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
@@ -952,7 +964,7 @@ impl<'a> FirstPass<'a> {
         self.pop(ix);
 
         // try to read trailing whitespace or it will register as a completely blank line
-        ix + scan_blank_line(&self.text[ix..]).unwrap_or(0)
+        ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -1019,18 +1031,15 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 ItemBody::ListItem(indent) => {
-                    let save = line_start.clone();
-                    if !(line_start.scan_space(indent) || line_start.is_at_eol()) {
-                        *line_start = save;
-                        break;
+                    if !line_start.is_at_eol() {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent){
+                            *line_start = save;
+                            break;
+                        }
                     }
                 }
-                ItemBody::Table(..) | ItemBody::TableHead | ItemBody::TableRow |
-                ItemBody::TableCell |
-                ItemBody::FootnoteDefinition(..) | ItemBody::List(..) |
-                ItemBody::Paragraph | ItemBody::IndentCodeBlock |
-                ItemBody::FencedCodeBlock(_) | ItemBody::HtmlBlock(_) => (),
-                ref node => panic!("unexpected node in tree: {:?}", node),
+                _ => (),
             }
             i += 1;
         }
@@ -1042,7 +1051,7 @@ impl<'a> FirstPass<'a> {
         let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
         if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
-            surgerize_tight_list(&mut self.tree);
+            surgerize_tight_list(&mut self.tree, cur_ix);
         }
     }
 
@@ -1116,46 +1125,41 @@ impl<'a> FirstPass<'a> {
         ix += atx_size;
         // next char is space or scan_eol
         // (guaranteed by scan_atx_heading)
-        let b = self.text.as_bytes()[ix];
+        let bytes = self.text.as_bytes();
+        let b = bytes[ix];
         if b == b'\n' || b == b'\r' {
-            return ix + scan_eol(&self.text[ix..]).unwrap_or(0);
+            return ix + scan_eol(&bytes[ix..]).unwrap_or(0);
         }
         // skip leading spaces
-        let skip_spaces = scan_whitespace_no_nl(&self.text[ix..]);
+        let skip_spaces = scan_whitespace_no_nl(&bytes[ix..]);
         ix += skip_spaces;
 
         // now handle the header text
         let header_start = ix;
-        let header_node_idx = self.tree.cur().unwrap(); // so that we can set the endpoint later
-        self.tree.push();
+        let header_node_idx = self.tree.push(); // so that we can set the endpoint later
         ix = self.parse_line(ix, false).0;
         self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text
-        // TODO: probably better to find limit before parsing; this makes assumptions
-        // about the way the line is parsed.
-        let header_text = &self.text[header_start..];
-        let mut limit = ix - header_start;
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\n' {
-            limit -= 1;
-        }
-        if limit > 0 && header_text.as_bytes()[limit-1] == b'\r' {
-            limit -= 1;
-        }
-        while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-            limit -= 1;
-        }
-        let mut closer = limit;
-        while closer > 0 && header_text.as_bytes()[closer-1] == b'#' {
-            closer -= 1;
-        }
-        if closer > 0 && header_text.as_bytes()[closer-1] == b' ' {
-            limit = closer;
-            while limit > 0 && header_text.as_bytes()[limit-1] == b' ' {
-                limit -= 1;
-            }
-        } else if closer == 0 { limit = closer; }
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+            let header_text = &bytes[header_start..ix];
+            let mut limit = header_text.iter()
+                .rposition(|&b| !(b == b'\n' || b == b'\r' || b == b' '))
+                .map_or(0, |i| i + 1);
+            let closer = header_text[..limit].iter()
+                .rposition(|&b| b != b'#')
+                .map_or(0, |i| i + 1);
+            if closer == 0 {
+                limit = closer;
+            } else {
+                let spaces = header_text[..closer].iter()
+                    .rev()
+                    .take_while(|&&b| b == b' ')
+                    .count();
+                if spaces > 0 {
+                    limit = closer - spaces;
+                }
+            }
             self.tree[cur_ix].item.end = limit + header_start;
         }
 
@@ -1165,11 +1169,13 @@ impl<'a> FirstPass<'a> {
 
     /// Returns the number of bytes scanned on success.
     fn parse_footnote(&mut self, start: usize) -> Option<usize> {
-        let tail = &self.text[start..];
-        if !tail.starts_with("[^") { return None; }
-        let (mut i, label) = scan_link_label_rest(&tail[2..])?;
+        let bytes = &self.text.as_bytes()[start..];
+        if !bytes.starts_with(b"[^") {
+            return None;
+        }
+        let (mut i, label) = scan_link_label_rest(&self.text[(start + 2)..])?;
         i += 2;
-        if scan_ch(&tail[i..], b':') == 0 {
+        if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
@@ -1184,35 +1190,37 @@ impl<'a> FirstPass<'a> {
 
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
-        let tail = &self.text[start..];
-        if !tail.starts_with('[') { return None; }
-        let (mut i, label) = scan_link_label_rest(&tail[1..])?;
+        let bytes = &self.text.as_bytes()[start..];
+        if scan_ch(bytes, b'[') == 0 {
+            return None;
+        }
+        let (mut i, label) = scan_link_label_rest(&self.text[(start + 1)..])?;
         i += 1;
-        if scan_ch(&tail[i..], b':') == 0 {
+        if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
-        let (bytes, link_def) = self.scan_refdef(start + i)?;
-        Some((bytes + i, UniCase::new(label), link_def))
+        let (bytecount, link_def) = self.scan_refdef(start + i)?;
+        Some((bytecount + i, UniCase::new(label), link_def))
     }
 
     /// Returns # of bytes and definition.
     /// Assumes the label of the reference including colon has already been scanned.
     fn scan_refdef(&self, start: usize) -> Option<(usize, LinkDef<'a>)> {
         let mut i = start;
+        let bytes = self.text.as_bytes();
 
         // whitespace between label and url (including up to one newline)
         let mut newlines = 0;
-        for c in self.text[i..].bytes() {
+        for &c in &bytes[i..] {
             if c == b'\n' {
                 i += 1;
                 newlines += 1;
                 if newlines > 1 {
                     return None;
                 } else {
-                    let mut line_start = LineStart::new(&self.text[i..]);
-                    let _n_containers = self.scan_containers(&mut line_start);
-                    // TODO: what to do with these containers?
+                    let mut line_start = LineStart::new(&bytes[i..]);
+                    self.scan_containers(&mut line_start);
                 }
             } else if is_ascii_whitespace_no_nl(c) {
                 i += 1;
@@ -1222,7 +1230,7 @@ impl<'a> FirstPass<'a> {
         }
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(&self.text[i..])?;
+        let (dest_length, dest) = scan_link_dest(&self.text, i, 1)?;
         let dest = unescape(dest);
         i += dest_length;
 
@@ -1230,11 +1238,11 @@ impl<'a> FirstPass<'a> {
         // FIXME: dedup with similar block above
         newlines = 0;
         let mut whitespace_bytes = 0;
-        for c in self.text[i..].bytes() {
+        for &c in &bytes[i..] {
             if c == b'\n' {
                 whitespace_bytes += 1;
                 newlines += 1;
-                let mut line_start = LineStart::new(&self.text[(i + whitespace_bytes)..]);
+                let mut line_start = LineStart::new(&bytes[(i + whitespace_bytes)..]);
                 let _n_containers = self.scan_containers(&mut line_start);
             } else if is_ascii_whitespace_no_nl(c) {
                 whitespace_bytes += 1;
@@ -1275,7 +1283,7 @@ impl<'a> FirstPass<'a> {
         };
 
         // scan EOL
-        if let Some(bytes) = scan_blank_line(&self.text[i..]) {
+        if let Some(bytes) = scan_blank_line(&bytes[i..]) {
             backup.0 = i + bytes - start;
             Some(backup)
         } else if newlines > 0 {
@@ -1285,7 +1293,7 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-    // FIXME: use scan_link_title ? but we need an inline scanner
+    // FIXME: use scan_link_title?
     // and that fn seems to allow blank lines.
     // FIXME: or, reuse scanner::scan_link_title ?
     // TODO: rename. this isnt just for refdef_titles, but all titles
@@ -1333,41 +1341,19 @@ impl<'a> FirstPass<'a> {
 
 /// Computes the number of header columns in a table line by computing the number of dividing pipes
 /// that aren't followed or preceeded by whitespace.
-fn count_header_cols(text: &str, mut pipes: usize, mut start: usize, last_pipe_ix: usize) -> usize {
+fn count_header_cols(bytes: &[u8], mut pipes: usize, mut start: usize, last_pipe_ix: usize) -> usize {
     // was first pipe preceeded by whitespace? if so, subtract one
-    start += scan_whitespace_no_nl(&text[start..]);
-    if text.as_bytes()[start] == b'|' {
+    start += scan_whitespace_no_nl(&bytes[start..]);
+    if bytes[start] == b'|' {
         pipes -= 1;
     }
 
     // was last pipe followed by whitespace? if so, sub one
-    if scan_blank_line(&text[(last_pipe_ix + 1)..]).is_some() {
+    if scan_blank_line(&bytes[(last_pipe_ix + 1)..]).is_some() {
         pipes -= 1;
     }
 
     pipes + 1
-}
-
-fn unescape_cow(c: CowStr<'_>) -> CowStr<'_> {
-    match c {
-        CowStr::Inlined(s) => unescape_str_line(s),
-        CowStr::Boxed(s) => unescape_str_line(s),
-        CowStr::Borrowed(s) => unescape(&s),
-    }
-}
-
-fn unescape_str_line<'a, S: AsRef<str>>(s: S) -> CowStr<'a> {
-    match unescape(s.as_ref()) {
-        CowStr::Borrowed(s) => {
-            if let Ok(inline_str) = InlineStr::try_from_str(s) {
-                CowStr::Inlined(inline_str)
-            } else {
-                s.to_owned().into()
-            }
-        }
-        CowStr::Inlined(s) => CowStr::Inlined(s),
-        CowStr::Boxed(s) => CowStr::Boxed(s),
-    }
 }
 
 impl<'a> Tree<Item> {
@@ -1410,7 +1396,7 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
 
-    let prev_char = s[..ix].chars().rev().next().unwrap();
+    let prev_char = s[..ix].chars().last().unwrap();
 
     prev_char.is_whitespace() || is_punctuation(prev_char)
 }
@@ -1422,7 +1408,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     if ix == 0 {
         return false;
     }
-    let prev_char = s[..ix].chars().rev().next().unwrap();
+    let prev_char = s[..ix].chars().last().unwrap();
     if prev_char.is_whitespace() {
         return false;
     }
@@ -1442,59 +1428,65 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
 /// Checks whether we should break a paragraph on the given input.
 /// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
 /// whether to break on a list requires additional context.
-fn scan_paragraph_interrupt(s: &str) -> bool {
-    scan_eol(s).is_some() ||
-    scan_hrule(s).is_ok() ||
-    scan_atx_heading(s).is_some() ||
-    scan_code_fence(s).is_some() ||
-    get_html_end_tag(s).is_some() ||
-    scan_blockquote_start(s).is_some() ||
-    is_html_tag(scan_html_block_tag(s).1)
+fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
+    scan_eol(bytes).is_some() ||
+    scan_hrule(bytes).is_ok() ||
+    scan_atx_heading(bytes).is_some() ||
+    scan_code_fence(bytes).is_some() ||
+    get_html_end_tag(bytes).is_some() ||
+    scan_blockquote_start(bytes).is_some() ||
+    is_html_tag(scan_html_block_tag(bytes).1)
 }
 
-static HTML_END_TAGS: &'static [&'static str; 7] = &["</script>", "</pre>", "</style>", "-->", "?>", "]]>", ">"];
+static HTML_END_TAGS: &[&str; 7] = &["</pre>", "</style>", "</script>", "-->", "?>", "]]>", ">"];
 
 // Returns an index into HTML_END_TAGS
-fn get_html_end_tag(text : &str) -> Option<u32> {
-    static BEGIN_TAGS: &'static [&'static str; 3] = &["<script", "<pre", "<style"];
-    
-    // TODO: Consider using `strcasecmp` here
-    'type_1: for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
-        if text.len() >= beg_tag.len() && text.starts_with('<') {
-            for (i, &c) in beg_tag.as_bytes()[1..].iter().enumerate() {
-                if ! (text.as_bytes()[i+1] == c || text.as_bytes()[i+1] == c - 32) {
-                    continue 'type_1;
-                }
-            }
+fn get_html_end_tag(text_bytes : &[u8]) -> Option<u32> {
+    static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
+    static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-            // Must either be the end of the line...
-            if text.len() == beg_tag.len() {
-                return Some(end_tag_ix);
-            }
-
-            // ...or be followed by whitespace, newline, or '>'.
-            let pos = beg_tag.len();
-            let s = text.as_bytes()[pos] as char;
-            // TODO: I think this should be ASCII whitespace only
-            if s.is_whitespace() || s == '>' {
-                return Some(end_tag_ix);
-            }
-        }
+    if scan_ch(text_bytes, b'<') == 0 {
+        return None;
     }
-    static ST_BEGIN_TAGS: &'static [&'static str; 3] = &["<!--", "<?", "<![CDATA["];
-    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
-        if text.starts_with(&beg_tag[..]) {
+    let text_bytes = &text_bytes[1..];
+
+    for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
+        let tag_len = beg_tag.len();
+
+        if text_bytes.len() < tag_len {
+            // begin tags are increasing in size
+            break;
+        }
+
+        if !text_bytes[..tag_len].eq_ignore_ascii_case(beg_tag) {
+            continue;
+        }
+
+        // Must either be the end of the line...
+        if text_bytes.len() == tag_len {
+            return Some(end_tag_ix);
+        }
+
+        // ...or be followed by whitespace, newline, or '>'.
+        let s = text_bytes[tag_len] as char;
+        // TODO: I think this should be ASCII whitespace only
+        if s.is_whitespace() || s == '>' {
             return Some(end_tag_ix);
         }
     }
-    if text.len() > 2 &&
-        text.starts_with("<!") {
-        let c = text[2..].chars().next().unwrap();
-        if c >= 'A' && c <= 'Z' {
-            return Some(6);
+
+    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
+        if text_bytes.starts_with(beg_tag) {
+            return Some(end_tag_ix);
         }
     }
-    None
+
+    if text_bytes.len() > 1 && text_bytes[0] == b'!' 
+        && text_bytes[1] >= b'A' && text_bytes[1] <= b'Z' {
+        Some(6)
+    } else {
+        None
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -1505,7 +1497,7 @@ struct InlineEl {
     both: bool,  // can both open and close
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct InlineStack {
     stack: Vec<InlineEl>,
     // lower bounds for
@@ -1523,8 +1515,8 @@ impl InlineStack {
         }
     }
 
-    fn pop_all<'a>(self, tree: &mut Tree<Item>) {
-        for el in self.stack {
+    fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
+        for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
@@ -1631,15 +1623,7 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
         let bytes = &self.text.as_bytes()[self.ix..upperbound];
         let memchr_res = memchr(c, bytes);
         self.ix = memchr_res.map(|ix| self.ix + ix).unwrap_or(bytes.len());
-
-        // jump to right node
-        while let TreePointer::Valid(cur_ix) = self.cur {
-            if self.ix <= self.tree[cur_ix].item.end {
-                break;
-            } else {
-                self.cur = self.tree[cur_ix].next;
-            }
-        }
+        self.cur = scan_nodes_to_ix(self.tree, self.cur, self.ix);
 
         memchr_res.unwrap_or(bytes.len())
     }
@@ -1674,8 +1658,8 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
     }
 
     // Note: will consume the prefix of the string.
-    fn scan_str(&mut self, s: &str) -> bool {
-        s.as_bytes().iter().all(|b| self.scan_ch(*b))
+    fn scan_str(&mut self, bytes: &[u8]) -> bool {
+        bytes.iter().all(|b| self.scan_ch(*b))
     }
 
     fn to_node_and_ix(&self) -> (TreePointer, usize) {
@@ -1686,26 +1670,6 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
             }
         }
         (cur, self.ix)
-    }
-
-    fn next_char(&mut self) -> Option<char> {
-        if let TreePointer::Valid(mut cur_ix) = self.cur {
-            while self.ix == self.tree[cur_ix].item.end {
-                self.cur = self.tree[cur_ix].next;
-                if let TreePointer::Valid(new_cur_ix) = self.cur {
-                    cur_ix = new_cur_ix;
-                    self.ix = self.tree[cur_ix].item.start;
-                } else {
-                    return None;
-                }
-            }
-            self.text[self.ix..].chars().next().map(|c| {
-                self.ix += c.len_utf8();
-                c
-            })
-        } else {
-            None
-        }
     }
 }
 
@@ -1794,7 +1758,7 @@ fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
                 if scanner.scan_ch(b'-') { return scanner.scan_ch(b'>'); }
             }
         } else if c == b'[' {
-            if !scanner.scan_str("CDATA[") { return false; }
+            if !scanner.scan_str(b"CDATA[") { return false; }
             loop {
                 scanner.scan_upto(b']');
                 if !scanner.scan_ch(b']') { return false; }
@@ -1859,149 +1823,6 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
         }
     }
     false
-}
-
-fn scan_link_destination_plain<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let mut url = String::new();
-    let mut nest = 0;
-    let mut bytecount = 0;
-    let mut still_borrowed = true;
-    let underlying = &scanner.text[scanner.ix..];
-    while let Some(mut c) = scanner.next_char() {
-        match c {
-            '(' => {
-                nest += 1;
-                if nest > LINK_MAX_NESTED_PARENS {
-                    return None;
-                }
-            }
-            ')' => {
-                if nest == 0 {
-                    scanner.unget();
-                    return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
-                }
-                nest -= 1;
-            }
-            '\x00'..=' ' => {
-                scanner.unget();
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() });
-            },
-            '\\' => {
-                if let Some(c_next) = scanner.next_char() {
-                    if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                        if !still_borrowed {
-                            url.push('\\');
-                        } else {
-                            bytecount += '\\'.len_utf8();
-                        }
-                    } else if still_borrowed {
-                        url.push_str(&underlying[..bytecount]);
-                        still_borrowed = false;
-                    }
-                    c = c_next;
-                } else {
-                    return None;
-                }
-            }
-            _ => {}
-        }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            url.push(c);
-        }
-    }
-    None
-}
-
-fn scan_link_destination_pointy<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let underlying = &scanner.text[scanner.ix..];
-    let mut url = String::new();
-    let mut still_borrowed = true;
-    let mut bytecount = 0;
-    while let Some(mut c) = scanner.next_char() {
-        match c {
-            '>' => {
-                return Some(if still_borrowed { underlying[..bytecount].into() } else { url.into() })
-            }
-            '\x00'..='\x1f' | '<' => return None,
-            '\\' => {
-                let c_next = scanner.next_char()?;
-                if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                    if !still_borrowed {
-                        url.push('\\');
-                    } else {
-                        bytecount += '\\'.len_utf8()
-                    }
-                } else if still_borrowed {
-                    url.push_str(&underlying[..bytecount]);
-                    still_borrowed = false;
-                }
-                c = c_next;
-            }
-            _ => {}
-        }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            url.push(c);
-        }
-    }
-    None
-}
-
-fn scan_link_destination<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    if scanner.scan_ch(b'<') {
-        scan_link_destination_pointy(scanner)
-    } else {
-        scan_link_destination_plain(scanner)
-    }
-    
-}
-
-fn scan_link_title<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let open = scanner.next_char()?;
-    if !(open == '\'' || open == '\"' || open == '(') {
-        return None;
-    }
-    let close = if open == '(' { ')' } else { open };
-    let underlying = &scanner.text[scanner.ix..];
-    let mut title = String::new();
-    let mut still_borrowed = true;
-    let mut bytecount = 0;
-    while let Some(mut c) = scanner.next_char() {
-        if c == close {
-            let cow = if still_borrowed {
-                underlying[..bytecount].into()
-            } else {
-                title.into()
-            };
-            return Some(cow);
-        }
-        if c == open {
-            return None;
-        }
-        if c == '\\' {
-            let c_next = scanner.next_char()?;
-            if !(c_next <= '\x7f' && is_ascii_punctuation(c_next as u8)) {
-                if !still_borrowed {
-                    title.push('\\');
-                } else {
-                    bytecount += '\\'.len_utf8()
-                }
-            } else if still_borrowed {
-                title.push_str(&underlying[..bytecount]);
-                still_borrowed = false;
-            }
-            c = c_next;
-        }
-        if still_borrowed {
-            bytecount += c.len_utf8();
-        } else {
-            title.push(c);
-        }
-    }
-    None
 }
 
 fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, LinkType)> {
@@ -2120,57 +1941,73 @@ enum RefScan<'a> {
     Failed,
 }
 
+fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: TreePointer, ix: usize) -> TreePointer {
+    while let TreePointer::Valid(node_ix) = node {
+        if tree[node_ix].item.end <= ix {
+            node = tree[node_ix].next;
+        } else {
+            break;
+        }
+    }
+    node
+}
+
 fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer) -> RefScan<'b> {
     let cur_ix = match cur {
         TreePointer::Nil => return RefScan::Failed,
         TreePointer::Valid(cur_ix) => cur_ix,
     };
     let start = tree[cur_ix].item.start;
+    let tail = &text.as_bytes()[start..];
     
-    if text[start..].starts_with("[]") {
+    if tail.starts_with(b"[]") {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(&text[start..]) {
-        let mut scanner = InlineScanner::new(tree, text, cur);
-        for _ in 0..ix { scanner.next(); } // move to right node in tree
-        let next_node = tree[scanner.cur.unwrap()].next;
+        let next_node = scan_nodes_to_ix(tree, cur, start + ix);
         RefScan::LinkLabel(label, next_node)
     } else {
         RefScan::Failed
     }
 }
 
-/// Returns url and title cows.
-fn scan_inline_link<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
-    if !scanner.scan_ch(b'(') {
+/// Returns next byte index, url and title.
+fn scan_inline_link(underlying: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, CowStr<'_>)> {
+    let mut ix = start_ix;
+    if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
         return None;
     }
-    scanner.scan_while(is_ascii_whitespace);
-    let url = scan_link_destination(scanner)?;
-    let mut title = "".into();
-    if scanner.scan_while(is_ascii_whitespace) > 0 {
-        let save = scanner.clone();
-        if let Some(t) = scan_link_title(scanner) {
-            title = t;
-            scanner.scan_while(is_ascii_whitespace);
-        } else {
-            *scanner = save;
-        }
-    }
-    if !scanner.scan_ch(b')') {
+    ix += 1;
+    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+    let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
+    let dest = unescape(dest);
+    ix += dest_length;
+
+    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+    let title = if let Some((bytes_scanned, t)) = scan_link_title(underlying, ix) {
+        ix += bytes_scanned;
+        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+        t
+    } else {
+        "".into()
+    };
+    if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
         return None;
     }
-    // in the worst case, title/ url is already owned, and we allocated
-    // *again* on unescaping. Can this be avoided?
-    Some((unescape_cow(url), unescape_cow(title)))
+    ix += 1;
+
+    Some((ix, dest, title))
 }
 
+#[derive(Clone, Debug)]
 struct LinkStackEl {
     node: TreeIndex,
     ty: LinkStackTy,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Debug)]
 enum LinkStackTy {
     Link,
     Image,
@@ -2304,6 +2141,10 @@ pub struct Parser<'a> {
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
+
+    // used by inline passes. store them here for reuse
+    inline_stack: InlineStack,
+    link_stack: Vec<LinkStackEl>,
 }
 
 impl<'a> Parser<'a> {
@@ -2328,7 +2169,9 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
-        Parser { text, tree, allocs, broken_link_callback, offset: 0 }
+        let inline_stack = InlineStack::new();
+        let link_stack = Vec::new();
+        Parser { text, tree, allocs, broken_link_callback, offset: 0, inline_stack, link_stack }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2352,7 +2195,6 @@ impl<'a> Parser<'a> {
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
-        let mut link_stack = Vec::new();
         let mut code_delims = CodeDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
@@ -2433,23 +2275,27 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
+                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
                 }
                 ItemBody::MaybeImage => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
+                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
-                    if let Some(tos) = link_stack.pop() {
+                    if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             self.tree[cur_ix].item.body = ItemBody::Text;
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+                        let link_details = if let TreePointer::Valid(cur_ix) = next {
+                            scan_inline_link(self.text, self.tree[cur_ix].item.start)
+                        } else {
+                            None
+                        };
 
-                        if let Some((url, title)) = scan_inline_link(scanner) {
-                            let (next_node, next_ix) = scanner.to_node_and_ix();
+                        if let Some((next_ix, url, title)) = link_details {
+                            let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
                                 self.tree[prev_ix].next = TreePointer::Nil;
                             }                            
@@ -2468,7 +2314,7 @@ impl<'a> Parser<'a> {
                             }
 
                             if tos.ty == LinkStackTy::Link {
-                                for el in &mut link_stack {
+                                for el in &mut self.link_stack {
                                     if el.ty == LinkStackTy::Link {
                                         el.ty = LinkStackTy::Disabled;
                                     }
@@ -2508,7 +2354,7 @@ impl<'a> Parser<'a> {
                                 self.tree[tos.node].item.body = ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
                                 prev = TreePointer::Valid(tos.node);
                                 cur = node_after_link;
-                                link_stack.clear();
+                                self.link_stack.clear();
                                 continue;
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
                                 let type_url_title = if let Some(matching_def) = self.allocs.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
@@ -2553,7 +2399,7 @@ impl<'a> Parser<'a> {
                                     cur_ix = tos.node;
 
                                     if tos.ty == LinkStackTy::Link {
-                                        for el in &mut link_stack {
+                                        for el in &mut self.link_stack {
                                             if el.ty == LinkStackTy::Link {
                                                 el.ty = LinkStackTy::Disabled;
                                             }
@@ -2578,7 +2424,6 @@ impl<'a> Parser<'a> {
     }
 
     fn handle_emphasis(&mut self) {
-        let mut stack = InlineStack::new();
         let mut prev = TreePointer::Nil;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
@@ -2587,7 +2432,7 @@ impl<'a> Parser<'a> {
                 let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                 let both = can_open && can_close;
                 if can_close {
-                    while let Some(el) = stack.find_match(&mut self.tree, c, count, both) {
+                    while let Some(el) = self.inline_stack.find_match(&mut self.tree, c, count, both) {
                         // have a match!
                         if let TreePointer::Valid(prev_ix) = prev {
                             self.tree[prev_ix].next = TreePointer::Nil;
@@ -2623,7 +2468,7 @@ impl<'a> Parser<'a> {
                         self.tree[prev_ix].next = cur;
 
                         if el.count > match_count {
-                            stack.push(InlineEl {
+                            self.inline_stack.push(InlineEl {
                                 start: el.start,
                                 count: el.count - match_count,
                                 c: el.c,
@@ -2640,7 +2485,7 @@ impl<'a> Parser<'a> {
                 }
                 if count > 0 {
                     if can_open {
-                        stack.push(InlineEl {
+                        self.inline_stack.push(InlineEl {
                             start: cur_ix,
                             count,
                             c,
@@ -2660,7 +2505,7 @@ impl<'a> Parser<'a> {
                 cur = self.tree[cur_ix].next;
             }
         }
-        stack.pop_all(&mut self.tree);
+        self.inline_stack.pop_all(&mut self.tree);
     }
 
     /// Make a code span.
@@ -2739,49 +2584,6 @@ impl<'a> Parser<'a> {
         self.tree[open].child = TreePointer::Nil;
     }
 
-    /// Returns the next event in a pre-order AST walk, along with its
-    /// start and end offset in the source.
-    // LLVM seems reluctant to inline this function without this attribute. It is thought to be
-    // beneficial as the call is hot and only called by the event iterators. Removing this
-    // attribute incurs a ~2% performance hit.
-    #[inline(always)]
-    fn next_event(&mut self) -> Option<(Event<'a>, Range<usize>)> {
-        match self.tree.cur() {
-            TreePointer::Nil => {
-                let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item, &self.allocs).unwrap();
-                self.offset = self.tree[ix].item.end;
-                self.tree.next_sibling(ix);
-                Some((Event::End(tag), self.tree[ix].item.start..self.tree[ix].item.end))
-            }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
-                        cur_ix = next;
-                    }
-                }
-                if self.tree[cur_ix].item.body.is_inline() {
-                    self.handle_inline();
-                }
-
-                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.allocs) {
-                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
-                        self.tree[child_ix].item.start
-                    } else {
-                        self.tree[cur_ix].item.end
-                    };
-                    self.tree.push();                
-                    Some((Event::Start(tag), self.tree[cur_ix].item.start..self.tree[cur_ix].item.end))
-                } else {
-                    self.tree.next_sibling(cur_ix);
-                    let item = &self.tree[cur_ix].item;
-                    self.offset = item.end;
-                    Some((item_to_event(item, self.text, &self.allocs), item.start..item.end))
-                }
-            }
-        }
-    }
-
     pub fn into_offset_iter(self) -> OffsetIter<'a> {
         OffsetIter {
             inner: self,
@@ -2840,7 +2642,33 @@ impl<'a> Iterator for OffsetIter<'a> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next_event()
+        match self.inner.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.inner.tree.pop()?;
+                let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs).unwrap();
+                self.inner.tree.next_sibling(ix);
+                Some((Event::End(tag), self.inner.tree[ix].item.start..self.inner.tree[ix].item.end))
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.inner.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.inner.tree.next_sibling(cur_ix) {
+                        cur_ix = next;
+                    }
+                }
+                if self.inner.tree[cur_ix].item.body.is_inline() {
+                    self.inner.handle_inline();
+                }
+
+                if let Some(tag) = item_to_tag(&self.inner.tree[cur_ix].item, &self.inner.allocs) {
+                    self.inner.tree.push();                
+                    Some((Event::Start(tag), self.inner.tree[cur_ix].item.start..self.inner.tree[cur_ix].item.end))
+                } else {
+                    self.inner.tree.next_sibling(cur_ix);
+                    let item = &self.inner.tree[cur_ix].item;
+                    Some((item_to_event(item, self.inner.text, &self.inner.allocs), item.start..item.end))
+                }
+            }
+        }
     }
 }
 
@@ -2914,44 +2742,45 @@ fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Ev
 }
 
 // https://english.stackexchange.com/a/285573
-// tree.cur points to a List<_, _, _, false> Item Node
-fn surgerize_tight_list<'a>(tree : &mut Tree<Item>) {
-    let mut this_listitem = tree[tree.cur().unwrap()].child;
-    while let TreePointer::Valid(listitem_ix) = this_listitem {
-        if let ItemBody::ListItem(_) = tree[listitem_ix].item.body {
-            // first child is special, controls how we repoint this_listitem.child
-            let this_listitem_firstborn = tree[listitem_ix].child;
-            if let TreePointer::Valid(firstborn_ix) = this_listitem_firstborn {
-                if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
-                    // paragraphs should always have children
-                    tree[listitem_ix].child = tree[firstborn_ix].child;
-                }
+fn surgerize_tight_list<'a>(tree : &mut Tree<Item>, list_ix: TreeIndex) {
+    let mut list_item = tree[list_ix].child;
+    while let TreePointer::Valid(listitem_ix) = list_item {
+        // first child is special, controls how we repoint list_item.child
+        let list_item_firstborn = tree[listitem_ix].child;
 
-                let mut this_listitem_child = TreePointer::Valid(firstborn_ix);
-                let mut node_to_repoint = TreePointer::Nil;
-                while let TreePointer::Valid(child_ix) = this_listitem_child {
-                    // surgerize paragraphs
-                    if let ItemBody::Paragraph = tree[child_ix].item.body {
-                        let this_listitem_child_firstborn = tree[child_ix].child;
-                        if let TreePointer::Valid(repoint_ix) = node_to_repoint {
-                            tree[repoint_ix].next = this_listitem_child_firstborn;
-                        }
-                        let mut this_listitem_child_lastborn = this_listitem_child_firstborn;
-                        while let TreePointer::Valid(lastborn_next_ix) = tree[this_listitem_child_lastborn.unwrap()].next {
-                            this_listitem_child_lastborn = TreePointer::Valid(lastborn_next_ix);
-                        }
-                        node_to_repoint = this_listitem_child_lastborn;
-                    } else {
-                        node_to_repoint = this_listitem_child;
+        // Check that list item has children - this is not necessarily the case!
+        if let TreePointer::Valid(firstborn_ix) = list_item_firstborn {
+            if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
+                // paragraphs should always have children
+                tree[listitem_ix].child = tree[firstborn_ix].child;
+            }
+
+            let mut list_item_child = TreePointer::Valid(firstborn_ix);
+            let mut node_to_repoint = TreePointer::Nil;
+            while let TreePointer::Valid(child_ix) = list_item_child {
+                // surgerize paragraphs
+                let repoint_ix = if let ItemBody::Paragraph = tree[child_ix].item.body {
+                    // no empty paragraphs!
+                    let child_firstborn = tree[child_ix].child.unwrap();
+                    if let TreePointer::Valid(repoint_ix) = node_to_repoint {
+                        tree[repoint_ix].next = TreePointer::Valid(child_firstborn);
                     }
+                    let mut child_lastborn = child_firstborn;
+                    while let TreePointer::Valid(lastborn_next_ix) = tree[child_lastborn].next {
+                        child_lastborn = lastborn_next_ix;
+                    }
+                    child_lastborn
+                } else {
+                    child_ix
+                };
 
-                    tree[node_to_repoint.unwrap()].next = tree[child_ix].next;
-                    this_listitem_child = tree[child_ix].next;
-                }
-            } // listitems should always have children, let this pass during testing
-        } // failure should be a panic, but I'll let it pass during testing
+                node_to_repoint = TreePointer::Valid(repoint_ix);
+                tree[repoint_ix].next = tree[child_ix].next;
+                list_item_child = tree[child_ix].next;
+            }
+        }
 
-        this_listitem = tree[listitem_ix].next;
+        list_item = tree[listitem_ix].next;
     }
 }
 
@@ -2959,7 +2788,40 @@ impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        self.next_event().map(|(ev, _range)| ev)
+        match self.tree.cur() {
+            TreePointer::Nil => {
+                let ix = self.tree.pop()?;
+                let tag = item_to_tag(&self.tree[ix].item, &self.allocs).unwrap();
+                self.offset = self.tree[ix].item.end;
+                self.tree.next_sibling(ix);
+                Some(Event::End(tag))
+            }
+            TreePointer::Valid(mut cur_ix) => {
+                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
+                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
+                        cur_ix = next;
+                    }
+                }
+                if self.tree[cur_ix].item.body.is_inline() {
+                    self.handle_inline();
+                }
+
+                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.allocs) {
+                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                        self.tree[child_ix].item.start
+                    } else {
+                        self.tree[cur_ix].item.end
+                    };
+                    self.tree.push();                
+                    Some(Event::Start(tag))
+                } else {
+                    self.tree.next_sibling(cur_ix);
+                    let item = &self.tree[cur_ix].item;
+                    self.offset = item.end;
+                    Some(item_to_event(item, self.text, &self.allocs))
+                }
+            }
+        }
     }
 }
 

@@ -120,10 +120,11 @@ impl<T: Default> Tree<T> {
 
     /// Push down one level, so that new items become children of the current node.
     /// The new focus index is returned.
-    pub fn push(&mut self) {
+    pub fn push(&mut self) -> TreeIndex {
         let cur_ix = self.cur.unwrap();
         self.spine.push(cur_ix);
         self.cur = self[cur_ix].child;
+        cur_ix
     }
 
     /// Pop back up a level.

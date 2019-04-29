@@ -24,7 +24,7 @@ use std::char;
 use std::convert::TryInto;
 
 use crate::entities;
-use crate::parse::Alignment;
+use crate::parse::{Alignment, LinkType};
 use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
@@ -911,6 +911,108 @@ pub fn scan_attribute_value_spec(data: &[u8]) -> Option<usize> {
     i += scan_whitespace_no_nl(&data[i..]);
     i += scan_attribute_value(&data[i..])?;
     Some(i)
+}
+
+/// Returns (next_byte_offset, uri, type)
+pub(crate) fn scan_autolink(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, LinkType)> {
+    scan_uri(text, start_ix).map(|(bytes, uri)| (bytes, uri, LinkType::Autolink))
+        .or_else(|| scan_email(text, start_ix).map(|(bytes, uri)| (bytes, uri, LinkType::Email)))
+}
+
+/// Returns (next_byte_offset, uri)
+fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+    let bytes = &text.as_bytes()[start_ix..];
+
+    // scheme's first byte must be an ascii letter
+    if bytes.is_empty() || !is_ascii_alpha(bytes[0]) {
+        return None;
+    }
+
+    let mut i = 1;
+
+    while i < bytes.len() {
+        let c = bytes[i];
+        i += 1;
+        match c {
+            c if is_ascii_alphanumeric(c) => (),
+            b'.' | b'-' | b'+' => (),
+            b':' => break,
+            _ => return None,
+        }
+    }
+
+    // scheme length must be between 2 and 32 characters long. scheme
+    // must be followed by colon
+    if i < 3 || i > 33  {
+        return None;
+    }
+
+    let mut ended = false;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\0' ... b' ' => {
+                ended = true;
+            }
+            b'>' | b'<' => break,
+            _ if ended => return None,
+            _ => (),
+        }
+        i += 1;
+    };
+
+    Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into()))
+}
+
+/// Returns (next_byte_offset, email)
+fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+    // using a regex library would be convenient, but doing it by hand is not too bad
+    let bytes = &text.as_bytes()[start_ix..];
+    let mut i = 0;
+
+    while i < bytes.len() {
+        let c = bytes[i];
+        i += 1;
+        match c {
+            c if is_ascii_alphanumeric(c) => (),
+            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
+            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
+            b'@' => break,
+            _ => return None,
+        }
+    }
+
+    loop {
+        let label_start_ix = i;
+        let mut fresh_label = true;
+
+        while i < bytes.len() {
+            match bytes[i] {
+                c if is_ascii_alphanumeric(c) => (),
+                b'-' if fresh_label => {
+                    return None;
+                }
+                b'-' => (),
+                _ => break,
+            }
+            fresh_label = false;
+            i += 1;
+        }
+    
+        if i == label_start_ix || i - label_start_ix > 63 || bytes[i - 1] == b'-' {
+            return None;
+        }
+
+        if scan_ch(&bytes[i..], b'.') == 0 {
+            break;
+        }
+        i += 1;
+    }
+
+    if scan_ch(&bytes[i..], b'>') == 0 {
+        return None;
+    }
+
+    Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into()))
 }
 
 #[cfg(test)]

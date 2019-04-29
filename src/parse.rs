@@ -1825,113 +1825,6 @@ fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
     false
 }
 
-fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, LinkType)> {
-    let save = scanner.clone();
-    let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
-        *scanner = save.clone();
-        scan_email(scanner).map(|s| (s, LinkType::Email))
-    });
-    if let Some(uri) = scans {
-        if scanner.scan_ch(b'>') {
-            return Some(uri);
-        }
-    }
-    *scanner = save;
-    None
-}
-
-// must return scanner to original state -- this doesnt seem true?
-// TODO: such invariants should probably be captured by the type system
-fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let start_ix = scanner.ix;
-
-    // scheme's first byte must be an ascii letter
-    let first = scanner.next()?;
-    if !is_ascii_alpha(first) {
-        return None;
-    }
-
-    while let Some(c) = scanner.next() {
-        match c {
-            c if is_ascii_alphanumeric(c) => (),
-            b'.' | b'-' | b'+' => (),
-            b':' => break,
-            _ => return None,
-        }
-    }
-
-    // scheme length must be between 2 and 32 characters long. scheme
-    // must be followed by colon
-    let uri_len = scanner.ix - start_ix;
-    if uri_len < 3 || uri_len > 33  {
-        return None;
-    }
-
-    let mut ended = false;
-    while let Some(c) = scanner.next() {
-        match c {
-            b'\0' ... b' ' => {
-                ended = true;
-            }
-            b'>' | b'<' => break,
-            _ if ended => return None,
-            _ => (),
-        }
-    };
-    scanner.unget();
-
-    Some(scanner.text[start_ix..scanner.ix].into())
-}
-
-fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    // using a regex library would be convenient, but doing it by hand is not too bad
-    let start_ix = scanner.ix;
-
-    while let Some(c) = scanner.next() {
-        match c {
-            c if is_ascii_alphanumeric(c) => (),
-            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
-            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
-            _ => break,
-        }
-    }
-
-    if scanner.ix == start_ix || scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
-        return None;
-    }
-
-    loop {
-        let label_start_ix = scanner.ix;
-        let mut fresh_label = true;
-
-        while let Some(c) = scanner.next() {
-            match c {
-                c if is_ascii_alphanumeric(c) => (),
-                b'-' if fresh_label => {
-                    return None;
-                }
-                b'-' => (),
-                _ => {
-                    scanner.unget();
-                    break;
-                }
-            }
-            fresh_label = false;
-        }
-    
-        if scanner.ix == label_start_ix || scanner.ix - label_start_ix > 63
-            || scanner.text.as_bytes()[scanner.ix - 1] == b'-' {
-            return None;
-        }
-
-        if !scanner.scan_ch(b'.') {
-            break;
-        }
-    }
-
-    Some(scanner.text[start_ix..scanner.ix].into())
-}
-
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // label, next node index
@@ -2204,9 +2097,14 @@ impl<'a> Parser<'a> {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
                     let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+                    let autolink = if let TreePointer::Valid(next_ix) = next {
+                        scan_autolink(self.text, self.tree[next_ix].item.start)
+                    } else {
+                        None
+                    };
 
-                    if let Some((uri, link_type)) = scan_autolink(scanner) {
-                        let (node, ix) = scanner.to_node_and_ix();
+                    if let Some((ix, uri, link_type)) = autolink {
+                        let node = scan_nodes_to_ix(&self.tree, next, ix);
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
@@ -2288,8 +2186,8 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let link_details = if let TreePointer::Valid(cur_ix) = next {
-                            scan_inline_link(self.text, self.tree[cur_ix].item.start)
+                        let link_details = if let TreePointer::Valid(next_ix) = next {
+                            scan_inline_link(self.text, self.tree[next_ix].item.start)
                         } else {
                             None
                         };

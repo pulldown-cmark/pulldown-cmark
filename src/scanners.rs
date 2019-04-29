@@ -511,7 +511,7 @@ pub fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
 }
 
 pub fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.len() >= 2 && data[0] == b'>' && data[1] == b' ' {
+    if data.starts_with(b"> ") {
         Some(2)
     } else {
         None

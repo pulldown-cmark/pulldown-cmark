@@ -1625,15 +1625,7 @@ impl<'t, 'a> InlineScanner<'t, 'a> {
         let bytes = &self.text.as_bytes()[self.ix..upperbound];
         let memchr_res = memchr(c, bytes);
         self.ix = memchr_res.map(|ix| self.ix + ix).unwrap_or(bytes.len());
-
-        // jump to right node
-        while let TreePointer::Valid(cur_ix) = self.cur {
-            if self.ix <= self.tree[cur_ix].item.end {
-                break;
-            } else {
-                self.cur = self.tree[cur_ix].next;
-            }
-        }
+        self.cur = scan_nodes_to_ix(self.tree, self.cur, self.ix);
 
         memchr_res.unwrap_or(bytes.len())
     }
@@ -1951,6 +1943,17 @@ enum RefScan<'a> {
     Failed,
 }
 
+fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: TreePointer, ix: usize) -> TreePointer {
+    while let TreePointer::Valid(node_ix) = node {
+        if tree[node_ix].item.end <= ix {
+            node = tree[node_ix].next;
+        } else {
+            break;
+        }
+    }
+    node
+}
+
 fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer) -> RefScan<'b> {
     let cur_ix = match cur {
         TreePointer::Nil => return RefScan::Failed,
@@ -1963,9 +1966,7 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(&text[start..]) {
-        let mut scanner = InlineScanner::new(tree, text, cur);
-        for _ in 0..ix { scanner.next(); } // move to right node in tree
-        let next_node = tree[scanner.cur.unwrap()].next;
+        let next_node = scan_nodes_to_ix(tree, cur, start + ix);
         RefScan::LinkLabel(label, next_node)
     } else {
         RefScan::Failed
@@ -2289,22 +2290,14 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let start_ix = if let TreePointer::Valid(cur_ix) = next {
-                            Some(self.tree[cur_ix].item.start)
+                        let link_details = if let TreePointer::Valid(cur_ix) = next {
+                            scan_inline_link(self.text, self.tree[cur_ix].item.start)
                         } else {
                             None
                         };
 
-                        if let Some((next_ix, url, title)) = start_ix.and_then(|start| scan_inline_link(self.text, start)) {
-                            let mut next_node = next;
-                            while let TreePointer::Valid(next_node_ix) = next_node {
-                                if self.tree[next_node_ix].item.end <= next_ix {
-                                    next_node = self.tree[next_node_ix].next;
-                                } else {
-                                    break;
-                                }
-                            }
-
+                        if let Some((next_ix, url, title)) = link_details {
+                            let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
                                 self.tree[prev_ix].next = TreePointer::Nil;
                             }                            

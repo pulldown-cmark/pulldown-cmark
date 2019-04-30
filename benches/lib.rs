@@ -114,4 +114,25 @@ mod to_html {
 
         b.iter(|| render_html(&buf, Options::empty()));
     }
+
+    #[bench]
+    fn pathological_cdata(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a <![CDATA[ ").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_html_processing(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a <? ").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
+    fn pathological_html_defs(b: &mut test::Bencher) {
+        let input = std::iter::repeat("a <!A ").take(2000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
 }

@@ -1127,59 +1127,60 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
     let c = *bytes.get(ix)?;
     ix += 1;
-    if c == b'-' {
-        let dashes = scan_ch_repeat(&bytes[ix..], b'-');
-        if dashes < 1 { return None; }
-        // Saw "<!--", scan comment.
-        ix += dashes;
-        if scan_ch(&bytes[ix..], b'>') == 1 {
-            return None;
-        }
+    match c {
+        b'-' => {
+            let dashes = scan_ch_repeat(&bytes[ix..], b'-');
+            if dashes < 1 { return None; }
+            // Saw "<!--", scan comment.
+            ix += dashes;
+            if scan_ch(&bytes[ix..], b'>') == 1 {
+                return None;
+            }
 
-        while let Some(x) = memchr(b'-', &bytes[ix..]) {
-            ix += x + 1;
-            if scan_ch(&bytes[ix..], b'-') == 1 {
-                ix += 1;
-                return if scan_ch(&bytes[ix..], b'>') == 1 {
-                    Some(ix + 1)
-                } else {
-                    None
-                };
-            } 
-        }
-        None
-    } else if c == b'[' {
-        if !bytes[ix..].starts_with(b"CDATA[") { return None; }
-        ix += b"CDATA[".len();
-        // FIXME: this is a definite quadratic scaling bug!
-        ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-        let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
-        ix += close_brackets;
+            while let Some(x) = memchr(b'-', &bytes[ix..]) {
+                ix += x + 1;
+                if scan_ch(&bytes[ix..], b'-') == 1 {
+                    ix += 1;
+                    return if scan_ch(&bytes[ix..], b'>') == 1 {
+                        Some(ix + 1)
+                    } else {
+                        None
+                    };
+                } 
+            }
+            None
+        } 
+        b'[' => {
+            if !bytes[ix..].starts_with(b"CDATA[") { return None; }
+            ix += b"CDATA[".len();
+            // FIXME: this is a definite quadratic scaling bug!
+            ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
+            let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
+            ix += close_brackets;
 
-        if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
-            None
-        } else {
-            Some(ix + 1)
+            if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
+                None
+            } else {
+                Some(ix + 1)
+            }
         }
-    } else {
-        // Scan declaration.
-        // FIXME: this is probably a quadratic scaling bug
-        let def = scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
-        if def == 0 {
-            return None;
+        b'A' ... b'Z' => {
+            // Scan declaration.
+            // FIXME: this is probably a quadratic scaling bug
+            ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
+            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
+            if whitespace == 0 {
+                return None;
+            }
+            ix += whitespace;
+            ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
+            if scan_ch(&bytes[ix..], b'>') == 0 {
+                None
+            } else {
+                Some(ix + 1)
+            }
         }
-        ix += def;
-        let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-        if whitespace == 0 {
-            return None;
-        }
-        ix += whitespace;
-        ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-        if scan_ch(&bytes[ix..], b'>') == 0 {
-            None
-        } else {
-            Some(ix + 1)
-        }
+        _ => None,
     }
 }
 

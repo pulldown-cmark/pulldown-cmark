@@ -31,13 +31,6 @@ use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
 
-// Allowing arbitrary depth nested parentheses inside link destinations
-// can create denial of service vulnerabilities if we're not careful.
-// The simplest countermeasure is to limit their depth, which is
-// explicitly allowed by the spec as long as the limit is at least 3:
-// https://spec.commonmark.org/0.29/#link-destination
-const LINK_MAX_NESTED_PARENS: usize = 5;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     // block-level tags
@@ -1272,7 +1265,7 @@ impl<'a> FirstPass<'a> {
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
-        if let Some((title_length, title)) = self.scan_refdef_title(i) {
+        if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
             i += title_length;
             backup.1.title = Some(unescape(title));
         } else if newlines > 0 {
@@ -1290,51 +1283,6 @@ impl<'a> FirstPass<'a> {
         } else {
             None
         }
-    }
-
-    // FIXME: use scan_link_title?
-    // and that fn seems to allow blank lines.
-    // FIXME: or, reuse scanner::scan_link_title ?
-    // TODO: rename. this isnt just for refdef_titles, but all titles
-    // returns (bytelength, title_str)
-    fn scan_refdef_title(&self, start: usize) -> Option<(usize, &'a str)> {
-        let text = &self.text[start..];
-        let mut chars = text.chars().peekable();
-        let closing_delim = match chars.next()? {
-            '\'' => '\'',
-            '"' => '"',
-            '(' => ')',
-            _ => return None,
-        };
-        let mut bytecount = 1;
-
-        while let Some(c) = chars.next() {
-            match c {
-                '\n' => {
-                    bytecount += 1;
-                    let mut next = *chars.peek()?;
-                    while is_ascii_whitespace_no_nl(next as u8) {
-                        bytecount += chars.next()?.len_utf8();
-                        next = *chars.peek()?;
-                    }
-                    if *chars.peek()? == '\n' {
-                        // blank line - not allowed
-                        return None;
-                    }
-                }
-                '\\' => {
-                    let next_char = chars.next()?;
-                    bytecount += 1 + next_char.len_utf8();
-                }
-                c if c == closing_delim => {
-                    return Some((bytecount + 1, &text[1..bytecount]));
-                }
-                c => {
-                    bytecount += c.len_utf8();
-                }
-            }
-        }
-        None
     }
 }
 
@@ -1621,36 +1569,6 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
     } else {
         RefScan::Failed
     }
-}
-
-/// Returns next byte index, url and title.
-fn scan_inline_link(underlying: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, CowStr<'_>)> {
-    let mut ix = start_ix;
-    if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
-        return None;
-    }
-    ix += 1;
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
-    let dest = unescape(dest);
-    ix += dest_length;
-
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let title = if let Some((bytes_scanned, t)) = scan_link_title(underlying, ix) {
-        ix += bytes_scanned;
-        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-        t
-    } else {
-        "".into()
-    };
-    if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
-        return None;
-    }
-    ix += 1;
-
-    Some((ix, dest, title))
 }
 
 #[derive(Clone, Debug)]

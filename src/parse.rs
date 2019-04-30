@@ -1696,7 +1696,7 @@ fn scan_inline_html(bytes: &[u8], mut ix: usize) -> Option<usize> {
             if whitespace == 0 {
                 return None;
             }
-            ix += scan_attribute(&bytes[ix..])?;
+            ix += scan_inline_attribute(&bytes[ix..])?;
         }
 
         ix += scan_whitespace_no_nl(&bytes[ix..]);
@@ -2009,7 +2009,12 @@ impl<'a> Parser<'a> {
                         continue;
                     } else {
                         let inline_html = if let TreePointer::Valid(next_ix) = next {
-                            scan_inline_html(self.text.as_bytes(), self.tree[next_ix].item.start)
+                            self.tree.peek_up()
+                                .map(|parent_ix| self.tree[parent_ix].item.end)
+                                .and_then(|end_offset| {
+                                    let bytes = &self.text.as_bytes()[..end_offset];
+                                    scan_inline_html(bytes, self.tree[next_ix].item.start)
+                                })
                         } else {
                             None
                         };

@@ -742,37 +742,64 @@ pub fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Option<(u
     Some((i, &data[(start_ix + dest_beg)..(start_ix + dest_end)]))
 }
 
-pub fn scan_attribute_name(data: &[u8]) -> Option<usize> {
-    let size = data.len();
-    match data.get(0)? {
-        c if is_ascii_alpha(*c) => (),
-        b'_' | b':' => (),
-        _ => {
-            return None;
-        }
-    }
-    let mut i = 1;
-    while i < size {
-        match data[i] {
-            c if is_ascii_alphanumeric(c) => i += 1,
-            b'_' | b'.' | b':' | b'-' => i += 1,
-            _ => break
-        }
-    }
-    Some(i)
+/// Returns bytes scanned
+fn scan_attribute_name(data: &[u8]) -> Option<usize> {
+    let (&c, tail) = data.split_first()?;
+    if is_ascii_alpha(c) || c == b'_' || c == b':' {
+        Some(1 + scan_while(tail, |c| is_ascii_alphanumeric(c)
+            || c == b'_' || c == b'.' || c == b':' || c == b'-'))
+    } else {
+        None
+    }    
 }
 
-pub fn scan_attribute_value(data: &[u8]) -> Option<usize> {
+/// Returns byte scanned
+fn scan_inline_attribute_value(data: &[u8]) -> Option<usize> {
+    let c = *data.first()?;
+    let mut ix = 1;
+
+    if is_ascii_whitespace(c) || c == b'=' || c == b'<' || c == b'>' || c == b'`' {
+        None
+    } else if c == b'\'' || c == b'"' {
+        // FIXME: this is very likely a quadratic scaling bug
+        ix += scan_while(&data[ix..], |b| b != c);
+        if scan_ch(&data[ix..], c) == 1 {
+            Some(ix + 1)
+        } else {
+            None
+        }
+    } else {
+        ix += scan_attr_value_chars(&data[ix..]);
+        Some(ix)
+    }
+}
+
+/// Returns byte scanned (TODO: should it return new offset?)
+pub(crate) fn scan_inline_attribute(data: &[u8]) -> Option<usize> {
+    let mut ix = scan_attribute_name(data)?;
+    let n_whitespace = scan_while(&data[ix..], is_ascii_whitespace);
+    ix += n_whitespace;
+    if scan_ch(&data[ix..], b'=') == 1 {
+        ix += 1;
+        ix += scan_while(&data[ix..], is_ascii_whitespace);
+        ix += scan_inline_attribute_value(&data[ix..])?;
+    } else if n_whitespace > 0 {
+        // Leave whitespace for next attribute.
+        ix -= 1;
+    }
+    Some(ix)
+}
+
+fn scan_attribute_value(data: &[u8]) -> Option<usize> {
     let mut i = 0;
     match *data.get(0)? {
-        b'\'' => {
+        // FIXME: quadratic scaling bug?
+        b @ b'"' | b @ b'\'' => {
             i += 1;
-            i += scan_while(&data[i..], |c| c != b'\'' && c != b'\n' && c != b'\r');
-            i += 1;
-        },
-        b'"' => {
-            i += 1;
-            i += scan_while(&data[i..], |c| c != b'"' && c != b'\n' && c != b'\r');
+            i += scan_while(&data[i..], |c| c != b && c != b'\n' && c != b'\r');
+            if scan_ch(&data[i..], b) == 0 {
+                return None;
+            }
             i += 1;
         },
         b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => { return None; },
@@ -780,11 +807,7 @@ pub fn scan_attribute_value(data: &[u8]) -> Option<usize> {
             i += scan_attr_value_chars(&data[i..]);
         }
     }
-    if i < data.len() {
-        Some(i)
-    } else {
-        None
-    }
+    Some(i)
 }
 
 // Remove backslash escapes and resolve entities

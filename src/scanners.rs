@@ -1038,6 +1038,134 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
     Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into()))
 }
 
+/// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
+/// Returns byte offset on match.
+fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    let c = *bytes.get(ix)?;
+    ix += 1;
+    if c == b'-' {
+        let dashes = scan_ch_repeat(&bytes[ix..], b'-');
+        if dashes < 1 { return None; }
+        // Saw "<!--", scan comment.
+        ix += dashes;
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            return None;
+        }
+
+        while let Some(x) = memchr(b'-', &bytes[ix..]) {
+            ix += x + 1;
+            if scan_ch(&bytes[ix..], b'-') == 1 {
+                ix += 1;
+                return if scan_ch(&bytes[ix..], b'>') == 1 {
+                    Some(ix + 1)
+                } else {
+                    None
+                };
+            } 
+        }
+        None
+    } else if c == b'[' {
+        if !bytes[ix..].starts_with(b"CDATA[") { return None; }
+        ix += b"CDATA[".len();
+        // FIXME: this is a definite quadratic scaling bug!
+        ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
+        let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
+        ix += close_brackets;
+
+        if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
+            None
+        } else {
+            Some(ix + 1)
+        }
+    } else {
+        // Scan declaration.
+        // FIXME: this is probably a quadratic scaling bug
+        let def = scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
+        if def == 0 {
+            return None;
+        }
+        ix += def;
+        let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
+        if whitespace == 0 {
+            return None;
+        }
+        ix += whitespace;
+        ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
+        if scan_ch(&bytes[ix..], b'>') == 0 {
+            None
+        } else {
+            Some(ix + 1)
+        }
+    }
+}
+
+/// Scan processing directive, with initial "<?" already consumed.
+/// Returns the next byte offset on success.
+fn scan_inline_html_processing(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    // FIXME: this is very likely to be a quadratic scaling bug
+    while let Some(offset) = memchr(b'?', &bytes[ix..]) {
+        ix += offset + 1;
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            return Some(ix + 1);
+        }
+    }
+    None
+}
+
+/// Returns the next byte offset on success.
+pub(crate) fn scan_inline_html(bytes: &[u8], mut ix: usize) -> Option<usize> {
+    let c = *bytes.get(ix)?;
+    ix += 1;
+
+    // TODO: write as match?
+    if c == b'!' {
+        scan_inline_html_comment(bytes, ix)
+    } else if c == b'?' {
+        scan_inline_html_processing(bytes, ix)
+    } else if c == b'/' {
+        let next_byte = *bytes.get(ix)?;
+        if !is_ascii_alpha(next_byte) {
+            return None;
+        }
+        ix += 1;
+        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+        ix += scan_while(&bytes[ix..], is_ascii_whitespace);
+        if scan_ch(&bytes[ix..], b'>') == 1 {
+            Some(ix + 1)
+        } else {
+            None
+        }
+    } else if is_ascii_alpha(c) {
+        // open tag (first character of tag consumed)
+        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+        // TODO: check if we can share code with scanners::scan_html_type_7
+
+        loop {
+            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
+            ix += whitespace;
+            if let Some(b'/') | Some(b'>') = bytes.get(ix) {
+                break;
+            }
+            if whitespace == 0 {
+                return None;
+            }
+            ix += scan_inline_attribute(&bytes[ix..])?;
+        }
+
+        ix += scan_whitespace_no_nl(&bytes[ix..]);
+        ix += scan_ch(&bytes[ix..], b'/');
+
+        let c = scan_ch(&bytes[ix..], b'>');
+        if c == 0 {
+            None
+        } else {
+            Some(ix + c)
+        }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

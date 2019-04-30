@@ -751,43 +751,48 @@ pub(crate) fn scan_refdef_title(text: &str) -> Option<(usize, &str)> {
 pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Option<(usize, &str)> {
     let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
-    let pointy = i != 0;
-    let dest_beg = i;
-    let mut nest = 0;
 
-    while i < bytes.len() {
-        match bytes[i] {
-            b'\n' | b'\r' => break,
-            b' ' if !pointy && nest == 0 => {
-                break;
+    if i != 0 {
+        // pointy links
+        while i < bytes.len() {
+            match bytes[i] {
+                b'\n' | b'\r' | b'<' => return None,
+                b'>' => return Some((i + 1, &data[(start_ix + 1)..(start_ix + i)])),
+                b'\\' => i += 1,
+                _ => {}
             }
-            b'(' if !pointy => {
-                if nest > max_next { return None; }
-                nest += 1;
-            }
-            b')' if !pointy => {
-                if nest == 0 { break; }
-                nest -= 1;
-            }
-            b'>' if pointy => {
-                break;
-            }
-            b'\\' => i += 1,
-            _ => ()
+            i += 1;
         }
-        i += 1;
+        None
+    } else {
+        // non-pointy links
+        let mut nest = 0;
+        while i < bytes.len() {
+            match bytes[i] {
+                0x0 ... 0x20 => break,
+                b'(' => {
+                    if nest > max_next {
+                        return None;
+                    }
+                    nest += 1;
+                }
+                b')' => {
+                    if nest == 0 {
+                        break;
+                    }
+                    nest -= 1;
+                }
+                b'\\' => i += 1,
+                _ => {}
+            }
+            i += 1;
+        }
+        if i <= bytes.len() {
+            Some((i, &data[start_ix..(start_ix + i)]))
+        } else {
+            None
+        }
     }
-    let dest_end = i;
-    if dest_end > bytes.len() {
-        return None;
-    }
-    if pointy {
-        let n = scan_ch(&bytes[i..], b'>');
-        if n == 0 { return None; }
-        i += n;
-    }
-
-    Some((i, &data[(start_ix + dest_beg)..(start_ix + dest_end)]))
 }
 
 

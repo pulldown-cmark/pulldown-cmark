@@ -24,7 +24,7 @@ use std::char;
 use std::convert::TryInto;
 
 use crate::entities;
-use crate::parse::{Alignment, LinkType};
+use crate::parse::{Alignment, LinkType, HtmlScanGuard};
 use crate::strings::CowStr;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 
@@ -1124,7 +1124,7 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
 /// Returns byte offset on match.
-fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
+fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard) -> Option<usize> {
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
@@ -1150,23 +1150,21 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
             }
             None
         } 
-        b'[' => {
-            if !bytes[ix..].starts_with(b"CDATA[") { return None; }
+        b'[' if bytes[ix..].starts_with(b"CDATA[") && scan_guard.cdata  => {
             ix += b"CDATA[".len();
-            // FIXME: this is a definite quadratic scaling bug!
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
             ix += close_brackets;
 
             if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
+                scan_guard.cdata = false;
                 None
             } else {
                 Some(ix + 1)
             }
         }
-        b'A' ... b'Z' => {
+        b'A' ... b'Z' if scan_guard.declaration => {
             // Scan declaration.
-            // FIXME: this is probably a quadratic scaling bug
             ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
             let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
             if whitespace == 0 {
@@ -1175,6 +1173,7 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
             ix += whitespace;
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             if scan_ch(&bytes[ix..], b'>') == 0 {
+                scan_guard.declaration = false;
                 None
             } else {
                 Some(ix + 1)
@@ -1186,68 +1185,72 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize) -> Option<usize> {
 
 /// Scan processing directive, with initial "<?" already consumed.
 /// Returns the next byte offset on success.
-fn scan_inline_html_processing(bytes: &[u8], mut ix: usize) -> Option<usize> {
-    // FIXME: this is very likely to be a quadratic scaling bug
+fn scan_inline_html_processing(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard) -> Option<usize> {
+    if !scan_guard.processing {
+        return None;
+    }
     while let Some(offset) = memchr(b'?', &bytes[ix..]) {
         ix += offset + 1;
         if scan_ch(&bytes[ix..], b'>') == 1 {
             return Some(ix + 1);
         }
     }
+    scan_guard.processing = false;
     None
 }
 
 /// Returns the next byte offset on success.
-pub(crate) fn scan_inline_html(bytes: &[u8], mut ix: usize) -> Option<usize> {
+pub(crate) fn scan_inline_html(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard)
+    -> Option<usize>
+{
     let c = *bytes.get(ix)?;
     ix += 1;
 
-    // TODO: write as match?
-    if c == b'!' {
-        scan_inline_html_comment(bytes, ix)
-    } else if c == b'?' {
-        scan_inline_html_processing(bytes, ix)
-    } else if c == b'/' {
-        let next_byte = *bytes.get(ix)?;
-        if !is_ascii_alpha(next_byte) {
-            return None;
-        }
-        ix += 1;
-        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
-        ix += scan_while(&bytes[ix..], is_ascii_whitespace);
-        if scan_ch(&bytes[ix..], b'>') == 1 {
-            Some(ix + 1)
-        } else {
-            None
-        }
-    } else if is_ascii_alpha(c) {
-        // open tag (first character of tag consumed)
-        ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
-        // TODO: check if we can share code with scanners::scan_html_type_7
-
-        loop {
-            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-            ix += whitespace;
-            if let Some(b'/') | Some(b'>') = bytes.get(ix) {
-                break;
-            }
-            if whitespace == 0 {
+    match c {
+        b'!' => scan_inline_html_comment(bytes, ix, scan_guard),
+        b'?' => scan_inline_html_processing(bytes, ix, scan_guard),
+        b'/' => {
+            let next_byte = *bytes.get(ix)?;
+            if !is_ascii_alpha(next_byte) {
                 return None;
             }
-            ix += scan_inline_attribute(&bytes[ix..])?;
+            ix += 1;
+            ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+            ix += scan_while(&bytes[ix..], is_ascii_whitespace);
+            if scan_ch(&bytes[ix..], b'>') == 1 {
+                Some(ix + 1)
+            } else {
+                None
+            }
         }
+        c if is_ascii_alpha(c) => {
+            // open tag (first character of tag consumed)
+            ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
+            // TODO: check if we can share code with scanners::scan_html_type_7
 
-        ix += scan_whitespace_no_nl(&bytes[ix..]);
-        ix += scan_ch(&bytes[ix..], b'/');
+            loop {
+                let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
+                ix += whitespace;
+                if let Some(b'/') | Some(b'>') = bytes.get(ix) {
+                    break;
+                }
+                if whitespace == 0 {
+                    return None;
+                }
+                ix += scan_inline_attribute(&bytes[ix..])?;
+            }
 
-        let c = scan_ch(&bytes[ix..], b'>');
-        if c == 0 {
-            None
-        } else {
-            Some(ix + c)
+            ix += scan_whitespace_no_nl(&bytes[ix..]);
+            ix += scan_ch(&bytes[ix..], b'/');
+
+            let c = scan_ch(&bytes[ix..], b'>');
+            if c == 0 {
+                None
+            } else {
+                Some(ix + c)
+            }
         }
-    } else {
-        None
+        _ => None,
     }
 }
 

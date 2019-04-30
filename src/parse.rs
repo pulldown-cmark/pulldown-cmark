@@ -1704,6 +1704,28 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
     }
 }
 
+/// A struct containing information on the reachability of certain inline HTML
+/// elements. In particular, for cdata elements (`<![CDATA[`), processing
+/// elements (`<?`) and declarations (`<!DECLARATION`). When their respective
+/// bool is set to false, we know we a scan for them will always fail and we can
+/// skip it.
+#[derive(Clone)]
+pub(crate) struct HtmlScanGuard {
+    pub cdata: bool,
+    pub processing: bool,
+    pub declaration: bool,
+}
+
+impl Default for HtmlScanGuard {
+    fn default() -> Self {
+        Self {
+            cdata: true,
+            processing: true,
+            declaration: true,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -1711,6 +1733,7 @@ pub struct Parser<'a> {
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
+    html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
@@ -1741,7 +1764,11 @@ impl<'a> Parser<'a> {
         tree.reset();
         let inline_stack = InlineStack::new();
         let link_stack = Vec::new();
-        Parser { text, tree, allocs, broken_link_callback, offset: 0, inline_stack, link_stack }
+        let html_scan_guard = Default::default();
+        Parser {
+            text, tree, allocs, broken_link_callback,
+            offset: 0, inline_stack, link_stack, html_scan_guard
+        }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -1802,7 +1829,7 @@ impl<'a> Parser<'a> {
                                 .map(|parent_ix| self.tree[parent_ix].item.end)
                                 .and_then(|end_offset| {
                                     let bytes = &self.text.as_bytes()[..end_offset];
-                                    scan_inline_html(bytes, self.tree[next_ix].item.start)
+                                    scan_inline_html(bytes, self.tree[next_ix].item.start, &mut self.html_scan_guard)
                                 })
                         } else {
                             None

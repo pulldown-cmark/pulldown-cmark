@@ -64,11 +64,8 @@ fn main() {
         .filter(|lit| !lit.contains(&b'\n'))
         .filter(|lit| !lit.is_empty())
         .collect();
-    let literals = Box::leak(literals.into_boxed_slice());
-    literals.shuffle(&mut rand::thread_rng());
 
     let pool = ThreadPool::new(num_cpus);
-    let mut combs_iter = literals.iter().combinations(COMBINATIONS);
     let mut count = -(num_cpus as isize) * BATCH_SIZE as isize;
     let start_time = Instant::now();
     let (tx, rx) = mpsc::channel();
@@ -77,14 +74,15 @@ fn main() {
     }
     loop {
         rx.recv().unwrap();
-        let combs: Vec<_> = (&mut combs_iter).take(BATCH_SIZE).collect();
-        if combs.is_empty() {
-            break;
-        }
+        let mut literals = literals.clone();
         let tx = tx.clone();
-        count += combs.len() as isize;
+        count += BATCH_SIZE as isize;
         pool.execute(move || {
-            combs.into_iter().for_each(|comb| {
+            literals.shuffle(&mut rand::thread_rng());
+            let combs = literals.iter()
+                .combinations(COMBINATIONS)
+                .take(BATCH_SIZE);
+            for comb in combs {
                 let res = panic::catch_unwind(|| {
                     let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
                     let s = String::from_utf8(concatenated).unwrap();
@@ -93,14 +91,13 @@ fn main() {
                 if res.is_err() {
                     ::std::process::exit(1);
                 }
-            });
+            }
             tx.send(()).unwrap();
         });
         if count > 0 {
             println!("{:<20} throughput: {}", count, count as u64 / start_time.elapsed().as_secs());
         }
     }
-    pool.join();
 }
 
 fn test(pattern: &str) {

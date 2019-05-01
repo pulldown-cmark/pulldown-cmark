@@ -1,0 +1,3 @@
+#!/bin/sh
+cargo rustc --release -- -C target-cpu=native
+nice -20 env RUST_BACKTRACE=1 ./target/release/find_exponential | tee output

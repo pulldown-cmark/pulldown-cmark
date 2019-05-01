@@ -2,7 +2,6 @@ use std::fs;
 use std::path::Path;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
-use std::slice;
 
 use walkdir::WalkDir;
 use syn::{Item, Expr, ImplItem, Stmt, ExprArray, ExprCall, ExprMethodCall, Visibility, Ident, Type,
@@ -12,19 +11,16 @@ use proc_macro2::TokenStream;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
 use ndarray::{Array2, Array1};
-use ndarray_stats::{CorrelationExt, SummaryStatisticsExt};
+use ndarray_stats::SummaryStatisticsExt;
 use rand::seq::SliceRandom;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
+const BATCH_SIZE: usize = 1_000_000;
 const COMBINATIONS: usize = 4;
-const MIN_MILLIS: u128 = 100;
-// abort test if it's not possible to produce an imput taking MIN_MILLIS time
-// until a string of ABORT_AT bytes is generated
-const ABORT_AT: usize = 128*1024*1024;
-const START_AT: usize = 128*1024;
-const SAMPLE_SIZE: usize = 10;
-// Pearson's Correlation Coefficient below which non-linear behaviour is assumed
-const ACCEPTANCE: f64 = 0.995;
+const MAX_MILLIS: u128 = 500;
+const MIN_MILLIS: u128 = 1;
+const NUM_BYTES: usize = 256*1024;
+const SAMPLE_SIZE: usize = 5;
 const ACCEPTANCE_STDDEV: f64 = 0.5;
 
 
@@ -54,52 +50,48 @@ fn main() {
         .collect();
     literals.shuffle(&mut rand::thread_rng());
 
-    for i in 1..=COMBINATIONS {
-        let combs: Vec<_> = literals.iter().combinations(i).collect();
+    let mut combs_iter = literals.iter().combinations(COMBINATIONS);
+    let mut count = 0;
+    loop {
+        let combs: Vec<_> = (&mut combs_iter).take(BATCH_SIZE).collect();
+        if combs.is_empty() {
+            break;
+        }
         combs.into_par_iter().for_each(|comb| {
             let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
             let s = String::from_utf8(concatenated).unwrap();
             test(&s);
-        })
+        });
+        count += BATCH_SIZE;
+        println!("{}", count);
     }
 }
 
 fn test(pattern: &str) {
-    // TODO: make this safe but keep it fast
-    // find n
-    let mut s = String::with_capacity(ABORT_AT);
-    s.push_str(&pattern.repeat(START_AT / 2 / pattern.len()));
-    let mut dur = Duration::new(0, 0);
-    while dur.as_millis() < MIN_MILLIS {
-        // abort if ABORT_AT is reached
-        if s.len() * 2 >= ABORT_AT {
-            return;
-        }
-        unsafe {
-            let mut vec = s.into_bytes();
-            let right = slice::from_raw_parts_mut(vec.as_mut_ptr().offset(vec.len() as isize), vec.len());
-            let left = &mut vec;
-            right.copy_from_slice(left);
-            vec.set_len(vec.len() * 2);
-            s = String::from_utf8_unchecked(vec);
-        }
-        dur = test_single(&s);
-    }
-
+    let s = pattern.repeat(NUM_BYTES / pattern.len());
     let mut array = Array2::zeros((2, SAMPLE_SIZE));
-    for (i, (dur, n)) in (1..=SAMPLE_SIZE).map(|i| {
+
+    let mut iter = (1..=SAMPLE_SIZE).map(|i| {
         let mut n = s.len()/SAMPLE_SIZE*i;
         // find closest byte boundary
         while !s.is_char_boundary(n) {
             n += 1;
         }
         (test_single(&s[..n]), n)
-    }).enumerate() {
+    }).enumerate()
+        .peekable();
+
+    if (iter.peek().unwrap().1).0.as_millis() < MIN_MILLIS {
+        return;
+    }
+
+    for (i, (dur, n)) in iter {
         array[[0, i]] = n as f64;
         array[[1, i]] = dur.as_micros() as f64;
+        if dur.as_millis() > MAX_MILLIS {
+            break;
+        }
     }
-//    let corr = array.pearson_correlation()[[1, 0]];
-//    println!("{}", corr);
     let slopes: Vec<_> = (0..SAMPLE_SIZE).tuple_combinations()
         .map(|(a, b)| {
             let x1 = array[[0, a]];
@@ -112,10 +104,15 @@ fn test(pattern: &str) {
             slope
         }).filter(|&slope| slope > 0.0)
         .collect();
+
+    if slopes.is_empty() {
+        return;
+    }
+
     let slopes = Array1::from(slopes);
     let stddev = slopes.central_moment(2).unwrap().sqrt();
-    println!("{}\t\t{}", stddev, pattern);
-//    if corr.abs() < ACCEPTANCE {
+
+//    println!("{:<30}{}", stddev, pattern);
     if stddev > ACCEPTANCE_STDDEV {
         println!("
 possible non-linear behaviour found

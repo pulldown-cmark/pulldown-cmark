@@ -21,7 +21,7 @@ const COMBINATIONS: usize = 4;
 const MAX_MILLIS: u128 = 500;
 const NUM_BYTES: usize = 256*1024;
 const SAMPLE_SIZE: usize = 5;
-const ACCEPTANCE_STDDEV: f64 = 0.5;
+const ACCEPTANCE_STDDEV: f64 = 0.1;
 
 
 fn main() {

@@ -1,0 +1,19 @@
+[package]
+name = "find_exponential"
+version = "0.1.0"
+authors = ["oberien <jaro.fietz@gmx.de>"]
+edition = "2018"
+
+[dependencies]
+syn = { version = "0.15.33", features = ["full"] }
+itertools = "0.8.0"
+walkdir = "2.2.7"
+pulldown-cmark = { path = ".." }
+proc-macro2 = "0.4.29"
+ndarray = "0.12.1"
+ndarray-stats = "0.2.0"
+rand = "0.6.5"
+rayon = "1.0.3"
+
+[profile.release]
+debug = true

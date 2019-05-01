@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
+use std::panic;
 
 use walkdir::WalkDir;
 use syn::{Item, Expr, ImplItem, Stmt, ExprArray, ExprCall, ExprMethodCall, Visibility, Ident, Type,
@@ -57,12 +58,17 @@ fn main() {
         if combs.is_empty() {
             break;
         }
+        count += combs.len();
         combs.into_par_iter().for_each(|comb| {
-            let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-            let s = String::from_utf8(concatenated).unwrap();
-            test(&s);
+            let res = panic::catch_unwind(|| {
+                let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
+                let s = String::from_utf8(concatenated).unwrap();
+                test(&s);
+            });
+            if let Err(e) = res {
+                eprintln!("Panic during execution in thread:\n {:?}", e);
+            }
         });
-        count += BATCH_SIZE;
         println!("{}", count);
     }
 }
@@ -89,6 +95,9 @@ fn test(pattern: &str) {
         array[[0, i]] = n as f64;
         array[[1, i]] = dur.as_micros() as f64;
         if dur.as_millis() > MAX_MILLIS {
+            if i == 0 || i == 1 {
+                print_find(pattern, &array, 0.0);
+            }
             break;
         }
     }
@@ -112,16 +121,21 @@ fn test(pattern: &str) {
     let slopes = Array1::from(slopes);
     let stddev = slopes.central_moment(2).unwrap().sqrt();
 
-//    println!("{:<30}{}", stddev, pattern);
+    //println!("{:<30}{}", stddev, pattern);
+    //println!("{}", array);
     if stddev > ACCEPTANCE_STDDEV {
-        println!("
+        print_find(pattern, &array, stddev);
+    }
+}
+
+fn print_find(pattern: &str, array: &Array2<f64>, stddev: f64) {
+    println!("
 possible non-linear behaviour found
 pattern: {:?}
 {}
 standard deviation: {}
 \
-        ", pattern, array.t(), stddev);
-    }
+    ", pattern, array.t(), stddev);
 }
 
 fn test_single(s: &str) -> Duration {

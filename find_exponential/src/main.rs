@@ -19,13 +19,16 @@ use rayon::iter::{ParallelIterator, IntoParallelIterator};
 const BATCH_SIZE: usize = 1_000_000;
 const COMBINATIONS: usize = 4;
 const MAX_MILLIS: u128 = 500;
-const MIN_MILLIS: u128 = 1;
 const NUM_BYTES: usize = 256*1024;
 const SAMPLE_SIZE: usize = 5;
 const ACCEPTANCE_STDDEV: f64 = 0.5;
 
 
 fn main() {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_cpus::get() * 3 / 4)
+        .build_global()
+        .unwrap();
     let walkdir = WalkDir::new("../src")
         .into_iter()
         .filter_map(|e| e.ok())
@@ -77,19 +80,14 @@ fn test(pattern: &str) {
     let s = pattern.repeat(NUM_BYTES / pattern.len());
     let mut array = Array2::zeros((2, SAMPLE_SIZE));
 
-    let mut iter = (1..=SAMPLE_SIZE).map(|i| {
+    let iter = (1..=SAMPLE_SIZE).map(|i| {
         let mut n = s.len()/SAMPLE_SIZE*i;
         // find closest byte boundary
         while !s.is_char_boundary(n) {
             n += 1;
         }
         (test_single(&s[..n]), n)
-    }).enumerate()
-        .peekable();
-
-    if (iter.peek().unwrap().1).0.as_millis() < MIN_MILLIS {
-        return;
-    }
+    }).enumerate();
 
     for (i, (dur, n)) in iter {
         array[[0, i]] = n as f64;

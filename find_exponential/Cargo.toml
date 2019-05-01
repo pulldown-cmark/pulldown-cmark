@@ -13,8 +13,8 @@ proc-macro2 = "0.4.29"
 ndarray = "0.12.1"
 ndarray-stats = "0.2.0"
 rand = "0.6.5"
-rayon = "1.0.3"
 num_cpus = "1.10.0"
+threadpool = "1.7.0"
 
 [profile.release]
 debug = true

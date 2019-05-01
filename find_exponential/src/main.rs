@@ -3,13 +3,14 @@ use std::path::Path;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use std::panic;
+use std::sync::mpsc;
 
 use walkdir::WalkDir;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
 use ndarray::Array2;
 use rand::seq::SliceRandom;
-use rayon::iter::{ParallelIterator, IntoParallelIterator};
+use threadpool::ThreadPool;
 
 mod literals;
 mod black_box;
@@ -37,10 +38,7 @@ const ACCEPTANCE_CORRELATION: f64 = 0.995;
 const DEBUG_LEVEL: u8 = 0;
 
 fn main() {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get() * 3 / 4)
-        .build_global()
-        .unwrap();
+    let num_cpus = num_cpus::get() * 3 / 4;
 
     // get all literals from pulldown-cmark's source code
     let walkdir = WalkDir::new("../src")
@@ -62,33 +60,47 @@ fn main() {
         literals::extract_literals_from_items(&mut literals, parsed.items);
     }
 
-    let mut literals: Vec<_> = literals.into_iter()
+    let literals: Vec<_> = literals.into_iter()
         .filter(|lit| !lit.contains(&b'\n'))
         .filter(|lit| !lit.is_empty())
         .collect();
-//    literals.shuffle(&mut rand::thread_rng());
+    let literals = Box::leak(literals.into_boxed_slice());
+    literals.shuffle(&mut rand::thread_rng());
 
+    let pool = ThreadPool::new(num_cpus);
     let mut combs_iter = literals.iter().combinations(COMBINATIONS);
-    let mut count = 0;
+    let mut count = -(num_cpus as isize) * BATCH_SIZE as isize;
     let start_time = Instant::now();
+    let (tx, rx) = mpsc::channel();
+    for _ in 0..num_cpus {
+        tx.send(()).unwrap();
+    }
     loop {
+        rx.recv().unwrap();
         let combs: Vec<_> = (&mut combs_iter).take(BATCH_SIZE).collect();
         if combs.is_empty() {
             break;
         }
-        count += combs.len();
-        combs.into_par_iter().for_each(|comb| {
-            let res = panic::catch_unwind(|| {
-                let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-                let s = String::from_utf8(concatenated).unwrap();
-                test(&s);
+        let tx = tx.clone();
+        count += combs.len() as isize;
+        pool.execute(move || {
+            combs.into_iter().for_each(|comb| {
+                let res = panic::catch_unwind(|| {
+                    let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
+                    let s = String::from_utf8(concatenated).unwrap();
+                    test(&s);
+                });
+                if res.is_err() {
+                    ::std::process::exit(1);
+                }
             });
-            if res.is_err() {
-                ::std::process::exit(1);
-            }
+            tx.send(()).unwrap();
         });
-        println!("{:<20} throughput: {}", count, count as u64 / start_time.elapsed().as_secs());
+        if count > 0 {
+            println!("{:<20} throughput: {}", count, count as u64 / start_time.elapsed().as_secs());
+        }
     }
+    pool.join();
 }
 
 fn test(pattern: &str) {

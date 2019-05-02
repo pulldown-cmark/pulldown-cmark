@@ -26,7 +26,7 @@ pub fn slope_stddev(array: &Array2<f64>) -> (f64, bool) {
     );
 
     let slopes = Array1::from(slopes);
-    if super::DEBUG_LEVEL >= 3 {
+    if super::DEBUG_LEVEL >= 2 {
         println!("slopes: {}", slopes);
     }
 

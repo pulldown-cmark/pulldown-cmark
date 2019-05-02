@@ -4,6 +4,8 @@ use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use std::panic;
 use std::sync::mpsc;
+use std::env;
+use std::io::{self, BufRead};
 
 use walkdir::WalkDir;
 use itertools::Itertools;
@@ -35,11 +37,25 @@ const ACCEPTANCE_STDDEV: f64 = 20.0;
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
 /// 0 / 1 / 2 / 3
-const DEBUG_LEVEL: u8 = 0;
+const DEBUG_LEVEL: u8 = 2;
 
 fn main() {
     let num_cpus = num_cpus::get() * 3 / 4;
 
+    let arg = env::args().nth(1);
+    if let Some("--retest") = arg.as_ref().map(|s| s.as_str()) {
+        for pattern in io::stdin().lock().lines() {
+            let pattern = pattern.unwrap();
+            println!("retesting {:?}", pattern);
+            test(&pattern);
+        }
+        return;
+    } else {
+        fuzz(num_cpus);
+    }
+}
+
+fn fuzz(num_cpus: usize) {
     // get all literals from pulldown-cmark's source code
     let walkdir = WalkDir::new("../src")
         .into_iter()
@@ -119,10 +135,16 @@ fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> (Ar
         let (dur, n) = calculate_point(&s, i+1, sample_size);
         array[[0, i]] = n as f64;
         array[[1, i]] = dur.as_nanos() as f64;
+        if DEBUG_LEVEL >= 3 {
+            println!("duration: {}", dur.as_nanos());
+        }
 
         if remove_outliers && i > 0 && array[[1, i-1]] > array[[1, i]] {
             // We have an outlier, possibly due to rescheduling.
             // Redo from the last sample
+            if DEBUG_LEVEL >= 3 {
+                println!("removed outlier");
+            }
             i -= 1;
             continue;
         }

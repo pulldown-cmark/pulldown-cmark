@@ -18,4 +18,3 @@ threadpool = "1.7.0"
 
 [profile.release]
 debug = true
-lto = true

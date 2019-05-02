@@ -1,0 +1,4 @@
+#!/bin/sh
+set -euo pipefail
+cargo rustc --release -- -C target-cpu=native
+grep 'pattern: "' < output | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/find_exponential --retest

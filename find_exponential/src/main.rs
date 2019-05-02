@@ -47,7 +47,8 @@ fn main() {
         for pattern in io::stdin().lock().lines() {
             let pattern = pattern.unwrap();
             println!("retesting {:?}", pattern);
-            test(&pattern);
+            let score = test(&pattern);
+            println!("score: {}", score);
         }
         return;
     } else {
@@ -116,55 +117,64 @@ fn fuzz(num_cpus: usize) {
     }
 }
 
-fn test(pattern: &str) {
+fn test(pattern: &str) -> f64 {
     loop {
         let res1 = test_pattern(pattern, SAMPLE_SIZE, false);
-        if let PatternResult::Linear(..) = res1 {
-            break;
+        if let PatternResult::Linear(_array, score) = res1 {
+            return score;
         }
         let res2 = test_pattern(pattern, SAMPLE_SIZE*2, true);
-        if let PatternResult::Linear(..) = res2 {
-            break;
+        if let PatternResult::Linear(_array, score) = res2 {
+            return score;
         }
 
         // possible non-linear behaviour found
 
-        match res2 {
+        let score = match res2 {
             PatternResult::Linear(..) => unreachable!(),
-            PatternResult::NonLinear(array, score) => println!(
-                "\n\
-                possible non-linear behaviour found\n\
-                pattern: {:?}\n\
-                score: {}\n\
-                {}\n",
-                pattern,
-                array.t(),
-                score,
-            ),
-            PatternResult::TooLong(array) => println!(
-                "\n\
-                possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
-                pattern: {:?}\n\
-                score: 0\n\
-                {}\n",
-                pattern,
-                array.t(),
-            ),
-            PatternResult::HugeOutlier(array, trim_len) => println!(
-                "\n\
-                huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
-                pattern: {:?}\n\
-                score: 0\n\
-                trim length: {}\n\
-                trimmed rest: {:?}\n\
-                {}\n",
-                pattern,
-                trim_len,
-                &pattern[..pattern.len() - trim_len],
-                array.t(),
-            ),
-        }
-        break;
+            PatternResult::NonLinear(array, score) => {
+                println!(
+                    "\n\
+                    possible non-linear behaviour found\n\
+                    pattern: {:?}\n\
+                    score: {}\n\
+                    {}\n",
+                    pattern,
+                    score,
+                    array.t(),
+                );
+                score
+            },
+            PatternResult::TooLong(array) => {
+                println!(
+                    "\n\
+                    possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
+                    pattern: {:?}\n\
+                    score: 0\n\
+                    {}\n",
+                    pattern,
+                    array.t(),
+                );
+                0.0
+            },
+            PatternResult::HugeOutlier(array, trim_len) => {
+                println!(
+                    "\n\
+                    huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
+                    pattern: {:?}\n\
+                    score: 0\n\
+                    trim length: {}\n\
+                    trimmed rest: {:?}\n\
+                    {}\n",
+                    pattern,
+                    trim_len,
+                    &pattern[..pattern.len() - trim_len],
+                    array.t(),
+                );
+                0.0
+            },
+        };
+        return score;
     }
 }
 

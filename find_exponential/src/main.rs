@@ -119,10 +119,12 @@ fn fuzz(num_cpus: usize) {
 
 fn test(pattern: &str) -> f64 {
     loop {
+        unsafe { assert_eq!(libc::sched_yield(), 0, "sched_yield not supported"); }
         let res1 = test_pattern(pattern, SAMPLE_SIZE, false);
         if let PatternResult::Linear(_array, score) = res1 {
             return score;
         }
+        unsafe { assert_eq!(libc::sched_yield(), 0, "sched_yield not supported"); }
         let res2 = test_pattern(pattern, SAMPLE_SIZE*2, true);
         if let PatternResult::Linear(_array, score) = res2 {
             return score;
@@ -194,7 +196,7 @@ enum PatternResult {
     HugeOutlier(Array2<f64>, usize),
 }
 
-fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> PatternResult {
+fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -> PatternResult {
     let s = pattern.repeat(NUM_BYTES / pattern.len());
     let mut array = Array2::zeros((2, sample_size));
 
@@ -217,7 +219,7 @@ fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> Pat
             }
         }
 
-        if remove_outliers && i > 0 && array[[1, i-1]] > array[[1, i]] {
+        if recalculate_outliers && i > 0 && array[[1, i-1]] > array[[1, i]] {
             // We have an outlier, possibly due to rescheduling.
             // Redo from the last sample
             if DEBUG_LEVEL >= 3 {

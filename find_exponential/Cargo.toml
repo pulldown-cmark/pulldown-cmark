@@ -15,7 +15,6 @@ ndarray-stats = "0.2.0"
 rand = "0.6.5"
 num_cpus = "1.10.0"
 threadpool = "1.7.0"
-libc = "0.2.54"
 
 [profile.release]
 debug = true

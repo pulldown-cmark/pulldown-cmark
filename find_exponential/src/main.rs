@@ -119,12 +119,10 @@ fn fuzz(num_cpus: usize) {
 
 fn test(pattern: &str) -> f64 {
     loop {
-        unsafe { assert_eq!(libc::sched_yield(), 0, "sched_yield not supported"); }
         let res1 = test_pattern(pattern, SAMPLE_SIZE, false);
         if let PatternResult::Linear(_array, score) = res1 {
             return score;
         }
-        unsafe { assert_eq!(libc::sched_yield(), 0, "sched_yield not supported"); }
         let res2 = test_pattern(pattern, SAMPLE_SIZE*2, true);
         if let PatternResult::Linear(_array, score) = res2 {
             return score;

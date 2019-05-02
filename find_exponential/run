@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -euo pipefail
 cargo rustc --release -- -C target-cpu=native -C lto=fat
 nice -20 env RUST_BACKTRACE=1 ./target/release/find_exponential | tee -a output

@@ -110,7 +110,7 @@ fn fuzz(num_cpus: usize) {
             }
             tx.send(()).unwrap();
         });
-        if count > 0 {
+        if count > 0 && start_time.elapsed().as_secs() > 0 {
             println!("{:<20} throughput: {}", count, count as u64 / start_time.elapsed().as_secs());
         }
     }

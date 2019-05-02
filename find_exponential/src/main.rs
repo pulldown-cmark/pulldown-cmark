@@ -37,7 +37,7 @@ const ACCEPTANCE_STDDEV: f64 = 20.0;
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
 /// 0 / 1 / 2 / 3
-const DEBUG_LEVEL: u8 = 2;
+const DEBUG_LEVEL: u8 = 0;
 
 fn main() {
     let num_cpus = num_cpus::get() * 3 / 4;
@@ -117,26 +117,94 @@ fn fuzz(num_cpus: usize) {
 }
 
 fn test(pattern: &str) {
-    let (_, _, non_linear) = test_pattern(pattern, SAMPLE_SIZE, false);
-    if non_linear {
-        let (array, score, non_linear) = test_pattern(pattern, SAMPLE_SIZE*2, true);
-        if non_linear {
-            print_find(pattern, &array, score);
+    loop {
+        let res1 = test_pattern(pattern, SAMPLE_SIZE, false);
+        if let PatternResult::Linear(..) = res1 {
+            break;
         }
+        let res2 = test_pattern(pattern, SAMPLE_SIZE*2, true);
+        if let PatternResult::Linear(..) = res2 {
+            break;
+        }
+
+        // possible non-linear behaviour found
+
+        match res2 {
+            PatternResult::Linear(..) => unreachable!(),
+            PatternResult::NonLinear(array, score) => println!(
+                "\n\
+                possible non-linear behaviour found\n\
+                pattern: {:?}\n\
+                score: {}\n\
+                {}\n",
+                pattern,
+                array.t(),
+                score,
+            ),
+            PatternResult::TooLong(array) => println!(
+                "\n\
+                possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
+                pattern: {:?}\n\
+                score: 0\n\
+                {}\n",
+                pattern,
+                array.t(),
+            ),
+            PatternResult::HugeOutlier(array, trim_len) => println!(
+                "\n\
+                huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
+                pattern: {:?}\n\
+                score: 0\n\
+                trim length: {}\n\
+                trimmed rest: {:?}\n\
+                {}\n",
+                pattern,
+                trim_len,
+                &pattern[..pattern.len() - trim_len],
+                array.t(),
+            ),
+        }
+        break;
     }
 }
 
-fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> (Array2<f64>, f64, bool) {
+#[derive(Debug)]
+enum PatternResult {
+    /// Probably linear growth (points, score)
+    Linear(Array2<f64>, f64),
+    /// Probably non-linear growth (points, score)
+    NonLinear(Array2<f64>, f64),
+    /// Execution took too long, assumed non-linear
+    TooLong(Array2<f64>),
+    /// Very slow outlier, probably due to different parsing in pulldown-cmark.
+    /// (points, number of bytes truncated from end reaching this behaviour)
+    ///
+    /// Possibly indicates weird behaviour in pulldown-cmark.
+    /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
+    HugeOutlier(Array2<f64>, usize),
+}
+
+fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> PatternResult {
     let s = pattern.repeat(NUM_BYTES / pattern.len());
     let mut array = Array2::zeros((2, sample_size));
 
     let mut i = 0;
+    let mut huge_outliers = 0;
     while i < sample_size {
         let (dur, n) = calculate_point(&s, i+1, sample_size);
         array[[0, i]] = n as f64;
         array[[1, i]] = dur.as_nanos() as f64;
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
+        }
+
+        if i > 0 && array[[1, i-1]] > array[[1, i]] * 50.0 {
+            huge_outliers += 1;
+            if huge_outliers > 10 {
+                let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
+                let trim_len = pattern.len() - (s.len() - last_repetition_start);
+                return PatternResult::HugeOutlier(array, trim_len);
+            }
         }
 
         if remove_outliers && i > 0 && array[[1, i-1]] > array[[1, i]] {
@@ -150,7 +218,7 @@ fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> (Ar
         }
 
         if dur.as_millis() > MAX_MILLIS {
-            return (array, 0.0, true);
+            return PatternResult::TooLong(array);
         }
         i += 1;
     }
@@ -164,7 +232,11 @@ fn test_pattern(pattern: &str, sample_size: usize, remove_outliers: bool) -> (Ar
         println!("{}", array.t());
     }
 
-    return (array, score, non_linear)
+    if non_linear {
+        PatternResult::NonLinear(array, score)
+    } else {
+        PatternResult::Linear(array, score)
+    }
 }
 
 fn calculate_point(s: &str, i: usize, sample_size: usize) -> (Duration, usize) {
@@ -185,13 +257,4 @@ fn time_needed(s: &str) -> Duration {
     time.elapsed()
 }
 
-fn print_find(pattern: &str, array: &Array2<f64>, stddev: f64) {
-    println!("
-possible non-linear behaviour found
-pattern: {:?}
-{}
-score: {}
-\
-    ", pattern, array.t(), stddev);
-}
 

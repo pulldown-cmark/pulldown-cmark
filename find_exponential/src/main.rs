@@ -29,7 +29,7 @@ const NUM_BYTES: usize = 256*1024;
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
 /// `scoring::{slope_stddev,pearson_correlation}`
-const SCORE_FUNCTION: fn(&Vec<[f64; 2]>) -> (f64, bool) = scoring::slope_stddev;
+const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
 const ACCEPTANCE_STDDEV: f64 = 20.0;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
@@ -117,13 +117,14 @@ fn fuzz(num_cpus: usize) {
 }
 
 fn test(pattern: &str) -> f64 {
+    let mut array = [(0.0, 0.0); SAMPLE_SIZE * 2];
     loop {
-        let res1 = test_pattern(pattern, SAMPLE_SIZE, false);
-        if let PatternResult::Linear(_array, score) = res1 {
+        let res1 = test_pattern(pattern, &mut array[..SAMPLE_SIZE], false);
+        if let PatternResult::Linear(score) = res1 {
             return score;
         }
-        let res2 = test_pattern(pattern, SAMPLE_SIZE*2, true);
-        if let PatternResult::Linear(_array, score) = res2 {
+        let res2 = test_pattern(pattern, &mut array, true);
+        if let PatternResult::Linear(score) = res2 {
             return score;
         }
 
@@ -131,7 +132,7 @@ fn test(pattern: &str) -> f64 {
 
         let score = match res2 {
             PatternResult::Linear(..) => unreachable!(),
-            PatternResult::NonLinear(array, score) => {
+            PatternResult::NonLinear(score) => {
                 println!(
                     "\n\
                     possible non-linear behaviour found\n\
@@ -144,7 +145,7 @@ fn test(pattern: &str) -> f64 {
                 );
                 score
             },
-            PatternResult::TooLong(array) => {
+            PatternResult::TooLong => {
                 println!(
                     "\n\
                     possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
@@ -156,7 +157,7 @@ fn test(pattern: &str) -> f64 {
                 );
                 0.0
             },
-            PatternResult::HugeOutlier(array, trim_len) => {
+            PatternResult::HugeOutlier(trim_len) => {
                 println!(
                     "\n\
                     huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
@@ -179,56 +180,59 @@ fn test(pattern: &str) -> f64 {
 
 #[derive(Debug)]
 enum PatternResult {
-    /// Probably linear growth (points, score)
-    Linear(Vec<[f64; 2]>, f64),
-    /// Probably non-linear growth (points, score)
-    NonLinear(Vec<[f64; 2]>, f64),
+    /// Probably linear growth (score)
+    Linear(f64),
+    /// Probably non-linear growth (score)
+    NonLinear(f64),
     /// Execution took too long, assumed non-linear
-    TooLong(Vec<[f64; 2]>),
+    TooLong,
     /// Very slow outlier, probably due to different parsing in pulldown-cmark.
-    /// (points, number of bytes truncated from end reaching this behaviour)
+    /// (number of bytes truncated from end reaching this behaviour)
     ///
     /// Possibly indicates weird behaviour in pulldown-cmark.
     /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
-    HugeOutlier(Vec<[f64; 2]>, usize),
+    HugeOutlier(usize),
 }
 
-fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -> PatternResult {
+fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: bool) -> PatternResult {
+    let sample_size = array.len();
     let s = pattern.repeat(NUM_BYTES / pattern.len());
-    let mut array = Vec::with_capacity(sample_size);
 
     let mut i = 0;
     let mut huge_outliers = 0;
     while i < sample_size {
         let (dur, n) = calculate_point(&s, i+1, sample_size);
-        array.push([n as f64, dur.as_nanos() as f64]);
+        array[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
         }
 
-        if i > 0 && array[i-1][1] > array[i][1] * 50.0 {
-            huge_outliers += 1;
-            if huge_outliers > 10 {
-                let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
-                let trim_len = pattern.len() - (s.len() - last_repetition_start);
-                return PatternResult::HugeOutlier(array, trim_len);
-            }
-        }
-
-        if recalculate_outliers && i > 0 && array[i-1][1] > array[i][1] {
+        if recalculate_outliers && i > 0 && array[i-1].1 > array[i].1 {
             // We have an outlier, possibly due to rescheduling.
+
+            // We can have a consistent huge outlier due to weird parsing behaviour when parts of
+            // the pattern are truncated at the end (see <https://github.com/raphlinus/pulldown-cmark/issues/287>).
+            // In that case we don't want to end in an infinite loop.
+            // Instead, if we encounter a huge outlier 10 times in the same test, we abort this pattern.
+            if array[i-1].1 > array[i].1 * 50.0 {
+                huge_outliers += 1;
+                if huge_outliers > 10 {
+                    let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
+                    let trim_len = pattern.len() - (s.len() - last_repetition_start);
+                    return PatternResult::HugeOutlier(trim_len);
+                }
+            }
+
             // Redo from the last sample
             if DEBUG_LEVEL >= 3 {
                 println!("removed outlier");
             }
-            array.pop();
-            array.pop();
             i -= 1;
             continue;
         }
 
         if dur.as_millis() > MAX_MILLIS {
-            return PatternResult::TooLong(array);
+            return PatternResult::TooLong;
         }
         i += 1;
     }
@@ -243,9 +247,9 @@ fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -
     }
 
     if non_linear {
-        PatternResult::NonLinear(array, score)
+        PatternResult::NonLinear(score)
     } else {
-        PatternResult::Linear(array, score)
+        PatternResult::Linear(score)
     }
 }
 

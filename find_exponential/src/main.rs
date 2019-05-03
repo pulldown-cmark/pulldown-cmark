@@ -10,7 +10,6 @@ use std::io::{self, BufRead};
 use walkdir::WalkDir;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
-use ndarray::Array2;
 use rand::seq::SliceRandom;
 use threadpool::ThreadPool;
 
@@ -30,7 +29,7 @@ const NUM_BYTES: usize = 256*1024;
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
 /// `scoring::{slope_stddev,pearson_correlation}`
-const SCORE_FUNCTION: fn(&Array2<f64>) -> (f64, bool) = scoring::slope_stddev;
+const SCORE_FUNCTION: fn(&Vec<[f64; 2]>) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
 const ACCEPTANCE_STDDEV: f64 = 20.0;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
@@ -138,10 +137,10 @@ fn test(pattern: &str) -> f64 {
                     possible non-linear behaviour found\n\
                     pattern: {:?}\n\
                     score: {}\n\
-                    {}\n",
+                    {:?}\n",
                     pattern,
                     score,
-                    array.t(),
+                    array,
                 );
                 score
             },
@@ -151,9 +150,9 @@ fn test(pattern: &str) -> f64 {
                     possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
                     pattern: {:?}\n\
                     score: 0\n\
-                    {}\n",
+                    {:?}\n",
                     pattern,
-                    array.t(),
+                    array,
                 );
                 0.0
             },
@@ -165,11 +164,11 @@ fn test(pattern: &str) -> f64 {
                     score: 0\n\
                     trim length: {}\n\
                     trimmed rest: {:?}\n\
-                    {}\n",
+                    {:?}\n",
                     pattern,
                     trim_len,
                     &pattern[..pattern.len() - trim_len],
-                    array.t(),
+                    array,
                 );
                 0.0
             },
@@ -181,34 +180,33 @@ fn test(pattern: &str) -> f64 {
 #[derive(Debug)]
 enum PatternResult {
     /// Probably linear growth (points, score)
-    Linear(Array2<f64>, f64),
+    Linear(Vec<[f64; 2]>, f64),
     /// Probably non-linear growth (points, score)
-    NonLinear(Array2<f64>, f64),
+    NonLinear(Vec<[f64; 2]>, f64),
     /// Execution took too long, assumed non-linear
-    TooLong(Array2<f64>),
+    TooLong(Vec<[f64; 2]>),
     /// Very slow outlier, probably due to different parsing in pulldown-cmark.
     /// (points, number of bytes truncated from end reaching this behaviour)
     ///
     /// Possibly indicates weird behaviour in pulldown-cmark.
     /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
-    HugeOutlier(Array2<f64>, usize),
+    HugeOutlier(Vec<[f64; 2]>, usize),
 }
 
 fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -> PatternResult {
     let s = pattern.repeat(NUM_BYTES / pattern.len());
-    let mut array = Array2::zeros((2, sample_size));
+    let mut array = Vec::with_capacity(sample_size);
 
     let mut i = 0;
     let mut huge_outliers = 0;
     while i < sample_size {
         let (dur, n) = calculate_point(&s, i+1, sample_size);
-        array[[0, i]] = n as f64;
-        array[[1, i]] = dur.as_nanos() as f64;
+        array.push([n as f64, dur.as_nanos() as f64]);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
         }
 
-        if i > 0 && array[[1, i-1]] > array[[1, i]] * 50.0 {
+        if i > 0 && array[i-1][1] > array[i][1] * 50.0 {
             huge_outliers += 1;
             if huge_outliers > 10 {
                 let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
@@ -217,12 +215,14 @@ fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -
             }
         }
 
-        if recalculate_outliers && i > 0 && array[[1, i-1]] > array[[1, i]] {
+        if recalculate_outliers && i > 0 && array[i-1][1] > array[i][1] {
             // We have an outlier, possibly due to rescheduling.
             // Redo from the last sample
             if DEBUG_LEVEL >= 3 {
                 println!("removed outlier");
             }
+            array.pop();
+            array.pop();
             i -= 1;
             continue;
         }
@@ -239,7 +239,7 @@ fn test_pattern(pattern: &str, sample_size: usize, recalculate_outliers: bool) -
         println!("{:<30}{}", score, pattern);
     }
     if DEBUG_LEVEL >= 2 {
-        println!("{}", array.t());
+        println!("{:?}", array);
     }
 
     if non_linear {

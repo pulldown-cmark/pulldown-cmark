@@ -89,7 +89,7 @@ fn fuzz(num_cpus: usize) {
     thread::scope(|s| {
         let threads: Vec<_> = (0..num_cpus).map(|_| {
             let literals = literals.clone();
-            s.spawn(move |_| thread_worker_fn(literals, &num_batches_finished, &start_time))
+            s.spawn(move |_| worker_thread_fn(literals, &num_batches_finished, &start_time))
         }).collect();
 
         for thread in threads {
@@ -98,7 +98,7 @@ fn fuzz(num_cpus: usize) {
     }).unwrap();
 }
 
-fn thread_worker_fn(mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant) {
+fn worker_thread_fn(mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant) {
     loop {
         literals.shuffle(&mut rand::thread_rng());
         let combs = literals.iter()

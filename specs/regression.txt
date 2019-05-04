@@ -172,3 +172,12 @@ b <?php but this is ?>
 <h2>a &lt;?php this is not a valid processing tag</h2>
 <p>b <?php but this is ?></p>
 ````````````````````````````````
+
+ISSUE #288
+
+```````````````````````````````` example
+[a]: u\
+foo
+.
+<p>foo</p>
+````````````````````````````````

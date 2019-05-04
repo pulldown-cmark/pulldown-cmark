@@ -203,3 +203,14 @@ b <?php but this is ?>
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_14() {
+    let original = r##"[a]: u\
+foo
+"##;
+    let expected = r##"<p>foo</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

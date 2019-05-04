@@ -759,9 +759,8 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
             match bytes[i] {
                 b'\n' | b'\r' | b'<' => return None,
                 b'>' => return Some((i + 1, &data[(start_ix + 1)..(start_ix + i)])),
-                b'\\' => {
-                    i = std::cmp::min(bytes.len(), i + 2);
-                    continue;
+                b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
+                    i += 1;
                 }
                 _ => {}
             }
@@ -786,9 +785,8 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
                     }
                     nest -= 1;
                 }
-                b'\\' => {
-                    i = std::cmp::min(bytes.len(), i + 2);
-                    continue;
+                b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
+                    i += 1;
                 }
                 _ => {}
             }

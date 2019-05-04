@@ -772,7 +772,10 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
         let mut nest = 0;
         while i < bytes.len() {
             match bytes[i] {
-                0x0 ... 0x20 => break,
+                0x0 ... 0x20 => {
+                    dbg!(bytes[i]);
+                    break;
+                }
                 b'(' => {
                     if nest > max_next {
                         return None;

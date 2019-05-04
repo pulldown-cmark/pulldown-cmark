@@ -1204,13 +1204,16 @@ impl<'a> FirstPass<'a> {
 
         // whitespace between label and url (including up to one newline)
         let mut newlines = 0;
-        for &c in &bytes[i..] {
-            if c == b'\n' {
-                i += 1;
+        while i < bytes.len() {
+            let c = bytes[i];
+            // TODO: we could probably replace this loop by a (number of) scan_blankline?
+            if c == b'\n' || c == b'\r' {
+                i += scan_eol(&bytes[i..])?;
                 newlines += 1;
                 if newlines > 1 {
                     return None;
                 } else {
+                    // FIXME: we aren't using the results of this scan (LOL)
                     let mut line_start = LineStart::new(&bytes[i..]);
                     self.scan_containers(&mut line_start);
                 }
@@ -1230,14 +1233,19 @@ impl<'a> FirstPass<'a> {
         // FIXME: dedup with similar block above
         newlines = 0;
         let mut whitespace_bytes = 0;
-        for &c in &bytes[i..] {
-            if c == b'\n' {
-                whitespace_bytes += 1;
+        while i < bytes.len() {
+            let c = bytes[i];
+            if c == b'\n' || c == b'\r' {
+                let eol_bytes = scan_eol(&bytes[i..])?;
+                i += eol_bytes;
+                whitespace_bytes += eol_bytes;
                 newlines += 1;
-                let mut line_start = LineStart::new(&bytes[(i + whitespace_bytes)..]);
+                // FIXME: we aren't using the results of this scan (LOL)
+                let mut line_start = LineStart::new(&bytes[i..]);
                 let _n_containers = self.scan_containers(&mut line_start);
             } else if is_ascii_whitespace_no_nl(c) {
                 whitespace_bytes += 1;
+                i += 1;
             } else {
                 break;
             }
@@ -1259,9 +1267,7 @@ impl<'a> FirstPass<'a> {
 
         if newlines > 1 {
             return Some(backup);
-        } else {
-            i += whitespace_bytes;
-        }        
+        }    
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
@@ -2470,6 +2476,7 @@ mod test {
         assert_eq!(expected_offsets, event_offsets);
     }
 
+    // FIXME: add this one regression suite
     #[test]
     fn link_def_at_eof() {
         let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
@@ -2484,6 +2491,16 @@ mod test {
     fn ref_def_at_eof() {
         let test_str = "[test]:\\";
         let expected = "";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn ref_def_cr_lf() {
+        let test_str = "[a]: /u\r\n\n[a]";
+        let expected = "<p><a href=\"/u\">a</a></p>\n";
 
         let mut buf = String::new();
         crate::html::push_html(&mut buf, Parser::new(test_str));

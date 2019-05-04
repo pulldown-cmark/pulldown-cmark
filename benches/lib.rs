@@ -21,6 +21,13 @@ mod to_html {
     }
 
     #[bench]
+    fn pathological_links2(b: &mut test::Bencher) {
+        let input = std::iter::repeat("[[]()").take(1000).collect::<String>();
+
+        b.iter(|| render_html(&input, Options::empty()));
+    }
+
+    #[bench]
     fn pathological_emphasis(b: &mut test::Bencher) {
         let input = std::iter::repeat("a***").take(1000).collect::<String>();
 

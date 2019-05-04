@@ -748,6 +748,7 @@ pub(crate) fn scan_refdef_title(text: &str) -> Option<(usize, &str)> {
 
 // note: dest returned is raw, still needs to be unescaped
 // TODO: check that nested parens are really not allowed for refdefs
+// TODO(performance): this func should probably its own unescaping
 pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Option<(usize, &str)> {
     let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
@@ -758,7 +759,10 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
             match bytes[i] {
                 b'\n' | b'\r' | b'<' => return None,
                 b'>' => return Some((i + 1, &data[(start_ix + 1)..(start_ix + i)])),
-                b'\\' => i += 1,
+                b'\\' => {
+                    i = std::cmp::min(bytes.len(), i + 2);
+                    continue;
+                }
                 _ => {}
             }
             i += 1;
@@ -782,16 +786,15 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
                     }
                     nest -= 1;
                 }
-                b'\\' => i += 1,
+                b'\\' => {
+                    i = std::cmp::min(bytes.len(), i + 2);
+                    continue;
+                }
                 _ => {}
             }
             i += 1;
         }
-        if i <= bytes.len() {
-            Some((i, &data[start_ix..(start_ix + i)]))
-        } else {
-            None
-        }
+        Some((i, &data[start_ix..(start_ix + i)]))
     }
 }
 

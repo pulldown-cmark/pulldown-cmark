@@ -2481,6 +2481,16 @@ mod test {
     }
 
     #[test]
+    fn ref_def_at_eof() {
+        let test_str = "[test]:\\";
+        let expected = "";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
         let parser = Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&|norm, raw| {

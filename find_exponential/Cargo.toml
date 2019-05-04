@@ -13,6 +13,7 @@ proc-macro2 = "0.4.29"
 ndarray = "0.12.1"
 ndarray-stats = "0.2.0"
 rand = "0.6.5"
+rand_xoshiro = "0.1.0"
 num_cpus = "1.10.0"
 crossbeam-utils = "0.6.5"
 

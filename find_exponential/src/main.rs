@@ -10,7 +10,8 @@ use std::io::{self, BufRead};
 use walkdir::WalkDir;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
-use rand::seq::SliceRandom;
+use rand::{SeedableRng, seq::SliceRandom};
+use rand_xoshiro::Xoshiro256Plus;
 use crossbeam_utils::thread;
 
 mod literals;
@@ -83,13 +84,17 @@ fn fuzz(num_cpus: usize) {
 
     let num_batches_finished = AtomicU64::new(0);
     let num_batches_finished = &num_batches_finished;
+    let mut rng = Xoshiro256Plus::from_rng(&mut rand::thread_rng()).unwrap();
     let start_time = Instant::now();
 
     // start threads
     thread::scope(|s| {
         let threads: Vec<_> = (0..num_cpus).map(|_| {
             let literals = literals.clone();
-            s.spawn(move |_| worker_thread_fn(literals, &num_batches_finished, &start_time))
+            // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
+            rng.jump();
+            let rng = rng.clone();
+            s.spawn(move |_| worker_thread_fn(literals, &num_batches_finished, &start_time, rng))
         }).collect();
 
         for thread in threads {
@@ -98,9 +103,12 @@ fn fuzz(num_cpus: usize) {
     }).unwrap();
 }
 
-fn worker_thread_fn(mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant) {
+fn worker_thread_fn(
+    mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
+    mut rng: Xoshiro256Plus,
+) {
     loop {
-        literals.shuffle(&mut rand::thread_rng());
+        literals.shuffle(&mut rng);
         let combs = literals.iter()
             .combinations(COMBINATIONS)
             .take(BATCH_SIZE);

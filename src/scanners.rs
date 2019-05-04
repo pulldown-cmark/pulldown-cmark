@@ -1150,20 +1150,20 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlSc
             }
             None
         } 
-        b'[' if bytes[ix..].starts_with(b"CDATA[") && scan_guard.cdata  => {
+        b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata  => {
             ix += b"CDATA[".len();
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
             ix += close_brackets;
 
             if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
-                scan_guard.cdata = false;
+                scan_guard.cdata = ix;
                 None
             } else {
                 Some(ix + 1)
             }
         }
-        b'A' ... b'Z' if scan_guard.declaration => {
+        b'A' ... b'Z' if ix > scan_guard.declaration => {
             // Scan declaration.
             ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
             let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
@@ -1173,7 +1173,7 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlSc
             ix += whitespace;
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             if scan_ch(&bytes[ix..], b'>') == 0 {
-                scan_guard.declaration = false;
+                scan_guard.declaration = ix;
                 None
             } else {
                 Some(ix + 1)
@@ -1186,7 +1186,7 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlSc
 /// Scan processing directive, with initial "<?" already consumed.
 /// Returns the next byte offset on success.
 fn scan_inline_html_processing(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard) -> Option<usize> {
-    if !scan_guard.processing {
+    if ix <= scan_guard.processing {
         return None;
     }
     while let Some(offset) = memchr(b'?', &bytes[ix..]) {
@@ -1195,7 +1195,7 @@ fn scan_inline_html_processing(bytes: &[u8], mut ix: usize, scan_guard: &mut Htm
             return Some(ix + 1);
         }
     }
-    scan_guard.processing = false;
+    scan_guard.processing = ix;
     None
 }
 

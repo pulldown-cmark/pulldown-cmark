@@ -190,3 +190,16 @@ fn regression_test_12() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_13() {
+    let original = r##"a <?php this is not a valid processing tag
+---
+b <?php but this is ?>
+"##;
+    let expected = r##"<h2>a &lt;?php this is not a valid processing tag</h2>
+<p>b <?php but this is ?></p>
+"##;
+
+    test_markdown_html(original, expected);
+}

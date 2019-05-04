@@ -96,21 +96,18 @@ mod to_html {
 
     #[bench]
     fn advanced_pathological_codeblocks(b: &mut test::Bencher) {
-        // Note that `buf` grows quadratically with number of
-        // iterations. The point here is that the render time shouldn't
-        // grow faster than that.
-        let size = 120;
         let mut buf = String::new();
-        for i in 1..size {
+        let mut i = 1;
+        while buf.len() < 1250 {
             for _ in 0..i {
                 buf.push('`');
             }
             buf.push(' ');
+            i += 1;
         }
-        for _ in 1..(size * size) {
+        for _ in 0..buf.len() {
             buf.push_str("*a* ");
         }
-        eprintln!("str size: {}", buf.len());
 
         b.iter(|| render_html(&buf, Options::empty()));
     }

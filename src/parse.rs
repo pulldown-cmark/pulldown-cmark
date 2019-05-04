@@ -1706,24 +1706,14 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
 
 /// A struct containing information on the reachability of certain inline HTML
 /// elements. In particular, for cdata elements (`<![CDATA[`), processing
-/// elements (`<?`) and declarations (`<!DECLARATION`). When their respective
-/// bool is set to false, we know we a scan for them will always fail and we can
-/// skip it.
-#[derive(Clone)]
+/// elements (`<?`) and declarations (`<!DECLARATION`). The respectives usizes
+/// represent the indices before which a scan will always fail and can hence
+/// be skipped.
+#[derive(Clone, Default)]
 pub(crate) struct HtmlScanGuard {
-    pub cdata: bool,
-    pub processing: bool,
-    pub declaration: bool,
-}
-
-impl Default for HtmlScanGuard {
-    fn default() -> Self {
-        Self {
-            cdata: true,
-            processing: true,
-            declaration: true,
-        }
-    }
+    pub cdata: usize,
+    pub processing: usize,
+    pub declaration: usize,
 }
 
 #[derive(Clone)]

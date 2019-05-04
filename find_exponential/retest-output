@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+# find errors / panics
+panic=0
+error=0
+grep "Panic cought. Pattern: " output || panic=1
+grep "Couldn't convert pattern to UTF-8. Err: " output || error=1
+
+if [ $panic -eq 0 -o $error -eq 0 ]; then
+  echo "Panics / Errors found and printed above. Press return to continue..."
+  read
+fi
+
 cargo rustc --release -- -C target-cpu=native
 grep 'pattern: "' < output | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/find_exponential --retest | tee output-retested

@@ -99,13 +99,22 @@ fn fuzz(num_cpus: usize) {
                 .combinations(COMBINATIONS)
                 .take(BATCH_SIZE);
             for comb in combs {
+                let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
+                let pattern = match String::from_utf8(concatenated) {
+                    Ok(pattern) => pattern,
+                    Err(err) => {
+                        println!(
+                            "Couldn't convert pattern to UTF-8. Err: {:?}.",
+                            err
+                        );
+                        continue;
+                    }
+                };
                 let res = panic::catch_unwind(|| {
-                    let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-                    let s = String::from_utf8(concatenated).unwrap();
-                    test(&s);
+                    test(&pattern);
                 });
                 if res.is_err() {
-                    ::std::process::exit(1);
+                    println!("Panic caught. Pattern: {:?}", pattern);
                 }
             }
             tx.send(()).unwrap();

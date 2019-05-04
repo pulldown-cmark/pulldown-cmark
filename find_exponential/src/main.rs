@@ -3,7 +3,7 @@ use std::path::Path;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use std::panic;
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::env;
 use std::io::{self, BufRead};
 
@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
 use rand::seq::SliceRandom;
-use threadpool::ThreadPool;
+use crossbeam_utils::thread;
 
 mod literals;
 mod black_box;
@@ -81,46 +81,64 @@ fn fuzz(num_cpus: usize) {
         .filter(|lit| !lit.is_empty())
         .collect();
 
-    let pool = ThreadPool::new(num_cpus);
-    let mut count = -(num_cpus as isize) * BATCH_SIZE as isize;
+    let num_batches_finished = AtomicU64::new(0);
+    let num_batches_finished = &num_batches_finished;
     let start_time = Instant::now();
-    let (tx, rx) = mpsc::channel();
-    for _ in 0..num_cpus {
-        tx.send(()).unwrap();
-    }
+
+    // start threads
+    thread::scope(|s| {
+        let threads: Vec<_> = (0..num_cpus).map(|_| {
+            let literals = literals.clone();
+            s.spawn(move |_| thread_worker_fn(literals, &num_batches_finished, &start_time))
+        }).collect();
+
+        for thread in threads {
+            println!("Joined thread: {:?}", thread.join());
+        }
+    }).unwrap();
+}
+
+fn thread_worker_fn(mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant) {
     loop {
-        rx.recv().unwrap();
-        let mut literals = literals.clone();
-        let tx = tx.clone();
-        count += BATCH_SIZE as isize;
-        pool.execute(move || {
-            literals.shuffle(&mut rand::thread_rng());
-            let combs = literals.iter()
-                .combinations(COMBINATIONS)
-                .take(BATCH_SIZE);
-            for comb in combs {
-                let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-                let pattern = match String::from_utf8(concatenated) {
-                    Ok(pattern) => pattern,
-                    Err(err) => {
-                        println!(
-                            "Couldn't convert pattern to UTF-8. Err: {:?}.",
-                            err
-                        );
-                        continue;
-                    }
-                };
-                let res = panic::catch_unwind(|| {
-                    test(&pattern);
-                });
-                if res.is_err() {
-                    println!("Panic caught. Pattern: {:?}", pattern);
+        literals.shuffle(&mut rand::thread_rng());
+        let combs = literals.iter()
+            .combinations(COMBINATIONS)
+            .take(BATCH_SIZE);
+        for comb in combs {
+            let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
+            // we mustn't panic here, because that would result in the thread being killed
+            let pattern = match String::from_utf8(concatenated) {
+                Ok(pattern) => pattern,
+                Err(err) => {
+                    println!("Couldn't convert pattern to UTF-8. Err: {:?}.", err);
+                    continue;
                 }
+            };
+            let res = panic::catch_unwind(|| {
+                test(&pattern);
+            });
+            if res.is_err() {
+                println!("Panic caught. Pattern: {:?}", pattern);
             }
-            tx.send(()).unwrap();
-        });
-        if count > 0 && start_time.elapsed().as_secs() > 0 {
-            println!("{:<20} throughput: {}", count, count as u64 / start_time.elapsed().as_secs());
+        }
+
+        // print throughput
+
+        // TODO: I don't know which ordering we actually need, SeqCst is always correct, but may
+        // not actually be needed.
+        let batches_finished = num_batches_finished.fetch_add(1, Ordering::SeqCst);
+        // fetch_add returns the old value
+        let batches_finished = batches_finished + 1;
+        let patterns_finished = batches_finished * BATCH_SIZE as u64;
+        let elapsed_secs = start_time.elapsed().as_secs();
+
+        // if for some reason we are super-fast, we must avoid div-by-zero
+        if elapsed_secs > 0 {
+            println!(
+                "{:<20} throughput: {} / s",
+                patterns_finished,
+                patterns_finished / elapsed_secs,
+            );
         }
     }
 }

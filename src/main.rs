@@ -187,9 +187,12 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     print!("{}", fail_report);
 }
 
-fn brief<ProgramName>(program: ProgramName) -> String
-        where ProgramName: std::fmt::Display {
-    return format!("Usage: {} FILE [options]", program);
+fn brief(program: &str) -> String {
+    format!(
+        "Usage: {} [options]\n\n{}",
+        program,
+        "Reads markdown from standard input and emits HTML.",
+    )
 }
 
 pub fn main() {
@@ -207,16 +210,7 @@ pub fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            let message = format!("{}\n{}\n",
-                                  f.to_string(),
-                                  opts.usage(&brief(&args[0])));
-            if let Err(err) = write!(std::io::stderr(), "{}", message) {
-                panic!("Failed to write to standard error: {}\n\
-                       Error encountered while trying to log the \
-                       following message: \"{}\"",
-                       err,
-                       message);
-            }
+            eprintln!("{}\n{}", f, opts.usage(&brief(&args[0])));
             std::process::exit(1);
         }
     };

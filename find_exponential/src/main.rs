@@ -40,6 +40,10 @@ const ACCEPTANCE_CORRELATION: f64 = 0.995;
 const DEBUG_LEVEL: u8 = 0;
 
 fn main() {
+    // previously know cases
+    regression_test();
+
+    // fuzz
     let num_cpus = num_cpus::get() * 3 / 4;
 
     let arg = env::args().nth(1);
@@ -54,6 +58,33 @@ fn main() {
     } else {
         fuzz(num_cpus);
     }
+}
+
+fn regression_test() {
+    // https://github.com/raphlinus/pulldown-cmark/issues/246
+    test("[](");
+    // https://github.com/raphlinus/pulldown-cmark/issues/247
+    test("``\\");
+    // https://github.com/raphlinus/pulldown-cmark/issues/248
+    test("a***");
+    // https://github.com/raphlinus/pulldown-cmark/issues/249
+    // TODO: we can't perform tests like this yet
+//    test("* * * ...a");
+    // https://github.com/raphlinus/pulldown-cmark/issues/251
+    test("[ (](");
+    // https://github.com/raphlinus/pulldown-cmark/issues/255
+    test("[*_a");
+    // https://github.com/raphlinus/pulldown-cmark/issues/280
+    test("a <![CDATA[");
+    // https://github.com/raphlinus/pulldown-cmark/issues/282
+    test("a<?");
+    // https://github.com/raphlinus/pulldown-cmark/issues/284
+    test("[[]()");
+    // https://github.com/raphlinus/pulldown-cmark/issues/287
+    // TODO: we can't perform tests like this reliably yet
+//    test("[{}]:\\a");
+    // https://github.com/raphlinus/pulldown-cmark/issues/296
+    test("[](<");
 }
 
 fn fuzz(num_cpus: usize) {

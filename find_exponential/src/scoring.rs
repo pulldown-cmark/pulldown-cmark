@@ -1,6 +1,7 @@
-use ndarray::{Array1, Array2};
-use ndarray_stats::{CorrelationExt, SummaryStatisticsExt};
+use ndarray::{ArrayViewMut1, Array2};
+use ndarray_stats::CorrelationExt;
 use itertools::Itertools;
+use crate::SAMPLE_SIZE;
 
 #[allow(dead_code)]
 pub fn pearson_correlation(array: &[(f64, f64)]) -> (f64, bool) {
@@ -14,31 +15,32 @@ pub fn pearson_correlation(array: &[(f64, f64)]) -> (f64, bool) {
 
 #[allow(dead_code)]
 pub fn slope_stddev(array: &[(f64, f64)]) -> (f64, bool) {
-    let mut slopes = Vec::with_capacity(array.len() * (array.len() - 1) / 2);
-    slopes.extend(
-        (0..super::SAMPLE_SIZE).tuple_combinations()
-            .map(|(a, b)| {
-                let (x1, y1) = array[a];
-                let (x2, y2) = array[b];
-                let dx = x2 - x1;
-                let dy = y2 - y1;
-                let slope = dy / dx;
-                slope
-            }).filter(|&slope| slope > 0.0)
-    );
+    let mut slopes = [0f64; SAMPLE_SIZE*2 * (SAMPLE_SIZE*2 - 1) / 2];
+    let mut i = 0;
 
-    let slopes = Array1::from(slopes);
+    for (point1, point2) in (0..array.len()).tuple_combinations() {
+        let (x1, y1) = array[point1];
+        let (x2, y2) = array[point2];
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        let slope = dy / dx;
+        slopes[i] = slope;
+        i += 1;
+    }
+
+    let slopes = &mut slopes[..i];
+
     if super::DEBUG_LEVEL >= 2 {
-        println!("slopes: {}", slopes);
+        println!("slopes: {:?}", slopes);
     }
 
-    if slopes.is_empty() {
-        // Values were too small, we just assume linear behaviour.
-        // Otherwise we should see larger values.
-        return (0.0, false);
-    }
-
-    let stddev = slopes.central_moment(2).unwrap().sqrt();
+    // calculate standard deviation
+    let mut array = ArrayViewMut1::from(slopes);
+    let mean = array.sum() / array.len() as f64;
+    array.mapv_inplace(|slope| (slope - mean).powi(2));
+    let sum = array.sum();
+    let in_sqrt = sum / array.len() as f64;
+    let stddev = in_sqrt.sqrt();
 
     (stddev, stddev > super::ACCEPTANCE_STDDEV)
 }

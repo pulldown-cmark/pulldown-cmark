@@ -1,13 +1,9 @@
-use std::fs;
-use std::path::Path;
-use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use std::panic;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::env;
 use std::io::{self, BufRead};
 
-use walkdir::WalkDir;
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
 use rand::{SeedableRng, seq::SliceRandom};
@@ -21,7 +17,7 @@ mod scoring;
 /// How many combinations are batch-processed.
 const BATCH_SIZE: usize = 10_000;
 /// Combination length.
-const COMBINATIONS: usize = 4;
+const COMBINATIONS: usize = 6;
 /// If parsing takes longer than this many milliseconds, it is assumed to be non-linear.
 const MAX_MILLIS: u128 = 500;
 /// Size of repetition in bytes to parse.
@@ -76,6 +72,8 @@ fn regression_test() {
     test("[*_a");
     // https://github.com/raphlinus/pulldown-cmark/issues/280
     test("a <![CDATA[");
+    // https://github.com/mity/md4c/issues/73#issuecomment-487640366
+    test("a <!A");
     // https://github.com/raphlinus/pulldown-cmark/issues/282
     test("a<?");
     // https://github.com/raphlinus/pulldown-cmark/issues/284
@@ -88,30 +86,7 @@ fn regression_test() {
 }
 
 fn fuzz(num_cpus: usize) {
-    // get all literals from pulldown-cmark's source code
-    let walkdir = WalkDir::new("../src")
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter(|e| if let Some(ext) = e.path().extension() { ext == "rs" } else { false });
-
-    let mut literals = HashSet::new();
-    for file in walkdir {
-        if file.path() == Path::new("../src/entities.rs") {
-            continue;
-        }
-        println!("parsing {}", file.path().display());
-        let content = fs::read_to_string(file.path())
-            .expect(&format!("unable to read file {:?}", file.path()));
-        let parsed = syn::parse_file(&content)
-            .expect(&format!("unable to parse file {:?}", file.path()));
-        literals::extract_literals_from_items(&mut literals, parsed.items);
-    }
-
-    let literals: Vec<_> = literals.into_iter()
-        .filter(|lit| !lit.contains(&b'\n'))
-        .filter(|lit| !lit.is_empty())
-        .collect();
+    let literals = literals::get();
 
     let num_batches_finished = AtomicU64::new(0);
     let num_batches_finished = &num_batches_finished;

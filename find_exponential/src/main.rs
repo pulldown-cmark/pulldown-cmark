@@ -141,9 +141,7 @@ fn worker_thread_fn(
 
         // print throughput
 
-        // TODO: I don't know which ordering we actually need, SeqCst is always correct, but may
-        // not actually be needed.
-        let batches_finished = num_batches_finished.fetch_add(1, Ordering::SeqCst);
+        let batches_finished = num_batches_finished.fetch_add(1, Ordering::Relaxed);
         // fetch_add returns the old value
         let batches_finished = batches_finished + 1;
         let patterns_finished = batches_finished * BATCH_SIZE as u64;

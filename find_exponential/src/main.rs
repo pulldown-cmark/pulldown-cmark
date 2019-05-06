@@ -3,10 +3,11 @@ use std::panic;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::env;
 use std::io::{self, BufRead};
+use std::iter;
 
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
-use rand::{SeedableRng, seq::SliceRandom};
+use rand::{SeedableRng, distributions::{Distribution, Uniform}};
 use rand_xoshiro::Xoshiro256Plus;
 use crossbeam_utils::thread;
 
@@ -110,14 +111,16 @@ fn fuzz(num_cpus: usize) {
 }
 
 fn worker_thread_fn(
-    mut literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
+    literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
     mut rng: Xoshiro256Plus,
 ) {
+    let uniform = Uniform::new(0, literals.len());
     loop {
-        literals.shuffle(&mut rng);
-        let combs = literals.iter()
-            .combinations(COMBINATIONS)
-            .take(BATCH_SIZE);
+        let chunks = iter::repeat_with(|| {
+            &literals[uniform.sample(&mut rng)]
+        }).chunks(COMBINATIONS);
+        let combs = chunks.into_iter().take(BATCH_SIZE);
+
         for comb in combs {
             let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
             // we mustn't panic here, because that would result in the thread being killed

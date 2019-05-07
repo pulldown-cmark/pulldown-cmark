@@ -86,23 +86,24 @@ const ACCEPTANCE_CORRELATION: f64 = 0.995;
 const DEBUG_LEVEL: u8 = 0;
 
 fn main() {
-    // previously know cases
-    regression_test();
-
-    // fuzz
     let num_cpus = num_cpus::get() * 3 / 4;
 
     let arg = env::args().nth(1);
-    if let Some("--retest") = arg.as_ref().map(|s| s.as_str()) {
-        for pattern in io::stdin().lock().lines() {
-            let pattern = pattern.unwrap();
-            println!("retesting {:?}", pattern);
-            let score = test(&pattern);
-            println!("score: {}", score);
-        }
-        return;
-    } else {
-        fuzz(num_cpus);
+    match arg.as_ref().map(|s| s.as_str()) {
+        Some("--retest") => {
+            for pattern in io::stdin().lock().lines() {
+                let pattern = pattern.unwrap();
+                println!("retesting {:?}", pattern);
+                let score = test(&pattern);
+                println!("score: {}", score);
+            }
+        },
+
+        Some("--regressions") => {
+            // previously know cases
+            regression_test();
+        },
+        _ => fuzz(num_cpus),
     }
 }
 
@@ -305,7 +306,7 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
     let mut i = 0;
     let mut huge_outliers = 0;
     while i < sample_size {
-        let (dur, n) = time_needed(&s, i+1, sample_size);
+        let (n, dur) = time_needed(&s, i+1, sample_size);
         array[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
@@ -357,11 +358,12 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
     }
 }
 
-/// Returns the time needed for parsing given string in given sample of given sample_size.
+/// Returns the length of the tested substring and the time needed for parsing given string in
+/// given sample of given sample_size.
 ///
 /// The passed string is the whole repeated pattern string.
 /// This function perform substring slicing according to the current sample and sample size uniformly.
-fn time_needed(s: &str, sample: usize, sample_size: usize) -> Duration {
+fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) {
     let mut n = s.len() / sample_size * sample;
     // find closest byte boundary
     while !s.is_char_boundary(n) {
@@ -374,7 +376,7 @@ fn time_needed(s: &str, sample: usize, sample_size: usize) -> Duration {
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });
-    (time.elapsed(), n)
+    (n, time.elapsed())
 }
 
 

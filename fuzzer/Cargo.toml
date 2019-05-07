@@ -1,5 +1,5 @@
 [package]
-name = "find_exponential"
+name = "fuzzer"
 version = "0.1.0"
 authors = ["oberien <jaro.fietz@gmx.de>"]
 edition = "2018"

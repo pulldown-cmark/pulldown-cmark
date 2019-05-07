@@ -106,6 +106,7 @@ fn main() {
     }
 }
 
+/// Tests patterns of previously known super-linear parsing behaviour.
 fn regression_test() {
     // https://github.com/raphlinus/pulldown-cmark/issues/246
     test("[](");
@@ -135,6 +136,7 @@ fn regression_test() {
     test("[](<");
 }
 
+/// Start fuzzing on given number of threads in parallel.
 fn fuzz(num_cpus: usize) {
     let literals = literals::get();
 
@@ -159,17 +161,20 @@ fn fuzz(num_cpus: usize) {
     }).unwrap();
 }
 
+/// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
     literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
     mut rng: Xoshiro256Plus,
 ) {
     let uniform = Uniform::new(0, literals.len());
     loop {
+        // generate `BATCH_SIZE` random patterns
         let chunks = iter::repeat_with(|| {
             &literals[uniform.sample(&mut rng)]
         }).chunks(COMBINATIONS);
         let combs = chunks.into_iter().take(BATCH_SIZE);
 
+        // test those patterns, catching panics of pulldown-cmark (and our code)
         for comb in combs {
             let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
             // we mustn't panic here, because that would result in the thread being killed
@@ -188,7 +193,7 @@ fn worker_thread_fn(
             }
         }
 
-        // print throughput
+        // print status update and throughput
 
         let batches_finished = num_batches_finished.fetch_add(1, Ordering::Relaxed);
         // fetch_add returns the old value
@@ -207,13 +212,20 @@ fn worker_thread_fn(
     }
 }
 
+/// Test a specific pattern, returning the score of the score-function.
+///
+/// This function prints its results to stdout.
+/// No further handling is needed, the returned score is for debugging purposes mostly.
 fn test(pattern: &str) -> f64 {
     let mut array = [(0.0, 0.0); SAMPLE_SIZE * 2];
     loop {
+        // first pass, gets rid of most linear patterns if there aren't too many large outliers
         let res1 = test_pattern(pattern, &mut array[..SAMPLE_SIZE], false);
         if let PatternResult::Linear(score) = res1 {
             return score;
         }
+        // If the first pass indicated possible non-linear behaviour, retest it with a larger
+        // sample size and handle outliers.
         let res2 = test_pattern(pattern, &mut array, true);
         if let PatternResult::Linear(score) = res2 {
             return score;
@@ -285,6 +297,7 @@ enum PatternResult {
     HugeOutlier(usize),
 }
 
+/// Tests a specific pattern, returning measurement and scoring outcomes.
 fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: bool) -> PatternResult {
     let sample_size = array.len();
     let s = pattern.repeat(NUM_BYTES / pattern.len());
@@ -292,7 +305,7 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
     let mut i = 0;
     let mut huge_outliers = 0;
     while i < sample_size {
-        let (dur, n) = calculate_point(&s, i+1, sample_size);
+        let (dur, n) = time_needed(&s, i+1, sample_size);
         array[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
@@ -344,22 +357,24 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
     }
 }
 
-fn calculate_point(s: &str, i: usize, sample_size: usize) -> (Duration, usize) {
-    let mut n = s.len() / sample_size * i;
+/// Returns the time needed for parsing given string in given sample of given sample_size.
+///
+/// The passed string is the whole repeated pattern string.
+/// This function perform substring slicing according to the current sample and sample size uniformly.
+fn time_needed(s: &str, sample: usize, sample_size: usize) -> Duration {
+    let mut n = s.len() / sample_size * sample;
     // find closest byte boundary
     while !s.is_char_boundary(n) {
         n += 1;
     }
-    (time_needed(&s[..n]), n)
-}
 
-fn time_needed(s: &str) -> Duration {
+    // perform actual time measurement
     let parser = Parser::new_ext(&s, Options::all());
     let time = Instant::now();
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });
-    time.elapsed()
+    (time.elapsed(), n)
 }
 
 

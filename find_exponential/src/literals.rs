@@ -8,6 +8,15 @@ use syn::{Item, Expr, ImplItem, Stmt, ExprArray, ExprCall, ExprMethodCall, Visib
           parse::{Parse, ParseStream, Error}, braced};
 use proc_macro2::TokenStream;
 
+/// Get all relevant literals from pulldown-cmark to generate fuzzing input from.
+///
+/// This method iterates over the source code of pulldown-cmark (except for `entities.rs` and `main.rs`.
+/// It parses the source code an extracts all literals used in consts, statics, conditions and match
+/// arm patterns and guards. Literals are Strs, ByteStrs, chars and bytes.
+/// If an array is encountered, only the first element is extracted. We assume that all elements in
+/// the array are used the same way to enter the same branch, like `if ["foo", "bar"].contains("baz")`.
+///
+/// Additionally, it manually adds some literals for uncovered edge-cases.
 pub fn get() -> Vec<Vec<u8>> {
     // Get relevant literals from pulldown-cmark's source code.
     // See documentaiton of `literals`-module for more information.

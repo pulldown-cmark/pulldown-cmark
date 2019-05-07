@@ -1,3 +1,48 @@
+//! This is a fuzzer for pulldown-cmark, which tries to detect super-linear parsing behaviour.
+//! Additionally it can detect panicks of pulldown-cmark.
+//!
+//! The general idea is to extract relevant literals from the pulldown-cmark source code
+//! (see the `literals` module).
+//! Short random combinations of literals are generated (like concatenating 6 random literals),
+//! which are called patterns.
+//! Those patterns are repeated until they reach a byte-length of `NUM_BYTES`.
+//! We iterate over subslices of the pattern to get `SAMPLE_SIZE` uniformly distributed
+//! (len, time)-pairs.
+//! Those pairs are fed into a scoring function to test if they seem to be linear or might be
+//! super-linear (see the `scoring` module).
+//! All of this is performed in parallel on multiple threads.
+//!
+//! Unfortunately we don't live in a perfect world, where linear patterns produce a perfect line.
+//! instead we need to deal with large outliers, e.g. if a thread is rescheduled while performing
+//! time measurements.
+//! Therefore, we have a sort-of two pass system.
+//! The first pass doesn't perform any outlier detection / handling.
+//! This is because outlier handling is pretty slow.
+//! The first pass just assumes there aren't any outliers, calculates `SAMPLE_SIZE` points and
+//! applies the scoring functions to them.
+//! This filters out most patterns already.
+//! If however possible non-linear behaviour is found, we perform the second pass.
+//! In the second pass, we double the `SAMPLE_SIZE`, because more points make for higher precision
+//! in the scoring functions.
+//! Additionally, we assume that the (len, time)-pairs interpreted as coordinates on a graph  are
+//! strictly monotonously increasing.
+//! If we encounter a time-value, which is larger than the next time value, that'll probably be an
+//! outlier.
+//! As such, if we encounter such a value, we'll re-time it.
+//! Unfortunately, again, we have an edge-case.
+//! When testing substrings of the input, we might not always end up after the whole pattern,
+//! but instead in the middle of it.
+//! Sometimes pulldown-cmark parses things differently if the strings ends differently.
+//! For one example see <https://github.com/raphlinus/pulldown-cmark/issues/287>.
+//! Thus we also need to detect these case.
+//! Therefore we only remove a maximum of 10 outliers.
+//! If more outliers are detected, measurements are aborted and an according message is printed.
+//!
+//! Additionally, we abort if parsing took longer than `MAX_MILLIS`.
+//! If we tested a substring of the whole input, and already exceeded `MAX_MILLIS`, we shouldn't
+//! continue testing with longer inputs, as we might have super-linear behaviour.
+//! Instead, we again print an according message and abort.
+
 use std::time::{Duration, Instant};
 use std::panic;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -15,18 +60,22 @@ mod literals;
 mod black_box;
 mod scoring;
 
-/// How many combinations are batch-processed.
+/// After how many patterns each threads prints status reports including throughput.
 const BATCH_SIZE: usize = 10_000;
-/// Combination length.
+/// Length of number of literals per combination.
+///
+/// For example given the literals `a` and `b`, with a value of 4, `aaab` is a possible pattern.
 const COMBINATIONS: usize = 6;
-/// If parsing takes longer than this many milliseconds, it is assumed to be non-linear.
+/// If parsing takes longer than this many milliseconds, it is assumed to be non-linear and
+/// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
-/// Size of repetition in bytes to parse.
+/// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
 const NUM_BYTES: usize = 256*1024;
-/// Number of samples per pattern tested.
+/// Number of samples per pattern tested. Higher number increases precision, but reduces the throughput.
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
-/// `scoring::{slope_stddev,pearson_correlation}`
+///
+/// Possible values: `scoring::{slope_stddev,pearson_correlation}`
 const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
 const ACCEPTANCE_STDDEV: f64 = 20.0;
@@ -229,8 +278,8 @@ enum PatternResult {
     /// Execution took too long, assumed non-linear
     TooLong,
     /// Very slow outlier, probably due to different parsing in pulldown-cmark.
-    /// (number of bytes truncated from end reaching this behaviour)
     ///
+    /// Contains the number of bytes truncated from end reaching this behaviour.
     /// Possibly indicates weird behaviour in pulldown-cmark.
     /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
     HugeOutlier(usize),

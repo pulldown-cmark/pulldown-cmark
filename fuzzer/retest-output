@@ -5,7 +5,7 @@ set -euo pipefail
 panic=0
 error=0
 join=0
-grep "Panic cought. Pattern: " output && panic=1
+grep "Panic caught. Pattern: " output && panic=1
 grep "Couldn't convert pattern to UTF-8. Err: " output && error=1
 grep "Joined thread: " output && join=1
 

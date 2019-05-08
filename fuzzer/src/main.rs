@@ -315,6 +315,9 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
 
     let mut i = 0;
     let mut huge_outliers = 0;
+    // We might not always get huge outliers. If we have a non-huge but consistent outlier, we
+    // need to abort as well.
+    let mut outlier = 0;
     while i < sample_size {
         let (n, dur) = time_needed(&s, i+1, sample_size);
         array[i] = (n as f64, dur.as_nanos() as f64);
@@ -343,6 +346,10 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
                 println!("removed outlier");
             }
             i -= 1;
+            outlier += 1;
+            if outlier > 100 {
+                return PatternResult::HugeOutlier(0);
+            }
             continue;
         }
 

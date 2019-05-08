@@ -174,7 +174,7 @@ fn fuzz(num_cpus: usize) {
         // timeout thread
         threads.push(s.spawn(|_| {
             loop {
-                std::thread::sleep(Duration::from_millis(MAX_MILLIS as u64));
+                std::thread::sleep(Duration::from_millis(MAX_MILLIS as u64 * 10));
                 for pattern_time in &pattern_times {
                     let (pattern, time) = &*pattern_time.lock().unwrap();
                     if time.elapsed().as_millis() > MAX_MILLIS * 10 {
@@ -353,8 +353,6 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
 
     let mut i = 0;
     let mut huge_outliers = 0;
-    // We might not always get huge outliers. If we have a non-huge but consistent outlier, we
-    // need to abort as well.
     let mut outlier = 0;
     while i < sample_size {
         let (n, dur) = time_needed(&s, i+1, sample_size);
@@ -372,7 +370,7 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
             // Instead, if we encounter a huge outlier 10 times in the same test, we abort this pattern.
             if array[i-1].1 > array[i].1 * 50.0 {
                 huge_outliers += 1;
-                if huge_outliers > 10 {
+                if huge_outliers > sample_size {
                     let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
                     let trim_len = pattern.len() - (s.len() - last_repetition_start);
                     return PatternResult::HugeOutlier(trim_len);
@@ -380,14 +378,18 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
             }
 
             // Redo from the last sample
+            outlier += 1;
             if DEBUG_LEVEL >= 3 {
-                println!("removed outlier");
+                println!("removed outlier, #{}", outlier);
             }
             i -= 1;
-            outlier += 1;
-            if outlier > 100 {
+
+            // We might not always get huge outliers.
+            // If we have a non-huge but consistent outlier, we need to abort as well.
+            if outlier > sample_size * 10 {
                 return PatternResult::HugeOutlier(0);
             }
+
             continue;
         }
 

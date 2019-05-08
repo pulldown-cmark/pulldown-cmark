@@ -380,6 +380,10 @@ fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) 
         n += 1;
     }
 
+    if DEBUG_LEVEL >= 3 {
+        println!("len: {}", n);
+    }
+
     // perform actual time measurement
     let parser = Parser::new_ext(&s[..n], Options::all());
     let clock = Clock::<ThreadCpuTime>::now();

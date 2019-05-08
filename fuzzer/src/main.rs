@@ -59,6 +59,9 @@ use crossbeam_utils::thread;
 mod literals;
 mod black_box;
 mod scoring;
+mod clock;
+
+use clock::{Clock, ThreadCpuTime};
 
 /// After how many patterns each threads prints status reports including throughput.
 const BATCH_SIZE: usize = 10_000;
@@ -372,11 +375,11 @@ fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) 
 
     // perform actual time measurement
     let parser = Parser::new_ext(&s, Options::all());
-    let time = Instant::now();
+    let clock = Clock::<ThreadCpuTime>::now();
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });
-    (n, time.elapsed())
+    (n, clock.elapsed())
 }
 
 

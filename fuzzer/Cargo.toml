@@ -16,6 +16,7 @@ rand = "0.6.5"
 rand_xoshiro = "0.1.0"
 num_cpus = "1.10.0"
 crossbeam-utils = "0.6.5"
+libc = "0.2.54"
 
 [profile.release]
 debug = true

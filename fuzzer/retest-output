@@ -15,4 +15,4 @@ if [ $panic -eq 1 -o $error -eq 1 -o $join -eq 1 ]; then
 fi
 
 cargo rustc --release -- -C target-cpu=native
-grep 'pattern: "' < output | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/find_exponential --retest | tee output-retested
+grep 'pattern: "' < output | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/fuzzer --retest | tee output-retested

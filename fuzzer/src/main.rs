@@ -45,10 +45,12 @@
 
 use std::time::{Duration, Instant};
 use std::panic;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
 use std::env;
 use std::io::{self, BufRead};
 use std::iter;
+use std::process::Command;
+use std::os::unix::process::CommandExt;
 
 use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
@@ -150,16 +152,50 @@ fn fuzz(num_cpus: usize) {
     let num_batches_finished = &num_batches_finished;
     let mut rng = Xoshiro256Plus::from_rng(&mut rand::thread_rng()).unwrap();
     let start_time = Instant::now();
+    let mut pattern_times = Vec::with_capacity(num_cpus);
+    for _ in 0..num_cpus {
+        pattern_times.push(Mutex::new((String::new(), Instant::now())));
+    }
 
     // start threads
     thread::scope(|s| {
-        let threads: Vec<_> = (0..num_cpus).map(|_| {
+        // worker threads
+        let mut threads: Vec<_> = (0..num_cpus).map(|i| {
             let literals = literals.clone();
             // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
             rng.jump();
             let rng = rng.clone();
-            s.spawn(move |_| worker_thread_fn(literals, &num_batches_finished, &start_time, rng))
+            let pattern_time = &pattern_times[i];
+            s.spawn(move |_| {
+                worker_thread_fn(literals, &num_batches_finished, &start_time, rng, pattern_time)
+            })
         }).collect();
+
+        // timeout thread
+        threads.push(s.spawn(|_| {
+            loop {
+                std::thread::sleep(Duration::from_millis(MAX_MILLIS as u64));
+                for pattern_time in &pattern_times {
+                    let (pattern, time) = &*pattern_time.lock().unwrap();
+                    if time.elapsed().as_millis() > MAX_MILLIS * 10 {
+                        // We assume a loop / too long behaviour in pulldown-cmark.
+                        // We print the pattern and exec ourselves again to not infinite-loop a thread.
+                        // See <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>
+                        // for more information.
+                        println!(
+                            "Thread timeout triggered (thread took too long) for Pattern: {:?}\n\
+                            Restarting process...",
+                            pattern,
+                        );
+                        let args: Vec<_> = env::args().collect();
+                        Command::new(&args[0])
+                            .args(&args[1..])
+                            .exec();
+                        unreachable!();
+                    }
+                }
+            }
+        }));
 
         for thread in threads {
             println!("Joined thread: {:?}", thread.join());
@@ -170,7 +206,7 @@ fn fuzz(num_cpus: usize) {
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
     literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
-    mut rng: Xoshiro256Plus,
+    mut rng: Xoshiro256Plus, pattern_time: &Mutex<(String, Instant)>,
 ) {
     let uniform = Uniform::new(0, literals.len());
     loop {
@@ -191,6 +227,8 @@ fn worker_thread_fn(
                     continue;
                 }
             };
+            // code-block just to be double-sure that the lock is dropped to not poison it
+            { *pattern_time.lock().unwrap() = (pattern.clone(), Instant::now()); }
             let _ = test_catch_unwind(&pattern);
         }
 

@@ -3,6 +3,7 @@ use std::mem;
 use std::io::Error;
 use std::marker::PhantomData;
 
+#[allow(dead_code)]
 pub enum Monotonic {}
 pub enum ThreadCpuTime {}
 

@@ -7,11 +7,13 @@ truncate -s 0 output-retested
 panic=0
 error=0
 join=0
+restart=0
 grep "Panic caught. Pattern: " output | tee -a output-retested && panic=1
 grep "Couldn't convert pattern to UTF-8. Err: " output | tee -a output-retested && error=1
 grep "Joined thread: " output | tee -a output-retested && join=1
+grep "Thread timeout triggered (thread took too long) for Pattern: " output | tee -a output-retested && restart=1
 
-if [ $panic -eq 1 -o $error -eq 1 -o $join -eq 1 ]; then
+if [ $panic -eq 1 -o $error -eq 1 -o $join -eq 1 -o $restart -eq 1 ]; then
   echo "Panics / Errors found and printed above. Press return to continue..."
   read
 fi

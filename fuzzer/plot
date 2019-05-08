@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import matplotlib.pyplot as plt
+import sys
+import ast
+
+data = " ".join(sys.argv[1:])
+data = ast.literal_eval(data)
+
+x = [d[0] for d in data]
+y = [d[1] for d in data]
+
+plt.plot(x, y)
+plt.plot(x, y, "or")
+plt.show()

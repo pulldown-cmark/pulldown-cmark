@@ -97,8 +97,10 @@ fn main() {
             for pattern in io::stdin().lock().lines() {
                 let pattern = pattern.unwrap();
                 println!("retesting {:?}", pattern);
-                let score = test(&pattern);
-                println!("score: {}", score);
+                match test_catch_unwind(&pattern) {
+                    Ok(score) => println!("score: {}", score),
+                    Err(()) => ()
+                }
             }
         },
 
@@ -189,12 +191,7 @@ fn worker_thread_fn(
                     continue;
                 }
             };
-            let res = panic::catch_unwind(|| {
-                test(&pattern);
-            });
-            if res.is_err() {
-                println!("Panic caught. Pattern: {:?}", pattern);
-            }
+            let _ = test_catch_unwind(&pattern);
         }
 
         // print status update and throughput
@@ -214,6 +211,16 @@ fn worker_thread_fn(
             );
         }
     }
+}
+
+fn test_catch_unwind(pattern: &str) -> Result<f64, ()> {
+    let res = panic::catch_unwind(|| {
+        test(&pattern)
+    });
+    if res.is_err() {
+        println!("Panic caught. Pattern: {:?}", pattern);
+    }
+    res.map_err(|_| ())
 }
 
 /// Test a specific pattern, returning the score of the score-function.

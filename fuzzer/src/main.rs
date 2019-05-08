@@ -374,7 +374,7 @@ fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) 
     }
 
     // perform actual time measurement
-    let parser = Parser::new_ext(&s, Options::all());
+    let parser = Parser::new_ext(&s[..n], Options::all());
     let clock = Clock::<ThreadCpuTime>::now();
     parser.for_each(|evt| {
         black_box::black_box(evt);

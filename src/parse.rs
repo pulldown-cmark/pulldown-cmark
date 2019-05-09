@@ -2851,6 +2851,12 @@ mod test {
     }
 
     #[test]
+    fn lone_hashtag() {
+        // dont crash
+        assert_eq!(3, Parser::new("#").count());
+    }
+
+    #[test]
     fn offset_iter() {
         let event_offsets: Vec<_> = Parser::new("*hello* world")
             .into_offset_iter()

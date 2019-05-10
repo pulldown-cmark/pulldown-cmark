@@ -96,7 +96,10 @@ for panic in panics:
     else:
         traces[stderr] = [input]
 
-for (stderr, patterns) in traces.items():
+traces = list(traces.items())
+traces.sort()
+
+for (stderr, patterns) in traces:
     print("```")
     for pattern in patterns:
         print("python -c \"print({})\" | RUST_BACKTRACE=1 cargo run -- -TFSL"

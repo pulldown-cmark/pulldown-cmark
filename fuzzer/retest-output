@@ -3,20 +3,83 @@ set -euo pipefail
 
 truncate -s 0 output-retested
 
-# find errors / panics
-panic=0
+PANICPATTERN="Panic caught. Pattern: "
+UTF8PATTERN="Couldn't convert pattern to UTF-8. Err: "
+JOINPATTERN="Joined thread: "
+TIMEOUTPATTERN="Thread timeout triggered (thread took too long) for Pattern: "
+# pattern to extract actual findings
+FINDPATTERN='^pattern: "'
+# output file of this program
+OUTFILE="output-retested"
+# temporary output file while performing a retesting run
+OUTFILE2="output-retested2"
+# file panics are written to
+PANICFILE="panics"
+
+cp output "$OUTFILE"
+
+retestround() {
+  mv "$OUTFILE" "$OUTFILE2"
+  grep "$PANICPATTERN" "$OUTFILE2" >> "$OUTFILE" && :
+  grep "$UTF8PATTERN" "$OUTFILE2" >> "$OUTFILE" && :
+  grep "$JOINPATTERN" "$OUTFILE2" >> "$OUTFILE" && :
+  grep "$TIMEOUTPATTERN" "$OUTFILE2" >> "$OUTFILE" && :
+  cargo rustc --release -- -C target-cpu=native > /dev/null 2>&1
+  grep "$FINDPATTERN" < "$OUTFILE2" | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/fuzzer --retest >> "$OUTFILE" 2>&1
+  rm "$OUTFILE2"
+}
+
+# We can't perform fixpoint iteration until retesting doesn't change number
+# of patterns, because retesting will at some point eliminate even true positives.
+# Instead, we just perform 3 rounds, which should be good enough for our case.
+finds_before=0
+finds_after=$(grep "$FINDPATTERN" "$OUTFILE" | wc -l)
+false_positives=0
+
+for i in `seq 3`; do
+  echo "Round $i"
+
+  finds_before=$finds_after
+  retestround
+  finds_after=$(grep "$FINDPATTERN" "$OUTFILE" | wc -l)
+
+  false_positives_this_round=$(($finds_before - $finds_after))
+  false_positives=$(($false_positives + $false_positives_this_round))
+
+  echo "Finds before: $finds_before"
+  echo "Finds after : $finds_after"
+done
+
+echo "Fixpoint reached"
+
+num_panics=$(grep "$PANICPATTERN" "$OUTFILE" | wc -l || :)
+num_timeouts=$(grep "$TIMEOUTPATTERN" "$OUTFILE" | wc -l || :)
+num_joined_thread=$(grep "$JOINPATTERN" "$OUTFILE" | wc -l || :)
+num_utf8_errors=$(grep "$UTF8PATTERN" "$OUTFILE" | wc -l || :)
+echo "Total panics: $num_panics"
+echo "Total thread timeouts: $num_timeouts"
+echo "Total joined threads: $num_joined_thread"
+echo "Total UTF8 Errors: $num_utf8_errors"
+echo "Total false positives: $false_positives"
+echo "Total true positives: $finds_after"
+
+echo "Retesting Panics"
+./group-panics > "$PANICFILE"
+echo "Panics exported to $PANICFILE"
+
+# Check if there are still errors
+echo "\n"
 error=0
 join=0
 restart=0
-grep "Panic caught. Pattern: " output | tee -a output-retested && panic=1
-grep "Couldn't convert pattern to UTF-8. Err: " output | tee -a output-retested && error=1
-grep "Joined thread: " output | tee -a output-retested && join=1
-grep "Thread timeout triggered (thread took too long) for Pattern: " output | tee -a output-retested && restart=1
+grep "$UTF8PATTERN" "$OUTFILE" && error=1
+grep "$JOINPATTERN" "$OUTFILE" && join=1
+grep "$TIMEOUTPATTERN" "$OUTFILE" && restart=1
 
-if [ $panic -eq 1 -o $error -eq 1 -o $join -eq 1 -o $restart -eq 1 ]; then
-  echo "Panics / Errors found and printed above. Press return to continue..."
-  read
+if [ $error -eq 1 -o $join -eq 1 -o $restart -eq 1 ]; then
+  echo "Finished. Remaining errors / problems found and printed above. They need to be tested manually."
+  echo ""
+  echo "Panics grouped in file '$PANICFILE'."
+  echo "Remaining true positive results in file '$OUTFILE'."
 fi
 
-cargo rustc --release -- -C target-cpu=native
-grep 'pattern: "' < output | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/fuzzer --retest | tee -a output-retested

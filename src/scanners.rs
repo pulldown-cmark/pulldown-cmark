@@ -774,7 +774,6 @@ pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Op
         while i < bytes.len() {
             match bytes[i] {
                 0x0 ... 0x20 => {
-                    dbg!(bytes[i]);
                     break;
                 }
                 b'(' => {

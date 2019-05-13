@@ -61,7 +61,7 @@ fn make_html_parser() -> html::Parser<RcDom> {
 fn normalize_html(s: &str) -> String {
     let parser = make_html_parser();
     let dom = parser.one(s);
-    let body = normalize_dom(dom);
+    let body = normalize_dom(&dom);
     let opts = SerializeOpts::default();
     let mut ret_val = Vec::new();
     serialize(&mut ret_val, &body, opts)
@@ -70,7 +70,7 @@ fn normalize_html(s: &str) -> String {
         .expect("html5ever should always produce UTF8")
 }
 
-fn normalize_dom(dom: RcDom) -> Handle {
+fn normalize_dom(dom: &RcDom) -> Handle {
     let body = {
         let children = dom.document.children.borrow();
         children[0].clone()

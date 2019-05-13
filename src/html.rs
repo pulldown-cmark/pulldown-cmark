@@ -42,7 +42,7 @@ struct WriteWrapper<W>(W);
 
 /// Trait that allows writing string slices. This is basically an extension
 /// of `std::io::Write` in order to include `String`.
-pub trait StrWrite {
+pub(crate) trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
 
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;

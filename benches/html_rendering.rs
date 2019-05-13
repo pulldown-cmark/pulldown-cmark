@@ -61,6 +61,16 @@ This is a [link](example.com). **Cool!**
 
         b.iter(|| Parser::new_ext(input, Options::empty()).count());
     });
+
+    c.bench_function("autolinks_n_html", |b| {
+        let input = "Drop me a line at <john@example.com>. <emph font-weight='BOLD'>Thanks!</emph> <otherinline>
+        Drop me a line at <john@example.com>. <emph font-weight='BOLD'>Thanks!</emph> <otherinline>
+        Drop me a line at <john@example.com>. <emph font-weight='BOLD'>Thanks!</emph> <otherinline>
+        Drop me a line at <john@example.com>. <emph font-weight='BOLD'>Thanks!</emph> <otherinline>
+        Drop me a line at <john@example.com>. <emph font-weight='BOLD'>Thanks!</emph> <otherinline>";
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -25,19 +25,11 @@ use std::ops::{Index, Range};
 use std::cmp::min;
 
 use unicase::UniCase;
-use memchr::memchr;
 
 use crate::strings::CowStr;
 use crate::scanners::*;
 use crate::tree::{TreePointer, TreeIndex, Tree};
 use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
-
-// Allowing arbitrary depth nested parentheses inside link destinations
-// can create denial of service vulnerabilities if we're not careful.
-// The simplest countermeasure is to limit their depth, which is
-// explicitly allowed by the spec as long as the limit is at least 3:
-// https://spec.commonmark.org/0.29/#link-destination
-const LINK_MAX_NESTED_PARENS: usize = 5;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
@@ -1212,13 +1204,16 @@ impl<'a> FirstPass<'a> {
 
         // whitespace between label and url (including up to one newline)
         let mut newlines = 0;
-        for &c in &bytes[i..] {
-            if c == b'\n' {
-                i += 1;
+        while i < bytes.len() {
+            let c = bytes[i];
+            // TODO: we could probably replace this loop by a (number of) scan_blankline?
+            if c == b'\n' || c == b'\r' {
+                i += scan_eol(&bytes[i..])?;
                 newlines += 1;
                 if newlines > 1 {
                     return None;
                 } else {
+                    // FIXME: we aren't using the results of this scan (LOL)
                     let mut line_start = LineStart::new(&bytes[i..]);
                     self.scan_containers(&mut line_start);
                 }
@@ -1238,14 +1233,19 @@ impl<'a> FirstPass<'a> {
         // FIXME: dedup with similar block above
         newlines = 0;
         let mut whitespace_bytes = 0;
-        for &c in &bytes[i..] {
-            if c == b'\n' {
-                whitespace_bytes += 1;
+        while i < bytes.len() {
+            let c = bytes[i];
+            if c == b'\n' || c == b'\r' {
+                let eol_bytes = scan_eol(&bytes[i..])?;
+                i += eol_bytes;
+                whitespace_bytes += eol_bytes;
                 newlines += 1;
-                let mut line_start = LineStart::new(&bytes[(i + whitespace_bytes)..]);
+                // FIXME: we aren't using the results of this scan (LOL)
+                let mut line_start = LineStart::new(&bytes[i..]);
                 let _n_containers = self.scan_containers(&mut line_start);
             } else if is_ascii_whitespace_no_nl(c) {
                 whitespace_bytes += 1;
+                i += 1;
             } else {
                 break;
             }
@@ -1267,13 +1267,11 @@ impl<'a> FirstPass<'a> {
 
         if newlines > 1 {
             return Some(backup);
-        } else {
-            i += whitespace_bytes;
-        }        
+        }    
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
-        if let Some((title_length, title)) = self.scan_refdef_title(i) {
+        if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
             i += title_length;
             backup.1.title = Some(unescape(title));
         } else if newlines > 0 {
@@ -1291,51 +1289,6 @@ impl<'a> FirstPass<'a> {
         } else {
             None
         }
-    }
-
-    // FIXME: use scan_link_title?
-    // and that fn seems to allow blank lines.
-    // FIXME: or, reuse scanner::scan_link_title ?
-    // TODO: rename. this isnt just for refdef_titles, but all titles
-    // returns (bytelength, title_str)
-    fn scan_refdef_title(&self, start: usize) -> Option<(usize, &'a str)> {
-        let text = &self.text[start..];
-        let mut chars = text.chars().peekable();
-        let closing_delim = match chars.next()? {
-            '\'' => '\'',
-            '"' => '"',
-            '(' => ')',
-            _ => return None,
-        };
-        let mut bytecount = 1;
-
-        while let Some(c) = chars.next() {
-            match c {
-                '\n' => {
-                    bytecount += 1;
-                    let mut next = *chars.peek()?;
-                    while is_ascii_whitespace_no_nl(next as u8) {
-                        bytecount += chars.next()?.len_utf8();
-                        next = *chars.peek()?;
-                    }
-                    if *chars.peek()? == '\n' {
-                        // blank line - not allowed
-                        return None;
-                    }
-                }
-                '\\' => {
-                    let next_char = chars.next()?;
-                    bytecount += 1 + next_char.len_utf8();
-                }
-                c if c == closing_delim => {
-                    return Some((bytecount + 1, &text[1..bytecount]));
-                }
-                c => {
-                    bytecount += c.len_utf8();
-                }
-            }
-        }
-        None
     }
 }
 
@@ -1578,353 +1531,6 @@ impl InlineStack {
     }
 }
 
-/// An iterator for text in an inline chain.
-#[derive(Clone)]
-struct InlineScanner<'t, 'a> {
-    tree: &'t Tree<Item>,
-    text: &'a str,
-    cur: TreePointer,
-    ix: usize,
-}
-
-impl<'t, 'a> InlineScanner<'t, 'a> {
-    fn new(tree: &'t Tree<Item>, text: &'a str, cur: TreePointer) -> InlineScanner<'t, 'a> {
-        let ix = if let TreePointer::Valid(cur_ix) = cur {
-            tree[cur_ix].item.start
-        } else {
-            !0
-        };
-        InlineScanner { tree, text, cur, ix }
-    }
-
-    fn unget(&mut self) {
-        self.ix -= 1;
-    }
-
-    // Consumes byte if it was next and returns true. Does
-    // nothing and returns false otherwise.
-    fn scan_ch(&mut self, c: u8) -> bool {
-        self.scan_if(|scanned| scanned == c)
-    }
-
-    fn scan_upto(&mut self, c: u8) -> usize {
-        let upperbound = if let Some(parent_ix) = self.tree.peek_up() {
-           self.tree[parent_ix].item.end 
-        } else {
-            self.text.len()
-        };
-        let bytes = &self.text.as_bytes()[self.ix..upperbound];
-        let memchr_res = memchr(c, bytes);
-        self.ix = memchr_res.map(|ix| self.ix + ix).unwrap_or(bytes.len());
-        self.cur = scan_nodes_to_ix(self.tree, self.cur, self.ix);
-
-        memchr_res.unwrap_or(bytes.len())
-    }
-
-    fn scan_if<F>(&mut self, mut f: F) -> bool
-    where
-        F: FnMut(u8) -> bool,
-    {
-        if let Some(c) = self.next() {
-            if !f(c) {
-                self.unget();
-            } else {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn scan_while<F>(&mut self, mut f: F) -> usize
-    where
-        F: FnMut(u8) -> bool,
-    {
-        let mut n = 0;
-        while let Some(c) = self.next() {
-            if !f(c) {
-                self.unget();
-                break;
-            }
-            n += 1;
-        }
-        n
-    }
-
-    // Note: will consume the prefix of the string.
-    fn scan_str(&mut self, bytes: &[u8]) -> bool {
-        bytes.iter().all(|b| self.scan_ch(*b))
-    }
-
-    fn to_node_and_ix(&self) -> (TreePointer, usize) {
-        let mut cur = self.cur;
-        if let TreePointer::Valid(cur_ix) = cur {
-            if self.tree[cur_ix].item.end == self.ix {
-                cur = self.tree[cur_ix].next;
-            }
-        }
-        (cur, self.ix)
-    }
-}
-
-impl<'t, 'a> Iterator for InlineScanner<'t, 'a> {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<u8> {
-        match self.cur {
-            TreePointer::Nil => None,
-            TreePointer::Valid(mut cur_ix) => {
-                while self.ix == self.tree[cur_ix].item.end {
-                    self.cur = self.tree[cur_ix].next;
-                    match self.cur {
-                        TreePointer::Nil => return None,
-                        TreePointer::Valid(new_cur_ix) => {
-                            cur_ix = new_cur_ix;
-                            self.ix = self.tree[cur_ix].item.start;
-                        }
-                    }
-                }
-                let c = self.text.as_bytes()[self.ix];
-                self.ix += 1;
-                Some(c)
-            }
-        }
-    }
-}
-
-fn scan_inline_attribute_name(scanner: &mut InlineScanner) -> bool {
-    if !scanner.scan_if(|c| is_ascii_alpha(c) || c == b'_' || c == b':') {
-        return false;
-    }
-    scanner.scan_while(|c| is_ascii_alphanumeric(c)
-        || c == b'_' || c == b'.' || c == b':' || c == b'-');
-    true
-}
-
-fn scan_inline_attribute_value(scanner: &mut InlineScanner) -> bool {
-    if let Some(c) = scanner.next() {
-        if is_ascii_whitespace(c) || c == b'=' || c == b'<' || c == b'>' || c == b'`' {
-            scanner.unget();
-        } else if c == b'\'' {
-            scanner.scan_while(|c| c != b'\'');
-            return scanner.scan_ch(b'\'')
-        } else if c == b'"' {
-            scanner.scan_while(|c| c != b'"');
-            return scanner.scan_ch(b'"')
-        } else {
-            scanner.scan_while(|c| !(is_ascii_whitespace(c)
-                || c == b'=' || c == b'<' || c == b'>' || c == b'`' || c == b'\'' || c == b'"'));
-            return true;
-        }
-    }
-    false
-}
-
-fn scan_inline_attribute(scanner: &mut InlineScanner) -> bool {
-    if !scan_inline_attribute_name(scanner) { return false; }
-    let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-    if scanner.scan_ch(b'=') {
-        scanner.scan_while(is_ascii_whitespace);
-        return scan_inline_attribute_value(scanner);
-    } else if n_whitespace > 0 {
-        // Leave whitespace for next attribute.
-        scanner.unget();
-    }
-    true
-}
-
-/// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
-fn scan_inline_html_comment(scanner: &mut InlineScanner) -> bool {
-    if let Some(c) = scanner.next() {
-        if c == b'-' {
-            if !scanner.scan_ch(b'-') { return false; }
-            // Saw "<!--", scan comment.
-            if scanner.scan_ch(b'>') { return false; }
-            if scanner.scan_ch(b'-') {
-                if scanner.scan_ch(b'>') {
-                    return false;
-                } else {
-                    scanner.unget();
-                }
-            }
-            while scanner.scan_upto(b'-') > 0 {
-                scanner.scan_ch(b'-');
-                if scanner.scan_ch(b'-') { return scanner.scan_ch(b'>'); }
-            }
-        } else if c == b'[' {
-            if !scanner.scan_str(b"CDATA[") { return false; }
-            loop {
-                scanner.scan_upto(b']');
-                if !scanner.scan_ch(b']') { return false; }
-                if scanner.scan_while(|c| c == b']') > 0 && scanner.scan_ch(b'>') {
-                    return true;
-                }
-            }
-        } else {
-            // Scan declaration.
-            if scanner.scan_while(|c| c >= b'A' && c <= b'Z') == 0 { return false; }
-            if scanner.scan_while(is_ascii_whitespace) == 0 { return false; }
-            scanner.scan_upto(b'>');
-            return scanner.scan_ch(b'>');
-        }
-    }
-    false
-}
-
-/// Scan processing directive, with initial "<?" already consumed.
-fn scan_inline_html_processing(scanner: &mut InlineScanner) -> bool {
-    while let Some(c) = scanner.next() {
-        if c == b'?' && scanner.scan_ch(b'>') { return true; }
-    }
-    false
-}
-
-fn scan_inline_html(scanner: &mut InlineScanner) -> bool {
-    if let Some(c) = scanner.next() {
-        if c == b'!' {
-            return scan_inline_html_comment(scanner);
-        } else if c == b'?' {
-            return scan_inline_html_processing(scanner);
-        } else if c == b'/' {
-            if !scanner.scan_if(is_ascii_alpha) {
-                return false;
-            }
-            scanner.scan_while(is_ascii_letterdigitdash);
-            scanner.scan_while(is_ascii_whitespace);
-            return scanner.scan_ch(b'>');
-        } else if is_ascii_alpha(c) {
-            // open tag (first character of tag consumed)
-            scanner.scan_while(is_ascii_letterdigitdash);
-            loop {
-                let n_whitespace = scanner.scan_while(is_ascii_whitespace);
-                if let Some(c) = scanner.next() {
-                    if c == b'/' {
-                        return scanner.scan_ch(b'>');
-                    } else if c == b'>' {
-                        return true;
-                    } else if n_whitespace == 0 {
-                        return false;
-                    } else {
-                        scanner.unget();
-                        if !scan_inline_attribute(scanner) {
-                            return false;
-                        }
-                    }
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
-    false
-}
-
-fn scan_autolink<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<(CowStr<'a>, LinkType)> {
-    let save = scanner.clone();
-    let scans = scan_uri(scanner).map(|s| (s, LinkType::Autolink)).or_else(|| {
-        *scanner = save.clone();
-        scan_email(scanner).map(|s| (s, LinkType::Email))
-    });
-    if let Some(uri) = scans {
-        if scanner.scan_ch(b'>') {
-            return Some(uri);
-        }
-    }
-    *scanner = save;
-    None
-}
-
-// must return scanner to original state -- this doesnt seem true?
-// TODO: such invariants should probably be captured by the type system
-fn scan_uri<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    let start_ix = scanner.ix;
-
-    // scheme's first byte must be an ascii letter
-    let first = scanner.next()?;
-    if !is_ascii_alpha(first) {
-        return None;
-    }
-
-    while let Some(c) = scanner.next() {
-        match c {
-            c if is_ascii_alphanumeric(c) => (),
-            b'.' | b'-' | b'+' => (),
-            b':' => break,
-            _ => return None,
-        }
-    }
-
-    // scheme length must be between 2 and 32 characters long. scheme
-    // must be followed by colon
-    let uri_len = scanner.ix - start_ix;
-    if uri_len < 3 || uri_len > 33  {
-        return None;
-    }
-
-    let mut ended = false;
-    while let Some(c) = scanner.next() {
-        match c {
-            b'\0' ... b' ' => {
-                ended = true;
-            }
-            b'>' | b'<' => break,
-            _ if ended => return None,
-            _ => (),
-        }
-    };
-    scanner.unget();
-
-    Some(scanner.text[start_ix..scanner.ix].into())
-}
-
-fn scan_email<'t, 'a>(scanner: &mut InlineScanner<'t, 'a>) -> Option<CowStr<'a>> {
-    // using a regex library would be convenient, but doing it by hand is not too bad
-    let start_ix = scanner.ix;
-
-    while let Some(c) = scanner.next() {
-        match c {
-            c if is_ascii_alphanumeric(c) => (),
-            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' |
-            b'=' | b'?' | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
-            _ => break,
-        }
-    }
-
-    if scanner.ix == start_ix || scanner.text.as_bytes()[scanner.ix - 1] != b'@' {
-        return None;
-    }
-
-    loop {
-        let label_start_ix = scanner.ix;
-        let mut fresh_label = true;
-
-        while let Some(c) = scanner.next() {
-            match c {
-                c if is_ascii_alphanumeric(c) => (),
-                b'-' if fresh_label => {
-                    return None;
-                }
-                b'-' => (),
-                _ => {
-                    scanner.unget();
-                    break;
-                }
-            }
-            fresh_label = false;
-        }
-    
-        if scanner.ix == label_start_ix || scanner.ix - label_start_ix > 63
-            || scanner.text.as_bytes()[scanner.ix - 1] == b'-' {
-            return None;
-        }
-
-        if !scanner.scan_ch(b'.') {
-            break;
-        }
-    }
-
-    Some(scanner.text[start_ix..scanner.ix].into())
-}
-
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // label, next node index
@@ -1962,36 +1568,6 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
     } else {
         RefScan::Failed
     }
-}
-
-/// Returns next byte index, url and title.
-fn scan_inline_link(underlying: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, CowStr<'_>)> {
-    let mut ix = start_ix;
-    if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
-        return None;
-    }
-    ix += 1;
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
-    let dest = unescape(dest);
-    ix += dest_length;
-
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let title = if let Some((bytes_scanned, t)) = scan_link_title(underlying, ix) {
-        ix += bytes_scanned;
-        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-        t
-    } else {
-        "".into()
-    };
-    if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
-        return None;
-    }
-    ix += 1;
-
-    Some((ix, dest, title))
 }
 
 #[derive(Clone, Default)]
@@ -2159,6 +1735,18 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
     }
 }
 
+/// A struct containing information on the reachability of certain inline HTML
+/// elements. In particular, for cdata elements (`<![CDATA[`), processing
+/// elements (`<?`) and declarations (`<!DECLARATION`). The respectives usizes
+/// represent the indices before which a scan will always fail and can hence
+/// be skipped.
+#[derive(Clone, Default)]
+pub(crate) struct HtmlScanGuard {
+    pub cdata: usize,
+    pub processing: usize,
+    pub declaration: usize,
+}
+
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -2166,6 +1754,7 @@ pub struct Parser<'a> {
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
+    html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
@@ -2196,7 +1785,11 @@ impl<'a> Parser<'a> {
         tree.reset();
         let inline_stack = Default::default();
         let link_stack = Default::default();
-        Parser { text, tree, allocs, broken_link_callback, offset: 0, inline_stack, link_stack }
+        let html_scan_guard = Default::default();
+        Parser {
+            text, tree, allocs, broken_link_callback,
+            offset: 0, inline_stack, link_stack, html_scan_guard
+        }
     }
 
     pub fn get_offset(&self) -> usize {
@@ -2228,10 +1821,14 @@ impl<'a> Parser<'a> {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
-                    let scanner = &mut InlineScanner::new(&self.tree, self.text, next);
+                    let autolink = if let TreePointer::Valid(next_ix) = next {
+                        scan_autolink(self.text, self.tree[next_ix].item.start)
+                    } else {
+                        None
+                    };
 
-                    if let Some((uri, link_type)) = scan_autolink(scanner) {
-                        let (node, ix) = scanner.to_node_and_ix();
+                    if let Some((ix, uri, link_type)) = autolink {
+                        let node = scan_nodes_to_ix(&self.tree, next, ix);
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
@@ -2247,18 +1844,30 @@ impl<'a> Parser<'a> {
                             self.tree[node_ix].item.start = ix;
                         }
                         continue;
-                    } else if scan_inline_html(scanner) {
-                        let (node, ix) = scanner.to_node_and_ix();
-                        // TODO: this logic isn't right if the replaced chain has
-                        // tricky stuff (skipped containers, replaced nulls).
-                        self.tree[cur_ix].item.body = ItemBody::InlineHtml;
-                        self.tree[cur_ix].item.end = ix;
-                        self.tree[cur_ix].next = node;
-                        cur = node;
-                        if let TreePointer::Valid(node_ix) = cur {
-                            self.tree[node_ix].item.start = ix;
+                    } else {
+                        let inline_html = if let TreePointer::Valid(next_ix) = next {
+                            self.tree.peek_up()
+                                .map(|parent_ix| self.tree[parent_ix].item.end)
+                                .and_then(|end_offset| {
+                                    let bytes = &self.text.as_bytes()[..end_offset];
+                                    scan_inline_html(bytes, self.tree[next_ix].item.start, &mut self.html_scan_guard)
+                                })
+                        } else {
+                            None
+                        };
+                        if let Some(ix) = inline_html {
+                            let node = scan_nodes_to_ix(&self.tree, next, ix);
+                            // TODO: this logic isn't right if the replaced chain has
+                            // tricky stuff (skipped containers, replaced nulls).
+                            self.tree[cur_ix].item.body = ItemBody::InlineHtml;
+                            self.tree[cur_ix].item.end = ix;
+                            self.tree[cur_ix].next = node;
+                            cur = node;
+                            if let TreePointer::Valid(node_ix) = cur {
+                                self.tree[node_ix].item.start = ix;
+                            }
+                            continue;
                         }
-                        continue;
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
@@ -2313,8 +1922,8 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let link_details = if let TreePointer::Valid(cur_ix) = next {
-                            scan_inline_link(self.text, self.tree[cur_ix].item.start)
+                        let link_details = if let TreePointer::Valid(next_ix) = next {
+                            scan_inline_link(self.text, self.tree[next_ix].item.start)
                         } else {
                             None
                         };
@@ -2890,10 +2499,31 @@ mod test {
         assert_eq!(expected_offsets, event_offsets);
     }
 
+    // FIXME: add this one regression suite
     #[test]
     fn link_def_at_eof() {
         let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
         let expected = "<p><a href=\"https://vincentprouillet.com\">My site</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn ref_def_at_eof() {
+        let test_str = "[test]:\\";
+        let expected = "";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn ref_def_cr_lf() {
+        let test_str = "[a]: /u\r\n\n[a]";
+        let expected = "<p><a href=\"/u\">a</a></p>\n";
 
         let mut buf = String::new();
         crate::html::push_html(&mut buf, Parser::new(test_str));

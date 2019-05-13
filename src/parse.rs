@@ -1450,7 +1450,7 @@ struct InlineEl {
     both: bool,  // can both open and close
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct InlineStack {
     stack: Vec<InlineEl>,
     // lower bounds for
@@ -1461,13 +1461,6 @@ struct InlineStack {
 }
 
 impl InlineStack {
-    fn new() -> InlineStack {
-        InlineStack {
-            stack: Vec::new(),
-            lower_bounds: [0; 5],
-        }
-    }
-
     fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
@@ -1574,6 +1567,38 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
         RefScan::LinkLabel(label, next_node)
     } else {
         RefScan::Failed
+    }
+}
+
+#[derive(Clone, Default)]
+struct LinkStack {
+    inner: Vec<LinkStackEl>,
+    disabled_ix: usize,
+}
+
+impl LinkStack {
+    fn push(&mut self, el: LinkStackEl) {
+        self.inner.push(el);
+    }
+
+    fn pop(&mut self) -> Option<LinkStackEl> {
+        let el = self.inner.pop();
+        self.disabled_ix = std::cmp::min(self.disabled_ix, self.inner.len());
+        el
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.disabled_ix = 0;
+    }
+
+    fn disable_all_links(&mut self) {
+        for el in &mut self.inner[self.disabled_ix..] {
+            if el.ty == LinkStackTy::Link {
+                el.ty = LinkStackTy::Disabled;
+            }
+        }
+        self.disabled_ix = self.inner.len();
     }
 }
 
@@ -1733,7 +1758,7 @@ pub struct Parser<'a> {
 
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
-    link_stack: Vec<LinkStackEl>,
+    link_stack: LinkStack,
 }
 
 impl<'a> Parser<'a> {
@@ -1758,8 +1783,8 @@ impl<'a> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
-        let inline_stack = InlineStack::new();
-        let link_stack = Vec::new();
+        let inline_stack = Default::default();
+        let link_stack = Default::default();
         let html_scan_guard = Default::default();
         Parser {
             text, tree, allocs, broken_link_callback,
@@ -1884,11 +1909,11 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
+                    self.link_stack.push(LinkStackEl { node: cur_ix, ty: LinkStackTy::Link });
                 }
                 ItemBody::MaybeImage => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    self.link_stack.push( LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
+                    self.link_stack.push(LinkStackEl { node: cur_ix, ty: LinkStackTy::Image });
                 }
                 ItemBody::MaybeLinkClose => {
                     if let Some(tos) = self.link_stack.pop() {
@@ -1923,11 +1948,7 @@ impl<'a> Parser<'a> {
                             }
 
                             if tos.ty == LinkStackTy::Link {
-                                for el in &mut self.link_stack {
-                                    if el.ty == LinkStackTy::Link {
-                                        el.ty = LinkStackTy::Disabled;
-                                    }
-                                }
+                                self.link_stack.disable_all_links();
                             }
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
@@ -2008,11 +2029,7 @@ impl<'a> Parser<'a> {
                                     cur_ix = tos.node;
 
                                     if tos.ty == LinkStackTy::Link {
-                                        for el in &mut self.link_stack {
-                                            if el.ty == LinkStackTy::Link {
-                                                el.ty = LinkStackTy::Disabled;
-                                            }
-                                        }
+                                        self.link_stack.disable_all_links();
                                     }
                                 } else {
                                     self.tree[cur_ix].item.body = ItemBody::Text;
@@ -2457,6 +2474,12 @@ mod test {
     fn single_open_fish_bracket() {
         // dont crash
         assert_eq!(3, Parser::new("<").count());
+    }
+
+    #[test]
+    fn lone_hashtag() {
+        // dont crash
+        assert_eq!(3, Parser::new("#").count());
     }
 
     #[test]

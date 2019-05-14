@@ -2285,13 +2285,15 @@ impl<'a> Iterator for OffsetIter<'a> {
                     self.inner.handle_inline();
                 }
 
-                let event = item_to_event(&self.inner.tree[cur_ix].item, self.inner.text, &self.inner.allocs);
+                let node = self.inner.tree[cur_ix];
+                let item = node.item;
+                let event = item_to_event(item, self.inner.text, &self.inner.allocs);
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
                     self.inner.tree.next_sibling(cur_ix);
                 }
-                Some((event, self.inner.tree[cur_ix].item.start..self.inner.tree[cur_ix].item.end))
+                Some((event, item.start..item.end))
             }
         }
     }
@@ -2338,8 +2340,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
     }
 }
 
-// Returns 
-fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text =>
             return Event::Text(text[item.start..item.end].into()),
@@ -2463,10 +2464,18 @@ impl<'a> Iterator for Parser<'a> {
                     self.handle_inline();
                 }
 
-                let event = item_to_event(&self.tree[cur_ix].item, self.text, &self.allocs);
+                let node = self.tree[cur_ix];
+                let item = node.item;
+                let event = item_to_event(item, self.text, &self.allocs);
                 if let Event::Start(..) = event {
+                    self.offset = if let TreePointer::Valid(child_ix) = node.child {
+                        self.tree[child_ix].item.start
+                    } else {
+                        item.end
+                    };
                     self.tree.push();
                 } else {
+                    self.offset = item.end;
                     self.tree.next_sibling(cur_ix);
                 }
                 Some(event)

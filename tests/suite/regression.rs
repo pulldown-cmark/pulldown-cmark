@@ -236,3 +236,16 @@ bar</p>
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_17() {
+    let original = r##"1\. foo
+
+1\) bar
+"##;
+    let expected = r##"<p>1. foo</p>
+<p>1) bar</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

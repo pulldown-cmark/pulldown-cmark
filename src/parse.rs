@@ -514,7 +514,6 @@ impl<'a> FirstPass<'a> {
                         self.tree[node_ix].item.body = ItemBody::Header(level);
                         if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
                             if bytes[start] == b'\\' {
-                                dbg!("got here 1");
                                 self.tree.append_text(start, start + 1);
                             }
                         }

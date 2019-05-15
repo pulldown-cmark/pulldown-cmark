@@ -214,3 +214,13 @@ foo
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_15() {
+    let original = r##"\`foo`
+"##;
+    let expected = r##"<p>`foo`</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

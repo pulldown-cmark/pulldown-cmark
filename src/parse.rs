@@ -151,12 +151,11 @@ enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
-    MaybeCode(usize), // number of backticks
+    MaybeCode(usize, bool), // number of backticks, preceeded by backslash
     MaybeHtml,
     MaybeLinkOpen,
     MaybeLinkClose,
     MaybeImage,
-    Backslash,
 
     // These are inline items after resolution.
     Emphasis,
@@ -194,7 +193,7 @@ enum ItemBody {
 impl<'a> ItemBody {
     fn is_inline(&self) -> bool {
         match *self {
-            ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(_)
+            ItemBody::MaybeEmphasis(..) | ItemBody::MaybeHtml | ItemBody::MaybeCode(..)
             | ItemBody::MaybeLinkOpen | ItemBody::MaybeLinkClose | ItemBody::MaybeImage => true,
             _ => false,
         }
@@ -615,13 +614,6 @@ impl<'a> FirstPass<'a> {
                 b'\\' => {
                     if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) {
                         self.tree.append_text(begin_text, ix);
-                        if !inside_table || bytes[ix + 1] != b'|' {
-                            self.tree.append(Item {
-                                start: ix,
-                                end: ix + 1,
-                                body: ItemBody::Backslash,
-                            });
-                        }
                         begin_text = ix + 1;
                         LoopInstruction::ContinueAndSkip(if bytes[ix + 1] == b'`' { 0 } else { 1 })
                     } else {
@@ -651,10 +643,11 @@ impl<'a> FirstPass<'a> {
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
                     let count = 1 + scan_ch_repeat(&bytes[ix+1..], b'`');
+                    let preceeded_by_backslash = ix > 0 && bytes[ix - 1] == b'\\';
                     self.tree.append(Item {
                         start: ix,
                         end: ix + count,
-                        body: ItemBody::MaybeCode(count),
+                        body: ItemBody::MaybeCode(count, preceeded_by_backslash),
                     });
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
@@ -1871,11 +1864,9 @@ impl<'a> Parser<'a> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(mut search_count) => {
-                    if let TreePointer::Valid(prev_ix) = prev {
-                        if self.tree[prev_ix].item.body == ItemBody::Backslash {
-                            search_count -= 1;
-                        }
+                ItemBody::MaybeCode(mut search_count, preceeded_by_backslash) => {
+                    if preceeded_by_backslash {
+                        search_count -= 1;
                     }
 
                     if code_delims.is_populated() {
@@ -1891,7 +1882,7 @@ impl<'a> Parser<'a> {
                         // so walk the AST
                         let mut scan = if search_count > 0 { self.tree[cur_ix].next } else { TreePointer::Nil };
                         while let TreePointer::Valid(scan_ix) = scan {
-                            if let ItemBody::MaybeCode(delim_count) = self.tree[scan_ix].item.body {
+                            if let ItemBody::MaybeCode(delim_count, _) = self.tree[scan_ix].item.body {
                                 if search_count == delim_count {
                                     self.make_code_span(cur_ix, scan_ix);
                                     code_delims.clear();
@@ -2275,12 +2266,7 @@ impl<'a> Iterator for OffsetIter<'a> {
                 self.inner.tree.next_sibling(ix);
                 Some((Event::End(tag), self.inner.tree[ix].item.start..self.inner.tree[ix].item.end))
             }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.inner.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.inner.tree.next_sibling(cur_ix) {
-                        cur_ix = next;
-                    }
-                }
+            TreePointer::Valid(cur_ix) => {
                 if self.inner.tree[cur_ix].item.body.is_inline() {
                     self.inner.handle_inline();
                 }
@@ -2422,12 +2408,7 @@ impl<'a> Iterator for Parser<'a> {
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag))
             }
-            TreePointer::Valid(mut cur_ix) => {
-                if let ItemBody::Backslash = self.tree[cur_ix].item.body {
-                    if let TreePointer::Valid(next) = self.tree.next_sibling(cur_ix) {
-                        cur_ix = next;
-                    }
-                }
+            TreePointer::Valid(cur_ix) => {
                 if self.tree[cur_ix].item.body.is_inline() {
                     self.handle_inline();
                 }

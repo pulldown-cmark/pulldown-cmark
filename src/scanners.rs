@@ -193,6 +193,8 @@ impl<'a> LineStart<'a> {
                         if val_usize as u64 != val { return None; }                        
                         if self.scan_space(1) || self.is_at_eol() {
                             return self.finish_list_marker(c, val_usize, indent + self.ix - start_ix);
+                        } else {
+                            break;
                         }
                     } else {
                         break;

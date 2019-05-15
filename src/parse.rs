@@ -2468,6 +2468,13 @@ mod test {
     }
 
     #[test]
+    fn lots_of_backslashes() {
+        // dont crash
+        Parser::new("\\\\\r\r").count();
+        Parser::new("\\\r\r\\.\\\\\r\r\\.\\").count();
+    }
+
+    #[test]
     fn offset_iter() {
         let event_offsets: Vec<_> = Parser::new("*hello* world")
             .into_offset_iter()

@@ -4,8 +4,8 @@
 pub use super::test_markdown_html;
 
 mod footnotes;
-mod table;
 mod regression;
+mod table;
 mod spec;
 mod gfm_table;
 mod gfm_strikethrough;

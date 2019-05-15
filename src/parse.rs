@@ -647,11 +647,11 @@ impl<'a> FirstPass<'a> {
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
                     let count = 1 + scan_ch_repeat(&bytes[ix+1..], b'`');
-                    let preceeded_by_backslash = ix > 0 && bytes[ix - 1] == b'\\';
+                    let preceded_by_backslash = bytes[..ix].iter().rev().take_while(|&&b| b == b'\\').count() % 2 == 1;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + count,
-                        body: ItemBody::MaybeCode(count, preceeded_by_backslash),
+                        body: ItemBody::MaybeCode(count, preceded_by_backslash),
                     });
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
@@ -1868,8 +1868,8 @@ impl<'a> Parser<'a> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
-                ItemBody::MaybeCode(mut search_count, preceeded_by_backslash) => {
-                    if preceeded_by_backslash {
+                ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
+                    if preceded_by_backslash {
                         search_count -= 1;
                     }
 

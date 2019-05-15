@@ -1871,13 +1871,14 @@ impl<'a> Parser<'a> {
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
+                        // TODO: if search_count = 0, we can probably short circuit
                     }
 
                     if code_delims.is_populated() {
                         // we have previously scanned all codeblock delimiters,
                         // so we can reuse that work
                         if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
-                            self.make_code_span(cur_ix, scan_ix);
+                            self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
                             self.tree[cur_ix].item.body = ItemBody::Text;
                         }
@@ -1888,7 +1889,7 @@ impl<'a> Parser<'a> {
                         while let TreePointer::Valid(scan_ix) = scan {
                             if let ItemBody::MaybeCode(delim_count, _) = self.tree[scan_ix].item.body {
                                 if search_count == delim_count {
-                                    self.make_code_span(cur_ix, scan_ix);
+                                    self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                                     code_delims.clear();
                                     break;
                                 } else {
@@ -2132,7 +2133,7 @@ impl<'a> Parser<'a> {
     /// Make a code span.
     ///
     /// Both `open` and `close` are matching MaybeCode items.
-    fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex) {
+    fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
         let first_ix = open + 1;
         let last_ix = close - 1;
         let bytes = self.text.as_bytes();
@@ -2199,10 +2200,17 @@ impl<'a> Parser<'a> {
         } else {
             self.text[span_start..span_end].into()
         };
-        self.tree[open].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
-        self.tree[open].item.end = self.tree[close].item.end;
-        self.tree[open].next = self.tree[close].next;
-        self.tree[open].child = TreePointer::Nil;
+        if preceding_backslash {
+            self.tree[open].item.body = ItemBody::Text;
+            self.tree[open].item.end = self.tree[open].item.start + 1;
+            self.tree[open].next = TreePointer::Valid(close);
+            self.tree[close].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
+            self.tree[close].item.start = self.tree[open].item.start + 1;
+        } else {
+            self.tree[open].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
+            self.tree[open].item.end = self.tree[close].item.end;
+            self.tree[open].next = self.tree[close].next;
+        }
     }
 
     pub fn into_offset_iter(self) -> OffsetIter<'a> {

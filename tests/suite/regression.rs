@@ -301,3 +301,15 @@ fn regression_test_21() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_22() {
+    let original = r##"[\\]: x
+
+YOLO
+"##;
+    let expected = r##"<p>YOLO</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

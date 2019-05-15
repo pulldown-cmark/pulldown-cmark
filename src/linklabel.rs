@@ -68,6 +68,7 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                 let next = char_iter.next()?;
                 byte_index += next.len_utf8();
                 codepoints += 2;
+                only_white_space = false;
             }
             _ if c.is_whitespace() => {
                 // normalize labels by collapsing whitespaces, including linebreaks

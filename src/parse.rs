@@ -514,6 +514,7 @@ impl<'a> FirstPass<'a> {
                         self.tree[node_ix].item.body = ItemBody::Header(level);
                         if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
                             if bytes[start] == b'\\' {
+                                dbg!("got here 1");
                                 self.tree.append_text(start, start + 1);
                             }
                         }
@@ -557,7 +558,11 @@ impl<'a> FirstPass<'a> {
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap_or(0);
                     let end_ix = ix + eol_bytes;
-                    if bytes.get(ix - 1) == Some(&b'\\') && end_ix < self.text.len() {
+                    let trailing_backslashes = bytes[..ix].iter()
+                        .rev()
+                        .take_while(|b| **b == b'\\')
+                        .count();
+                    if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
                         return LoopInstruction::BreakAtWith(end_ix, Some(Item {

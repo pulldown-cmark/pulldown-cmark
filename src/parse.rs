@@ -1456,10 +1456,10 @@ struct InlineEl {
 struct InlineStack {
     stack: Vec<InlineEl>,
     // lower bounds for
-    // _, non_both, * (mod 3), ** (mod 3), *** (mod 3)
+    // _, non_both, * (mod 3), ** (mod 3), *** (mod 3), ~~
     // for example an underscore empasis will never match
     // with any element in the stack with index smaller than lowerbounds[0]
-    lower_bounds: [usize; 5],
+    lower_bounds: [usize; 6],
 }
 
 impl InlineStack {
@@ -1484,7 +1484,7 @@ impl InlineStack {
                 min(mod3_lower, self.lower_bounds[1])
             }
         } else {
-            0
+            self.lower_bounds[5]
         }
     }
 
@@ -1496,6 +1496,8 @@ impl InlineStack {
             if !both {
                 self.lower_bounds[1] = new_bound;
             }
+        } else {
+            self.lower_bounds[5] = new_bound;
         }
     }
 

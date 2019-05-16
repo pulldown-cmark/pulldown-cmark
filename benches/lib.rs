@@ -15,42 +15,51 @@ mod to_html {
 
     #[bench]
     fn pathological_links(b: &mut test::Bencher) {
-        let input = std::iter::repeat("[a](<").take(1000).collect::<String>();
+        let input = "[a](<".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_links2(b: &mut test::Bencher) {
-        let input = std::iter::repeat("[[]()").take(1000).collect::<String>();
+        let input = "[[]()".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_emphasis1(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a***").take(1000).collect::<String>();
+        let input = "a***".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_emphasis2(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a***_b__").take(1000).collect::<String>();
+        let input = "a***_b__".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_emphasis3(b: &mut test::Bencher) {
-        let input = std::iter::repeat("[*_a").take(1000).collect::<String>();
+        let input = "[*_a".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
+    fn pathological_emphasis4(b: &mut test::Bencher) {
+        let input = "*~~\u{a0}".repeat(1000);
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+
+        b.iter(|| render_html(&input, opts));
+    }
+
+    #[bench]
     fn pathological_strikethrough(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a***b~~").take(2000).collect::<String>();
+        let input = "a***b~~".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
@@ -73,14 +82,14 @@ mod to_html {
 
     #[bench]
     fn pathological_codeblocks2(b: &mut test::Bencher) {
-        let input = std::iter::repeat("\\``").take(1000).collect::<String>();
+        let input = "\\``".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_codeblocks3(b: &mut test::Bencher) {
-        let mut input = std::iter::repeat("`a`").take(4000).collect::<String>();
+        let mut input = "`a`".repeat(1000);
         input.push('`');
 
         b.iter(|| render_html(&input, Options::empty()));
@@ -88,7 +97,7 @@ mod to_html {
 
     #[bench]
     fn pathological_hrules(b: &mut test::Bencher) {
-        let mut input = std::iter::repeat("* ").take(2000).collect::<String>();
+        let mut input = "* ".repeat(1000);
         input.push('a');
 
         b.iter(|| render_html(&input, Options::empty()));
@@ -96,7 +105,7 @@ mod to_html {
 
     #[bench]
     fn pathological_link_titles(b: &mut test::Bencher) {
-        let input = std::iter::repeat("[ (](").take(2000).collect::<String>();
+        let input = "[ (](".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
@@ -121,21 +130,21 @@ mod to_html {
 
     #[bench]
     fn pathological_cdata(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a <![CDATA[ ").take(2000).collect::<String>();
+        let input = "a <![CDATA[ ".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_html_processing(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a <? ").take(2000).collect::<String>();
+        let input = "a <? ".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }
 
     #[bench]
     fn pathological_html_defs(b: &mut test::Bencher) {
-        let input = std::iter::repeat("a <!A ").take(1000).collect::<String>();
+        let input = "a <!A ".repeat(1000);
 
         b.iter(|| render_html(&input, Options::empty()));
     }

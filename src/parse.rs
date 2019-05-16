@@ -557,10 +557,7 @@ impl<'a> FirstPass<'a> {
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap_or(0);
                     let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = bytes[..ix].iter()
-                        .rev()
-                        .take_while(|b| **b == b'\\')
-                        .count();
+                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
                     if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
                         i -= 1;
                         self.tree.append_text(begin_text, i);
@@ -570,10 +567,7 @@ impl<'a> FirstPass<'a> {
                             body: ItemBody::HardBreak,
                         }));
                     }
-                    let trailing_whitespace = bytes[..ix].iter()
-                        .rev()
-                        .take_while(|&&b| is_ascii_whitespace_no_nl(b))
-                        .count();
+                    let trailing_whitespace = scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
                     if trailing_whitespace >= 2 {
                         i -= trailing_whitespace;
                         self.tree.append_text(begin_text, i);
@@ -647,7 +641,7 @@ impl<'a> FirstPass<'a> {
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
                     let count = 1 + scan_ch_repeat(&bytes[ix+1..], b'`');
-                    let preceded_by_backslash = bytes[..ix].iter().rev().take_while(|&&b| b == b'\\').count() % 2 == 1;
+                    let preceded_by_backslash = scan_rev_while(&bytes[..ix], |b| b == b'\\') % 2 == 1;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + count,
@@ -915,10 +909,7 @@ impl<'a> FirstPass<'a> {
         // TODO: info strings are typically very short. wouldnt it be faster
         // to just do a forward scan here?
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
-        let info_end = ix - bytes[info_start..ix].iter()
-            .rev()
-            .take_while(|&&b| is_ascii_whitespace(b))
-            .count();
+        let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
         let info_string = unescape(&self.text[info_start..info_end]);
         self.tree.append(Item {
             start: start_ix,
@@ -1141,10 +1132,7 @@ impl<'a> FirstPass<'a> {
             if closer == 0 {
                 limit = closer;
             } else {
-                let spaces = header_text[..closer].iter()
-                    .rev()
-                    .take_while(|&&b| b == b' ')
-                    .count();
+                let spaces = scan_rev_while(&header_text[..closer], |b| b == b' ');
                 if spaces > 0 {
                     limit = closer - spaces;
                 }

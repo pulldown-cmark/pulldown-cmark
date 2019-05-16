@@ -316,6 +316,11 @@ pub(crate) fn scan_while<F>(data: &[u8], mut f: F) -> usize
     data.iter().take_while(|&&c| f(c)).count()
 }
 
+pub(crate) fn scan_rev_while<F>(data: &[u8], mut f: F) -> usize
+        where F: FnMut(u8) -> bool {
+    data.iter().rev().take_while(|&&c| f(c)).count()
+}
+
 pub(crate) fn scan_ch_repeat(data: &[u8], c: u8) -> usize {
     scan_while(data, |x| x == c)
 }

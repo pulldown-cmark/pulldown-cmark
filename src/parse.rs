@@ -572,27 +572,6 @@ impl<'a> FirstPass<'a> {
 
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap_or(0);
-                    let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
-                    if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
-                        i -= 1;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
-                            start: i,
-                            end: end_ix,
-                            body: ItemBody::HardBreak,
-                        }));
-                    }
-                    let trailing_whitespace = scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
-                    if trailing_whitespace >= 2 {
-                        i -= trailing_whitespace;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
-                            start: i,
-                            end: end_ix,
-                            body: ItemBody::HardBreak,
-                        }));
-                    }
                     if mode == TableParseMode::Scan && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
@@ -616,6 +595,28 @@ impl<'a> FirstPass<'a> {
                                 }));
                             }
                         }
+                    }
+
+                    let end_ix = ix + eol_bytes;
+                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
+                    if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
+                        i -= 1;
+                        self.tree.append_text(begin_text, i);
+                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
+                            start: i,
+                            end: end_ix,
+                            body: ItemBody::HardBreak,
+                        }));
+                    }
+                    let trailing_whitespace = scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
+                    if trailing_whitespace >= 2 {
+                        i -= trailing_whitespace;
+                        self.tree.append_text(begin_text, i);
+                        return LoopInstruction::BreakAtWith(end_ix, Some(Item {
+                            start: i,
+                            end: end_ix,
+                            body: ItemBody::HardBreak,
+                        }));
                     }
                         
                     self.tree.append_text(begin_text, ix);

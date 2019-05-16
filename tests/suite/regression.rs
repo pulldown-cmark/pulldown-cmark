@@ -329,3 +329,31 @@ foo | bar</p>
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_24() {
+    let original = r##"foo|bar  
+---|---
+foo|bar
+"##;
+    let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_25() {
+    let original = r##"foo|bar\\
+---|---
+foo|bar
+"##;
+    let expected = r##"<table><thead><tr><th>foo</th><th>bar\</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected);
+}

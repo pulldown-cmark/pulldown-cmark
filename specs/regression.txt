@@ -278,3 +278,27 @@ A | B
 ---|---
 foo | bar</p>
 ````````````````````````````````
+
+ISSUE #318 (note the trailing whitespace on the first line)
+
+```````````````````````````````` example
+foo|bar  
+---|---
+foo|bar
+.
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+````````````````````````````````
+
+ISSUE #318
+
+```````````````````````````````` example
+foo|bar\\
+---|---
+foo|bar
+.
+<table><thead><tr><th>foo</th><th>bar\</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+````````````````````````````````

@@ -2504,6 +2504,13 @@ mod test {
     }
 
     #[test]
+    fn issue_283() {
+        let input = std::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap();
+        // dont crash
+        parser_with_extensions(input).count();
+    }
+
+    #[test]
     fn offset_iter() {
         let event_offsets: Vec<_> = Parser::new("*hello* world")
             .into_offset_iter()

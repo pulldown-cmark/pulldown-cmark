@@ -313,3 +313,19 @@ YOLO
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_23() {
+    let original = r##"lorem ipsum
+A | B
+---|---
+foo | bar
+"##;
+    let expected = r##"<p>lorem ipsum
+A | B
+---|---
+foo | bar</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

@@ -206,6 +206,17 @@ impl<'a> Default for ItemBody {
     }
 }
 
+/// Scanning modes for `Parser`'s `parse_line` method.
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum TableParseMode {
+    /// Inside a paragraph, scanning for table headers.
+    Scan,
+    /// Inside a table.
+    Active,
+    /// Inside a paragraph, not scanning for table headers.
+    Disabled,
+}
+
 /// State for the first parsing pass.
 ///
 /// The first pass resolves all block structure, generating an AST. Within a block, items
@@ -446,7 +457,7 @@ impl<'a> FirstPass<'a> {
                 body: ItemBody::TableCell,
             });
             self.tree.push();
-            let (next_ix, _brk) = self.parse_line(ix, true);
+            let (next_ix, _brk) = self.parse_line(ix, TableParseMode::Active);
             self.tree[cell_ix].item.end = next_ix;
             self.tree.pop();
 
@@ -490,19 +501,24 @@ impl<'a> FirstPass<'a> {
 
         let mut ix = start_ix;
         loop {
-            let (next_ix, brk) = self.parse_line(ix, false);
-
-            // break out when we find a table
-            if let Some(Item { body: ItemBody::Table(alignment_ix), start, end }) = brk {
-                let table_cols = self.allocs[alignment_ix].len();
-                self.tree[node_ix].item = Item { body: ItemBody::Table(alignment_ix), start, end };
-                // this clears out any stuff we may have appended - but there may
-                // be a cleaner way
-                self.tree[node_ix].child = TreePointer::Nil;
-                self.tree.pop();
-                self.tree.push();
-                return self.parse_table(table_cols, ix, next_ix);
-            }
+            let (next_ix, brk) = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
+                let (next_ix, brk) = self.parse_line(ix, TableParseMode::Scan);
+                // break out when we find a table
+                if let Some(Item { body: ItemBody::Table(alignment_ix), start, end }) = brk {
+                    let table_cols = self.allocs[alignment_ix].len();
+                    self.tree[node_ix].item = Item { body: ItemBody::Table(alignment_ix), start, end };
+                    // this clears out any stuff we may have appended - but there may
+                    // be a cleaner way
+                    self.tree[node_ix].child = TreePointer::Nil;
+                    self.tree.pop();
+                    self.tree.push();
+                    return self.parse_table(table_cols, ix, next_ix);
+                } else {
+                    (next_ix, brk)
+                }
+            } else {
+                self.parse_line(ix, TableParseMode::Disabled)
+            };
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
@@ -541,7 +557,7 @@ impl<'a> FirstPass<'a> {
     /// Parse a line of input, appending text and items to tree.
     ///
     /// Returns: index after line and an item representing the break.
-    fn parse_line(&mut self, start: usize, inside_table: bool) -> (usize, Option<Item>) {
+    fn parse_line(&mut self, start: usize, mode: TableParseMode) -> (usize, Option<Item>) {
         let bytes = &self.text.as_bytes();
         let mut pipes = 0;
         let mut last_pipe_ix = start;
@@ -550,7 +566,7 @@ impl<'a> FirstPass<'a> {
         let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
             match byte {
                 b'\n' | b'\r' => {
-                    if inside_table {
+                    if let TableParseMode::Active = mode {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }
 
@@ -577,7 +593,7 @@ impl<'a> FirstPass<'a> {
                             body: ItemBody::HardBreak,
                         }));
                     }
-                    if self.options.contains(Options::ENABLE_TABLES) && !inside_table && pipes > 0 {
+                    if mode == TableParseMode::Scan && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
@@ -712,7 +728,7 @@ impl<'a> FirstPass<'a> {
                     }
                 }
                 b'|' => {
-                    if inside_table {
+                    if let TableParseMode::Active = mode {
                         LoopInstruction::BreakAtWith(ix, None)
                     } else {
                         last_pipe_ix = ix;
@@ -1117,7 +1133,7 @@ impl<'a> FirstPass<'a> {
         // now handle the header text
         let header_start = ix;
         let header_node_idx = self.tree.push(); // so that we can set the endpoint later
-        ix = self.parse_line(ix, false).0;
+        ix = self.parse_line(ix, TableParseMode::Disabled).0;
         self.tree[header_node_idx].item.end = ix;
 
         // remove trailing matter from header text

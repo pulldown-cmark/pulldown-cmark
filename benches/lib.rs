@@ -29,7 +29,7 @@ mod to_html {
 
     #[bench]
     fn pathological_emphasis1(b: &mut test::Bencher) {
-        let input = std::iter::repeat("\\` ").take(2000).collect::<String>();
+        let input = std::iter::repeat("a***").take(1000).collect::<String>();
 
         b.iter(|| render_html(&input, Options::empty()));
     }

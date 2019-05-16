@@ -2453,6 +2453,16 @@ mod test {
     use super::*;
     use crate::tree::Node;
 
+    fn parser_with_extensions(text: &str) -> Parser<'_> {
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        Parser::new_ext(text, opts)
+    }
+
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
@@ -2484,6 +2494,12 @@ mod test {
         // dont crash
         Parser::new("\\\\\r\r").count();
         Parser::new("\\\r\r\\.\\\\\r\r\\.\\").count();
+    }
+
+    #[test]
+    fn issue_320() {
+        // dont crash
+        parser_with_extensions(":\r\t> |\r:\r\t> |\r").count();
     }
 
     #[test]

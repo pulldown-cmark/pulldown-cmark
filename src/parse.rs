@@ -1307,10 +1307,10 @@ fn count_header_cols(bytes: &[u8], mut pipes: usize, mut start: usize, last_pipe
 
     // was last pipe followed by whitespace? if so, sub one
     if scan_blank_line(&bytes[(last_pipe_ix + 1)..]).is_some() {
-        pipes -= 1;
+        pipes
+    } else {
+        pipes + 1
     }
-
-    pipes + 1
 }
 
 impl<'a> Tree<Item> {
@@ -2517,6 +2517,13 @@ mod test {
     fn issue_320() {
         // dont crash
         parser_with_extensions(":\r\t> |\r:\r\t> |\r").count();
+    }
+
+    #[test]
+    fn issue_319() {
+        // dont crash
+        parser_with_extensions("|\r-]([^|\r-]([^").count();
+        parser_with_extensions("|\r\r=][^|\r\r=][^car").count();
     }
 
     #[test]

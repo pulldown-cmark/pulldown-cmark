@@ -2396,7 +2396,6 @@ fn surgerize_tight_list<'a>(tree : &mut Tree<Item>, list_ix: TreeIndex) {
         // Check that list item has children - this is not necessarily the case!
         if let TreePointer::Valid(firstborn_ix) = list_item_firstborn {
             if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
-                // paragraphs should always have children
                 tree[listitem_ix].child = tree[firstborn_ix].child;
             }
 
@@ -2405,16 +2404,18 @@ fn surgerize_tight_list<'a>(tree : &mut Tree<Item>, list_ix: TreeIndex) {
             while let TreePointer::Valid(child_ix) = list_item_child {
                 // surgerize paragraphs
                 let repoint_ix = if let ItemBody::Paragraph = tree[child_ix].item.body {
-                    // no empty paragraphs!
-                    let child_firstborn = tree[child_ix].child.unwrap();
-                    if let TreePointer::Valid(repoint_ix) = node_to_repoint {
-                        tree[repoint_ix].next = TreePointer::Valid(child_firstborn);
+                    if let TreePointer::Valid(child_firstborn) = tree[child_ix].child {
+                        if let TreePointer::Valid(repoint_ix) = node_to_repoint {
+                            tree[repoint_ix].next = TreePointer::Valid(child_firstborn);
+                        }
+                        let mut child_lastborn = child_firstborn;
+                        while let TreePointer::Valid(lastborn_next_ix) = tree[child_lastborn].next {
+                            child_lastborn = lastborn_next_ix;
+                        }
+                        child_lastborn
+                    } else {
+                        child_ix
                     }
-                    let mut child_lastborn = child_firstborn;
-                    while let TreePointer::Valid(lastborn_next_ix) = tree[child_lastborn].next {
-                        child_lastborn = lastborn_next_ix;
-                    }
-                    child_lastborn
                 } else {
                     child_ix
                 };
@@ -2545,6 +2546,13 @@ mod test {
         let input = std::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap();
         // dont crash
         parser_with_extensions(input).count();
+    }
+
+    #[test]
+    fn issue_289() {
+        // dont crash
+        parser_with_extensions("> - \\\n> - ").count();
+        parser_with_extensions("- \n\n").count();
     }
 
     #[test]

@@ -1464,16 +1464,19 @@ struct InlineStack {
 
 impl InlineStack {
     fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
+        dbg!(self.stack.len());
+        dbg!(&tree);
         for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
         }
-        dbg!(self.stack.len());
     }
 
     // both implies *, i think. because _ can never be
-    // both opener and closer
+    // both opener and closer.
+    // FIXME: it appears _ can be both?? does it matter from a correctness pov?
+    // yes, probably
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
         if c == b'_' {
             self.lower_bounds[0]
@@ -1505,17 +1508,18 @@ impl InlineStack {
     fn find_match<'a>(&mut self, tree: &mut Tree<Item>, c: u8, count: usize, both: bool)
         -> Option<InlineEl>
     {
+        dbg!(c, count, both);
         let lowerbound = self.get_lowerbound(c, count, both);
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
             .enumerate()
-            .rev()
-            .find(|(_, el)| {
+            .rfind(|(_, el)| {
                 el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
+            dbg!(matching_ix);
             for i in (matching_ix + 1)..self.stack.len() {
                 let el = self.stack[i];
                 self.set_lowerbound(el.c, el.count, el.both, matching_ix.saturating_sub(1));
@@ -1526,12 +1530,14 @@ impl InlineStack {
             self.stack.truncate(matching_ix);
             Some(matching_el)
         } else {
+            dbg!("no match");
             self.set_lowerbound(c, count, both, self.stack.len().saturating_sub(1));
             None
         }
     }
 
     fn push(&mut self, el: InlineEl) {
+        dbg!("pushin'");
         self.stack.push(el)
     }
 }
@@ -1811,6 +1817,7 @@ impl<'a> Parser<'a> {
     fn handle_inline(&mut self) {
         self.handle_inline_pass1();
         self.handle_emphasis();
+        dbg!(&self.tree);
     }
 
     /// Handle inline HTML, code spans, and links.

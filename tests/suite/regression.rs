@@ -357,3 +357,43 @@ foo|bar
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_26() {
+    let original = r##"[<foo>](url)
+"##;
+    let expected = r##"<p><a href="url"><foo></a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_27() {
+    let original = r##"[<foo>bar</foo>](url)
+"##;
+    let expected = r##"<p><a href="url"><foo>bar</foo></a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_28() {
+    let original = r##"![<http://example.com>](http://example.com/logo.png)
+"##;
+    let expected = r##"<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_29() {
+    let original = r##"[<http://one> <http://two>](url)
+"##;
+    let expected = r##"<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}

@@ -302,3 +302,35 @@ foo|bar
 <tbody><tr><td>foo</td><td>bar</td></tr></tbody>
 </table>
 ````````````````````````````````
+
+ISSUE #328
+
+```````````````````````````````` example
+[<foo>](url)
+.
+<p><a href="url"><foo></a></p>
+````````````````````````````````
+
+ISSUE #328
+
+```````````````````````````````` example
+[<foo>bar</foo>](url)
+.
+<p><a href="url"><foo>bar</foo></a></p>
+````````````````````````````````
+
+ISSUE #328
+
+```````````````````````````````` example
+![<http://example.com>](http://example.com/logo.png)
+.
+<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
+````````````````````````````````
+
+ISSUE #328
+
+```````````````````````````````` example
+[<http://one> <http://two>](url)
+.
+<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
+````````````````````````````````

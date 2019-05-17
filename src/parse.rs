@@ -1843,6 +1843,7 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = TreePointer::Valid(text_node);
+                        prev = cur;
                         cur = node;
                         if let TreePointer::Valid(node_ix) = cur {
                             self.tree[node_ix].item.start = ix;
@@ -1866,6 +1867,7 @@ impl<'a> Parser<'a> {
                             self.tree[cur_ix].item.body = ItemBody::InlineHtml;
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
+                            prev = cur;
                             cur = node;
                             if let TreePointer::Valid(node_ix) = cur {
                                 self.tree[node_ix].item.start = ix;

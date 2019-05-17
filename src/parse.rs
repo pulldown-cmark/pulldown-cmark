@@ -1469,6 +1469,7 @@ impl InlineStack {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
         }
+        dbg!(self.stack.len());
     }
 
     // both implies *, i think. because _ can never be
@@ -1790,6 +1791,7 @@ impl<'a> Parser<'a> {
         let inline_stack = Default::default();
         let link_stack = Default::default();
         let html_scan_guard = Default::default();
+        dbg!(&tree);
         Parser {
             text, tree, allocs, broken_link_callback,
             offset: 0, inline_stack, link_stack, html_scan_guard

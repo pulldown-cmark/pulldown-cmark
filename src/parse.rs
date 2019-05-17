@@ -2063,6 +2063,7 @@ impl<'a> Parser<'a> {
             prev = cur;
             cur = self.tree[cur_ix].next;
         }
+        self.link_stack.clear();
     }
 
     fn handle_emphasis(&mut self) {
@@ -2516,6 +2517,20 @@ mod test {
     fn issue_320() {
         // dont crash
         parser_with_extensions(":\r\t> |\r:\r\t> |\r").count();
+    }
+
+    #[test]
+    fn issue_303() {
+        // dont crash
+        parser_with_extensions("[^\r\ra]").count();
+        parser_with_extensions("\r\r]Z[^\x00\r\r]Z[^\x00").count();
+    }
+
+    #[test]
+    fn issue_313() {
+        // dont crash
+        parser_with_extensions("*]0[^\r\r*]0[^").count();
+        parser_with_extensions("[^\r> `][^\r> `][^\r> `][").count();
     }
 
     #[test]

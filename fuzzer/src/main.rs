@@ -6,7 +6,7 @@
 //! Short random combinations of literals are generated (like concatenating 6 random literals),
 //! which are called patterns.
 //! Those patterns are repeated until they reach a byte-length of `NUM_BYTES`.
-//! We iterate over subslices of the pattern to get `SAMPLE_SIZE` uniformly distributed
+//! We iterate over subslices of the pattern to get `SAMPLE_SIZE` evenly distributed
 //! (len, time)-pairs.
 //! Those pairs are fed into a scoring function to test if they seem to be linear or might be
 //! super-linear (see the `scoring` module).
@@ -41,7 +41,18 @@
 //! Additionally, we abort if parsing took longer than `MAX_MILLIS`.
 //! If we tested a substring of the whole input, and already exceeded `MAX_MILLIS`, we shouldn't
 //! continue testing with longer inputs, as we might have super-linear behaviour.
-//! Instead, we again print an according message and abort.
+//! Instead, we again print an according message and abort with that pattern.
+//!
+//! There can also be cases where either the fuzzer or the parser takes a very long time testing
+//! a single pattern.
+//! If the time a thread spends on a single pattern exceeds `10 * MAX_MILLIS`, it could indicate
+//! bugs in the fuzzer, extremely long parsing of an input, or maybe even an infinite loop.
+//! As such we report the pattern the thread currently works on.
+//! To kill that thread and not let it be stuck in a possibly inifinite loop forever, we restart
+//! the whole process (by executing `exec` with our own binary).
+//! While there are other ways of killing threads / handling infinite loops, as evaluated in
+//! <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>,
+//! the easiest solution is to just restart the whole process.
 
 use std::time::{Duration, Instant};
 use std::panic;
@@ -71,7 +82,7 @@ const BATCH_SIZE: usize = 10_000;
 ///
 /// For example given the literals `a` and `b`, with a value of 4, `aaab` is a possible pattern.
 const COMBINATIONS: usize = 6;
-/// If parsing takes longer than this many milliseconds, it is assumed to be non-linear and
+/// If parsing takes longer than this many milliseconds, it is assumed to be superlinear and
 /// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
 /// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
@@ -146,7 +157,7 @@ fn regression_test() {
 
 /// Start fuzzing on given number of threads in parallel.
 fn fuzz(num_cpus: usize) {
-    let literals = literals::get();
+    let literals = &literals::get();
 
     let num_batches_finished = AtomicU64::new(0);
     let num_batches_finished = &num_batches_finished;
@@ -161,7 +172,6 @@ fn fuzz(num_cpus: usize) {
     thread::scope(|s| {
         // worker threads
         let mut threads: Vec<_> = (0..num_cpus).map(|i| {
-            let literals = literals.clone();
             // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
             rng.jump();
             let rng = rng.clone();
@@ -205,7 +215,7 @@ fn fuzz(num_cpus: usize) {
 
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
-    literals: Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
+    literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
     mut rng: Xoshiro256Plus, pattern_time: &Mutex<(String, Instant)>,
 ) {
     let uniform = Uniform::new(0, literals.len());
@@ -266,16 +276,16 @@ fn test_catch_unwind(pattern: &str) -> Result<f64, ()> {
 /// This function prints its results to stdout.
 /// No further handling is needed, the returned score is for debugging purposes mostly.
 fn test(pattern: &str) -> f64 {
-    let mut array = [(0.0, 0.0); SAMPLE_SIZE * 2];
+    let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE * 2];
     loop {
         // first pass, gets rid of most linear patterns if there aren't too many large outliers
-        let res1 = test_pattern(pattern, &mut array[..SAMPLE_SIZE], false);
+        let res1 = test_pattern(pattern, &mut time_samples[..SAMPLE_SIZE], false);
         if let PatternResult::Linear(score) = res1 {
             return score;
         }
         // If the first pass indicated possible non-linear behaviour, retest it with a larger
         // sample size and handle outliers.
-        let res2 = test_pattern(pattern, &mut array, true);
+        let res2 = test_pattern(pattern, &mut time_samples, true);
         if let PatternResult::Linear(score) = res2 {
             return score;
         }
@@ -293,7 +303,7 @@ fn test(pattern: &str) -> f64 {
                     {:?}\n",
                     pattern,
                     score,
-                    array,
+                    time_samples,
                 );
                 score
             },
@@ -305,7 +315,7 @@ fn test(pattern: &str) -> f64 {
                     score: 0\n\
                     {:?}\n",
                     pattern,
-                    array,
+                    time_samples,
                 );
                 0.0
             },
@@ -321,7 +331,7 @@ fn test(pattern: &str) -> f64 {
                     pattern,
                     trim_len,
                     &pattern[..pattern.len() - trim_len],
-                    array,
+                    time_samples,
                 );
                 0.0
             },
@@ -347,46 +357,46 @@ enum PatternResult {
 }
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
-fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: bool) -> PatternResult {
-    let sample_size = array.len();
-    let s = pattern.repeat(NUM_BYTES / pattern.len());
+fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outliers: bool) -> PatternResult {
+    let sample_size = time_samples.len();
+    let repeated_pattern = pattern.repeat(NUM_BYTES / pattern.len());
 
     let mut i = 0;
-    let mut huge_outliers = 0;
-    let mut outlier = 0;
+    let mut num_huge_outliers = 0;
+    let mut num_outliers = 0;
     while i < sample_size {
-        let (n, dur) = time_needed(&s, i+1, sample_size);
-        array[i] = (n as f64, dur.as_nanos() as f64);
+        let (n, dur) = time_needed(&repeated_pattern, i+1, sample_size);
+        time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
         }
 
-        if recalculate_outliers && i > 0 && array[i-1].1 > array[i].1 {
+        if recalculate_outliers && i > 0 && time_samples[i-1].1 > time_samples[i].1 {
             // We have an outlier, possibly due to rescheduling.
 
             // We can have a consistent huge outlier due to weird parsing behaviour when parts of
             // the pattern are truncated at the end (see <https://github.com/raphlinus/pulldown-cmark/issues/287>).
             // In that case we don't want to end in an infinite loop.
             // Instead, if we encounter a huge outlier 10 times in the same test, we abort this pattern.
-            if array[i-1].1 > array[i].1 * 50.0 {
-                huge_outliers += 1;
-                if huge_outliers > sample_size {
-                    let last_repetition_start = pattern.len() + s.rfind(pattern).unwrap();
-                    let trim_len = pattern.len() - (s.len() - last_repetition_start);
+            if time_samples[i-1].1 > time_samples[i].1 * 50.0 {
+                num_huge_outliers += 1;
+                if num_huge_outliers > sample_size {
+                    let last_repetition_start = pattern.len() + repeated_pattern.rfind(pattern).unwrap();
+                    let trim_len = pattern.len() - (repeated_pattern.len() - last_repetition_start);
                     return PatternResult::HugeOutlier(trim_len);
                 }
             }
 
             // Redo from the last sample
-            outlier += 1;
+            num_outliers += 1;
             if DEBUG_LEVEL >= 3 {
-                println!("removed outlier, #{}", outlier);
+                println!("removed outlier, #{}", num_outliers);
             }
             i -= 1;
 
             // We might not always get huge outliers.
             // If we have a non-huge but consistent outlier, we need to abort as well.
-            if outlier > sample_size * 10 {
+            if num_outliers > sample_size * 10 {
                 return PatternResult::HugeOutlier(0);
             }
 
@@ -399,13 +409,13 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
         i += 1;
     }
 
-    let (score, non_linear) = SCORE_FUNCTION(&array);
+    let (score, non_linear) = SCORE_FUNCTION(&time_samples);
 
     if DEBUG_LEVEL >= 1 {
         println!("{:<30}{}", score, pattern);
     }
     if DEBUG_LEVEL >= 2 {
-        println!("{:?}", array);
+        println!("{:?}", time_samples);
     }
 
     if non_linear {
@@ -420,10 +430,10 @@ fn test_pattern(pattern: &str, array: &mut [(f64, f64)], recalculate_outliers: b
 ///
 /// The passed string is the whole repeated pattern string.
 /// This function perform substring slicing according to the current sample and sample size uniformly.
-fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) {
-    let mut n = s.len() / sample_size * sample;
+fn time_needed(repeated_pattern: &str, sample: usize, sample_size: usize) -> (usize, Duration) {
+    let mut n = repeated_pattern.len() / sample_size * sample;
     // find closest byte boundary
-    while !s.is_char_boundary(n) {
+    while !repeated_pattern.is_char_boundary(n) {
         n += 1;
     }
 
@@ -432,7 +442,7 @@ fn time_needed(s: &str, sample: usize, sample_size: usize) -> (usize, Duration) 
     }
 
     // perform actual time measurement
-    let parser = Parser::new_ext(&s[..n], Options::all());
+    let parser = Parser::new_ext(&repeated_pattern[..n], Options::all());
     let clock = Clock::<ThreadCpuTime>::now();
     parser.for_each(|evt| {
         black_box::black_box(evt);

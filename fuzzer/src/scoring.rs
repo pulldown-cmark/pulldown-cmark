@@ -7,21 +7,22 @@ use crate::SAMPLE_SIZE;
 
 /// Calculates the pearson_correlation of the passed `(len, time)`-array.
 #[allow(dead_code)]
-pub fn pearson_correlation(array: &[(f64, f64)]) -> (f64, bool) {
-    let mut vec = Vec::with_capacity(array.len());
-    vec.extend(array.iter().cloned().map(|(x, y)| [x, y]));
-    let array = Array2::from(vec);
-    let array = array.t();
-    let corr = array.pearson_correlation()[[1, 0]];
+pub fn pearson_correlation(time_samples: &[(f64, f64)]) -> (f64, bool) {
+    let mut vec = Vec::with_capacity(time_samples.len());
+    vec.extend(time_samples.iter().cloned().map(|(x, y)| [x, y]));
+    let time_samples = Array2::from(vec);
+    let time_samples = time_samples.t();
+    let corr = time_samples.pearson_correlation()[[1, 0]];
     (corr, corr < super::ACCEPTANCE_CORRELATION)
 }
 
 /// Calculates the stdandard deviation of the slopes between all combinations of points.
 ///
-/// We interpret the `(len, time)`-array as `(x, y)`-coordinates / points on a graph.
+/// We interpret the `(len, time)`-tuples of the array as `(x, y)`-coordinates / points on a graph.
+/// Each tuple in the array is one point / coordinate.
 /// If the time increase is perfectly linear, the slopes of the line running through each two
 /// adjacent points are all equal.
-/// In fact given any pair of points from the array, the slope will be the same.
+/// In fact the slope between any two points from the array will be the same.
 /// If all slopes are the same, the standard deviation of all of those slopes will be zero.
 ///
 /// However, in the real world there are inconsistencies, deviations, rounding and outliers.
@@ -35,13 +36,13 @@ pub fn pearson_correlation(array: &[(f64, f64)]) -> (f64, bool) {
 ///
 /// If the function is not linear, the slopes will all be different, resulting in a higher stddev.
 #[allow(dead_code)]
-pub fn slope_stddev(array: &[(f64, f64)]) -> (f64, bool) {
+pub fn slope_stddev(time_samples: &[(f64, f64)]) -> (f64, bool) {
     let mut slopes = [0f64; SAMPLE_SIZE*2 * (SAMPLE_SIZE*2 - 1) / 2];
     let mut i = 0;
 
-    for (point1, point2) in (0..array.len()).tuple_combinations() {
-        let (x1, y1) = array[point1];
-        let (x2, y2) = array[point2];
+    for (point1, point2) in (0..time_samples.len()).tuple_combinations() {
+        let (x1, y1) = time_samples[point1];
+        let (x2, y2) = time_samples[point2];
         let dx = x2 - x1;
         let dy = y2 - y1;
         let slope = dy / dx;
@@ -56,11 +57,11 @@ pub fn slope_stddev(array: &[(f64, f64)]) -> (f64, bool) {
     }
 
     // calculate standard deviation
-    let mut array = ArrayViewMut1::from(slopes);
-    let mean = array.sum() / array.len() as f64;
-    array.mapv_inplace(|slope| (slope - mean).powi(2));
-    let sum = array.sum();
-    let in_sqrt = sum / array.len() as f64;
+    let mut time_samples = ArrayViewMut1::from(slopes);
+    let mean = time_samples.sum() / time_samples.len() as f64;
+    time_samples.mapv_inplace(|slope| (slope - mean).powi(2));
+    let sum = time_samples.sum();
+    let in_sqrt = sum / time_samples.len() as f64;
     let stddev = in_sqrt.sqrt();
 
     (stddev, stddev > super::ACCEPTANCE_STDDEV)

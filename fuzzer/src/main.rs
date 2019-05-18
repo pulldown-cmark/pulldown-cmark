@@ -111,7 +111,7 @@ fn main() {
                 let pattern = pattern.unwrap();
                 println!("retesting {:?}", pattern);
                 match test_catch_unwind(&pattern) {
-                    Ok(score) => println!("score: {}", score),
+                    Ok(res) => println!("score: {}", res.score()),
                     Err(()) => ()
                 }
             }
@@ -119,40 +119,49 @@ fn main() {
 
         Some("--regressions") => {
             // previously know cases
-            regression_test();
+            let exit_code = regression_test();
+            std::process::exit(exit_code);
         },
         _ => fuzz(num_cpus),
     }
 }
 
 /// Tests patterns of previously known super-linear parsing behaviour.
-fn regression_test() {
+///
+/// Returns the exit code. 0 if all tests passed and 1 otherwise.
+fn regression_test() -> i32 {
+    let mut exit_code = 0;
+    let mut check_result = |res| match res {
+        PatternResult::Linear(_) => (),
+        _ => exit_code = 1,
+    };
     // https://github.com/raphlinus/pulldown-cmark/issues/246
-    test("[](");
+    check_result(test("[]("));
     // https://github.com/raphlinus/pulldown-cmark/issues/247
-    test("``\\");
+    check_result(test("``\\"));
     // https://github.com/raphlinus/pulldown-cmark/issues/248
-    test("a***");
+    check_result(test("a***"));
     // https://github.com/raphlinus/pulldown-cmark/issues/249
     // TODO: we can't perform tests like this yet
-//    test("* * * ...a");
+//    check_result(test("* * * ...a"));
     // https://github.com/raphlinus/pulldown-cmark/issues/251
-    test("[ (](");
+    check_result(test("[ (]("));
     // https://github.com/raphlinus/pulldown-cmark/issues/255
-    test("[*_a");
+    check_result(test("[*_a"));
     // https://github.com/raphlinus/pulldown-cmark/issues/280
-    test("a <![CDATA[");
+    check_result(test("a <![CDATA["));
     // https://github.com/mity/md4c/issues/73#issuecomment-487640366
-    test("a <!A");
+    check_result(test("a <!A"));
     // https://github.com/raphlinus/pulldown-cmark/issues/282
-    test("a<?");
+    check_result(test("a<?"));
     // https://github.com/raphlinus/pulldown-cmark/issues/284
-    test("[[]()");
+    check_result(test("[[]()"));
     // https://github.com/raphlinus/pulldown-cmark/issues/287
     // TODO: we can't perform tests like this reliably yet
-//    test("[{}]:\\a");
+//    check_result(test("[{}]:\\a"));
     // https://github.com/raphlinus/pulldown-cmark/issues/296
-    test("[](<");
+    check_result(test("[](<"));
+    return exit_code;
 }
 
 /// Start fuzzing on given number of threads in parallel.
@@ -261,7 +270,7 @@ fn worker_thread_fn(
     }
 }
 
-fn test_catch_unwind(pattern: &str) -> Result<f64, ()> {
+fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
     let res = panic::catch_unwind(|| {
         test(&pattern)
     });
@@ -271,76 +280,74 @@ fn test_catch_unwind(pattern: &str) -> Result<f64, ()> {
     res.map_err(|_| ())
 }
 
-/// Test a specific pattern, returning the score of the score-function.
+/// Test a specific pattern, returning the pattern result.
 ///
 /// This function prints its results to stdout.
 /// No further handling is needed, the returned score is for debugging purposes mostly.
-fn test(pattern: &str) -> f64 {
+fn test(pattern: &str) -> PatternResult {
     let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE * 2];
-    loop {
-        // first pass, gets rid of most linear patterns if there aren't too many large outliers
-        let res1 = test_pattern(pattern, &mut time_samples[..SAMPLE_SIZE], false);
-        if let PatternResult::Linear(score) = res1 {
-            return score;
-        }
-        // If the first pass indicated possible non-linear behaviour, retest it with a larger
-        // sample size and handle outliers.
-        let res2 = test_pattern(pattern, &mut time_samples, true);
-        if let PatternResult::Linear(score) = res2 {
-            return score;
-        }
-
-        // possible non-linear behaviour found
-
-        let score = match res2 {
-            PatternResult::Linear(..) => unreachable!(),
-            PatternResult::NonLinear(score) => {
-                println!(
-                    "\n\
-                    possible non-linear behaviour found\n\
-                    pattern: {:?}\n\
-                    score: {}\n\
-                    {:?}\n",
-                    pattern,
-                    score,
-                    time_samples,
-                );
-                score
-            },
-            PatternResult::TooLong => {
-                println!(
-                    "\n\
-                    possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
-                    pattern: {:?}\n\
-                    score: 0\n\
-                    {:?}\n",
-                    pattern,
-                    time_samples,
-                );
-                0.0
-            },
-            PatternResult::HugeOutlier(trim_len) => {
-                println!(
-                    "\n\
-                    huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
-                    pattern: {:?}\n\
-                    score: 0\n\
-                    trim length: {}\n\
-                    trimmed rest: {:?}\n\
-                    {:?}\n",
-                    pattern,
-                    trim_len,
-                    &pattern[..pattern.len() - trim_len],
-                    time_samples,
-                );
-                0.0
-            },
-        };
-        return score;
+    // first pass, gets rid of most linear patterns if there aren't too many large outliers
+    let res1 = test_pattern(pattern, &mut time_samples[..SAMPLE_SIZE], false);
+    if let PatternResult::Linear(_) = res1 {
+        return res1;
     }
+    // If the first pass indicated possible non-linear behaviour, retest it with a larger
+    // sample size and handle outliers.
+    let res2 = test_pattern(pattern, &mut time_samples, true);
+    if let PatternResult::Linear(_) = res2 {
+        return res2;
+    }
+
+    // possible non-linear behaviour found
+
+    match res2 {
+        PatternResult::Linear(..) => unreachable!(),
+        PatternResult::NonLinear(score) => {
+            println!(
+                "\n\
+                possible non-linear behaviour found\n\
+                pattern: {:?}\n\
+                score: {}\n\
+                {:?}\n",
+                pattern,
+                score,
+                time_samples,
+            );
+            score
+        },
+        PatternResult::TooLong => {
+            println!(
+                "\n\
+                possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
+                pattern: {:?}\n\
+                score: 0\n\
+                {:?}\n",
+                pattern,
+                time_samples,
+            );
+            0.0
+        },
+        PatternResult::HugeOutlier(trim_len) => {
+            println!(
+                "\n\
+                huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
+                pattern: {:?}\n\
+                score: 0\n\
+                trim length: {}\n\
+                trimmed rest: {:?}\n\
+                {:?}\n",
+                pattern,
+                trim_len,
+                &pattern[..pattern.len() - trim_len],
+                time_samples,
+            );
+            0.0
+        },
+    };
+    res2
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum PatternResult {
     /// Probably linear growth (score)
     Linear(f64),
@@ -354,6 +361,15 @@ enum PatternResult {
     /// Possibly indicates weird behaviour in pulldown-cmark.
     /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
     HugeOutlier(usize),
+}
+
+impl PatternResult {
+    fn score(&self) -> f64 {
+        match *self {
+            PatternResult::Linear(score) | PatternResult::NonLinear(score) => score,
+            PatternResult::TooLong | PatternResult::HugeOutlier(_) => 0.0,
+        }
+    }
 }
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.

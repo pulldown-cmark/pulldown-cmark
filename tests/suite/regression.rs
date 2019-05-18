@@ -397,3 +397,18 @@ fn regression_test_29() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_30() {
+    let original = r##"Markdown | Less | Pretty
+--- | --- | ---
+ 
+some text
+"##;
+    let expected = r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+</tbody></table>
+<p>some text</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

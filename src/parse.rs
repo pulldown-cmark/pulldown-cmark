@@ -427,6 +427,8 @@ impl<'a> FirstPass<'a> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
         let _n_containers = self.scan_containers(&mut line_start);
+        // TODO: we should probably check that n_containers == self.tree.spine_len()
+        line_start.scan_all_space();
         let mut cells = 0;
         let mut final_cell_ix = None;
         ix += line_start.bytes_scanned();
@@ -1456,16 +1458,14 @@ struct InlineEl {
 struct InlineStack {
     stack: Vec<InlineEl>,
     // lower bounds for
-    // _, non_both, * (mod 3), ** (mod 3), *** (mod 3), ~~
+    // _ non_both , * non_both, * (mod 3), ** (mod 3), *** (mod 3), ~~, _ both
     // for example an underscore empasis will never match
     // with any element in the stack with index smaller than lowerbounds[0]
-    lower_bounds: [usize; 6],
+    lower_bounds: [usize; 7],
 }
 
 impl InlineStack {
     fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
-        dbg!(self.stack.len());
-        dbg!(&tree);
         for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
@@ -1479,7 +1479,11 @@ impl InlineStack {
     // yes, probably
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
         if c == b'_' {
-            self.lower_bounds[0]
+            if both {
+                self.lower_bounds[6]
+            } else {
+                self.lower_bounds[0]
+            }
         } else if c == b'*' {
             let mod3_lower = self.lower_bounds[2 + count % 3];
             if both {
@@ -1494,7 +1498,11 @@ impl InlineStack {
 
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
-            self.lower_bounds[0] = new_bound;
+            if both {
+                self.lower_bounds[6] = new_bound;
+            } else {
+                self.lower_bounds[0] = new_bound;
+            }
         } else if c == b'*' {
             self.lower_bounds[2 + count % 3] = new_bound;
             if !both {
@@ -1508,7 +1516,6 @@ impl InlineStack {
     fn find_match<'a>(&mut self, tree: &mut Tree<Item>, c: u8, count: usize, both: bool)
         -> Option<InlineEl>
     {
-        dbg!(c, count, both);
         let lowerbound = self.get_lowerbound(c, count, both);
         let res = self.stack[lowerbound..]
             .iter()
@@ -1519,7 +1526,6 @@ impl InlineStack {
             });
 
         if let Some((matching_ix, matching_el)) = res {
-            dbg!(matching_ix);
             for i in (matching_ix + 1)..self.stack.len() {
                 let el = self.stack[i];
                 self.set_lowerbound(el.c, el.count, el.both, matching_ix.saturating_sub(1));
@@ -1530,14 +1536,12 @@ impl InlineStack {
             self.stack.truncate(matching_ix);
             Some(matching_el)
         } else {
-            dbg!("no match");
             self.set_lowerbound(c, count, both, self.stack.len().saturating_sub(1));
             None
         }
     }
 
     fn push(&mut self, el: InlineEl) {
-        dbg!("pushin'");
         self.stack.push(el)
     }
 }
@@ -1797,7 +1801,6 @@ impl<'a> Parser<'a> {
         let inline_stack = Default::default();
         let link_stack = Default::default();
         let html_scan_guard = Default::default();
-        dbg!(&tree);
         Parser {
             text, tree, allocs, broken_link_callback,
             offset: 0, inline_stack, link_stack, html_scan_guard
@@ -1817,7 +1820,6 @@ impl<'a> Parser<'a> {
     fn handle_inline(&mut self) {
         self.handle_inline_pass1();
         self.handle_emphasis();
-        dbg!(&self.tree);
     }
 
     /// Handle inline HTML, code spans, and links.

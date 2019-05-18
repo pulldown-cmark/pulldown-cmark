@@ -334,3 +334,16 @@ ISSUE #328
 .
 <p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
 ````````````````````````````````
+
+ISSUE #330 (NOTE THERE IS A SPACE ON THE LINE BETWEEN THE TABLE AND THE PARAGRAPH!)
+
+```````````````````````````````` example
+Markdown | Less | Pretty
+--- | --- | ---
+ 
+some text
+.
+<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+</tbody></table>
+<p>some text</p>
+````````````````````````````````

@@ -45,7 +45,7 @@ lazy_static! {
         "pre", "code"
     ].iter().cloned().collect();
     static ref TABLE_TAGS: HashSet<&'static str> = [
-        "table", "thead", "tbody", "tr"
+        "table", "thead", "tbody", "tr", "td"
     ].iter().cloned().collect();
 }
 
@@ -323,11 +323,14 @@ fn leaves_necessary_whitespace_all_nested() {
 
 #[test]
 fn drops_empty_tbody() {
-    assert_eq!("<table><thead><tr><td>hi</td></tr></thead></table>", normalize_html("<table><thead><tr><td>hi</td></tr></thead><tbody>  </tbody></table>"))
+    assert_eq!(
+        "<table><thead><tr><td>hi</td></tr></thead></table>",
+        normalize_html("<table><thead><tr><td>hi</td></tr></thead><tbody>  </tbody></table>")
+    )
 }
 
 #[test]
 fn leaves_nonempty_tbody() {
-    assert_eq!("<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>", normalize_html("<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>"))
+    let input = "<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>";
+    assert_eq!(input, normalize_html(input))
 }
-

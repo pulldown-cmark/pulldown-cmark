@@ -460,7 +460,13 @@ impl<'a> FirstPass<'a> {
             });
             self.tree.push();
             let (next_ix, _brk) = self.parse_line(ix, TableParseMode::Active);
-            self.tree[cell_ix].item.end = next_ix;
+            let trailing_whitespace = scan_rev_while(&bytes[..next_ix], is_ascii_whitespace);
+
+            if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+                self.tree[cur_ix].item.end -= trailing_whitespace;
+            }
+            
+            self.tree[cell_ix].item.end = next_ix - trailing_whitespace;
             self.tree.pop();
 
             ix = next_ix;
@@ -2470,6 +2476,8 @@ impl<'a> Iterator for Parser<'a> {
 mod test {
     use super::*;
     use crate::tree::Node;
+
+    // TODO: move these tests to tests/html.rs?
 
     fn parser_with_extensions(text: &str) -> Parser<'_> {
         let mut opts = Options::empty();

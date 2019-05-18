@@ -2,6 +2,8 @@
 
 extern crate pulldown_cmark;
 
+use pulldown_cmark::{Parser, html, Options};
+
 #[test]
 fn html_test_1() {
     let original = r##"Little header
@@ -28,13 +30,8 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -66,13 +63,8 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -90,13 +82,8 @@ fn html_test_3() {
 <p>Useless</p>
 ?>"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -114,13 +101,8 @@ fn html_test_4() {
 <p>Useless</p>
 -->"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -138,13 +120,8 @@ fn html_test_5() {
 <p>Useless</p>
 ]]>"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -160,13 +137,8 @@ Some things are here...
 Some things are here...
 >"##;
 
-    use pulldown_cmark::{Parser, html};
-
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
 
@@ -197,13 +169,23 @@ console.log("fooooo");
 }
 </script>"##;
 
-    use pulldown_cmark::{Parser, html};
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn html_test_8() {
+    let original = "A | B\n---|---\nfoo | bar";
+    let expected = r##"<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody>
+<tr><td>foo</td><td>bar</td></tr>
+</tbody></table>
+"##;
 
     let mut s = String::new();
-
-    let p = Parser::new(&original);
-    html::push_html(&mut s, p);
-
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_TABLES);
+    html::push_html(&mut s, Parser::new_ext(&original, opts));
     assert_eq!(expected, s);
 }
 

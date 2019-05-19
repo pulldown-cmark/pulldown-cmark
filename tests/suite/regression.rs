@@ -412,3 +412,24 @@ some text
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_31() {
+    let original = r##"1. > foo
+2. >
+"##;
+    let expected = r##"<ol>
+<li>
+<blockquote>
+<p>foo</p>
+</blockquote>
+</li>
+<li>
+<blockquote>
+</blockquote>
+</li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected);
+}

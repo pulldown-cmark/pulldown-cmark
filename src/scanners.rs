@@ -549,25 +549,23 @@ pub(crate) fn scan_empty_list(data: &[u8]) -> bool {
 }
 
 // return number of bytes scanned, delimiter, start index, and indent
-pub(crate) fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
-    if bytes.is_empty() { return (0, 0, 0, 0); }
-    let mut c = bytes[0];
+pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
+    let mut c = *bytes.get(0)?;
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
         b'0' ... b'9' => {
             let (length, start) = parse_decimal(bytes);
-            if length >= bytes.len() { return (0, 0, 0, 0); }
-            c = bytes[length];
-            if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
+            c = *bytes.get(length)?;
+            if !(c == b'.' || c == b')') { return None; }
             (length + 1, start)
         }
-        _ => { return (0, 0, 0, 0); }
+        _ => { return None; }
     };
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&bytes[w.. ], 5);
     if postindent == 0 {
         if scan_eol(&bytes[w..]).is_none() {
-            return (0, 0, 0, 0);
+            return None;
         }
         postindent += 1;
     } else if postindent > 4 {
@@ -578,7 +576,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
         postn = 0;
         postindent = 1;
     }
-    (w + postn, c, start, w + postindent)
+    Some((w + postn, c, start, w + postindent))
 }
 
 // returns (number of bytes, parsed decimal)
@@ -1272,6 +1270,6 @@ mod test {
     use super::*;
     #[test]
     fn overflow_list() {
-        assert_eq!((0, 0, 0, 0), scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!"));
+        assert!(scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none());
     }
 }

@@ -347,3 +347,22 @@ some text
 </tbody></table>
 <p>some text</p>
 ````````````````````````````````
+
+ISSUE #331
+
+```````````````````````````````` example
+1. > foo
+2. >
+.
+<ol>
+<li>
+<blockquote>
+<p>foo</p>
+</blockquote>
+</li>
+<li>
+<blockquote>
+</blockquote>
+</li>
+</ol>
+````````````````````````````````

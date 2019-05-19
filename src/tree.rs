@@ -169,7 +169,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
-    pub fn walk_spine(&self) -> impl Iterator<Item = &TreeIndex> {
+    pub fn walk_spine(&self) -> impl std::iter::DoubleEndedIterator<Item = &TreeIndex> {
         self.spine.iter()
     }
 

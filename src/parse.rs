@@ -287,15 +287,7 @@ impl<'a> FirstPass<'a> {
         // Process new containers
         loop {
             let container_start = start_ix + line_start.bytes_scanned();
-            if line_start.scan_blockquote_marker() {
-                self.finish_list(start_ix);
-                self.tree.append(Item {
-                    start: container_start,
-                    end: 0, // will get set later
-                    body: ItemBody::BlockQuote,
-                });
-                self.tree.push();
-            } else if let Some((ch, index, indent)) = line_start.scan_list_marker() {
+            if let Some((ch, index, indent)) = line_start.scan_list_marker() {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.continue_list(container_start, ch, index);
                 self.tree.append(Item {
@@ -317,8 +309,15 @@ impl<'a> FirstPass<'a> {
                         });
                     }
                 }
-            }
-            else {
+            } else if line_start.scan_blockquote_marker() {
+                self.finish_list(start_ix);
+                self.tree.append(Item {
+                    start: container_start,
+                    end: 0, // will get set later
+                    body: ItemBody::BlockQuote,
+                });
+                self.tree.push();
+            } else {
                 break;
             }
         }
@@ -547,7 +546,7 @@ impl<'a> FirstPass<'a> {
                 }
                 // first check for non-empty lists, then for other interrupts    
                 let suffix = &bytes[ix_new..];
-                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+                if scan_paragraph_interrupt(suffix) || self.interrupt_paragraph_by_list(suffix) {
                     break;
                 }
             }
@@ -759,21 +758,20 @@ impl<'a> FirstPass<'a> {
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
     fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
-        let (ix, delim, index, _) = scan_listitem(suffix);
-
-        if ix == 0 {
-            return false;
+        match scan_listitem(suffix) {
+            Some((ix, delim, index, _)) => {
+                // we don't allow interruption by either empty lists or
+                // numbered lists starting at an index other than 1
+                if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
+                    return true;
+                }
+            }
+            None => return false,
         }
 
-        // we don't allow interruption by either empty lists or
-        // numbered lists starting at an index other than 1
-        if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
-            return true;
-        }
-
-        // check if we are currently in a list
-        self.tree.peek_grandparent().map_or(false, |gp_ix| {
-            match self.tree[gp_ix].item.body {
+        // check if we are currently in a list. parent is always paragraph
+        self.tree.walk_spine().rev().skip(1).any(|&ix| {
+            match self.tree[ix].item.body {
                 ItemBody::ListItem(..) => true,
                 _ => false,
             }

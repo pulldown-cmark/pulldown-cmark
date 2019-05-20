@@ -508,24 +508,24 @@ impl<'a> FirstPass<'a> {
 
         let mut ix = start_ix;
         loop {
-            let (next_ix, brk) = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
-                let (next_ix, brk) = self.parse_line(ix, TableParseMode::Scan);
-                // break out when we find a table
-                if let Some(Item { body: ItemBody::Table(alignment_ix), start, end }) = brk {
-                    let table_cols = self.allocs[alignment_ix].len();
-                    self.tree[node_ix].item = Item { body: ItemBody::Table(alignment_ix), start, end };
-                    // this clears out any stuff we may have appended - but there may
-                    // be a cleaner way
-                    self.tree[node_ix].child = TreePointer::Nil;
-                    self.tree.pop();
-                    self.tree.push();
-                    return self.parse_table(table_cols, ix, next_ix);
-                } else {
-                    (next_ix, brk)
-                }
+            let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
+                TableParseMode::Scan
             } else {
-                self.parse_line(ix, TableParseMode::Disabled)
+                TableParseMode::Disabled
             };
+            let (next_ix, brk) = self.parse_line(ix, scan_mode);
+            
+            // break out when we find a table
+            if let Some(Item { body: ItemBody::Table(alignment_ix), start, end }) = brk {
+                let table_cols = self.allocs[alignment_ix].len();
+                self.tree[node_ix].item = Item { body: ItemBody::Table(alignment_ix), start, end };
+                // this clears out any stuff we may have appended - but there may
+                // be a cleaner way
+                self.tree[node_ix].child = TreePointer::Nil;
+                self.tree.pop();
+                self.tree.push();
+                return self.parse_table(table_cols, ix, next_ix);
+            }
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
@@ -636,8 +636,19 @@ impl<'a> FirstPass<'a> {
                 b'\\' => {
                     if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) {
                         self.tree.append_text(begin_text, ix);
-                        begin_text = ix + 1;
-                        LoopInstruction::ContinueAndSkip(if bytes[ix + 1] == b'`' { 0 } else { 1 })
+                        if bytes[ix + 1] == b'`' {
+                            let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
+                            self.tree.append(Item {
+                                start: ix + 1,
+                                end: ix + count + 1,
+                                body: ItemBody::MaybeCode(count, true),
+                            });
+                            begin_text = ix + 1 + count;
+                            LoopInstruction::ContinueAndSkip(count)
+                        } else {
+                            begin_text = ix + 1;
+                            LoopInstruction::ContinueAndSkip(1)
+                        }
                     } else {
                         LoopInstruction::ContinueAndSkip(0)
                     }
@@ -664,12 +675,11 @@ impl<'a> FirstPass<'a> {
                 }
                 b'`' => {
                     self.tree.append_text(begin_text, ix);
-                    let count = 1 + scan_ch_repeat(&bytes[ix+1..], b'`');
-                    let preceded_by_backslash = scan_rev_while(&bytes[..ix], |b| b == b'\\') % 2 == 1;
+                    let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
                     self.tree.append(Item {
                         start: ix,
                         end: ix + count,
-                        body: ItemBody::MaybeCode(count, preceded_by_backslash),
+                        body: ItemBody::MaybeCode(count, false),
                     });
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
@@ -1895,7 +1905,12 @@ impl<'a> Parser<'a> {
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
-                        // TODO: if search_count = 0, we can probably short circuit
+                        if search_count == 0 {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            prev = cur;
+                            cur = self.tree[cur_ix].next;
+                            continue;
+                        }
                     }
 
                     if code_delims.is_populated() {

@@ -228,6 +228,7 @@ struct FirstPass<'a> {
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
+    list_nesting: usize,
 }
 
 impl<'a> FirstPass<'a> {
@@ -239,7 +240,10 @@ impl<'a> FirstPass<'a> {
         let begin_list_item = false;
         let last_line_blank = false;
         let allocs = Allocations::new();
-        FirstPass { text, tree, begin_list_item, last_line_blank, allocs, options }
+        FirstPass {
+            text, tree, begin_list_item, last_line_blank,
+            allocs, options, list_nesting: 0
+        }
     }
 
     fn run(mut self) -> (Tree<Item>, Allocations<'a>) {
@@ -546,7 +550,7 @@ impl<'a> FirstPass<'a> {
                 }
                 // first check for non-empty lists, then for other interrupts    
                 let suffix = &bytes[ix_new..];
-                if scan_paragraph_interrupt(suffix) || self.interrupt_paragraph_by_list(suffix) {
+                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix)  {
                     break;
                 }
             }
@@ -768,23 +772,11 @@ impl<'a> FirstPass<'a> {
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
     fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
-        match scan_listitem(suffix) {
-            Some((ix, delim, index, _)) => {
-                // we don't allow interruption by either empty lists or
-                // numbered lists starting at an index other than 1
-                if !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1) {
-                    return true;
-                }
-            }
-            None => return false,
-        }
-
-        // check if we are currently in a list. parent is always paragraph
-        self.tree.walk_spine().rev().skip(1).any(|&ix| {
-            match self.tree[ix].item.body {
-                ItemBody::ListItem(..) => true,
-                _ => false,
-            }
+        scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
+            self.list_nesting > 0 ||
+            // we don't allow interruption by either empty lists or
+            // numbered lists starting at an index other than 1
+            !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
         })
     }
 
@@ -1073,6 +1065,7 @@ impl<'a> FirstPass<'a> {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
                 self.pop(ix);
+                self.list_nesting -= 1; 
             }
         }
         if self.last_line_blank {
@@ -1110,6 +1103,7 @@ impl<'a> FirstPass<'a> {
             end: 0,  // will get set later
             body: ItemBody::List(true, ch, index),
         });
+        self.list_nesting += 1;
         self.tree.push();
         self.last_line_blank = false;
     }
@@ -1817,7 +1811,7 @@ impl<'a> Parser<'a> {
         let html_scan_guard = Default::default();
         Parser {
             text, tree, allocs, broken_link_callback,
-            offset: 0, inline_stack, link_stack, html_scan_guard
+            offset: 0, inline_stack, link_stack, html_scan_guard,
         }
     }
 

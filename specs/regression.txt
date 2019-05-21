@@ -400,3 +400,16 @@ ISSUE #298 (not yet fixed)
 <p><a href="/url">foo bar</a></p>
 </blockquote>
 ````````````````````````````````
+
+TABLES IN BROKEN CONTAINERS
+
+```````````````````````````````` example
+> foo | bar
+> --- | ---
+yolo | swag
+.
+<blockquote>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead></table>
+</blockquote>
+<p>yolo | swag</p>
+````````````````````````````````

@@ -458,3 +458,18 @@ fn regression_test_33() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_34() {
+    let original = r##"> foo | bar
+> --- | ---
+yolo | swag
+"##;
+    let expected = r##"<blockquote>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead></table>
+</blockquote>
+<p>yolo | swag</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

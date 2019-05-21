@@ -412,9 +412,8 @@ impl<'a> FirstPass<'a> {
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
     fn parse_table(&mut self, table_cols: usize, head_start: usize, body_start: usize) -> usize {
-        // parse header. this shouldn't fail because we (should have) made sure the table
-        // header is ok
-        let (_sep_start, thead_ix) = self.parse_table_row(head_start, table_cols).unwrap();
+        // parse header. this shouldn't fail because we made sure the table header is ok
+        let (_sep_start, thead_ix) = self.parse_table_row_inner(head_start, table_cols);
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
@@ -427,20 +426,12 @@ impl<'a> FirstPass<'a> {
         ix
     }
 
-    /// Returns first offset after the row and the tree index of the row.
-    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
+    /// Call this when containers are taken care of.
+    /// Returns bytes scanned, row_ix
+    fn parse_table_row_inner(&mut self, mut ix: usize, row_cells: usize) -> (usize, TreeIndex) {
         let bytes = self.text.as_bytes();
-        let mut line_start = LineStart::new(&bytes[ix..]);
-        let _n_containers = self.scan_containers(&mut line_start);
-        // TODO: we should probably check that n_containers == self.tree.spine_len()
-        line_start.scan_all_space();
         let mut cells = 0;
         let mut final_cell_ix = None;
-        ix += line_start.bytes_scanned();
-
-        if scan_paragraph_interrupt(&bytes[ix..]) {
-            return None;
-        }
 
         let row_ix = self.tree.append(Item {
             start: ix,
@@ -499,6 +490,25 @@ impl<'a> FirstPass<'a> {
         }
 
         self.pop(ix);
+
+        (ix, row_ix)
+    }
+
+    /// Returns first offset after the row and the tree index of the row.
+    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
+        let bytes = self.text.as_bytes();
+        let mut line_start = LineStart::new(&bytes[ix..]);
+        let containers = self.scan_containers(&mut line_start);
+        if containers != self.tree.spine_len() {
+            return None;
+        }
+        line_start.scan_all_space();
+        ix += line_start.bytes_scanned();
+        if scan_paragraph_interrupt(&bytes[ix..]) {
+            return None;
+        }
+
+        let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells);
         Some((ix, row_ix))
     }
 
@@ -589,23 +599,24 @@ impl<'a> FirstPass<'a> {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        let _n_containers = self.scan_containers(&mut line_start);
-                        let table_head_ix = next_line_ix + line_start.bytes_scanned();
-                        let (table_head_bytes, alignment) = scan_table_head(&bytes[table_head_ix..]);
+                        if self.scan_containers(&mut line_start) == self.tree.spine_len() {
+                            let table_head_ix = next_line_ix + line_start.bytes_scanned();
+                            let (table_head_bytes, alignment) = scan_table_head(&bytes[table_head_ix..]);
 
-                        if table_head_bytes > 0 {
-                            // computing header count from number of pipes
-                            let header_count = count_header_cols(bytes, pipes, start, last_pipe_ix);
+                            if table_head_bytes > 0 {
+                                // computing header count from number of pipes
+                                let header_count = count_header_cols(bytes, pipes, start, last_pipe_ix);
 
-                            // make sure they match the number of columns we find in separator line
-                            if alignment.len() == header_count {
-                                let alignment_ix = self.allocs.allocate_alignment(alignment);
-                                let end_ix = table_head_ix + table_head_bytes;
-                                return LoopInstruction::BreakAtWith(end_ix, Some(Item {
-                                    start: i,
-                                    end: end_ix, // must update later
-                                    body: ItemBody::Table(alignment_ix),
-                                }));
+                                // make sure they match the number of columns we find in separator line
+                                if alignment.len() == header_count {
+                                    let alignment_ix = self.allocs.allocate_alignment(alignment);
+                                    let end_ix = table_head_ix + table_head_bytes;
+                                    return LoopInstruction::BreakAtWith(end_ix, Some(Item {
+                                        start: i,
+                                        end: end_ix, // must update later
+                                        body: ItemBody::Table(alignment_ix),
+                                    }));
+                                }
                             }
                         }
                     }

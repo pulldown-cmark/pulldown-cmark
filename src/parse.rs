@@ -1209,33 +1209,37 @@ impl<'a> FirstPass<'a> {
         Some((bytecount + i, UniCase::new(label), link_def))
     }
 
-    /// Returns # of bytes and definition.
-    /// Assumes the label of the reference including colon has already been scanned.
-    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkDef<'a>)> {
-        let mut i = start;
-        let bytes = self.text.as_bytes();
-
-        // whitespace between label and url (including up to one newline)
+    /// Returns number of bytes and number of newlines 
+    fn scan_refdef_space(&self, bytes: &[u8], mut i: usize) -> Option<(usize, usize)> {
         let mut newlines = 0;
-        while i < bytes.len() {
-            let c = bytes[i];
-            // TODO: we could probably replace this loop by a (number of) scan_blankline?
-            if c == b'\n' || c == b'\r' {
-                i += scan_eol(&bytes[i..])?;
+        loop {
+            let whitespaces = scan_whitespace_no_nl(&bytes[i..]);
+            i += whitespaces;
+            if let Some(eol_bytes) = scan_eol(&bytes[i..]) {
+                i += eol_bytes;
                 newlines += 1;
                 if newlines > 1 {
                     return None;
-                } else {
-                    // FIXME: we aren't using the results of this scan
-                    let mut line_start = LineStart::new(&bytes[i..]);
-                    self.scan_containers(&mut line_start);
                 }
-            } else if is_ascii_whitespace_no_nl(c) {
-                i += 1;
             } else {
                 break;
             }
+            let mut line_start = LineStart::new(&bytes[i..]);
+            if self.tree.spine_len() != self.scan_containers(&mut line_start) {
+                return None;
+            }
+            i += line_start.bytes_scanned();
         }
+        Some((i, newlines))
+    }
+
+    /// Returns # of bytes and definition.
+    /// Assumes the label of the reference including colon has already been scanned.
+    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkDef<'a>)> {
+        let bytes = self.text.as_bytes();
+
+        // whitespace between label and url (including up to one newline)
+        let (mut i, _newlines) = self.scan_refdef_space(&bytes, start)?;
 
         // scan link dest
         let (dest_length, dest) = scan_link_dest(&self.text, i, 1)?;
@@ -1243,47 +1247,26 @@ impl<'a> FirstPass<'a> {
             return None;
         }
         let dest = unescape(dest);
-        i += dest_length;        
-
-        // scan whitespace between dest and label
-        // FIXME: dedup with similar block above
-        newlines = 0;
-        let mut whitespace_bytes = 0;
-        while i < bytes.len() {
-            let c = bytes[i];
-            if c == b'\n' || c == b'\r' {
-                let eol_bytes = scan_eol(&bytes[i..])?;
-                i += eol_bytes;
-                whitespace_bytes += eol_bytes;
-                newlines += 1;
-                // FIXME: we aren't using the results of this scan
-                let mut line_start = LineStart::new(&bytes[i..]);
-                let _n_containers = self.scan_containers(&mut line_start);
-            } else if is_ascii_whitespace_no_nl(c) {
-                whitespace_bytes += 1;
-                i += 1;
-            } else {
-                break;
-            }
-        }
-        if i == self.text.len() {
-            newlines += 1;
-        }
-        if whitespace_bytes == 0 && newlines == 0 {
-            return None;
-        }
+        i += dest_length;
 
         // no title
-        let mut backup = 
-            (i - start,
-            LinkDef {
-                dest,
-                title: None,
-            });
+        let mut backup = (i - start, LinkDef { dest, title: None });
 
-        if newlines > 1 {
+        // scan whitespace between dest and label
+        let (mut i, newlines) = if let Some((new_i, mut newlines)) = self.scan_refdef_space(&bytes, i) {
+            if i == self.text.len() {
+                newlines += 1;
+            }
+            if new_i == i && newlines == 0 {
+                return None;
+            }
+            if newlines > 1 {
+                return Some(backup);
+            };
+            (new_i, newlines)
+        } else {
             return Some(backup);
-        }    
+        };
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title

@@ -387,3 +387,16 @@ ISSUE #295
 .
 <p>[foo]:</p>
 ````````````````````````````````
+
+ISSUE #298 (not yet fixed)
+
+```````````````````````````````` DISABLED example
+> [foo
+> bar]: /url
+>
+> [foo bar]
+.
+<blockquote>
+<p><a href="/url">foo bar</a></p>
+</blockquote>
+````````````````````````````````

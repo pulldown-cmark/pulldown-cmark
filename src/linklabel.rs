@@ -54,7 +54,6 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
-    let start_byte = byte_index;
 
     loop {
         if codepoints >= 1000 { return None; }
@@ -74,8 +73,31 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                 // normalize labels by collapsing whitespaces, including linebreaks
                 let mut whitespaces = 1;
                 let mut byte_addition = 0;
+                let mut linebreaks = if c == '\r' || c == '\n' { 1 } else { 0 };
                 loop {
                     match char_iter.peek() {
+                        Some('\r') => {
+                            linebreaks += 1;
+                            if linebreaks > 1 {
+                                return None;
+                            }
+                            byte_addition += 1;
+                            let _ = char_iter.next();
+                            if let Some('\n') = char_iter.peek() {
+                                byte_addition += 1;
+                                let _ = char_iter.next();
+                            }
+                        }
+                        Some('\n') => {
+                            if byte_addition > 0 || c != '\r' {
+                                linebreaks += 1;
+                                if linebreaks > 1 {
+                                    return None;
+                                }
+                            }                            
+                            byte_addition += 1;
+                            let _ = char_iter.next();
+                        }
                         Some(w) if w.is_whitespace() => {
                             whitespaces += 1;
                             byte_addition += w.len_utf8();
@@ -87,7 +109,7 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                 if whitespaces > 1 || c != ' ' {
                     if still_borrowed {
                         let end_ix = byte_index - c.len_utf8();
-                        label.push_str(&text[start_byte..end_ix]);
+                        label.push_str(&text[..end_ix]);
                         still_borrowed = false;
                     }
                     c = ' ';
@@ -110,7 +132,7 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
         return None;
     }
     let cow = if still_borrowed {
-        text[start_byte..(byte_index - 1)].into()
+        text[..(byte_index - 1)].into()
     } else {
         label.into()
     };
@@ -130,5 +152,11 @@ mod test {
         let (bytes, normalized_label) = scan_link_label_rest(input).unwrap();
         assert_eq!(20, bytes);
         assert_eq!(expected_output, normalized_label.as_ref());
+    }
+
+    #[test]
+    fn return_carriage_linefeed_ok() {
+        let input = "hello\r\nworld\r\n]";
+        assert!(scan_link_label_rest(input).is_some();
     }
 }

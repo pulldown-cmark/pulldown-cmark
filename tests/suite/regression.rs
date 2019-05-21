@@ -433,3 +433,18 @@ fn regression_test_31() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_32() {
+    let original = r##"[
+x
+
+]: f
+"##;
+    let expected = r##"<p>[
+x</p>
+<p>]: f</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

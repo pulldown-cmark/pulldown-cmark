@@ -1135,9 +1135,8 @@ impl<'a> FirstPass<'a> {
         // next char is space or scan_eol
         // (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
-        let b = bytes[ix];
-        if b == b'\n' || b == b'\r' {
-            return ix + scan_eol(&bytes[ix..]).unwrap_or(0);
+        if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
+            return ix + eol_bytes;
         }
         // skip leading spaces
         let skip_spaces = scan_whitespace_no_nl(&bytes[ix..]);
@@ -2521,7 +2520,7 @@ mod test {
     #[test]
     fn lone_hashtag() {
         // dont crash
-        assert_eq!(3, Parser::new("#").count());
+        assert_eq!(2, Parser::new("#").count());
     }
 
     #[test]

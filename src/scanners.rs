@@ -430,12 +430,11 @@ pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
 /// Returns number of bytes in prefix and level.
 pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<(usize, i32)> {
     let level = scan_ch_repeat(data, b'#');
-    if level >= 1 && level <= 6 {
-        if let b' ' | b'\t' ... b'\r' = *data.get(level)? {
-            return Some((level, level as i32));
-        }
+    if level >= 1 && level <= 6 && data.get(level).cloned().map_or(true, is_ascii_whitespace) {
+        Some((level, level as i32))
+    } else {
+        None
     }
-    None
 }
 
 /// Scan a setext heading underline.

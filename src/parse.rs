@@ -1226,7 +1226,7 @@ impl<'a> FirstPass<'a> {
                 if newlines > 1 {
                     return None;
                 } else {
-                    // FIXME: we aren't using the results of this scan (LOL)
+                    // FIXME: we aren't using the results of this scan
                     let mut line_start = LineStart::new(&bytes[i..]);
                     self.scan_containers(&mut line_start);
                 }
@@ -1239,8 +1239,11 @@ impl<'a> FirstPass<'a> {
 
         // scan link dest
         let (dest_length, dest) = scan_link_dest(&self.text, i, 1)?;
+        if dest_length == 0 {
+            return None;
+        }
         let dest = unescape(dest);
-        i += dest_length;
+        i += dest_length;        
 
         // scan whitespace between dest and label
         // FIXME: dedup with similar block above
@@ -1253,7 +1256,7 @@ impl<'a> FirstPass<'a> {
                 i += eol_bytes;
                 whitespace_bytes += eol_bytes;
                 newlines += 1;
-                // FIXME: we aren't using the results of this scan (LOL)
+                // FIXME: we aren't using the results of this scan
                 let mut line_start = LineStart::new(&bytes[i..]);
                 let _n_containers = self.scan_containers(&mut line_start);
             } else if is_ascii_whitespace_no_nl(c) {
@@ -2613,6 +2616,16 @@ mod test {
     fn ref_def_cr_lf() {
         let test_str = "[a]: /u\r\n\n[a]";
         let expected = "<p><a href=\"/u\">a</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn no_dest_refdef() {
+        let test_str = "[a]:";
+        let expected = "<p>[a]:</p>\n";
 
         let mut buf = String::new();
         crate::html::push_html(&mut buf, Parser::new(test_str));

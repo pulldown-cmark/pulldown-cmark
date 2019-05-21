@@ -402,25 +402,25 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
 /// Returns Err(x) when it does not find an hrule and x is
 /// the offset in data before no hrule can appear.
 pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
-    if bytes.len() < 2 { return Err(0); }
+    if bytes.len() < 3 { return Err(0); }
     let c = bytes[0];
     if !(c == b'*' || c == b'-' || c == b'_') { return Err(0); }
     let mut n = 0;
     let mut i = 0;
 
-    for (offset, &b) in bytes.iter().enumerate() {
-        match b {
+    while i < bytes.len() {
+        match bytes[i] {
             b'\n' | b'\r' => {
-                i = offset + scan_eol(&bytes[offset..]).unwrap_or(0);
+                i += scan_eol(&bytes[i..]).unwrap_or(0);
                 break;
             }
             c2 if c2 == c => {
                 n += 1;
             }
             b' ' | b'\t' => (),
-            _ => return Err(offset)
+            _ => return Err(i)
         }
-        i = offset;
+        i += 1;
     }
     if n >= 3 { Ok(i) } else { Err(i) }
 }

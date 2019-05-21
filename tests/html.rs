@@ -189,6 +189,26 @@ fn html_test_8() {
     assert_eq!(expected, s);
 }
 
+#[test]
+fn html_test_9() {
+    let original = "---";
+    let expected = "<hr />\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn html_test_10() {
+    let original = "* * *";
+    let expected = "<hr />\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
 // TODO: add broken link callback feature
 /*
 #[test]

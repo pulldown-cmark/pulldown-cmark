@@ -387,6 +387,8 @@ impl<'a> FirstPass<'a> {
         let ix = start_ix + line_start.bytes_scanned();
 
         if let Ok(n) = scan_hrule(&bytes[ix..]) {
+            dbg!(ix);
+            dbg!(n);
             return self.parse_hrule(n, ix);
         }
 

@@ -23,6 +23,7 @@
 use unicase::UniCase;
 
 use crate::strings::CowStr;
+use crate::scanners::{scan_eol, is_ascii_whitespace};
 
 pub enum ReferenceLabel<'a> {
     Link(CowStr<'a>),
@@ -47,97 +48,78 @@ pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel<'_>)>
 /// Assumes the opening bracket has already been scanned.
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
-    let mut char_iter = text.chars().peekable();
-    let mut byte_index = 0;
+    let bytes = text.as_bytes();
+    let mut ix = 0;
     let mut only_white_space = true;
-    let mut still_borrowed = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
+    let mut mark = 0;
 
     loop {
         if codepoints >= 1000 { return None; }
-        let mut c = char_iter.next()?;
-        byte_index += c.len_utf8();
-
-        match c {
-            '[' => return None,
-            ']' => break,
-            '\\' => {
-                let next = char_iter.next()?;
-                byte_index += next.len_utf8();
+        match *bytes.get(ix)? {
+            b'[' => return None,
+            b']' => break,
+            b'\\' => {
+                ix += 2;
                 codepoints += 2;
                 only_white_space = false;
             }
-            _ if c.is_whitespace() => {
+            b if is_ascii_whitespace(b) => {
                 // normalize labels by collapsing whitespaces, including linebreaks
-                let mut whitespaces = 1;
-                let mut byte_addition = 0;
-                let mut linebreaks = if c == '\r' || c == '\n' { 1 } else { 0 };
-                loop {
-                    match char_iter.peek() {
-                        Some('\r') => {
-                            linebreaks += 1;
-                            if linebreaks > 1 {
-                                return None;
-                            }
-                            byte_addition += 1;
-                            let _ = char_iter.next();
-                            if let Some('\n') = char_iter.peek() {
-                                byte_addition += 1;
-                                let _ = char_iter.next();
-                            }
-                        }
-                        Some('\n') => {
-                            if byte_addition > 0 || c != '\r' {
-                                linebreaks += 1;
-                                if linebreaks > 1 {
-                                    return None;
-                                }
-                            }                            
-                            byte_addition += 1;
-                            let _ = char_iter.next();
-                        }
-                        Some(w) if w.is_whitespace() => {
-                            whitespaces += 1;
-                            byte_addition += w.len_utf8();
-                            let _ = char_iter.next();
-                        }
-                        _ => break,
-                    }
-                }
-                if whitespaces > 1 || c != ' ' {
-                    if still_borrowed {
-                        let end_ix = byte_index - c.len_utf8();
-                        label.push_str(&text[..end_ix]);
-                        still_borrowed = false;
-                    }
-                    c = ' ';
-                }
-                byte_index += byte_addition;
-                codepoints += whitespaces;
-            }
-            _ => {
-                only_white_space = false;
-                codepoints += 1;
-            }
-        }
+                let mut whitespaces = 0;
+                let mut linebreaks = 0;
+                let whitespace_start = ix;
 
-        if !still_borrowed {
-            label.push(c);
+                while ix < bytes.len() && is_ascii_whitespace(bytes[ix]) {
+                    if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
+                        linebreaks += 1;
+                        if linebreaks > 1 {
+                            return None;
+                        }
+                        ix += eol_bytes;
+                        whitespaces += 2; // indicate that we need to replace
+                    } else {
+                        whitespaces += if bytes[ix] == b' ' {
+                            1
+                        } else {
+                            2
+                        };
+                        ix += 1;
+                    }
+                }
+                if whitespaces > 1 {
+                    label.push_str(&text[mark..whitespace_start]);
+                    label.push(' ');
+                    mark = ix;
+                    codepoints += ix - whitespace_start;
+                } else {
+                    codepoints += 1;
+                }
+            }
+            b => {
+                only_white_space = false;
+                ix += 1;
+                if b & 0b1000_0000 != 0 {
+                    codepoints += 1;
+                }
+            }
         }
     }
 
     if only_white_space {
-        return None;
-    }
-    let cow = if still_borrowed {
-        text[..(byte_index - 1)].into()
+        None
     } else {
-        label.into()
-    };
-    Some((byte_index, cow))
-} 
+        let cow = if mark == 0 {
+            text[..ix].into()
+        } else {
+            label.push_str(&text[mark..ix]);
+            label.into()
+        };
+        Some((ix + 1, cow))
+    }
+}
 
 
 #[cfg(test)]
@@ -146,17 +128,16 @@ mod test {
 
     #[test]
     fn whitespace_normalization() {
-        let input = "«\u{00A0}Blurry Eyes\u{00A0}»][blurry_eyes]"; // non-breaking spaces
+        let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (bytes, normalized_label) = scan_link_label_rest(input).unwrap();
-        assert_eq!(20, bytes);
+        let (_bytes, normalized_label) = scan_link_label_rest(input).unwrap();
         assert_eq!(expected_output, normalized_label.as_ref());
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input).is_some();
+        assert!(scan_link_label_rest(input).is_some());
     }
 }

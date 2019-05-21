@@ -1420,9 +1420,8 @@ fn get_html_end_tag(text_bytes : &[u8]) -> Option<u32> {
         }
 
         // ...or be followed by whitespace, newline, or '>'.
-        let s = text_bytes[tag_len] as char;
-        // TODO: I think this should be ASCII whitespace only
-        if s.is_whitespace() || s == '>' {
+        let s = text_bytes[tag_len];
+        if is_ascii_whitespace(s) || s == b'>' {
             return Some(end_tag_ix);
         }
     }

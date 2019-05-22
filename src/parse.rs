@@ -266,17 +266,17 @@ impl<'a> FirstPass<'a> {
         for _ in i..self.tree.spine_len() {
             self.pop(start_ix);
         }
-
-        // finish footnote if it's still open and was preceeded by blank line
-        if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
-                if self.last_line_blank {
-                    self.pop(start_ix);
-                }
-            }
-        }
         
         if self.options.contains(Options::ENABLE_FOOTNOTES) {
+            // finish footnote if it's still open and was preceeded by blank line
+            if let Some(node_ix) = self.tree.peek_up() {
+                if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
+                    if self.last_line_blank {
+                        self.pop(start_ix);
+                    }
+                }
+            }
+
             // Footnote definitions of the form
             // [^bar]:
             // * anything really
@@ -357,38 +357,29 @@ impl<'a> FirstPass<'a> {
             return self.parse_indented_code_block(ix, remaining_space);
         }
 
+        let ix = start_ix + line_start.bytes_scanned();
 
         // HTML Blocks
-
-        // Start scanning at the first nonspace character, but don't advance `ix` yet because any
-        // spaces present before the HTML block begins should be preserved.
-        let nonspace_ix = start_ix + line_start.bytes_scanned();
-
-        if self.text.as_bytes()[nonspace_ix] == b'<' {
+        if self.text.as_bytes()[ix] == b'<' {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
-            if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[nonspace_ix..]) {
+            if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[(ix + 1)..]) {
                 return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
             }
 
             // Detect type 6
-            let possible_tag = scan_html_block_tag(&bytes[nonspace_ix..]).1;
+            let possible_tag = scan_html_block_tag(&bytes[(ix + 1)..]).1;
             if is_html_tag(possible_tag) {
                 return self.parse_html_block_type_6_or_7(ix, remaining_space);
             }
 
             // Detect type 7
-            if let Some(_html_bytes) = scan_html_type_7(&bytes[nonspace_ix..]) {
+            if let Some(_html_bytes) = scan_html_type_7(&bytes[(ix + 1)..]) {
                 return self.parse_html_block_type_6_or_7(ix, remaining_space);
             }
         }
 
-        // Advance `ix` after HTML blocks have been scanned
-        let ix = start_ix + line_start.bytes_scanned();
-
         if let Ok(n) = scan_hrule(&bytes[ix..]) {
-            dbg!(ix);
-            dbg!(n);
             return self.parse_hrule(n, ix);
         }
 
@@ -594,7 +585,7 @@ impl<'a> FirstPass<'a> {
                     }
 
                     let mut i = ix;
-                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap_or(0);
+                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
                     if mode == TableParseMode::Scan && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
@@ -1003,7 +994,6 @@ impl<'a> FirstPass<'a> {
         }
     }
 
-
     /// Appends a line of HTML to the tree.
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
@@ -1392,26 +1382,25 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
 /// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
 /// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
-    scan_eol(bytes).is_some() ||
-    scan_hrule(bytes).is_ok() ||
-    scan_atx_heading(bytes).is_some() ||
-    scan_code_fence(bytes).is_some() ||
-    get_html_end_tag(bytes).is_some() ||
-    scan_blockquote_start(bytes).is_some() ||
-    is_html_tag(scan_html_block_tag(bytes).1)
+    if scan_eol(bytes).is_some() ||
+        scan_hrule(bytes).is_ok() ||
+        scan_atx_heading(bytes).is_some() ||
+        scan_code_fence(bytes).is_some() ||
+        scan_blockquote_start(bytes).is_some()
+    {
+        return true;
+    }
+    bytes.starts_with(b"<") &&
+        (get_html_end_tag(&bytes[1..]).is_some() || is_html_tag(scan_html_block_tag(&bytes[1..]).1))
 }
 
 static HTML_END_TAGS: &[&str; 7] = &["</pre>", "</style>", "</script>", "-->", "?>", "]]>", ">"];
 
-// Returns an index into HTML_END_TAGS
+/// Returns an index into HTML_END_TAGS.
+/// Assumes `text_bytes` is preceded by `<`.
 fn get_html_end_tag(text_bytes : &[u8]) -> Option<u32> {
     static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
-
-    if scan_ch(text_bytes, b'<') == 0 {
-        return None;
-    }
-    let text_bytes = &text_bytes[1..];
 
     for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
         let tag_len = beg_tag.len();

@@ -441,10 +441,9 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<(usize, i32)> {
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, i32)> {
-    let mut i = 0;
-    let c = *data.get(i)?;
+    let c = *data.get(0)?;
     if !(c == b'-' || c == b'=') { return None; }
-    i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
+    let mut i = 1 + scan_ch_repeat(&data[1..], c);
     i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' { 1 } else { 2 };
     Some((i, level))
@@ -944,10 +943,9 @@ pub(crate) fn unescape(input: &str) -> CowStr<'_> {
     }
 }
 
+/// Assumes `data` is preceded by `<`.
 pub(crate) fn scan_html_block_tag(data: &[u8]) -> (usize, &[u8]) {
-    let mut i = scan_ch(data, b'<');
-    if i == 0 { return (0, b"") }
-    i += scan_ch(&data[i..], b'/');
+    let i = scan_ch(data, b'/');
     let n = scan_while(&data[i..], is_ascii_alphanumeric);
     // TODO: scan attributes and >
     (i + n, &data[i .. i + n])
@@ -971,20 +969,14 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
     }).is_ok()
 }
 
+/// Assumes that `data` is preceded by `<`.
 pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
-    let mut i = scan_ch(data, b'<');
-    if i == 0 {
-        return None;
-    }
-
-    let close_tag_bytes = scan_ch(&data[i..], b'/');
-    i += close_tag_bytes;
-
-    let l = scan_while(&data[i..], is_ascii_alpha);
+    let close_tag_bytes = scan_ch(&data, b'/');
+    let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0  {
         return None;
     }
-    i += l;
+    let mut i = close_tag_bytes + l;
     i += scan_while(&data[i..], is_ascii_letterdigitdash);
 
     if close_tag_bytes == 0 {

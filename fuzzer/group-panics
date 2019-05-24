@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+
+import subprocess, re, os
+
+panics = subprocess.run(["grep", "Panic caught. Pattern:", "output"], capture_output=True).stdout
+panics = panics.strip()
+panics = panics.split(b"\n")
+
+traces = {}
+
+def test(pattern, release=True):
+    env = os.environ.copy()
+    env["RUST_BACKTRACE"] = "1"
+    args = ["cargo", "run", "-q", "--release", "--", "-T", "-F", "-S", "-L"]
+    if not release:
+        args.remove("--release")
+
+    p = subprocess.Popen(
+        args,
+        cwd="..",
+        env=env,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout, stderr = p.communicate(input=(pattern + "\n").encode("UTF-8"))
+    p.stdin.close()
+    p.wait()
+    return stderr
+
+for panic in panics:
+    pattern = re.match(br'Panic caught\. Pattern: "(.*)"', panic).group(1)
+    # unescape pattern
+    def repl(match):
+        codepoint = match.group(1).rjust(4, b"0")
+        escaped = b"\\u" + codepoint
+        return escaped
+    # first, get rid of all escaped backslashes
+    # (otherwise `\\u{xyz}` would be false positive)
+    # replace them with a PUA codepoint
+    pattern = pattern.replace(b"\\\\", b"\uF000")
+    # now find `\u{xyz}`
+    pattern = re.sub(br"\\u\{(.*?)\}", repl, pattern)
+    # now replace back escaped backslashes
+    pattern = pattern.replace(b"\uF000", b"\\\\")
+    pattern = pattern.decode("unicode_escape")
+
+    print("investigating: " + repr(pattern))
+
+    # find panicking suffix
+    for i in range(len(pattern)):
+        suffix = pattern[:i]
+        pat = pattern * 50000 + suffix
+        stderr = test(pat)
+        if stderr != b"":
+            break
+        if i == len(pattern) - 1:
+            # couldn't reproduce
+            suffix = None
+            break
+
+    if suffix is None:
+        print("couldn't reproduce")
+        continue
+
+    # binary search pattern repetition length
+    # start at power of two
+    i = 1 << ((50000 // 2).bit_length())
+    step_size = i
+    while True:
+        stderr = test(pattern * i + suffix)
+        step_size //= 2
+        if step_size == 0:
+            # search ended
+            if stderr == b"":
+                i += 1
+            else:
+                i = i
+            break
+
+        if stderr == b"":
+            i = i + step_size
+        else:
+            i = i - step_size
+
+    stderr = test(pattern * i + suffix, release=False)
+    input = "{!r}".format(pattern)
+    if i != 1:
+        input += " * {}".format(i)
+    if suffix != "":
+        input += " + {!r}".format(suffix)
+    print("input", input)
+    assert stderr != b""
+    if stderr in traces:
+        traces[stderr].append(input)
+    else:
+        traces[stderr] = [input]
+
+traces = list(traces.items())
+traces.sort()
+
+for (stderr, patterns) in traces:
+    print("```")
+    for pattern in patterns:
+        print("python -c \"print({})\" | RUST_BACKTRACE=1 cargo run -- -TFSL"
+            .format(pattern))
+    print("```")
+    print()
+    print("```")
+    print(stderr.decode("UTF-8"))
+    print("```")
+    print("\n")

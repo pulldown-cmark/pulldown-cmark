@@ -29,14 +29,7 @@
 //! If we encounter a time-value, which is larger than the next time value, that'll probably be an
 //! outlier.
 //! As such, if we encounter such a value, we'll re-time it.
-//! Unfortunately, again, we have an edge-case.
-//! When testing substrings of the input, we might not always end up after the whole pattern,
-//! but instead in the middle of it.
-//! Sometimes pulldown-cmark parses things differently if the strings ends differently.
-//! For one example see <https://github.com/raphlinus/pulldown-cmark/issues/287>.
-//! Thus we also need to detect these case.
-//! Therefore we only remove a maximum of 10 outliers.
-//! If more outliers are detected, measurements are aborted and an according message is printed.
+//! To prevent further edge-cases, we always align the tested input to pattern boundaries.
 //!
 //! Additionally, we abort if parsing took longer than `MAX_MILLIS`.
 //! If we tested a substring of the whole input, and already exceeded `MAX_MILLIS`, we shouldn't
@@ -44,7 +37,7 @@
 //! Instead, we again print an according message and abort with that pattern.
 //!
 //! There can also be cases where either the fuzzer or the parser takes a very long time testing
-//! a single pattern.
+//! a single pattern or ends up in an infinite loop.
 //! If the time a thread spends on a single pattern exceeds `10 * MAX_MILLIS`, it could indicate
 //! bugs in the fuzzer, extremely long parsing of an input, or maybe even an infinite loop.
 //! As such we report the pattern the thread currently works on.
@@ -327,22 +320,6 @@ fn test(pattern: &str) -> PatternResult {
             );
             0.0
         },
-        PatternResult::HugeOutlier(trim_len) => {
-            println!(
-                "\n\
-                huge outlier found, this may indicate weird behaviour in pulldown-cmark\n\
-                pattern: {:?}\n\
-                score: 0\n\
-                trim length: {}\n\
-                trimmed rest: {:?}\n\
-                {:?}\n",
-                pattern,
-                trim_len,
-                &pattern[..pattern.len() - trim_len],
-                time_samples,
-            );
-            0.0
-        },
     };
     res2
 }
@@ -355,19 +332,13 @@ enum PatternResult {
     NonLinear(f64),
     /// Execution took too long, assumed non-linear
     TooLong,
-    /// Very slow outlier, probably due to different parsing in pulldown-cmark.
-    ///
-    /// Contains the number of bytes truncated from end reaching this behaviour.
-    /// Possibly indicates weird behaviour in pulldown-cmark.
-    /// See <https://github.com/raphlinus/pulldown-cmark/issues/287> for an example.
-    HugeOutlier(usize),
 }
 
 impl PatternResult {
     fn score(&self) -> f64 {
         match *self {
             PatternResult::Linear(score) | PatternResult::NonLinear(score) => score,
-            PatternResult::TooLong | PatternResult::HugeOutlier(_) => 0.0,
+            PatternResult::TooLong => 0.0,
         }
     }
 }
@@ -378,8 +349,6 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
     let repeated_pattern = pattern.repeat(NUM_BYTES / pattern.len());
 
     let mut i = 0;
-    let mut num_huge_outliers = 0;
-    let mut num_outliers = 0;
     while i < sample_size {
         let (n, dur) = time_needed(&repeated_pattern, i+1, sample_size);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
@@ -388,34 +357,11 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
         }
 
         if recalculate_outliers && i > 0 && time_samples[i-1].1 > time_samples[i].1 {
-            // We have an outlier, possibly due to rescheduling.
-
-            // We can have a consistent huge outlier due to weird parsing behaviour when parts of
-            // the pattern are truncated at the end (see <https://github.com/raphlinus/pulldown-cmark/issues/287>).
-            // In that case we don't want to end in an infinite loop.
-            // Instead, if we encounter a huge outlier 10 times in the same test, we abort this pattern.
-            if time_samples[i-1].1 > time_samples[i].1 * 50.0 {
-                num_huge_outliers += 1;
-                if num_huge_outliers > sample_size {
-                    let last_repetition_start = pattern.len() + repeated_pattern.rfind(pattern).unwrap();
-                    let trim_len = pattern.len() - (repeated_pattern.len() - last_repetition_start);
-                    return PatternResult::HugeOutlier(trim_len);
-                }
-            }
-
             // Redo from the last sample
-            num_outliers += 1;
             if DEBUG_LEVEL >= 3 {
-                println!("removed outlier, #{}", num_outliers);
+                println!("removed outlier");
             }
             i -= 1;
-
-            // We might not always get huge outliers.
-            // If we have a non-huge but consistent outlier, we need to abort as well.
-            if num_outliers > sample_size * 10 {
-                return PatternResult::HugeOutlier(0);
-            }
-
             continue;
         }
 
@@ -447,11 +393,9 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
 /// The passed string is the whole repeated pattern string.
 /// This function perform substring slicing according to the current sample and sample size uniformly.
 fn time_needed(repeated_pattern: &str, sample: usize, sample_size: usize) -> (usize, Duration) {
-    let mut n = repeated_pattern.len() / sample_size * sample;
-    // find closest byte boundary
-    while !repeated_pattern.is_char_boundary(n) {
-        n += 1;
-    }
+    let n = repeated_pattern.len() / sample_size * sample;
+    // round up to next pattern
+    let n = (n + repeated_pattern.len() - 1) / repeated_pattern.len() * repeated_pattern.len();
 
     if DEBUG_LEVEL >= 3 {
         println!("len: {}", n);

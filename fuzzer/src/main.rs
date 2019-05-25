@@ -79,7 +79,7 @@ const COMBINATIONS: usize = 6;
 /// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
 /// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
-const NUM_BYTES: usize = 256*1024;
+const NUM_BYTES: usize = 8*1024;
 /// Number of samples per pattern tested. Higher number increases precision, but reduces the throughput.
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
@@ -87,15 +87,15 @@ const SAMPLE_SIZE: usize = 5;
 /// Possible values: `scoring::{slope_stddev,pearson_correlation}`
 const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
-const ACCEPTANCE_STDDEV: f64 = 20.0;
+const ACCEPTANCE_STDDEV: f64 = 0.0005;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
 /// 0 / 1 / 2 / 3
-const DEBUG_LEVEL: u8 = 0;
+const DEBUG_LEVEL: u8 = 1;
 
 fn main() {
-    let num_cpus = num_cpus::get() * 3 / 4;
+    let num_cpus = (num_cpus::get() as f32 * 0.8).ceil() as usize;
 
     let arg = env::args().nth(1);
     match arg.as_ref().map(|s| s.as_str()) {
@@ -182,12 +182,14 @@ fn fuzz(num_cpus: usize) {
             let rng = rng.clone();
             let pattern_time = &pattern_times[i];
             s.spawn(move |_| {
-                worker_thread_fn(literals, &num_batches_finished, &start_time, rng, pattern_time)
+                worker_thread_fn(literals, &num_batches_finished, rng, pattern_time)
             })
         }).collect();
 
         // timeout thread
         threads.push(s.spawn(|_| {
+            let mut prev_batches = 0;
+
             loop {
                 std::thread::sleep(Duration::from_millis(MAX_MILLIS as u64 * 10));
                 for pattern_time in &pattern_times {
@@ -209,6 +211,21 @@ fn fuzz(num_cpus: usize) {
                         unreachable!();
                     }
                 }
+
+                // measure and print thruput
+                let batches_finished = num_batches_finished.load(Ordering::Relaxed);
+                let patterns_finished = batches_finished * BATCH_SIZE as u64;
+                let elapsed_secs = start_time.elapsed().as_secs();
+
+                // if for some reason we are super-fast, we must avoid div-by-zero
+                if batches_finished != prev_batches && elapsed_secs > 0 && patterns_finished > 0 {
+                    println!(
+                        "Tested patterns: {}\t\tThroughput: {} patterns / s",
+                        patterns_finished,
+                        patterns_finished / elapsed_secs,
+                    );
+                    prev_batches = batches_finished;
+                }
             }
         }));
 
@@ -220,7 +237,7 @@ fn fuzz(num_cpus: usize) {
 
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
-    literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64, start_time: &Instant,
+    literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64,
     mut rng: Xoshiro256Plus, pattern_time: &Mutex<(String, Instant)>,
 ) {
     let uniform = Uniform::new(0, literals.len());
@@ -247,22 +264,7 @@ fn worker_thread_fn(
             let _ = test_catch_unwind(&pattern);
         }
 
-        // print status update and throughput
-
-        let batches_finished = num_batches_finished.fetch_add(1, Ordering::Relaxed);
-        // fetch_add returns the old value
-        let batches_finished = batches_finished + 1;
-        let patterns_finished = batches_finished * BATCH_SIZE as u64;
-        let elapsed_secs = start_time.elapsed().as_secs();
-
-        // if for some reason we are super-fast, we must avoid div-by-zero
-        if elapsed_secs > 0 {
-            println!(
-                "{:<20} throughput: {} / s",
-                patterns_finished,
-                patterns_finished / elapsed_secs,
-            );
-        }
+        let _ = num_batches_finished.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -281,23 +283,11 @@ fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
 /// This function prints its results to stdout.
 /// No further handling is needed, the returned score is for debugging purposes mostly.
 fn test(pattern: &str) -> PatternResult {
-    let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE * 2];
-    // first pass, gets rid of most linear patterns if there aren't too many large outliers
-    let res1 = test_pattern(pattern, &mut time_samples[..SAMPLE_SIZE], false);
-    if let PatternResult::Linear(_) = res1 {
-        return res1;
-    }
-    // If the first pass indicated possible non-linear behaviour, retest it with a larger
-    // sample size and handle outliers.
-    let res2 = test_pattern(pattern, &mut time_samples, true);
-    if let PatternResult::Linear(_) = res2 {
-        return res2;
-    }
+    let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE];
+    let res = test_pattern(pattern, &mut time_samples);
 
-    // possible non-linear behaviour found
-
-    match res2 {
-        PatternResult::Linear(..) => unreachable!(),
+    match res {
+        PatternResult::Linear(..) => {}
         PatternResult::NonLinear(score) => {
             println!(
                 "\n\
@@ -309,7 +299,6 @@ fn test(pattern: &str) -> PatternResult {
                 score,
                 time_samples,
             );
-            score
         },
         PatternResult::TooLong => {
             println!(
@@ -321,10 +310,9 @@ fn test(pattern: &str) -> PatternResult {
                 pattern,
                 time_samples,
             );
-            0.0
         },
     };
-    res2
+    res
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -347,7 +335,7 @@ impl PatternResult {
 }
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
-fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outliers: bool) -> PatternResult {
+fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult {
     let sample_size = time_samples.len();
     let repeated_pattern = pattern.repeat(NUM_BYTES / pattern.len());
 
@@ -357,15 +345,6 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
-        }
-
-        if recalculate_outliers && i > 0 && time_samples[i-1].1 > time_samples[i].1 {
-            // Redo from the last sample
-            if DEBUG_LEVEL >= 3 {
-                println!("removed outlier");
-            }
-            i -= 1;
-            continue;
         }
 
         if dur.as_millis() > MAX_MILLIS {

@@ -350,7 +350,7 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
 
     let mut i = 0;
     while i < sample_size {
-        let (n, dur) = time_needed(&repeated_pattern, i+1, sample_size);
+        let (n, dur) = time_needed(&repeated_pattern, pattern.len(), i+1, sample_size);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
@@ -392,10 +392,10 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)], recalculate_outl
 ///
 /// The passed string is the whole repeated pattern string.
 /// This function perform substring slicing according to the current sample and sample size uniformly.
-fn time_needed(repeated_pattern: &str, sample: usize, sample_size: usize) -> (usize, Duration) {
+fn time_needed(repeated_pattern: &str, pattern_len: usize, sample: usize, sample_size: usize) -> (usize, Duration) {
     let n = repeated_pattern.len() / sample_size * sample;
     // round up to next pattern
-    let n = (n + repeated_pattern.len() - 1) / repeated_pattern.len() * repeated_pattern.len();
+    let n = (n + pattern_len - 1) / pattern_len * pattern_len;
 
     if DEBUG_LEVEL >= 3 {
         println!("len: {}", n);

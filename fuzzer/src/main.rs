@@ -154,6 +154,8 @@ fn regression_test() -> i32 {
 //    check_result(test("[{}]:\\a"));
     // https://github.com/raphlinus/pulldown-cmark/issues/296
     check_result(test("[](<"));
+    check_result(test("[\"[]]\\("));
+    check_result(test(")-\r%<["));
     return exit_code;
 }
 

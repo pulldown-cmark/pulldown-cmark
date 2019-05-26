@@ -1937,13 +1937,8 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let link_details = if let TreePointer::Valid(next_ix) = next {
-                            scan_inline_link(self.text, self.tree[next_ix].item.start)
-                        } else {
-                            None
-                        };
 
-                        if let Some((next_ix, url, title)) = link_details {
+                        if let Some((next_ix, url, title)) = scan_inline_link(self.text, self.tree[cur_ix].item.end) {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
                                 self.tree[prev_ix].next = TreePointer::Nil;

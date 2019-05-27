@@ -214,3 +214,262 @@ foo
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_15() {
+    let original = r##"\`foo`
+"##;
+    let expected = r##"<p>`foo`</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_16() {
+    let original = r##"foo\\
+bar
+"##;
+    let expected = r##"<p>foo\
+bar</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_17() {
+    let original = r##"1\. foo
+
+1\) bar
+"##;
+    let expected = r##"<p>1. foo</p>
+<p>1) bar</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_18() {
+    let original = r##"1...
+
+1.2.3.
+
+1 2 3 .
+
+1.|2.-3.
+
+1)2)3)
+"##;
+    let expected = r##"<p>1...</p>
+<p>1.2.3.</p>
+<p>1 2 3 .</p>
+<p>1.|2.-3.</p>
+<p>1)2)3)</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_19() {
+    let original = r##"[](<<>)
+"##;
+    let expected = r##"<p>[](&lt;&lt;&gt;)</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_20() {
+    let original = r##"\``foo``bar`
+"##;
+    let expected = r##"<p>`<code>foo``bar</code></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_21() {
+    let original = r##"\\`foo`
+"##;
+    let expected = r##"<p>\<code>foo</code></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_22() {
+    let original = r##"[\\]: x
+
+YOLO
+"##;
+    let expected = r##"<p>YOLO</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_23() {
+    let original = r##"lorem ipsum
+A | B
+---|---
+foo | bar
+"##;
+    let expected = r##"<p>lorem ipsum
+A | B
+---|---
+foo | bar</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_24() {
+    let original = r##"foo|bar  
+---|---
+foo|bar
+"##;
+    let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_25() {
+    let original = r##"foo|bar\\
+---|---
+foo|bar
+"##;
+    let expected = r##"<table><thead><tr><th>foo</th><th>bar\</th></tr></thead>
+<tbody><tr><td>foo</td><td>bar</td></tr></tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_26() {
+    let original = r##"[<foo>](url)
+"##;
+    let expected = r##"<p><a href="url"><foo></a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_27() {
+    let original = r##"[<foo>bar</foo>](url)
+"##;
+    let expected = r##"<p><a href="url"><foo>bar</foo></a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_28() {
+    let original = r##"![<http://example.com>](http://example.com/logo.png)
+"##;
+    let expected = r##"<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_29() {
+    let original = r##"[<http://one> <http://two>](url)
+"##;
+    let expected = r##"<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_30() {
+    let original = r##"Markdown | Less | Pretty
+--- | --- | ---
+ 
+some text
+"##;
+    let expected = r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+</tbody></table>
+<p>some text</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_31() {
+    let original = r##"1. > foo
+2. >
+"##;
+    let expected = r##"<ol>
+<li>
+<blockquote>
+<p>foo</p>
+</blockquote>
+</li>
+<li>
+<blockquote>
+</blockquote>
+</li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_32() {
+    let original = r##"[
+x
+
+]: f
+"##;
+    let expected = r##"<p>[
+x</p>
+<p>]: f</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_33() {
+    let original = r##"[foo]:
+"##;
+    let expected = r##"<p>[foo]:</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_34() {
+    let original = r##"> foo | bar
+> --- | ---
+yolo | swag
+"##;
+    let expected = r##"<blockquote>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead></table>
+</blockquote>
+<p>yolo | swag</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

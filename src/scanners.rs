@@ -193,7 +193,11 @@ impl<'a> LineStart<'a> {
                         if val_usize as u64 != val { return None; }                        
                         if self.scan_space(1) || self.is_at_eol() {
                             return self.finish_list_marker(c, val_usize, indent + self.ix - start_ix);
+                        } else {
+                            break;
                         }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -312,6 +316,11 @@ pub(crate) fn scan_while<F>(data: &[u8], mut f: F) -> usize
     data.iter().take_while(|&&c| f(c)).count()
 }
 
+pub(crate) fn scan_rev_while<F>(data: &[u8], mut f: F) -> usize
+        where F: FnMut(u8) -> bool {
+    data.iter().rev().take_while(|&&c| f(c)).count()
+}
+
 pub(crate) fn scan_ch_repeat(data: &[u8], c: u8) -> usize {
     scan_while(data, |x| x == c)
 }
@@ -393,25 +402,25 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
 /// Returns Err(x) when it does not find an hrule and x is
 /// the offset in data before no hrule can appear.
 pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
-    if bytes.len() < 2 { return Err(0); }
+    if bytes.len() < 3 { return Err(0); }
     let c = bytes[0];
     if !(c == b'*' || c == b'-' || c == b'_') { return Err(0); }
     let mut n = 0;
     let mut i = 0;
 
-    for (offset, &b) in bytes.iter().enumerate() {
-        match b {
+    while i < bytes.len() {
+        match bytes[i] {
             b'\n' | b'\r' => {
-                i = offset + scan_eol(&bytes[offset..]).unwrap_or(0);
+                i += scan_eol(&bytes[i..]).unwrap_or(0);
                 break;
             }
             c2 if c2 == c => {
                 n += 1;
             }
             b' ' | b'\t' => (),
-            _ => return Err(offset)
+            _ => return Err(i)
         }
-        i = offset;
+        i += 1;
     }
     if n >= 3 { Ok(i) } else { Err(i) }
 }
@@ -421,22 +430,20 @@ pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
 /// Returns number of bytes in prefix and level.
 pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<(usize, i32)> {
     let level = scan_ch_repeat(data, b'#');
-    if level >= 1 && level <= 6 {
-        if let b' ' | b'\t' ... b'\r' = *data.get(level)? {
-            return Some((level, level as i32));
-        }
+    if level >= 1 && level <= 6 && data.get(level).cloned().map_or(true, is_ascii_whitespace) {
+        Some((level, level as i32))
+    } else {
+        None
     }
-    None
 }
 
 /// Scan a setext heading underline.
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, i32)> {
-    let mut i = 0;
-    let c = *data.get(i)?;
+    let c = *data.get(0)?;
     if !(c == b'-' || c == b'=') { return None; }
-    i += 1 + scan_ch_repeat(&data[i + 1 ..], c);
+    let mut i = 1 + scan_ch_repeat(&data[1..], c);
     i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' { 1 } else { 2 };
     Some((i, level))
@@ -540,25 +547,23 @@ pub(crate) fn scan_empty_list(data: &[u8]) -> bool {
 }
 
 // return number of bytes scanned, delimiter, start index, and indent
-pub(crate) fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
-    if bytes.is_empty() { return (0, 0, 0, 0); }
-    let mut c = bytes[0];
+pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
+    let mut c = *bytes.get(0)?;
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
         b'0' ... b'9' => {
             let (length, start) = parse_decimal(bytes);
-            if length >= bytes.len() { return (0, 0, 0, 0); }
-            c = bytes[length];
-            if !(c == b'.' || c == b')') { return (0, 0, 0, 0); }
+            c = *bytes.get(length)?;
+            if !(c == b'.' || c == b')') { return None; }
             (length + 1, start)
         }
-        _ => { return (0, 0, 0, 0); }
+        _ => { return None; }
     };
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&bytes[w.. ], 5);
     if postindent == 0 {
         if scan_eol(&bytes[w..]).is_none() {
-            return (0, 0, 0, 0);
+            return None;
         }
         postindent += 1;
     } else if postindent > 4 {
@@ -569,7 +574,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> (usize, u8, usize, usize) {
         postn = 0;
         postindent = 1;
     }
-    (w + postn, c, start, w + postindent)
+    Some((w + postn, c, start, w + postindent))
 }
 
 // returns (number of bytes, parsed decimal)
@@ -938,10 +943,9 @@ pub(crate) fn unescape(input: &str) -> CowStr<'_> {
     }
 }
 
+/// Assumes `data` is preceded by `<`.
 pub(crate) fn scan_html_block_tag(data: &[u8]) -> (usize, &[u8]) {
-    let mut i = scan_ch(data, b'<');
-    if i == 0 { return (0, b"") }
-    i += scan_ch(&data[i..], b'/');
+    let i = scan_ch(data, b'/');
     let n = scan_while(&data[i..], is_ascii_alphanumeric);
     // TODO: scan attributes and >
     (i + n, &data[i .. i + n])
@@ -965,20 +969,14 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
     }).is_ok()
 }
 
+/// Assumes that `data` is preceded by `<`.
 pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
-    let mut i = scan_ch(data, b'<');
-    if i == 0 {
-        return None;
-    }
-
-    let close_tag_bytes = scan_ch(&data[i..], b'/');
-    i += close_tag_bytes;
-
-    let l = scan_while(&data[i..], is_ascii_alpha);
+    let close_tag_bytes = scan_ch(&data, b'/');
+    let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0  {
         return None;
     }
-    i += l;
+    let mut i = close_tag_bytes + l;
     i += scan_while(&data[i..], is_ascii_letterdigitdash);
 
     if close_tag_bytes == 0 {
@@ -1263,6 +1261,6 @@ mod test {
     use super::*;
     #[test]
     fn overflow_list() {
-        assert_eq!((0, 0, 0, 0), scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!"));
+        assert!(scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none());
     }
 }

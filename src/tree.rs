@@ -169,7 +169,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
-    pub fn walk_spine(&self) -> impl Iterator<Item = &TreeIndex> {
+    pub fn walk_spine(&self) -> impl std::iter::DoubleEndedIterator<Item = &TreeIndex> {
         self.spine.iter()
     }
 
@@ -177,6 +177,35 @@ impl<T: Default> Tree<T> {
     pub fn next_sibling(&mut self, cur_ix: TreeIndex) -> TreePointer {
         self.cur = self[cur_ix].next;
         self.cur
+    }
+}
+
+impl<T> std::fmt::Debug for Tree<T>
+    where T: std::fmt::Debug
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fn debug_tree<T>(tree: &Tree<T>, cur: TreeIndex, indent: usize, f: &mut std::fmt::Formatter) -> std::fmt::Result
+            where T: std::fmt::Debug
+        {
+            for _ in 0..indent {
+                write!(f, "  ")?;
+            }
+            writeln!(f, "{:?}", &tree[cur].item)?;
+            if let TreePointer::Valid(child_ix) = tree[cur].child {
+                debug_tree(tree, child_ix, indent + 1, f)?;
+            }
+            if let TreePointer::Valid(next_ix) = tree[cur].next {
+                debug_tree(tree, next_ix, indent, f)?;
+            }
+            Ok(())
+        }
+
+        if self.nodes.len() > 1 {
+            let cur = TreeIndex(NonZeroUsize::new(1).unwrap());
+            debug_tree(self, cur, 0, f)
+        } else {
+            write!(f, "Empty tree")
+        }
     }
 }
 

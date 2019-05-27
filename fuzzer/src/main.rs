@@ -87,12 +87,14 @@ const SAMPLE_SIZE: usize = 5;
 /// Possible values: `scoring::{slope_stddev,pearson_correlation}`
 const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
-const ACCEPTANCE_STDDEV: f64 = 0.0005;
+const ACCEPTANCE_STDDEV: f64 = 30.0;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
+/// Number of times we test until we are convinced of superlinear behavior
+const TEST_COUNT: usize = 5;
 /// 0 / 1 / 2 / 3
-const DEBUG_LEVEL: u8 = 1;
+const DEBUG_LEVEL: u8 = 0;
 
 fn main() {
     let num_cpus = (num_cpus::get() as f32 * 0.8).ceil() as usize;
@@ -284,34 +286,44 @@ fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
 /// No further handling is needed, the returned score is for debugging purposes mostly.
 fn test(pattern: &str) -> PatternResult {
     let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE];
-    let res = test_pattern(pattern, &mut time_samples);
+    let mut res = PatternResult::TooLong;
 
-    match res {
-        PatternResult::Linear(..) => {}
-        PatternResult::NonLinear(score) => {
-            println!(
-                "\n\
-                possible non-linear behaviour found\n\
-                pattern: {:?}\n\
-                score: {}\n\
-                {:?}\n",
-                pattern,
-                score,
-                time_samples,
-            );
-        },
-        PatternResult::TooLong => {
-            println!(
-                "\n\
-                possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
-                pattern: {:?}\n\
-                score: 0\n\
-                {:?}\n",
-                pattern,
-                time_samples,
-            );
-        },
-    };
+    for _ in 0..TEST_COUNT {
+        res = test_pattern(pattern, &mut time_samples);
+
+        match res {
+            PatternResult::Linear(..) => return res,
+            PatternResult::NonLinear(_score) => {
+                // retest
+            },
+            PatternResult::TooLong => {
+                println!(
+                    "\n\
+                    possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
+                    pattern: {:?}\n\
+                    score: 0\n\
+                    {:?}\n",
+                    pattern,
+                    time_samples,
+                );
+                return res;
+            },
+        };
+    }
+
+    if let PatternResult::NonLinear(score) = res {
+        println!(
+            "\n\
+            possible non-linear behaviour found\n\
+            pattern: {:?}\n\
+            score: {}\n\
+            {:?}\n",
+            pattern,
+            score,
+            time_samples,
+        );
+    }
+    
     res
 }
 

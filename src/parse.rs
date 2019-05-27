@@ -1451,14 +1451,23 @@ struct InlineEl {
 #[derive(Debug, Clone, Default)]
 struct InlineStack {
     stack: Vec<InlineEl>,
-    // lower bounds for
-    // _ non_both , * non_both, * (mod 3), ** (mod 3), *** (mod 3), ~~, _ both
-    // for example an underscore empasis will never match
-    // with any element in the stack with index smaller than lowerbounds[0]
+    // Lower bounds for matching indices in the stack. For example
+    // a strikethrough delimiter will never match with any element
+    // in the stack with index smaller than
+    // `lower_bounds[InlineStack::TILDES]`.
     lower_bounds: [usize; 7],
 }
 
 impl InlineStack {
+    /// These are indices into the lower bounds array.
+    /// Not both refers to the property that the delimiter can not both
+    /// be opener as a closer.
+    const UNDERSCORE_NOT_BOTH: usize = 0;
+    const ASTERISK_NOT_BOTH: usize = 1;
+    const ASTERISK_BASE: usize = 2;
+    const TILDES: usize = 5;
+    const UNDERSCORE_BOTH: usize = 6;
+
     fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
@@ -1474,36 +1483,36 @@ impl InlineStack {
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
         if c == b'_' {
             if both {
-                self.lower_bounds[6]
+                self.lower_bounds[InlineStack::UNDERSCORE_BOTH]
             } else {
-                self.lower_bounds[0]
+                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH]
             }
         } else if c == b'*' {
-            let mod3_lower = self.lower_bounds[2 + count % 3];
+            let mod3_lower = self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3];
             if both {
                 mod3_lower
             } else {
-                min(mod3_lower, self.lower_bounds[1])
+                min(mod3_lower, self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH])
             }
         } else {
-            self.lower_bounds[5]
+            self.lower_bounds[InlineStack::TILDES]
         }
     }
 
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
             if both {
-                self.lower_bounds[6] = new_bound;
+                self.lower_bounds[InlineStack::UNDERSCORE_BOTH] = new_bound;
             } else {
-                self.lower_bounds[0] = new_bound;
+                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
             }
         } else if c == b'*' {
-            self.lower_bounds[2 + count % 3] = new_bound;
+            self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3] = new_bound;
             if !both {
-                self.lower_bounds[1] = new_bound;
+                self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH] = new_bound;
             }
         } else {
-            self.lower_bounds[5] = new_bound;
+            self.lower_bounds[InlineStack::TILDES] = new_bound;
         }
     }
 

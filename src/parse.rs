@@ -2298,7 +2298,7 @@ impl<'a> Iterator for OffsetIter<'a> {
         match self.inner.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.inner.tree.pop()?;
-                let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs).unwrap();
+                let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs);
                 self.inner.tree.next_sibling(ix);
                 Some((Event::End(tag), self.inner.tree[ix].item.start..self.inner.tree[ix].item.end))
             }
@@ -2307,86 +2307,118 @@ impl<'a> Iterator for OffsetIter<'a> {
                     self.inner.handle_inline();
                 }
 
-                if let Some(tag) = item_to_tag(&self.inner.tree[cur_ix].item, &self.inner.allocs) {
-                    self.inner.tree.push();                
-                    Some((Event::Start(tag), self.inner.tree[cur_ix].item.start..self.inner.tree[cur_ix].item.end))
+                let node = self.inner.tree[cur_ix];
+                let item = node.item;
+                let event = item_to_event(item, self.inner.text, &self.inner.allocs);
+                if let Event::Start(..) = event {
+                    self.inner.tree.push();
                 } else {
                     self.inner.tree.next_sibling(cur_ix);
-                    let item = &self.inner.tree[cur_ix].item;
-                    Some((item_to_event(item, self.inner.text, &self.inner.allocs), item.start..item.end))
                 }
+                Some((event, item.start..item.end))
             }
         }
     }
 }
 
-fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Option<Tag<'a>> {
+fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
     match item.body {
-        ItemBody::Paragraph => Some(Tag::Paragraph),
-        ItemBody::Emphasis => Some(Tag::Emphasis),
-        ItemBody::Strong => Some(Tag::Strong),
-        ItemBody::Strikethrough => Some(Tag::Strikethrough),
+        ItemBody::Paragraph => Tag::Paragraph,
+        ItemBody::Emphasis => Tag::Emphasis,
+        ItemBody::Strong => Tag::Strong,
+        ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Some(Tag::Link(*link_type, url.clone(), title.clone()))
+            Tag::Link(*link_type, url.clone(), title.clone())
         }
         ItemBody::Image(link_ix) => {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Some(Tag::Image(*link_type, url.clone(), title.clone()))
+            Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Rule => Some(Tag::Rule),
-        ItemBody::Header(level) => Some(Tag::Header(level)),
+        ItemBody::Rule => Tag::Rule,
+        ItemBody::Header(level) => Tag::Header(level),
         ItemBody::FencedCodeBlock(cow_ix) =>
-            Some(Tag::CodeBlock(allocs[cow_ix].clone())),
-        ItemBody::IndentCodeBlock => Some(Tag::CodeBlock("".into())),
-        ItemBody::BlockQuote => Some(Tag::BlockQuote),
+            Tag::CodeBlock(allocs[cow_ix].clone()),
+        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
-                Some(Tag::List(Some(listitem_start)))
+                Tag::List(Some(listitem_start))
             } else {
-                Some(Tag::List(None))
+                Tag::List(None)
             }
         }
-        ItemBody::ListItem(_) => Some(Tag::Item),
-        ItemBody::HtmlBlock(_) => Some(Tag::HtmlBlock),
-        ItemBody::TableHead => Some(Tag::TableHead),
-        ItemBody::TableCell => Some(Tag::TableCell),
-        ItemBody::TableRow => Some(Tag::TableRow),
+        ItemBody::ListItem(_) => Tag::Item,
+        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
+        ItemBody::TableHead => Tag::TableHead,
+        ItemBody::TableCell => Tag::TableCell,
+        ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => {
-            Some(Tag::Table(allocs[alignment_ix].clone()))
+            Tag::Table(allocs[alignment_ix].clone())
         }
         ItemBody::FootnoteDefinition(cow_ix) =>
-            Some(Tag::FootnoteDefinition(allocs[cow_ix].clone())),
-        _ => None,
+            Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        _ => panic!("unexpected item body {:?}", item.body)
     }
 }
 
-// leaf items only
-fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
-    match item.body {
-        ItemBody::Text => {
-            Event::Text(text[item.start..item.end].into())
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
+    let tag = match item.body {
+        ItemBody::Text =>
+            return Event::Text(text[item.start..item.end].into()),
+        ItemBody::Code(cow_ix) =>
+            return Event::Code(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeText(cow_ix) =>
+            return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::Html =>
+            return Event::Html(text[item.start..item.end].into()),
+        ItemBody::InlineHtml =>
+            return Event::InlineHtml(text[item.start..item.end].into()),
+        ItemBody::SoftBreak => return Event::SoftBreak,
+        ItemBody::HardBreak => return Event::HardBreak,
+        ItemBody::FootnoteReference(cow_ix) =>
+            return Event::FootnoteReference(allocs[cow_ix].clone()),
+        ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
+
+        ItemBody::Paragraph => Tag::Paragraph,
+        ItemBody::Emphasis => Tag::Emphasis,
+        ItemBody::Strong => Tag::Strong,
+        ItemBody::Strikethrough => Tag::Strikethrough,
+        ItemBody::Link(link_ix) => {
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
+            Tag::Link(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Code(cow_ix) => {
-            Event::Code(allocs[cow_ix].clone())
+        ItemBody::Image(link_ix) => {
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
+            Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::SynthesizeText(cow_ix) => {
-            Event::Text(allocs[cow_ix].clone())
+        ItemBody::Rule => Tag::Rule,
+        ItemBody::Header(level) => Tag::Header(level),
+        ItemBody::FencedCodeBlock(cow_ix) =>
+            Tag::CodeBlock(allocs[cow_ix].clone()),
+        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::BlockQuote => Tag::BlockQuote,
+        ItemBody::List(_, c, listitem_start) => {
+            if c == b'.' || c == b')' {
+                Tag::List(Some(listitem_start))
+            } else {
+                Tag::List(None)
+            }
         }
-        ItemBody::Html => {
-            Event::Html(text[item.start..item.end].into())
+        ItemBody::ListItem(_) => Tag::Item,
+        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
+        ItemBody::TableHead => Tag::TableHead,
+        ItemBody::TableCell => Tag::TableCell,
+        ItemBody::TableRow => Tag::TableRow,
+        ItemBody::Table(alignment_ix) => {
+            Tag::Table(allocs[alignment_ix].clone())
         }
-        ItemBody::InlineHtml => {
-            Event::InlineHtml(text[item.start..item.end].into())
-        }
-        ItemBody::SoftBreak => Event::SoftBreak,
-        ItemBody::HardBreak => Event::HardBreak,
-        ItemBody::FootnoteReference(cow_ix) => {
-            Event::FootnoteReference(allocs[cow_ix].clone())
-        }
-        ItemBody::TaskListMarker(checked) => Event::TaskListMarker(checked),
+        ItemBody::FootnoteDefinition(cow_ix) =>
+            Tag::FootnoteDefinition(allocs[cow_ix].clone()),
         _ => panic!("unexpected item body {:?}", item.body)
-    }
+    };
+
+    Event::Start(tag)
 }
 
 // https://english.stackexchange.com/a/285573
@@ -2440,7 +2472,7 @@ impl<'a> Iterator for Parser<'a> {
         match self.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item, &self.allocs).unwrap();
+                let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
                 self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag))
@@ -2450,20 +2482,21 @@ impl<'a> Iterator for Parser<'a> {
                     self.handle_inline();
                 }
 
-                if let Some(tag) = item_to_tag(&self.tree[cur_ix].item, &self.allocs) {
-                    self.offset = if let TreePointer::Valid(child_ix) = self.tree[cur_ix].child {
+                let node = self.tree[cur_ix];
+                let item = node.item;
+                let event = item_to_event(item, self.text, &self.allocs);
+                if let Event::Start(..) = event {
+                    self.offset = if let TreePointer::Valid(child_ix) = node.child {
                         self.tree[child_ix].item.start
                     } else {
-                        self.tree[cur_ix].item.end
+                        item.end
                     };
-                    self.tree.push();                
-                    Some(Event::Start(tag))
+                    self.tree.push();
                 } else {
-                    self.tree.next_sibling(cur_ix);
-                    let item = &self.tree[cur_ix].item;
                     self.offset = item.end;
-                    Some(item_to_event(item, self.text, &self.allocs))
+                    self.tree.next_sibling(cur_ix);
                 }
+                Some(event)
             }
         }
     }

@@ -866,7 +866,6 @@ fn scan_attribute(data: &[u8], allow_newline: bool) -> Option<usize> {
 fn scan_attribute_value(data: &[u8], allow_newline: bool) -> Option<usize> {
     let mut i = 0;
     match *data.get(0)? {
-        // FIXME: quadratic scaling bug?
         b @ b'"' | b @ b'\'' => {
             i += 1;
             i += scan_while(&data[i..], |c| c != b && (allow_newline || c != b'\n' && c != b'\r'));
@@ -951,6 +950,12 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
 
 /// Assumes that `data` is preceded by `<`.
 pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
+    let i = scan_html_block_inner(data, false)?;
+    scan_blank_line(&data[i..])?;
+    Some(i)
+}
+
+fn scan_html_block_inner(data: &[u8], allow_newline: bool) -> Option<usize> {
     let close_tag_bytes = scan_ch(&data, b'/');
     let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0  {
@@ -961,13 +966,14 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
 
     if close_tag_bytes == 0 {
         loop {
-            let whitespace = scan_whitespace_no_nl(&data[i..]);
+            let whitespace_scanner = |c| is_ascii_whitespace(c) && (allow_newline || c != b'\n' && c != b'\r');
+            let whitespace = scan_while(&data[i..], whitespace_scanner);
             i += whitespace;
             if let Some(b'/') | Some(b'>') = data.get(i) {
                 break;
             }
             if whitespace == 0 { return None; }
-            i += scan_attribute(&data[i..], false)?;
+            i += scan_attribute(&data[i..], allow_newline)?;
         }
     }
 
@@ -979,11 +985,10 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
 
     let c = scan_ch(&data[i..], b'>');
     if c == 0 {
-        return None;
+        None
+    } else {
+        Some(i + c)
     }
-    i += c;
-
-    scan_blank_line(&data[i..]).map(|_| i)
 }
 
 /// Returns (next_byte_offset, uri, type)
@@ -1166,57 +1171,17 @@ fn scan_inline_html_processing(bytes: &[u8], mut ix: usize, scan_guard: &mut Htm
 }
 
 /// Returns the next byte offset on success.
-pub(crate) fn scan_inline_html(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard)
+pub(crate) fn scan_inline_html(bytes: &[u8], ix: usize, scan_guard: &mut HtmlScanGuard)
     -> Option<usize>
 {
     let c = *bytes.get(ix)?;
-    ix += 1;
-
-    match c {
-        b'!' => scan_inline_html_comment(bytes, ix, scan_guard),
-        b'?' => scan_inline_html_processing(bytes, ix, scan_guard),
-        b'/' => {
-            let next_byte = *bytes.get(ix)?;
-            if !is_ascii_alpha(next_byte) {
-                return None;
-            }
-            ix += 1;
-            ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
-            ix += scan_while(&bytes[ix..], is_ascii_whitespace);
-            if scan_ch(&bytes[ix..], b'>') == 1 {
-                Some(ix + 1)
-            } else {
-                None
-            }
-        }
-        c if is_ascii_alpha(c) => {
-            // open tag (first character of tag consumed)
-            ix += scan_while(&bytes[ix..], is_ascii_letterdigitdash);
-            // TODO: check if we can share code with scanners::scan_html_type_7
-
-            loop {
-                let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-                ix += whitespace;
-                if let Some(b'/') | Some(b'>') = bytes.get(ix) {
-                    break;
-                }
-                if whitespace == 0 {
-                    return None;
-                }
-                ix += scan_attribute(&bytes[ix..], true)?;
-            }
-
-            ix += scan_whitespace_no_nl(&bytes[ix..]);
-            ix += scan_ch(&bytes[ix..], b'/');
-
-            let c = scan_ch(&bytes[ix..], b'>');
-            if c == 0 {
-                None
-            } else {
-                Some(ix + c)
-            }
-        }
-        _ => None,
+    if c == b'!' {
+        scan_inline_html_comment(bytes, ix + 1, scan_guard)
+    } else if c == b'?' {
+        scan_inline_html_processing(bytes, ix + 1, scan_guard)
+    } else {
+        let i = scan_html_block_inner(&bytes[ix..], true)?;
+        Some(i + ix)
     }
 }
 

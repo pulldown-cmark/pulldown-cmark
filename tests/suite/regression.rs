@@ -473,3 +473,25 @@ yolo | swag
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_35() {
+    let original = r##"<foo bar>
+"##;
+    let expected = r##"<foo bar>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_36() {
+    let original = r##"<foo bar =
+ "hi"> 
+"##;
+    let expected = r##"<p><foo bar =
+ "hi"> </p>
+"##;
+
+    test_markdown_html(original, expected);
+}

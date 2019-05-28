@@ -846,36 +846,16 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
     }    
 }
 
-/// Returns byte scanned
-fn scan_inline_attribute_value(data: &[u8]) -> Option<usize> {
-    let c = *data.first()?;
-    let mut ix = 1;
-
-    if is_ascii_whitespace(c) || c == b'=' || c == b'<' || c == b'>' || c == b'`' {
-        None
-    } else if c == b'\'' || c == b'"' {
-        // FIXME: this is very likely a quadratic scaling bug
-        ix += scan_while(&data[ix..], |b| b != c);
-        if scan_ch(&data[ix..], c) == 1 {
-            Some(ix + 1)
-        } else {
-            None
-        }
-    } else {
-        ix += scan_attr_value_chars(&data[ix..]);
-        Some(ix)
-    }
-}
-
 /// Returns byte scanned (TODO: should it return new offset?)
-fn scan_inline_attribute(data: &[u8]) -> Option<usize> {
+fn scan_attribute(data: &[u8], allow_newline: bool) -> Option<usize> {
+    let whitespace_scanner = |c| is_ascii_whitespace(c) && (allow_newline || c != b'\n' && c != b'\r');
     let mut ix = scan_attribute_name(data)?;
-    let n_whitespace = scan_while(&data[ix..], is_ascii_whitespace);
+    let n_whitespace = scan_while(&data[ix..], whitespace_scanner);
     ix += n_whitespace;
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
-        ix += scan_while(&data[ix..], is_ascii_whitespace);
-        ix += scan_inline_attribute_value(&data[ix..])?;
+        ix += scan_while(&data[ix..], whitespace_scanner);
+        ix += scan_attribute_value(&data[ix..], allow_newline)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -883,13 +863,13 @@ fn scan_inline_attribute(data: &[u8]) -> Option<usize> {
     Some(ix)
 }
 
-fn scan_attribute_value(data: &[u8]) -> Option<usize> {
+fn scan_attribute_value(data: &[u8], allow_newline: bool) -> Option<usize> {
     let mut i = 0;
     match *data.get(0)? {
         // FIXME: quadratic scaling bug?
         b @ b'"' | b @ b'\'' => {
             i += 1;
-            i += scan_while(&data[i..], |c| c != b && c != b'\n' && c != b'\r');
+            i += scan_while(&data[i..], |c| c != b && (allow_newline || c != b'\n' && c != b'\r'));
             if scan_ch(&data[i..], b) == 0 {
                 return None;
             }
@@ -987,7 +967,7 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
                 break;
             }
             if whitespace == 0 { return None; }
-            i += scan_attribute(&data[i..])?;
+            i += scan_attribute(&data[i..], false)?;
         }
     }
 
@@ -1004,22 +984,6 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
     i += c;
 
     scan_blank_line(&data[i..]).map(|_| i)
-}
-
-fn scan_attribute(data: &[u8]) -> Option<usize> {
-    let mut i = scan_whitespace_no_nl(data);
-    i += scan_attribute_name(&data[i..])?;
-    scan_attribute_value_spec(&data[i..]).map(|attr_valspec_bytes| attr_valspec_bytes + i)
-}
-
-fn scan_attribute_value_spec(data: &[u8]) -> Option<usize> {
-    let mut i = scan_whitespace_no_nl(data);
-    let eq = scan_ch(&data[i..], b'=');
-    if eq == 0 { return None; }
-    i += eq;
-    i += scan_whitespace_no_nl(&data[i..]);
-    i += scan_attribute_value(&data[i..])?;
-    Some(i)
 }
 
 /// Returns (next_byte_offset, uri, type)
@@ -1239,7 +1203,7 @@ pub(crate) fn scan_inline_html(bytes: &[u8], mut ix: usize, scan_guard: &mut Htm
                 if whitespace == 0 {
                     return None;
                 }
-                ix += scan_inline_attribute(&bytes[ix..])?;
+                ix += scan_attribute(&bytes[ix..], true)?;
             }
 
             ix += scan_whitespace_no_nl(&bytes[ix..]);

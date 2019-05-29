@@ -2580,6 +2580,12 @@ mod test {
     }
 
     #[test]
+    fn issue_311() {
+        // dont crash
+        parser_with_extensions("\\\u{0d}-\u{09}\\\u{0d}-\u{09}").count();
+    }
+
+    #[test]
     fn issue_283() {
         let input = std::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap();
         // dont crash

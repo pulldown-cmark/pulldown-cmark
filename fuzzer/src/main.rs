@@ -126,39 +126,39 @@ fn main() {
 /// Returns the exit code. 0 if all tests passed and 1 otherwise.
 fn regression_test() -> i32 {
     let mut exit_code = 0;
-    let mut check_result = |res| match res {
+    let mut check_result = |pat| match test(pat) {
         PatternResult::Linear(_) => (),
         _ => exit_code = 1,
     };
     // https://github.com/raphlinus/pulldown-cmark/issues/246
-    check_result(test("[]("));
+    check_pattern("[](");
     // https://github.com/raphlinus/pulldown-cmark/issues/247
-    check_result(test("``\\"));
+    check_pattern("``\\");
     // https://github.com/raphlinus/pulldown-cmark/issues/248
-    check_result(test("a***"));
+    check_pattern("a***");
     // https://github.com/raphlinus/pulldown-cmark/issues/249
     // TODO: we can't perform tests like this yet
-//    check_result(test("* * * ...a"));
+//    check_pattern("* * * ...a");
     // https://github.com/raphlinus/pulldown-cmark/issues/251
-    check_result(test("[ (]("));
+    check_pattern("[ (](");
     // https://github.com/raphlinus/pulldown-cmark/issues/255
-    check_result(test("[*_a"));
+    check_pattern("[*_a");
     // https://github.com/raphlinus/pulldown-cmark/issues/280
-    check_result(test("a <![CDATA["));
+    check_pattern("a <![CDATA[");
     // https://github.com/mity/md4c/issues/73#issuecomment-487640366
-    check_result(test("a <!A"));
+    check_pattern("a <!A");
     // https://github.com/raphlinus/pulldown-cmark/issues/282
-    check_result(test("a<?"));
+    check_pattern("a<?");
     // https://github.com/raphlinus/pulldown-cmark/issues/284
-    check_result(test("[[]()"));
+    check_pattern("[[]()");
     // https://github.com/raphlinus/pulldown-cmark/issues/287
     // TODO: we can't perform tests like this reliably yet
-//    check_result(test("[{}]:\\a"));
+//    check_pattern("[{}]:\\a");
     // https://github.com/raphlinus/pulldown-cmark/issues/296
-    check_result(test("[](<"));
-    check_result(test("[\"[]]\\("));
-    check_result(test(")-\r%<["));
-    check_result(test("\u{0}[@[{<"));
+    check_pattern("[](<");
+    check_pattern("[\"[]]\\(");
+    check_pattern(")-\r%<[");
+    check_pattern("\u{0}[@[{<");
     exit_code
 }
 
@@ -214,7 +214,7 @@ fn fuzz(num_cpus: usize) {
                     }
                 }
 
-                // measure and print thruput
+                // measure and print throughput
                 let batches_finished = num_batches_finished.load(Ordering::Relaxed);
                 let patterns_finished = batches_finished * BATCH_SIZE as u64;
                 let elapsed_secs = start_time.elapsed().as_secs();
@@ -288,6 +288,11 @@ fn test(pattern: &str) -> PatternResult {
     let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE];
     let mut res = PatternResult::TooLong;
 
+    // Test a pattern a number of times until its first negative
+    // to reduce the number of false positives. This allows us to keep
+    // the threshold relatively low since the false positive rate
+    // drops exponentially with the number of retests (assuming independence
+    // of false positive occurrence).
     for _ in 0..TEST_COUNT {
         res = test_pattern(pattern, &mut time_samples);
 

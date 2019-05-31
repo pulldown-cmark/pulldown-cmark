@@ -156,7 +156,8 @@ fn regression_test() -> i32 {
     check_result(test("[](<"));
     check_result(test("[\"[]]\\("));
     check_result(test(")-\r%<["));
-    return exit_code;
+    check_result(test("\u{0}[@[{<"));
+    exit_code
 }
 
 /// Start fuzzing on given number of threads in parallel.

@@ -158,7 +158,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
-                Html(html) | InlineHtml(html) => {
+                Html(html) => {
                     self.write(&html)?;
                 }
                 SoftBreak => {
@@ -342,7 +342,6 @@ where
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
-            Tag::HtmlBlock => Ok(())
         }
     }
 
@@ -409,7 +408,6 @@ where
             Tag::FootnoteDefinition(_) => {
                 self.write("</div>\n")?;
             }
-            Tag::HtmlBlock => {}
         }
         Ok(())
     }
@@ -426,8 +424,7 @@ where
                     }
                     nest -= 1;
                 }
-                Html(_) => (),
-                InlineHtml(text) | Code(text) | Text(text) => {
+                Html(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }

@@ -47,7 +47,6 @@ pub enum Tag<'a> {
     List(Option<usize>),  // TODO: add delim and tight for ast (not needed for html)
     Item,
     FootnoteDefinition(CowStr<'a>),
-    HtmlBlock,
 
     // tables
     Table(Vec<Alignment>),
@@ -107,7 +106,6 @@ pub enum Event<'a> {
     Text(CowStr<'a>),
     Code(CowStr<'a>),
     Html(CowStr<'a>),
-    InlineHtml(CowStr<'a>),
     FootnoteReference(CowStr<'a>),
     SoftBreak,
     HardBreak,
@@ -161,7 +159,6 @@ enum ItemBody {
     Strong,
     Strikethrough,
     Code(CowIndex),
-    InlineHtml,
     Link(LinkIndex),
     Image(LinkIndex),
     FootnoteReference(CowIndex), 
@@ -171,7 +168,6 @@ enum ItemBody {
     Header(i32), // header level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
-    HtmlBlock(Option<u32>), // end tag, or none for type 6
     Html,
     BlockQuote,
     List(bool, u8, usize), // is_tight, list character, list start index
@@ -362,8 +358,8 @@ impl<'a> FirstPass<'a> {
         if self.text.as_bytes()[ix] == b'<' {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
-            if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[(ix + 1)..]) {
-                return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
+            if let Some(html_end_tag) = get_html_end_tag(&bytes[(ix + 1)..]) {
+                return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
             }
 
             // Detect type 6
@@ -788,19 +784,11 @@ impl<'a> FirstPass<'a> {
     /// tree and also keeping track of the lines of HTML within the block.
     ///
     /// The html_end_tag is the tag that must be found on a line to end the block.
-    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag_ix: u32,
+    fn parse_html_block_type_1_to_5(&mut self, start_ix: usize, html_end_tag: &str,
             mut remaining_space: usize) -> usize
     {
-        self.tree.append(Item {
-            start: start_ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(Some(html_end_tag_ix)),
-        });
-        self.tree.push();
-
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
-        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -809,26 +797,20 @@ impl<'a> FirstPass<'a> {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() {
-                end_ix = ix;
                 break;
             }
 
-            let html_end_tag = HTML_END_TAGS[html_end_tag_ix as usize];
-
             if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
-                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() {
-                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        self.pop(end_ix);
         ix
     }
 
@@ -838,16 +820,8 @@ impl<'a> FirstPass<'a> {
     fn parse_html_block_type_6_or_7(&mut self, start_ix: usize, mut remaining_space: usize)
         -> usize
     {
-        self.tree.append(Item {
-            start: start_ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(None)
-        });
-        self.tree.push();
-
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
-        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -855,9 +829,7 @@ impl<'a> FirstPass<'a> {
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
-            if n_containers < self.tree.spine_len() || line_start.is_at_eol()
-            {
-                end_ix = ix;
+            if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
                 break;
             }
 
@@ -865,13 +837,11 @@ impl<'a> FirstPass<'a> {
             if next_line_ix == self.text.len()
                 || scan_blank_line(&bytes[next_line_ix..]).is_some()
             {
-                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        self.pop(end_ix);
         ix
     }
 
@@ -1393,15 +1363,12 @@ fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
         (get_html_end_tag(&bytes[1..]).is_some() || is_html_tag(scan_html_block_tag(&bytes[1..]).1))
 }
 
-static HTML_END_TAGS: &[&str; 7] = &["</pre>", "</style>", "</script>", "-->", "?>", "]]>", ">"];
-
-/// Returns an index into HTML_END_TAGS.
 /// Assumes `text_bytes` is preceded by `<`.
-fn get_html_end_tag(text_bytes : &[u8]) -> Option<u32> {
+fn get_html_end_tag(text_bytes : &[u8]) -> Option<&'static str> {
     static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-    for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
+    for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(["</pre>", "</style>", "</script>"].into_iter()) {
         let tag_len = beg_tag.len();
 
         if text_bytes.len() < tag_len {
@@ -1415,25 +1382,25 @@ fn get_html_end_tag(text_bytes : &[u8]) -> Option<u32> {
 
         // Must either be the end of the line...
         if text_bytes.len() == tag_len {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
 
         // ...or be followed by whitespace, newline, or '>'.
         let s = text_bytes[tag_len];
         if is_ascii_whitespace(s) || s == b'>' {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
     }
 
-    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
+    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(["-->", "?>", "]]>"].into_iter()) {
         if text_bytes.starts_with(beg_tag) {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
     }
 
     if text_bytes.len() > 1 && text_bytes[0] == b'!' 
         && text_bytes[1] >= b'A' && text_bytes[1] <= b'Z' {
-        Some(6)
+        Some(">")
     } else {
         None
     }
@@ -1877,7 +1844,7 @@ impl<'a> Parser<'a> {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
                             // TODO: this logic isn't right if the replaced chain has
                             // tricky stuff (skipped containers, replaced nulls).
-                            self.tree[cur_ix].item.body = ItemBody::InlineHtml;
+                            self.tree[cur_ix].item.body = ItemBody::Html;
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
@@ -2348,7 +2315,6 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
@@ -2371,8 +2337,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             return Event::Text(allocs[cow_ix].clone()),
         ItemBody::Html =>
             return Event::Html(text[item.start..item.end].into()),
-        ItemBody::InlineHtml =>
-            return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) =>
@@ -2405,7 +2369,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,

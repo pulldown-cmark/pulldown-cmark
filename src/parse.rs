@@ -2254,7 +2254,7 @@ pub(crate) enum LoopInstruction<T> {
 /// This function walks the byte slices from the given index and
 /// calls the callback function on all bytes (and their indices) that are in the following set:
 /// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
-/// It may also call the callback on other bytes, but it is not guaranteed.
+/// It is guaranteed not call the callback on other bytes.
 /// Whenever `callback(ix, byte)` returns a `ContinueAndSkip(n)` value, the callback
 /// will not be called with an index that is less than `ix + n + 1`.
 /// When the callback returns a `BreakAtWith(end_ix, opt+val)`, no more callbacks will be
@@ -2270,18 +2270,42 @@ fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, 
     { scalar_iterate_special_bytes(bytes, ix, callback) }
 }
 
+const fn special_bytes() -> [bool; 256] {
+    let mut bytes = [false; 256];
+    bytes[b'<' as usize] = true;
+    bytes[b'!' as usize] = true;
+    bytes[b'[' as usize] = true;
+    bytes[b'~' as usize] = true;
+    bytes[b'`' as usize] = true;
+    bytes[b'|' as usize] = true;
+    bytes[b'\\' as usize] = true;
+    bytes[b'*' as usize] = true;
+    bytes[b'_' as usize] = true;
+    bytes[b'\r' as usize] = true;
+    bytes[b'\n' as usize] = true;
+    bytes[b']' as usize] = true;
+    bytes[b'&' as usize] = true;
+    bytes
+}
+
 pub(crate) fn scalar_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut callback: F) -> (usize, Option<T>)
     where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
 {
+    let special_bytes = special_bytes();
+
     while ix < bytes.len() {
-        match callback(ix, bytes[ix]) {
-            LoopInstruction::ContinueAndSkip(skip) => {
-                ix += skip + 1;
-            }
-            LoopInstruction::BreakAtWith(ix, val) => {
-                return (ix, val);
+        let b = bytes[ix];
+        if special_bytes[b as usize] {
+            match callback(ix, b) {
+                LoopInstruction::ContinueAndSkip(skip) => {
+                    ix += skip;
+                }
+                LoopInstruction::BreakAtWith(ix, val) => {
+                    return (ix, val);
+                }
             }
         }
+        ix += 1;
     }
 
     (ix, None)

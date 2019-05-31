@@ -26,15 +26,15 @@ use std::str::from_utf8;
 use crate::html::StrWrite;
 
 static HREF_SAFE: [u8; 128] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-    ];
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+];
 
 static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &'static str = "&amp;";
@@ -77,32 +77,24 @@ where
     w.write_str(&s[mark..])
 }
 
-static HTML_ESCAPE_TABLE: [u8; 256] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 4, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ];
+const fn create_html_escape_table() -> [u8; 256] {
+    let mut table = [0; 256];
+    table[b'"' as usize] = 1;
+    table[b'&' as usize] = 2;
+    table[b'<' as usize] = 3;
+    table[b'>' as usize] = 4;
+    table
+}
+
+static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
 
 static HTML_ESCAPES: [&'static str; 5] = [
-        "",
-        "&quot;",
-        "&amp;",
-        "&lt;",
-        "&gt;"
-    ];
+    "",
+    "&quot;",
+    "&amp;",
+    "&lt;",
+    "&gt;"
+];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.
@@ -129,13 +121,11 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
         }
         let c = bytes[i];
         let escape = HTML_ESCAPE_TABLE[c as usize];
-        if escape != 0 {
-            let escape_seq = HTML_ESCAPES[escape as usize];
-            w.write_str(&s[mark..i])?;
-            w.write_str(escape_seq)?;
-            mark = i + 1; // all escaped characters are ASCII
-        }
+        let escape_seq = HTML_ESCAPES[escape as usize];
+        w.write_str(&s[mark..i])?;
+        w.write_str(escape_seq)?;
         i += 1;
+        mark = i; // all escaped characters are ASCII
     }
     w.write_str(&s[mark..])
 }

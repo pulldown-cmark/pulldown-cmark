@@ -1476,10 +1476,6 @@ impl InlineStack {
         }
     }
 
-    // both implies *, i think. because _ can never be
-    // both opener and closer.
-    // FIXME: it appears _ can be both?? does it matter from a correctness pov?
-    // yes, probably
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
         if c == b'_' {
             if both {
@@ -1519,7 +1515,7 @@ impl InlineStack {
     fn find_match<'a>(&mut self, tree: &mut Tree<Item>, c: u8, count: usize, both: bool)
         -> Option<InlineEl>
     {
-        let lowerbound = self.get_lowerbound(c, count, both);
+        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
@@ -1529,9 +1525,7 @@ impl InlineStack {
             });
 
         if let Some((matching_ix, matching_el)) = res {
-            for i in (matching_ix + 1)..self.stack.len() {
-                let el = self.stack[i];
-                self.set_lowerbound(el.c, el.count, el.both, matching_ix.saturating_sub(1));
+            for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
                     tree[el.start + i].item.body = ItemBody::Text;
                 }
@@ -1539,6 +1533,7 @@ impl InlineStack {
             self.stack.truncate(matching_ix);
             Some(matching_el)
         } else {
+            // FIXME: shouldnt the lower bound be self.stack.len()?
             self.set_lowerbound(c, count, both, self.stack.len().saturating_sub(1));
             None
         }
@@ -2591,6 +2586,18 @@ mod test {
         // dont crash
         parser_with_extensions("> - \\\n> - ").count();
         parser_with_extensions("- \n\n").count();
+    }
+
+    #[test]
+    fn issue_306() {
+        // dont crash
+        parser_with_extensions("*\r_<__*\r_<__*\r_<__*\r_<__").count();
+    }
+
+    #[test]
+    fn issue_305() {
+        // dont crash
+        parser_with_extensions("_6**6*_*").count();
     }
 
     #[test]

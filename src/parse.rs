@@ -38,7 +38,7 @@ pub enum Tag<'a> {
     Rule,
 
     /// A heading. The field indicates the level of the heading.
-    Header(i32),
+    Heading(i32),
 
     BlockQuote,
     CodeBlock(CowStr<'a>),
@@ -165,7 +165,7 @@ enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Header(i32), // header level
+    Heading(i32), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
@@ -536,7 +536,7 @@ impl<'a> FirstPass<'a> {
                 let ix_new = ix + line_start.bytes_scanned();
                 if n_containers == self.tree.spine_len() {
                     if let Some((n, level)) = scan_setext_heading(&bytes[ix_new..]) {
-                        self.tree[node_ix].item.body = ItemBody::Header(level);
+                        self.tree[node_ix].item.body = ItemBody::Heading(level);
                         if let Some(Item { start, body: ItemBody::HardBreak, .. }) = brk {
                             if bytes[start] == b'\\' {
                                 self.tree.append_text(start, start + 1);
@@ -1099,7 +1099,7 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Header(atx_level),
+            body: ItemBody::Heading(atx_level),
         });
         ix += atx_size;
         // next char is space or scan_eol
@@ -2302,7 +2302,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Rule => Tag::Rule,
-        ItemBody::Header(level) => Tag::Header(level),
+        ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) =>
             Tag::CodeBlock(allocs[cow_ix].clone()),
         ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
@@ -2356,7 +2356,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Rule => Tag::Rule,
-        ItemBody::Header(level) => Tag::Header(level),
+        ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) =>
             Tag::CodeBlock(allocs[cow_ix].clone()),
         ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),

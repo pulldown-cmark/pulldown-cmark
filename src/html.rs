@@ -204,7 +204,7 @@ where
                     self.write("\n<hr />\n")
                 }
             }
-            Tag::Header(level) => {
+            Tag::Heading(level) => {
                 if self.end_newline {
                     self.end_newline = false;
                     write!(&mut self.writer, "<h{}>", level)
@@ -351,7 +351,7 @@ where
                 self.write("</p>\n")?;
             }
             Tag::Rule => (),
-            Tag::Header(level) => {
+            Tag::Heading(level) => {
                 self.write("</h")?;
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;

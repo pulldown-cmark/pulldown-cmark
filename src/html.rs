@@ -167,6 +167,13 @@ where
                 HardBreak => {
                     self.write("<br />\n")?;
                 }
+                Rule => {
+                    if self.end_newline {
+                        self.write("<hr />\n")?;
+                    } else {
+                        self.write("\n<hr />\n")?;
+                    }
+                }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
@@ -195,13 +202,6 @@ where
                     self.write("<p>")
                 } else {
                     self.write("\n<p>")
-                }
-            }
-            Tag::Rule => {
-                if self.end_newline {
-                    self.write("<hr />\n")
-                } else {
-                    self.write("\n<hr />\n")
                 }
             }
             Tag::Heading(level) => {
@@ -350,7 +350,6 @@ where
             Tag::Paragraph => {
                 self.write("</p>\n")?;
             }
-            Tag::Rule => (),
             Tag::Heading(level) => {
                 self.write("</h")?;
                 write!(&mut self.writer, "{}", level)?;
@@ -428,7 +427,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
-                SoftBreak | HardBreak => {
+                SoftBreak | HardBreak | Rule => {
                     self.write(" ")?;
                 }
                 FootnoteReference(name) => {

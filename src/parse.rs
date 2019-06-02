@@ -35,7 +35,6 @@ use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, Referen
 pub enum Tag<'a> {
     // block-level tags
     Paragraph,
-    Rule,
 
     /// A heading. The field indicates the level of the heading.
     Heading(i32),
@@ -109,6 +108,7 @@ pub enum Event<'a> {
     FootnoteReference(CowStr<'a>),
     SoftBreak,
     HardBreak,
+    Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked
     TaskListMarker(bool),
 }
@@ -2301,7 +2301,6 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Rule => Tag::Rule,
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) =>
             Tag::CodeBlock(allocs[cow_ix].clone()),
@@ -2342,6 +2341,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::FootnoteReference(cow_ix) =>
             return Event::FootnoteReference(allocs[cow_ix].clone()),
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
+        ItemBody::Rule => return Event::Rule,
 
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -2355,7 +2355,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Rule => Tag::Rule,
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) =>
             Tag::CodeBlock(allocs[cow_ix].clone()),

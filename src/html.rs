@@ -109,7 +109,7 @@ struct HtmlWriter<'a, I, W> {
 impl<'a, I, W> HtmlWriter<'a, I, W>
 where
     I: Iterator<Item = Event<'a>>,
-    W: StrWrite,
+    W: StrWrite    
 {
     fn new(iter: I, writer: W) -> Self {
         Self {
@@ -140,8 +140,14 @@ where
         Ok(())
     }
 
-    pub fn run(mut self) -> io::Result<()> {
+    pub fn run<F>(mut self, mut custom_renderer: F) -> io::Result<()>
+        where F: FnMut(&mut HtmlWriter<'a, I, W>, Event<'a>) -> Result<io::Result<()>, Event<'a>>
+    {
         while let Some(event) = self.iter.next() {
+            let event = match custom_renderer(&mut self, event) {
+                Ok(res) => return res,
+                Err(event) => event,
+            };
             match event {
                 Start(tag) => {
                     self.start_tag(tag)?;
@@ -478,7 +484,7 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    HtmlWriter::new(iter, s).run().unwrap();
+    HtmlWriter::new(iter, s).run(|_, event| Err(event)).unwrap();
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -519,5 +525,5 @@ where
     I: Iterator<Item = Event<'a>>,
     W: Write,
 {
-    HtmlWriter::new(iter, WriteWrapper(writer)).run()
+    HtmlWriter::new(iter, WriteWrapper(writer)).run(|_, event| Err(event))
 }

@@ -44,8 +44,6 @@ impl<'a> std::cmp::PartialEq<InlineStr> for InlineStr {
     }
 }
 
-// This could be an implementation of TryFrom<&str>
-// when that trait is stabilized.
 impl TryFrom<&str> for InlineStr {
     type Error = StringTooLongError;
 

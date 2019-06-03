@@ -38,11 +38,11 @@ enum TableState {
 /// for all types implementing `Write` and types of the for `&mut W` where
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
-struct WriteWrapper<W>(W);
+pub struct WriteWrapper<W>(W);
 
 /// Trait that allows writing string slices. This is basically an extension
 /// of `std::io::Write` in order to include `String`.
-pub(crate) trait StrWrite {
+pub trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
 
     fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
@@ -90,7 +90,8 @@ impl<W> StrWrite for &'_ mut W
     }
 }
 
-struct HtmlWriter<'a, I, W> {
+/// Keeps track of internal state for rendering to HTML.
+pub struct HtmlWriter<'a, I, W> {
     /// Iterator supplying events.
     iter: I,
 
@@ -131,7 +132,7 @@ where
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
-    fn write(&mut self, s: &str) -> io::Result<()> {
+    pub fn write(&mut self, s: &str) -> io::Result<()> {
         self.writer.write_str(s)?;
 
         if !s.is_empty() {
@@ -145,7 +146,10 @@ where
     {
         while let Some(event) = self.iter.next() {
             let event = match custom_renderer(&mut self, event) {
-                Ok(res) => return res,
+                Ok(res) => {
+                    res?;
+                    continue;
+                }
                 Err(event) => event,
             };
             match event {
@@ -487,6 +491,36 @@ where
     HtmlWriter::new(iter, s).run(|_, event| Err(event)).unwrap();
 }
 
+/// Like `push_html`, but allows for custom rendering of events.
+///
+/// # Examples
+///
+/// ```
+/// use pulldown_cmark::{html, Parser, Event, Tag};
+///
+/// let markdown_str = "No html!<foo>";
+/// let mut html_buf = String::new();
+/// let parser = Parser::new(markdown_str);
+///
+/// html::push_html_with_extension(&mut html_buf, parser, |state, event| {
+///     if let Event::InlineHtml(..) = event {
+///         Ok(state.write("<REDACTED>"))
+///     } else {
+///         // default rendering
+///         Err(event)
+///     }
+/// });
+///
+/// assert_eq!(&html_buf[..], "<p>No html!<REDACTED></p>\n");
+/// ```
+pub fn push_html_with_extension<'a, I, F>(s: &mut String, iter: I, custom_renderer: F)
+where
+    I: Iterator<Item = Event<'a>>,
+    F: FnMut(&mut HtmlWriter<'a, I, &mut String>, Event<'a>) -> Result<io::Result<()>, Event<'a>>
+{
+    HtmlWriter::new(iter, s).run(custom_renderer).unwrap();
+}
+
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
 /// write it out to a writable stream.
 ///
@@ -526,4 +560,14 @@ where
     W: Write,
 {
     HtmlWriter::new(iter, WriteWrapper(writer)).run(|_, event| Err(event))
+}
+
+/// Like `write_html`, but allows for custom rendering of events.
+pub fn write_html_with_extension<'a, I, W, F>(writer: W, iter: I, custom_renderer: F)
+where
+    I: Iterator<Item = Event<'a>>,
+    W: Write,
+    F: FnMut(&mut HtmlWriter<'a, I, WriteWrapper<W>>, Event<'a>) -> Result<io::Result<()>, Event<'a>>
+{
+    HtmlWriter::new(iter, WriteWrapper(writer)).run(custom_renderer).unwrap();
 }

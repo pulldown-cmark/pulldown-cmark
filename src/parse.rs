@@ -1474,6 +1474,7 @@ impl InlineStack {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
         }
+        self.lower_bounds = [0; 7];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {

@@ -1525,6 +1525,7 @@ impl InlineStack {
             });
 
         if let Some((matching_ix, matching_el)) = res {
+            let matching_ix = matching_ix + lowerbound;
             for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
                     tree[el.start + i].item.body = ItemBody::Text;
@@ -1533,8 +1534,7 @@ impl InlineStack {
             self.stack.truncate(matching_ix);
             Some(matching_el)
         } else {
-            // FIXME: shouldnt the lower bound be self.stack.len()?
-            self.set_lowerbound(c, count, both, self.stack.len().saturating_sub(1));
+            self.set_lowerbound(c, count, both, self.stack.len());
             None
         }
     }
@@ -2598,6 +2598,11 @@ mod test {
     fn issue_305() {
         // dont crash
         parser_with_extensions("_6**6*_*").count();
+    }
+
+    #[test]
+    fn another_emphasis_panic() {
+        parser_with_extensions("*__#_#__*").count();
     }
 
     #[test]

@@ -413,3 +413,14 @@ yolo | swag
 </blockquote>
 <p>yolo | swag</p>
 ````````````````````````````````
+
+EMPHASIS ACROSS PARAGRAPHS
+
+```````````````````````````````` example
+~~*_**__
+
+__a__
+.
+<p>~~*_**__</p>
+<p><strong>a</strong></p>
+````````````````````````````````

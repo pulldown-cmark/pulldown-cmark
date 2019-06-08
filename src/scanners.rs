@@ -562,9 +562,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&bytes[w.. ], 5);
     if postindent == 0 {
-        if scan_eol(&bytes[w..]).is_none() {
-            return None;
-        }
+        scan_eol(&bytes[w..])?;
         postindent += 1;
     } else if postindent > 4 {
         postn = 1;
@@ -697,12 +695,10 @@ fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
                 continue;
             }
         }
-        if c == b'\\' {
-            if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
-                title.push_str(&text[mark..i]);
-                i += 1;
-                mark = i;
-            }
+        if c == b'\\' && i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
+            title.push_str(&text[mark..i]);
+            i += 1;
+            mark = i;
         }
 
         i += 1;

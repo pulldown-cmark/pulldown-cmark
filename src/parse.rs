@@ -1468,7 +1468,7 @@ impl InlineStack {
     const TILDES: usize = 5;
     const UNDERSCORE_BOTH: usize = 6;
 
-    fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
+    fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
@@ -1513,7 +1513,7 @@ impl InlineStack {
         }
     }
 
-    fn find_match<'a>(&mut self, tree: &mut Tree<Item>, c: u8, count: usize, both: bool)
+    fn find_match(&mut self, tree: &mut Tree<Item>, c: u8, count: usize, both: bool)
         -> Option<InlineEl>
     {
         let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
@@ -2004,7 +2004,7 @@ impl<'a> Parser<'a> {
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
                                 let type_url_title = if let Some(matching_def) = self.allocs.refdefs.get(&UniCase::new(link_label.as_ref().into())) {
                                     // found a matching definition!
-                                    let title = matching_def.title.as_ref().cloned().unwrap_or("".into());
+                                    let title = matching_def.title.as_ref().cloned().unwrap_or_else(|| "".into());
                                     let url = matching_def.dest.clone();
                                     Some((link_type, url, title))
                                 } else if let Some(callback) = self.broken_link_callback {
@@ -2418,7 +2418,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
 }
 
 // https://english.stackexchange.com/a/285573
-fn surgerize_tight_list<'a>(tree : &mut Tree<Item>, list_ix: TreeIndex) {
+fn surgerize_tight_list(tree : &mut Tree<Item>, list_ix: TreeIndex) {
     let mut list_item = tree[list_ix].child;
     while let TreePointer::Valid(listitem_ix) = list_item {
         // first child is special, controls how we repoint list_item.child

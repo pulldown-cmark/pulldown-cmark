@@ -250,7 +250,7 @@ pub fn main() {
         } else {
             let mut p = Parser::new_ext(&input, opts);
             let stdio = io::stdout();
-            let buffer = std::io::BufWriter::with_capacity(1*1024*1024, stdio.lock());
+            let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
             html::write_html(buffer, &mut p).unwrap();
             // Since the program will now terminate and the memory will be returned
             // to the operating system anyway, there is no point in tidely cleaning

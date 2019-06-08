@@ -1766,7 +1766,7 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
     allocs: Allocations<'a>,
-    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
     html_scan_guard: HtmlScanGuard,
 
@@ -1792,7 +1792,7 @@ impl<'a> Parser<'a> {
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
-        broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>
+        broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>
     ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();

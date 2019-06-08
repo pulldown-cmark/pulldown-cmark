@@ -190,7 +190,7 @@ impl<'a> LineStart<'a> {
                         let val_usize = val as usize;
                         // This will cause some failures on 32 bit arch.
                         // TODO (breaking API change): should be u64, not usize.
-                        if val_usize as u64 != val { return None; }                        
+                        if val_usize as u64 != val { return None; }
                         if self.scan_space(1) || self.is_at_eol() {
                             return self.finish_list_marker(c, val_usize, indent + self.ix - start_ix);
                         } else {
@@ -396,9 +396,9 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
 
 /// Scan hrule opening sequence.
 ///
-/// Returns Ok(x) when it finds an hrule, where x is the 
+/// Returns Ok(x) when it finds an hrule, where x is the
 /// size of line containing the hrule, including the trailing newline.
-/// 
+///
 /// Returns Err(x) when it does not find an hrule and x is
 /// the offset in data before no hrule can appear.
 pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
@@ -582,8 +582,12 @@ fn parse_decimal(bytes: &[u8]) -> (usize, usize) {
     match bytes.iter()
         .take_while(|&&b| is_digit(b))
         .try_fold((0, 0usize), |(count, acc), c| {
-            match acc.checked_mul(10) {
-                Some(ten_acc) => Ok((count + 1, ten_acc + usize::from(c - b'0'))),
+            let digit = usize::from(c - b'0');
+            match acc
+                .checked_mul(10)
+                .and_then(|ten_acc| ten_acc.checked_add(digit))
+            {
+                Some(number) => Ok((count + 1, number)),
                 // stop early on overflow
                 None => Err((count, acc)),
             }
@@ -609,8 +613,11 @@ fn parse_hex(bytes: &[u8]) -> (usize, usize) {
                     return Err((count, acc));
                 }
             };
-            match acc.checked_mul(16) {
-                Some(sixteen_acc) => Ok((count + 1, sixteen_acc + digit)),
+            match acc
+                .checked_mul(16)
+                .and_then(|sixteen_acc| sixteen_acc.checked_add(digit))
+            {
+                Some(number) => Ok((count + 1, number)),
                 // stop early on overflow
                 None => Err((count, acc)),
             }
@@ -680,7 +687,7 @@ fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
                 title.push_str(&text[mark..i]);
                 (i - start_ix + 1, title.into())
             };
-            
+
             return Some(cow);
         }
         if c == open {
@@ -843,7 +850,7 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
             || c == b'_' || c == b'.' || c == b':' || c == b'-'))
     } else {
         None
-    }    
+    }
 }
 
 /// Returns byte scanned
@@ -1106,7 +1113,7 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
             fresh_label = false;
             i += 1;
         }
-    
+
         if i == label_start_ix || i - label_start_ix > 63 || bytes[i - 1] == b'-' {
             return None;
         }
@@ -1148,10 +1155,10 @@ fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlSc
                     } else {
                         None
                     };
-                } 
+                }
             }
             None
-        } 
+        }
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata  => {
             ix += b"CDATA[".len();
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
@@ -1262,5 +1269,10 @@ mod test {
     #[test]
     fn overflow_list() {
         assert!(scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none());
+    }
+
+    #[test]
+    fn overflow_by_addition() {
+        assert!(scan_listitem(b"1844674407370955161615!").is_none());
     }
 }

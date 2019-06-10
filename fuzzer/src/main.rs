@@ -14,21 +14,9 @@
 //!
 //! Unfortunately we don't live in a perfect world, where linear patterns produce a perfect line.
 //! instead we need to deal with large outliers, e.g. if a thread is rescheduled while performing
-//! time measurements.
-//! Therefore, we have a sort-of two pass system.
-//! The first pass doesn't perform any outlier detection / handling.
-//! This is because outlier handling is pretty slow.
-//! The first pass just assumes there aren't any outliers, calculates `SAMPLE_SIZE` points and
-//! applies the scoring functions to them.
-//! This filters out most patterns already.
-//! If however possible non-linear behaviour is found, we perform the second pass.
-//! In the second pass, we double the `SAMPLE_SIZE`, because more points make for higher precision
-//! in the scoring functions.
-//! Additionally, we assume that the (len, time)-pairs interpreted as coordinates on a graph  are
-//! strictly monotonously increasing.
-//! If we encounter a time-value, which is larger than the next time value, that'll probably be an
-//! outlier.
-//! As such, if we encounter such a value, we'll re-time it.
+//! time measurements. Therefore, we retest positive hits up to `TEST_COUNT` times to make
+//! false positives less likely. Only when all of these tests are positive a pattern is flagged as
+//! superlinear.
 //! To prevent further edge-cases, we always align the tested input to pattern boundaries.
 //!
 //! Additionally, we abort if parsing took longer than `MAX_MILLIS`.
@@ -126,7 +114,7 @@ fn main() {
 /// Returns the exit code. 0 if all tests passed and 1 otherwise.
 fn regression_test() -> i32 {
     let mut exit_code = 0;
-    let mut check_result = |pat| match test(pat) {
+    let mut check_pattern = |pat| match test(pat) {
         PatternResult::Linear(_) => (),
         _ => exit_code = 1,
     };

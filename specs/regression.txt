@@ -424,3 +424,14 @@ __a__
 <p>~~*_**__</p>
 <p><strong>a</strong></p>
 ````````````````````````````````
+
+EMPTY CODE IN BLOCKQUOTE
+
+```````````````````````````````` example
+> `
+> `
+.
+<blockquote>
+<p><code></code></p>
+</blockquote>
+````````````````````````````````

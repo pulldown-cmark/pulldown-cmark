@@ -2157,7 +2157,7 @@ impl<'a> Parser<'a> {
         let first_ix = open + 1;
         let last_ix = close - 1;
         let bytes = self.text.as_bytes();
-        let mut span_start = self.tree[first_ix].item.start;
+        let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
         let mut buf: Option<String> = None;
 

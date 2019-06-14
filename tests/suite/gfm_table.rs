@@ -68,7 +68,7 @@ fn gfm_table_test_3() {
 </thead>
 <tbody>
 <tr>
-<td>b <code>|</code> az</td>
+<td>b <code>\|</code> az</td>
 </tr>
 <tr>
 <td>b <strong>|</strong> im</td>

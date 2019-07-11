@@ -489,6 +489,19 @@ __a__
 
 #[test]
 fn regression_test_36() {
+    let original = r##"> `
+> `
+"##;
+    let expected = r##"<blockquote>
+<p><code></code></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_37() {
     let original = r##"Paragraph 1
     
 Paragraph 2

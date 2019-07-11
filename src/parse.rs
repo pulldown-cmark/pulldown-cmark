@@ -2160,7 +2160,7 @@ impl<'a> Parser<'a> {
         let first_ix = open + 1;
         let last_ix = close - 1;
         let bytes = self.text.as_bytes();
-        let mut span_start = self.tree[first_ix].item.start;
+        let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
         let mut buf: Option<String> = None;
 
@@ -2180,39 +2180,40 @@ impl<'a> Parser<'a> {
             let mut ix = first_ix;
 
             while ix < close {
-                match self.tree[ix].item.body {
-                    ItemBody::HardBreak | ItemBody::SoftBreak => {
-                        if drop_enclosing_whitespace &&
-                            (ix == first_ix && bytes[self.tree[ix].item.start] != b'\\') ||
-                            (ix == last_ix && last_ix > first_ix) {
-                            // just ignore it
-                        } else {
-                            let end = bytes[self.tree[ix].item.start..]
-                                .iter()
-                                .position(|&b| b == b'\r' || b == b'\n')
-                                .unwrap()
-                                + self.tree[ix].item.start;
-                            if let Some(ref mut buf) = buf {
-                                buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                                buf.push(' ');
-                            } else {
-                                let mut new_buf = String::with_capacity(span_end - span_start);
-                                new_buf.push_str(&self.text[span_start..end]);
-                                new_buf.push(' ');
-                                buf = Some(new_buf);
-                            }
+                if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
+                    if drop_enclosing_whitespace {
+                        // check whether break should be ignored
+                        if ix == first_ix {
+                            ix = ix + 1;
+                            span_start = min(span_end, self.tree[ix].item.start);
+                            continue;
+                        } else if ix == last_ix && last_ix > first_ix {
+                            ix = ix + 1;
+                            continue;
                         }
                     }
-                    _ => {
-                        if let Some(ref mut buf) = buf {
-                            let end = if ix == last_ix {
-                                span_end
-                            } else {
-                                self.tree[ix].item.end
-                            };
-                            buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                        }
+
+                    let end = bytes[self.tree[ix].item.start..]
+                        .iter()
+                        .position(|&b| b == b'\r' || b == b'\n')
+                        .unwrap()
+                        + self.tree[ix].item.start;
+                    if let Some(ref mut buf) = buf {
+                        buf.push_str(&self.text[self.tree[ix].item.start..end]);
+                        buf.push(' ');
+                    } else {
+                        let mut new_buf = String::with_capacity(span_end - span_start);
+                        new_buf.push_str(&self.text[span_start..end]);
+                        new_buf.push(' ');
+                        buf = Some(new_buf);
                     }
+                } else if let Some(ref mut buf) = buf {
+                    let end = if ix == last_ix {
+                        span_end
+                    } else {
+                        self.tree[ix].item.end
+                    };
+                    buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
                 ix = ix + 1;
             }

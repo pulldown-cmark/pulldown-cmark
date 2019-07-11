@@ -558,6 +558,9 @@ impl<'a> FirstPass<'a> {
                 }
             }
             line_start.scan_all_space();
+            if line_start.is_at_eol() {
+                break;
+            }
             ix = next_ix + line_start.bytes_scanned();
             if let Some(item) = brk {
                 self.tree.append(item);

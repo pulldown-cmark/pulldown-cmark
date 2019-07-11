@@ -147,4 +147,4 @@ The main author is Raph Levien.
 ## Contributions
 
 We gladly accept contributions via GitHub pull requests. Please see
-`CONTRIBUTIONS.md` for more details.
+[CONTRIBUTING.md](CONTRIBUTING.md) for more details.

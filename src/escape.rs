@@ -25,6 +25,7 @@ use std::str::from_utf8;
 
 use crate::html::StrWrite;
 
+#[rustfmt::skip]
 static HREF_SAFE: [u8; 128] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -77,6 +78,7 @@ where
     w.write_str(&s[mark..])
 }
 
+#[rustfmt::skip]
 static HTML_ESCAPE_TABLE: [u8; 256] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

@@ -503,6 +503,16 @@ fn regression_test_36() {
 
 #[test]
 fn regression_test_37() {
+    let original = r##"`\|`
+"##;
+    let expected = r##"<p><code>\|</code></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_38() {
     let original = r##"Paragraph 1
     
 Paragraph 2

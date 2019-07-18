@@ -4,7 +4,7 @@ extern crate pulldown_cmark;
 extern crate test;
 
 mod to_html {
-    use pulldown_cmark::{Parser, Options, html};
+    use pulldown_cmark::{html, Options, Parser};
 
     fn render_html(text: &str, opts: Options) -> String {
         let mut s = String::with_capacity(text.len() * 3 / 2);

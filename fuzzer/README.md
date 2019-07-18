@@ -1,12 +1,12 @@
-# Fuzzer for detecting non-linear growth in pulldown-cmark
+# Fuzzer for detecting superlinear growth in pulldown-cmark
 
-This fuzzer tries to find non-linear growth in pulldown-cmark wrt. input length.
+This fuzzer tries to find superlinear growth in pulldown-cmark wrt. input length.
 The general approach is to parse the source code of pulldown-cmark, extract
 literals which are used in branching code (if-conditions, match patterns,
 match guards, …) and add some manually.
 Random combinations of those literals are generated.
 The pulldown-cmark parser is then timed against repetitions of different length
-of those literals to identify non-linear parsing behaviour.
+of those literals to identify superlinear parsing behaviour.
 
 ## Running
 
@@ -14,11 +14,11 @@ Running the fuzzer can be done by executing the `./run` script.
 The constants in `main.rs` should be tweaked for the system the fuzzer is
 executed on, as some of them are system dependent.
 The number of threads can be changed in the `main()` function.
-It defaults to using ¾ of available threads.
+It defaults to using 80% of the number of system threads, rounding up.
 
 The fuzzer will run until manually stopped.
 All output will be written to the file `output` and will most likely contain
-lots of false positives (currently around 93% false positive rate).
+many false positives.
 Therefore, after fuzzing has been stopped, the `./retest-output` script should
 be executed.
 It'll retest found patterns several times to remove as many false positives as

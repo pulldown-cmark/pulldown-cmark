@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.5.2"
+version = "0.5.3"
 authors = [ "Raph Levien <raph.levien@gmail.com>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"

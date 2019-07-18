@@ -340,7 +340,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "criterion 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",

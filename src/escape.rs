@@ -37,9 +37,9 @@ static HREF_SAFE: [u8; 128] = [
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
 ];
 
-static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
-static AMP_ESCAPE: &'static str = "&amp;";
-static SLASH_ESCAPE: &'static str = "&#x27;";
+static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+static AMP_ESCAPE: &str = "&amp;";
+static SLASH_ESCAPE: &str = "&#x27;";
 
 pub(crate) fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
 where
@@ -98,7 +98,7 @@ static HTML_ESCAPE_TABLE: [u8; 256] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-static HTML_ESCAPES: [&'static str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
+static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.

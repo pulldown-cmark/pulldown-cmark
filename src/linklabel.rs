@@ -22,8 +22,8 @@
 
 use unicase::UniCase;
 
+use crate::scanners::{is_ascii_whitespace, scan_eol};
 use crate::strings::CowStr;
-use crate::scanners::{scan_eol, is_ascii_whitespace};
 
 pub enum ReferenceLabel<'a> {
     Link(CowStr<'a>),
@@ -34,7 +34,9 @@ pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Returns number of bytes (including brackets) and label on success.
 pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel<'_>)> {
-    if text.len() < 2 || text.as_bytes()[0] != b'[' { return None; }
+    if text.len() < 2 || text.as_bytes()[0] != b'[' {
+        return None;
+    }
     let pair = if b'^' == text.as_bytes()[1] {
         let (byte_index, cow) = scan_link_label_rest(&text[2..])?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
@@ -57,7 +59,9 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
     let mut mark = 0;
 
     loop {
-        if codepoints >= 1000 { return None; }
+        if codepoints >= 1000 {
+            return None;
+        }
         match *bytes.get(ix)? {
             b'[' => return None,
             b']' => break,
@@ -81,11 +85,7 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                         ix += eol_bytes;
                         whitespaces += 2; // indicate that we need to replace
                     } else {
-                        whitespaces += if bytes[ix] == b' ' {
-                            1
-                        } else {
-                            2
-                        };
+                        whitespaces += if bytes[ix] == b' ' { 1 } else { 2 };
                         ix += 1;
                     }
                 }
@@ -120,7 +120,6 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
         Some((ix + 1, cow))
     }
 }
-
 
 #[cfg(test)]
 mod test {

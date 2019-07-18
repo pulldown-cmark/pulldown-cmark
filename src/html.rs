@@ -21,13 +21,13 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write, ErrorKind};
 use std::fmt::{Arguments, Write as FmtWrite};
+use std::io::{self, ErrorKind, Write};
 
-use crate::parse::{LinkType, Event, Tag, Alignment};
+use crate::escape::{escape_href, escape_html};
 use crate::parse::Event::*;
+use crate::parse::{Alignment, Event, LinkType, Tag};
 use crate::strings::CowStr;
-use crate::escape::{escape_html, escape_href};
 
 enum TableState {
     Head,
@@ -49,7 +49,8 @@ pub(crate) trait StrWrite {
 }
 
 impl<W> StrWrite for WriteWrapper<W>
-    where W: Write
+where
+    W: Write,
 {
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
@@ -77,7 +78,8 @@ impl<'w> StrWrite for String {
 }
 
 impl<W> StrWrite for &'_ mut W
-    where W: StrWrite
+where
+    W: StrWrite,
 {
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
@@ -235,15 +237,9 @@ where
                     }
                 }
                 match self.table_alignments.get(self.table_cell_index) {
-                    Some(&Alignment::Left) => {
-                        self.write(" align=\"left\">")
-                    }
-                    Some(&Alignment::Center) => {
-                        self.write(" align=\"center\">")
-                    }
-                    Some(&Alignment::Right) => {
-                        self.write(" align=\"right\">")
-                    }
+                    Some(&Alignment::Left) => self.write(" align=\"left\">"),
+                    Some(&Alignment::Center) => self.write(" align=\"center\">"),
+                    Some(&Alignment::Right) => self.write(" align=\"right\">"),
                     _ => self.write(">"),
                 }
             }
@@ -342,7 +338,7 @@ where
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
-            Tag::HtmlBlock => Ok(())
+            Tag::HtmlBlock => Ok(()),
         }
     }
 

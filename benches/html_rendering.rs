@@ -3,7 +3,7 @@ extern crate criterion;
 extern crate pulldown_cmark;
 
 use criterion::Criterion;
-use pulldown_cmark::{Parser, Options, html};
+use pulldown_cmark::{html, Options, Parser};
 use std::str::from_utf8;
 
 static CRDT_BYTES: &[u8] = include_bytes!("../third_party/xi-editor/crdt.md");

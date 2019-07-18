@@ -1,5 +1,5 @@
 //! SIMD byte scanning logic.
-//! 
+//!
 //! This module provides functions that allow walking through byteslices, calling
 //! provided callback functions on special bytes and their indices using SIMD.
 //! The byteset is defined in `compute_lookup`.
@@ -16,8 +16,8 @@
 //!
 //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
-use core::arch::x86_64::*;
 use crate::parse::LoopInstruction;
+use core::arch::x86_64::*;
 
 const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 
@@ -29,17 +29,17 @@ const fn compute_lookup() -> [u8; 16] {
     let mut lookup = [0u8; 16];
     lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
     lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
-    lookup[(b'*'  & 0x0f) as usize] |= 1 << (b'*'  >> 4);
-    lookup[(b'_'  & 0x0f) as usize] |= 1 << (b'_'  >> 4);
-    lookup[(b'~'  & 0x0f) as usize] |= 1 << (b'~'  >> 4);
-    lookup[(b'|'  & 0x0f) as usize] |= 1 << (b'|'  >> 4);
-    lookup[(b'&'  & 0x0f) as usize] |= 1 << (b'&'  >> 4);
+    lookup[(b'*' & 0x0f) as usize] |= 1 << (b'*' >> 4);
+    lookup[(b'_' & 0x0f) as usize] |= 1 << (b'_' >> 4);
+    lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
+    lookup[(b'|' & 0x0f) as usize] |= 1 << (b'|' >> 4);
+    lookup[(b'&' & 0x0f) as usize] |= 1 << (b'&' >> 4);
     lookup[(b'\\' & 0x0f) as usize] |= 1 << (b'\\' >> 4);
-    lookup[(b'['  & 0x0f) as usize] |= 1 << (b'['  >> 4);
-    lookup[(b']'  & 0x0f) as usize] |= 1 << (b']'  >> 4);
-    lookup[(b'<'  & 0x0f) as usize] |= 1 << (b'<'  >> 4);
-    lookup[(b'!'  & 0x0f) as usize] |= 1 << (b'!'  >> 4);
-    lookup[(b'`'  & 0x0f) as usize] |= 1 << (b'`'  >> 4);
+    lookup[(b'[' & 0x0f) as usize] |= 1 << (b'[' >> 4);
+    lookup[(b']' & 0x0f) as usize] |= 1 << (b']' >> 4);
+    lookup[(b'<' & 0x0f) as usize] |= 1 << (b'<' >> 4);
+    lookup[(b'!' & 0x0f) as usize] |= 1 << (b'!' >> 4);
+    lookup[(b'`' & 0x0f) as usize] |= 1 << (b'`' >> 4);
     lookup
 }
 
@@ -58,10 +58,8 @@ unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
     let bitmap = _mm_loadu_si128(lookup.as_ptr() as *const __m128i);
     // Small lookup table to compute single bit bitshifts
     // for 16 bytes at once.
-    let bitmask_lookup = _mm_setr_epi8(
-        1, 2, 4, 8, 16, 32, 64, -128,
-        -1, -1, -1, -1, -1, -1, -1, -1
-    );
+    let bitmask_lookup =
+        _mm_setr_epi8(1, 2, 4, 8, 16, 32, 64, -128, -1, -1, -1, -1, -1, -1, -1, -1);
 
     // Load input from memory.
     let raw_ptr = bytes.as_ptr().add(ix) as *const __m128i;
@@ -93,13 +91,16 @@ unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
 /// Breaks when callback returns LoopInstruction::BreakAtWith(ix, val). And skips the
 /// number of bytes in callback return value otherwise.
 /// Returns the final index and a possible break value.
-pub(crate) fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
-    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
+pub(crate) fn iterate_special_bytes<F, T>(
+    bytes: &[u8],
+    ix: usize,
+    callback: F,
+) -> (usize, Option<T>)
+where
+    F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     if is_x86_feature_detected!("ssse3") && bytes.len() >= VECTOR_SIZE {
-        unsafe {
-            simd_iterate_special_bytes(bytes, ix, callback)
-        }
+        unsafe { simd_iterate_special_bytes(bytes, ix, callback) }
     } else {
         crate::parse::scalar_iterate_special_bytes(bytes, ix, callback)
     }
@@ -109,9 +110,14 @@ pub(crate) fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) 
 /// the index `offset + ix`, where `ix` is the position of the 1 in the mask.
 /// Returns `Ok(ix)` to continue from index `ix`, `Err((end_ix, opt_val)` to break with
 /// final index `end_ix` and optional value `opt_val`.
-unsafe fn process_mask<F, T>(mut mask: i32, bytes: &[u8], mut offset: usize, callback: &mut F)
-    -> Result<usize, (usize, Option<T>)>
-where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
+unsafe fn process_mask<F, T>(
+    mut mask: i32,
+    bytes: &[u8],
+    mut offset: usize,
+    callback: &mut F,
+) -> Result<usize, (usize, Option<T>)>
+where
+    F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     while mask != 0 {
         let mask_ix = mask.trailing_zeros() as usize;
@@ -130,12 +136,17 @@ where F: FnMut(usize, u8) -> LoopInstruction<Option<T>>
 #[target_feature(enable = "ssse3")]
 /// Important: only call this function when `bytes.len() >= 16`. Doing
 /// so otherwise may exhibit undefined behaviour.
-unsafe fn simd_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut callback: F) -> (usize, Option<T>)
-    where F: FnMut(usize, u8) -> LoopInstruction<Option<T>> 
+unsafe fn simd_iterate_special_bytes<F, T>(
+    bytes: &[u8],
+    mut ix: usize,
+    mut callback: F,
+) -> (usize, Option<T>)
+where
+    F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     debug_assert!(bytes.len() >= VECTOR_SIZE);
     let upperbound = bytes.len() - VECTOR_SIZE;
-    
+
     while ix < upperbound {
         let mask = compute_mask(bytes, ix);
         let block_start = ix;
@@ -155,7 +166,6 @@ unsafe fn simd_iterate_special_bytes<F, T>(bytes: &[u8], mut ix: usize, mut call
 
     (bytes.len(), None)
 }
-
 
 #[cfg(test)]
 mod simd_test {
@@ -199,7 +209,9 @@ mod simd_test {
 
     #[test]
     fn exhaustive_search() {
-        let chars = [b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`'];
+        let chars = [
+            b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+        ];
 
         for &c in &chars {
             for i in 0u8..=255 {

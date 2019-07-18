@@ -3,8 +3,8 @@
 
 pub use super::test_markdown_html;
 
-mod footnotes;
 mod regression;
+mod footnotes;
 mod table;
 mod spec;
 mod gfm_table;

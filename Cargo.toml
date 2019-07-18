@@ -22,7 +22,7 @@ name = "html_rendering"
 harness = false
 
 [dependencies]
-bitflags = "1.0"
+bitflags = "1.1"
 unicase = "2.4"
 memchr = "2.2"
 getopts = { version = "0.2", optional = true }

@@ -558,8 +558,7 @@ impl<'a> FirstPass<'a> {
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
                 if n_containers == self.tree.spine_len() {
-                    if let Some((n, level)) = scan_setext_heading(&bytes[ix_new..]) {
-                        self.tree[node_ix].item.body = ItemBody::Header(level);
+                    if let Some(ix_setext) = self.parse_setext_heading(ix_new, node_ix) {
                         if let Some(Item {
                             start,
                             body: ItemBody::HardBreak,
@@ -570,7 +569,7 @@ impl<'a> FirstPass<'a> {
                                 self.tree.append_text(start, start + 1);
                             }
                         }
-                        ix = ix_new + n;
+                        ix = ix_setext;
                         break;
                     }
                 }
@@ -592,6 +591,23 @@ impl<'a> FirstPass<'a> {
 
         self.pop(ix);
         ix
+    }
+
+    /// Returns end ix of setext_heading on success.
+    fn parse_setext_heading(&mut self, ix: usize, node_ix: TreeIndex) -> Option<usize> {
+        let bytes = self.text.as_bytes();
+        let (n, level) = scan_setext_heading(&bytes[ix..])?;
+        self.tree[node_ix].item.body = ItemBody::Header(level);
+
+        // strip trailing whitespace
+        if let TreePointer::Valid(cur_ix) = self.tree.cur() {
+            self.tree[cur_ix].item.end -= scan_rev_while(
+                &bytes[..self.tree[cur_ix].item.end],
+                is_ascii_whitespace_no_nl,
+            );
+        }
+
+        Some(ix + n)
     }
 
     /// Parse a line of input, appending text and items to tree.

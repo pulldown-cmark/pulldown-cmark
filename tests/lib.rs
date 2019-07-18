@@ -91,7 +91,11 @@ lazy_static! {
     .iter()
     .cloned()
     .collect();
-    static ref PRE_TAGS: HashSet<&'static str> = ["pre", "code"].iter().cloned().collect();
+    static ref WHITESPACE_SENSITIVE_TAGS: HashSet<&'static str> =
+        ["pre", "code", "h1", "h2", "h3", "h4", "h5", "h6"]
+            .iter()
+            .cloned()
+            .collect();
     static ref TABLE_TAGS: HashSet<&'static str> = ["table", "thead", "tbody", "tr", "td"]
         .iter()
         .cloned()
@@ -163,7 +167,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                 let mut parent = parent.clone();
                 loop {
                     let is_pre = if let NodeData::Element { ref name, .. } = parent.data {
-                        PRE_TAGS.contains(&&*name.local.to_ascii_lowercase())
+                        WHITESPACE_SENSITIVE_TAGS.contains(&&*name.local.to_ascii_lowercase())
                     } else {
                         false
                     };

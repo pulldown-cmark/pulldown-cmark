@@ -3,10 +3,10 @@
 
 pub use super::test_markdown_html;
 
-mod regression;
 mod footnotes;
-mod table;
-mod spec;
-mod gfm_table;
 mod gfm_strikethrough;
+mod gfm_table;
 mod gfm_tasklist;
+mod regression;
+mod spec;
+mod table;

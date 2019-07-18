@@ -69,20 +69,22 @@ fn generate_tests_from_spec() {
         spec_rs
             .write(b"// Please, do not modify it manually\n")
             .unwrap();
-        spec_rs.write(b"\nuse super::test_markdown_html;").unwrap();
+        spec_rs
+            .write(b"\nuse super::test_markdown_html;\n")
+            .unwrap();
 
         for (i, testcase) in spec.enumerate() {
             spec_rs
                 .write_fmt(format_args!(
                     r###"
-
 #[test]
 fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
     test_markdown_html(original, expected);
-}}"###,
+}}
+"###,
                     spec_name,
                     i = i + 1,
                     original = testcase.original,

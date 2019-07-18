@@ -405,8 +405,7 @@ fn regression_test_30() {
  
 some text
 "##;
-    let expected =
-        r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+    let expected = r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
 </tbody></table>
 <p>some text</p>
 "##;

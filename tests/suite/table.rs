@@ -140,8 +140,7 @@ fn table_test_8() {
 
 #[test]
 fn table_test_9() {
-    let original =
-        r##"|  Target                       | std |rustc|cargo| notes                      |
+    let original = r##"|  Target                       | std |rustc|cargo| notes                      |
 |-------------------------------|-----|-----|-----|----------------------------|
 | `x86_64-unknown-linux-musl`   |  ✓  |     |     | 64-bit Linux with MUSL     |
 | `arm-linux-androideabi`       |  ✓  |     |     | ARM Android                |

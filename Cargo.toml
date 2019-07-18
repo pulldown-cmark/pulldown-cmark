@@ -1,7 +1,7 @@
 [package]
 name = "pulldown-cmark"
-version = "0.5.2"
-authors = [ "Raph Levien <raph.levien@gmail.com>" ]
+version = "0.5.3"
+authors = [ "Raph Levien <raph.levien@gmail.com>", "Marcus Klaas de Vries <mail@marcusklaas.nl>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/raphlinus/pulldown-cmark"
@@ -22,7 +22,7 @@ name = "html_rendering"
 harness = false
 
 [dependencies]
-bitflags = "1.0"
+bitflags = "1.1"
 unicase = "2.4"
 memchr = "2.2"
 getopts = { version = "0.2", optional = true }

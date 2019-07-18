@@ -21,7 +21,7 @@
 //! Pull parser for [CommonMark](https://commonmark.org). This crate provides a [Parser](struct.Parser.html) struct
 //! which is an iterator over [Event](enum.Event.html)s. This iterator can be used
 //! directly, or to output HTML using the [HTML module](html/index.html).
-//! 
+//!
 //! By default, only CommonMark features are enabled. To use extensions like tables,
 //! footnotes or task lists, enable by setting the corresponding flags in the
 //! [Options](struct.Options.html) struct.
@@ -31,13 +31,13 @@
 //! use pulldown_cmark::{Parser, Options, html};
 //!
 //! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
-//! 
+//!
 //! // Set up options and parser. Strikethroughs are not part of the CommonMark standard
 //! // and we therefore must enable it explicitly.
 //! let mut options = Options::empty();
-//! options.insert(Options::ENABLE_STRIKETHROUGH); 
+//! options.insert(Options::ENABLE_STRIKETHROUGH);
 //! let parser = Parser::new_ext(markdown_input, options);
-//! 
+//!
 //! // Write to String buffer.
 //! let mut html_output = String::new();
 //! html::push_html(&mut html_output, parser);
@@ -58,17 +58,17 @@ pub mod html;
 extern crate bitflags;
 extern crate unicase;
 
-mod scanners;
 mod entities;
 mod escape;
-mod puncttable;
-mod parse;
-mod tree;
 mod linklabel;
+mod parse;
+mod puncttable;
+mod scanners;
 mod strings;
+mod tree;
 
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 mod simd;
 
-pub use crate::parse::{Parser, OffsetIter, Alignment, Event, Tag, Options, LinkType};
+pub use crate::parse::{Alignment, Event, LinkType, OffsetIter, Options, Parser, Tag};
 pub use crate::strings::{CowStr, InlineStr};

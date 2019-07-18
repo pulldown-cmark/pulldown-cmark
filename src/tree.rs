@@ -181,11 +181,18 @@ impl<T: Default> Tree<T> {
 }
 
 impl<T> std::fmt::Debug for Tree<T>
-    where T: std::fmt::Debug
+where
+    T: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fn debug_tree<T>(tree: &Tree<T>, cur: TreeIndex, indent: usize, f: &mut std::fmt::Formatter) -> std::fmt::Result
-            where T: std::fmt::Debug
+        fn debug_tree<T>(
+            tree: &Tree<T>,
+            cur: TreeIndex,
+            indent: usize,
+            f: &mut std::fmt::Formatter,
+        ) -> std::fmt::Result
+        where
+            T: std::fmt::Debug,
         {
             for _ in 0..indent {
                 write!(f, "  ")?;

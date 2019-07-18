@@ -33,7 +33,6 @@ pub fn get() -> Vec<Vec<u8>> {
         if skipped_files.contains(&file.path()) {
             continue;
         }
-        println!("parsing {}", file.path().display());
         literal_parser.extract_literals_from_file(file.path());
     }
 

@@ -454,3 +454,11 @@ Paragraph 2
 <p>Paragraph 1</p>
 <p>Paragraph 2</p>
 ````````````````````````````````
+
+ISSUE 375
+
+```````````````````````````````` example
+\[[link text](https://www.google.com/)\]
+.
+<p>[<a href="https://www.google.com/">link text</a>]</p>
+````````````````````````````````

@@ -2046,7 +2046,8 @@ impl<'a> Parser<'a> {
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
                             if let TreePointer::Valid(next_node_ix) = next_node {
-                                self.tree[next_node_ix].item.start = next_ix;
+                                self.tree[next_node_ix].item.start =
+                                    std::cmp::max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
                             if tos.ty == LinkStackTy::Link {

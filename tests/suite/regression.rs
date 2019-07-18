@@ -522,3 +522,13 @@ Paragraph 2
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_39() {
+    let original = r##"\[[link text](https://www.google.com/)\]
+"##;
+    let expected = r##"<p>[<a href="https://www.google.com/">link text</a>]</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

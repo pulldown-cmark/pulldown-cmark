@@ -477,6 +477,28 @@ yolo | swag
 
 #[test]
 fn regression_test_35() {
+    let original = r##"<foo bar>
+"##;
+    let expected = r##"<foo bar>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_36() {
+    let original = r##"<foo bar =
+ "hi"> 
+"##;
+    let expected = r##"<p><foo bar =
+ "hi"> </p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_37() {
     let original = r##"~~*_**__
 
 __a__
@@ -489,7 +511,7 @@ __a__
 }
 
 #[test]
-fn regression_test_36() {
+fn regression_test_38() {
     let original = r##"> `
 > `
 "##;
@@ -502,7 +524,7 @@ fn regression_test_36() {
 }
 
 #[test]
-fn regression_test_37() {
+fn regression_test_39() {
     let original = r##"`\|`
 "##;
     let expected = r##"<p><code>\|</code></p>
@@ -512,7 +534,7 @@ fn regression_test_37() {
 }
 
 #[test]
-fn regression_test_38() {
+fn regression_test_40() {
     let original = r##"Paragraph 1
     
 Paragraph 2
@@ -525,7 +547,7 @@ Paragraph 2
 }
 
 #[test]
-fn regression_test_39() {
+fn regression_test_41() {
     let original = r##"\[[link text](https://www.google.com/)\]
 "##;
     let expected = r##"<p>[<a href="https://www.google.com/">link text</a>]</p>

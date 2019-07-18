@@ -1536,7 +1536,7 @@ impl InlineStack {
     const TILDES: usize = 5;
     const UNDERSCORE_BOTH: usize = 6;
 
-    fn pop_all<'a>(&mut self, tree: &mut Tree<Item>) {
+    fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
                 tree[el.start + i].item.body = ItemBody::Text;
@@ -1584,7 +1584,7 @@ impl InlineStack {
         }
     }
 
-    fn find_match<'a>(
+    fn find_match(
         &mut self,
         tree: &mut Tree<Item>,
         c: u8,
@@ -1844,7 +1844,7 @@ pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
     allocs: Allocations<'a>,
-    broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+    broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
     offset: usize,
     html_scan_guard: HtmlScanGuard,
 
@@ -1870,7 +1870,7 @@ impl<'a> Parser<'a> {
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
-        broken_link_callback: Option<&'a Fn(&str, &str) -> Option<(String, String)>>,
+        broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
     ) -> Parser<'a> {
         let first_pass = FirstPass::new(text, options);
         let (mut tree, allocs) = first_pass.run();
@@ -2113,8 +2113,11 @@ impl<'a> Parser<'a> {
                                     .get(&UniCase::new(link_label.as_ref().into()))
                                 {
                                     // found a matching definition!
-                                    let title =
-                                        matching_def.title.as_ref().cloned().unwrap_or("".into());
+                                    let title = matching_def
+                                        .title
+                                        .as_ref()
+                                        .cloned()
+                                        .unwrap_or_else(|| "".into());
                                     let url = matching_def.dest.clone();
                                     Some((link_type, url, title))
                                 } else if let Some(callback) = self.broken_link_callback {
@@ -2542,7 +2545,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
 }
 
 // https://english.stackexchange.com/a/285573
-fn surgerize_tight_list<'a>(tree: &mut Tree<Item>, list_ix: TreeIndex) {
+fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     let mut list_item = tree[list_ix].child;
     while let TreePointer::Valid(listitem_ix) = list_item {
         // first child is special, controls how we repoint list_item.child

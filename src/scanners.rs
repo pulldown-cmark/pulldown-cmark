@@ -348,14 +348,14 @@ pub(crate) fn is_ascii_whitespace_no_nl(c: u8) -> bool {
 
 fn is_ascii_alpha(c: u8) -> bool {
     match c {
-        b'a'...b'z' | b'A'...b'Z' => true,
+        b'a'..=b'z' | b'A'..=b'Z' => true,
         _ => false,
     }
 }
 
 fn is_ascii_alphanumeric(c: u8) -> bool {
     match c {
-        b'0'...b'9' | b'a'...b'z' | b'A'...b'Z' => true,
+        b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' => true,
         _ => false,
     }
 }
@@ -649,7 +649,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     let mut c = *bytes.get(0)?;
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
-        b'0'...b'9' => {
+        b'0'..=b'9' => {
             let (length, start) = parse_decimal(bytes);
             c = *bytes.get(length)?;
             if !(c == b'.' || c == b')') {
@@ -664,9 +664,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     // TODO: replace calc_indent with scan_leading_whitespace, for tab correctness
     let (mut postn, mut postindent) = calc_indent(&bytes[w..], 5);
     if postindent == 0 {
-        if scan_eol(&bytes[w..]).is_none() {
-            return None;
-        }
+        scan_eol(&bytes[w..])?;
         postindent += 1;
     } else if postindent > 4 {
         postn = 1;
@@ -804,12 +802,10 @@ fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
                 continue;
             }
         }
-        if c == b'\\' {
-            if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
-                title.push_str(&text[mark..i]);
-                i += 1;
-                mark = i;
-            }
+        if c == b'\\' && i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
+            title.push_str(&text[mark..i]);
+            i += 1;
+            mark = i;
         }
 
         i += 1;
@@ -889,7 +885,7 @@ pub(crate) fn scan_link_dest(
         let mut nest = 0;
         while i < bytes.len() {
             match bytes[i] {
-                0x0...0x20 => {
+                0x0..=0x20 => {
                     break;
                 }
                 b'(' => {
@@ -1155,7 +1151,7 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
     let mut ended = false;
     while i < bytes.len() {
         match bytes[i] {
-            b'\0'...b' ' => {
+            b'\0'..=b' ' => {
                 ended = true;
             }
             b'>' | b'<' => break,
@@ -1267,7 +1263,7 @@ fn scan_inline_html_comment(
                 Some(ix + 1)
             }
         }
-        b'A'...b'Z' if ix > scan_guard.declaration => {
+        b'A'..=b'Z' if ix > scan_guard.declaration => {
             // Scan declaration.
             ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
             let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);

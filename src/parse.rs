@@ -2061,6 +2061,7 @@ impl<'a> Parser<'a> {
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
+                            self.tree[cur_ix].item.end = next_ix;
                             if let TreePointer::Valid(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start =
                                     std::cmp::max(self.tree[next_node_ix].item.start, next_ix);
@@ -2746,6 +2747,16 @@ mod test {
             .map(|(_ev, range)| range)
             .collect();
         let expected_offsets = vec![(0..13), (0..7), (1..6), (0..7), (7..13), (0..13)];
+        assert_eq!(expected_offsets, event_offsets);
+    }
+
+    #[test]
+    fn offset_iter_issue_378() {
+        let event_offsets: Vec<_> = Parser::new("a [b](c) d")
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .collect();
+        let expected_offsets = vec![(0..10), (0..2), (2..8), (3..4), (2..8), (8..10), (0..10)];
         assert_eq!(expected_offsets, event_offsets);
     }
 

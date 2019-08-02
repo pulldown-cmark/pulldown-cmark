@@ -1,5 +1,6 @@
-// This is a slightly modified (replaced example table by example) of the
-// table section from GitHub's spec.txt
+// This is a slightly modified (replaced example table by example,
+// different rendering of code inside table) copy of the
+// table section from GFM's spec.txt
 
 ## Tables (extension)
 
@@ -82,7 +83,7 @@ inline spans:
 </thead>
 <tbody>
 <tr>
-<td>b <code>|</code> az</td>
+<td>b <code>\|</code> az</td>
 </tr>
 <tr>
 <td>b <strong>|</strong> im</td>

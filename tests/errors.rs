@@ -16,7 +16,7 @@ fn test_unterminated_link() {
     use pulldown_cmark::Parser;
 
     let parser = Parser::new(&markdown);
-    for _ in parser { }
+    for _ in parser {}
 }
 
 #[test]
@@ -31,7 +31,7 @@ fn test_infinite_loop() {
     use pulldown_cmark::Parser;
 
     let parser = Parser::new(&markdown);
-    for _ in parser { }
+    for _ in parser {}
 }
 
 #[test]
@@ -40,5 +40,5 @@ fn test_html_tag() {
     use pulldown_cmark::Parser;
 
     let parser = Parser::new(&markdown);
-    for _ in parser { }
+    for _ in parser {}
 }

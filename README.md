@@ -142,9 +142,9 @@ pulldown-cmark = { version = "0.5", default-features = false, features = ["simd"
 
 ## Authors
 
-The main author is Raph Levien.
+The main author is Raph Levien. The implementation of the new design (v0.3+) was completed by Marcus Klaas de Vries.
 
 ## Contributions
 
 We gladly accept contributions via GitHub pull requests. Please see
-`CONTRIBUTIONS.md` for more details.
+[CONTRIBUTING.md](CONTRIBUTING.md) for more details.

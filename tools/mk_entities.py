@@ -60,11 +60,14 @@ const ENTITIES: [(&[u8], &str); {len(entities)}] = [""")
     for e in entities:
         codepoints = jsondata['&' + e + ';']["codepoints"];
         s = ''.join([r'\u{%04X}' % cp for cp in codepoints])
-        print(f"        (b\"{e}\", \"{s}\"),")
-    print("""    ];
+        print(f"    (b\"{e}\", \"{s}\"),")
+    print("""];
 
 pub(crate) fn get_entity(bytes: &[u8]) -> Option<&'static str> {
-    ENTITIES.binary_search_by_key(&bytes, |&(key, _value)| key).ok().map(|i| ENTITIES[i].1)
+    ENTITIES
+        .binary_search_by_key(&bytes, |&(key, _value)| key)
+        .ok()
+        .map(|i| ENTITIES[i].1)
 }
 """)
 

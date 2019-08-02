@@ -69,19 +69,19 @@ def main(args):
 const PUNCT_MASKS_ASCII: [u16; 8] = ["""
     for x in range(8):
         y = get_bits(x, ascii_set)
-        print '        0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15)
-    print """    ];
+        print '    0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15)
+    print """];
 
 const PUNCT_TAB: [u16; %i] = [""" % len(pshift)
     for x in pshift:
-        print '        %d,  // U+%04X...U+%04X' % (x, x * 16, x * 16 + 15)
-    print """    ];
+        print '    %d,  // U+%04X...U+%04X' % (x, x * 16, x * 16 + 15)
+    print """];
 
 const PUNCT_MASKS: [u16; %i] = [""" % len(pshift)
     for i, y in enumerate(bits):
         x = pshift[i]
-        print '        0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15)
-    print """    ];
+        print '    0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15)
+    print """];
 
 pub fn is_ascii_punctuation(c: u8) -> bool {
     c < 128 && (PUNCT_MASKS_ASCII[(c / 16) as usize] & (1 << (c & 15))) != 0

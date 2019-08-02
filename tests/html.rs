@@ -2,7 +2,7 @@
 
 extern crate pulldown_cmark;
 
-use pulldown_cmark::{Parser, html, Options};
+use pulldown_cmark::{html, Options, Parser};
 
 #[test]
 fn html_test_1() {

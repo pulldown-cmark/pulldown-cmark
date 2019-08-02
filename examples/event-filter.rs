@@ -2,7 +2,7 @@ extern crate pulldown_cmark;
 
 use std::io::Write as _;
 
-use pulldown_cmark::{Parser, Event, Tag, Options, html};
+use pulldown_cmark::{html, Event, Options, Parser, Tag};
 
 fn main() {
     let markdown_input: &str = "This is Peter on ![holiday in Greece](pearl_beach.jpg).";
@@ -13,7 +13,7 @@ fn main() {
     let parser = Parser::new_ext(markdown_input, Options::empty())
         .map(|event| match event {
             Event::Text(text) => Event::Text(text.replace("Peter", "John").into()),
-            _ => event
+            _ => event,
         })
         .filter(|event| match event {
             Event::Start(Tag::Image(..)) | Event::End(Tag::Image(..)) => false,

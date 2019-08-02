@@ -1,16 +1,18 @@
-#[macro_use] extern crate html5ever;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate html5ever;
+#[macro_use]
+extern crate lazy_static;
 
-use html5ever::{driver as html, QualName};
 use html5ever::rcdom::{Handle, NodeData, RcDom};
 use html5ever::serialize::{serialize, SerializeOpts};
-use pulldown_cmark::{Parser, Options};
+use html5ever::{driver as html, QualName};
+use pulldown_cmark::{Options, Parser};
 
+use regex::Regex;
 use std::collections::HashSet;
 use std::mem;
 use std::rc::{Rc, Weak};
 use tendril::stream::TendrilSink;
-use regex::Regex;
 
 mod suite;
 
@@ -35,18 +37,69 @@ lazy_static! {
     static ref LEADING_WHITESPACE_RE: Regex = Regex::new(r"\A\s+").unwrap();
     static ref TRAILING_WHITESPACE_RE: Regex = Regex::new(r"\s+\z").unwrap();
     static ref BLOCK_TAGS: HashSet<&'static str> = [
-        "article", "header", "aside", "hgroup", "blockquote", "hr", "iframe", "body", "li",
-        "map", "button", "object", "canvas", "ol", "caption", "output", "col", "p", "colgroup",
-        "pre", "dd", "progress", "div", "section", "dl", "table", "td", "dt", "tbody", "embed",
-        "textarea", "fieldset", "tfoot", "figcaption", "th", "figure", "thead", "footer", "tr",
-        "form", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "video", "script", "style"
-    ].iter().cloned().collect();
-    static ref PRE_TAGS: HashSet<&'static str> = [
-        "pre", "code"
-    ].iter().cloned().collect();
-    static ref TABLE_TAGS: HashSet<&'static str> = [
-        "table", "thead", "tbody", "tr", "td"
-    ].iter().cloned().collect();
+        "article",
+        "header",
+        "aside",
+        "hgroup",
+        "blockquote",
+        "hr",
+        "iframe",
+        "body",
+        "li",
+        "map",
+        "button",
+        "object",
+        "canvas",
+        "ol",
+        "caption",
+        "output",
+        "col",
+        "p",
+        "colgroup",
+        "pre",
+        "dd",
+        "progress",
+        "div",
+        "section",
+        "dl",
+        "table",
+        "td",
+        "dt",
+        "tbody",
+        "embed",
+        "textarea",
+        "fieldset",
+        "tfoot",
+        "figcaption",
+        "th",
+        "figure",
+        "thead",
+        "footer",
+        "tr",
+        "form",
+        "ul",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "video",
+        "script",
+        "style"
+    ]
+    .iter()
+    .cloned()
+    .collect();
+    static ref WHITESPACE_SENSITIVE_TAGS: HashSet<&'static str> =
+        ["pre", "code", "h1", "h2", "h3", "h4", "h5", "h6"]
+            .iter()
+            .cloned()
+            .collect();
+    static ref TABLE_TAGS: HashSet<&'static str> = ["table", "thead", "tbody", "tr", "td"]
+        .iter()
+        .cloned()
+        .collect();
 }
 
 fn make_html_parser() -> html::Parser<RcDom> {
@@ -66,8 +119,7 @@ fn normalize_html(s: &str) -> String {
     let mut ret_val = Vec::new();
     serialize(&mut ret_val, &body, opts)
         .expect("Writing to a string shouldn't fail (expect on OOM)");
-    String::from_utf8(ret_val)
-        .expect("html5ever should always produce UTF8")
+    String::from_utf8(ret_val).expect("html5ever should always produce UTF8")
 }
 
 fn normalize_dom(dom: &RcDom) -> Handle {
@@ -77,12 +129,7 @@ fn normalize_dom(dom: &RcDom) -> Handle {
     };
     let mut current_level = Vec::new();
     let mut next_level = Vec::new();
-    current_level.extend(
-        body.children.borrow()
-            .iter()
-            .cloned()
-            .rev()
-    );
+    current_level.extend(body.children.borrow().iter().cloned().rev());
     loop {
         while let Some(mut node) = current_level.pop() {
             let parent = node.parent.replace(None);
@@ -95,15 +142,12 @@ fn normalize_dom(dom: &RcDom) -> Handle {
                 let mut siblings = parent.children.borrow_mut();
                 siblings.retain(|s| !Rc::ptr_eq(&node, s));
             } else {
-                next_level.extend(
-                    node.children.borrow()
-                        .iter()
-                        .cloned()
-                        .rev(),
-                );
+                next_level.extend(node.children.borrow().iter().cloned().rev());
             }
         }
-        if next_level.is_empty() { break };
+        if next_level.is_empty() {
+            break;
+        };
         mem::swap(&mut next_level, &mut current_level);
     }
     body
@@ -113,28 +157,30 @@ fn normalize_dom(dom: &RcDom) -> Handle {
 // Returns true otherwise.
 fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
     match node.data {
-        NodeData::Comment { .. } |
-        NodeData::Doctype { .. } |
-        NodeData::Document |
-        NodeData::ProcessingInstruction { .. } => true,
+        NodeData::Comment { .. }
+        | NodeData::Doctype { .. }
+        | NodeData::Document
+        | NodeData::ProcessingInstruction { .. } => true,
         NodeData::Text { ref contents, .. } => {
             let mut contents = contents.borrow_mut();
             let is_pre = {
                 let mut parent = parent.clone();
                 loop {
-                    let is_pre = if let NodeData::Element{ ref name, .. } = parent.data {
-                        PRE_TAGS.contains(&&*name.local.to_ascii_lowercase())
+                    let is_pre = if let NodeData::Element { ref name, .. } = parent.data {
+                        WHITESPACE_SENSITIVE_TAGS.contains(&&*name.local.to_ascii_lowercase())
                     } else {
                         false
                     };
-                    if is_pre { break true };
+                    if is_pre {
+                        break true;
+                    };
                     let parent_ = parent.parent.replace(None);
                     parent.parent.replace(parent_.clone());
                     let parent_ = parent_.as_ref().and_then(Weak::upgrade);
                     if let Some(parent_) = parent_ {
                         parent = parent_
                     } else {
-                        break false
+                        break false;
                     };
                 }
             };
@@ -145,7 +191,8 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                     let mut parent = parent.clone();
                     let mut node = node.clone();
                     loop {
-                        let reached_block = if let NodeData::Element{ ref name, .. } = parent.data {
+                        let reached_block = if let NodeData::Element { ref name, .. } = parent.data
+                        {
                             BLOCK_TAGS.contains(&&*name.local.to_ascii_lowercase())
                         } else {
                             false
@@ -153,7 +200,14 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                         let (is_first, is_last) = {
                             let siblings = parent.children.borrow();
                             let n = &node;
-                            (siblings.get(0).map(|s| Rc::ptr_eq(s, n)).unwrap_or(false), siblings.len() > 0 && siblings.get(siblings.len() - 1).map(|s| Rc::ptr_eq(s, n)).unwrap_or(false))
+                            (
+                                siblings.get(0).map(|s| Rc::ptr_eq(s, n)).unwrap_or(false),
+                                siblings.len() > 0
+                                    && siblings
+                                        .get(siblings.len() - 1)
+                                        .map(|s| Rc::ptr_eq(s, n))
+                                        .unwrap_or(false),
+                            )
                         };
                         is_first_in_block = is_first_in_block && is_first;
                         is_last_in_block = is_last_in_block && is_last;
@@ -165,10 +219,10 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                             if let Some(parent_) = parent_ {
                                 parent = parent_;
                             } else {
-                                break (is_first_in_block, is_last_in_block)
+                                break (is_first_in_block, is_last_in_block);
                             }
                         } else {
-                            break (is_first_in_block, is_last_in_block)
+                            break (is_first_in_block, is_last_in_block);
                         }
                     }
                 };
@@ -189,7 +243,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                             if let Some(parent_) = parent_ {
                                 parent = parent_;
                             } else {
-                                break 'ascent false
+                                break 'ascent false;
                             }
                         } else {
                             let siblings = parent.children.borrow();
@@ -201,49 +255,62 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                                     break 'search;
                                 }
                             }
-                            assert!(pos != !0, "The list of node's parent's children shall contain node");
-                            assert!(pos != 0, "If node is not first, then node's position shall not be zero");
-                            let mut preceeding = siblings[pos-1].clone();
+                            assert!(
+                                pos != !0,
+                                "The list of node's parent's children shall contain node"
+                            );
+                            assert!(
+                                pos != 0,
+                                "If node is not first, then node's position shall not be zero"
+                            );
+                            let mut preceeding = siblings[pos - 1].clone();
                             'descent: loop {
                                 if let NodeData::Text { .. } = preceeding.data {
-                                    break 'descent
+                                    break 'descent;
                                 }
                                 preceeding = {
                                     let ch = preceeding.children.borrow();
-                                    if ch.len() == 0 { break 'descent }
+                                    if ch.len() == 0 {
+                                        break 'descent;
+                                    }
                                     if let Some(preceeding_) = ch.get(ch.len() - 1) {
                                         preceeding_.clone()
                                     } else {
-                                        break 'descent
+                                        break 'descent;
                                     }
                                 };
                             }
                             if let NodeData::Text { ref contents, .. } = preceeding.data {
-                                break 'ascent TRAILING_WHITESPACE_RE.is_match(&*contents.borrow())
+                                break 'ascent TRAILING_WHITESPACE_RE.is_match(&*contents.borrow());
                             } else {
-                                break 'ascent false
+                                break 'ascent false;
                             }
                         }
                     }
                 };
 
-                let is_in_table = if let NodeData::Element{ ref name, .. } = parent.data {
+                let is_in_table = if let NodeData::Element { ref name, .. } = parent.data {
                     TABLE_TAGS.contains(&&*name.local.to_ascii_lowercase())
                 } else {
                     false
                 };
-                let whitespace_replacement = if is_in_table {
-                    ""
-                } else {
-                    " "
-                };
-                *contents = WHITESPACE_RE.replace_all(&*contents, whitespace_replacement).as_ref().into();
+                let whitespace_replacement = if is_in_table { "" } else { " " };
+                *contents = WHITESPACE_RE
+                    .replace_all(&*contents, whitespace_replacement)
+                    .as_ref()
+                    .into();
 
                 if is_first_in_block || is_preceeded_by_ws {
-                    *contents = LEADING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
+                    *contents = LEADING_WHITESPACE_RE
+                        .replace_all(&*contents, "")
+                        .as_ref()
+                        .into();
                 }
                 if is_last_in_block {
-                    *contents = TRAILING_WHITESPACE_RE.replace_all(&*contents, "").as_ref().into();
+                    *contents = TRAILING_WHITESPACE_RE
+                        .replace_all(&*contents, "")
+                        .as_ref()
+                        .into();
                 }
                 // TODO: collapse whitespace when adjacent to whitespace.
                 // For example, the whitespace in the span should be collapsed in all of these cases:
@@ -256,7 +323,11 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             }
             &**contents != ""
         }
-        NodeData::Element { ref attrs, ref name, .. } => {
+        NodeData::Element {
+            ref attrs,
+            ref name,
+            ..
+        } => {
             let mut attrs = attrs.borrow_mut();
             for a in attrs.iter_mut() {
                 a.name.local = a.name.local.to_ascii_lowercase().into();
@@ -266,20 +337,23 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
             });
             let ascii_name = &*name.local.to_ascii_lowercase();
             // drop empty tbody's
-            ascii_name != "tbody" ||
-                node.children.borrow().len() > 1 ||
-                node.children.borrow().iter().next().map(|only_child| match only_child.data {
-                    NodeData::Text { ref contents, .. } => {
-                        !contents.borrow().chars().all(|c| c.is_whitespace())
-                    }
-                    _ => {
-                        true
-                    }
-                }).unwrap_or(false)
+            ascii_name != "tbody"
+                || node.children.borrow().len() > 1
+                || node
+                    .children
+                    .borrow()
+                    .iter()
+                    .next()
+                    .map(|only_child| match only_child.data {
+                        NodeData::Text { ref contents, .. } => {
+                            !contents.borrow().chars().all(|c| c.is_whitespace())
+                        }
+                        _ => true,
+                    })
+                    .unwrap_or(false)
         }
     }
 }
-
 
 #[test]
 fn strip_div_newline() {
@@ -298,12 +372,18 @@ fn strip_double_space() {
 
 #[test]
 fn strip_inline_internal_text() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html("<u> a </u> b <u> c </u>"))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html("<u> a </u> b <u> c </u>")
+    )
 }
 
 #[test]
 fn strip_inline_block_internal_text() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html(" <u> a </u> b <u> c </u> "))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html(" <u> a </u> b <u> c </u> ")
+    )
 }
 
 #[test]
@@ -313,12 +393,18 @@ fn leaves_necessary_whitespace_alone() {
 
 #[test]
 fn leaves_necessary_whitespace_alone_weird() {
-    assert_eq!("<u>a </u>b <u>c</u>", normalize_html(" <u>a </u>b <u>c</u>"))
+    assert_eq!(
+        "<u>a </u>b <u>c</u>",
+        normalize_html(" <u>a </u>b <u>c</u>")
+    )
 }
 
 #[test]
 fn leaves_necessary_whitespace_all_nested() {
-    assert_eq!("<u></u><u></u><u></u><u></u>", normalize_html("<u> </u><u> </u><u> </u><u> </u>"))
+    assert_eq!(
+        "<u></u><u></u><u></u><u></u>",
+        normalize_html("<u> </u><u> </u><u> </u><u> </u>")
+    )
 }
 
 #[test]

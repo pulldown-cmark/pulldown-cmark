@@ -25,20 +25,21 @@ use std::str::from_utf8;
 
 use crate::html::StrWrite;
 
+#[rustfmt::skip]
 static HREF_SAFE: [u8; 128] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-    ];
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+];
 
-static HEX_CHARS: &'static [u8] = b"0123456789ABCDEF";
-static AMP_ESCAPE: &'static str = "&amp;";
-static SLASH_ESCAPE: &'static str = "&#x27;";
+static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+static AMP_ESCAPE: &str = "&amp;";
+static SLASH_ESCAPE: &str = "&#x27;";
 
 pub(crate) fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
 where
@@ -77,40 +78,39 @@ where
     w.write_str(&s[mark..])
 }
 
+#[rustfmt::skip]
 static HTML_ESCAPE_TABLE: [u8; 256] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 4, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ];
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 4, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+];
 
-static HTML_ESCAPES: [&'static str; 5] = [
-        "",
-        "&quot;",
-        "&amp;",
-        "&lt;",
-        "&gt;"
-    ];
+static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.
 pub(crate) fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
-    #[cfg(all(target_arch = "x86_64", feature="simd"))]
-    { simd::escape_html(w, s) }
-    #[cfg(not(all(target_arch = "x86_64", feature="simd")))]
-    { escape_html_scalar(w, s) }
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        simd::escape_html(w, s)
+    }
+    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    {
+        escape_html_scalar(w, s)
+    }
 }
 
 fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
@@ -140,19 +140,19 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
     w.write_str(&s[mark..])
 }
 
-#[cfg(all(target_arch = "x86_64", feature="simd"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 mod simd {
+    use crate::html::StrWrite;
     use std::arch::x86_64::*;
     use std::io;
     use std::mem::size_of;
-    use crate::html::StrWrite;
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
     pub(crate) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
-        // the buffer is at least one VECTOR_SIZE in length to prevent reading 
+        // the buffer is at least one VECTOR_SIZE in length to prevent reading
         // out of bounds. If either of these conditions is not met, we fall back
         // to scalar code.
         if is_x86_feature_detected!("ssse3") && s.len() >= VECTOR_SIZE {
@@ -162,7 +162,8 @@ mod simd {
             unsafe {
                 foreach_special_simd(bytes, 0, |i| {
                     let escape_ix = *bytes.get_unchecked(i) as usize;
-                    let replacement = super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[escape_ix] as usize];
+                    let replacement =
+                        super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[escape_ix] as usize];
                     w.write_str(&s.get_unchecked(mark..i))?;
                     mark = i + 1; // all escaped characters are ASCII
                     w.write_str(replacement)
@@ -205,7 +206,7 @@ mod simd {
         // Note that shuffle maps bytes with their most significant bit set to lookup[0].
         // Bytes that share their lower nibble with an HTML special byte get mapped to that
         // corresponding special byte. Note that all HTML special bytes have distinct lower
-        // nibbles. Other bytes either get mapped to 0 or 127. 
+        // nibbles. Other bytes either get mapped to 0 or 127.
         let expected = _mm_shuffle_epi8(lookup, vector);
         // We compare the original vector to the mapped output. Bytes that shared a lower
         // nibble with an HTML special byte match *only* if they are that special byte. Bytes
@@ -213,7 +214,7 @@ mod simd {
         // 127 and will hence never match. All other bytes have non-zero lower nibbles but
         // were mapped to 0 and will therefore also not match.
         let matches = _mm_cmpeq_epi8(expected, vector);
-        
+
         // Translate matches to a bitmask, where every 1 corresponds to a HTML special character
         // and a 0 is a non-HTML byte.
         _mm_movemask_epi8(matches)
@@ -224,8 +225,13 @@ mod simd {
     /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
     /// occur otherwise.
     #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<F>(bytes: &[u8], mut offset: usize, mut callback: F) -> io::Result<()>
-        where F: FnMut(usize) -> io::Result<()>
+    unsafe fn foreach_special_simd<F>(
+        bytes: &[u8],
+        mut offset: usize,
+        mut callback: F,
+    ) -> io::Result<()>
+    where
+        F: FnMut(usize) -> io::Result<()>,
     {
         // The strategy here is to walk the byte buffer in chunks of VECTOR_SIZE (16)
         // bytes at a time starting at the given offset. For each chunk, we compute a
@@ -238,7 +244,7 @@ mod simd {
 
         debug_assert!(bytes.len() >= VECTOR_SIZE);
         let upperbound = bytes.len() - VECTOR_SIZE;
-        while offset < upperbound { 
+        while offset < upperbound {
             let mut mask = compute_mask(bytes, offset);
             while mask != 0 {
                 let ix = mask.trailing_zeros();
@@ -261,16 +267,15 @@ mod simd {
     }
 
     #[cfg(test)]
-    mod html_scan_tests {    
+    mod html_scan_tests {
         #[test]
         fn multichunk() {
             let mut vec = Vec::new();
             unsafe {
-                super::foreach_special_simd(
-                    "&aXaaaa.a'aa9a<>aab&".as_bytes(),
-                    0,
-                    |ix| Ok(vec.push(ix))
-                ).unwrap();
+                super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| {
+                    Ok(vec.push(ix))
+                })
+                .unwrap();
             }
             assert_eq!(vec, vec![0, 14, 15, 19]);
         }
@@ -283,16 +288,21 @@ mod simd {
                 let vek = vec![b; super::VECTOR_SIZE];
                 let mut match_count = 0;
                 unsafe {
-                    super::foreach_special_simd(
-                        &vek,
-                        0,
-                        |_| { match_count += 1; Ok(()) }
-                    ).unwrap();
+                    super::foreach_special_simd(&vek, 0, |_| {
+                        match_count += 1;
+                        Ok(())
+                    })
+                    .unwrap();
                 }
                 assert!((match_count > 0) == (match_count == super::VECTOR_SIZE));
-                assert_eq!((match_count == super::VECTOR_SIZE), right_byte, "match_count: {}, byte: {:?}", match_count, b as char);
+                assert_eq!(
+                    (match_count == super::VECTOR_SIZE),
+                    right_byte,
+                    "match_count: {}, byte: {:?}",
+                    match_count,
+                    b as char
+                );
             }
         }
     }
 }
-

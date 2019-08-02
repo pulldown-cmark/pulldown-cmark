@@ -23,6 +23,8 @@ Further, it optionally supports parsing footnotes,
 [Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
+Rustc 1.34 or newer is required to build the crate.
+
 ## Why a pull parser?
 
 There are many parsers for Markdown and its variants, but to my knowledge none

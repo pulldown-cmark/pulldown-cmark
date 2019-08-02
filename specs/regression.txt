@@ -413,3 +413,70 @@ yolo | swag
 </blockquote>
 <p>yolo | swag</p>
 ````````````````````````````````
+
+ISSUE #336
+
+```````````````````````````````` example
+<foo bar>
+.
+<foo bar>
+````````````````````````````````
+
+ISSUE #336
+
+```````````````````````````````` example
+<foo bar =
+ "hi"> 
+.
+<p><foo bar =
+ "hi"> </p>
+````````````````````````````````
+
+EMPHASIS ACROSS PARAGRAPHS
+
+```````````````````````````````` example
+~~*_**__
+
+__a__
+.
+<p>~~*_**__</p>
+<p><strong>a</strong></p>
+````````````````````````````````
+
+EMPTY CODE IN BLOCKQUOTE
+
+```````````````````````````````` example
+> `
+> `
+.
+<blockquote>
+<p><code></code></p>
+</blockquote>
+````````````````````````````````
+
+ISSUE #356
+
+```````````````````````````````` example
+`\|`
+.
+<p><code>\|</code></p>
+````````````````````````````````
+
+ISSUE 370
+
+```````````````````````````````` example
+Paragraph 1
+    
+Paragraph 2
+.
+<p>Paragraph 1</p>
+<p>Paragraph 2</p>
+````````````````````````````````
+
+ISSUE 375
+
+```````````````````````````````` example
+\[[link text](https://www.google.com/)\]
+.
+<p>[<a href="https://www.google.com/">link text</a>]</p>
+````````````````````````````````

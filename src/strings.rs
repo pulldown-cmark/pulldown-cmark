@@ -1,9 +1,9 @@
-use std::ops::Deref;
-use std::borrow::{ToOwned, Borrow};
-use std::str::from_utf8;
-use std::hash::{Hash, Hasher};
+use std::borrow::{Borrow, ToOwned};
 use std::convert::AsRef;
 use std::fmt;
+use std::hash::{Hash, Hasher};
+use std::ops::Deref;
+use std::str::from_utf8;
 
 const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
 
@@ -97,8 +97,9 @@ impl<'a> Hash for CowStr<'a> {
 impl<'a> std::clone::Clone for CowStr<'a> {
     fn clone(&self) -> Self {
         match self {
-            CowStr::Boxed(s) if s.len() < MAX_INLINE_STR_LEN
-                => CowStr::Inlined(InlineStr::try_from_str(&**s).unwrap()),
+            CowStr::Boxed(s) if s.len() < MAX_INLINE_STR_LEN => {
+                CowStr::Inlined(InlineStr::try_from_str(&**s).unwrap())
+            }
             CowStr::Boxed(s) => CowStr::Boxed(s.clone()),
             CowStr::Borrowed(s) => CowStr::Borrowed(s),
             CowStr::Inlined(s) => CowStr::Inlined(*s),
@@ -154,7 +155,7 @@ impl<'a> CowStr<'a> {
             CowStr::Boxed(b) => b.into(),
             CowStr::Borrowed(b) => b.to_owned(),
             CowStr::Inlined(s) => s.deref().to_owned(),
-        }        
+        }
     }
 }
 
@@ -225,9 +226,9 @@ mod test_special_string {
         let smort: CowStr = s.into();
         let smort_clone = smort.clone();
 
-        if let CowStr::Inlined(..) = smort_clone {} else {
+        if let CowStr::Inlined(..) = smort_clone {
+        } else {
             panic!("Expected a Inlined variant!");
         }
     }
 }
-

@@ -24,15 +24,15 @@ extern crate getopts;
 
 extern crate pulldown_cmark;
 
-use pulldown_cmark::Parser;
-use pulldown_cmark::Options;
 use pulldown_cmark::html;
+use pulldown_cmark::Options;
+use pulldown_cmark::Parser;
 
-use std::mem;
 use std::env;
-use std::io::{self, Read, Write};
-use std::path::Path;
 use std::fs::File;
+use std::io::{self, Read, Write};
+use std::mem;
+use std::path::Path;
 
 fn render_html(text: &str, opts: Options) -> String {
     let mut s = String::with_capacity(text.len() * 3 / 2);
@@ -41,7 +41,7 @@ fn render_html(text: &str, opts: Options) -> String {
     s
 }
 
-fn dry_run(text:&str, opts: Options) {
+fn dry_run(text: &str, opts: Options) {
     let p = Parser::new_ext(text, opts);
     let count = p.count();
     println!("{} events", count);
@@ -64,12 +64,12 @@ fn read_file(filename: &str) -> String {
     let path = Path::new(filename);
     let mut file = match File::open(&path) {
         Err(why) => panic!("couldn't open {}: {}", path.display(), why),
-        Ok(file) => file
+        Ok(file) => file,
     };
     let mut s = String::new();
     match file.read_to_string(&mut s) {
         Err(why) => panic!("couldn't open {}: {}", path.display(), why),
-        Ok(_) => s
+        Ok(_) => s,
     }
 }
 
@@ -87,7 +87,7 @@ struct Spec<'a> {
 
 impl<'a> Spec<'a> {
     pub fn new(spec: &'a str) -> Self {
-        Spec{ spec, test_n: 0 }
+        Spec { spec, test_n: 0 }
     }
 }
 
@@ -109,25 +109,39 @@ impl<'a> Iterator for Spec<'a> {
     fn next(&mut self) -> Option<TestCase<'a>> {
         let spec = self.spec;
 
-        let i_start = match self.spec.find("```````````````````````````````` example\n").map(|pos| pos + 41) {
+        let i_start = match self
+            .spec
+            .find("```````````````````````````````` example\n")
+            .map(|pos| pos + 41)
+        {
             Some(pos) => pos,
             None => return None,
         };
 
-        let i_end = match self.spec[i_start..].find("\n.\n").map(|pos| (pos + 1) + i_start){
+        let i_end = match self.spec[i_start..]
+            .find("\n.\n")
+            .map(|pos| (pos + 1) + i_start)
+        {
             Some(pos) => pos,
             None => return None,
         };
 
-        let e_end = match self.spec[i_end + 2..].find("````````````````````````````````\n").map(|pos| pos + i_end + 2){
+        let e_end = match self.spec[i_end + 2..]
+            .find("````````````````````````````````\n")
+            .map(|pos| pos + i_end + 2)
+        {
             Some(pos) => pos,
             None => return None,
         };
 
         self.test_n += 1;
-        self.spec = &self.spec[e_end + 33 ..];
+        self.spec = &self.spec[e_end + 33..];
 
-        Some(TestCase::new(self.test_n, &spec[i_start .. i_end], &spec[i_end + 2 .. e_end]))
+        Some(TestCase::new(
+            self.test_n,
+            &spec[i_start..i_end],
+            &spec[i_end + 2..e_end],
+        ))
     }
 }
 
@@ -139,7 +153,7 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
         let first = iter.next().and_then(|s| s.parse().ok());
         let last = match iter.next() {
             Some(s) => s.parse().ok(),
-            None => first
+            None => first,
         };
         (first, last)
     };
@@ -150,8 +164,12 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
     let mut fail_report = String::new();
 
     for test in spec {
-        if first.map(|fst| test.n < fst).unwrap_or(false) { continue }
-        if last.map(|lst| test.n > lst).unwrap_or(false) { break }
+        if first.map(|fst| test.n < fst).unwrap_or(false) {
+            continue;
+        }
+        if last.map(|lst| test.n > lst).unwrap_or(false) {
+            break;
+        }
 
         if test.n % 10 == 1 {
             if test.n % 40 == 1 {
@@ -172,8 +190,10 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
             print!(".");
         } else {
             if tests_failed == 0 {
-                fail_report = format!("\nFAIL {}:\n\n---input---\n{:?}\n\n---wanted---\n{:?}\n\n---got---\n{:?}\n",
-                    test.n, test.input, test.expected, our_html);
+                fail_report = format!(
+                    "\nFAIL {}:\n\n---input---\n{:?}\n\n---wanted---\n{:?}\n\n---got---\n{:?}\n",
+                    test.n, test.input, test.expected, our_html
+                );
             }
             print!("X");
             tests_failed += 1;
@@ -190,8 +210,7 @@ fn run_spec(spec_text: &str, args: &[String], opts: Options) {
 fn brief(program: &str) -> String {
     format!(
         "Usage: {} [options]\n\n{}",
-        program,
-        "Reads markdown from standard input and emits HTML.",
+        program, "Reads markdown from standard input and emits HTML.",
     )
 }
 
@@ -203,7 +222,11 @@ pub fn main() {
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
-    opts.optflag("S", "enable-strikethrough", "enable GitHub-style strikethrough");
+    opts.optflag(
+        "S",
+        "enable-strikethrough",
+        "enable GitHub-style strikethrough",
+    );
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optopt("s", "spec", "run tests from spec file", "FILE");
     opts.optopt("b", "bench", "run benchmark", "FILE");
@@ -232,7 +255,11 @@ pub fn main() {
         opts.insert(Options::ENABLE_TASKLISTS);
     }
     if let Some(filename) = matches.opt_str("spec") {
-        run_spec(&read_file(&filename).replace("→", "\t"), &matches.free, opts);
+        run_spec(
+            &read_file(&filename).replace("→", "\t"),
+            &matches.free,
+            opts,
+        );
     } else if let Some(filename) = matches.opt_str("bench") {
         let inp = read_file(&filename);
         for _ in 0..1000 {
@@ -250,7 +277,7 @@ pub fn main() {
         } else {
             let mut p = Parser::new_ext(&input, opts);
             let stdio = io::stdout();
-            let buffer = std::io::BufWriter::with_capacity(1*1024*1024, stdio.lock());
+            let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
             html::write_html(buffer, &mut p).unwrap();
             // Since the program will now terminate and the memory will be returned
             // to the operating system anyway, there is no point in tidely cleaning

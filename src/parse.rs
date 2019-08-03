@@ -31,27 +31,38 @@ use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex, TreePointer};
 
+/// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
-    // block-level tags
+    /// A paragraph of text and other inline elements.
     Paragraph,
-    Rule,
+    /// A horizontal ruler.
+    Rule, // FIXME: shouldn't this just be an event?
 
     /// A heading. The field indicates the level of the heading.
     Header(i32),
 
     BlockQuote,
+    /// A code block. The value contained in the tag describes the language of the code,
+    /// which may be empty.
     CodeBlock(CowStr<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
+    /// Contains only list items.
     List(Option<usize>), // TODO: add delim and tight for ast (not needed for html)
+    /// A list item.
     Item,
+    /// A footnote definition. The value contained is the footnote's label by which it can
+    /// be referred to.
     FootnoteDefinition(CowStr<'a>),
     HtmlBlock,
 
-    // tables
+    /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
+    /// A table header. Contains only `TableRow`s. Note that the table body starts immediately
+    /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     TableHead,
+    /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
     TableRow,
     TableCell,
 
@@ -60,13 +71,14 @@ pub enum Tag<'a> {
     Strong,
     Strikethrough,
 
-    /// A link. The first field is the link type, the second the destination URL and the third is a title
+    /// A link. The first field is the link type, the second the destination URL and the third is a title.
     Link(LinkType, CowStr<'a>, CowStr<'a>),
 
-    /// An image. The first field is the link type, the second the destination URL and the third is a title
+    /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
+/// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
@@ -100,23 +112,41 @@ impl LinkType {
     }
 }
 
+/// Markdown events that are generated in a preorder traversal of the document
+/// tree, with additional `End` events whenever all of an inner node's children
+/// have been visited.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
+    /// Start of a tagged element. Events that are yielded after this event
+    /// and before its corresponding `End` event are inside this element.
+    /// Start and end events are guaranteed to be balanced.
     Start(Tag<'a>),
+    /// End of a tagged element.
     End(Tag<'a>),
+    /// A text node.
     Text(CowStr<'a>),
+    /// An inline code node.
     Code(CowStr<'a>),
+    /// An HTML node.
     Html(CowStr<'a>),
-    InlineHtml(CowStr<'a>),
+    /// An inline HTML node.
+    InlineHtml(CowStr<'a>), // TODO: do we need a distinction between Html blocks/ Html/ InlineHtml?
+    /// A reference to a footnote with given label, which may or may not be defined
+    /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
+    /// occur in any order.
     FootnoteReference(CowStr<'a>),
+    /// A soft line break.
     SoftBreak,
+    /// A hard line break.
     HardBreak,
-    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked
+    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
 }
 
+/// Table column text alignment.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Alignment {
+    /// Default text alignment.
     None,
     Left,
     Center,
@@ -124,6 +154,10 @@ pub enum Alignment {
 }
 
 bitflags! {
+    /// Option struct containing flags for enabling extra features
+    /// that are not part of the CommonMark spec.
+    /// The `FIRST_PASS` flag is unused and will be removed in the
+    /// future.
     pub struct Options: u32 {
         const FIRST_PASS = 1 << 0;
         const ENABLE_TABLES = 1 << 1;
@@ -1839,6 +1873,7 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
+/// Markdown event iterator.
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -1854,10 +1889,12 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Creates a new event iterator for a markdown string without any options enabled.
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
 
+    /// Creates a new event iteratorfor a markdown string with given options.
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
         Parser::new_with_broken_link_callback(text, options, None)
     }
@@ -1865,8 +1902,8 @@ impl<'a> Parser<'a> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
-    /// and the returned pair will be used as the link name and title if not
-    /// None.
+    /// and the returned pair will be used as the link name and title if it is not
+    /// `None`.
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
@@ -1890,6 +1927,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Returns the current offset in the source markdown. When source
+    /// mapping is required, it is strongly encourage to transform the iterator to
+    /// a [OffsetIter](struct.OffsetIter.html) instead using
+    /// [`into_offset_iter`](#method.into_offset_iter) instead, since its behaviour
+    /// is much better defined.
     pub fn get_offset(&self) -> usize {
         self.offset
     }
@@ -2362,6 +2404,9 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Consumes the event iterator and produces an iterator that produces
+    /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
+    /// range in the markdown source.
     pub fn into_offset_iter(self) -> OffsetIter<'a> {
         OffsetIter { inner: self }
     }
@@ -2444,6 +2489,13 @@ where
     (ix, None)
 }
 
+/// Markdown event and source range iterator.
+///
+/// Generates tuples where the first element is the markdown event and the second
+/// is a the corresponding range in the source string.
+///
+/// Constructed from a `Parser` using its
+/// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 pub struct OffsetIter<'a> {
     inner: Parser<'a>,
 }

@@ -7,11 +7,13 @@ use std::str::from_utf8;
 
 const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
 
-/// Returned when trying to convert a &str into a InlineStr
+/// Returned when trying to convert a `&str` into a `InlineStr`
 /// but it fails because it doesn't fit.
 #[derive(Debug)]
 pub struct StringTooLongError;
 
+/// An inline string that can contain almost three words
+/// of utf-8 text.
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct InlineStr {
     inner: [u8; MAX_INLINE_STR_LEN],
@@ -75,10 +77,17 @@ impl fmt::Display for InlineStr {
     }
 }
 
+/// A copy-on-write string that can be owned, borrowed
+/// or inlined.
+///
+/// It is three words long.
 #[derive(Debug, Eq)]
 pub enum CowStr<'a> {
+    /// An owned, immutable string.
     Boxed(Box<str>),
+    /// A borrowed string.
     Borrowed(&'a str),
+    /// A short inline string.
     Inlined(InlineStr),
 }
 

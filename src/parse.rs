@@ -2085,9 +2085,10 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-
+                        let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
+                        let link_text = &self.text[..block_end];
                         if let Some((next_ix, url, title)) =
-                            scan_inline_link(self.text, self.tree[cur_ix].item.end)
+                            scan_inline_link(link_text, self.tree[cur_ix].item.end)
                         {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {

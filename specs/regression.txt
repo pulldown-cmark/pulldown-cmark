@@ -524,3 +524,28 @@ ISSUE 351
 <p>[a](b &quot;</p>
 <p>&quot;)</p>
 ````````````````````````````````
+
+ISSUE 382
+
+```````````````````````````````` example
+<http:// >
+.
+<p>&lt;http:// &gt;</p>
+````````````````````````````````
+
+ISSUE 382
+
+```````````````````````````````` example
+foo | bar
+--- | ---
+<http://| baz
+.
+<table>
+<thead>
+<tr><th>foo</th><th>bar</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt;http://</td><td>baz</td></tr>
+</tbody>
+</table>
+````````````````````````````````

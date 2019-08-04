@@ -607,3 +607,32 @@ fn regression_test_45() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_46() {
+    let original = r##"<http:// >
+"##;
+    let expected = r##"<p>&lt;http:// &gt;</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_47() {
+    let original = r##"foo | bar
+--- | ---
+<http://| baz
+"##;
+    let expected = r##"<table>
+<thead>
+<tr><th>foo</th><th>bar</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt;http://</td><td>baz</td></tr>
+</tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected);
+}

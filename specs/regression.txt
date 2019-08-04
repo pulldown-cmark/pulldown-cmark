@@ -549,3 +549,20 @@ foo | bar
 </tbody>
 </table>
 ````````````````````````````````
+
+ISSUE 381
+
+```````````````````````````````` example
+foo | bar
+--- | ---
+<http://|>
+.
+<table>
+<thead>
+<tr><th>foo</th><th>bar</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt;http://</td><td>&gt;</td></tr>
+</tbody>
+</table>
+````````````````````````````````

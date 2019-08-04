@@ -620,6 +620,16 @@ fn regression_test_46() {
 
 #[test]
 fn regression_test_47() {
+    let original = r##"<http://>
+"##;
+    let expected = r##"<p>&lt;http://&gt;</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_48() {
     let original = r##"foo | bar
 --- | ---
 <http://| baz
@@ -638,7 +648,7 @@ fn regression_test_47() {
 }
 
 #[test]
-fn regression_test_48() {
+fn regression_test_49() {
     let original = r##"foo | bar
 --- | ---
 <http://|>

@@ -1151,8 +1151,7 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
     while i < bytes.len() {
         match bytes[i] {
             b'>' => return Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into())),
-            b'<' => return None,
-            b if is_ascii_whitespace(b) => return None,
+            b'\0'..=b' ' | b'<' => return None,
             _ => (),
         }
         i += 1;

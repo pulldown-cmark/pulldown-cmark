@@ -39,14 +39,12 @@ use std::time::{Duration, Instant};
 use std::panic;
 use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
 use std::env;
-use std::io::{self, BufRead};
 use std::iter;
 use std::process::Command;
 use std::os::unix::process::CommandExt;
 
-use itertools::Itertools;
 use pulldown_cmark::{Parser, Options};
-use rand::{SeedableRng, distributions::{Distribution, Uniform}};
+use rand::{Rng, SeedableRng, distributions::Distribution, seq::SliceRandom};
 use rand_xoshiro::Xoshiro256Plus;
 use crossbeam_utils::thread;
 
@@ -84,22 +82,56 @@ const TEST_COUNT: usize = 5;
 /// 0 / 1 / 2 / 3
 const DEBUG_LEVEL: u8 = 0;
 
+#[derive(Debug, Clone, Default)]
+struct Pattern {
+    prefix: String,
+    repeating_pattern: String,
+    postfix: String,
+}
+
+impl<'a> Into<Pattern> for &'a str {
+    fn into(self) -> Pattern {
+        Pattern {
+            prefix: String::new(),
+            repeating_pattern: self.to_owned(),
+            postfix: String::new(),
+        }
+    }
+}
+
+struct UniformPatterns<'a> {
+    patterns: &'a [Vec<u8>],
+}
+
+impl<'a> UniformPatterns<'a> {
+    fn new(patterns: &'a [Vec<u8>]) -> Self {
+        Self {
+            patterns
+        }
+    }
+}
+
+impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Pattern {
+        fn random_seq<'b, I: Iterator<Item=Option<&'b Vec<u8>>>>(iter: &mut I) -> String {
+            String::from_utf8(iter.take(COMBINATIONS).flatten().flatten().cloned().collect()).expect("Bytes to String failed!")
+        }
+
+        let mut random_words = iter::repeat_with(|| self.patterns.choose(rng));
+
+        Pattern {
+            prefix: random_seq(&mut random_words),
+            postfix: random_seq(&mut random_words),
+            repeating_pattern: random_seq(&mut random_words),
+        }
+    }
+}
+
 fn main() {
     let num_cpus = (num_cpus::get() as f32 * 0.8).ceil() as usize;
 
     let arg = env::args().nth(1);
     match arg.as_ref().map(|s| s.as_str()) {
-        Some("--retest") => {
-            for pattern in io::stdin().lock().lines() {
-                let pattern = pattern.unwrap();
-                println!("retesting {:?}", pattern);
-                match test_catch_unwind(&pattern) {
-                    Ok(res) => println!("score: {}", res.score()),
-                    Err(()) => ()
-                }
-            }
-        },
-
         Some("--regressions") => {
             // previously know cases
             let exit_code = regression_test();
@@ -114,7 +146,7 @@ fn main() {
 /// Returns the exit code. 0 if all tests passed and 1 otherwise.
 fn regression_test() -> i32 {
     let mut exit_code = 0;
-    let mut check_pattern = |pat| match test(pat) {
+    let mut check_pattern = |pat: &str| match test(&pat.into()) {
         PatternResult::Linear(_) => (),
         _ => exit_code = 1,
     };
@@ -160,7 +192,7 @@ fn fuzz(num_cpus: usize) {
     let start_time = Instant::now();
     let mut pattern_times = Vec::with_capacity(num_cpus);
     for _ in 0..num_cpus {
-        pattern_times.push(Mutex::new((String::new(), Instant::now())));
+        pattern_times.push(Mutex::new((Pattern::default(), Instant::now())));
     }
 
     // start threads
@@ -228,29 +260,18 @@ fn fuzz(num_cpus: usize) {
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
     literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64,
-    mut rng: Xoshiro256Plus, pattern_time: &Mutex<(String, Instant)>,
-) {
-    let uniform = Uniform::new(0, literals.len());
+    mut rng: Xoshiro256Plus, pattern_time: &Mutex<(Pattern, Instant)>,
+)
+{
+    let pattern_distr = UniformPatterns::new(&literals);
     loop {
-        // generate `BATCH_SIZE` random patterns
-        let chunks = iter::repeat_with(|| {
-            &literals[uniform.sample(&mut rng)]
-        }).chunks(COMBINATIONS);
-        let combs = chunks.into_iter().take(BATCH_SIZE);
-
         // test those patterns, catching panics of pulldown-cmark (and our code)
-        for comb in combs {
-            let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-            // we mustn't panic here, because that would result in the thread being killed
-            let pattern = match String::from_utf8(concatenated) {
-                Ok(pattern) => pattern,
-                Err(err) => {
-                    println!("Couldn't convert pattern to UTF-8. Err: {:?}.", err);
-                    continue;
-                }
-            };
+        for _ in 0..BATCH_SIZE {
+            let pattern = pattern_distr.sample(&mut rng);
             // code-block just to be double-sure that the lock is dropped to not poison it
-            { *pattern_time.lock().unwrap() = (pattern.clone(), Instant::now()); }
+            {
+                *pattern_time.lock().unwrap() = (pattern.clone(), Instant::now());
+            }
             let _ = test_catch_unwind(&pattern);
         }
 
@@ -258,7 +279,7 @@ fn worker_thread_fn(
     }
 }
 
-fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
+fn test_catch_unwind(pattern: &Pattern) -> Result<PatternResult, ()> {
     let res = panic::catch_unwind(|| {
         test(&pattern)
     });
@@ -272,7 +293,7 @@ fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
 ///
 /// This function prints its results to stdout.
 /// No further handling is needed, the returned score is for debugging purposes mostly.
-fn test(pattern: &str) -> PatternResult {
+fn test(pattern: &Pattern) -> PatternResult {
     let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE];
     let mut res = PatternResult::TooLong;
 
@@ -340,13 +361,14 @@ impl PatternResult {
 }
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
-fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult {
+fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternResult {
     let sample_size = time_samples.len();
-    let repeated_pattern = pattern.repeat(NUM_BYTES / pattern.len());
+    let pattern_len = pattern.repeating_pattern.len();
+    let repeated_pattern = pattern.repeating_pattern.repeat(NUM_BYTES / pattern_len);
 
     let mut i = 0;
     while i < sample_size {
-        let (n, dur) = time_needed(&repeated_pattern, pattern.len(), i+1, sample_size);
+        let (n, dur) = time_needed(&repeated_pattern, pattern_len, i+1, sample_size);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
@@ -361,7 +383,7 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult
     let (score, non_linear) = SCORE_FUNCTION(&time_samples);
 
     if DEBUG_LEVEL >= 1 {
-        println!("{:<30}{}", score, pattern);
+        println!("{:<30}{:?}", score, pattern);
     }
     if DEBUG_LEVEL >= 2 {
         println!("{:?}", time_samples);
@@ -396,5 +418,3 @@ fn time_needed(repeated_pattern: &str, pattern_len: usize, sample: usize, sample
     });
     (n, clock.elapsed())
 }
-
-

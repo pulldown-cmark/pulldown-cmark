@@ -154,39 +154,55 @@ fn main() {
 /// Returns the exit code. 0 if all tests passed and 1 otherwise.
 fn regression_test() -> i32 {
     let mut exit_code = 0;
-    let mut check_pattern = |pat: &str| match test(&pat.into()) {
+    let mut check_pattern = |pat| match test(&pat) {
         PatternResult::Linear(_) => (),
         _ => exit_code = 1,
     };
     // https://github.com/raphlinus/pulldown-cmark/issues/246
-    check_pattern("[](");
+    check_pattern("[](".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/247
-    check_pattern("``\\");
+    check_pattern("``\\".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/248
-    check_pattern("a***");
+    check_pattern("a***".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/249
-    // TODO: we can't perform tests like this yet
-    //    check_pattern("* * * ...a");
+    check_pattern(Pattern {
+        prefix: "".into(),
+        repeating_pattern: "* ".into(),
+        postfix: "a".into(),
+    });
     // https://github.com/raphlinus/pulldown-cmark/issues/251
-    check_pattern("[ (](");
+    check_pattern("[ (](".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/255
-    check_pattern("[*_a");
+    check_pattern("[*_a".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/280
-    check_pattern("a <![CDATA[");
+    check_pattern("a <![CDATA[".into());
     // https://github.com/mity/md4c/issues/73#issuecomment-487640366
-    check_pattern("a <!A");
+    check_pattern("a <!A".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/282
-    check_pattern("a<?");
+    check_pattern("a<?".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/284
-    check_pattern("[[]()");
-    // https://github.com/raphlinus/pulldown-cmark/issues/287
-    // TODO: we can't perform tests like this reliably yet
-    //    check_pattern("[{}]:\\a");
+    check_pattern("[[]()".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/296
-    check_pattern("[](<");
-    check_pattern("[\"[]]\\(");
-    check_pattern(")-\r%<[");
-    check_pattern("\u{0}[@[{<");
+    check_pattern("[](<".into());
+    check_pattern("[\"[]]\\(".into());
+    check_pattern(")-\r%<[".into());
+    check_pattern("\u{0}[@[{<".into());
+    check_pattern("a <!A ".into());
+    check_pattern("a <? ".into());
+    check_pattern("[ (]( ".into());
+    check_pattern(Pattern {
+        prefix: "".into(),
+        repeating_pattern: "`a`".into(),
+        postfix: "`".into(),
+    });
+    check_pattern("\\``".into());
+    check_pattern("a***b~~".into());
+    check_pattern("*~~\u{a0}".into());
+    check_pattern("[*_a".into());
+    check_pattern("a***_b__".into());
+    check_pattern("a***".into());
+    check_pattern("[[]()".into());
+    check_pattern("[a](<".into());
     exit_code
 }
 
@@ -373,7 +389,7 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
     let mut i = 0;
 
     while i < sample_count {
-        let n = sample_pattern(pattern, &mut buf, i, sample_count); // FIXME: set actual values
+        let n = sample_pattern(pattern, &mut buf, i + 1, sample_count); // FIXME: set actual values
         let dur = time_needed(&buf);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
@@ -414,7 +430,7 @@ fn sample_pattern(
 
     let target_byte_count = sample_size * NUM_BYTES / sample_count;
     let target_repeat_bytes = target_byte_count - pattern.prefix.len() - pattern.postfix.len();
-    let num_repeats = pattern.repeating_pattern.len();
+    let num_repeats = target_repeat_bytes / pattern.repeating_pattern.len();
 
     for _ in 0..num_repeats {
         buf.push_str(&pattern.repeating_pattern);

@@ -35,23 +35,26 @@
 //! <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>,
 //! the easiest solution is to just restart the whole process.
 
-use std::time::{Duration, Instant};
-use std::panic;
-use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
 use std::env;
 use std::iter;
-use std::process::Command;
 use std::os::unix::process::CommandExt;
+use std::panic;
+use std::process::Command;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Mutex,
+};
+use std::time::{Duration, Instant};
 
-use pulldown_cmark::{Parser, Options};
-use rand::{Rng, SeedableRng, distributions::Distribution, seq::SliceRandom};
-use rand_xoshiro::Xoshiro256Plus;
 use crossbeam_utils::thread;
+use pulldown_cmark::{Options, Parser};
+use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
+use rand_xoshiro::Xoshiro256Plus;
 
-mod literals;
 mod black_box;
-mod scoring;
 mod clock;
+mod literals;
+mod scoring;
 
 use clock::{Clock, ThreadCpuTime};
 
@@ -65,7 +68,7 @@ const COMBINATIONS: usize = 6;
 /// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
 /// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
-const NUM_BYTES: usize = 8*1024;
+const NUM_BYTES: usize = 8 * 1024;
 /// Number of samples per pattern tested. Higher number increases precision, but reduces the throughput.
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
@@ -105,16 +108,21 @@ struct UniformPatterns<'a> {
 
 impl<'a> UniformPatterns<'a> {
     fn new(patterns: &'a [Vec<u8>]) -> Self {
-        Self {
-            patterns
-        }
+        Self { patterns }
     }
 }
 
 impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Pattern {
-        fn random_seq<'b, I: Iterator<Item=Option<&'b Vec<u8>>>>(iter: &mut I) -> String {
-            String::from_utf8(iter.take(COMBINATIONS).flatten().flatten().cloned().collect()).expect("Bytes to String failed!")
+        fn random_seq<'b, I: Iterator<Item = Option<&'b Vec<u8>>>>(iter: &mut I) -> String {
+            String::from_utf8(
+                iter.take(COMBINATIONS)
+                    .flatten()
+                    .flatten()
+                    .cloned()
+                    .collect(),
+            )
+            .expect("Bytes to String failed!")
         }
 
         let mut random_words = iter::repeat_with(|| self.patterns.choose(rng));
@@ -136,7 +144,7 @@ fn main() {
             // previously know cases
             let exit_code = regression_test();
             std::process::exit(exit_code);
-        },
+        }
         _ => fuzz(num_cpus),
     }
 }
@@ -158,7 +166,7 @@ fn regression_test() -> i32 {
     check_pattern("a***");
     // https://github.com/raphlinus/pulldown-cmark/issues/249
     // TODO: we can't perform tests like this yet
-//    check_pattern("* * * ...a");
+    //    check_pattern("* * * ...a");
     // https://github.com/raphlinus/pulldown-cmark/issues/251
     check_pattern("[ (](");
     // https://github.com/raphlinus/pulldown-cmark/issues/255
@@ -173,7 +181,7 @@ fn regression_test() -> i32 {
     check_pattern("[[]()");
     // https://github.com/raphlinus/pulldown-cmark/issues/287
     // TODO: we can't perform tests like this reliably yet
-//    check_pattern("[{}]:\\a");
+    //    check_pattern("[{}]:\\a");
     // https://github.com/raphlinus/pulldown-cmark/issues/296
     check_pattern("[](<");
     check_pattern("[\"[]]\\(");
@@ -198,15 +206,17 @@ fn fuzz(num_cpus: usize) {
     // start threads
     thread::scope(|s| {
         // worker threads
-        let mut threads: Vec<_> = (0..num_cpus).map(|i| {
-            // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
-            rng.jump();
-            let rng = rng.clone();
-            let pattern_time = &pattern_times[i];
-            s.spawn(move |_| {
-                worker_thread_fn(literals, &num_batches_finished, rng, pattern_time)
+        let mut threads: Vec<_> = (0..num_cpus)
+            .map(|i| {
+                // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
+                rng.jump();
+                let rng = rng.clone();
+                let pattern_time = &pattern_times[i];
+                s.spawn(move |_| {
+                    worker_thread_fn(literals, &num_batches_finished, rng, pattern_time)
+                })
             })
-        }).collect();
+            .collect();
 
         // timeout thread
         threads.push(s.spawn(|_| {
@@ -223,13 +233,11 @@ fn fuzz(num_cpus: usize) {
                         // for more information.
                         println!(
                             "Thread timeout triggered (thread took too long) for Pattern: {:?}\n\
-                            Restarting process...",
+                             Restarting process...",
                             pattern,
                         );
                         let args: Vec<_> = env::args().collect();
-                        Command::new(&args[0])
-                            .args(&args[1..])
-                            .exec();
+                        Command::new(&args[0]).args(&args[1..]).exec();
                         unreachable!();
                     }
                 }
@@ -254,15 +262,17 @@ fn fuzz(num_cpus: usize) {
         for thread in threads {
             println!("Joined thread: {:?}", thread.join());
         }
-    }).unwrap();
+    })
+    .unwrap();
 }
 
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
-    literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64,
-    mut rng: Xoshiro256Plus, pattern_time: &Mutex<(Pattern, Instant)>,
-)
-{
+    literals: &Vec<Vec<u8>>,
+    num_batches_finished: &AtomicU64,
+    mut rng: Xoshiro256Plus,
+    pattern_time: &Mutex<(Pattern, Instant)>,
+) {
     let pattern_distr = UniformPatterns::new(&literals);
     loop {
         // test those patterns, catching panics of pulldown-cmark (and our code)
@@ -280,9 +290,7 @@ fn worker_thread_fn(
 }
 
 fn test_catch_unwind(pattern: &Pattern) -> Result<PatternResult, ()> {
-    let res = panic::catch_unwind(|| {
-        test(&pattern)
-    });
+    let res = panic::catch_unwind(|| test(&pattern));
     if res.is_err() {
         println!("Panic caught. Pattern: {:?}", pattern);
     }
@@ -309,7 +317,7 @@ fn test(pattern: &Pattern) -> PatternResult {
             PatternResult::Linear(..) => return res,
             PatternResult::NonLinear(_score) => {
                 // retest
-            },
+            }
             PatternResult::TooLong => {
                 println!(
                     "\n\
@@ -321,23 +329,21 @@ fn test(pattern: &Pattern) -> PatternResult {
                     time_samples,
                 );
                 return res;
-            },
+            }
         };
     }
 
     if let PatternResult::NonLinear(score) = res {
         println!(
             "\n\
-            possible non-linear behaviour found\n\
-            pattern: {:?}\n\
-            score: {}\n\
-            {:?}\n",
-            pattern,
-            score,
-            time_samples,
+             possible non-linear behaviour found\n\
+             pattern: {:?}\n\
+             score: {}\n\
+             {:?}\n",
+            pattern, score, time_samples,
         );
     }
-    
+
     res
 }
 
@@ -397,7 +403,12 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
 }
 
 /// Returns the number of repeated patterns.
-fn sample_pattern(pattern: &Pattern, buf: &mut String, sample_size: usize, sample_count: usize) -> usize {
+fn sample_pattern(
+    pattern: &Pattern,
+    buf: &mut String,
+    sample_size: usize,
+    sample_count: usize,
+) -> usize {
     buf.clear();
     buf.push_str(&pattern.prefix);
 

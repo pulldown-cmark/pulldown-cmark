@@ -1,9 +1,9 @@
 //! Functions detecting non-linear growth.
 
-use ndarray::{ArrayViewMut1, Array2};
-use ndarray_stats::CorrelationExt;
-use itertools::Itertools;
 use crate::SAMPLE_SIZE;
+use itertools::Itertools;
+use ndarray::{Array2, ArrayViewMut1};
+use ndarray_stats::CorrelationExt;
 
 /// Calculates the pearson_correlation of the passed `(len, time)`-array.
 #[allow(dead_code)]
@@ -37,7 +37,7 @@ pub fn pearson_correlation(time_samples: &[(f64, f64)]) -> (f64, bool) {
 /// If the function is not linear, the slopes will all be different, resulting in a higher stddev.
 #[allow(dead_code)]
 pub fn slope_stddev(time_samples: &[(f64, f64)]) -> (f64, bool) {
-    let mut slopes = [0f64; SAMPLE_SIZE*2 * (SAMPLE_SIZE*2 - 1) / 2];
+    let mut slopes = [0f64; SAMPLE_SIZE * 2 * (SAMPLE_SIZE * 2 - 1) / 2];
     let mut i = 0;
 
     for (point1, point2) in (0..time_samples.len()).tuple_combinations() {

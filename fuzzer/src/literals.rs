@@ -2,11 +2,16 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use walkdir::WalkDir;
-use syn::{Item, Expr, ImplItem, Stmt, ExprArray, ExprCall, ExprMethodCall, Visibility, Ident, Type,
-          ExprTuple, Lit, Pat, punctuated::Punctuated, token::{Comma, Semi, Struct, Colon, Eq, Const, Brace},
-          parse::{Parse, ParseStream, Error}, braced};
 use proc_macro2::TokenStream;
+use syn::{
+    braced,
+    parse::{Error, Parse, ParseStream},
+    punctuated::Punctuated,
+    token::{Brace, Colon, Comma, Const, Eq, Semi, Struct},
+    Expr, ExprArray, ExprCall, ExprMethodCall, ExprTuple, Ident, ImplItem, Item, Lit, Pat, Stmt,
+    Type, Visibility,
+};
+use walkdir::WalkDir;
 
 /// Get all relevant literals from pulldown-cmark to generate fuzzing input from.
 ///
@@ -24,7 +29,13 @@ pub fn get() -> Vec<Vec<u8>> {
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .filter(|e| if let Some(ext) = e.path().extension() { ext == "rs" } else { false });
+        .filter(|e| {
+            if let Some(ext) = e.path().extension() {
+                ext == "rs"
+            } else {
+                false
+            }
+        });
 
     let mut literal_parser = LiteralParser::new();
 
@@ -79,10 +90,8 @@ impl LiteralParser {
 
     pub fn extract_literals_from_file<P: AsRef<Path>>(&mut self, path: P) {
         let path = path.as_ref();
-        let content = fs::read_to_string(path)
-            .expect(&format!("unable to read file {:?}", path));
-        let parsed = syn::parse_file(&content)
-            .expect(&format!("unable to parse file {:?}", path));
+        let content = fs::read_to_string(path).expect(&format!("unable to read file {:?}", path));
+        let parsed = syn::parse_file(&content).expect(&format!("unable to parse file {:?}", path));
         self.extract_literals_from_items(parsed.items);
     }
 
@@ -109,16 +118,18 @@ impl LiteralParser {
                 self.in_static = true;
                 self.extract_literals_from_expr(*item.expr);
                 self.in_static = false;
-            },
+            }
             Item::Const(item) => {
                 self.in_const = true;
                 self.extract_literals_from_expr(*item.expr);
                 self.in_const = false;
-            },
+            }
             Item::Fn(item) => self.extract_literals_from_stmts(item.block.stmts),
-            Item::Mod(item) => if let Some((_, item)) = item.content {
-                self.extract_literals_from_items(item);
-            },
+            Item::Mod(item) => {
+                if let Some((_, item)) = item.content {
+                    self.extract_literals_from_items(item);
+                }
+            }
             Item::Impl(item) => self.extract_literals_from_impl(item.items),
             Item::Macro(item) => self.extract_literals_from_macro(item.mac.tts),
             Item::Macro2(_) => unimplemented!("macros 2.0"),
@@ -128,9 +139,11 @@ impl LiteralParser {
     fn extract_literals_from_stmts(&mut self, stmts: Vec<Stmt>) {
         for stmt in stmts {
             match stmt {
-                Stmt::Local(local) => if let Some((_, expr)) = local.init {
-                    self.extract_literals_from_expr(*expr);
-                },
+                Stmt::Local(local) => {
+                    if let Some((_, expr)) = local.init {
+                        self.extract_literals_from_expr(*expr);
+                    }
+                }
                 Stmt::Item(item) => self.extract_literals_from_item(item),
                 Stmt::Expr(expr) | Stmt::Semi(expr, _) => self.extract_literals_from_expr(expr),
             }
@@ -144,10 +157,9 @@ impl LiteralParser {
                     self.in_const = true;
                     self.extract_literals_from_expr(item.expr);
                     self.in_const = false;
-                },
+                }
                 ImplItem::Method(item) => self.extract_literals_from_stmts(item.block.stmts),
-                ImplItem::Type(_)
-                | ImplItem::Existential(_) => (),
+                ImplItem::Type(_) | ImplItem::Existential(_) => (),
                 ImplItem::Macro(item) => self.extract_literals_from_macro(item.mac.tts),
                 ImplItem::Verbatim(_) => unimplemented!("ImplItem::Verbatim"),
             }
@@ -167,7 +179,7 @@ impl LiteralParser {
                         })
                     }
                 }
-            }
+            };
         }
         args!(ExprArgsComma, Comma);
         args!(ExprArgsSemi, Semi);
@@ -246,7 +258,6 @@ impl LiteralParser {
         }
     }
 
-
     fn extract_literals_from_expr(&mut self, expr: Expr) {
         match expr {
             Expr::Box(expr) => self.extract_literals_from_expr(*expr.expr),
@@ -259,11 +270,17 @@ impl LiteralParser {
                     self.extract_literals_from_expr(elem);
                 }
             }
-            Expr::Tuple(ExprTuple { elems, .. }) => for expr in elems {
-                self.extract_literals_from_expr(expr);
-            },
+            Expr::Tuple(ExprTuple { elems, .. }) => {
+                for expr in elems {
+                    self.extract_literals_from_expr(expr);
+                }
+            }
             Expr::Call(ExprCall { func, args, .. })
-            | Expr::MethodCall(ExprMethodCall { args, receiver: func, ..}) => {
+            | Expr::MethodCall(ExprMethodCall {
+                args,
+                receiver: func,
+                ..
+            }) => {
                 self.extract_literals_from_expr(*func);
                 for arg in args {
                     self.extract_literals_from_expr(arg);
@@ -272,7 +289,7 @@ impl LiteralParser {
             Expr::Binary(expr) => {
                 self.extract_literals_from_expr(*expr.left);
                 self.extract_literals_from_expr(*expr.right);
-            },
+            }
             Expr::Unary(expr) => self.extract_literals_from_expr(*expr.expr),
             Expr::Lit(expr) => self.extract_literals_from_lit(expr.lit),
             Expr::Cast(_) => (),
@@ -284,7 +301,7 @@ impl LiteralParser {
                 }
                 self.condition_depth -= 1;
                 self.extract_literals_from_expr(*expr.expr)
-            },
+            }
             Expr::If(expr) => {
                 self.condition_depth += 1;
                 self.extract_literals_from_expr(*expr.cond);
@@ -293,19 +310,19 @@ impl LiteralParser {
                 if let Some((_, expr)) = expr.else_branch {
                     self.extract_literals_from_expr(*expr)
                 }
-            },
+            }
             Expr::While(expr) => {
                 self.condition_depth += 1;
                 self.extract_literals_from_expr(*expr.cond);
                 self.condition_depth -= 1;
                 self.extract_literals_from_stmts(expr.body.stmts);
-            },
+            }
             Expr::ForLoop(expr) => {
                 self.condition_depth += 1;
                 self.extract_literals_from_expr(*expr.expr);
                 self.condition_depth -= 1;
                 self.extract_literals_from_stmts(expr.body.stmts);
-            },
+            }
             Expr::Loop(expr) => self.extract_literals_from_stmts(expr.body.stmts),
             Expr::Match(arm) => {
                 self.condition_depth += 1;
@@ -322,7 +339,7 @@ impl LiteralParser {
                     self.condition_depth -= 1;
                     self.extract_literals_from_expr(*arm.body);
                 }
-            },
+            }
             // TODO: are closure argument patterns relevant?
             Expr::Closure(expr) => self.extract_literals_from_expr(*expr.body),
             Expr::Unsafe(expr) => self.extract_literals_from_stmts(expr.block.stmts),
@@ -330,29 +347,35 @@ impl LiteralParser {
             Expr::Assign(expr) => {
                 self.extract_literals_from_expr(*expr.left);
                 self.extract_literals_from_expr(*expr.right);
-            },
+            }
             Expr::AssignOp(expr) => {
                 self.extract_literals_from_expr(*expr.left);
                 self.extract_literals_from_expr(*expr.right);
-            },
+            }
             Expr::Field(expr) => self.extract_literals_from_expr(*expr.base),
             Expr::Index(expr) => {
                 self.extract_literals_from_expr(*expr.expr);
                 self.extract_literals_from_expr(*expr.index);
-            },
+            }
             // from is enough as we can trigger that range with the beginning
-            Expr::Range(expr) => if let Some(val) = expr.from.or(expr.to) {
-                self.extract_literals_from_expr(*val);
-            },
+            Expr::Range(expr) => {
+                if let Some(val) = expr.from.or(expr.to) {
+                    self.extract_literals_from_expr(*val);
+                }
+            }
             Expr::Path(_) => (),
             Expr::Reference(expr) => self.extract_literals_from_expr(*expr.expr),
-            Expr::Break(expr) => if let Some(expr) = expr.expr {
-                self.extract_literals_from_expr(*expr);
-            },
+            Expr::Break(expr) => {
+                if let Some(expr) = expr.expr {
+                    self.extract_literals_from_expr(*expr);
+                }
+            }
             Expr::Continue(_) => (),
-            Expr::Return(expr) => if let Some(expr) = expr.expr {
-                self.extract_literals_from_expr(*expr);
-            },
+            Expr::Return(expr) => {
+                if let Some(expr) = expr.expr {
+                    self.extract_literals_from_expr(*expr);
+                }
+            }
             Expr::Macro(expr) => self.extract_literals_from_macro(expr.mac.tts),
             Expr::Struct(expr) => {
                 for field in expr.fields {
@@ -361,47 +384,63 @@ impl LiteralParser {
                 if let Some(expr) = expr.rest {
                     self.extract_literals_from_expr(*expr);
                 }
-            },
+            }
             Expr::Repeat(expr) => {
                 self.extract_literals_from_expr(*expr.expr);
                 self.extract_literals_from_expr(*expr.len);
-            },
+            }
             Expr::Paren(expr) => self.extract_literals_from_expr(*expr.expr),
             Expr::Group(expr) => self.extract_literals_from_expr(*expr.expr),
             Expr::Try(expr) => self.extract_literals_from_expr(*expr.expr),
             Expr::Async(expr) => self.extract_literals_from_stmts(expr.block.stmts),
             Expr::TryBlock(expr) => self.extract_literals_from_stmts(expr.block.stmts),
-            Expr::Yield(expr) => if let Some(expr) = expr.expr {
-                self.extract_literals_from_expr(*expr);
-            },
+            Expr::Yield(expr) => {
+                if let Some(expr) = expr.expr {
+                    self.extract_literals_from_expr(*expr);
+                }
+            }
             Expr::Verbatim(_) => unimplemented!("Expr::Verbatim"),
         }
     }
 
     fn extract_literals_from_pat(&mut self, pat: Pat) {
         match pat {
-            Pat::Wild(_)
-            | Pat::Path(_) => (),
-            Pat::Ident(pat) => if let Some((_, pat)) = pat.subpat {
-                self.extract_literals_from_pat(*pat);
-            },
-            Pat::Struct(pat) => for pat in pat.fields {
-                self.extract_literals_from_pat(*pat.pat);
-            },
-            Pat::TupleStruct(pat) => for pat in pat.pat.front.into_iter().chain(pat.pat.back) {
-                self.extract_literals_from_pat(pat);
-            },
-            Pat::Tuple(pat) => for pat in pat.front.into_iter().chain(pat.back) {
-                self.extract_literals_from_pat(pat);
-            },
+            Pat::Wild(_) | Pat::Path(_) => (),
+            Pat::Ident(pat) => {
+                if let Some((_, pat)) = pat.subpat {
+                    self.extract_literals_from_pat(*pat);
+                }
+            }
+            Pat::Struct(pat) => {
+                for pat in pat.fields {
+                    self.extract_literals_from_pat(*pat.pat);
+                }
+            }
+            Pat::TupleStruct(pat) => {
+                for pat in pat.pat.front.into_iter().chain(pat.pat.back) {
+                    self.extract_literals_from_pat(pat);
+                }
+            }
+            Pat::Tuple(pat) => {
+                for pat in pat.front.into_iter().chain(pat.back) {
+                    self.extract_literals_from_pat(pat);
+                }
+            }
             Pat::Box(pat) => self.extract_literals_from_pat(*pat.pat),
             Pat::Ref(pat) => self.extract_literals_from_pat(*pat.pat),
             Pat::Lit(pat) => self.extract_literals_from_expr(*pat.expr),
             // handling lo is enough as we can trigger that pattern with the lo element already
             Pat::Range(pat) => self.extract_literals_from_expr(*pat.lo),
-            Pat::Slice(pat) => for pat in pat.front.into_iter().chain(pat.middle.map(|pat| *pat)).chain(pat.back) {
-                self.extract_literals_from_pat(pat);
-            },
+            Pat::Slice(pat) => {
+                for pat in pat
+                    .front
+                    .into_iter()
+                    .chain(pat.middle.map(|pat| *pat))
+                    .chain(pat.back)
+                {
+                    self.extract_literals_from_pat(pat);
+                }
+            }
             Pat::Macro(pat) => self.extract_literals_from_macro(pat.mac.tts),
             Pat::Verbatim(_) => unimplemented!("Pat::Verbatim"),
         }

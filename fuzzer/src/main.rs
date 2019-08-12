@@ -362,13 +362,13 @@ impl PatternResult {
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
 fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternResult {
-    let sample_size = time_samples.len();
-    let pattern_len = pattern.repeating_pattern.len();
-    let repeated_pattern = pattern.repeating_pattern.repeat(NUM_BYTES / pattern_len);
-
+    let mut buf = String::with_capacity(NUM_BYTES);
+    let sample_count = time_samples.len();
     let mut i = 0;
-    while i < sample_size {
-        let (n, dur) = time_needed(&repeated_pattern, pattern_len, i+1, sample_size);
+
+    while i < sample_count {
+        let n = sample_pattern(pattern, &mut buf, i, sample_count); // FIXME: set actual values
+        let dur = time_needed(&buf);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
@@ -396,25 +396,30 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
     }
 }
 
-/// Returns the length of the tested substring and the time needed for parsing given string in
-/// given sample of given sample_size.
-///
-/// The passed string is the whole repeated pattern string.
-/// This function perform substring slicing according to the current sample and sample size uniformly.
-fn time_needed(repeated_pattern: &str, pattern_len: usize, sample: usize, sample_size: usize) -> (usize, Duration) {
-    let n = repeated_pattern.len() / sample_size * sample;
-    // round up to next pattern
-    let n = (n + pattern_len - 1) / pattern_len * pattern_len;
+/// Returns the number of repeated patterns.
+fn sample_pattern(pattern: &Pattern, buf: &mut String, sample_size: usize, sample_count: usize) -> usize {
+    buf.clear();
+    buf.push_str(&pattern.prefix);
 
-    if DEBUG_LEVEL >= 3 {
-        println!("len: {}", n);
+    let target_byte_count = sample_size * NUM_BYTES / sample_count;
+    let target_repeat_bytes = target_byte_count - pattern.prefix.len() - pattern.postfix.len();
+    let num_repeats = pattern.repeating_pattern.len();
+
+    for _ in 0..num_repeats {
+        buf.push_str(&pattern.repeating_pattern);
     }
 
+    buf.push_str(&pattern.postfix);
+    num_repeats
+}
+
+/// Returns the length of the tested substring and the time needed for parsing given string.
+fn time_needed(sample: &str) -> Duration {
     // perform actual time measurement
-    let parser = Parser::new_ext(&repeated_pattern[..n], Options::all());
+    let parser = Parser::new_ext(sample, Options::all());
     let clock = Clock::<ThreadCpuTime>::now();
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });
-    (n, clock.elapsed())
+    clock.elapsed()
 }

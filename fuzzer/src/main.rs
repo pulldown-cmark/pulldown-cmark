@@ -443,8 +443,8 @@ fn sample_pattern(
 /// Returns the length of the tested substring and the time needed for parsing given string.
 fn time_needed(sample: &str) -> Duration {
     // perform actual time measurement
-    let parser = Parser::new_ext(sample, Options::all());
     let clock = Clock::<ThreadCpuTime>::now();
+    let parser = Parser::new_ext(sample, Options::all());
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });

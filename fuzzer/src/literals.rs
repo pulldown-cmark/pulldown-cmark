@@ -2,14 +2,8 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use proc_macro2::TokenStream;
 use syn::{
-    braced,
-    parse::{Error, Parse, ParseStream},
-    punctuated::Punctuated,
-    token::{Brace, Colon, Comma, Const, Eq, Semi, Struct},
-    Expr, ExprArray, ExprCall, ExprMethodCall, ExprTuple, Ident, ImplItem, Item, Lit, Pat, Stmt,
-    Type, Visibility,
+    Expr, ExprArray, ExprCall, ExprMethodCall, ExprTuple, ImplItem, Item, Lit, Pat, Stmt,
 };
 use walkdir::WalkDir;
 
@@ -131,7 +125,7 @@ impl LiteralParser {
                 }
             }
             Item::Impl(item) => self.extract_literals_from_impl(item.items),
-            Item::Macro(item) => self.extract_literals_from_macro(item.mac.tts),
+            Item::Macro(_) => (),
             Item::Macro2(_) => unimplemented!("macros 2.0"),
         }
     }
@@ -160,83 +154,9 @@ impl LiteralParser {
                 }
                 ImplItem::Method(item) => self.extract_literals_from_stmts(item.block.stmts),
                 ImplItem::Type(_) | ImplItem::Existential(_) => (),
-                ImplItem::Macro(item) => self.extract_literals_from_macro(item.mac.tts),
+                ImplItem::Macro(_) => (),
                 ImplItem::Verbatim(_) => unimplemented!("ImplItem::Verbatim"),
             }
-        }
-    }
-
-    fn extract_literals_from_macro(&mut self, tts: TokenStream) {
-        macro_rules! args {
-            ($name:ident, $delim:ty) => {
-                struct $name {
-                    args: Punctuated<Expr, $delim>,
-                }
-                impl Parse for $name {
-                    fn parse(input: ParseStream) -> Result<Self, Error> {
-                        Ok($name {
-                            args: input.parse_terminated(Expr::parse)?,
-                        })
-                    }
-                }
-            };
-        }
-        args!(ExprArgsComma, Comma);
-        args!(ExprArgsSemi, Semi);
-        #[allow(dead_code)]
-        struct BitflagsField {
-            const_token: Const,
-            ident: Ident,
-            eq_token: Eq,
-            expr: Expr,
-        }
-        impl Parse for BitflagsField {
-            fn parse(input: ParseStream) -> Result<Self, Error> {
-                Ok(BitflagsField {
-                    const_token: input.parse().unwrap(),
-                    ident: input.parse().unwrap(),
-                    eq_token: input.parse().unwrap(),
-                    expr: input.parse().unwrap(),
-                })
-            }
-        }
-        #[allow(dead_code)]
-        struct Bitflags {
-            vis: Visibility,
-            struct_token: Struct,
-            ident: Ident,
-            colon: Colon,
-            repr_type: Type,
-            brace_token: Brace,
-            fields: Punctuated<BitflagsField, Semi>,
-        }
-        impl Parse for Bitflags {
-            fn parse(input: ParseStream) -> Result<Self, Error> {
-                let content;
-                Ok(Bitflags {
-                    vis: input.parse().unwrap(),
-                    struct_token: input.parse().unwrap(),
-                    ident: input.parse().unwrap(),
-                    colon: input.parse().unwrap(),
-                    repr_type: input.parse().unwrap(),
-                    brace_token: braced!(content in input),
-                    fields: content.parse_terminated(BitflagsField::parse).unwrap(),
-                })
-            }
-        }
-
-        if let Ok(args) = syn::parse2::<ExprArgsComma>(tts.clone()) {
-            for expr in args.args {
-                self.extract_literals_from_expr(expr);
-            }
-        } else if let Ok(args) = syn::parse2::<ExprArgsSemi>(tts.clone()) {
-            for expr in args.args {
-                self.extract_literals_from_expr(expr);
-            }
-        } else if let Ok(_) = syn::parse2::<Bitflags>(tts.clone()) {
-            // ignore
-        } else {
-            unimplemented!("Unhandled macro invocation: {:?}", tts);
         }
     }
 
@@ -376,7 +296,7 @@ impl LiteralParser {
                     self.extract_literals_from_expr(*expr);
                 }
             }
-            Expr::Macro(expr) => self.extract_literals_from_macro(expr.mac.tts),
+            Expr::Macro(_) => (),
             Expr::Struct(expr) => {
                 for field in expr.fields {
                     self.extract_literals_from_expr(field.expr);
@@ -441,7 +361,7 @@ impl LiteralParser {
                     self.extract_literals_from_pat(pat);
                 }
             }
-            Pat::Macro(pat) => self.extract_literals_from_macro(pat.mac.tts),
+            Pat::Macro(_) => (),
             Pat::Verbatim(_) => unimplemented!("Pat::Verbatim"),
         }
     }

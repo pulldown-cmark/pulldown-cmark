@@ -8,7 +8,7 @@ UTF8PATTERN="Couldn't convert pattern to UTF-8. Err: "
 JOINPATTERN="Joined thread: "
 TIMEOUTPATTERN="Thread timeout triggered (thread took too long) for Pattern: "
 # pattern to extract actual findings
-FINDPATTERN='^pattern: "'
+FINDPATTERN='^pattern: Pattern"'
 # output file of this program
 OUTFILE="output-retested"
 # temporary output file while performing a retesting run

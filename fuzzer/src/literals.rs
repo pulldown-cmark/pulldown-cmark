@@ -350,12 +350,12 @@ impl LiteralParser {
             // handling lo is enough as we can trigger that pattern with the lo element already
             Pat::Range(pat) => self.extract_literals_from_expr(*pat.lo),
             Pat::Slice(pat) => {
-                for pat in pat
+                let pats_iter = pat
                     .front
                     .into_iter()
                     .chain(pat.middle.map(|pat| *pat))
-                    .chain(pat.back)
-                {
+                    .chain(pat.back);
+                for pat in pats_iter {
                     self.extract_literals_from_pat(pat);
                 }
             }

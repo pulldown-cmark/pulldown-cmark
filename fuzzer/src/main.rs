@@ -36,6 +36,7 @@
 //! the easiest solution is to just restart the whole process.
 
 use std::env;
+use std::io::{self, BufRead};
 use std::iter;
 use std::os::unix::process::CommandExt;
 use std::panic;
@@ -50,6 +51,8 @@ use crossbeam_utils::thread;
 use pulldown_cmark::{Options, Parser};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256Plus;
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 mod black_box;
 mod clock;
@@ -85,7 +88,7 @@ const TEST_COUNT: usize = 5;
 /// 0 / 1 / 2 / 3
 const DEBUG_LEVEL: u8 = 0;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 struct Pattern {
     prefix: String,
     repeating_pattern: String,
@@ -140,6 +143,16 @@ fn main() {
 
     let arg = env::args().nth(1);
     match arg.as_ref().map(|s| s.as_str()) {
+        Some("--retest") => {
+            for pattern in io::stdin().lock().lines().flatten() {
+                let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
+                println!("retesting {:?}", &pattern);
+                match test_catch_unwind(&pattern) {
+                    Ok(res) => println!("score: {}", res.score()),
+                    Err(()) => ()
+                }
+            }
+        },
         Some("--regressions") => {
             // previously know cases
             let exit_code = regression_test();
@@ -389,7 +402,7 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
     let mut i = 0;
 
     while i < sample_count {
-        let n = sample_pattern(pattern, &mut buf, i + 1, sample_count);
+        let _n = sample_pattern(pattern, &mut buf, i + 1, sample_count);
         let dur = time_needed(&buf);
         time_samples[i] = ((i + 1) as f64, dur.as_nanos() as f64);
         if DEBUG_LEVEL >= 3 {

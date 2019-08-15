@@ -40,12 +40,15 @@ pub fn slope_stddev(time_samples: &[(f64, f64)]) -> (f64, bool) {
     let mut slopes = [0f64; SAMPLE_SIZE * 2 * (SAMPLE_SIZE * 2 - 1) / 2];
     let mut i = 0;
 
+    let mean_time: f64 =
+        time_samples.iter().map(|tup| tup.1).sum::<f64>() / time_samples.len() as f64;
+
     for (point1, point2) in (0..time_samples.len()).tuple_combinations() {
         let (x1, y1) = time_samples[point1];
         let (x2, y2) = time_samples[point2];
         let dx = x2 - x1;
         let dy = y2 - y1;
-        let slope = dy / dx;
+        let slope = dy / dx / mean_time;
         slopes[i] = slope;
         i += 1;
     }

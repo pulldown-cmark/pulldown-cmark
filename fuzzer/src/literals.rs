@@ -2,9 +2,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use syn::{
-    Expr, ExprArray, ExprCall, ExprMethodCall, ExprTuple, ImplItem, Item, Lit, Pat, Stmt,
-};
+use syn::{Expr, ExprArray, ExprCall, ExprMethodCall, ExprTuple, ImplItem, Item, Lit, Pat, Stmt};
 use walkdir::WalkDir;
 
 /// Get all relevant literals from pulldown-cmark to generate fuzzing input from.

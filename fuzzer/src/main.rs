@@ -51,7 +51,7 @@ use crossbeam_utils::thread;
 use pulldown_cmark::{Options, Parser};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256Plus;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 mod black_box;
@@ -71,7 +71,7 @@ const COMBINATIONS: usize = 6;
 /// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
 /// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
-const NUM_BYTES: usize = 8 * 1024;
+const NUM_BYTES: usize = 32 * 1024;
 /// Number of samples per pattern tested. Higher number increases precision, but reduces the throughput.
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
@@ -92,7 +92,7 @@ const DEBUG_LEVEL: u8 = 0;
 struct Pattern {
     prefix: String,
     repeating_pattern: String,
-    postfix: String,
+    suffix: String,
 }
 
 impl<'a> Into<Pattern> for &'a str {
@@ -100,7 +100,7 @@ impl<'a> Into<Pattern> for &'a str {
         Pattern {
             prefix: String::new(),
             repeating_pattern: self.to_owned(),
-            postfix: String::new(),
+            suffix: String::new(),
         }
     }
 }
@@ -132,7 +132,7 @@ impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
 
         Pattern {
             prefix: random_seq(&mut random_words),
-            postfix: random_seq(&mut random_words),
+            suffix: random_seq(&mut random_words),
             repeating_pattern: random_seq(&mut random_words),
         }
     }
@@ -149,10 +149,10 @@ fn main() {
                 println!("retesting {:?}", &pattern);
                 match test_catch_unwind(&pattern) {
                     Ok(res) => println!("score: {}", res.score()),
-                    Err(()) => ()
+                    Err(()) => (),
                 }
             }
-        },
+        }
         Some("--regressions") => {
             // previously know cases
             let exit_code = regression_test();
@@ -181,7 +181,7 @@ fn regression_test() -> i32 {
     check_pattern(Pattern {
         prefix: "".into(),
         repeating_pattern: "* ".into(),
-        postfix: "a".into(),
+        suffix: "a".into(),
     });
     // https://github.com/raphlinus/pulldown-cmark/issues/251
     check_pattern("[ (](".into());
@@ -206,7 +206,7 @@ fn regression_test() -> i32 {
     check_pattern(Pattern {
         prefix: "".into(),
         repeating_pattern: "`a`".into(),
-        postfix: "`".into(),
+        suffix: "`".into(),
     });
     check_pattern("\\``".into());
     check_pattern("a***b~~".into());
@@ -397,14 +397,16 @@ impl PatternResult {
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
 fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternResult {
-    let mut buf = String::with_capacity(NUM_BYTES);
     let sample_count = time_samples.len();
     let mut i = 0;
+    let mut buf = String::with_capacity(NUM_BYTES);
+    buf.push_str(&pattern.prefix);
 
     while i < sample_count {
         let _n = sample_pattern(pattern, &mut buf, i + 1, sample_count);
         let dur = time_needed(&buf);
         time_samples[i] = ((i + 1) as f64, dur.as_nanos() as f64);
+
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
         }
@@ -413,6 +415,9 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
             return PatternResult::TooLong;
         }
         i += 1;
+
+        // remove suffix for next run
+        buf.truncate(buf.len() - pattern.suffix.len());
     }
 
     let (score, non_linear) = SCORE_FUNCTION(time_samples);
@@ -438,18 +443,12 @@ fn sample_pattern(
     sample_size: usize,
     sample_count: usize,
 ) -> usize {
-    buf.clear();
-    buf.push_str(&pattern.prefix);
-
     let target_byte_count = sample_size * NUM_BYTES / sample_count;
-    let target_repeat_bytes = target_byte_count - pattern.prefix.len() - pattern.postfix.len();
+    let target_repeat_bytes = target_byte_count - buf.len() - pattern.suffix.len();
     let num_repeats = target_repeat_bytes / pattern.repeating_pattern.len();
 
-    for _ in 0..num_repeats {
-        buf.push_str(&pattern.repeating_pattern);
-    }
-
-    buf.push_str(&pattern.postfix);
+    buf.extend(std::iter::repeat(&pattern.repeating_pattern[..]).take(num_repeats));
+    buf.push_str(&pattern.suffix);
     num_repeats
 }
 
@@ -458,8 +457,6 @@ fn time_needed(sample: &str) -> Duration {
     // perform actual time measurement
     let clock = Clock::<ThreadCpuTime>::now();
     let parser = Parser::new_ext(sample, Options::all());
-    parser.for_each(|evt| {
-        black_box::black_box(evt);
-    });
+    black_box::black_box(parser.count());
     clock.elapsed()
 }

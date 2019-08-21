@@ -145,8 +145,8 @@ fn main() {
     match arg.as_ref().map(|s| s.as_str()) {
         Some("--retest") => {
             for pattern in io::stdin().lock().lines().flatten() {
-                let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
                 println!("retesting {:?}", &pattern);
+                let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
                 match test_catch_unwind(&pattern) {
                     Ok(res) => println!("score: {}", res.score()),
                     Err(()) => (),
@@ -261,9 +261,9 @@ fn fuzz(num_cpus: usize) {
                         // See <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>
                         // for more information.
                         println!(
-                            "Thread timeout triggered (thread took too long) for Pattern: {:?}\n\
+                            "Thread timeout triggered (thread took too long) for Pattern: {}\n\
                              Restarting process...",
-                            pattern,
+                            serde_json::to_string(&pattern).unwrap(),
                         );
                         let args: Vec<_> = env::args().collect();
                         Command::new(&args[0]).args(&args[1..]).exec();
@@ -321,7 +321,10 @@ fn worker_thread_fn(
 fn test_catch_unwind(pattern: &Pattern) -> Result<PatternResult, ()> {
     let res = panic::catch_unwind(|| test(&pattern));
     if res.is_err() {
-        println!("Panic caught. Pattern: {:?}", pattern);
+        println!(
+            "Panic caught. Pattern: {}",
+            serde_json::to_string(&pattern).unwrap()
+        );
     }
     res.map_err(|_| ())
 }
@@ -351,10 +354,10 @@ fn test(pattern: &Pattern) -> PatternResult {
                 println!(
                     "\n\
                     possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
-                    pattern: {:?}\n\
+                    pattern: {}\n\
                     score: 0\n\
                     {:?}\n",
-                    pattern,
+                    serde_json::to_string(&pattern).unwrap(),
                     time_samples,
                 );
                 return res;
@@ -366,10 +369,12 @@ fn test(pattern: &Pattern) -> PatternResult {
         println!(
             "\n\
              possible non-linear behaviour found\n\
-             pattern: {:?}\n\
+             pattern: {}\n\
              score: {}\n\
              {:?}\n",
-            pattern, score, time_samples,
+            serde_json::to_string(&pattern).unwrap(),
+            score,
+            time_samples,
         );
     }
 
@@ -457,6 +462,8 @@ fn time_needed(sample: &str) -> Duration {
     // perform actual time measurement
     let clock = Clock::<ThreadCpuTime>::now();
     let parser = Parser::new_ext(sample, Options::all());
-    black_box::black_box(parser.count());
+    parser.for_each(|evt| {
+        black_box::black_box(evt);
+    });
     clock.elapsed()
 }

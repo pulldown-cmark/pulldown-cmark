@@ -145,7 +145,7 @@ fn main() {
     match arg.as_ref().map(|s| s.as_str()) {
         Some("--retest") => {
             for pattern in io::stdin().lock().lines().flatten() {
-                println!("retesting {:?}", &pattern);
+                println!("Retesting: {}", &pattern);
                 let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
                 match test_catch_unwind(&pattern) {
                     Ok(res) => println!("score: {}", res.score()),

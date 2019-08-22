@@ -40,15 +40,12 @@ pub fn slope_stddev(time_samples: &[(f64, f64)]) -> (f64, bool) {
     let mut slopes = [0f64; SAMPLE_SIZE * 2 * (SAMPLE_SIZE * 2 - 1) / 2];
     let mut i = 0;
 
-    let mean_time: f64 =
-        time_samples.iter().map(|tup| tup.1).sum::<f64>() / time_samples.len() as f64;
-
     for (point1, point2) in (0..time_samples.len()).tuple_combinations() {
         let (x1, y1) = time_samples[point1];
         let (x2, y2) = time_samples[point2];
         let dx = x2 - x1;
         let dy = y2 - y1;
-        let slope = dy / dx / mean_time;
+        let slope = dy / dx;
         slopes[i] = slope;
         i += 1;
     }
@@ -68,4 +65,70 @@ pub fn slope_stddev(time_samples: &[(f64, f64)]) -> (f64, bool) {
     let stddev = in_sqrt.sqrt();
 
     (stddev, stddev > super::ACCEPTANCE_STDDEV)
+}
+
+#[cfg(test)]
+mod test {
+    use super::slope_stddev;
+
+    #[test]
+    fn stddev_negative_on_linear() {
+        let vec = vec![
+            (10.0, 100.0),
+            (20.0, 201.0),
+            (30.0, 299.5),
+            (40.0, 385.0),
+            (50.0, 510.0),
+        ];
+        let test_result = slope_stddev(&vec);
+
+        println!("Score = {}", test_result.0);
+        assert!(test_result.1 == false);
+    }
+
+    #[test]
+    fn stddev_negative_on_noisy_linear() {
+        let vec = vec![
+            (0.1, 85.0),
+            (0.2, 222.0),
+            (0.3, 270.5),
+            (0.4, 385.0),
+            (0.5, 520.0),
+        ];
+        let test_result = slope_stddev(&vec);
+
+        println!("Score = {}", test_result.0);
+        assert!(test_result.1 == false);
+    }
+
+    #[test]
+    fn stddev_positive_on_quadratic() {
+        let vec = vec![
+            (0.1, 100.0),
+            (0.2, 400.0),
+            (0.3, 880.0),
+            (0.4, 1630.0),
+            (0.5, 2440.0),
+        ];
+        let test_result = slope_stddev(&vec);
+
+        println!("Score = {}", test_result.0);
+        assert!(test_result.1 == true);
+    }
+
+    #[test]
+    // power of 1.5
+    fn stddev_positive_on_semiquadratic() {
+        let vec = vec![
+            (0.1, 105.0),
+            (0.2, 260.0),
+            (0.3, 505.0),
+            (0.4, 775.0),
+            (0.5, 1118.0),
+        ];
+        let test_result = slope_stddev(&vec);
+
+        println!("Score = {}", test_result.0);
+        assert!(test_result.1 == true);
+    }
 }

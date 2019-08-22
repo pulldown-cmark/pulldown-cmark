@@ -79,7 +79,7 @@ const SAMPLE_SIZE: usize = 5;
 /// Possible values: `scoring::{slope_stddev,pearson_correlation}`
 const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
-const ACCEPTANCE_STDDEV: f64 = 0.6;
+const ACCEPTANCE_STDDEV: f64 = 300.0;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
@@ -406,11 +406,12 @@ fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternRe
     let mut i = 0;
     let mut buf = String::with_capacity(NUM_BYTES);
     buf.push_str(&pattern.prefix);
+    let mut n = 0;
 
     while i < sample_count {
-        let _n = sample_pattern(pattern, &mut buf, i + 1, sample_count);
+        n += sample_pattern(pattern, &mut buf, i + 1, sample_count);
         let dur = time_needed(&buf);
-        time_samples[i] = ((i + 1) as f64, dur.as_nanos() as f64);
+        time_samples[i] = (n as f64, dur.as_nanos() as f64);
 
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());

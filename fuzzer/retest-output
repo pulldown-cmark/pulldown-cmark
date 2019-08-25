@@ -8,7 +8,7 @@ UTF8PATTERN="Couldn't convert pattern to UTF-8. Err: "
 JOINPATTERN="Joined thread: "
 TIMEOUTPATTERN="Thread timeout triggered (thread took too long) for Pattern: "
 # pattern to extract actual findings
-FINDPATTERN='^pattern: "'
+FINDPATTERN='^pattern: '
 # output file of this program
 OUTFILE="output-retested"
 # temporary output file while performing a retesting run
@@ -25,7 +25,7 @@ retestround() {
   grep "$JOINPATTERN" "$OUTFILE2" >> "$OUTFILE" && :
   grep "$TIMEOUTPATTERN" "$OUTFILE2" >> "$OUTFILE" && :
   cargo rustc --release -- -C target-cpu=native > /dev/null 2>&1
-  grep "$FINDPATTERN" < "$OUTFILE2" | sed 's/pattern: "\(.*\)"/\1/' | RUST_BACKTRACE=1 ./target/release/fuzzer --retest >> "$OUTFILE" 2>&1
+  grep "$FINDPATTERN" < "$OUTFILE2" | sed 's/pattern: \(.*\)/\1/' | RUST_BACKTRACE=1 ./target/release/fuzzer --retest >> "$OUTFILE" 2>&1
   rm "$OUTFILE2"
 }
 
@@ -41,8 +41,8 @@ for i in `seq 3`; do
 
   finds_before=$finds_after
   retestround
-  finds_after=$(grep "$FINDPATTERN" "$OUTFILE" | wc -l)
 
+  finds_after=$(grep "$FINDPATTERN" "$OUTFILE" | wc -l)
   false_positives_this_round=$(($finds_before - $finds_after))
   false_positives=$(($false_positives + $false_positives_this_round))
 

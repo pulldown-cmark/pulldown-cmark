@@ -35,25 +35,29 @@
 //! <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>,
 //! the easiest solution is to just restart the whole process.
 
-use std::time::{Duration, Instant};
-use std::panic;
-use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
 use std::env;
 use std::io::{self, BufRead};
 use std::iter;
-use std::process::Command;
 use std::os::unix::process::CommandExt;
+use std::panic;
+use std::process::Command;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Mutex,
+};
+use std::time::{Duration, Instant};
 
-use itertools::Itertools;
-use pulldown_cmark::{Parser, Options};
-use rand::{SeedableRng, distributions::{Distribution, Uniform}};
-use rand_xoshiro::Xoshiro256Plus;
 use crossbeam_utils::thread;
+use pulldown_cmark::{Options, Parser};
+use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
+use rand_xoshiro::Xoshiro256Plus;
+use serde::{Deserialize, Serialize};
+use serde_json;
 
-mod literals;
 mod black_box;
-mod scoring;
 mod clock;
+mod literals;
+mod scoring;
 
 use clock::{Clock, ThreadCpuTime};
 
@@ -67,7 +71,7 @@ const COMBINATIONS: usize = 6;
 /// parsing is aborted.
 const MAX_MILLIS: u128 = 500;
 /// Byte-length of maximum pattern repetitions used as input to pulldown-cmark.
-const NUM_BYTES: usize = 8*1024;
+const NUM_BYTES: usize = 32 * 1024;
 /// Number of samples per pattern tested. Higher number increases precision, but reduces the throughput.
 const SAMPLE_SIZE: usize = 5;
 /// Score function to use when figuring out if something is non-linear.
@@ -75,7 +79,7 @@ const SAMPLE_SIZE: usize = 5;
 /// Possible values: `scoring::{slope_stddev,pearson_correlation}`
 const SCORE_FUNCTION: fn(&[(f64, f64)]) -> (f64, bool) = scoring::slope_stddev;
 /// If slope_stddev is used, if the standard deviation is larger than this, it's assumed to be non-linear.
-const ACCEPTANCE_STDDEV: f64 = 30.0;
+const ACCEPTANCE_STDDEV: f64 = 300.0;
 /// If pearson_correlation is used, if the correlation coefficient is below this value,
 /// it's assumed to be non-linear.
 const ACCEPTANCE_CORRELATION: f64 = 0.995;
@@ -84,27 +88,76 @@ const TEST_COUNT: usize = 5;
 /// 0 / 1 / 2 / 3
 const DEBUG_LEVEL: u8 = 0;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct Pattern {
+    prefix: String,
+    repeating_pattern: String,
+    suffix: String,
+}
+
+impl<'a> Into<Pattern> for &'a str {
+    fn into(self) -> Pattern {
+        Pattern {
+            prefix: String::new(),
+            repeating_pattern: self.to_owned(),
+            suffix: String::new(),
+        }
+    }
+}
+
+struct UniformPatterns<'a> {
+    patterns: &'a [Vec<u8>],
+}
+
+impl<'a> UniformPatterns<'a> {
+    fn new(patterns: &'a [Vec<u8>]) -> Self {
+        Self { patterns }
+    }
+}
+
+impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Pattern {
+        fn random_seq<'b, I: Iterator<Item = Option<&'b Vec<u8>>>>(iter: &mut I) -> String {
+            String::from_utf8(
+                iter.take(COMBINATIONS)
+                    .flatten()
+                    .flatten()
+                    .cloned()
+                    .collect(),
+            )
+            .expect("Bytes to String failed!")
+        }
+
+        let mut random_words = iter::repeat_with(|| self.patterns.choose(rng));
+
+        Pattern {
+            prefix: random_seq(&mut random_words),
+            suffix: random_seq(&mut random_words),
+            repeating_pattern: random_seq(&mut random_words),
+        }
+    }
+}
+
 fn main() {
     let num_cpus = (num_cpus::get() as f32 * 0.8).ceil() as usize;
 
     let arg = env::args().nth(1);
     match arg.as_ref().map(|s| s.as_str()) {
         Some("--retest") => {
-            for pattern in io::stdin().lock().lines() {
-                let pattern = pattern.unwrap();
-                println!("retesting {:?}", pattern);
+            for pattern in io::stdin().lock().lines().flatten() {
+                println!("Retesting: {}", &pattern);
+                let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
                 match test_catch_unwind(&pattern) {
                     Ok(res) => println!("score: {}", res.score()),
-                    Err(()) => ()
+                    Err(()) => (),
                 }
             }
-        },
-
+        }
         Some("--regressions") => {
             // previously know cases
             let exit_code = regression_test();
             std::process::exit(exit_code);
-        },
+        }
         _ => fuzz(num_cpus),
     }
 }
@@ -114,39 +167,55 @@ fn main() {
 /// Returns the exit code. 0 if all tests passed and 1 otherwise.
 fn regression_test() -> i32 {
     let mut exit_code = 0;
-    let mut check_pattern = |pat| match test(pat) {
+    let mut check_pattern = |pat| match test(&pat) {
         PatternResult::Linear(_) => (),
         _ => exit_code = 1,
     };
     // https://github.com/raphlinus/pulldown-cmark/issues/246
-    check_pattern("[](");
+    check_pattern("[](".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/247
-    check_pattern("``\\");
+    check_pattern("``\\".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/248
-    check_pattern("a***");
+    check_pattern("a***".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/249
-    // TODO: we can't perform tests like this yet
-//    check_pattern("* * * ...a");
+    check_pattern(Pattern {
+        prefix: "".into(),
+        repeating_pattern: "* ".into(),
+        suffix: "a".into(),
+    });
     // https://github.com/raphlinus/pulldown-cmark/issues/251
-    check_pattern("[ (](");
+    check_pattern("[ (](".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/255
-    check_pattern("[*_a");
+    check_pattern("[*_a".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/280
-    check_pattern("a <![CDATA[");
+    check_pattern("a <![CDATA[".into());
     // https://github.com/mity/md4c/issues/73#issuecomment-487640366
-    check_pattern("a <!A");
+    check_pattern("a <!A".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/282
-    check_pattern("a<?");
+    check_pattern("a<?".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/284
-    check_pattern("[[]()");
-    // https://github.com/raphlinus/pulldown-cmark/issues/287
-    // TODO: we can't perform tests like this reliably yet
-//    check_pattern("[{}]:\\a");
+    check_pattern("[[]()".into());
     // https://github.com/raphlinus/pulldown-cmark/issues/296
-    check_pattern("[](<");
-    check_pattern("[\"[]]\\(");
-    check_pattern(")-\r%<[");
-    check_pattern("\u{0}[@[{<");
+    check_pattern("[](<".into());
+    check_pattern("[\"[]]\\(".into());
+    check_pattern(")-\r%<[".into());
+    check_pattern("\u{0}[@[{<".into());
+    check_pattern("a <!A ".into());
+    check_pattern("a <? ".into());
+    check_pattern("[ (]( ".into());
+    check_pattern(Pattern {
+        prefix: "".into(),
+        repeating_pattern: "`a`".into(),
+        suffix: "`".into(),
+    });
+    check_pattern("\\``".into());
+    check_pattern("a***b~~".into());
+    check_pattern("*~~\u{a0}".into());
+    check_pattern("[*_a".into());
+    check_pattern("a***_b__".into());
+    check_pattern("a***".into());
+    check_pattern("[[]()".into());
+    check_pattern("[a](<".into());
     exit_code
 }
 
@@ -160,21 +229,23 @@ fn fuzz(num_cpus: usize) {
     let start_time = Instant::now();
     let mut pattern_times = Vec::with_capacity(num_cpus);
     for _ in 0..num_cpus {
-        pattern_times.push(Mutex::new((String::new(), Instant::now())));
+        pattern_times.push(Mutex::new((Pattern::default(), Instant::now())));
     }
 
     // start threads
     thread::scope(|s| {
         // worker threads
-        let mut threads: Vec<_> = (0..num_cpus).map(|i| {
-            // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
-            rng.jump();
-            let rng = rng.clone();
-            let pattern_time = &pattern_times[i];
-            s.spawn(move |_| {
-                worker_thread_fn(literals, &num_batches_finished, rng, pattern_time)
+        let mut threads: Vec<_> = (0..num_cpus)
+            .map(|i| {
+                // Get unique RNG for each thread. Read docs of Xoshiro256Plus for further information.
+                rng.jump();
+                let rng = rng.clone();
+                let pattern_time = &pattern_times[i];
+                s.spawn(move |_| {
+                    worker_thread_fn(literals, &num_batches_finished, rng, pattern_time)
+                })
             })
-        }).collect();
+            .collect();
 
         // timeout thread
         threads.push(s.spawn(|_| {
@@ -190,14 +261,12 @@ fn fuzz(num_cpus: usize) {
                         // See <https://github.com/raphlinus/pulldown-cmark/pull/286#issuecomment-490315582>
                         // for more information.
                         println!(
-                            "Thread timeout triggered (thread took too long) for Pattern: {:?}\n\
-                            Restarting process...",
-                            pattern,
+                            "Thread timeout triggered (thread took too long) for Pattern: {}\n\
+                             Restarting process...",
+                            serde_json::to_string(&pattern).unwrap(),
                         );
                         let args: Vec<_> = env::args().collect();
-                        Command::new(&args[0])
-                            .args(&args[1..])
-                            .exec();
+                        Command::new(&args[0]).args(&args[1..]).exec();
                         unreachable!();
                     }
                 }
@@ -222,35 +291,26 @@ fn fuzz(num_cpus: usize) {
         for thread in threads {
             println!("Joined thread: {:?}", thread.join());
         }
-    }).unwrap();
+    })
+    .unwrap();
 }
 
 /// Function executed in worker-threads. Infinite loop generating and testing patterns.
 fn worker_thread_fn(
-    literals: &Vec<Vec<u8>>, num_batches_finished: &AtomicU64,
-    mut rng: Xoshiro256Plus, pattern_time: &Mutex<(String, Instant)>,
+    literals: &Vec<Vec<u8>>,
+    num_batches_finished: &AtomicU64,
+    mut rng: Xoshiro256Plus,
+    pattern_time: &Mutex<(Pattern, Instant)>,
 ) {
-    let uniform = Uniform::new(0, literals.len());
+    let pattern_distr = UniformPatterns::new(&literals);
     loop {
-        // generate `BATCH_SIZE` random patterns
-        let chunks = iter::repeat_with(|| {
-            &literals[uniform.sample(&mut rng)]
-        }).chunks(COMBINATIONS);
-        let combs = chunks.into_iter().take(BATCH_SIZE);
-
         // test those patterns, catching panics of pulldown-cmark (and our code)
-        for comb in combs {
-            let concatenated = comb.into_iter().flatten().cloned().collect::<Vec<_>>();
-            // we mustn't panic here, because that would result in the thread being killed
-            let pattern = match String::from_utf8(concatenated) {
-                Ok(pattern) => pattern,
-                Err(err) => {
-                    println!("Couldn't convert pattern to UTF-8. Err: {:?}.", err);
-                    continue;
-                }
-            };
+        for _ in 0..BATCH_SIZE {
+            let pattern = pattern_distr.sample(&mut rng);
             // code-block just to be double-sure that the lock is dropped to not poison it
-            { *pattern_time.lock().unwrap() = (pattern.clone(), Instant::now()); }
+            {
+                *pattern_time.lock().unwrap() = (pattern.clone(), Instant::now());
+            }
             let _ = test_catch_unwind(&pattern);
         }
 
@@ -258,12 +318,13 @@ fn worker_thread_fn(
     }
 }
 
-fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
-    let res = panic::catch_unwind(|| {
-        test(&pattern)
-    });
+fn test_catch_unwind(pattern: &Pattern) -> Result<PatternResult, ()> {
+    let res = panic::catch_unwind(|| test(&pattern));
     if res.is_err() {
-        println!("Panic caught. Pattern: {:?}", pattern);
+        println!(
+            "Panic caught. Pattern: {}",
+            serde_json::to_string(&pattern).unwrap()
+        );
     }
     res.map_err(|_| ())
 }
@@ -272,7 +333,7 @@ fn test_catch_unwind(pattern: &str) -> Result<PatternResult, ()> {
 ///
 /// This function prints its results to stdout.
 /// No further handling is needed, the returned score is for debugging purposes mostly.
-fn test(pattern: &str) -> PatternResult {
+fn test(pattern: &Pattern) -> PatternResult {
     let mut time_samples = [(0.0, 0.0); SAMPLE_SIZE];
     let mut res = PatternResult::TooLong;
 
@@ -288,35 +349,35 @@ fn test(pattern: &str) -> PatternResult {
             PatternResult::Linear(..) => return res,
             PatternResult::NonLinear(_score) => {
                 // retest
-            },
+            }
             PatternResult::TooLong => {
                 println!(
                     "\n\
                     possible non-linear behaviour found due to exceeding MAX_MILLIS (parsing took too long)\n\
-                    pattern: {:?}\n\
+                    pattern: {}\n\
                     score: 0\n\
                     {:?}\n",
-                    pattern,
+                    serde_json::to_string(&pattern).unwrap(),
                     time_samples,
                 );
                 return res;
-            },
+            }
         };
     }
 
     if let PatternResult::NonLinear(score) = res {
         println!(
             "\n\
-            possible non-linear behaviour found\n\
-            pattern: {:?}\n\
-            score: {}\n\
-            {:?}\n",
-            pattern,
+             possible non-linear behaviour found\n\
+             pattern: {}\n\
+             score: {}\n\
+             {:?}\n",
+            serde_json::to_string(&pattern).unwrap(),
             score,
             time_samples,
         );
     }
-    
+
     res
 }
 
@@ -340,14 +401,18 @@ impl PatternResult {
 }
 
 /// Tests a specific pattern, returning measurement and scoring outcomes.
-fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult {
-    let sample_size = time_samples.len();
-    let repeated_pattern = pattern.repeat(NUM_BYTES / pattern.len());
-
+fn test_pattern(pattern: &Pattern, time_samples: &mut [(f64, f64)]) -> PatternResult {
+    let sample_count = time_samples.len();
     let mut i = 0;
-    while i < sample_size {
-        let (n, dur) = time_needed(&repeated_pattern, pattern.len(), i+1, sample_size);
+    let mut buf = String::with_capacity(NUM_BYTES);
+    buf.push_str(&pattern.prefix);
+    let mut n = 0;
+
+    while i < sample_count {
+        n += sample_pattern(pattern, &mut buf, i + 1, sample_count);
+        let dur = time_needed(&buf);
         time_samples[i] = (n as f64, dur.as_nanos() as f64);
+
         if DEBUG_LEVEL >= 3 {
             println!("duration: {}", dur.as_nanos());
         }
@@ -356,12 +421,15 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult
             return PatternResult::TooLong;
         }
         i += 1;
+
+        // remove suffix for next run
+        buf.truncate(buf.len() - pattern.suffix.len());
     }
 
-    let (score, non_linear) = SCORE_FUNCTION(&time_samples);
+    let (score, non_linear) = SCORE_FUNCTION(time_samples);
 
     if DEBUG_LEVEL >= 1 {
-        println!("{:<30}{}", score, pattern);
+        println!("{:<30}{:?}", score, pattern);
     }
     if DEBUG_LEVEL >= 2 {
         println!("{:?}", time_samples);
@@ -374,27 +442,29 @@ fn test_pattern(pattern: &str, time_samples: &mut [(f64, f64)]) -> PatternResult
     }
 }
 
-/// Returns the length of the tested substring and the time needed for parsing given string in
-/// given sample of given sample_size.
-///
-/// The passed string is the whole repeated pattern string.
-/// This function perform substring slicing according to the current sample and sample size uniformly.
-fn time_needed(repeated_pattern: &str, pattern_len: usize, sample: usize, sample_size: usize) -> (usize, Duration) {
-    let n = repeated_pattern.len() / sample_size * sample;
-    // round up to next pattern
-    let n = (n + pattern_len - 1) / pattern_len * pattern_len;
+/// Returns the number of repeated patterns.
+fn sample_pattern(
+    pattern: &Pattern,
+    buf: &mut String,
+    sample_size: usize,
+    sample_count: usize,
+) -> usize {
+    let target_byte_count = sample_size * NUM_BYTES / sample_count;
+    let target_repeat_bytes = target_byte_count - buf.len() - pattern.suffix.len();
+    let num_repeats = target_repeat_bytes / pattern.repeating_pattern.len();
 
-    if DEBUG_LEVEL >= 3 {
-        println!("len: {}", n);
-    }
+    buf.extend(std::iter::repeat(&pattern.repeating_pattern[..]).take(num_repeats));
+    buf.push_str(&pattern.suffix);
+    num_repeats
+}
 
+/// Returns the length of the tested substring and the time needed for parsing given string.
+fn time_needed(sample: &str) -> Duration {
     // perform actual time measurement
-    let parser = Parser::new_ext(&repeated_pattern[..n], Options::all());
     let clock = Clock::<ThreadCpuTime>::now();
+    let parser = Parser::new_ext(sample, Options::all());
     parser.for_each(|evt| {
         black_box::black_box(evt);
     });
-    (n, clock.elapsed())
+    clock.elapsed()
 }
-
-

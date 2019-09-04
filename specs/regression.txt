@@ -590,3 +590,15 @@ email: <john@example.com>\_
 .
 <p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
 ````````````````````````````````
+
+ISSUE 301
+
+```````````````````````````````` example
+> [link](/url 'foo
+> bar')
+.
+<blockquote>
+<p><a href="/url" title="foo
+bar">link</a></p>
+</blockquote>
+````````````````````````````````

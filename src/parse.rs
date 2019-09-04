@@ -31,6 +31,13 @@ use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex, TreePointer};
 
+// Allowing arbitrary depth nested parentheses inside link destinations
+// can create denial of service vulnerabilities if we're not careful.
+// The simplest countermeasure is to limit their depth, which is
+// explicitly allowed by the spec as long as the limit is at least 3:
+// https://spec.commonmark.org/0.29/#link-destination
+const LINK_MAX_NESTED_PARENS: usize = 5;
+
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
@@ -2071,7 +2078,7 @@ impl<'a> Parser<'a> {
                         }
                         let next = self.tree[cur_ix].next;
                         if let Some((next_ix, url, title)) =
-                            scan_inline_link(block_text, self.tree[cur_ix].item.end)
+                            self.scan_inline_link(block_text, self.tree[cur_ix].item.end, next)
                         {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
@@ -2296,6 +2303,108 @@ impl<'a> Parser<'a> {
             }
         }
         self.inline_stack.pop_all(&mut self.tree);
+    }
+
+    /// Returns next byte index, url and title.
+    fn scan_inline_link(
+        &self,
+        underlying: &'a str,
+        start_ix: usize,
+        node: TreePointer,
+    ) -> Option<(usize, CowStr<'a>, CowStr<'a>)> {
+        let mut ix = start_ix;
+        if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
+            return None;
+        }
+        ix += 1;
+        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+        let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
+        let dest = unescape(dest);
+        ix += dest_length;
+
+        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+        let title = if let Some((bytes_scanned, t)) = self.scan_link_title(underlying, ix, node) {
+            ix += bytes_scanned;
+            ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+            t
+        } else {
+            "".into()
+        };
+        if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
+            return None;
+        }
+        ix += 1;
+
+        Some((ix, dest, title))
+    }
+
+    // returns (bytes scanned, title cow)
+    fn scan_link_title(
+        &self,
+        text: &'a str,
+        start_ix: usize,
+        node: TreePointer,
+    ) -> Option<(usize, CowStr<'a>)> {
+        let bytes = text.as_bytes();
+        let open = match bytes.get(start_ix) {
+            Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
+            _ => return None,
+        };
+        let close = if open == b'(' { b')' } else { open };
+
+        let mut title = String::new();
+        let mut mark = start_ix + 1;
+        let mut i = start_ix + 1;
+
+        while i < bytes.len() {
+            let c = bytes[i];
+
+            if c == close {
+                let cow = if mark == 1 {
+                    (i - start_ix + 1, text[mark..i].into())
+                } else {
+                    title.push_str(&text[mark..i]);
+                    (i - start_ix + 1, title.into())
+                };
+
+                return Some(cow);
+            }
+            if c == open {
+                return None;
+            }
+
+            if c == b'\n' || c == b'\r' {
+                if let TreePointer::Valid(node_ix) = scan_nodes_to_ix(&self.tree, node, i + 1) {
+                    if self.tree[node_ix].item.start > i {
+                        title.push_str(&text[mark..i]);
+                        title.push('\n');
+                        i = self.tree[node_ix].item.start;
+                        mark = i;
+                        continue;
+                    }
+                }
+            }
+            if c == b'&' {
+                if let (n, Some(value)) = scan_entity(&bytes[i..]) {
+                    title.push_str(&text[mark..i]);
+                    title.push_str(&value);
+                    i += n;
+                    mark = i;
+                    continue;
+                }
+            }
+            if c == b'\\' && i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
+                title.push_str(&text[mark..i]);
+                i += 1;
+                mark = i;
+            }
+
+            i += 1;
+        }
+
+        None
     }
 
     /// Make a code span.

@@ -172,11 +172,10 @@ impl<'a> LineStart<'a> {
 
     /// Determine whether we're at end of line (includes end of file).
     pub(crate) fn is_at_eol(&self) -> bool {
-        if self.ix >= self.bytes.len() {
-            return true;
-        }
-        let c = self.bytes[self.ix];
-        c == b'\r' || c == b'\n'
+        self.bytes
+            .get(self.ix)
+            .map(|&c| c == b'\r' || c == b'\n')
+            .unwrap_or(true)
     }
 
     fn scan_ch(&mut self, c: u8) -> bool {

@@ -699,3 +699,69 @@ bar">link</a></p>
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_53() {
+    let original = r##"> [foo
+> bar]: /url
+>
+> [foo bar]
+"##;
+    let expected = r##"<blockquote>
+<p><a href="/url">foo bar</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_54() {
+    let original = r##"> [foo   bar]: /url
+>
+> [foo
+> bar]
+"##;
+    let expected = r##"<blockquote>
+<p><a href="/url">foo
+bar</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_55() {
+    let original = r##"> - [a
+> b c]: /foo
+
+[a b c]
+"##;
+    let expected = r##"<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<p><a href="/foo">a b c</a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_56() {
+    let original = r##"[a
+> b]: /foo
+
+[a b] [a > b]
+"##;
+    let expected = r##"<p>[a</p>
+<blockquote>
+<p>b]: /foo</p>
+</blockquote>
+<p>[a b] [a > b]</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

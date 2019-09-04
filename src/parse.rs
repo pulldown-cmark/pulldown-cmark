@@ -26,7 +26,7 @@ use std::ops::{Index, Range};
 
 use unicase::UniCase;
 
-use crate::linklabel::{scan_link_label, scan_link_label_rest, LinkLabel, ReferenceLabel};
+use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex, TreePointer};
@@ -410,7 +410,7 @@ impl<'a> FirstPass<'a> {
         let ix = start_ix + line_start.bytes_scanned();
 
         // HTML Blocks
-        if self.text.as_bytes()[ix] == b'<' {
+        if bytes[ix] == b'<' {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
             if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[(ix + 1)..]) {
@@ -440,7 +440,10 @@ impl<'a> FirstPass<'a> {
         // parse refdef
         if let Some((bytecount, label, link_def)) = self.parse_refdef_total(ix) {
             self.allocs.refdefs.entry(label).or_insert(link_def);
-            return ix + bytecount;
+            let ix = ix + bytecount;
+            // try to read trailing whitespace or it will register as a completely blank line
+            // TODO: shouldn't we do this for all block level items?
+            return ix + scan_blank_line(&bytes[ix..]).unwrap_or(0);
         }
 
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
@@ -1278,7 +1281,7 @@ impl<'a> FirstPass<'a> {
         if !bytes.starts_with(b"[^") {
             return None;
         }
-        let (mut i, label) = scan_link_label_rest(&self.text[(start + 2)..])?;
+        let (mut i, label) = self.parse_refdef_label(start + 2)?;
         i += 2;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
@@ -1293,13 +1296,29 @@ impl<'a> FirstPass<'a> {
         Some(i)
     }
 
+    fn parse_refdef_label(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
+        let bytes = self.text.as_bytes();
+        scan_link_label_rest(self.text, start, |ix| {
+            let mut line_start = LineStart::new(&bytes[ix..]);
+            let _n_containers = self.scan_containers(&mut line_start);
+            // first check for non-empty lists, then for other interrupts
+            let bytes_scanned = line_start.bytes_scanned();
+            let suffix = &bytes[(ix + bytes_scanned)..];
+            if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+                None
+            } else {
+                Some(bytes_scanned)
+            }
+        })
+    }
+
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
         let bytes = &self.text.as_bytes()[start..];
         if scan_ch(bytes, b'[') == 0 {
             return None;
         }
-        let (mut i, label) = scan_link_label_rest(&self.text[(start + 1)..])?;
+        let (mut i, label) = self.parse_refdef_label(start + 1)?;
         i += 1;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
@@ -1681,6 +1700,35 @@ fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: TreePointer, ix: usize) -> Tree
     node
 }
 
+/// Returns number of bytes (including brackets) and label on success.
+fn scan_link_label<'text, 'tree>(
+    tree: &'tree Tree<Item>,
+    // must be global text
+    text: &'text str,
+    start: usize,
+    node: TreePointer,
+) -> Option<(usize, ReferenceLabel<'text>)> {
+    let bytes = &text.as_bytes()[start..];
+    if bytes.len() < 2 || bytes[0] != b'[' {
+        return None;
+    }
+    let linebreak_handler = |ix: usize| -> Option<usize> {
+        if let TreePointer::Valid(node_ix) = scan_nodes_to_ix(tree, node, ix) {
+            Some(tree[node_ix].item.start - ix)
+        } else {
+            None
+        }
+    };
+    let pair = if b'^' == bytes[1] {
+        let (byte_index, cow) = scan_link_label_rest(text, start + 2, linebreak_handler)?;
+        (byte_index + 2, ReferenceLabel::Footnote(cow))
+    } else {
+        let (byte_index, cow) = scan_link_label_rest(text, start + 1, linebreak_handler)?;
+        (byte_index + 1, ReferenceLabel::Link(cow))
+    };
+    Some(pair)
+}
+
 fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer) -> RefScan<'b> {
     let cur_ix = match cur {
         TreePointer::Nil => return RefScan::Failed,
@@ -1692,7 +1740,8 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
     if tail.starts_with(b"[]") {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(&text[start..]) {
+    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(tree, text, start, cur)
+    {
         let next_node = scan_nodes_to_ix(tree, cur, start + ix);
         RefScan::LinkLabel(label, next_node)
     } else {
@@ -2122,11 +2171,13 @@ impl<'a> Parser<'a> {
                                 RefScan::LinkLabel(l, ..) => Some(ReferenceLabel::Link(l)),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
-                                    let start = self.tree[tos.node].item.end - 1;
-                                    let end = self.tree[cur_ix].item.end;
-                                    let search_text = &block_text[start..end];
-
-                                    scan_link_label(search_text).map(|(_ix, label)| label)
+                                    scan_link_label(
+                                        &self.tree,
+                                        &self.text[..self.tree[cur_ix].item.end],
+                                        self.tree[tos.node].item.end - 1,
+                                        TreePointer::Valid(tos.node),
+                                    )
+                                    .map(|(_ix, label)| label)
                                 }
                             };
 
@@ -2141,32 +2192,31 @@ impl<'a> Parser<'a> {
                                 self.link_stack.clear();
                                 continue;
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
-                                let type_url_title = if let Some(matching_def) = self
+                                let type_url_title = self
                                     .allocs
                                     .refdefs
                                     .get(&UniCase::new(link_label.as_ref().into()))
-                                {
-                                    // found a matching definition!
-                                    let title = matching_def
-                                        .title
-                                        .as_ref()
-                                        .cloned()
-                                        .unwrap_or_else(|| "".into());
-                                    let url = matching_def.dest.clone();
-                                    Some((link_type, url, title))
-                                } else if let Some(callback) = self.broken_link_callback {
-                                    // looked for matching definition, but didn't find it. try to fix
-                                    // link with callback, if it is defined
-                                    if let Some((url, title)) =
-                                        callback(link_label.as_ref(), link_label.as_ref())
-                                    {
-                                        Some((link_type.to_unknown(), url.into(), title.into()))
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                };
+                                    .map(|matching_def| {
+                                        // found a matching definition!
+                                        let title = matching_def
+                                            .title
+                                            .as_ref()
+                                            .cloned()
+                                            .unwrap_or_else(|| "".into());
+                                        let url = matching_def.dest.clone();
+                                        (link_type, url, title)
+                                    })
+                                    .or_else(|| {
+                                        self.broken_link_callback
+                                            .and_then(|callback| {
+                                                // looked for matching definition, but didn't find it. try to fix
+                                                // link with callback, if it is defined
+                                                callback(link_label.as_ref(), link_label.as_ref())
+                                            })
+                                            .map(|(url, title)| {
+                                                (link_type.to_unknown(), url.into(), title.into())
+                                            })
+                                    });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
                                     let link_ix =

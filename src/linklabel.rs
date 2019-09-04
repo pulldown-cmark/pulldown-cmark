@@ -32,31 +32,24 @@ pub enum ReferenceLabel<'a> {
 
 pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
-/// Returns number of bytes (including brackets) and label on success.
-pub(crate) fn scan_link_label(text: &str) -> Option<(usize, ReferenceLabel<'_>)> {
-    if text.len() < 2 || text.as_bytes()[0] != b'[' {
-        return None;
-    }
-    let pair = if b'^' == text.as_bytes()[1] {
-        let (byte_index, cow) = scan_link_label_rest(&text[2..])?;
-        (byte_index + 2, ReferenceLabel::Footnote(cow))
-    } else {
-        let (byte_index, cow) = scan_link_label_rest(&text[1..])?;
-        (byte_index + 1, ReferenceLabel::Link(cow))
-    };
-    Some(pair)
-}
-
 /// Assumes the opening bracket has already been scanned.
 /// Returns the number of bytes read (including closing bracket) and label on success.
-pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
+pub(crate) fn scan_link_label_rest<F>(
+    text: &str,
+    start: usize,
+    linebreak_handler: F,
+) -> Option<(usize, CowStr<'_>)>
+where
+    // Takes a _global_ index into the document string, returns how many bytes to skip
+    F: Fn(usize) -> Option<usize>,
+{
     let bytes = text.as_bytes();
-    let mut ix = 0;
+    let mut ix = start;
     let mut only_white_space = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
-    let mut mark = 0;
+    let mut mark = start;
 
     loop {
         if codepoints >= 1000 {
@@ -83,6 +76,7 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
                             return None;
                         }
                         ix += eol_bytes;
+                        ix += linebreak_handler(ix)?;
                         whitespaces += 2; // indicate that we need to replace
                     } else {
                         whitespaces += if bytes[ix] == b' ' { 1 } else { 2 };
@@ -112,12 +106,12 @@ pub(crate) fn scan_link_label_rest(text: &str) -> Option<(usize, CowStr<'_>)> {
         None
     } else {
         let cow = if mark == 0 {
-            text[..ix].into()
+            text[start..ix].into()
         } else {
             label.push_str(&text[mark..ix]);
             label.into()
         };
-        Some((ix + 1, cow))
+        Some((ix + 1 - start, cow))
     }
 }
 
@@ -130,13 +124,13 @@ mod test {
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, normalized_label) = scan_link_label_rest(input).unwrap();
+        let (_bytes, normalized_label) = scan_link_label_rest(input, 0, |_| None).unwrap();
         assert_eq!(expected_output, normalized_label.as_ref());
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input).is_some());
+        assert!(scan_link_label_rest(input, 0, |_| Some(0)).is_some());
     }
 }

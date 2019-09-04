@@ -33,7 +33,8 @@ fn dry_run(text: &str, opts: Options) {
 }
 
 fn print_events(text: &str, opts: Options) {
-    for (range, event) in Parser::new_ext(text, opts).into_offset_iter() {
+    let parser = Parser::new_ext(text, opts).into_offset_iter();
+    for (event, range) in parser {
         println!("{:?}: {:?}", range, event);
     }
     println!("EOF");

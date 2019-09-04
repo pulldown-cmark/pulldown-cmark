@@ -602,3 +602,61 @@ ISSUE 301
 bar">link</a></p>
 </blockquote>
 ````````````````````````````````
+
+ISSUE 298
+
+```````````````````````````````` example
+> [foo
+> bar]: /url
+>
+> [foo bar]
+.
+<blockquote>
+<p><a href="/url">foo bar</a></p>
+</blockquote>
+````````````````````````````````
+
+ISSUE 298
+
+```````````````````````````````` example
+> [foo   bar]: /url
+>
+> [foo
+> bar]
+.
+<blockquote>
+<p><a href="/url">foo
+bar</a></p>
+</blockquote>
+````````````````````````````````
+
+ISSUE 298
+
+```````````````````````````````` example
+> - [a
+> b c]: /foo
+
+[a b c]
+.
+<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<p><a href="/foo">a b c</a></p>
+````````````````````````````````
+
+ISSUE 298
+
+```````````````````````````````` example
+[a
+> b]: /foo
+
+[a b] [a > b]
+.
+<p>[a</p>
+<blockquote>
+<p>b]: /foo</p>
+</blockquote>
+<p>[a b] [a > b]</p>
+````````````````````````````````

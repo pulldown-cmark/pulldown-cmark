@@ -1957,12 +1957,15 @@ impl<'a> Parser<'a> {
         let mut cur = self.tree.cur();
         let mut prev = TreePointer::Nil;
 
+        let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
+        let block_text = &self.text[..block_end];
+
         while let TreePointer::Valid(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
                     let autolink = if let TreePointer::Valid(next_ix) = next {
-                        scan_autolink(self.text, self.tree[next_ix].item.start)
+                        scan_autolink(block_text, self.tree[next_ix].item.start)
                     } else {
                         None
                     };
@@ -1987,17 +1990,11 @@ impl<'a> Parser<'a> {
                         continue;
                     } else {
                         let inline_html = if let TreePointer::Valid(next_ix) = next {
-                            self.tree
-                                .peek_up()
-                                .map(|parent_ix| self.tree[parent_ix].item.end)
-                                .and_then(|end_offset| {
-                                    let bytes = &self.text.as_bytes()[..end_offset];
-                                    scan_inline_html(
-                                        bytes,
-                                        self.tree[next_ix].item.start,
-                                        &mut self.html_scan_guard,
-                                    )
-                                })
+                            scan_inline_html(
+                                block_text.as_bytes(),
+                                self.tree[next_ix].item.start,
+                                &mut self.html_scan_guard,
+                            )
                         } else {
                             None
                         };
@@ -2084,10 +2081,8 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
-                        let link_text = &self.text[..block_end];
                         if let Some((next_ix, url, title)) =
-                            scan_inline_link(link_text, self.tree[cur_ix].item.end)
+                            scan_inline_link(block_text, self.tree[cur_ix].item.end)
                         {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
@@ -2115,7 +2110,7 @@ impl<'a> Parser<'a> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result = scan_reference(&self.tree, &self.text, next);
+                            let scan_result = scan_reference(&self.tree, block_text, next);
                             let label_node = self.tree[tos.node].next;
                             let node_after_link = match scan_result {
                                 RefScan::LinkLabel(_, next_node) => next_node,
@@ -2133,7 +2128,7 @@ impl<'a> Parser<'a> {
                                     // No label? maybe it is a shortcut reference
                                     let start = self.tree[tos.node].item.end - 1;
                                     let end = self.tree[cur_ix].item.end;
-                                    let search_text = &self.text[start..end];
+                                    let search_text = &block_text[start..end];
 
                                     scan_link_label(search_text).map(|(_ix, label)| label)
                                 }

@@ -525,6 +525,56 @@ ISSUE 351
 <p>&quot;)</p>
 ````````````````````````````````
 
+ISSUE 382
+
+```````````````````````````````` example
+<http:// >
+.
+<p>&lt;http:// &gt;</p>
+````````````````````````````````
+
+ISSUE 382 (control chars)
+
+```````````````````````````````` example
+<http://>
+.
+<p>&lt;http://&gt;</p>
+````````````````````````````````
+
+ISSUE 382
+
+```````````````````````````````` example
+foo | bar
+--- | ---
+<http://| baz
+.
+<table>
+<thead>
+<tr><th>foo</th><th>bar</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt;http://</td><td>baz</td></tr>
+</tbody>
+</table>
+````````````````````````````````
+
+ISSUE 381
+
+```````````````````````````````` example
+foo | bar
+--- | ---
+<http://|>
+.
+<table>
+<thead>
+<tr><th>foo</th><th>bar</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt;http://</td><td>&gt;</td></tr>
+</tbody>
+</table>
+````````````````````````````````
+
 ISSUE 389
 
 ```````````````````````````````` example

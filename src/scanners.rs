@@ -1148,20 +1148,16 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
         return None;
     }
 
-    let mut ended = false;
     while i < bytes.len() {
         match bytes[i] {
-            b'\0'..=b' ' => {
-                ended = true;
-            }
-            b'>' | b'<' => break,
-            _ if ended => return None,
+            b'>' => return Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into())),
+            b'\0'..=b' ' | b'<' => return None,
             _ => (),
         }
         i += 1;
     }
 
-    Some((start_ix + i + 1, text[start_ix..(start_ix + i)].into()))
+    None
 }
 
 /// Returns (next_byte_offset, email)

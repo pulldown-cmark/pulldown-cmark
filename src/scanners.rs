@@ -30,13 +30,6 @@ use crate::strings::CowStr;
 
 use memchr::memchr;
 
-// Allowing arbitrary depth nested parentheses inside link destinations
-// can create denial of service vulnerabilities if we're not careful.
-// The simplest countermeasure is to limit their depth, which is
-// explicitly allowed by the spec as long as the limit is at least 3:
-// https://spec.commonmark.org/0.29/#link-destination
-const LINK_MAX_NESTED_PARENS: usize = 5;
-
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
     "address",
@@ -762,58 +755,6 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     (0, None)
 }
 
-// returns (bytes scanned, title cow)
-fn scan_link_title(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
-    let bytes = text.as_bytes();
-    let open = match bytes.get(start_ix) {
-        Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
-        _ => return None,
-    };
-    let close = if open == b'(' { b')' } else { open };
-
-    let mut title = String::new();
-    let mut mark = start_ix + 1;
-    let mut i = start_ix + 1;
-
-    while i < bytes.len() {
-        let c = bytes[i];
-
-        if c == close {
-            let cow = if mark == 1 {
-                (i - start_ix + 1, text[mark..i].into())
-            } else {
-                title.push_str(&text[mark..i]);
-                (i - start_ix + 1, title.into())
-            };
-
-            return Some(cow);
-        }
-        if c == open {
-            return None;
-        }
-
-        // TODO: do b'\r' as well?
-        if c == b'&' {
-            if let (n, Some(value)) = scan_entity(&bytes[i..]) {
-                title.push_str(&text[mark..i]);
-                title.push_str(&value);
-                i += n;
-                mark = i;
-                continue;
-            }
-        }
-        if c == b'\\' && i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
-            title.push_str(&text[mark..i]);
-            i += 1;
-            mark = i;
-        }
-
-        i += 1;
-    }
-
-    None
-}
-
 // FIXME: we can most likely re-use other scanners
 // returns (bytelength, title_str)
 pub(crate) fn scan_refdef_title(text: &str) -> Option<(usize, &str)> {
@@ -909,39 +850,6 @@ pub(crate) fn scan_link_dest(
         }
         Some((i, &data[start_ix..(start_ix + i)]))
     }
-}
-
-/// Returns next byte index, url and title.
-pub(crate) fn scan_inline_link(
-    underlying: &str,
-    start_ix: usize,
-) -> Option<(usize, CowStr<'_>, CowStr<'_>)> {
-    let mut ix = start_ix;
-    if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
-        return None;
-    }
-    ix += 1;
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
-    let dest = unescape(dest);
-    ix += dest_length;
-
-    ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-
-    let title = if let Some((bytes_scanned, t)) = scan_link_title(underlying, ix) {
-        ix += bytes_scanned;
-        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
-        t
-    } else {
-        "".into()
-    };
-    if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
-        return None;
-    }
-    ix += 1;
-
-    Some((ix, dest, title))
 }
 
 /// Returns bytes scanned

@@ -685,3 +685,17 @@ fn regression_test_51() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_52() {
+    let original = r##"> [link](/url 'foo
+> bar')
+"##;
+    let expected = r##"<blockquote>
+<p><a href="/url" title="foo
+bar">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}

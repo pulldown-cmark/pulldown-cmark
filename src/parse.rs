@@ -38,7 +38,7 @@ pub enum Tag<'a> {
     Paragraph,
 
     /// A heading. The field indicates the level of the heading.
-    Heading(i32),
+    Heading(u32),
 
     BlockQuote,
     /// A code block. The value contained in the tag describes the language of the code,
@@ -47,7 +47,7 @@ pub enum Tag<'a> {
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
-    List(Option<usize>), // TODO: add delim and tight for ast (not needed for html)
+    List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
     /// A list item.
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
@@ -153,8 +153,6 @@ pub enum Alignment {
 bitflags! {
     /// Option struct containing flags for enabling extra features
     /// that are not part of the CommonMark spec.
-    /// The `FIRST_PASS` flag is unused and will be removed in the
-    /// future.
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
@@ -198,13 +196,13 @@ enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(i32), // heading level
+    Heading(u32), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
     BlockQuote,
-    List(bool, u8, usize), // is_tight, list character, list start index
-    ListItem(usize),       // indent level
+    List(bool, u8, u64), // is_tight, list character, list start index
+    ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
     FootnoteDefinition(CowIndex),
 
@@ -420,8 +418,8 @@ impl<'a> FirstPass<'a> {
             return self.parse_hrule(n, ix);
         }
 
-        if let Some((atx_size, atx_level)) = scan_atx_heading(&bytes[ix..]) {
-            return self.parse_atx_heading(ix, atx_level, atx_size);
+        if let Some(atx_size) = scan_atx_heading(&bytes[ix..]) {
+            return self.parse_atx_heading(ix, atx_size);
         }
 
         // parse refdef
@@ -1146,7 +1144,7 @@ impl<'a> FirstPass<'a> {
 
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
-    fn continue_list(&mut self, start: usize, ch: u8, index: usize) {
+    fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
                 if existing_ch == ch {
@@ -1185,11 +1183,11 @@ impl<'a> FirstPass<'a> {
     /// Parse an ATX heading.
     ///
     /// Returns index of start of next line.
-    fn parse_atx_heading(&mut self, mut ix: usize, atx_level: i32, atx_size: usize) -> usize {
+    fn parse_atx_heading(&mut self, mut ix: usize, atx_size: usize) -> usize {
         self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Heading(atx_level),
+            body: ItemBody::Heading(atx_size as u32),
         });
         ix += atx_size;
         // next char is space or scan_eol

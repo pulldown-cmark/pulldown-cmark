@@ -212,7 +212,7 @@ impl<'a> LineStart<'a> {
     /// Return value is the character, the start index, and the indent in spaces.
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
-    pub(crate) fn scan_list_marker(&mut self) -> Option<(u8, usize, usize)> {
+    pub(crate) fn scan_list_marker(&mut self) -> Option<(u8, u64, usize)> {
         let save = self.clone();
         let indent = self.scan_space_upto(3);
         if self.ix < self.bytes.len() {
@@ -242,18 +242,8 @@ impl<'a> LineStart<'a> {
                         val = val * 10 + u64::from(c - b'0');
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
-                        let val_usize = val as usize;
-                        // This will cause some failures on 32 bit arch.
-                        // TODO (breaking API change): should be u64, not usize.
-                        if val_usize as u64 != val {
-                            return None;
-                        }
                         if self.scan_space(1) || self.is_at_eol() {
-                            return self.finish_list_marker(
-                                c,
-                                val_usize,
-                                indent + self.ix - start_ix,
-                            );
+                            return self.finish_list_marker(c, val, indent + self.ix - start_ix);
                         } else {
                             break;
                         }
@@ -270,9 +260,9 @@ impl<'a> LineStart<'a> {
     fn finish_list_marker(
         &mut self,
         c: u8,
-        start: usize,
+        start: u64,
         mut indent: usize,
-    ) -> Option<(u8, usize, usize)> {
+    ) -> Option<(u8, u64, usize)> {
         let save = self.clone();
 
         // skip the rest of the line if it's blank
@@ -523,10 +513,10 @@ pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
 /// Scan an ATX heading opening sequence.
 ///
 /// Returns number of bytes in prefix and level.
-pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<(usize, i32)> {
+pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<usize> {
     let level = scan_ch_repeat(data, b'#');
     if level >= 1 && level <= 6 && data.get(level).cloned().map_or(true, is_ascii_whitespace) {
-        Some((level, level as i32))
+        Some(level)
     } else {
         None
     }
@@ -535,7 +525,7 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<(usize, i32)> {
 /// Scan a setext heading underline.
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
-pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, i32)> {
+pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, u32)> {
     let c = *data.get(0)?;
     if !(c == b'-' || c == b'=') {
         return None;

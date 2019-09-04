@@ -665,3 +665,23 @@ fn regression_test_49() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_50() {
+    let original = r##"<sup>\*hi</sup>\_
+"##;
+    let expected = r##"<p><sup>*hi</sup>_</p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_51() {
+    let original = r##"email: <john@example.com>\_
+"##;
+    let expected = r##"<p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
+"##;
+
+    test_markdown_html(original, expected);
+}

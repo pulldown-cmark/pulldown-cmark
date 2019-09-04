@@ -1,7 +1,7 @@
-use std::time::Duration;
-use std::mem;
 use std::io::Error;
 use std::marker::PhantomData;
+use std::mem;
+use std::time::Duration;
 
 #[allow(dead_code)]
 pub enum Monotonic {}

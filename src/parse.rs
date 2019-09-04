@@ -20,7 +20,7 @@
 
 //! Tree-based two pass parser.
 
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Index, Range};
 
@@ -273,7 +273,7 @@ impl<'a> FirstPass<'a> {
     fn new(text: &'a str, options: Options) -> FirstPass {
         // This is a very naive heuristic for the number of nodes
         // we'll need.
-        let start_capacity = std::cmp::max(128, text.len() / 32);
+        let start_capacity = max(128, text.len() / 32);
         let tree = Tree::with_capacity(start_capacity);
         let begin_list_item = false;
         let last_line_blank = false;
@@ -1985,7 +1985,7 @@ impl<'a> Parser<'a> {
                         prev = cur;
                         cur = node;
                         if let TreePointer::Valid(node_ix) = cur {
-                            self.tree[node_ix].item.start = ix;
+                            self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
                         }
                         continue;
                     } else {
@@ -2000,15 +2000,14 @@ impl<'a> Parser<'a> {
                         };
                         if let Some(ix) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            // TODO: this logic isn't right if the replaced chain has
-                            // tricky stuff (skipped containers, replaced nulls).
                             self.tree[cur_ix].item.body = ItemBody::InlineHtml;
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
                             cur = node;
                             if let TreePointer::Valid(node_ix) = cur {
-                                self.tree[node_ix].item.start = ix;
+                                self.tree[node_ix].item.start =
+                                    max(self.tree[node_ix].item.start, ix);
                             }
                             continue;
                         }
@@ -2102,7 +2101,7 @@ impl<'a> Parser<'a> {
                             self.tree[cur_ix].item.end = next_ix;
                             if let TreePointer::Valid(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start =
-                                    std::cmp::max(self.tree[next_node_ix].item.start, next_ix);
+                                    max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
                             if tos.ty == LinkStackTy::Link {

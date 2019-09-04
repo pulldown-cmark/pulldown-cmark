@@ -23,7 +23,7 @@
 //! directly, or to output HTML using the [HTML module](html/index.html).
 //!
 //! By default, only CommonMark features are enabled. To use extensions like tables,
-//! footnotes or task lists, enable by setting the corresponding flags in the
+//! footnotes or task lists, enable them by setting the corresponding flags in the
 //! [Options](struct.Options.html) struct.
 //!
 //! # Example

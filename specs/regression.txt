@@ -480,3 +480,63 @@ ISSUE 375
 .
 <p>[<a href="https://www.google.com/">link text</a>]</p>
 ````````````````````````````````
+
+ISSUE 351
+
+```````````````````````````````` example
+foo | bar
+--- | ---
+[a](< | url>)
+.
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>[a](&lt;</td><td>url&gt;)</td></tr></tbody></table>
+````````````````````````````````
+
+ISSUE 351
+
+```````````````````````````````` example
+[a](url "
+- - -
+")
+.
+<p>[a](url "</p>
+<hr>
+<p>")</p>
+````````````````````````````````
+
+ISSUE 351
+
+```````````````````````````````` example
+[a](url
+
+)
+.
+<p>[a](url</p>
+<p>)</p>
+````````````````````````````````
+
+ISSUE 351
+
+```````````````````````````````` example
+[a](b "
+
+")
+.
+<p>[a](b &quot;</p>
+<p>&quot;)</p>
+````````````````````````````````
+
+ISSUE 389
+
+```````````````````````````````` example
+<sup>\*hi</sup>\_
+.
+<p><sup>*hi</sup>_</p>
+````````````````````````````````
+
+ISSUE 389
+
+```````````````````````````````` example
+email: <john@example.com>\_
+.
+<p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
+````````````````````````````````

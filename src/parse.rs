@@ -20,7 +20,7 @@
 
 //! Tree-based two pass parser.
 
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Index, Range};
 
@@ -31,25 +31,35 @@ use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex, TreePointer};
 
+/// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
-    // block-level tags
+    /// A paragraph of text and other inline elements.
     Paragraph,
 
     /// A heading. The field indicates the level of the heading.
     Heading(i32),
 
     BlockQuote,
+    /// A code block. The value contained in the tag describes the language of the code,
+    /// which may be empty.
     CodeBlock(CowStr<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
+    /// Contains only list items.
     List(Option<usize>), // TODO: add delim and tight for ast (not needed for html)
+    /// A list item.
     Item,
+    /// A footnote definition. The value contained is the footnote's label by which it can
+    /// be referred to.
     FootnoteDefinition(CowStr<'a>),
 
-    // tables
+    /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
+    /// A table header. Contains only `TableRow`s. Note that the table body starts immediately
+    /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     TableHead,
+    /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
     TableRow,
     TableCell,
 
@@ -58,13 +68,14 @@ pub enum Tag<'a> {
     Strong,
     Strikethrough,
 
-    /// A link. The first field is the link type, the second the destination URL and the third is a title
+    /// A link. The first field is the link type, the second the destination URL and the third is a title.
     Link(LinkType, CowStr<'a>, CowStr<'a>),
 
-    /// An image. The first field is the link type, the second the destination URL and the third is a title
+    /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
+/// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
@@ -98,23 +109,41 @@ impl LinkType {
     }
 }
 
+/// Markdown events that are generated in a preorder traversal of the document
+/// tree, with additional `End` events whenever all of an inner node's children
+/// have been visited.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
+    /// Start of a tagged element. Events that are yielded after this event
+    /// and before its corresponding `End` event are inside this element.
+    /// Start and end events are guaranteed to be balanced.
     Start(Tag<'a>),
+    /// End of a tagged element.
     End(Tag<'a>),
+    /// A text node.
     Text(CowStr<'a>),
+    /// An inline code node.
     Code(CowStr<'a>),
+    /// An HTML node.
     Html(CowStr<'a>),
+    /// A reference to a footnote with given label, which may or may not be defined
+    /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
+    /// occur in any order.
     FootnoteReference(CowStr<'a>),
+    /// A soft line break.
     SoftBreak,
+    /// A hard line break.
     HardBreak,
+    /// A horizontal ruler.
     Rule,
-    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked
+    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
 }
 
+/// Table column text alignment.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Alignment {
+    /// Default text alignment.
     None,
     Left,
     Center,
@@ -122,6 +151,10 @@ pub enum Alignment {
 }
 
 bitflags! {
+    /// Option struct containing flags for enabling extra features
+    /// that are not part of the CommonMark spec.
+    /// The `FIRST_PASS` flag is unused and will be removed in the
+    /// future.
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
@@ -234,7 +267,7 @@ impl<'a> FirstPass<'a> {
     fn new(text: &'a str, options: Options) -> FirstPass {
         // This is a very naive heuristic for the number of nodes
         // we'll need.
-        let start_capacity = std::cmp::max(128, text.len() / 32);
+        let start_capacity = max(128, text.len() / 32);
         let tree = Tree::with_capacity(start_capacity);
         let begin_list_item = false;
         let last_line_blank = false;
@@ -1809,6 +1842,7 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
+/// Markdown event iterator.
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
@@ -1824,10 +1858,12 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Creates a new event iterator for a markdown string without any options enabled.
     pub fn new(text: &'a str) -> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
 
+    /// Creates a new event iteratorfor a markdown string with given options.
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
         Parser::new_with_broken_link_callback(text, options, None)
     }
@@ -1835,8 +1871,8 @@ impl<'a> Parser<'a> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
-    /// and the returned pair will be used as the link name and title if not
-    /// None.
+    /// and the returned pair will be used as the link name and title if it is not
+    /// `None`.
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
@@ -1860,6 +1896,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Returns the current offset in the source markdown. When source
+    /// mapping is required, it is strongly encourage to transform the iterator to
+    /// a [OffsetIter](struct.OffsetIter.html) instead using
+    /// [`into_offset_iter`](#method.into_offset_iter) instead, since its behaviour
+    /// is much better defined.
     pub fn get_offset(&self) -> usize {
         self.offset
     }
@@ -1910,7 +1951,7 @@ impl<'a> Parser<'a> {
                         prev = cur;
                         cur = node;
                         if let TreePointer::Valid(node_ix) = cur {
-                            self.tree[node_ix].item.start = ix;
+                            self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
                         }
                         continue;
                     } else {
@@ -1931,15 +1972,14 @@ impl<'a> Parser<'a> {
                         };
                         if let Some(ix) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            // TODO: this logic isn't right if the replaced chain has
-                            // tricky stuff (skipped containers, replaced nulls).
                             self.tree[cur_ix].item.body = ItemBody::Html;
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
                             cur = node;
                             if let TreePointer::Valid(node_ix) = cur {
-                                self.tree[node_ix].item.start = ix;
+                                self.tree[node_ix].item.start =
+                                    max(self.tree[node_ix].item.start, ix);
                             }
                             continue;
                         }
@@ -2013,9 +2053,10 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-
+                        let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
+                        let link_text = &self.text[..block_end];
                         if let Some((next_ix, url, title)) =
-                            scan_inline_link(self.text, self.tree[cur_ix].item.end)
+                            scan_inline_link(link_text, self.tree[cur_ix].item.end)
                         {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let TreePointer::Valid(prev_ix) = prev {
@@ -2034,7 +2075,7 @@ impl<'a> Parser<'a> {
                             self.tree[cur_ix].item.end = next_ix;
                             if let TreePointer::Valid(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start =
-                                    std::cmp::max(self.tree[next_node_ix].item.start, next_ix);
+                                    max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
                             if tos.ty == LinkStackTy::Link {
@@ -2332,6 +2373,9 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Consumes the event iterator and produces an iterator that produces
+    /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
+    /// range in the markdown source.
     pub fn into_offset_iter(self) -> OffsetIter<'a> {
         OffsetIter { inner: self }
     }
@@ -2347,7 +2391,7 @@ pub(crate) enum LoopInstruction<T> {
 /// This function walks the byte slices from the given index and
 /// calls the callback function on all bytes (and their indices) that are in the following set:
 /// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
-/// It may also call the callback on other bytes, but it is not guaranteed.
+/// It is guaranteed not call the callback on other bytes.
 /// Whenever `callback(ix, byte)` returns a `ContinueAndSkip(n)` value, the callback
 /// will not be called with an index that is less than `ix + n + 1`.
 /// When the callback returns a `BreakAtWith(end_ix, opt+val)`, no more callbacks will be
@@ -2368,6 +2412,24 @@ where
     }
 }
 
+const fn special_bytes() -> [bool; 256] {
+    let mut bytes = [false; 256];
+    bytes[b'<' as usize] = true;
+    bytes[b'!' as usize] = true;
+    bytes[b'[' as usize] = true;
+    bytes[b'~' as usize] = true;
+    bytes[b'`' as usize] = true;
+    bytes[b'|' as usize] = true;
+    bytes[b'\\' as usize] = true;
+    bytes[b'*' as usize] = true;
+    bytes[b'_' as usize] = true;
+    bytes[b'\r' as usize] = true;
+    bytes[b'\n' as usize] = true;
+    bytes[b']' as usize] = true;
+    bytes[b'&' as usize] = true;
+    bytes
+}
+
 pub(crate) fn scalar_iterate_special_bytes<F, T>(
     bytes: &[u8],
     mut ix: usize,
@@ -2376,20 +2438,33 @@ pub(crate) fn scalar_iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
+    let special_bytes = special_bytes();
+
     while ix < bytes.len() {
-        match callback(ix, bytes[ix]) {
-            LoopInstruction::ContinueAndSkip(skip) => {
-                ix += skip + 1;
-            }
-            LoopInstruction::BreakAtWith(ix, val) => {
-                return (ix, val);
+        let b = bytes[ix];
+        if special_bytes[b as usize] {
+            match callback(ix, b) {
+                LoopInstruction::ContinueAndSkip(skip) => {
+                    ix += skip;
+                }
+                LoopInstruction::BreakAtWith(ix, val) => {
+                    return (ix, val);
+                }
             }
         }
+        ix += 1;
     }
 
     (ix, None)
 }
 
+/// Markdown event and source range iterator.
+///
+/// Generates tuples where the first element is the markdown event and the second
+/// is a the corresponding range in the source string.
+///
+/// Constructed from a `Parser` using its
+/// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 pub struct OffsetIter<'a> {
     inner: Parser<'a>,
 }

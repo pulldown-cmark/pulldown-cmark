@@ -1,5 +1,5 @@
 use std::borrow::{Borrow, ToOwned};
-use std::convert::AsRef;
+use std::convert::{AsRef, TryFrom};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
@@ -7,11 +7,13 @@ use std::str::from_utf8;
 
 const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
 
-/// Returned when trying to convert a &str into a InlineStr
+/// Returned when trying to convert a `&str` into a `InlineStr`
 /// but it fails because it doesn't fit.
 #[derive(Debug)]
 pub struct StringTooLongError;
 
+/// An inline string that can contain almost three words
+/// of utf-8 text.
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct InlineStr {
     inner: [u8; MAX_INLINE_STR_LEN],
@@ -44,10 +46,10 @@ impl<'a> std::cmp::PartialEq<InlineStr> for InlineStr {
     }
 }
 
-// This could be an implementation of TryFrom<&str>
-// when that trait is stabilized.
-impl InlineStr {
-    pub fn try_from_str(s: &str) -> Result<InlineStr, StringTooLongError> {
+impl TryFrom<&str> for InlineStr {
+    type Error = StringTooLongError;
+
+    fn try_from(s: &str) -> Result<InlineStr, StringTooLongError> {
         let len = s.len();
         if len < MAX_INLINE_STR_LEN {
             let mut inner = [0u8; MAX_INLINE_STR_LEN];
@@ -75,10 +77,17 @@ impl fmt::Display for InlineStr {
     }
 }
 
+/// A copy-on-write string that can be owned, borrowed
+/// or inlined.
+///
+/// It is three words long.
 #[derive(Debug, Eq)]
 pub enum CowStr<'a> {
+    /// An owned, immutable string.
     Boxed(Box<str>),
+    /// A borrowed string.
     Borrowed(&'a str),
+    /// A short inline string.
     Inlined(InlineStr),
 }
 
@@ -97,10 +106,10 @@ impl<'a> Hash for CowStr<'a> {
 impl<'a> std::clone::Clone for CowStr<'a> {
     fn clone(&self) -> Self {
         match self {
-            CowStr::Boxed(s) if s.len() < MAX_INLINE_STR_LEN => {
-                CowStr::Inlined(InlineStr::try_from_str(&**s).unwrap())
-            }
-            CowStr::Boxed(s) => CowStr::Boxed(s.clone()),
+            CowStr::Boxed(s) => match InlineStr::try_from(&**s) {
+                Ok(inline) => CowStr::Inlined(inline),
+                Err(..) => CowStr::Boxed(s.clone()),
+            },
             CowStr::Borrowed(s) => CowStr::Borrowed(s),
             CowStr::Inlined(s) => CowStr::Inlined(*s),
         }
@@ -208,7 +217,7 @@ mod test_special_string {
     #[cfg(target_pointer_width = "64")]
     fn inlinestr_fits_twentytwo() {
         let s = "0123456789abcdefghijkl";
-        let stack_str = InlineStr::try_from_str(s).unwrap();
+        let stack_str = InlineStr::try_from(s).unwrap();
         assert_eq!(stack_str.deref(), s);
     }
 
@@ -216,7 +225,7 @@ mod test_special_string {
     #[cfg(target_pointer_width = "64")]
     fn inlinestr_not_fits_twentythree() {
         let s = "0123456789abcdefghijklm";
-        let _stack_str = InlineStr::try_from_str(s).unwrap_err();
+        let _stack_str = InlineStr::try_from(s).unwrap_err();
     }
 
     #[test]

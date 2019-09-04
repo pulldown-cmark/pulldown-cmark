@@ -23,16 +23,16 @@ harness = false
 
 [dependencies]
 bitflags = "1.1"
-unicase = "2.4"
+unicase = "2.5"
 memchr = "2.2"
 getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]
-html5ever = "0.23"
+html5ever = "0.24"
 lazy_static = "1.3"
-regex = "1.1"
 tendril = "0.4"
-criterion = "0.2"
+criterion = "0.3"
+regex = "1.3"
 
 [features]
 default = ["getopts"]

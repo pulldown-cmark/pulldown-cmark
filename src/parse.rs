@@ -1880,7 +1880,6 @@ pub struct Parser<'a> {
     tree: Tree<Item>,
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
-    offset: usize,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
@@ -1920,20 +1919,10 @@ impl<'a> Parser<'a> {
             tree,
             allocs,
             broken_link_callback,
-            offset: 0,
             inline_stack,
             link_stack,
             html_scan_guard,
         }
-    }
-
-    /// Returns the current offset in the source markdown. When source
-    /// mapping is required, it is strongly encourage to transform the iterator to
-    /// a [OffsetIter](struct.OffsetIter.html) instead using
-    /// [`into_offset_iter`](#method.into_offset_iter) instead, since its behaviour
-    /// is much better defined.
-    pub fn get_offset(&self) -> usize {
-        self.offset
     }
 
     /// Handle inline markup.
@@ -2668,7 +2657,6 @@ impl<'a> Iterator for Parser<'a> {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
-                self.offset = self.tree[ix].item.end;
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag))
             }
@@ -2681,14 +2669,8 @@ impl<'a> Iterator for Parser<'a> {
                 let item = node.item;
                 let event = item_to_event(item, self.text, &self.allocs);
                 if let Event::Start(..) = event {
-                    self.offset = if let TreePointer::Valid(child_ix) = node.child {
-                        self.tree[child_ix].item.start
-                    } else {
-                        item.end
-                    };
                     self.tree.push();
                 } else {
-                    self.offset = item.end;
                     self.tree.next_sibling(cur_ix);
                 }
                 Some(event)

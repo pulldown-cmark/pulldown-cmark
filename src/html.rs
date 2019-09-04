@@ -160,7 +160,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
-                Html(html) | InlineHtml(html) => {
+                Html(html) => {
                     self.write(&html)?;
                 }
                 SoftBreak => {
@@ -168,6 +168,13 @@ where
                 }
                 HardBreak => {
                     self.write("<br />\n")?;
+                }
+                Rule => {
+                    if self.end_newline {
+                        self.write("<hr />\n")?;
+                    } else {
+                        self.write("\n<hr />\n")?;
+                    }
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
@@ -199,14 +206,7 @@ where
                     self.write("\n<p>")
                 }
             }
-            Tag::Rule => {
-                if self.end_newline {
-                    self.write("<hr />\n")
-                } else {
-                    self.write("\n<hr />\n")
-                }
-            }
-            Tag::Header(level) => {
+            Tag::Heading(level) => {
                 if self.end_newline {
                     self.end_newline = false;
                     write!(&mut self.writer, "<h{}>", level)
@@ -338,7 +338,6 @@ where
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
-            Tag::HtmlBlock => Ok(()),
         }
     }
 
@@ -347,8 +346,7 @@ where
             Tag::Paragraph => {
                 self.write("</p>\n")?;
             }
-            Tag::Rule => (),
-            Tag::Header(level) => {
+            Tag::Heading(level) => {
                 self.write("</h")?;
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;
@@ -405,7 +403,6 @@ where
             Tag::FootnoteDefinition(_) => {
                 self.write("</div>\n")?;
             }
-            Tag::HtmlBlock => {}
         }
         Ok(())
     }
@@ -422,12 +419,11 @@ where
                     }
                     nest -= 1;
                 }
-                Html(_) => (),
-                InlineHtml(text) | Code(text) | Text(text) => {
+                Html(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
-                SoftBreak | HardBreak => {
+                SoftBreak | HardBreak | Rule => {
                     self.write(" ")?;
                 }
                 FootnoteReference(name) => {

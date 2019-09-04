@@ -43,11 +43,9 @@ const LINK_MAX_NESTED_PARENS: usize = 5;
 pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
-    /// A horizontal ruler.
-    Rule, // FIXME: shouldn't this just be an event?
 
     /// A heading. The field indicates the level of the heading.
-    Header(i32),
+    Heading(u32),
 
     BlockQuote,
     /// A code block. The value contained in the tag describes the language of the code,
@@ -56,13 +54,12 @@ pub enum Tag<'a> {
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
-    List(Option<usize>), // TODO: add delim and tight for ast (not needed for html)
+    List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
     /// A list item.
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
     FootnoteDefinition(CowStr<'a>),
-    HtmlBlock,
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
@@ -136,8 +133,6 @@ pub enum Event<'a> {
     Code(CowStr<'a>),
     /// An HTML node.
     Html(CowStr<'a>),
-    /// An inline HTML node.
-    InlineHtml(CowStr<'a>), // TODO: do we need a distinction between Html blocks/ Html/ InlineHtml?
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.
@@ -146,6 +141,8 @@ pub enum Event<'a> {
     SoftBreak,
     /// A hard line break.
     HardBreak,
+    /// A horizontal ruler.
+    Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
 }
@@ -163,10 +160,7 @@ pub enum Alignment {
 bitflags! {
     /// Option struct containing flags for enabling extra features
     /// that are not part of the CommonMark spec.
-    /// The `FIRST_PASS` flag is unused and will be removed in the
-    /// future.
     pub struct Options: u32 {
-        const FIRST_PASS = 1 << 0;
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
@@ -203,21 +197,19 @@ enum ItemBody {
     Strong,
     Strikethrough,
     Code(CowIndex),
-    InlineHtml,
     Link(LinkIndex),
     Image(LinkIndex),
     FootnoteReference(CowIndex),
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Header(i32), // header level
+    Heading(u32), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
-    HtmlBlock(Option<u32>), // end tag, or none for type 6
     Html,
     BlockQuote,
-    List(bool, u8, usize), // is_tight, list character, list start index
-    ListItem(usize),       // indent level
+    List(bool, u8, u64), // is_tight, list character, list start index
+    ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
     FootnoteDefinition(CowIndex),
 
@@ -413,8 +405,8 @@ impl<'a> FirstPass<'a> {
         if bytes[ix] == b'<' {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
-            if let Some(html_end_tag_ix) = get_html_end_tag(&bytes[(ix + 1)..]) {
-                return self.parse_html_block_type_1_to_5(ix, html_end_tag_ix, remaining_space);
+            if let Some(html_end_tag) = get_html_end_tag(&bytes[(ix + 1)..]) {
+                return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
             }
 
             // Detect type 6
@@ -433,8 +425,8 @@ impl<'a> FirstPass<'a> {
             return self.parse_hrule(n, ix);
         }
 
-        if let Some((atx_size, atx_level)) = scan_atx_heading(&bytes[ix..]) {
-            return self.parse_atx_heading(ix, atx_level, atx_size);
+        if let Some(atx_size) = scan_atx_heading(&bytes[ix..]) {
+            return self.parse_atx_heading(ix, atx_size);
         }
 
         // parse refdef
@@ -641,7 +633,7 @@ impl<'a> FirstPass<'a> {
     fn parse_setext_heading(&mut self, ix: usize, node_ix: TreeIndex) -> Option<usize> {
         let bytes = self.text.as_bytes();
         let (n, level) = scan_setext_heading(&bytes[ix..])?;
-        self.tree[node_ix].item.body = ItemBody::Header(level);
+        self.tree[node_ix].item.body = ItemBody::Heading(level);
 
         // strip trailing whitespace
         if let TreePointer::Valid(cur_ix) = self.tree.cur() {
@@ -892,19 +884,11 @@ impl<'a> FirstPass<'a> {
     fn parse_html_block_type_1_to_5(
         &mut self,
         start_ix: usize,
-        html_end_tag_ix: u32,
+        html_end_tag: &str,
         mut remaining_space: usize,
     ) -> usize {
-        self.tree.append(Item {
-            start: start_ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(Some(html_end_tag_ix)),
-        });
-        self.tree.push();
-
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
-        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -913,26 +897,20 @@ impl<'a> FirstPass<'a> {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() {
-                end_ix = ix;
                 break;
             }
 
-            let html_end_tag = HTML_END_TAGS[html_end_tag_ix as usize];
-
             if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
-                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() {
-                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        self.pop(end_ix);
         ix
     }
 
@@ -944,16 +922,8 @@ impl<'a> FirstPass<'a> {
         start_ix: usize,
         mut remaining_space: usize,
     ) -> usize {
-        self.tree.append(Item {
-            start: start_ix,
-            end: 0, // set later
-            body: ItemBody::HtmlBlock(None),
-        });
-        self.tree.push();
-
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
-        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -962,20 +932,17 @@ impl<'a> FirstPass<'a> {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = self.scan_containers(&mut line_start);
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
-                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() || scan_blank_line(&bytes[next_line_ix..]).is_some()
             {
-                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
-        self.pop(end_ix);
         ix
     }
 
@@ -1187,7 +1154,7 @@ impl<'a> FirstPass<'a> {
 
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
-    fn continue_list(&mut self, start: usize, ch: u8, index: usize) {
+    fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
                 if existing_ch == ch {
@@ -1226,11 +1193,11 @@ impl<'a> FirstPass<'a> {
     /// Parse an ATX heading.
     ///
     /// Returns index of start of next line.
-    fn parse_atx_heading(&mut self, mut ix: usize, atx_level: i32, atx_size: usize) -> usize {
+    fn parse_atx_heading(&mut self, mut ix: usize, atx_size: usize) -> usize {
         self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Header(atx_level),
+            body: ItemBody::Heading(atx_size as u32),
         });
         ix += atx_size;
         // next char is space or scan_eol
@@ -1519,15 +1486,15 @@ fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
             || is_html_tag(scan_html_block_tag(&bytes[1..]).1))
 }
 
-static HTML_END_TAGS: &[&str; 7] = &["</pre>", "</style>", "</script>", "-->", "?>", "]]>", ">"];
-
-/// Returns an index into HTML_END_TAGS.
 /// Assumes `text_bytes` is preceded by `<`.
-fn get_html_end_tag(text_bytes: &[u8]) -> Option<u32> {
+fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
     static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-    for (beg_tag, end_tag_ix) in BEGIN_TAGS.iter().zip(0..3) {
+    for (beg_tag, end_tag) in BEGIN_TAGS
+        .iter()
+        .zip(["</pre>", "</style>", "</script>"].into_iter())
+    {
         let tag_len = beg_tag.len();
 
         if text_bytes.len() < tag_len {
@@ -1541,19 +1508,19 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<u32> {
 
         // Must either be the end of the line...
         if text_bytes.len() == tag_len {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
 
         // ...or be followed by whitespace, newline, or '>'.
         let s = text_bytes[tag_len];
         if is_ascii_whitespace(s) || s == b'>' {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
     }
 
-    for (beg_tag, end_tag_ix) in ST_BEGIN_TAGS.iter().zip(3..6) {
+    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(["-->", "?>", "]]>"].into_iter()) {
         if text_bytes.starts_with(beg_tag) {
-            return Some(end_tag_ix);
+            return Some(end_tag);
         }
     }
 
@@ -1562,7 +1529,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<u32> {
         && text_bytes[1] >= b'A'
         && text_bytes[1] <= b'Z'
     {
-        Some(6)
+        Some(">")
     } else {
         None
     }
@@ -2045,7 +2012,7 @@ impl<'a> Parser<'a> {
                         };
                         if let Some(ix) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            self.tree[cur_ix].item.body = ItemBody::InlineHtml;
+                            self.tree[cur_ix].item.body = ItemBody::Html;
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
@@ -2690,8 +2657,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Rule => Tag::Rule,
-        ItemBody::Header(level) => Tag::Header(level),
+        ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
         ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2703,7 +2669,6 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
@@ -2719,13 +2684,13 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
-        ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
             return Event::FootnoteReference(allocs[cow_ix].clone())
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
+        ItemBody::Rule => return Event::Rule,
 
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -2739,8 +2704,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Rule => Tag::Rule,
-        ItemBody::Header(level) => Tag::Header(level),
+        ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
         ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2752,7 +2716,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::HtmlBlock(_) => Tag::HtmlBlock,
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,

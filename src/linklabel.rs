@@ -36,20 +36,18 @@ pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest<F>(
     text: &str,
-    start: usize,
     linebreak_handler: F,
 ) -> Option<(usize, CowStr<'_>)>
 where
-    // Takes a _global_ index into the document string, returns how many bytes to skip
-    F: Fn(usize) -> Option<usize>,
+    F: Fn(&[u8]) -> Option<usize>,
 {
     let bytes = text.as_bytes();
-    let mut ix = start;
+    let mut ix = 0;
     let mut only_white_space = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
     let mut label = String::new();
-    let mut mark = start;
+    let mut mark = 0;
 
     loop {
         if codepoints >= 1000 {
@@ -76,7 +74,7 @@ where
                             return None;
                         }
                         ix += eol_bytes;
-                        ix += linebreak_handler(ix)?;
+                        ix += linebreak_handler(&bytes[ix..])?;
                         whitespaces += 2; // indicate that we need to replace
                     } else {
                         whitespaces += if bytes[ix] == b' ' { 1 } else { 2 };
@@ -106,12 +104,12 @@ where
         None
     } else {
         let cow = if mark == 0 {
-            text[start..ix].into()
+            text[..ix].into()
         } else {
             label.push_str(&text[mark..ix]);
             label.into()
         };
-        Some((ix + 1 - start, cow))
+        Some((ix + 1, cow))
     }
 }
 
@@ -124,13 +122,13 @@ mod test {
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, normalized_label) = scan_link_label_rest(input, 0, |_| None).unwrap();
+        let (_bytes, normalized_label) = scan_link_label_rest(input, |_| None).unwrap();
         assert_eq!(expected_output, normalized_label.as_ref());
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input, 0, |_| Some(0)).is_some());
+        assert!(scan_link_label_rest(input, |_| Some(0)).is_some());
     }
 }

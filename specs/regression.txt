@@ -660,3 +660,38 @@ ISSUE 298
 </blockquote>
 <p>[a b] [a > b]</p>
 ````````````````````````````````
+
+ISSUE 398
+
+```````````````````````````````` example
+[`cargo
+package`]
+
+[`cargo package`]: https://example.com
+.
+<p><a href="https://example.com"><code>cargo package</code></a></p>
+````````````````````````````````
+
+ISSUE 398
+
+```````````````````````````````` example
+> [`cargo
+> package`]
+
+[`cargo package`]: https://example.com
+.
+<blockquote>
+<p><a href="https://example.com"><code>cargo package</code></a></p>
+</blockquote>
+````````````````````````````````
+
+ISSUE 398
+
+```````````````````````````````` example
+> `cargo
+> package`
+.
+<blockquote>
+<p><code>cargo package</code></p>
+</blockquote>
+````````````````````````````````

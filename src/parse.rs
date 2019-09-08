@@ -1681,7 +1681,17 @@ fn scan_link_label<'text, 'tree>(
     }
     let linebreak_handler = |ix: usize| -> Option<usize> {
         if let TreePointer::Valid(node_ix) = scan_nodes_to_ix(tree, node, ix) {
-            Some(tree[node_ix].item.start - ix)
+            // FIXME: this doesn't work correctly when we break inside a code
+            // span, since it is replaced by a contiguous item.
+            //
+            // Maybe we should scan containers when ix is greater than node start?
+            // Like this:
+            //
+            // let mut line_start = LineStart::new(&bytes[start_ix..]);
+            // let i = self.scan_containers(&mut line_start);
+            // Some(line_start.bytes_scanned())
+            let skip_bytes = tree[node_ix].item.start.saturating_sub(ix);
+            Some(skip_bytes)
         } else {
             None
         }

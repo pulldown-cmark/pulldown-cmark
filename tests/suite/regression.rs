@@ -765,3 +765,44 @@ fn regression_test_56() {
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_57() {
+    let original = r##"[`cargo
+package`]
+
+[`cargo package`]: https://example.com
+"##;
+    let expected = r##"<p><a href="https://example.com"><code>cargo package</code></a></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_58() {
+    let original = r##"> [`cargo
+> package`]
+
+[`cargo package`]: https://example.com
+"##;
+    let expected = r##"<blockquote>
+<p><a href="https://example.com"><code>cargo package</code></a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_59() {
+    let original = r##"> `cargo
+> package`
+"##;
+    let expected = r##"<blockquote>
+<p><code>cargo package</code></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}

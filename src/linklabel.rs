@@ -34,13 +34,10 @@ pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Assumes the opening bracket has already been scanned.
 /// Returns the number of bytes read (including closing bracket) and label on success.
-pub(crate) fn scan_link_label_rest<F>(
-    text: &str,
-    linebreak_handler: F,
-) -> Option<(usize, CowStr<'_>)>
-where
-    F: Fn(&[u8]) -> Option<usize>,
-{
+pub(crate) fn scan_link_label_rest<'t>(
+    text: &'t str,
+    linebreak_handler: &dyn Fn(&[u8]) -> Option<usize>,
+) -> Option<(usize, CowStr<'t>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
     let mut only_white_space = true;
@@ -122,13 +119,13 @@ mod test {
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, normalized_label) = scan_link_label_rest(input, |_| None).unwrap();
+        let (_bytes, normalized_label) = scan_link_label_rest(input, &|_| None).unwrap();
         assert_eq!(expected_output, normalized_label.as_ref());
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input, |_| Some(0)).is_some());
+        assert!(scan_link_label_rest(input, &|_| Some(0)).is_some());
     }
 }

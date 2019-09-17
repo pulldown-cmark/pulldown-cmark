@@ -1239,7 +1239,7 @@ impl<'a> FirstPass<'a> {
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
     fn parse_refdef_label(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
-        scan_link_label_rest(&self.text[start..], |bytes| {
+        scan_link_label_rest(&self.text[start..], &|bytes| {
             let mut line_start = LineStart::new(bytes);
             let _ = scan_containers(&self.tree, &mut line_start);
             let bytes_scanned = line_start.bytes_scanned();
@@ -1687,10 +1687,10 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, cow) = scan_link_label_rest(&text[2..], linebreak_handler)?;
+        let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
-        let (byte_index, cow) = scan_link_label_rest(&text[1..], linebreak_handler)?;
+        let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
         (byte_index + 1, ReferenceLabel::Link(cow))
     };
     Some(pair)

@@ -1194,16 +1194,16 @@ impl<'a> FirstPass<'a> {
     ///
     /// Returns index of start of next line.
     fn parse_atx_heading(&mut self, mut ix: usize, atx_size: usize) -> usize {
-        self.tree.append(Item {
+        let heading_ix = self.tree.append(Item {
             start: ix,
             end: 0, // set later
             body: ItemBody::Heading(atx_size as u32),
         });
         ix += atx_size;
-        // next char is space or scan_eol
-        // (guaranteed by scan_atx_heading)
+        // next char is space or eol (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
+            self.tree[heading_ix].item.end = ix + eol_bytes;
             return ix + eol_bytes;
         }
         // skip leading spaces
@@ -2932,6 +2932,16 @@ mod test {
             .map(|(_ev, range)| range)
             .collect();
         let expected_offsets = vec![(0..10), (0..2), (2..8), (3..4), (2..8), (8..10), (0..10)];
+        assert_eq!(expected_offsets, event_offsets);
+    }
+
+    #[test]
+    fn offset_iter_issue_404() {
+        let event_offsets: Vec<_> = Parser::new("###\n")
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .collect();
+        let expected_offsets = vec![(0..4), (0..4)];
         assert_eq!(expected_offsets, event_offsets);
     }
 

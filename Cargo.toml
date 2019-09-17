@@ -9,6 +9,7 @@ keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2018"
 readme = "README.md"
+exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/benches/**/*", "/azure-pipelines.yml"]
 
 build = "build.rs"
 

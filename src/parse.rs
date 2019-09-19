@@ -2001,10 +2001,9 @@ impl<'a> Parser<'a> {
                         continue;
                     } else {
                         let inline_html = if let TreePointer::Valid(next_ix) = next {
-                            scan_inline_html(
+                            self.scan_inline_html(
                                 block_text.as_bytes(),
                                 self.tree[next_ix].item.start,
-                                &mut self.html_scan_guard,
                             )
                         } else {
                             None
@@ -2509,6 +2508,26 @@ impl<'a> Parser<'a> {
             self.tree[open].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
             self.tree[open].item.end = self.tree[close].item.end;
             self.tree[open].next = self.tree[close].next;
+        }
+    }
+
+    /// Returns the next byte offset on success.
+    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<usize> {
+        let c = *bytes.get(ix)?;
+        if c == b'!' {
+            scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)
+        } else if c == b'?' {
+            scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)
+        } else {
+            let i = scan_html_block_inner(
+                &bytes[ix..],
+                Some(&|_bytes| {
+                    let mut line_start = LineStart::new(bytes);
+                    let _ = scan_containers(&self.tree, &mut line_start);
+                    line_start.bytes_scanned()
+                }),
+            )?;
+            Some(i + ix)
         }
     }
 

@@ -801,7 +801,6 @@ fn regression_test_59() {
 "##;
     let expected = r##"<blockquote>
 <p><code>cargo package</code></p>
-</blockquote>
 "##;
 
     test_markdown_html(original, expected);

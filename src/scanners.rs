@@ -856,7 +856,9 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
 }
 
 /// Returns byte scanned (TODO: should it return new offset?)
-fn scan_attribute(data: &[u8], allow_newline: bool) -> Option<usize> {
+// TODO: properly use the newline handler here
+fn scan_attribute(data: &[u8], newline_handler: Option<&dyn Fn(&[u8]) -> usize>) -> Option<usize> {
+    let allow_newline = newline_handler.is_some();
     let whitespace_scanner =
         |c| is_ascii_whitespace(c) && (allow_newline || c != b'\n' && c != b'\r');
     let mut ix = scan_attribute_name(data)?;
@@ -865,7 +867,7 @@ fn scan_attribute(data: &[u8], allow_newline: bool) -> Option<usize> {
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
         ix += scan_while(&data[ix..], whitespace_scanner);
-        ix += scan_attribute_value(&data[ix..], allow_newline)?;
+        ix += scan_attribute_value(&data[ix..], newline_handler)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -873,18 +875,27 @@ fn scan_attribute(data: &[u8], allow_newline: bool) -> Option<usize> {
     Some(ix)
 }
 
-fn scan_attribute_value(data: &[u8], allow_newline: bool) -> Option<usize> {
+fn scan_attribute_value(
+    data: &[u8],
+    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+) -> Option<usize> {
     let mut i = 0;
     match *data.get(0)? {
         b @ b'"' | b @ b'\'' => {
             i += 1;
-            i += scan_while(&data[i..], |c| {
-                c != b && (allow_newline || c != b'\n' && c != b'\r')
-            });
-            if scan_ch(&data[i..], b) == 0 {
-                return None;
+            while i < data.len() {
+                if data[i] == b {
+                    return Some(i + 1);
+                }
+                if let Some(eol_bytes) = scan_eol(&data[i..]) {
+                    let handler = newline_handler?;
+                    i += eol_bytes;
+                    i += handler(&data[i..]);
+                } else {
+                    i += 1;
+                }
             }
-            i += 1;
+            return None;
         }
         b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => {
             return None;
@@ -966,12 +977,22 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
 
 /// Assumes that `data` is preceded by `<`.
 pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
-    let i = scan_html_block_inner(data, false)?;
+    // Block type html does not allow for newlines, so we
+    // do not pass a newline handler.
+    let i = scan_html_block_inner(data, None)?;
     scan_blank_line(&data[i..])?;
     Some(i)
 }
 
-fn scan_html_block_inner(data: &[u8], allow_newline: bool) -> Option<usize> {
+// FIXME: instead of a newline handler, maybe this should receive
+// a whitespace handler instead.
+// With signature `&dyn Fn(&[u8]) -> Option<usize>`.
+// We currently need to implement whitespace handling in all of
+// this function's dependencies as well.
+pub(crate) fn scan_html_block_inner(
+    data: &[u8],
+    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+) -> Option<usize> {
     let close_tag_bytes = scan_ch(&data, b'/');
     let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0 {
@@ -982,17 +1003,28 @@ fn scan_html_block_inner(data: &[u8], allow_newline: bool) -> Option<usize> {
 
     if close_tag_bytes == 0 {
         loop {
-            let whitespace_scanner =
-                |c| is_ascii_whitespace(c) && (allow_newline || c != b'\n' && c != b'\r');
-            let whitespace = scan_while(&data[i..], whitespace_scanner);
-            i += whitespace;
+            let old_i = i;
+            loop {
+                i += scan_whitespace_no_nl(&data[i..]);
+                if let Some(eol_bytes) = scan_eol(&data[i..]) {
+                    if let Some(handler) = newline_handler {
+                        i += eol_bytes;
+                        i += handler(&data[i..]);
+                    } else {
+                        return None;
+                    }
+                } else {
+                    break;
+                }
+            }
             if let Some(b'/') | Some(b'>') = data.get(i) {
                 break;
             }
-            if whitespace == 0 {
+            if old_i == i {
+                // No whitespace, which is mandatory.
                 return None;
             }
-            i += scan_attribute(&data[i..], allow_newline)?;
+            i += scan_attribute(&data[i..], newline_handler)?;
         }
     }
 
@@ -1002,11 +1034,10 @@ fn scan_html_block_inner(data: &[u8], allow_newline: bool) -> Option<usize> {
         i += scan_ch(&data[i..], b'/');
     }
 
-    let c = scan_ch(&data[i..], b'>');
-    if c == 0 {
+    if scan_ch(&data[i..], b'>') == 0 {
         None
     } else {
-        Some(i + c)
+        Some(i + 1)
     }
 }
 
@@ -1111,7 +1142,7 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
 /// Returns byte offset on match.
-fn scan_inline_html_comment(
+pub(crate) fn scan_inline_html_comment(
     bytes: &[u8],
     mut ix: usize,
     scan_guard: &mut HtmlScanGuard,
@@ -1178,7 +1209,7 @@ fn scan_inline_html_comment(
 
 /// Scan processing directive, with initial "<?" already consumed.
 /// Returns the next byte offset on success.
-fn scan_inline_html_processing(
+pub(crate) fn scan_inline_html_processing(
     bytes: &[u8],
     mut ix: usize,
     scan_guard: &mut HtmlScanGuard,
@@ -1194,23 +1225,6 @@ fn scan_inline_html_processing(
     }
     scan_guard.processing = ix;
     None
-}
-
-/// Returns the next byte offset on success.
-pub(crate) fn scan_inline_html(
-    bytes: &[u8],
-    ix: usize,
-    scan_guard: &mut HtmlScanGuard,
-) -> Option<usize> {
-    let c = *bytes.get(ix)?;
-    if c == b'!' {
-        scan_inline_html_comment(bytes, ix + 1, scan_guard)
-    } else if c == b'?' {
-        scan_inline_html_processing(bytes, ix + 1, scan_guard)
-    } else {
-        let i = scan_html_block_inner(&bytes[ix..], true)?;
-        Some(i + ix)
-    }
 }
 
 #[cfg(test)]

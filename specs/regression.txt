@@ -693,5 +693,18 @@ ISSUE 398
 .
 <blockquote>
 <p><code>cargo package</code></p>
+````````````````````````````````
+
+ISSUE 399
+
+```````````````````````````````` DISABLED example
+> Note: Though you should not rely on this, all pointers to <abbr
+> title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+> the size of `usize` and have the same alignment.
+.
+<blockquote>
+<p>Note: Though you should not rely on this, all pointers to
+<abbr title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 ````````````````````````````````

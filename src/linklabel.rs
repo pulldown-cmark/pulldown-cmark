@@ -33,6 +33,10 @@ pub enum ReferenceLabel<'a> {
 pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Assumes the opening bracket has already been scanned.
+/// The line break handler determines what happens when a linebreak
+/// is found. It is passed the bytes following the line break and
+/// either returns `Some(k)`, where `k` is the number of bytes to skip,
+/// or `None` to abort parsing the label.
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest<'t>(
     text: &'t str,

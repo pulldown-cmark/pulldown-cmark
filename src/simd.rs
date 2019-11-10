@@ -25,7 +25,7 @@ const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 /// special marker bytes. This is effectively a 128 element 2d bitvector,
 /// that can be indexed by a four bit row index (the lower nibble)
 /// and a three bit column index (upper nibble).
-const fn compute_lookup() -> [u8; 16] {
+static SPECIALS_LUT: [u8; 16] = {
     let mut lookup = [0u8; 16];
     lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
     lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
@@ -41,7 +41,7 @@ const fn compute_lookup() -> [u8; 16] {
     lookup[(b'!' & 0x0f) as usize] |= 1 << (b'!' >> 4);
     lookup[(b'`' & 0x0f) as usize] |= 1 << (b'`' >> 4);
     lookup
-}
+};
 
 /// Computes a bit mask for the given byteslice starting from the given index,
 /// where the 16 least significant bits indicate (by value of 1) whether or not
@@ -54,8 +54,7 @@ const fn compute_lookup() -> [u8; 16] {
 unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
     debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
 
-    let lookup = compute_lookup();
-    let bitmap = _mm_loadu_si128(lookup.as_ptr() as *const __m128i);
+    let bitmap = _mm_loadu_si128(SPECIALS_LUT.as_ptr() as *const __m128i);
     // Small lookup table to compute single bit bitshifts
     // for 16 bytes at once.
     let bitmask_lookup =

@@ -2570,7 +2570,7 @@ where
     }
 }
 
-const fn special_bytes() -> [bool; 256] {
+static SPECIAL_BYTES: [bool; 256] = {
     let mut bytes = [false; 256];
     bytes[b'<' as usize] = true;
     bytes[b'!' as usize] = true;
@@ -2586,7 +2586,7 @@ const fn special_bytes() -> [bool; 256] {
     bytes[b']' as usize] = true;
     bytes[b'&' as usize] = true;
     bytes
-}
+};
 
 pub(crate) fn scalar_iterate_special_bytes<F, T>(
     bytes: &[u8],
@@ -2596,11 +2596,10 @@ pub(crate) fn scalar_iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-    let special_bytes = special_bytes();
 
     while ix < bytes.len() {
         let b = bytes[ix];
-        if special_bytes[b as usize] {
+        if SPECIAL_BYTES[b as usize] {
             match callback(ix, b) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     ix += skip;

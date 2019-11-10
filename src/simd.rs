@@ -216,18 +216,18 @@ mod simd_test {
 
     #[test]
     fn long_match() {
-        check_expected_indices("0123456789abcde~*bcd&f0".as_bytes(), &[15, 16, 20], 0);
+        check_expected_indices("0123456789abcde_*bcd&f0".as_bytes(), &[15, 16, 20], 0);
     }
 
     #[test]
     fn border_skip() {
-        check_expected_indices("0123456789abcde~~~~d&f0".as_bytes(), &[15, 20], 3);
+        check_expected_indices("0123456789abcde****d&f0".as_bytes(), &[15, 20], 3);
     }
 
     #[test]
     fn exhaustive_search() {
         let chars = [
-            b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
         ];
 
         for &c in &chars {

@@ -2563,7 +2563,12 @@ pub(crate) enum LoopInstruction<T> {
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
 /// If `BreakAtWith(..)` is never returned, this function will return the first
 /// index that is outside the byteslice bound and a `None` value.
-fn iterate_special_bytes<F, T>(lut: LookupTable, bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
+fn iterate_special_bytes<F, T>(
+    lut: LookupTable,
+    bytes: &[u8],
+    ix: usize,
+    callback: F,
+) -> (usize, Option<T>)
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
@@ -2628,7 +2633,6 @@ pub(crate) fn scalar_iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-
     while ix < bytes.len() {
         let b = bytes[ix];
         if lut[b as usize] {

@@ -266,6 +266,7 @@ struct FirstPass<'a> {
     allocs: Allocations<'a>,
     options: Options,
     list_nesting: usize,
+    lookup_table: LookupTable,
 }
 
 impl<'a> FirstPass<'a> {
@@ -277,6 +278,11 @@ impl<'a> FirstPass<'a> {
         let begin_list_item = false;
         let last_line_blank = false;
         let allocs = Allocations::new();
+        let lookup_table = if options == Options::empty() {
+            LOOKUP_TABLE_STANDARD
+        } else {
+            LOOKUP_TABLE_EXTENDED
+        };
         FirstPass {
             text,
             tree,
@@ -285,6 +291,7 @@ impl<'a> FirstPass<'a> {
             allocs,
             options,
             list_nesting: 0,
+            lookup_table,
         }
     }
 
@@ -655,7 +662,7 @@ impl<'a> FirstPass<'a> {
         let mut last_pipe_ix = start;
         let mut begin_text = start;
 
-        let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
+        let (final_ix, brk) = iterate_special_bytes(self.lookup_table, bytes, start, |ix, byte| {
             match byte {
                 b'\n' | b'\r' => {
                     if let TableParseMode::Active = mode {
@@ -2556,28 +2563,43 @@ pub(crate) enum LoopInstruction<T> {
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
 /// If `BreakAtWith(..)` is never returned, this function will return the first
 /// index that is outside the byteslice bound and a `None` value.
-fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
+fn iterate_special_bytes<F, T>(lut: LookupTable, bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
-        crate::simd::iterate_special_bytes(bytes, ix, callback)
+        crate::simd::iterate_special_bytes(lut, bytes, ix, callback)
     }
     #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
     {
-        scalar_iterate_special_bytes(bytes, ix, callback)
+        scalar_iterate_special_bytes(lut, bytes, ix, callback)
     }
 }
 
-static SPECIAL_BYTES: [bool; 256] = {
+pub(crate) type ScalarLut = &'static [bool; 256];
+
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+type LookupTable = crate::simd::MaybeSimdLut;
+#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+type LookupTable = ScalarLut;
+
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+static LOOKUP_TABLE_STANDARD: LookupTable = crate::simd::MAYBE_SPECIALS_LUT;
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+static LOOKUP_TABLE_EXTENDED: LookupTable = crate::simd::MAYBE_SPECIALS_LUT_EXTENDED;
+
+#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+static LOOKUP_TABLE_STANDARD: LookupTable = &SPECIAL_BYTES_LUT;
+#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+static LOOKUP_TABLE_EXTENDED: LookupTable = &SPECIAL_BYTES_LUT_EXTENDED;
+
+const fn base_lut() -> [bool; 256] {
     let mut bytes = [false; 256];
     bytes[b'<' as usize] = true;
     bytes[b'!' as usize] = true;
     bytes[b'[' as usize] = true;
-    bytes[b'~' as usize] = true;
     bytes[b'`' as usize] = true;
-    bytes[b'|' as usize] = true;
     bytes[b'\\' as usize] = true;
     bytes[b'*' as usize] = true;
     bytes[b'_' as usize] = true;
@@ -2586,9 +2608,19 @@ static SPECIAL_BYTES: [bool; 256] = {
     bytes[b']' as usize] = true;
     bytes[b'&' as usize] = true;
     bytes
+}
+
+pub(crate) static SPECIAL_BYTES_LUT: [bool; 256] = base_lut();
+
+pub(crate) static SPECIAL_BYTES_LUT_EXTENDED: [bool; 256] = {
+    let mut bytes = base_lut();
+    bytes[b'~' as usize] = true;
+    bytes[b'|' as usize] = true;
+    bytes
 };
 
 pub(crate) fn scalar_iterate_special_bytes<F, T>(
+    lut: &'static [bool; 256],
     bytes: &[u8],
     mut ix: usize,
     mut callback: F,
@@ -2599,7 +2631,7 @@ where
 
     while ix < bytes.len() {
         let b = bytes[ix];
-        if SPECIAL_BYTES[b as usize] {
+        if lut[b as usize] {
             match callback(ix, b) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     ix += skip;

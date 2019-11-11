@@ -18,9 +18,9 @@ name = "pulldown-cmark"
 required-features = ["getopts"]
 doc = false
 
-[[bench]]
-name = "html_rendering"
-harness = false
+#[[bench]]
+#name = "html_rendering"
+#harness = false
 
 [dependencies]
 bitflags = "1.2"

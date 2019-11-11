@@ -9,7 +9,7 @@ keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2018"
 readme = "README.md"
-exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/benches/**/*", "/azure-pipelines.yml"]
+exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/azure-pipelines.yml"]
 
 build = "build.rs"
 
@@ -18,9 +18,9 @@ name = "pulldown-cmark"
 required-features = ["getopts"]
 doc = false
 
-#[[bench]]
-#name = "html_rendering"
-#harness = false
+[[bench]]
+name = "html_rendering"
+harness = false
 
 [dependencies]
 bitflags = "1.2"

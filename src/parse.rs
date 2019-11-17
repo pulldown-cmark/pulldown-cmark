@@ -38,6 +38,36 @@ use crate::tree::{Tree, TreeIndex, TreePointer};
 // https://spec.commonmark.org/0.29/#link-destination
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
+/// Codeblock kind.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CodeBlockKind<'a> {
+    Indented,
+    Fenced(CowStr<'a>),
+}
+
+impl<'a> CodeBlockKind<'a> {
+    pub fn is_indented(&self) -> bool {
+        match *self {
+            CodeBlockKind::Indented => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_fenced(&self) -> bool {
+        match *self {
+            CodeBlockKind::Fenced(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_fences(&self) -> Option<&CowStr<'a>> {
+        match *self {
+            CodeBlockKind::Fenced(ref f) => Some(f),
+            _ => None,
+        }
+    }
+}
+
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
@@ -48,9 +78,12 @@ pub enum Tag<'a> {
     Heading(u32),
 
     BlockQuote,
-    /// A code block. The value contained in the tag describes the language of the code,
-    /// which may be empty.
-    CodeBlock(CowStr<'a>),
+    /// A code block.
+    ///
+    /// The boolean is `true` is this is an indented code block (not starting with "\`\`\`").
+    ///
+    /// The value contained in the tag describes the language of the code, which may be empty.
+    CodeBlock(CodeBlockKind<'a>, CowStr<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
@@ -204,7 +237,7 @@ enum ItemBody {
 
     Rule,
     Heading(u32), // heading level
-    FencedCodeBlock(CowIndex),
+    FencedCodeBlock(CowIndex, CowIndex),
     IndentCodeBlock,
     Html,
     BlockQuote,
@@ -1012,10 +1045,14 @@ impl<'a> FirstPass<'a> {
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
         let info_string = unescape(&self.text[info_start..info_end]);
+        let fences = &self.text[start_ix..info_start];
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
+            body: ItemBody::FencedCodeBlock(
+                self.allocs.allocate_cow(fences.into()),
+                self.allocs.allocate_cow(info_string),
+            ),
         });
         self.tree.push();
         loop {
@@ -2675,8 +2712,13 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
-        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::FencedCodeBlock(fences_ix, cow_ix) => {
+            Tag::CodeBlock(
+                CodeBlockKind::Fenced(allocs[fences_ix].clone()),
+                allocs[cow_ix].clone(),
+            )
+        }
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented, "".into()),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -2722,8 +2764,13 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
-        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::FencedCodeBlock(fences_ix, cow_ix) => {
+            Tag::CodeBlock(
+                CodeBlockKind::Fenced(allocs[fences_ix].clone()),
+                allocs[cow_ix].clone(),
+            )
+        }
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented, "".into()),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {

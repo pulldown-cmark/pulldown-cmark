@@ -250,7 +250,7 @@ where
                     self.write("\n<blockquote>\n")
                 }
             }
-            Tag::CodeBlock(info) => {
+            Tag::CodeBlock(_, info) => {
                 if !self.end_newline {
                     self.write_newline()?;
                 }
@@ -375,7 +375,7 @@ where
             Tag::BlockQuote => {
                 self.write("</blockquote>\n")?;
             }
-            Tag::CodeBlock(_) => {
+            Tag::CodeBlock(_, _) => {
                 self.write("</code></pre>\n")?;
             }
             Tag::List(Some(_)) => {

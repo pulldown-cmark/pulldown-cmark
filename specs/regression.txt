@@ -708,3 +708,25 @@ ISSUE 399
 the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 ````````````````````````````````
+
+ISSUE 413
+
+```````````````````````````````` example
+Lorem ipsum.[^a]
+
+An unordered list before the footnotes:
+* Ipsum
+* Lorem
+
+[^a]: Cool.
+.
+<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
+<p>An unordered list before the footnotes:</p>
+<ul>
+    <li>Ipsum</li>
+    <li>Lorem</li>
+</ul>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+    <p>Cool.</p>
+</div>
+````````````````````````````````

@@ -6889,8 +6889,7 @@ fn spec_test_511() {
 fn spec_test_512() {
     let original = r##"[link *foo **bar** `#`*](/uri)
 "##;
-    let expected =
-        r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
+    let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
     test_markdown_html(original, expected);
@@ -7038,8 +7037,7 @@ fn spec_test_526() {
 
 [ref]: /uri
 "##;
-    let expected =
-        r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
+    let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
     test_markdown_html(original, expected);
@@ -7923,8 +7921,7 @@ fn spec_test_600() {
 fn spec_test_601() {
     let original = r##"<foo+special@Bar.baz-bar0.com>
 "##;
-    let expected =
-        r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
+    let expected = r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
 "##;
 
     test_markdown_html(original, expected);

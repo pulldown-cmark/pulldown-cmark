@@ -405,8 +405,7 @@ fn regression_test_30() {
  
 some text
 "##;
-    let expected =
-        r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+    let expected = r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
 </tbody></table>
 <p>some text</p>
 "##;
@@ -801,6 +800,30 @@ fn regression_test_59() {
 "##;
     let expected = r##"<blockquote>
 <p><code>cargo package</code></p>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_60() {
+    let original = r##"Lorem ipsum.[^a]
+
+An unordered list before the footnotes:
+* Ipsum
+* Lorem
+
+[^a]: Cool.
+"##;
+    let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
+<p>An unordered list before the footnotes:</p>
+<ul>
+    <li>Ipsum</li>
+    <li>Lorem</li>
+</ul>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+    <p>Cool.</p>
+</div>
 "##;
 
     test_markdown_html(original, expected);

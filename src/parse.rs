@@ -1226,6 +1226,7 @@ impl<'a> FirstPass<'a> {
             return None;
         }
         i += 1;
+        self.finish_list(start);
         self.tree.append(Item {
             start,
             end: 0, // will get set later

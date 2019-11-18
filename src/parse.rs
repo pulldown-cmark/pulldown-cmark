@@ -3077,4 +3077,37 @@ mod test {
         }
         assert!(link_tag_count > 0);
     }
+
+    #[test]
+    fn code_block_kind_check_fenced() {
+        let parser = Parser::new("hello\n```test\ntadam\n```");
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(fences), syntax)) => {
+                    assert_eq!(fences.as_ref(), "```");
+                    assert_eq!(syntax.as_ref(), "test");
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn code_block_kind_check_indented() {
+        let parser = Parser::new("hello\n\n    ```test\n    tadam\nhello");
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented, syntax)) => {
+                    assert_eq!(syntax.as_ref(), "");
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
+    }
 }

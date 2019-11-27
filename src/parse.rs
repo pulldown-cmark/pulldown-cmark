@@ -42,6 +42,7 @@ const LINK_MAX_NESTED_PARENS: usize = 5;
 #[derive(Clone, Debug, PartialEq)]
 pub enum CodeBlockKind<'a> {
     Indented,
+    /// The value contained in the tag describes the language of the code, which may be empty.
     Fenced(CowStr<'a>),
 }
 
@@ -59,13 +60,6 @@ impl<'a> CodeBlockKind<'a> {
             _ => false,
         }
     }
-
-    pub fn get_fences(&self) -> Option<&CowStr<'a>> {
-        match *self {
-            CodeBlockKind::Fenced(ref f) => Some(f),
-            _ => None,
-        }
-    }
 }
 
 /// Tags for elements that can contain other elements.
@@ -79,11 +73,7 @@ pub enum Tag<'a> {
 
     BlockQuote,
     /// A code block.
-    ///
-    /// The boolean is `true` is this is an indented code block (not starting with "\`\`\`").
-    ///
-    /// The value contained in the tag describes the language of the code, which may be empty.
-    CodeBlock(CodeBlockKind<'a>, CowStr<'a>),
+    CodeBlock(CodeBlockKind<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
@@ -237,7 +227,7 @@ enum ItemBody {
 
     Rule,
     Heading(u32), // heading level
-    FencedCodeBlock(CowIndex, CowIndex),
+    FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
     BlockQuote,
@@ -1045,12 +1035,10 @@ impl<'a> FirstPass<'a> {
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
         let info_string = unescape(&self.text[info_start..info_end]);
-        let fences = &self.text[start_ix..info_start];
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
             body: ItemBody::FencedCodeBlock(
-                self.allocs.allocate_cow(fences.into()),
                 self.allocs.allocate_cow(info_string),
             ),
         });
@@ -2712,13 +2700,10 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(fences_ix, cow_ix) => {
-            Tag::CodeBlock(
-                CodeBlockKind::Fenced(allocs[fences_ix].clone()),
-                allocs[cow_ix].clone(),
-            )
+        ItemBody::FencedCodeBlock(cow_ix) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
-        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented, "".into()),
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -2764,13 +2749,10 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(fences_ix, cow_ix) => {
-            Tag::CodeBlock(
-                CodeBlockKind::Fenced(allocs[fences_ix].clone()),
-                allocs[cow_ix].clone(),
-            )
+        ItemBody::FencedCodeBlock(cow_ix) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
-        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented, "".into()),
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -2886,14 +2868,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = std::mem::size_of::<Node<Item>>();
-        assert_eq!(56, node_size);
+        assert_eq!(48, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = std::mem::size_of::<ItemBody>();
-        assert_eq!(24, body_size);
+        assert_eq!(16, body_size);
     }
 
     #[test]
@@ -3084,8 +3066,7 @@ mod test {
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
             match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(fences), syntax)) => {
-                    assert_eq!(fences.as_ref(), "```");
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) => {
                     assert_eq!(syntax.as_ref(), "test");
                     found += 1;
                 }
@@ -3101,8 +3082,7 @@ mod test {
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
             match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented, syntax)) => {
-                    assert_eq!(syntax.as_ref(), "");
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
                     found += 1;
                 }
                 _ => {}

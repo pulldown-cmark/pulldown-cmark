@@ -26,7 +26,7 @@ use std::io::{self, ErrorKind, Write};
 
 use crate::escape::{escape_href, escape_html};
 use crate::parse::Event::*;
-use crate::parse::{Alignment, Event, LinkType, Tag};
+use crate::parse::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 use crate::strings::CowStr;
 
 enum TableState {
@@ -254,13 +254,18 @@ where
                 if !self.end_newline {
                     self.write_newline()?;
                 }
-                let lang = info.split(' ').next().unwrap();
-                if lang.is_empty() {
-                    self.write("<pre><code>")
-                } else {
-                    self.write("<pre><code class=\"language-")?;
-                    escape_html(&mut self.writer, lang)?;
-                    self.write("\">")
+                match info {
+                    CodeBlockKind::Fenced(info) => {
+                        let lang = info.split(' ').next().unwrap();
+                        if lang.is_empty() {
+                            self.write("<pre><code>")
+                        } else {
+                            self.write("<pre><code class=\"language-")?;
+                            escape_html(&mut self.writer, lang)?;
+                            self.write("\">")
+                        }
+                    }
+                    CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
             Tag::List(Some(1)) => {

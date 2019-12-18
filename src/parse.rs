@@ -38,6 +38,30 @@ use crate::tree::{Tree, TreeIndex, TreePointer};
 // https://spec.commonmark.org/0.29/#link-destination
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
+/// Codeblock kind.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CodeBlockKind<'a> {
+    Indented,
+    /// The value contained in the tag describes the language of the code, which may be empty.
+    Fenced(CowStr<'a>),
+}
+
+impl<'a> CodeBlockKind<'a> {
+    pub fn is_indented(&self) -> bool {
+        match *self {
+            CodeBlockKind::Indented => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_fenced(&self) -> bool {
+        match *self {
+            CodeBlockKind::Fenced(_) => true,
+            _ => false,
+        }
+    }
+}
+
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
@@ -48,9 +72,8 @@ pub enum Tag<'a> {
     Heading(u32),
 
     BlockQuote,
-    /// A code block. The value contained in the tag describes the language of the code,
-    /// which may be empty.
-    CodeBlock(CowStr<'a>),
+    /// A code block.
+    CodeBlock(CodeBlockKind<'a>),
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
@@ -1015,7 +1038,9 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
+            body: ItemBody::FencedCodeBlock(
+                self.allocs.allocate_cow(info_string),
+            ),
         });
         self.tree.push();
         loop {
@@ -2676,8 +2701,10 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
-        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::FencedCodeBlock(cow_ix) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+        }
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -2723,8 +2750,10 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
-        ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(allocs[cow_ix].clone()),
-        ItemBody::IndentCodeBlock => Tag::CodeBlock("".into()),
+        ItemBody::FencedCodeBlock(cow_ix) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+        }
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -3030,5 +3059,36 @@ mod test {
             assert_eq!(title.as_ref(), "SWAG");
         }
         assert!(link_tag_count > 0);
+    }
+
+    #[test]
+    fn code_block_kind_check_fenced() {
+        let parser = Parser::new("hello\n```test\ntadam\n```");
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) => {
+                    assert_eq!(syntax.as_ref(), "test");
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn code_block_kind_check_indented() {
+        let parser = Parser::new("hello\n\n    ```test\n    tadam\nhello");
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
     }
 }

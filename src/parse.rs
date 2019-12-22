@@ -1941,7 +1941,7 @@ impl<'a> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
 
-    /// Creates a new event iteratorfor a markdown string with given options.
+    /// Creates a new event iterator for a markdown string with given options.
     pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
         Parser::new_with_broken_link_callback(text, options, None)
     }

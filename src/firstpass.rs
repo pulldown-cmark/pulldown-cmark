@@ -201,6 +201,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
+
+        if let Some(n) = scan_options_start(&bytes[ix..]) {
+            return self.parse_options_block(ix, n);
+        }
+
         self.parse_paragraph(ix)
     }
 
@@ -416,6 +421,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 match byte {
                     b'\n' | b'\r' => {
                         if let TableParseMode::Active = mode {
+                            return LoopInstruction::BreakAtWith(ix, None);
+                        }
+
+                        // If tables are not enabled yet and the next char is a pipe,
+                        // and there was content before then a table begins here but
+                        // there was content before the table:
+                        // ```
+                        // Hello
+                        // | a | b | c |
+                        // ```
+                        if TableParseMode::Scan == mode &&
+                            bytes.len() > (ix + 1) &&
+                            bytes[ix + 1] == b'|' &&
+                            begin_text < ix &&
+                            pipes == 0 {
                             return LoopInstruction::BreakAtWith(ix, None);
                         }
 
@@ -869,6 +889,27 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // try to read trailing whitespace or it will register as a completely blank line
         ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
+    }
+
+
+     fn parse_options_block(
+        &mut self,
+        start_ix: usize,
+        n_option_char: usize
+    ) -> usize {
+        let bytes = self.text.as_bytes();
+        let mut info_start = start_ix + n_option_char;
+        let end = scan_nextline(&bytes[info_start..]) + info_start;
+
+        self.tree.append(Item {
+            start: info_start,
+            end: 0, // will get set later
+            body: ItemBody::Options,
+        });
+        self.tree.push();
+        self.tree.append_text(info_start, end - 1);
+        self.pop(end);
+        end
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -1397,7 +1438,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b':'
     ];
 
     for &byte in &standard_bytes {

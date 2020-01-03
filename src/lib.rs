@@ -127,11 +127,13 @@ pub enum Tag<'a> {
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
     TableRow,
     TableCell,
+    Options,
 
     // span-level tags
     Emphasis,
     Strong,
     Strikethrough,
+    Options,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title.
     Link(LinkType, CowStr<'a>, CowStr<'a>),

@@ -730,3 +730,20 @@ An unordered list before the footnotes:
     <p>Cool.</p>
 </div>
 ````````````````````````````````
+
+ISSUE 421
+
+```````````````````````````````` example
+[][a]
+
+[a]: b
+
+# assimp-rs [![][crates-badge]][crates]
+
+[crates]: https://crates.io/crates/assimp
+[crates-badge]: http://meritbadge.herokuapp.com/assimp
+.
+<p><a href="b"></a></p>
+
+<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
+````````````````````````````````

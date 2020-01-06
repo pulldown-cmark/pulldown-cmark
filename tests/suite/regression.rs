@@ -828,3 +828,22 @@ An unordered list before the footnotes:
 
     test_markdown_html(original, expected);
 }
+
+#[test]
+fn regression_test_61() {
+    let original = r##"[][a]
+
+[a]: b
+
+# assimp-rs [![][crates-badge]][crates]
+
+[crates]: https://crates.io/crates/assimp
+[crates-badge]: http://meritbadge.herokuapp.com/assimp
+"##;
+    let expected = r##"<p><a href="b"></a></p>
+
+<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
+"##;
+
+    test_markdown_html(original, expected);
+}

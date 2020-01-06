@@ -1038,9 +1038,7 @@ impl<'a> FirstPass<'a> {
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body: ItemBody::FencedCodeBlock(
-                self.allocs.allocate_cow(info_string),
-            ),
+            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
         self.tree.push();
         loop {
@@ -2147,7 +2145,6 @@ impl<'a> Parser<'a> {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
                             let scan_result = scan_reference(&self.tree, block_text, next);
-                            let label_node = self.tree[tos.node].next;
                             let node_after_link = match scan_result {
                                 RefScan::LinkLabel(_, next_node) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
@@ -2158,6 +2155,7 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(..) => LinkType::Collapsed,
                                 RefScan::Failed => LinkType::Shortcut,
                             };
+
                             let label: Option<ReferenceLabel<'a>> = match scan_result {
                                 RefScan::LinkLabel(l, ..) => Some(ReferenceLabel::Link(l)),
                                 RefScan::Collapsed(..) | RefScan::Failed => {
@@ -2217,17 +2215,20 @@ impl<'a> Parser<'a> {
                                     } else {
                                         ItemBody::Link(link_ix)
                                     };
+                                    let label_node = self.tree[tos.node].next;
 
                                     // lets do some tree surgery to add the link to the tree
                                     // 1st: skip the label node and close node
                                     self.tree[tos.node].next = node_after_link;
 
-                                    // then, add the label node as a child to the link node
-                                    self.tree[tos.node].child = label_node;
+                                    // then, if it exists, add the label node as a child to the link node
+                                    if label_node != cur {
+                                        self.tree[tos.node].child = label_node;
 
-                                    // finally: disconnect list of children
-                                    if let TreePointer::Valid(prev_ix) = prev {
-                                        self.tree[prev_ix].next = TreePointer::Nil;
+                                        // finally: disconnect list of children
+                                        if let TreePointer::Valid(prev_ix) = prev {
+                                            self.tree[prev_ix].next = TreePointer::Nil;
+                                        }
                                     }
 
                                     // set up cur so next node will be node_after_link
@@ -2349,10 +2350,9 @@ impl<'a> Parser<'a> {
     fn scan_inline_link(
         &self,
         underlying: &'a str,
-        start_ix: usize,
+        mut ix: usize,
         node: TreePointer,
     ) -> Option<(usize, CowStr<'a>, CowStr<'a>)> {
-        let mut ix = start_ix;
         if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
             return None;
         }

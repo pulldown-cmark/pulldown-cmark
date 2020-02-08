@@ -1519,7 +1519,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
 
     for (beg_tag, end_tag) in BEGIN_TAGS
         .iter()
-        .zip(["</pre>", "</style>", "</script>"].into_iter())
+        .zip(["</pre>", "</style>", "</script>"].iter())
     {
         let tag_len = beg_tag.len();
 
@@ -1544,7 +1544,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
         }
     }
 
-    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(["-->", "?>", "]]>"].into_iter()) {
+    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(["-->", "?>", "]]>"].iter()) {
         if text_bytes.starts_with(beg_tag) {
             return Some(end_tag);
         }

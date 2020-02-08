@@ -780,8 +780,8 @@ impl<'a> FirstPass<'a> {
                 c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
-                    let can_open = delim_run_can_open(&self.text, string_suffix, count, ix);
-                    let can_close = delim_run_can_close(&self.text, string_suffix, count, ix);
+                    let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
+                    let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
                     let is_valid_seq = c != b'~'
                         || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
 
@@ -1323,10 +1323,10 @@ impl<'a> FirstPass<'a> {
         let bytes = self.text.as_bytes();
 
         // whitespace between label and url (including up to one newline)
-        let (mut i, _newlines) = self.scan_refdef_space(&bytes, start)?;
+        let (mut i, _newlines) = self.scan_refdef_space(bytes, start)?;
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(&self.text, i, 1)?;
+        let (dest_length, dest) = scan_link_dest(self.text, i, 1)?;
         if dest_length == 0 {
             return None;
         }
@@ -1338,7 +1338,7 @@ impl<'a> FirstPass<'a> {
 
         // scan whitespace between dest and label
         let (mut i, newlines) =
-            if let Some((new_i, mut newlines)) = self.scan_refdef_space(&bytes, i) {
+            if let Some((new_i, mut newlines)) = self.scan_refdef_space(bytes, i) {
                 if i == self.text.len() {
                     newlines += 1;
                 }

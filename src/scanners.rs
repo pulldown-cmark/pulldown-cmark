@@ -993,7 +993,7 @@ pub(crate) fn scan_html_block_inner(
     data: &[u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
 ) -> Option<usize> {
-    let close_tag_bytes = scan_ch(&data, b'/');
+    let close_tag_bytes = scan_ch(data, b'/');
     let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0 {
         return None;

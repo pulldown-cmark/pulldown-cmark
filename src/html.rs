@@ -147,6 +147,13 @@ where
                     self.write("\n<p>")
                 }
             }
+            Tag::Options => {
+                if self.end_newline {
+                    self.write("<div class='options'>")
+                } else {
+                    self.write("\n<div class='options'>")
+                }
+            }
             Tag::Heading(level) => {
                 if self.end_newline {
                     self.end_newline = false;
@@ -291,6 +298,9 @@ where
         match tag {
             Tag::Paragraph => {
                 self.write("</p>\n")?;
+            }
+            Tag::Options => {
+                self.write("</div>\n")?;
             }
             Tag::Heading(level) => {
                 self.write("</")?;

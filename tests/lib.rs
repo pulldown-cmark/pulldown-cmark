@@ -9,6 +9,7 @@ use std::mem;
 use std::rc::{Rc, Weak};
 use tendril::stream::TendrilSink;
 
+mod options;
 mod suite;
 
 #[inline(never)]

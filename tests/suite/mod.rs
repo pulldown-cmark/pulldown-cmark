@@ -11,3 +11,4 @@ mod regression;
 mod smart_punct;
 mod spec;
 mod table;
+mod options;

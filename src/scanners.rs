@@ -604,6 +604,14 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
     }
 }
 
+pub(crate) fn scan_options_start(data: &[u8]) -> Option<usize> {
+    if data.starts_with(b":: ") {
+        Some(3)
+    } else {
+        None
+    }
+}
+
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
     if data.starts_with(b"> ") {
         Some(2)

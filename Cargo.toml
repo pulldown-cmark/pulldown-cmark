@@ -29,7 +29,8 @@ memchr = "2.3"
 getopts = { version = "0.2", optional = true }
 
 [dev-dependencies]
-html5ever = "0.24"
+html5ever = "0.25"
+markup5ever_rcdom = "0.1"
 lazy_static = "1.4"
 tendril = "0.4"
 criterion = "0.3"

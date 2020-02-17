@@ -1675,8 +1675,8 @@ impl InlineStack {
 
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
-    // label, next node index
-    LinkLabel(CowStr<'a>, TreePointer),
+    // label, next node index, source ix of label end
+    LinkLabel(CowStr<'a>, TreePointer, usize),
     // contains next node index
     Collapsed(TreePointer),
     Failed,
@@ -1733,7 +1733,7 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(tree, &text[start..]) {
         let next_node = scan_nodes_to_ix(tree, cur, start + ix);
-        RefScan::LinkLabel(label, next_node)
+        RefScan::LinkLabel(label, next_node, start + ix)
     } else {
         RefScan::Failed
     }
@@ -2146,7 +2146,7 @@ impl<'a> Parser<'a> {
                             // to a defined link?
                             let scan_result = scan_reference(&self.tree, block_text, next);
                             let node_after_link = match scan_result {
-                                RefScan::LinkLabel(_, next_node) => next_node,
+                                RefScan::LinkLabel(_, next_node, _) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
@@ -2156,30 +2156,34 @@ impl<'a> Parser<'a> {
                                 RefScan::Failed => LinkType::Shortcut,
                             };
 
-                            let label: Option<ReferenceLabel<'a>> = match scan_result {
-                                RefScan::LinkLabel(l, ..) => Some(ReferenceLabel::Link(l)),
+                            // (label, source_ix end)
+                            let label: Option<(ReferenceLabel<'a>, usize)> = match scan_result {
+                                RefScan::LinkLabel(l, _, end_ix) => {
+                                    Some((ReferenceLabel::Link(l), end_ix))
+                                }
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
+                                    let label_start = self.tree[tos.node].item.end - 1;
                                     scan_link_label(
                                         &self.tree,
-                                        &self.text[(self.tree[tos.node].item.end - 1)
-                                            ..self.tree[cur_ix].item.end],
+                                        &self.text[label_start..self.tree[cur_ix].item.end],
                                     )
-                                    .map(|(_ix, label)| label)
+                                    .map(|(ix, label)| (label, label_start + ix))
                                 }
                             };
 
                             // see if it's a footnote reference
-                            if let Some(ReferenceLabel::Footnote(l)) = label {
+                            if let Some((ReferenceLabel::Footnote(l), end)) = label {
                                 self.tree[tos.node].next = node_after_link;
                                 self.tree[tos.node].child = TreePointer::Nil;
                                 self.tree[tos.node].item.body =
                                     ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
+                                self.tree[tos.node].item.end = end;
                                 prev = TreePointer::Valid(tos.node);
                                 cur = node_after_link;
                                 self.link_stack.clear();
                                 continue;
-                            } else if let Some(ReferenceLabel::Link(link_label)) = label {
+                            } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
                                 let type_url_title = self
                                     .allocs
                                     .refdefs
@@ -2230,6 +2234,8 @@ impl<'a> Parser<'a> {
                                             self.tree[prev_ix].next = TreePointer::Nil;
                                         }
                                     }
+
+                                    self.tree[tos.node].item.end = end;
 
                                     // set up cur so next node will be node_after_link
                                     cur = TreePointer::Valid(tos.node);

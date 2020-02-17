@@ -3,9 +3,9 @@ extern crate html5ever;
 #[macro_use]
 extern crate lazy_static;
 
-use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};
 use html5ever::serialize::{serialize, SerializeOpts};
 use html5ever::{driver as html, QualName};
+use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};
 use pulldown_cmark::{Options, Parser};
 
 use regex::Regex;

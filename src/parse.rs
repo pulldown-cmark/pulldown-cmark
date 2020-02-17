@@ -2979,6 +2979,33 @@ mod test {
     }
 
     #[test]
+    fn reference_link_offsets() {
+        let range =
+            Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
+                .into_offset_iter()
+                .filter_map(|(ev, range)| match ev {
+                    Event::Start(Tag::Link(LinkType::Reference, ..), ..) => Some(range),
+                    _ => None,
+                })
+                .next()
+                .unwrap();
+        assert_eq!(5..30, range);
+    }
+
+    #[test]
+    fn footnote_offsets() {
+        let range = Parser::new("Testing this[^1] out.\n\n[^1]: Footnote.")
+            .into_offset_iter()
+            .filter_map(|(ev, range)| match ev {
+                Event::FootnoteReference(..) => Some(range),
+                _ => None,
+            })
+            .next()
+            .unwrap();
+        assert_eq!(12..16, range);
+    }
+
+    #[test]
     fn offset_iter_issue_378() {
         let event_offsets: Vec<_> = Parser::new("a [b](c) d")
             .into_offset_iter()

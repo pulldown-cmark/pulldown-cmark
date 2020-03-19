@@ -677,6 +677,7 @@ impl<'a> FirstPass<'a> {
         let mut pipes = 0;
         let mut last_pipe_ix = start;
         let mut begin_text = start;
+        let mut scanner = EntityScanner::default();
 
         let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
             match byte {
@@ -855,13 +856,13 @@ impl<'a> FirstPass<'a> {
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
-                b'&' => match scan_entity(&bytes[ix..]) {
+                b'&' => match scanner.scan_entity(&bytes[ix..]) {
                     (n, Some(value)) => {
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {
                             start: ix,
                             end: ix + n,
-                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
+                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value.to_string().into())),
                         });
                         begin_text = ix + n;
                         LoopInstruction::ContinueAndSkip(n - 1)
@@ -2394,6 +2395,7 @@ impl<'a> Parser<'a> {
         };
         let close = if open == b'(' { b')' } else { open };
 
+        let mut scanner = EntityScanner::default();
         let mut title = String::new();
         let mut mark = start_ix + 1;
         let mut i = start_ix + 1;
@@ -2427,7 +2429,7 @@ impl<'a> Parser<'a> {
                 }
             }
             if c == b'&' {
-                if let (n, Some(value)) = scan_entity(&bytes[i..]) {
+                if let (n, Some(value)) = scanner.scan_entity(&bytes[i..]) {
                     title.push_str(&text[mark..i]);
                     title.push_str(&value);
                     i += n;

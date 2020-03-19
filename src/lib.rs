@@ -64,8 +64,11 @@ mod linklabel;
 mod parse;
 mod puncttable;
 mod scanners;
-mod strings;
 mod tree;
+
+mod strings {
+	pub type CowStr<'a> = beef::lean::Cow<'a, str>;
+}
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]
 mod simd;

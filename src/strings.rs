@@ -1,1 +1,0 @@
-pub type CowStr<'a> = beef::lean::Cow<'a, str>;

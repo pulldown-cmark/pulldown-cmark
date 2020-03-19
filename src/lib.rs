@@ -73,4 +73,4 @@ mod simd;
 pub use crate::parse::{
     Alignment, CodeBlockKind, Event, LinkType, OffsetIter, Options, Parser, Tag,
 };
-pub use crate::strings::{CowStr, InlineStr};
+// pub use crate::strings::{CowStr, InlineStr};

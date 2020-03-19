@@ -730,7 +730,8 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
             (0, None)
         } else if let Some(c) = char_from_codepoint(codepoint) {
-            (end + 1, Some(c.into()))
+            let mut buf = [0u8; 4];
+            (end + 1, Some(c.encode_utf8(&mut buf).to_string().into()))
         } else {
             (0, None)
         };

@@ -23,6 +23,7 @@ name = "html_rendering"
 harness = false
 
 [dependencies]
+beef = "0.4"
 bitflags = "1.2"
 unicase = "2.6"
 memchr = "2.3"

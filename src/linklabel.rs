@@ -42,7 +42,7 @@ pub(crate) fn scan_link_label_rest<'t>(
     arena: &mut Arena,
     text: &'t str,
     linebreak_handler: impl Fn(&'t [u8]) -> Option<usize>,
-) -> Option<(usize, &'t str, CowStr<'t>)> {
+) -> Option<(usize, CowStr<'t>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
     let mut only_white_space = true;
@@ -105,14 +105,13 @@ pub(crate) fn scan_link_label_rest<'t>(
     if only_white_space {
         None
     } else {
-        let raw = &text[..ix];
         let cow = if mark == 0 {
-            raw.into()
+            text[..ix].into()
         } else {
             label.push_str(&text[mark..ix]);
             label.into()
         };
-        Some((ix + 1, raw, cow))
+        Some((ix + 1, cow))
     }
 }
 
@@ -125,11 +124,9 @@ mod test {
     fn whitespace_normalization() {
         let mut arena = Arena::default();
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
-        let expected_raw = "«\t\tBlurry Eyes\t\t»";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, raw_label, normalized_label) = scan_link_label_rest(&mut arena, input, |_| None).unwrap();
-        assert_eq!(expected_raw, raw_label);
+        let (_bytes, normalized_label) = scan_link_label_rest(&mut arena, input, |_| None).unwrap();
         assert_eq!(expected_output, arena.as_str(normalized_label));
     }
 

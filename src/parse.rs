@@ -1251,7 +1251,7 @@ impl<'a> FirstPass<'a> {
         if !bytes.starts_with(b"[^") {
             return None;
         }
-        let (mut i, raw, label) = self.parse_refdef_label(start + 2)?;
+        let (mut i, label) = self.parse_refdef_label(start + 2)?;
         i += 2;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
@@ -1270,7 +1270,7 @@ impl<'a> FirstPass<'a> {
 
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
-    fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, &'a str, CowStr<'a>)> {
+    fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, CowStr<'a>)> {
         let tree = &self.tree;
         let list_nesting = self.list_nesting;
 
@@ -1294,14 +1294,15 @@ impl<'a> FirstPass<'a> {
         if scan_ch(bytes, b'[') == 0 {
             return None;
         }
-        let (mut i, raw, label) = self.parse_refdef_label(start + 1)?;
+        let (mut i, label) = self.parse_refdef_label(start + 1)?;
         i += 1;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
         let (bytecount, link_def) = self.scan_refdef(start + i)?;
-        Some((bytecount + i, UniCase::new(raw), link_def))
+        let label = self.allocs.arena.as_str(label);
+        Some((bytecount + i, UniCase::new(label), link_def))
     }
 
     /// Returns number of bytes and number of newlines
@@ -1697,7 +1698,7 @@ impl InlineStack {
 
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
-    // label, next node index
+    // raw_label, label, next node index
     LinkLabel(CowStr<'a>, TreePointer),
     // contains next node index
     Collapsed(TreePointer),
@@ -1734,11 +1735,11 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[2..], linebreak_handler)?;
-        (byte_index + 2, ReferenceLabel::Footnote(cow))
+        let (byte_index, label) = scan_link_label_rest(arena, &text[2..], linebreak_handler)?;
+        (byte_index + 2, ReferenceLabel::Footnote(label))
     } else {
-        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[1..], linebreak_handler)?;
-        (byte_index + 1, ReferenceLabel::Link(cow))
+        let (byte_index, label) = scan_link_label_rest(arena, &text[1..], linebreak_handler)?;
+        (byte_index + 1, ReferenceLabel::Link(label))
     };
     Some(pair)
 }

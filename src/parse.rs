@@ -1274,7 +1274,7 @@ impl<'a> FirstPass<'a> {
         let tree = &self.tree;
         let list_nesting = self.list_nesting;
 
-        scan_link_label_rest(&mut self.allocs.arena, &self.text[start..], |bytes: &'a [u8]| {
+        scan_link_label_rest(&mut self.allocs.arena, &self.text[start..], &|bytes: &'a [u8]| {
             let mut line_start = LineStart::new(bytes);
             let _ = scan_containers(tree, &mut line_start);
             let bytes_scanned = line_start.bytes_scanned();
@@ -1734,10 +1734,10 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, label) = scan_link_label_rest(arena, &text[2..], linebreak_handler)?;
+        let (byte_index, label) = scan_link_label_rest(arena, &text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(label))
     } else {
-        let (byte_index, label) = scan_link_label_rest(arena, &text[1..], linebreak_handler)?;
+        let (byte_index, label) = scan_link_label_rest(arena, &text[1..], &linebreak_handler)?;
         (byte_index + 1, ReferenceLabel::Link(label))
     };
     Some(pair)

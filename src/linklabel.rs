@@ -41,7 +41,7 @@ pub type LinkLabel<'a> = UniCase<&'a str>;
 pub(crate) fn scan_link_label_rest<'t>(
     arena: &mut Arena<'t>,
     text: &'t str,
-    linebreak_handler: impl Fn(&'t [u8]) -> Option<usize>,
+    linebreak_handler: &dyn Fn(&'t [u8]) -> Option<usize>,
 ) -> Option<(usize, &'t str)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
@@ -126,7 +126,7 @@ mod test {
         let expected_output = "« Blurry Eyes »"; // regular spaces!
         let mut arena = Arena::with_capacity(input.len());
 
-        let (_bytes, normalized_label) = scan_link_label_rest(&mut arena, input, |_| None).unwrap();
+        let (_bytes, normalized_label) = scan_link_label_rest(&mut arena, input, &|_| None).unwrap();
         assert_eq!(expected_output, normalized_label);
     }
 
@@ -134,6 +134,6 @@ mod test {
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
         let mut arena = Arena::with_capacity(input.len());
-        assert!(scan_link_label_rest(&mut arena, input, |_| Some(0)).is_some());
+        assert!(scan_link_label_rest(&mut arena, input, &|_| Some(0)).is_some());
     }
 }

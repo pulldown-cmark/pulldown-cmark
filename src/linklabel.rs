@@ -20,7 +20,6 @@
 
 //! Link label parsing and matching.
 
-use beef::Cow;
 use unicase::UniCase;
 
 use crate::scanners::{is_ascii_whitespace, scan_eol};
@@ -40,15 +39,16 @@ pub type LinkLabel<'a> = UniCase<&'a str>;
 /// or `None` to abort parsing the label.
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest<'t>(
+    arena: &mut Arena,
     text: &'t str,
     linebreak_handler: impl Fn(&'t [u8]) -> Option<usize>,
-) -> Option<(usize, &'t str, Cow<'t, str>)> {
+) -> Option<(usize, &'t str, CowStr<'t>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
     let mut only_white_space = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
-    let mut label = String::new();
+    let mut label = arena.builder();
     let mut mark = 0;
 
     loop {
@@ -119,19 +119,24 @@ pub(crate) fn scan_link_label_rest<'t>(
 #[cfg(test)]
 mod test {
     use super::scan_link_label_rest;
+    use crate::strings::Arena;
 
     #[test]
     fn whitespace_normalization() {
+        let mut arena = Arena::default();
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
+        let expected_raw = "«\t\tBlurry Eyes\t\t»";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, normalized_label) = scan_link_label_rest(input, &|_| None).unwrap();
-        assert_eq!(expected_output, normalized_label.as_ref());
+        let (_bytes, raw_label, normalized_label) = scan_link_label_rest(&mut arena, input, |_| None).unwrap();
+        assert_eq!(expected_raw, raw_label);
+        assert_eq!(expected_output, arena.as_str(normalized_label));
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
+        let mut arena = Arena::default();
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input, &|_| Some(0)).is_some());
+        assert!(scan_link_label_rest(&mut arena, input, |_| Some(0)).is_some());
     }
 }

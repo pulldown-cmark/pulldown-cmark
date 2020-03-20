@@ -24,6 +24,7 @@ use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Index, Range};
 
+use beef::lean::Cow;
 use unicase::UniCase;
 
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
@@ -44,7 +45,7 @@ const LINK_MAX_NESTED_PARENS: usize = 5;
 pub enum CodeBlockKind<'a> {
     Indented,
     /// The value contained in the tag describes the language of the code, which may be empty.
-    Fenced(&'a str),
+    Fenced(Cow<'a, str>),
 }
 
 impl<'a> CodeBlockKind<'a> {
@@ -84,7 +85,7 @@ pub enum Tag<'a> {
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
-    FootnoteDefinition(&'a str),
+    FootnoteDefinition(Cow<'a, str>),
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
@@ -101,10 +102,10 @@ pub enum Tag<'a> {
     Strikethrough,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title.
-    Link(LinkType, &'a str, &'a str),
+    Link(LinkType, Cow<'a, str>, Cow<'a, str>),
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
-    Image(LinkType, &'a str, &'a str),
+    Image(LinkType, Cow<'a, str>, Cow<'a, str>),
 }
 
 /// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
@@ -154,15 +155,15 @@ pub enum Event<'a> {
     /// End of a tagged element.
     End(Tag<'a>),
     /// A text node.
-    Text(&'a str),
+    Text(Cow<'a, str>),
     /// An inline code node.
-    Code(&'a str),
+    Code(Cow<'a, str>),
     /// An HTML node.
-    Html(&'a str),
+    Html(Cow<'a, str>),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.
-    FootnoteReference(&'a str),
+    FootnoteReference(Cow<'a, str>),
     /// A soft line break.
     SoftBreak,
     /// A hard line break.
@@ -637,7 +638,7 @@ impl<'a> FirstPass<'a> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+                if interrupt_paragraph_by_list(self.list_nesting, suffix) || scan_paragraph_interrupt(suffix) {
                     break;
                 }
             }
@@ -895,16 +896,16 @@ impl<'a> FirstPass<'a> {
         (final_ix, brk)
     }
 
-    /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
-    /// lists are allowed.
-    fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
-        scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
-            self.list_nesting > 0 ||
-            // we don't allow interruption by either empty lists or
-            // numbered lists starting at an index other than 1
-            !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
-        })
-    }
+    // /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
+    // /// lists are allowed.
+    // fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
+    //     scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
+    //         self.list_nesting > 0 ||
+    //         // we don't allow interruption by either empty lists or
+    //         // numbered lists starting at an index other than 1
+    //         !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
+    //     })
+    // }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
     /// this will find the end of the block, adding the block itself to the
@@ -1271,13 +1272,15 @@ impl<'a> FirstPass<'a> {
     /// On success, returns the number of bytes of the label and the label itself.
     fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, &'a str, CowStr<'a>)> {
         let tree = &self.tree;
-        scan_link_label_rest(&self.text[start..], |bytes: &'a [u8]| {
+        let list_nesting = self.list_nesting;
+
+        scan_link_label_rest(&mut self.allocs.arena, &self.text[start..], |bytes: &'a [u8]| {
             let mut line_start = LineStart::new(bytes);
             let _ = scan_containers(tree, &mut line_start);
             let bytes_scanned = line_start.bytes_scanned();
 
             let suffix = &bytes[bytes_scanned..];
-            if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+            if interrupt_paragraph_by_list(list_nesting, suffix) || scan_paragraph_interrupt(suffix) {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1382,6 +1385,17 @@ impl<'a> FirstPass<'a> {
             None
         }
     }
+}
+
+/// Check whether we should allow a paragraph interrupt by lists. Only non-empty
+/// lists are allowed.
+fn interrupt_paragraph_by_list(list_nesting: usize, suffix: &[u8]) -> bool {
+    scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
+        list_nesting > 0 ||
+        // we don't allow interruption by either empty lists or
+        // numbered lists starting at an index other than 1
+        !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
+    })
 }
 
 /// Returns number of containers scanned.
@@ -1720,10 +1734,10 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, raw, cow) = scan_link_label_rest(&text[2..], linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[2..], linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
-        let (byte_index, raw, cow) = scan_link_label_rest(&text[1..], linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[1..], linebreak_handler)?;
         (byte_index + 1, ReferenceLabel::Link(cow))
     };
     Some(pair)
@@ -1885,10 +1899,6 @@ impl<'a> Allocations<'a> {
         CowIndex(ix)
     }
 
-    fn get_str(&'a mut self, ix: CowIndex) -> &'a str {
-        self.arena.as_str(self.cows[ix.0])
-    }
-
     fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
         let ix = self.links.len();
         self.links.push((ty, url, title));
@@ -1903,18 +1913,18 @@ impl<'a> Allocations<'a> {
 }
 
 impl<'a> Allocations<'a> {
-    pub fn link(&self, ix: LinkIndex) -> (LinkType, &'a str, &'a str) {
+    pub fn link(&self, ix: LinkIndex) -> (LinkType, Cow<'a, str>, Cow<'a, str>) {
         let (linktype, a, b) = self.links[ix.0];
 
         (
             linktype,
-            self.arena.as_str(a),
-            self.arena.as_str(b),
+            self.arena.as_str(a).into(),
+            self.arena.as_str(b).into(),
         )
     }
 
-    pub fn str(&self, ix: CowIndex) -> &'a str {
-        self.arena.as_str(self.cows[ix.0])
+    pub fn str(&self, ix: CowIndex) -> Cow<'a, str> {
+        self.arena.as_str(self.cows[ix.0]).into()
     }
 }
 
@@ -2792,7 +2802,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs.str(cow_ix)),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.str(cow_ix)),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

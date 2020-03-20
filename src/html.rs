@@ -24,6 +24,8 @@ use std::collections::HashMap;
 use std::fmt::{Arguments, Write as FmtWrite};
 use std::io::{self, ErrorKind, Write};
 
+use beef::lean::Cow;
+
 use crate::escape::{escape_href, escape_html};
 use crate::parse::Event::*;
 use crate::parse::{Alignment, CodeBlockKind, Event, LinkType, Tag};
@@ -104,7 +106,7 @@ struct HtmlWriter<'a, I, W> {
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<&'a str, usize>,
+    numbers: HashMap<Cow<'a, str>, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>

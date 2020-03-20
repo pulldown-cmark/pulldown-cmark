@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct ArenaStr {
 	offset: usize,
 	len: usize,
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum CowStr<'a> {
 	Source(&'a str),
 	Arena(ArenaStr),

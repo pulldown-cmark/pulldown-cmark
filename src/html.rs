@@ -27,7 +27,6 @@ use std::io::{self, ErrorKind, Write};
 use crate::escape::{escape_href, escape_html};
 use crate::parse::Event::*;
 use crate::parse::{Alignment, CodeBlockKind, Event, LinkType, Tag};
-use crate::strings::CowStr;
 
 enum TableState {
     Head,
@@ -105,7 +104,7 @@ struct HtmlWriter<'a, I, W> {
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<CowStr<'a>, usize>,
+    numbers: HashMap<&'a str, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>

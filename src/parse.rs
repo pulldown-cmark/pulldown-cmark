@@ -28,7 +28,7 @@ use unicase::UniCase;
 
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
-use crate::strings::CowStr;
+use crate::strings::{Arena, CowStr};
 use crate::tree::{Tree, TreeIndex, TreePointer};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -39,11 +39,12 @@ use crate::tree::{Tree, TreeIndex, TreePointer};
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
 /// Codeblock kind.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
+// #[derive(Clone, Debug, PartialEq)]
 pub enum CodeBlockKind<'a> {
     Indented,
     /// The value contained in the tag describes the language of the code, which may be empty.
-    Fenced(CowStr<'a>),
+    Fenced(&'a str),
 }
 
 impl<'a> CodeBlockKind<'a> {
@@ -63,7 +64,8 @@ impl<'a> CodeBlockKind<'a> {
 }
 
 /// Tags for elements that can contain other elements.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
+// #[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
@@ -82,7 +84,7 @@ pub enum Tag<'a> {
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
-    FootnoteDefinition(CowStr<'a>),
+    FootnoteDefinition(&'a str),
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
@@ -99,10 +101,10 @@ pub enum Tag<'a> {
     Strikethrough,
 
     /// A link. The first field is the link type, the second the destination URL and the third is a title.
-    Link(LinkType, CowStr<'a>, CowStr<'a>),
+    Link(LinkType, &'a str, &'a str),
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
-    Image(LinkType, CowStr<'a>, CowStr<'a>),
+    Image(LinkType, &'a str, &'a str),
 }
 
 /// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
@@ -142,7 +144,8 @@ impl LinkType {
 /// Markdown events that are generated in a preorder traversal of the document
 /// tree, with additional `End` events whenever all of an inner node's children
 /// have been visited.
-#[derive(Clone, Debug, PartialEq)]
+// #[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Event<'a> {
     /// Start of a tagged element. Events that are yielded after this event
     /// and before its corresponding `End` event are inside this element.
@@ -151,15 +154,15 @@ pub enum Event<'a> {
     /// End of a tagged element.
     End(Tag<'a>),
     /// A text node.
-    Text(CowStr<'a>),
+    Text(&'a str),
     /// An inline code node.
-    Code(CowStr<'a>),
+    Code(&'a str),
     /// An HTML node.
-    Html(CowStr<'a>),
+    Html(&'a str),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.
-    FootnoteReference(CowStr<'a>),
+    FootnoteReference(&'a str),
     /// A soft line break.
     SoftBreak,
     /// A hard line break.
@@ -677,7 +680,6 @@ impl<'a> FirstPass<'a> {
         let mut pipes = 0;
         let mut last_pipe_ix = start;
         let mut begin_text = start;
-        let mut scanner = EntityScanner::default();
 
         let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
             match byte {
@@ -856,13 +858,13 @@ impl<'a> FirstPass<'a> {
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
-                b'&' => match scanner.scan_entity(&bytes[ix..]) {
+                b'&' => match scan_entity(&mut self.allocs.arena, &bytes[ix..]) {
                     (n, Some(value)) => {
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {
                             start: ix,
                             end: ix + n,
-                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value.to_string().into())),
+                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
                         });
                         begin_text = ix + n;
                         LoopInstruction::ContinueAndSkip(n - 1)
@@ -1035,7 +1037,7 @@ impl<'a> FirstPass<'a> {
         // to just do a forward scan here?
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
-        let info_string = unescape(&self.text[info_start..info_end]);
+        let info_string = unescape(&mut self.allocs.arena, &self.text[info_start..info_end]);
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
@@ -1244,7 +1246,7 @@ impl<'a> FirstPass<'a> {
         if !bytes.starts_with(b"[^") {
             return None;
         }
-        let (mut i, label) = self.parse_refdef_label(start + 2)?;
+        let (mut i, raw, label) = self.parse_refdef_label(start + 2)?;
         i += 2;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
@@ -1263,8 +1265,8 @@ impl<'a> FirstPass<'a> {
 
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
-    fn parse_refdef_label(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
-        scan_link_label_rest(&self.text[start..], &|bytes| {
+    fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, &'a str, CowStr<'a>)> {
+        scan_link_label_rest(&mut self.allocs.arena, &self.text[start..], &|bytes| {
             let mut line_start = LineStart::new(bytes);
             let _ = scan_containers(&self.tree, &mut line_start);
             let bytes_scanned = line_start.bytes_scanned();
@@ -1284,14 +1286,14 @@ impl<'a> FirstPass<'a> {
         if scan_ch(bytes, b'[') == 0 {
             return None;
         }
-        let (mut i, label) = self.parse_refdef_label(start + 1)?;
+        let (mut i, raw, label) = self.parse_refdef_label(start + 1)?;
         i += 1;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;
         }
         i += 1;
         let (bytecount, link_def) = self.scan_refdef(start + i)?;
-        Some((bytecount + i, UniCase::new(label), link_def))
+        Some((bytecount + i, UniCase::new(raw), link_def))
     }
 
     /// Returns number of bytes and number of newlines
@@ -1331,7 +1333,7 @@ impl<'a> FirstPass<'a> {
         if dest_length == 0 {
             return None;
         }
-        let dest = unescape(dest);
+        let dest = unescape(&mut self.allocs.arena, dest);
         i += dest_length;
 
         // no title
@@ -1358,7 +1360,7 @@ impl<'a> FirstPass<'a> {
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
             i += title_length;
-            backup.1.title = Some(unescape(title));
+            backup.1.title = Some(unescape(&mut self.allocs.arena, title));
         } else if newlines > 0 {
             return Some(backup);
         } else {
@@ -1699,6 +1701,7 @@ fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: TreePointer, ix: usize) -> Tree
 /// Scans an inline link label, which cannot be interrupted.
 /// Returns number of bytes (including brackets) and label on success.
 fn scan_link_label<'text, 'tree>(
+    arena: &mut Arena,
     tree: &'tree Tree<Item>,
     text: &'text str,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
@@ -1712,16 +1715,21 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
-        let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[1..], &linebreak_handler)?;
         (byte_index + 1, ReferenceLabel::Link(cow))
     };
     Some(pair)
 }
 
-fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer) -> RefScan<'b> {
+fn scan_reference<'a, 'b>(
+    arena: &mut Arena,
+    tree: &'a Tree<Item>,
+    text: &'b str,
+    cur: TreePointer,
+) -> RefScan<'b> {
     let cur_ix = match cur {
         TreePointer::Nil => return RefScan::Failed,
         TreePointer::Valid(cur_ix) => cur_ix,
@@ -1732,7 +1740,7 @@ fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: TreePointer)
     if tail.starts_with(b"[]") {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(tree, &text[start..]) {
+    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(arena, tree, &text[start..]) {
         let next_node = scan_nodes_to_ix(tree, cur, start + ix);
         RefScan::LinkLabel(label, next_node)
     } else {
@@ -1847,8 +1855,8 @@ struct CowIndex(usize);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 struct AlignmentIndex(usize);
 
-#[derive(Clone)]
 struct Allocations<'a> {
+    arena: Arena,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
@@ -1858,6 +1866,7 @@ struct Allocations<'a> {
 impl<'a> Allocations<'a> {
     fn new() -> Self {
         Self {
+            arena: Arena::with_capacity(128),
             refdefs: HashMap::new(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
@@ -1869,6 +1878,10 @@ impl<'a> Allocations<'a> {
         let ix = self.cows.len();
         self.cows.push(cow);
         CowIndex(ix)
+    }
+
+    fn get_str(&'a mut self, ix: CowIndex) -> &'a str {
+        self.arena.as_str(self.cows[ix.0])
     }
 
     fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
@@ -1884,19 +1897,23 @@ impl<'a> Allocations<'a> {
     }
 }
 
-impl<'a> Index<CowIndex> for Allocations<'a> {
-    type Output = CowStr<'a>;
+impl Index<CowIndex> for Allocations<'_> {
+    type Output = str;
 
     fn index(&self, ix: CowIndex) -> &Self::Output {
-        self.cows.index(ix.0)
+        self.arena.as_str(self.cows[ix.0])
     }
 }
 
-impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+impl<'a> Allocations<'a> {
+    pub fn link(&'a self, ix: LinkIndex) -> (LinkType, &'a str, &'a str) {
+        let (linktype, a, b) = self.links[ix.0];
 
-    fn index(&self, ix: LinkIndex) -> &Self::Output {
-        self.links.index(ix.0)
+        (
+            linktype,
+            self.arena.as_str(a),
+            self.arena.as_str(b),
+        )
     }
 }
 
@@ -1921,7 +1938,6 @@ pub(crate) struct HtmlScanGuard {
 }
 
 /// Markdown event iterator.
-#[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
     tree: Tree<Item>,
@@ -2145,7 +2161,7 @@ impl<'a> Parser<'a> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result = scan_reference(&self.tree, block_text, next);
+                            let scan_result = scan_reference(&mut self.allocs.arena, &self.tree, block_text, next);
                             let node_after_link = match scan_result {
                                 RefScan::LinkLabel(_, next_node) => next_node,
                                 RefScan::Collapsed(next_node) => next_node,
@@ -2162,6 +2178,7 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     scan_link_label(
+                                        &mut self.allocs.arena,
                                         &self.tree,
                                         &self.text[(self.tree[tos.node].item.end - 1)
                                             ..self.tree[cur_ix].item.end],
@@ -2181,10 +2198,12 @@ impl<'a> Parser<'a> {
                                 self.link_stack.clear();
                                 continue;
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
+                                let str_label = self.allocs.arena.as_str(link_label);
+
                                 let type_url_title = self
                                     .allocs
                                     .refdefs
-                                    .get(&UniCase::new(link_label.as_ref().into()))
+                                    .get(&UniCase::new(str_label))
                                     .map(|matching_def| {
                                         // found a matching definition!
                                         let title = matching_def
@@ -2200,9 +2219,12 @@ impl<'a> Parser<'a> {
                                             .and_then(|callback| {
                                                 // looked for matching definition, but didn't find it. try to fix
                                                 // link with callback, if it is defined
-                                                callback(link_label.as_ref(), link_label.as_ref())
+                                                callback(str_label, str_label)
                                             })
                                             .map(|(url, title)| {
+                                                let url = self.allocs.arena.alloc_str(&url);
+                                                let title = self.allocs.arena.alloc_str(&title);
+
                                                 (link_type.to_unknown(), url.into(), title.into())
                                             })
                                     });
@@ -2361,7 +2383,7 @@ impl<'a> Parser<'a> {
         ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
 
         let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
-        let dest = unescape(dest);
+        let dest = unescape(&mut self.allocs.arena, dest);
         ix += dest_length;
 
         ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
@@ -2383,7 +2405,7 @@ impl<'a> Parser<'a> {
 
     // returns (bytes scanned, title cow)
     fn scan_link_title(
-        &self,
+        &mut self,
         text: &'a str,
         start_ix: usize,
         node: TreePointer,
@@ -2395,8 +2417,7 @@ impl<'a> Parser<'a> {
         };
         let close = if open == b'(' { b')' } else { open };
 
-        let mut scanner = EntityScanner::default();
-        let mut title = String::new();
+        let mut title = self.allocs.arena.builder();
         let mut mark = start_ix + 1;
         let mut i = start_ix + 1;
 
@@ -2429,9 +2450,9 @@ impl<'a> Parser<'a> {
                 }
             }
             if c == b'&' {
-                if let (n, Some(value)) = scanner.scan_entity(&bytes[i..]) {
+                if let (n, Some(value)) = scan_entity(&mut self.allocs.arena, &bytes[i..]) {
                     title.push_str(&text[mark..i]);
-                    title.push_str(&value);
+                    title.push_str(self.allocs.arena.as_str(value));
                     i += n;
                     mark = i;
                     continue;
@@ -2458,7 +2479,7 @@ impl<'a> Parser<'a> {
         let bytes = self.text.as_bytes();
         let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
-        let mut buf: Option<String> = None;
+        let mut buf = self.allocs.arena.builder(); // : Option<String> = None;
 
         // detect all-space sequences, since they are kept as-is as of commonmark 0.29
         if !bytes[span_start..span_end].iter().all(|&b| b == b' ') {
@@ -2500,16 +2521,14 @@ impl<'a> Parser<'a> {
                         .position(|&b| b == b'\r' || b == b'\n')
                         .unwrap()
                         + self.tree[ix].item.start;
-                    if let Some(ref mut buf) = buf {
+                    if buf.len() != 0 {
                         buf.push_str(&self.text[self.tree[ix].item.start..end]);
                         buf.push(' ');
                     } else {
-                        let mut new_buf = String::with_capacity(span_end - span_start);
-                        new_buf.push_str(&self.text[span_start..end]);
-                        new_buf.push(' ');
-                        buf = Some(new_buf);
+                        buf.push_str(&self.text[span_start..end]);
+                        buf.push(' ');
                     }
-                } else if let Some(ref mut buf) = buf {
+                } else if buf.len() != 0 {
                     let end = if ix == last_ix {
                         span_end
                     } else {
@@ -2521,7 +2540,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let cow = if let Some(buf) = buf {
+        let cow = if buf.len() != 0 {
             buf.into()
         } else {
             self.text[span_start..span_end].into()
@@ -2688,23 +2707,23 @@ impl<'a> Iterator for OffsetIter<'a> {
     }
 }
 
-fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
+fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
     match item.body {
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.link(link_ix);
+            Tag::Link(link_type, url, title)
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.link(link_ix);
+            Tag::Image(link_type, url, title)
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+            Tag::CodeBlock(CodeBlockKind::Fenced(&allocs[cow_ix]))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2720,21 +2739,21 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs[cow_ix]),
         _ => panic!("unexpected item body {:?}", item.body),
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &'a Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::Code(cow_ix) => return Event::Code(&allocs[cow_ix]),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(&allocs[cow_ix]),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs[cow_ix].clone())
+            return Event::FootnoteReference(&allocs[cow_ix])
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
@@ -2744,16 +2763,16 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.link(link_ix);
+            Tag::Link(link_type, url, title)
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.link(link_ix);
+            Tag::Image(link_type, url, title)
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+            Tag::CodeBlock(CodeBlockKind::Fenced(&allocs[cow_ix]))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2769,7 +2788,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs[cow_ix]),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

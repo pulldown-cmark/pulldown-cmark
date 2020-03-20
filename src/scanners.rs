@@ -26,7 +26,7 @@ use std::convert::TryInto;
 use crate::entities;
 use crate::parse::{Alignment, HtmlScanGuard, LinkType};
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
-use crate::strings::CowStr;
+use crate::strings::{Arena, CowStr};
 
 use memchr::memchr;
 
@@ -715,40 +715,33 @@ fn char_from_codepoint(input: usize) -> Option<char> {
     char::from_u32(codepoint)
 }
 
-#[derive(Default)]
-pub(crate) struct EntityScanner {
-    buf: [u8; 4],
-}
-
-impl EntityScanner {
-    // doesn't bother to check data[0] == '&'
-    pub(crate) fn scan_entity(&mut self, bytes: &[u8]) -> (usize, Option<&str>) {
-        let mut end = 1;
-        if scan_ch(&bytes[end..], b'#') == 1 {
+// doesn't bother to check data[0] == '&'
+pub(crate) fn scan_entity(arena: &mut Arena, bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
+    let mut end = 1;
+    if scan_ch(&bytes[end..], b'#') == 1 {
+        end += 1;
+        let (bytecount, codepoint) = if end < bytes.len() && bytes[end] | 0x20 == b'x' {
             end += 1;
-            let (bytecount, codepoint) = if end < bytes.len() && bytes[end] | 0x20 == b'x' {
-                end += 1;
-                parse_hex(&bytes[end..])
-            } else {
-                parse_decimal(&bytes[end..])
-            };
-            end += bytecount;
-            return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
-                (0, None)
-            } else if let Some(c) = char_from_codepoint(codepoint) {
-                (end + 1, Some(c.encode_utf8(&mut self.buf)))
-            } else {
-                (0, None)
-            };
-        }
-        end += scan_while(&bytes[end..], is_ascii_alphanumeric);
-        if scan_ch(&bytes[end..], b';') == 1 {
-            if let Some(value) = entities::get_entity(&bytes[1..end]) {
-                return (end + 1, Some(value));
-            }
-        }
-        (0, None)
+            parse_hex(&bytes[end..])
+        } else {
+            parse_decimal(&bytes[end..])
+        };
+        end += bytecount;
+        return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
+            (0, None)
+        } else if let Some(c) = char_from_codepoint(codepoint) {
+            (end + 1, Some(arena.alloc_char(c).into()))
+        } else {
+            (0, None)
+        };
     }
+    end += scan_while(&bytes[end..], is_ascii_alphanumeric);
+    if scan_ch(&bytes[end..], b';') == 1 {
+        if let Some(value) = entities::get_entity(&bytes[1..end]) {
+            return (end + 1, Some(value.into()));
+        }
+    }
+    (0, None)
 }
 
 // FIXME: we can most likely re-use other scanners
@@ -916,9 +909,8 @@ fn scan_attribute_value(
 }
 
 // Remove backslash escapes and resolve entities
-pub(crate) fn unescape(input: &str) -> CowStr<'_> {
-    let mut scanner = EntityScanner::default();
-    let mut result = String::new();
+pub(crate) fn unescape<'a>(arena: &mut Arena, input: &'a str) -> CowStr<'a> {
+    let mut result = arena.builder();
     let mut mark = 0;
     let mut i = 0;
     let bytes = input.as_bytes();
@@ -930,10 +922,10 @@ pub(crate) fn unescape(input: &str) -> CowStr<'_> {
                 mark = i + 1;
                 i += 2;
             }
-            b'&' => match scanner.scan_entity(&bytes[i..]) {
+            b'&' => match scan_entity(arena, &bytes[i..]) {
                 (n, Some(value)) => {
                     result.push_str(&input[mark..i]);
-                    result.push_str(&value);
+                    result.push_str(arena.as_str(value));
                     i += n;
                     mark = i;
                 }

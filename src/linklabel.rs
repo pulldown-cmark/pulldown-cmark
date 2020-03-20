@@ -23,14 +23,14 @@
 use unicase::UniCase;
 
 use crate::scanners::{is_ascii_whitespace, scan_eol};
-use crate::strings::CowStr;
+use crate::strings::{Arena, CowStr};
 
 pub enum ReferenceLabel<'a> {
     Link(CowStr<'a>),
     Footnote(CowStr<'a>),
 }
 
-pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
+pub type LinkLabel<'a> = UniCase<&'a str>;
 
 /// Assumes the opening bracket has already been scanned.
 /// The line break handler determines what happens when a linebreak
@@ -39,15 +39,16 @@ pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
 /// or `None` to abort parsing the label.
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest<'t>(
+    arena: &mut Arena,
     text: &'t str,
     linebreak_handler: &dyn Fn(&[u8]) -> Option<usize>,
-) -> Option<(usize, CowStr<'t>)> {
+) -> Option<(usize, &'t str, CowStr<'t>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
     let mut only_white_space = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
-    let mut label = String::new();
+    let mut label = arena.builder();
     let mut mark = 0;
 
     loop {
@@ -104,13 +105,14 @@ pub(crate) fn scan_link_label_rest<'t>(
     if only_white_space {
         None
     } else {
+        let raw = &text[..ix];
         let cow = if mark == 0 {
-            text[..ix].into()
+            raw.into()
         } else {
             label.push_str(&text[mark..ix]);
             label.into()
         };
-        Some((ix + 1, cow))
+        Some((ix + 1, raw, cow))
     }
 }
 

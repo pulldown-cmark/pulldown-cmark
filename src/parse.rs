@@ -858,13 +858,17 @@ impl<'a> FirstPass<'a> {
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
-                b'&' => match scan_entity(&mut self.allocs.arena, &bytes[ix..]) {
+                b'&' => match scan_entity(&bytes[ix..]) {
                     (n, Some(value)) => {
+                        let value = match value {
+                            Entity::Char(c) => self.allocs.arena.alloc_char(c),
+                            Entity::Str(slice) => self.allocs.arena.alloc_str(slice),
+                        };
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {
                             start: ix,
                             end: ix + n,
-                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
+                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value.into())),
                         });
                         begin_text = ix + n;
                         LoopInstruction::ContinueAndSkip(n - 1)
@@ -1266,9 +1270,10 @@ impl<'a> FirstPass<'a> {
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
     fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, &'a str, CowStr<'a>)> {
-        scan_link_label_rest(&mut self.allocs.arena, &self.text[start..], &|bytes| {
+        let tree = &self.tree;
+        scan_link_label_rest(&self.text[start..], |bytes: &'a [u8]| {
             let mut line_start = LineStart::new(bytes);
-            let _ = scan_containers(&self.tree, &mut line_start);
+            let _ = scan_containers(tree, &mut line_start);
             let bytes_scanned = line_start.bytes_scanned();
 
             let suffix = &bytes[bytes_scanned..];
@@ -1322,7 +1327,7 @@ impl<'a> FirstPass<'a> {
 
     /// Returns # of bytes and definition.
     /// Assumes the label of the reference including colon has already been scanned.
-    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkDef<'a>)> {
+    fn scan_refdef(&mut self, start: usize) -> Option<(usize, LinkDef<'a>)> {
         let bytes = self.text.as_bytes();
 
         // whitespace between label and url (including up to one newline)
@@ -1715,10 +1720,10 @@ fn scan_link_label<'text, 'tree>(
         Some(line_start.bytes_scanned())
     };
     let pair = if b'^' == bytes[1] {
-        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[2..], &linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(&text[2..], linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
-        let (byte_index, raw, cow) = scan_link_label_rest(arena, &text[1..], &linebreak_handler)?;
+        let (byte_index, raw, cow) = scan_link_label_rest(&text[1..], linebreak_handler)?;
         (byte_index + 1, ReferenceLabel::Link(cow))
     };
     Some(pair)
@@ -2367,7 +2372,7 @@ impl<'a> Parser<'a> {
 
     /// Returns next byte index, url and title.
     fn scan_inline_link(
-        &self,
+        &mut self,
         underlying: &'a str,
         mut ix: usize,
         node: TreePointer,
@@ -2446,9 +2451,12 @@ impl<'a> Parser<'a> {
                 }
             }
             if c == b'&' {
-                if let (n, Some(value)) = scan_entity(&mut self.allocs.arena, &bytes[i..]) {
+                if let (n, Some(value)) = scan_entity(&bytes[i..]) {
                     title.push_str(&text[mark..i]);
-                    title.push_str(self.allocs.arena.as_str(value));
+                    match value {
+                        Entity::Char(c) => title.push(c),
+                        Entity::Str(slice) => title.push_str(slice),
+                    }
                     i += n;
                     mark = i;
                     continue;

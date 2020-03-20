@@ -715,8 +715,13 @@ fn char_from_codepoint(input: usize) -> Option<char> {
     char::from_u32(codepoint)
 }
 
+pub(crate) enum Entity {
+    Char(char),
+    Str(&'static str),
+}
+
 // doesn't bother to check data[0] == '&'
-pub(crate) fn scan_entity(arena: &mut Arena, bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
+pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<Entity>) {
     let mut end = 1;
     if scan_ch(&bytes[end..], b'#') == 1 {
         end += 1;
@@ -730,7 +735,7 @@ pub(crate) fn scan_entity(arena: &mut Arena, bytes: &[u8]) -> (usize, Option<Cow
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
             (0, None)
         } else if let Some(c) = char_from_codepoint(codepoint) {
-            (end + 1, Some(arena.alloc_char(c).into()))
+            (end + 1, Some(Entity::Char(c)))
         } else {
             (0, None)
         };
@@ -738,7 +743,7 @@ pub(crate) fn scan_entity(arena: &mut Arena, bytes: &[u8]) -> (usize, Option<Cow
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
     if scan_ch(&bytes[end..], b';') == 1 {
         if let Some(value) = entities::get_entity(&bytes[1..end]) {
-            return (end + 1, Some(value.into()));
+            return (end + 1, Some(Entity::Str(value)));
         }
     }
     (0, None)
@@ -922,10 +927,13 @@ pub(crate) fn unescape<'a>(arena: &mut Arena, input: &'a str) -> CowStr<'a> {
                 mark = i + 1;
                 i += 2;
             }
-            b'&' => match scan_entity(arena, &bytes[i..]) {
+            b'&' => match scan_entity(&bytes[i..]) {
                 (n, Some(value)) => {
                     result.push_str(&input[mark..i]);
-                    result.push_str(arena.as_str(value));
+                    match value {
+                        Entity::Char(c) => result.push(c),
+                        Entity::Str(slice) => result.push_str(slice),
+                    }
                     i += n;
                     mark = i;
                 }

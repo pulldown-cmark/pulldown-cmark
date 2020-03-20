@@ -20,6 +20,7 @@
 
 //! Link label parsing and matching.
 
+use beef::Cow;
 use unicase::UniCase;
 
 use crate::scanners::{is_ascii_whitespace, scan_eol};
@@ -39,16 +40,15 @@ pub type LinkLabel<'a> = UniCase<&'a str>;
 /// or `None` to abort parsing the label.
 /// Returns the number of bytes read (including closing bracket) and label on success.
 pub(crate) fn scan_link_label_rest<'t>(
-    arena: &mut Arena,
     text: &'t str,
-    linebreak_handler: &dyn Fn(&[u8]) -> Option<usize>,
-) -> Option<(usize, &'t str, CowStr<'t>)> {
+    linebreak_handler: impl Fn(&'t [u8]) -> Option<usize>,
+) -> Option<(usize, &'t str, Cow<'t, str>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
     let mut only_white_space = true;
     let mut codepoints = 0;
     // no worries, doesnt allocate until we push things onto it
-    let mut label = arena.builder();
+    let mut label = String::new();
     let mut mark = 0;
 
     loop {

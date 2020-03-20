@@ -11,6 +11,7 @@ pub struct Arena<'a> {
 }
 
 impl<'a> Arena<'a> {
+	#[inline]
 	pub fn with_capacity(capacity: usize) -> Self {
 		let mut buf = ManuallyDrop::new(Vec::with_capacity(capacity));
 
@@ -26,6 +27,7 @@ impl<'a> Arena<'a> {
 		}
 	}
 
+	#[inline]
 	pub fn alloc_char(&mut self, c: char) -> &'a str {
 		let len = c.len_utf8();
 
@@ -45,6 +47,7 @@ impl<'a> Arena<'a> {
 		c.encode_utf8(unsafe { &mut*slice })
 	}
 
+	#[inline]
 	pub fn alloc_str(&mut self, slice: &str) -> &'a str {
 		if self.offset + slice.len() > self.capacity {
 			panic!("Arena out of bounds!");
@@ -67,6 +70,7 @@ impl<'a> Arena<'a> {
 		}
 	}
 
+	#[inline]
 	pub fn builder(&mut self) -> StrBuilder<'a, '_> {
 		StrBuilder {
 			start: self.offset,
@@ -81,24 +85,29 @@ pub struct StrBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> From<StrBuilder<'a, 'b>> for &'a str {
+	#[inline]
 	fn from(builder: StrBuilder<'a, 'b>) -> Self {
 		builder.finish()
 	}
 }
 
 impl<'a, 'b> StrBuilder<'a, 'b> {
+	#[inline]
 	pub fn push_str(&mut self, slice: &str) {
 		self.arena.alloc_str(slice);
 	}
 
+	#[inline]
 	pub fn push(&mut self, c: char) {
 		self.arena.alloc_char(c);
 	}
 
+	#[inline]
 	pub fn len(&self) -> usize {
 		self.arena.offset - self.start
 	}
 
+	#[inline]
 	pub fn finish(self) -> &'a str {
 		let raw = unsafe {
 			ptr::slice_from_raw_parts(
@@ -112,6 +121,7 @@ impl<'a, 'b> StrBuilder<'a, 'b> {
 }
 
 impl Drop for Arena<'_> {
+	#[inline]
 	fn drop(&mut self) {
 		unsafe {
 			Vec::from_raw_parts(

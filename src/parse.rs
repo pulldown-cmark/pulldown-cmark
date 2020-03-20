@@ -303,7 +303,7 @@ impl<'a> FirstPass<'a> {
         let tree = Tree::with_capacity(start_capacity);
         let begin_list_item = false;
         let last_line_blank = false;
-        let allocs = Allocations::new();
+        let allocs = Allocations::with_capacity(text.len());
         FirstPass {
             text,
             tree,
@@ -1883,9 +1883,9 @@ struct Allocations<'a> {
 }
 
 impl<'a> Allocations<'a> {
-    fn new() -> Self {
+    fn with_capacity(capacity: usize) -> Self {
         Self {
-            arena: Arena::with_capacity(128),
+            arena: Arena::with_capacity(capacity),
             refdefs: HashMap::new(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),

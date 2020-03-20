@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct ArenaStr {
 	offset: usize,
@@ -23,14 +25,16 @@ impl From<ArenaStr> for CowStr<'_> {
 }
 
 #[derive(Default)]
-pub struct Arena {
+pub struct Arena<'a> {
 	buf: String,
+	marker: PhantomData<&'a str>,
 }
 
-impl Arena {
+impl<'a> Arena<'a> {
 	pub fn with_capacity(capacity: usize) -> Self {
 		Arena {
-			buf: String::with_capacity(capacity)
+			buf: String::with_capacity(capacity),
+			marker: PhantomData,
 		}
 	}
 
@@ -65,11 +69,11 @@ impl Arena {
 		}
 	}
 
-	pub fn get_str<'a>(&'a self, a: ArenaStr) -> &'a str {
+	pub fn get_str(&'a self, a: ArenaStr) -> &'a str {
 		&self.buf[a.offset..(a.offset + a.len)]
 	}
 
-	pub fn as_str<'a>(&'a self, cow: CowStr<'a>) -> &'a str {
+	pub fn as_str(&'a self, cow: CowStr<'a>) -> &'a str {
 		match cow {
 			CowStr::Source(slice) => slice,
 			CowStr::Arena(a) => self.get_str(a),

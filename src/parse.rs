@@ -1856,7 +1856,7 @@ struct CowIndex(usize);
 struct AlignmentIndex(usize);
 
 struct Allocations<'a> {
-    arena: Arena,
+    arena: Arena<'a>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
@@ -1897,14 +1897,6 @@ impl<'a> Allocations<'a> {
     }
 }
 
-impl Index<CowIndex> for Allocations<'_> {
-    type Output = str;
-
-    fn index(&self, ix: CowIndex) -> &Self::Output {
-        self.arena.as_str(self.cows[ix.0])
-    }
-}
-
 impl<'a> Allocations<'a> {
     pub fn link(&'a self, ix: LinkIndex) -> (LinkType, &'a str, &'a str) {
         let (linktype, a, b) = self.links[ix.0];
@@ -1914,6 +1906,10 @@ impl<'a> Allocations<'a> {
             self.arena.as_str(a),
             self.arena.as_str(b),
         )
+    }
+
+    pub fn str(&'a self, ix: CowIndex) -> &'a str {
+        self.arena.as_str(self.cows[ix.0])
     }
 }
 
@@ -2723,7 +2719,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(&allocs[cow_ix]))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.str(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2739,7 +2735,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs[cow_ix]),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.str(cow_ix)),
         _ => panic!("unexpected item body {:?}", item.body),
     }
 }
@@ -2747,13 +2743,13 @@ fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &'a Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(&allocs[cow_ix]),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(&allocs[cow_ix]),
+        ItemBody::Code(cow_ix) => return Event::Code(allocs.str(cow_ix)),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.str(cow_ix)),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(&allocs[cow_ix])
+            return Event::FootnoteReference(allocs.str(cow_ix))
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
@@ -2772,7 +2768,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &'a Allocations<'a>) -> 
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(&allocs[cow_ix]))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.str(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -2788,7 +2784,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &'a Allocations<'a>) -> 
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs[cow_ix]),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(&allocs.str(cow_ix)),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 
@@ -2839,10 +2835,19 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
-impl<'a> Iterator for Parser<'a> {
+// impl<'a> Parser<'a> {
+//     fn next_internal(&'a mut self) -> Option<Event<'a>> {
+
+//     }
+// }
+
+impl<'a> Iterator for Parser<'a>
+where
+    Parser<'a>: 'a,
+{
     type Item = Event<'a>;
 
-    fn next(&mut self) -> Option<Event<'a>> {
+    fn next(&mut self) -> Option<Self::Item> {
         match self.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;

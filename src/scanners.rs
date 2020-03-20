@@ -26,7 +26,7 @@ use std::convert::TryInto;
 use crate::entities;
 use crate::parse::{Alignment, HtmlScanGuard, LinkType};
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
-use crate::strings::{Arena, CowStr};
+use crate::strings::Arena;
 
 use memchr::memchr;
 
@@ -914,7 +914,7 @@ fn scan_attribute_value(
 }
 
 // Remove backslash escapes and resolve entities
-pub(crate) fn unescape<'a>(arena: &mut Arena, input: &'a str) -> CowStr<'a> {
+pub(crate) fn unescape<'a>(arena: &mut Arena<'a>, input: &'a str) -> &'a str {
     let mut result = arena.builder();
     let mut mark = 0;
     let mut i = 0;
@@ -1051,14 +1051,14 @@ pub(crate) fn scan_html_block_inner(
 }
 
 /// Returns (next_byte_offset, uri, type)
-pub(crate) fn scan_autolink(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, LinkType)> {
+pub(crate) fn scan_autolink(text: &str, start_ix: usize) -> Option<(usize, &str, LinkType)> {
     scan_uri(text, start_ix)
         .map(|(bytes, uri)| (bytes, uri, LinkType::Autolink))
         .or_else(|| scan_email(text, start_ix).map(|(bytes, uri)| (bytes, uri, LinkType::Email)))
 }
 
 /// Returns (next_byte_offset, uri)
-fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, &str)> {
     let bytes = &text.as_bytes()[start_ix..];
 
     // scheme's first byte must be an ascii letter
@@ -1098,7 +1098,7 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 }
 
 /// Returns (next_byte_offset, email)
-fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
+fn scan_email(text: &str, start_ix: usize) -> Option<(usize, &str)> {
     // using a regex library would be convenient, but doing it by hand is not too bad
     let bytes = &text.as_bytes()[start_ix..];
     let mut i = 0;

@@ -1,115 +1,124 @@
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
+use std::ops::Drop;
+use std::ptr;
 
-#[derive(Clone, Copy, Debug)]
-pub struct ArenaStr {
-	offset: usize,
-	len: usize,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum CowStr<'a> {
-	Source(&'a str),
-	Arena(ArenaStr),
-}
-
-impl<'a> From<&'a str> for CowStr<'a> {
-	fn from(slice: &'a str) -> Self {
-		CowStr::Source(slice)
-	}
-}
-
-impl From<ArenaStr> for CowStr<'_> {
-	fn from(slice: ArenaStr) -> Self {
-		CowStr::Arena(slice)
-	}
-}
-
-#[derive(Default)]
 pub struct Arena<'a> {
-	buf: String,
+	ptr: *mut u8,
+	capacity: usize,
+	offset: usize,
 	marker: PhantomData<&'a str>,
 }
 
 impl<'a> Arena<'a> {
 	pub fn with_capacity(capacity: usize) -> Self {
+		let mut buf = ManuallyDrop::new(Vec::with_capacity(capacity));
+
+		// Ensure we use actual allocated capacity!
+		let capacity = buf.capacity();
+		let ptr = buf.as_mut_ptr();
+
 		Arena {
-			buf: String::with_capacity(capacity),
+			ptr,
+			capacity,
+			offset: 0,
 			marker: PhantomData,
 		}
 	}
 
-	pub fn alloc_char(&mut self, c: char) -> ArenaStr {
-		let offset = self.buf.len();
+	pub fn alloc_char(&mut self, c: char) -> &'a str {
 		let len = c.len_utf8();
 
-		self.buf.push(c);
+		if self.offset + len > self.capacity {
+			panic!("Arena out of bounds!");
+		}
 
-		ArenaStr {
-			offset,
-			len,
+		let slice = unsafe {
+			ptr::slice_from_raw_parts_mut(
+				self.ptr.add(self.offset),
+				len,
+			)
+		};
+
+		self.offset += len;
+
+		c.encode_utf8(unsafe { &mut*slice })
+	}
+
+	pub fn alloc_str(&mut self, slice: &str) -> &'a str {
+		if self.offset + slice.len() > self.capacity {
+			panic!("Arena out of bounds!");
+		}
+
+		let target = unsafe { self.ptr.add(self.offset) };
+
+		unsafe {
+			ptr::copy_nonoverlapping(
+				slice.as_ptr(),
+				target,
+				slice.len(),
+			);
+		}
+
+		self.offset += slice.len();
+
+		unsafe {
+			&*(ptr::slice_from_raw_parts(target, slice.len()) as *const str)
 		}
 	}
 
-	pub fn alloc_str(&mut self, slice: &str) -> ArenaStr {
-		let offset = self.buf.len();
-		let len = slice.len();
-
-		self.buf.push_str(slice);
-
-		ArenaStr {
-			offset,
-			len,
-		}
-	}
-
-	pub fn builder(&mut self) -> StrBuilder<'_> {
+	pub fn builder(&mut self) -> StrBuilder<'a, '_> {
 		StrBuilder {
-			offset: self.buf.len(),
-			buf: &mut self.buf,
-		}
-	}
-
-	pub fn get_str(&self, a: ArenaStr) -> &'a str {
-		unsafe { &*(&self.buf[a.offset..(a.offset + a.len)] as *const str) }
-	}
-
-	pub fn as_str(&self, cow: CowStr<'a>) -> &'a str {
-		match cow {
-			CowStr::Source(slice) => slice,
-			CowStr::Arena(a) => self.get_str(a),
+			start: self.offset,
+			arena: self,
 		}
 	}
 }
 
-pub struct StrBuilder<'a> {
-	offset: usize,
-	buf: &'a mut String,
+pub struct StrBuilder<'a, 'b> {
+	start: usize,
+	arena: &'b mut Arena<'a>,
 }
 
-impl<'a, 'b> From<StrBuilder<'b>> for CowStr<'a> {
-	fn from(builder: StrBuilder<'b>) -> Self {
-		CowStr::Arena(builder.finish())
+impl<'a, 'b> From<StrBuilder<'a, 'b>> for &'a str {
+	fn from(builder: StrBuilder<'a, 'b>) -> Self {
+		builder.finish()
 	}
 }
 
-impl<'a> StrBuilder<'a> {
+impl<'a, 'b> StrBuilder<'a, 'b> {
 	pub fn push_str(&mut self, slice: &str) {
-		self.buf.push_str(slice);
+		self.arena.alloc_str(slice);
 	}
 
 	pub fn push(&mut self, c: char) {
-		self.buf.push(c);
+		self.arena.alloc_char(c);
 	}
 
 	pub fn len(&self) -> usize {
-		self.buf.len() - self.offset
+		self.arena.offset - self.start
 	}
 
-	pub fn finish(self) -> ArenaStr {
-		ArenaStr {
-			offset: self.offset,
-			len: self.len(),
+	pub fn finish(self) -> &'a str {
+		let raw = unsafe {
+			ptr::slice_from_raw_parts(
+				self.arena.ptr.add(self.start),
+				self.len(),
+			)
+		};
+
+		unsafe { &*(raw as *const str) }
+	}
+}
+
+impl Drop for Arena<'_> {
+	fn drop(&mut self) {
+		unsafe {
+			Vec::from_raw_parts(
+				self.ptr,
+				0,
+				self.capacity,
+			);
 		}
 	}
-
 }

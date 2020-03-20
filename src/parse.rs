@@ -29,7 +29,7 @@ use unicase::UniCase;
 
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
-use crate::strings::{Arena, CowStr};
+use crate::strings::Arena;
 use crate::tree::{Tree, TreeIndex, TreePointer};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -1270,7 +1270,7 @@ impl<'a> FirstPass<'a> {
 
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
-    fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, CowStr<'a>)> {
+    fn parse_refdef_label(&mut self, start: usize) -> Option<(usize, &'a str)> {
         let tree = &self.tree;
         let list_nesting = self.list_nesting;
 
@@ -1301,7 +1301,6 @@ impl<'a> FirstPass<'a> {
         }
         i += 1;
         let (bytecount, link_def) = self.scan_refdef(start + i)?;
-        let label = self.allocs.arena.as_str(label);
         Some((bytecount + i, UniCase::new(label), link_def))
     }
 
@@ -1699,7 +1698,7 @@ impl InlineStack {
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
     // raw_label, label, next node index
-    LinkLabel(CowStr<'a>, TreePointer),
+    LinkLabel(&'a str, TreePointer),
     // contains next node index
     Collapsed(TreePointer),
     Failed,
@@ -1721,7 +1720,7 @@ fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: TreePointer, ix: usize) -> Tree
 /// Scans an inline link label, which cannot be interrupted.
 /// Returns number of bytes (including brackets) and label on success.
 fn scan_link_label<'text, 'tree>(
-    arena: &mut Arena,
+    arena: &mut Arena<'text>,
     tree: &'tree Tree<Item>,
     text: &'text str,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
@@ -1745,7 +1744,7 @@ fn scan_link_label<'text, 'tree>(
 }
 
 fn scan_reference<'a, 'b>(
-    arena: &mut Arena,
+    arena: &mut Arena<'b>,
     tree: &'a Tree<Item>,
     text: &'b str,
     cur: TreePointer,
@@ -1815,8 +1814,8 @@ enum LinkStackTy {
 
 #[derive(Clone)]
 struct LinkDef<'a> {
-    dest: CowStr<'a>,
-    title: Option<CowStr<'a>>,
+    dest: &'a str,
+    title: Option<&'a str>,
 }
 
 /// Tracks tree indices of code span delimiters of each length. It should prevent
@@ -1878,8 +1877,8 @@ struct AlignmentIndex(usize);
 struct Allocations<'a> {
     arena: Arena<'a>,
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
-    cows: Vec<CowStr<'a>>,
+    links: Vec<(LinkType, Cow<'a, str>, Cow<'a, str>)>,
+    cows: Vec<&'a str>,
     alignments: Vec<Vec<Alignment>>,
 }
 
@@ -1894,13 +1893,13 @@ impl<'a> Allocations<'a> {
         }
     }
 
-    fn allocate_cow(&mut self, cow: CowStr<'a>) -> CowIndex {
+    fn allocate_cow(&mut self, cow: &'a str) -> CowIndex {
         let ix = self.cows.len();
         self.cows.push(cow);
         CowIndex(ix)
     }
 
-    fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
+    fn allocate_link(&mut self, ty: LinkType, url: Cow<'a, str>, title: Cow<'a, str>) -> LinkIndex {
         let ix = self.links.len();
         self.links.push((ty, url, title));
         LinkIndex(ix)
@@ -1914,18 +1913,12 @@ impl<'a> Allocations<'a> {
 }
 
 impl<'a> Allocations<'a> {
-    pub fn link(&self, ix: LinkIndex) -> (LinkType, Cow<'a, str>, Cow<'a, str>) {
-        let (linktype, a, b) = self.links[ix.0];
-
-        (
-            linktype,
-            self.arena.as_str(a).into(),
-            self.arena.as_str(b).into(),
-        )
+    pub fn link(&self, ix: LinkIndex) -> &(LinkType, Cow<'a, str>, Cow<'a, str>) {
+        &self.links[ix.0]
     }
 
     pub fn str(&self, ix: CowIndex) -> Cow<'a, str> {
-        self.arena.as_str(self.cows[ix.0]).into()
+        self.cows[ix.0].into()
     }
 }
 
@@ -2041,7 +2034,7 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
+                        let link_ix = self.allocs.allocate_link(link_type, uri.into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -2153,7 +2146,7 @@ impl<'a> Parser<'a> {
                             }
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
-                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title);
+                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url.into(), title.into());
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -2210,12 +2203,10 @@ impl<'a> Parser<'a> {
                                 self.link_stack.clear();
                                 continue;
                             } else if let Some(ReferenceLabel::Link(link_label)) = label {
-                                let str_label = self.allocs.arena.as_str(link_label);
-
                                 let type_url_title = self
                                     .allocs
                                     .refdefs
-                                    .get(&UniCase::new(str_label))
+                                    .get(&UniCase::new(link_label))
                                     .map(|matching_def| {
                                         // found a matching definition!
                                         let title = matching_def
@@ -2224,20 +2215,17 @@ impl<'a> Parser<'a> {
                                             .cloned()
                                             .unwrap_or_else(|| "".into());
                                         let url = matching_def.dest.clone();
-                                        (link_type, url, title)
+                                        (link_type, url.into(), title.into())
                                     })
                                     .or_else(|| {
                                         self.broken_link_callback
                                             .and_then(|callback| {
                                                 // looked for matching definition, but didn't find it. try to fix
                                                 // link with callback, if it is defined
-                                                callback(str_label, str_label)
+                                                callback(link_label, link_label)
                                             })
                                             .map(|(url, title)| {
-                                                let url = self.allocs.arena.alloc_str(&url);
-                                                let title = self.allocs.arena.alloc_str(&title);
-
-                                                (link_type.to_unknown(), url.into(), title.into())
+                                                (link_type.to_unknown(), Cow::owned(url), Cow::owned(title))
                                             })
                                     });
 
@@ -2387,7 +2375,7 @@ impl<'a> Parser<'a> {
         underlying: &'a str,
         mut ix: usize,
         node: TreePointer,
-    ) -> Option<(usize, CowStr<'a>, CowStr<'a>)> {
+    ) -> Option<(usize, &'a str, &'a str)> {
         if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
             return None;
         }
@@ -2421,7 +2409,7 @@ impl<'a> Parser<'a> {
         text: &'a str,
         start_ix: usize,
         node: TreePointer,
-    ) -> Option<(usize, CowStr<'a>)> {
+    ) -> Option<(usize, &'a str)> {
         let bytes = text.as_bytes();
         let open = match bytes.get(start_ix) {
             Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
@@ -2730,11 +2718,11 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
             let (link_type, url, title) = allocs.link(link_ix);
-            Tag::Link(link_type, url, title)
+            Tag::Link(*link_type, url.clone(), title.clone())
         }
         ItemBody::Image(link_ix) => {
             let (link_type, url, title) = allocs.link(link_ix);
-            Tag::Image(link_type, url, title)
+            Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
@@ -2779,11 +2767,11 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
             let (link_type, url, title) = allocs.link(link_ix);
-            Tag::Link(link_type, url, title)
+            Tag::Link(*link_type, url.clone(), title.clone())
         }
         ItemBody::Image(link_ix) => {
             let (link_type, url, title) = allocs.link(link_ix);
-            Tag::Image(link_type, url, title)
+            Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {

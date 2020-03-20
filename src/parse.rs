@@ -1898,7 +1898,7 @@ impl<'a> Allocations<'a> {
 }
 
 impl<'a> Allocations<'a> {
-    pub fn link(&'a self, ix: LinkIndex) -> (LinkType, &'a str, &'a str) {
+    pub fn link(&self, ix: LinkIndex) -> (LinkType, &'a str, &'a str) {
         let (linktype, a, b) = self.links[ix.0];
 
         (
@@ -1908,7 +1908,7 @@ impl<'a> Allocations<'a> {
         )
     }
 
-    pub fn str(&'a self, ix: CowIndex) -> &'a str {
+    pub fn str(&self, ix: CowIndex) -> &'a str {
         self.arena.as_str(self.cows[ix.0])
     }
 }
@@ -2703,7 +2703,7 @@ impl<'a> Iterator for OffsetIter<'a> {
     }
 }
 
-fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
+fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
     match item.body {
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -2740,7 +2740,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &'a Allocations<'a>) -> Tag<'a> {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &'a Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.str(cow_ix)),
@@ -2834,12 +2834,6 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
         list_item = tree[listitem_ix].next;
     }
 }
-
-// impl<'a> Parser<'a> {
-//     fn next_internal(&'a mut self) -> Option<Event<'a>> {
-
-//     }
-// }
 
 impl<'a> Iterator for Parser<'a>
 where

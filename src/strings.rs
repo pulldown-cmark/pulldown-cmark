@@ -69,11 +69,11 @@ impl<'a> Arena<'a> {
 		}
 	}
 
-	pub fn get_str(&'a self, a: ArenaStr) -> &'a str {
-		&self.buf[a.offset..(a.offset + a.len)]
+	pub fn get_str(&self, a: ArenaStr) -> &'a str {
+		unsafe { &*(&self.buf[a.offset..(a.offset + a.len)] as *const str) }
 	}
 
-	pub fn as_str(&'a self, cow: CowStr<'a>) -> &'a str {
+	pub fn as_str(&self, cow: CowStr<'a>) -> &'a str {
 		match cow {
 			CowStr::Source(slice) => slice,
 			CowStr::Arena(a) => self.get_str(a),

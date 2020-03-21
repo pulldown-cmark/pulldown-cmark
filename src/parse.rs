@@ -860,7 +860,7 @@ impl<'a> FirstPass<'a> {
                     (n, Some(value)) => {
                         let value = match value {
                             Entity::Char(c) => self.allocs.arena.alloc_char(c),
-                            Entity::Str(slice) => self.allocs.arena.alloc_str(slice),
+                            Entity::Str(slice) => slice,
                         };
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {

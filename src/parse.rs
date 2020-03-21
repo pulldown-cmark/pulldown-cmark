@@ -40,8 +40,7 @@ use crate::tree::{Tree, TreeIndex, TreePointer};
 const LINK_MAX_NESTED_PARENS: usize = 5;
 
 /// Codeblock kind.
-#[derive(Clone, Debug)]
-// #[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CodeBlockKind<'a> {
     Indented,
     /// The value contained in the tag describes the language of the code, which may be empty.
@@ -65,8 +64,7 @@ impl<'a> CodeBlockKind<'a> {
 }
 
 /// Tags for elements that can contain other elements.
-#[derive(Clone, Debug)]
-// #[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
@@ -145,8 +143,7 @@ impl LinkType {
 /// Markdown events that are generated in a preorder traversal of the document
 /// tree, with additional `End` events whenever all of an inner node's children
 /// have been visited.
-// #[derive(Clone, Debug, PartialEq)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Event<'a> {
     /// Start of a tagged element. Events that are yielded after this event
     /// and before its corresponding `End` event are inside this element.
@@ -895,17 +892,6 @@ impl<'a> FirstPass<'a> {
         }
         (final_ix, brk)
     }
-
-    // /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
-    // /// lists are allowed.
-    // fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
-    //     scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
-    //         self.list_nesting > 0 ||
-    //         // we don't allow interruption by either empty lists or
-    //         // numbered lists starting at an index other than 1
-    //         !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
-    //     })
-    // }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
     /// this will find the end of the block, adding the block itself to the
@@ -1917,6 +1903,7 @@ impl<'a> Allocations<'a> {
         &self.links[ix.0]
     }
 
+    #[inline]
     pub fn str(&self, ix: CowIndex) -> Cow<'a, str> {
         self.cows[ix.0].into()
     }

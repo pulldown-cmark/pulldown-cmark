@@ -919,7 +919,6 @@ pub(crate) fn unescape<'a>(arena: &mut Arena<'a>, input: &'a str) -> &'a str {
     let mut mark = 0;
     let mut i = 0;
     let bytes = input.as_bytes();
-
     while i < bytes.len() {
         match bytes[i] {
             b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {

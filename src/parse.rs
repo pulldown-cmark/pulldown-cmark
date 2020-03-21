@@ -1683,7 +1683,7 @@ impl InlineStack {
 
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
-    // raw_label, label, next node index
+    // label, next node index
     LinkLabel(&'a str, TreePointer),
     // contains next node index
     Collapsed(TreePointer),
@@ -2212,7 +2212,7 @@ impl<'a> Parser<'a> {
                                                 callback(link_label, link_label)
                                             })
                                             .map(|(url, title)| {
-                                                (link_type.to_unknown(), Cow::owned(url), Cow::owned(title))
+                                                (link_type.to_unknown(), url.into(), title.into())
                                             })
                                     });
 
@@ -2469,7 +2469,7 @@ impl<'a> Parser<'a> {
         let bytes = self.text.as_bytes();
         let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
-        let mut buf = self.allocs.arena.builder(); // : Option<String> = None;
+        let mut buf = self.allocs.arena.builder();
 
         // detect all-space sequences, since they are kept as-is as of commonmark 0.29
         if !bytes[span_start..span_end].iter().all(|&b| b == b' ') {
@@ -2829,13 +2829,10 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
-impl<'a> Iterator for Parser<'a>
-where
-    Parser<'a>: 'a,
-{
+impl<'a> Iterator for Parser<'a> {
     type Item = Event<'a>;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Event<'a>> {
         match self.tree.cur() {
             TreePointer::Nil => {
                 let ix = self.tree.pop()?;

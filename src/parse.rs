@@ -98,11 +98,13 @@ pub enum Tag<'a> {
     Strong,
     Strikethrough,
 
-    /// A link. The first field is the link type, the second the destination URL and the third is a title.
-    Link(LinkType, CowStr<'a>, CowStr<'a>),
+    /// A link. The first field is the link type, the second the destination URL and the third is a title,
+    /// the fourth is the link identifier.
+    Link(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>),
 
-    /// An image. The first field is the link type, the second the destination URL and the third is a title.
-    Image(LinkType, CowStr<'a>, CowStr<'a>),
+    /// An image. The first field is the link type, the second the destination URL and the third is a title,
+    /// the fourth is the link identifier.
+    Image(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>),
 }
 
 /// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
@@ -1849,7 +1851,7 @@ struct AlignmentIndex(usize);
 #[derive(Clone)]
 struct Allocations<'a> {
     refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
+    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
 }
@@ -1870,9 +1872,15 @@ impl<'a> Allocations<'a> {
         CowIndex(ix)
     }
 
-    fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
+    fn allocate_link(
+        &mut self,
+        ty: LinkType,
+        url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    ) -> LinkIndex {
         let ix = self.links.len();
-        self.links.push((ty, url, title));
+        self.links.push((ty, url, title, id));
         LinkIndex(ix)
     }
 
@@ -1892,7 +1900,7 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>);
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
@@ -2012,7 +2020,9 @@ impl<'a> Parser<'a> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
+                        let link_ix =
+                            self.allocs
+                                .allocate_link(link_type, uri, "".into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -2124,7 +2134,9 @@ impl<'a> Parser<'a> {
                             }
                             cur = TreePointer::Valid(tos.node);
                             cur_ix = tos.node;
-                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title);
+                            let link_ix =
+                                self.allocs
+                                    .allocate_link(LinkType::Inline, url, title, "".into());
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -2150,6 +2162,7 @@ impl<'a> Parser<'a> {
                                 RefScan::Collapsed(next_node) => next_node,
                                 RefScan::Failed => next,
                             };
+
                             let link_type = match &scan_result {
                                 RefScan::LinkLabel(..) => LinkType::Reference,
                                 RefScan::Collapsed(..) => LinkType::Collapsed,
@@ -2167,6 +2180,12 @@ impl<'a> Parser<'a> {
                                     )
                                     .map(|(_ix, label)| label)
                                 }
+                            };
+
+                            let id = match &label {
+                                Some(ReferenceLabel::Link(l)) => l.clone(),
+                                Some(ReferenceLabel::Footnote(l)) => l.clone(),
+                                None => "".into(),
                             };
 
                             // see if it's a footnote reference
@@ -2208,7 +2227,7 @@ impl<'a> Parser<'a> {
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
                                     let link_ix =
-                                        self.allocs.allocate_link(def_link_type, url, title);
+                                        self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
                                     {
                                         ItemBody::Image(link_ix)
@@ -2693,12 +2712,12 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let &(ref link_type, ref url, ref title, ref id) = allocs.index(link_ix);
+            Tag::Link(*link_type, url.clone(), title.clone(), id.clone())
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let &(ref link_type, ref url, ref title, ref id) = allocs.index(link_ix);
+            Tag::Image(*link_type, url.clone(), title.clone(), id.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
@@ -2742,12 +2761,12 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let &(ref link_type, ref url, ref title, ref id) = allocs.index(link_ix);
+            Tag::Link(*link_type, url.clone(), title.clone(), id.clone())
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let &(ref link_type, ref url, ref title, ref id) = allocs.index(link_ix);
+            Tag::Image(*link_type, url.clone(), title.clone(), id.clone())
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
@@ -3046,9 +3065,9 @@ mod test {
             }),
         );
         let mut link_tag_count = 0;
-        for (typ, url, title) in parser.filter_map(|event| match event {
+        for (typ, url, title, id) in parser.filter_map(|event| match event {
             Event::Start(tag) | Event::End(tag) => match tag {
-                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                Tag::Link(typ, url, title, id) => Some((typ, url, title, id)),
                 _ => None,
             },
             _ => None,
@@ -3057,6 +3076,7 @@ mod test {
             assert_eq!(typ, LinkType::ReferenceUnknown);
             assert_eq!(url.as_ref(), "YOLO");
             assert_eq!(title.as_ref(), "SWAG");
+            assert_eq!(id.as_ref(), "world");
         }
         assert!(link_tag_count > 0);
     }

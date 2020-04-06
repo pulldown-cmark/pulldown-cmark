@@ -1007,6 +1007,9 @@ pub(crate) fn scan_html_block_inner(
             loop {
                 i += scan_whitespace_no_nl(&data[i..]);
                 if let Some(eol_bytes) = scan_eol(&data[i..]) {
+                    if eol_bytes == 0 {
+                        return None;
+                    }
                     if let Some(handler) = newline_handler {
                         i += eol_bytes;
                         i += handler(&data[i..]);

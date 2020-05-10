@@ -102,7 +102,7 @@ pub fn main() -> std::io::Result<()> {
         // to the operating system anyway, there is no point in tidely cleaning
         // up all the datastructures we have used. We shouldn't do this if we'd
         // do other things after this, because this is basically intentionally
-        // leaking data. Skipping cleanup let's us return a bit (~5%) faster.
+        // leaking data. Skipping cleanup lets us return a bit (~5%) faster.
         mem::forget(p);
     }
     Ok(())

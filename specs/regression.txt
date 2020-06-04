@@ -747,3 +747,46 @@ ISSUE 421
 
 <h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
 ````````````````````````````````
+
+ISSUE 443 (note the spaces on the blank lines)
+
+```````````````````````````````` example
+* A list.
+
+   * A sublist.
+
+   * Another sublist.
+
+
+* A list.
+ 
+   * A sublist.
+ 
+   * Another sublist.
+ 
+.
+<ul>
+<li>
+<p>A list.</p>
+<ul>
+<li>
+<p>A sublist.</p>
+</li>
+<li>
+<p>Another sublist.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>A list.</p>
+<ul>
+<li>
+<p>A sublist.</p>
+</li>
+<li>
+<p>Another sublist.</p>
+</li>
+</ul>
+</li>
+</ul>
+````````````````````````````````

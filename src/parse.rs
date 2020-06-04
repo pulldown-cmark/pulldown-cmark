@@ -1389,9 +1389,9 @@ fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
                 }
             }
             ItemBody::ListItem(indent) => {
-                if !line_start.is_at_eol() {
-                    let save = line_start.clone();
-                    if !line_start.scan_space(indent) {
+                let save = line_start.clone();
+                if !line_start.scan_space(indent) {
+                    if !line_start.is_at_eol() {
                         *line_start = save;
                         break;
                     }

@@ -850,8 +850,29 @@ fn regression_test_61() {
 
 #[test]
 fn regression_test_62() {
-    let original = "<foo";
-    let expected = r##"<p>&lt;foo</p>
+    let original = r##"Some text.
+ 
+* A list.
+ 
+   * A sublist.
+ 
+   * Another sublist.
+
+"##;
+    let expected = r##"<p>Some text.</p>
+<ul>
+<li>
+<p>A list.</p>
+<ul>
+<li>
+<p>A sublist.</p>
+</li>
+<li>
+<p>Another sublist.</p>
+</li>
+</ul>
+</li>
+</ul>
 "##;
 
     test_markdown_html(original, expected);

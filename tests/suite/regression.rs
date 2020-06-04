@@ -850,17 +850,32 @@ fn regression_test_61() {
 
 #[test]
 fn regression_test_62() {
-    let original = r##"Some text.
- 
+    let original = r##"* A list.
+
+   * A sublist.
+
+   * Another sublist.
+
+
 * A list.
  
    * A sublist.
  
    * Another sublist.
-
+ 
 "##;
-    let expected = r##"<p>Some text.</p>
+    let expected = r##"<ul>
+<li>
+<p>A list.</p>
 <ul>
+<li>
+<p>A sublist.</p>
+</li>
+<li>
+<p>Another sublist.</p>
+</li>
+</ul>
+</li>
 <li>
 <p>A list.</p>
 <ul>

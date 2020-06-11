@@ -114,14 +114,14 @@ impl<T: Default> Tree<T> {
 
     /// Pop back up a level.
     pub fn pop(&mut self) -> Option<TreeIndex> {
-        let ix = self.spine.pop()?;
-        self.cur = Some(ix);
-        Some(ix)
+        let ix = Some(self.spine.pop()?);
+        self.cur = ix;
+        ix
     }
 
     /// Look at the parent node.
     pub fn peek_up(&self) -> Option<TreeIndex> {
-        self.spine.last().cloned()
+        self.spine.last().copied()
     }
 
     /// Look at grandparent node.
@@ -150,7 +150,7 @@ impl<T: Default> Tree<T> {
         } else {
             Some(TreeIndex::new(1))
         };
-        self.spine.truncate(0);
+        self.spine.clear();
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.

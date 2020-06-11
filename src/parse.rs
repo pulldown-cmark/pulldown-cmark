@@ -2146,13 +2146,19 @@ impl<'a> Parser<'a> {
                             // to a defined link?
                             let scan_result = scan_reference(&self.tree, block_text, next);
                             let node_after_link = match scan_result {
+                                // [label][reference]
                                 RefScan::LinkLabel(_, next_node, _) => next_node,
+                                // []
                                 RefScan::Collapsed(next_node) => next_node,
+                                // other
                                 RefScan::Failed => next,
                             };
                             let link_type = match &scan_result {
                                 RefScan::LinkLabel(..) => LinkType::Reference,
                                 RefScan::Collapsed(..) => LinkType::Collapsed,
+                                // [shortcut]
+                                //
+                                // [shortcut]: /blah
                                 RefScan::Failed => LinkType::Shortcut,
                             };
 

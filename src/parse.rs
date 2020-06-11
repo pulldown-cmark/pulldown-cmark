@@ -2145,21 +2145,15 @@ impl<'a> Parser<'a> {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
                             let scan_result = scan_reference(&self.tree, block_text, next);
-                            let node_after_link = match scan_result {
+                            let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
-                                RefScan::LinkLabel(_, next_node, _) => next_node,
+                                RefScan::LinkLabel(_, next_node, _) => (next_node, LinkType::Reference),
                                 // []
-                                RefScan::Collapsed(next_node) => next_node,
-                                // other
-                                RefScan::Failed => next,
-                            };
-                            let link_type = match &scan_result {
-                                RefScan::LinkLabel(..) => LinkType::Reference,
-                                RefScan::Collapsed(..) => LinkType::Collapsed,
+                                RefScan::Collapsed(next_node) => (next_node, LinkType::Collapsed),
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => LinkType::Shortcut,
+                                RefScan::Failed => (next, LinkType::Shortcut),
                             };
 
                             // (label, source_ix end)

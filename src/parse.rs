@@ -2109,9 +2109,9 @@ impl<'a> Parser<'a> {
                     });
                 }
                 ItemBody::MaybeLinkClose => {
+                    self.tree[cur_ix].item.body = ItemBody::Text;
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
@@ -2244,15 +2244,9 @@ impl<'a> Parser<'a> {
                                     if tos.ty == LinkStackTy::Link {
                                         self.link_stack.disable_all_links();
                                     }
-                                } else {
-                                    self.tree[cur_ix].item.body = ItemBody::Text;
                                 }
-                            } else {
-                                self.tree[cur_ix].item.body = ItemBody::Text;
                             }
                         }
-                    } else {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
                     }
                 }
                 _ => (),

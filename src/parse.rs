@@ -2154,16 +2154,7 @@ impl<'a> Parser<'a> {
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => {
-                                    if saw_broken {
-                                        saw_broken = false;
-                                        prev = cur;
-                                        cur = self.tree[cur_ix].next;
-                                        continue;
-                                    } else {
-                                        (next, LinkType::Shortcut)
-                                    }
-                                }
+                                RefScan::Failed => (next, LinkType::Shortcut),
                             };
 
                             // (label, source_ix end)
@@ -2209,15 +2200,20 @@ impl<'a> Parser<'a> {
                                         (link_type, url, title)
                                     })
                                     .or_else(|| {
-                                        self.broken_link_callback
-                                            .and_then(|callback| {
-                                                // looked for matching definition, but didn't find it. try to fix
-                                                // link with callback, if it is defined
-                                                callback(link_label.as_ref(), link_label.as_ref())
-                                            })
-                                            .map(|(url, title)| {
-                                                (link_type.to_unknown(), url.into(), title.into())
-                                            })
+                                        if saw_broken {
+                                            saw_broken = false;
+                                            None
+                                        } else {
+                                            self.broken_link_callback
+                                                .and_then(|callback| {
+                                                    // looked for matching definition, but didn't find it. try to fix
+                                                    // link with callback, if it is defined
+                                                    callback(link_label.as_ref(), link_label.as_ref())
+                                                })
+                                                .map(|(url, title)| {
+                                                    (link_type.to_unknown(), url.into(), title.into())
+                                                })
+                                        }
                                     });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {

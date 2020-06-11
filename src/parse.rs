@@ -1991,6 +1991,7 @@ impl<'a> Parser<'a> {
         let mut code_delims = CodeDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = None;
+        let mut saw_broken = false;
 
         let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
         let block_text = &self.text[..block_end];
@@ -2153,7 +2154,16 @@ impl<'a> Parser<'a> {
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => (next, LinkType::Shortcut),
+                                RefScan::Failed => {
+                                    if saw_broken {
+                                        saw_broken = false;
+                                        prev = cur;
+                                        cur = self.tree[cur_ix].next;
+                                        continue;
+                                    } else {
+                                        (next, LinkType::Shortcut)
+                                    }
+                                }
                             };
 
                             // (label, source_ix end)
@@ -2244,6 +2254,10 @@ impl<'a> Parser<'a> {
                                     if tos.ty == LinkStackTy::Link {
                                         self.link_stack.disable_all_links();
                                     }
+                                } else {
+                                    // We didn't find it the first time, so we won't find it next time either.
+                                    // By disabling links we do less processing and also avoid calling broken_link_callback twice.
+                                    saw_broken = true;
                                 }
                             }
                         }

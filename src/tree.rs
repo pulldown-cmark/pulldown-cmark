@@ -9,21 +9,6 @@
 use std::num::NonZeroUsize;
 use std::ops::{Add, Sub};
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum TreePointer {
-    Nil,
-    Valid(TreeIndex),
-}
-
-impl TreePointer {
-    pub fn unwrap(self) -> TreeIndex {
-        match self {
-            TreePointer::Nil => panic!("Called unwrap on a Nil value"),
-            TreePointer::Valid(ix) => ix,
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd)]
 pub struct TreeIndex(NonZeroUsize);
 
@@ -57,8 +42,8 @@ impl Sub<usize> for TreeIndex {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Node<T> {
-    pub child: TreePointer,
-    pub next: TreePointer,
+    pub child: Option<TreeIndex>,
+    pub next: Option<TreeIndex>,
     pub item: T,
 }
 
@@ -67,7 +52,7 @@ pub struct Node<T> {
 pub struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<TreeIndex>, // indices of nodes on path to current node
-    cur: TreePointer,
+    cur: Option<TreeIndex>,
 }
 
 impl<T: Default> Tree<T> {
@@ -77,28 +62,28 @@ impl<T: Default> Tree<T> {
     pub fn with_capacity(cap: usize) -> Tree<T> {
         let mut nodes = Vec::with_capacity(cap);
         nodes.push(Node {
-            child: TreePointer::Nil,
-            next: TreePointer::Nil,
+            child: None,
+            next: None,
             item: <T as Default>::default(),
         });
         Tree {
             nodes,
             spine: Vec::new(),
-            cur: TreePointer::Nil,
+            cur: None,
         }
     }
 
     /// Returns the index of the element currently in focus.
-    pub fn cur(&self) -> TreePointer {
+    pub fn cur(&self) -> Option<TreeIndex> {
         self.cur
     }
 
     /// Append one item to the current position in the tree.
     pub fn append(&mut self, item: T) -> TreeIndex {
         let ix = self.create_node(item);
-        let this = TreePointer::Valid(ix);
+        let this = Some(ix);
 
-        if let TreePointer::Valid(ix) = self.cur {
+        if let Some(ix) = self.cur {
             self[ix].next = this;
         } else if let Some(&parent) = self.spine.last() {
             self[parent].child = this;
@@ -111,8 +96,8 @@ impl<T: Default> Tree<T> {
     pub fn create_node(&mut self, item: T) -> TreeIndex {
         let this = self.nodes.len();
         self.nodes.push(Node {
-            child: TreePointer::Nil,
-            next: TreePointer::Nil,
+            child: None,
+            next: None,
             item,
         });
         TreeIndex::new(this)
@@ -129,14 +114,14 @@ impl<T: Default> Tree<T> {
 
     /// Pop back up a level.
     pub fn pop(&mut self) -> Option<TreeIndex> {
-        let ix = self.spine.pop()?;
-        self.cur = TreePointer::Valid(ix);
-        Some(ix)
+        let ix = Some(self.spine.pop()?);
+        self.cur = ix;
+        ix
     }
 
     /// Look at the parent node.
     pub fn peek_up(&self) -> Option<TreeIndex> {
-        self.spine.last().cloned()
+        self.spine.last().copied()
     }
 
     /// Look at grandparent node.
@@ -161,11 +146,11 @@ impl<T: Default> Tree<T> {
     /// Resets the focus to the first node added to the tree, if it exists.
     pub fn reset(&mut self) {
         self.cur = if self.is_empty() {
-            TreePointer::Nil
+            None
         } else {
-            TreePointer::Valid(TreeIndex::new(1))
+            Some(TreeIndex::new(1))
         };
-        self.spine.truncate(0);
+        self.spine.clear();
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
@@ -174,7 +159,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Moves focus to the next sibling of the given node.
-    pub fn next_sibling(&mut self, cur_ix: TreeIndex) -> TreePointer {
+    pub fn next_sibling(&mut self, cur_ix: TreeIndex) -> Option<TreeIndex> {
         self.cur = self[cur_ix].next;
         self.cur
     }
@@ -198,10 +183,10 @@ where
                 write!(f, "  ")?;
             }
             writeln!(f, "{:?}", &tree[cur].item)?;
-            if let TreePointer::Valid(child_ix) = tree[cur].child {
+            if let Some(child_ix) = tree[cur].child {
                 debug_tree(tree, child_ix, indent + 1, f)?;
             }
-            if let TreePointer::Valid(next_ix) = tree[cur].next {
+            if let Some(next_ix) = tree[cur].next {
                 debug_tree(tree, next_ix, indent, f)?;
             }
             Ok(())

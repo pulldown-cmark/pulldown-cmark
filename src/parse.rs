@@ -3133,14 +3133,18 @@ mod test {
     fn broken_links_called_only_once() {
         use std::cell::Cell;
 
-        let markdown = "See also [`g()`][crate::g].";
-        let times_called = Cell::new(0);
-        let callback = |_: &str, _: &str| {
-            times_called.set(times_called.get() + 1);
-            None
-        };
-        let parser = Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(&callback));
-        for _ in parser {}
-        assert_eq!(times_called.get(), 1);
+        for &(markdown, expected) in &[
+            ("See also [`g()`][crate::g].", 1),
+            ("[brokenlink1] some other node [brokenlink2]", 2),
+        ] {
+            let times_called = Cell::new(0);
+            let callback = |_: &str, _: &str| {
+                times_called.set(times_called.get() + 1);
+                None
+            };
+            let parser = Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(&callback));
+            for _ in parser {}
+            assert_eq!(times_called.get(), expected);
+        }
     }
 }

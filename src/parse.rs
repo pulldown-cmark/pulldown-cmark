@@ -593,16 +593,11 @@ impl<'a> FirstPass<'a> {
             // break out when we find a table
             if let Some(Item {
                 body: ItemBody::Table(alignment_ix),
-                start,
-                end,
+                ..
             }) = brk
             {
                 let table_cols = self.allocs[alignment_ix].len();
-                self.tree[node_ix].item = Item {
-                    body: ItemBody::Table(alignment_ix),
-                    start,
-                    end,
-                };
+                self.tree[node_ix].item.body = ItemBody::Table(alignment_ix);
                 // this clears out any stuff we may have appended - but there may
                 // be a cleaner way
                 self.tree[node_ix].child = None;
@@ -1684,7 +1679,11 @@ enum RefScan<'a> {
 
 /// Skips forward within a block to a node which spans (ends inclusive) the given
 /// index into the source.
-fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: Option<TreeIndex>, ix: usize) -> Option<TreeIndex> {
+fn scan_nodes_to_ix(
+    tree: &Tree<Item>,
+    mut node: Option<TreeIndex>,
+    ix: usize,
+) -> Option<TreeIndex> {
     while let Some(node_ix) = node {
         if tree[node_ix].item.end <= ix {
             node = tree[node_ix].next;
@@ -1720,7 +1719,11 @@ fn scan_link_label<'text, 'tree>(
     Some(pair)
 }
 
-fn scan_reference<'a, 'b>(tree: &'a Tree<Item>, text: &'b str, cur: Option<TreeIndex>) -> RefScan<'b> {
+fn scan_reference<'a, 'b>(
+    tree: &'a Tree<Item>,
+    text: &'b str,
+    cur: Option<TreeIndex>,
+) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
         Some(cur_ix) => cur_ix,
@@ -2147,7 +2150,9 @@ impl<'a> Parser<'a> {
                             let scan_result = scan_reference(&self.tree, block_text, next);
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
-                                RefScan::LinkLabel(_, next_node, _) => (next_node, LinkType::Reference),
+                                RefScan::LinkLabel(_, next_node, _) => {
+                                    (next_node, LinkType::Reference)
+                                }
                                 // []
                                 RefScan::Collapsed(next_node) => (next_node, LinkType::Collapsed),
                                 // [shortcut]
@@ -2997,6 +3002,18 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(12..16, range);
+    }
+
+    #[test]
+    fn table_offset() {
+        let markdown = "a\n\nTesting|This|Outtt\n--|:--:|--:\nSome Data|Other data|asdf";
+        let event_offset = parser_with_extensions(markdown)
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .nth(3)
+            .unwrap();
+        let expected_offset = 3..59;
+        assert_eq!(expected_offset, event_offset);
     }
 
     #[test]

@@ -822,6 +822,22 @@ fn regression_test_60() {
 
 #[test]
 fn regression_test_61() {
+    let original = r##"> Note: Though you should not rely on this, all pointers to <abbr
+> title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+> the size of `usize` and have the same alignment.
+"##;
+    let expected = r##"<blockquote>
+<p>Note: Though you should not rely on this, all pointers to
+<abbr title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+the size of <code>usize</code> and have the same alignment.</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected);
+}
+
+#[test]
+fn regression_test_62() {
     let original = r##"Lorem ipsum.[^a]
 
 An unordered list before the footnotes:
@@ -845,7 +861,7 @@ An unordered list before the footnotes:
 }
 
 #[test]
-fn regression_test_62() {
+fn regression_test_63() {
     let original = r##"[][a]
 
 [a]: b
@@ -864,7 +880,7 @@ fn regression_test_62() {
 }
 
 #[test]
-fn regression_test_63() {
+fn regression_test_64() {
     let original = r##"* A list.
 
    * A sublist.
@@ -909,7 +925,7 @@ fn regression_test_63() {
 }
 
 #[test]
-fn regression_test_64() {
+fn regression_test_65() {
     let original = r##"<foo
 "##;
     let expected = r##"<p>&lt;foo</p>

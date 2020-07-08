@@ -231,6 +231,7 @@ enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
+    OwnedHtml(CowIndex), // TODO: find better name. InlineHtml?
     BlockQuote,
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
@@ -2041,17 +2042,21 @@ impl<'a> Parser<'a> {
                         }
                         continue;
                     } else {
-                        let inline_html = if let Some(next_ix) = next {
+                        let inline_html = next.and_then(|next_ix| {
                             self.scan_inline_html(
                                 block_text.as_bytes(),
                                 self.tree[next_ix].item.start,
                             )
-                        } else {
-                            None
-                        };
-                        if let Some(ix) = inline_html {
+                        });
+                        if let Some((span, ix)) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            self.tree[cur_ix].item.body = ItemBody::Html;
+
+                            self.tree[cur_ix].item.body = if let CowStr::Boxed(_) = span {
+                                ItemBody::OwnedHtml(self.allocs.allocate_cow(span))
+                            } else {
+                                ItemBody::Html
+                            };
+
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
@@ -2594,14 +2599,20 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns the next byte offset on success.
-    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<usize> {
+    fn scan_inline_html<'b>(&mut self, bytes: &'b [u8], ix: usize) -> Option<(CowStr<'b>, usize)> {
         let c = *bytes.get(ix)?;
         if c == b'!' {
-            scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)
+            let ix = scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?;
+            let span = ::std::str::from_utf8(&bytes[..ix]).unwrap();
+            // FIXME: clean this whole thing up
+            Some((span.into(), ix))
         } else if c == b'?' {
-            scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)
+            let ix = scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?;
+            let span = ::std::str::from_utf8(&bytes[..ix]).unwrap();
+            // FIXME: clean this whole thing up
+            Some((span.into(), ix))
         } else {
-            let i = scan_html_block_inner(
+            let (span, i) = scan_html_block_inner(
                 &bytes[ix..],
                 Some(&|_bytes| {
                     let mut line_start = LineStart::new(bytes);
@@ -2609,7 +2620,7 @@ impl<'a> Parser<'a> {
                     line_start.bytes_scanned()
                 }),
             )?;
-            Some(i + ix)
+            Some((span, i + ix))
         }
     }
 
@@ -2785,6 +2796,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {

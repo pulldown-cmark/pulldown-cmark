@@ -855,7 +855,8 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
     }
 }
 
-/// Returns byte scanned (TODO: should it return new offset?)
+/// Returns bytes scanned (TODO: should it return new offset?) and the attribute string.
+// TODO: return attribute string
 // TODO: properly use the newline handler here
 fn scan_attribute(data: &[u8], newline_handler: Option<&dyn Fn(&[u8]) -> usize>) -> Option<usize> {
     let allow_newline = newline_handler.is_some();
@@ -875,6 +876,8 @@ fn scan_attribute(data: &[u8], newline_handler: Option<&dyn Fn(&[u8]) -> usize>)
     Some(ix)
 }
 
+/// Returns the number of bytes scanned, and the attribute value string.
+// TODO: return attribute value string
 fn scan_attribute_value(
     data: &[u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
@@ -976,12 +979,12 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
 }
 
 /// Assumes that `data` is preceded by `<`.
-pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
+pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<(CowStr<'_>, usize)> {
     // Block type html does not allow for newlines, so we
     // do not pass a newline handler.
-    let i = scan_html_block_inner(data, None)?;
+    let (span, i) = scan_html_block_inner(data, None)?;
     scan_blank_line(&data[i..])?;
-    Some(i)
+    Some((span, i))
 }
 
 // FIXME: instead of a newline handler, maybe this should receive
@@ -989,10 +992,15 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
 // With signature `&dyn Fn(&[u8]) -> Option<usize>`.
 // We currently need to implement whitespace handling in all of
 // this function's dependencies as well.
-pub(crate) fn scan_html_block_inner(
-    data: &[u8],
+/// Returns the number of bytes scanned and the html in case of
+/// success.
+pub(crate) fn scan_html_block_inner<'a>(
+    data: &'a [u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
-) -> Option<usize> {
+) -> Option<(CowStr<'a>, usize)> {
+    let mut buffer = String::new();
+    let mut last_buf_index = 0;
+
     let close_tag_bytes = scan_ch(data, b'/');
     let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
     if l == 0 {
@@ -1010,11 +1018,18 @@ pub(crate) fn scan_html_block_inner(
                     if eol_bytes == 0 {
                         return None;
                     }
-                    if let Some(handler) = newline_handler {
-                        i += eol_bytes;
-                        i += handler(&data[i..]);
-                    } else {
-                        return None;
+                    let handler = newline_handler?;
+                    i += eol_bytes;
+                    let skipped_bytes = handler(&data[i..]);
+
+                    if skipped_bytes > 0 {
+                        if buffer.is_empty() {
+                            buffer.push('<');
+                        }
+                        // FIXME: don't do conversion from &[u8] to &str
+                        buffer.push_str(::std::str::from_utf8(&data[last_buf_index..i]).unwrap());
+                        i += skipped_bytes;
+                        last_buf_index = i;
                     }
                 } else {
                     break;
@@ -1040,7 +1055,15 @@ pub(crate) fn scan_html_block_inner(
     if scan_ch(&data[i..], b'>') == 0 {
         None
     } else {
-        Some(i + 1)
+        i += 1;
+        if !buffer.is_empty() {
+            // FIXME: no conversion etc
+            buffer.push_str(::std::str::from_utf8(&data[last_buf_index..i]).unwrap());
+            dbg!(&buffer);
+            Some((buffer.into(), i))
+        } else {
+            Some((::std::str::from_utf8(&data[..i]).unwrap().into(), i))
+        }
     }
 }
 

@@ -798,3 +798,19 @@ ISSUE 437
 .
 <p>&lt;foo</p>
 ````````````````````````````````
+
+Inline HTML stress test
+
+```````````````````````````````` example
+> > a <a href
+> > ="yo
+> > lo">
+.
+<blockquote>
+<blockquote>
+<p>a <a href
+="yo
+lo"></p>
+</blockquote>
+</blockquote>
+````````````````````````````````

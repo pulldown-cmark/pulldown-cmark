@@ -447,7 +447,7 @@ impl<'a> FirstPass<'a> {
             }
 
             // Detect type 7
-            if let Some(_html_bytes) = scan_html_type_7(&bytes[(ix + 1)..]) {
+            if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
                 return self.parse_html_block_type_6_or_7(ix, remaining_space);
             }
         }
@@ -2050,13 +2050,15 @@ impl<'a> Parser<'a> {
                         });
                         if let Some((span, ix)) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-
-                            self.tree[cur_ix].item.body = if let CowStr::Boxed(_) = span {
-                                ItemBody::OwnedHtml(self.allocs.allocate_cow(span))
+                            self.tree[cur_ix].item.body = if let Some(vek) = span {
+                                let converted_string =
+                                    String::from_utf8(vek).expect("invalid utf8");
+                                ItemBody::OwnedHtml(
+                                    self.allocs.allocate_cow(converted_string.into()),
+                                )
                             } else {
                                 ItemBody::Html
                             };
-
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
@@ -2599,28 +2601,29 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns the next byte offset on success.
-    fn scan_inline_html<'b>(&mut self, bytes: &'b [u8], ix: usize) -> Option<(CowStr<'b>, usize)> {
+    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<(Option<Vec<u8>>, usize)> {
         let c = *bytes.get(ix)?;
         if c == b'!' {
-            let ix = scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?;
-            let span = ::std::str::from_utf8(&bytes[..ix]).unwrap();
-            // FIXME: clean this whole thing up
-            Some((span.into(), ix))
+            Some((
+                None,
+                scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?,
+            ))
         } else if c == b'?' {
-            let ix = scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?;
-            let span = ::std::str::from_utf8(&bytes[..ix]).unwrap();
-            // FIXME: clean this whole thing up
-            Some((span.into(), ix))
+            Some((
+                None,
+                scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?,
+            ))
         } else {
             let (span, i) = scan_html_block_inner(
-                &bytes[ix..],
+                // Subtract 1 to include the < character
+                &bytes[(ix - 1)..],
                 Some(&|_bytes| {
                     let mut line_start = LineStart::new(bytes);
                     let _ = scan_containers(&self.tree, &mut line_start);
                     line_start.bytes_scanned()
                 }),
             )?;
-            Some((span, i + ix))
+            Some((span, i + ix - 1))
         }
     }
 

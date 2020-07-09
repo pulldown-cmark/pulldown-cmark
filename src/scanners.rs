@@ -855,20 +855,22 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
     }
 }
 
-/// Returns bytes scanned (TODO: should it return new offset?) and the attribute string.
-// TODO: return attribute string
-// TODO: properly use the newline handler here
-fn scan_attribute(data: &[u8], newline_handler: Option<&dyn Fn(&[u8]) -> usize>) -> Option<usize> {
-    let allow_newline = newline_handler.is_some();
-    let whitespace_scanner =
-        |c| is_ascii_whitespace(c) && (allow_newline || c != b'\n' && c != b'\r');
-    let mut ix = scan_attribute_name(data)?;
-    let n_whitespace = scan_while(&data[ix..], whitespace_scanner);
+/// Returns the new index.
+fn scan_attribute(
+    data: &[u8],
+    mut ix: usize,
+    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    buffer: &mut Vec<u8>,
+    buffer_ix: &mut usize,
+) -> Option<usize> {
+    ix += scan_attribute_name(&data[ix..])?;
+    let n_whitespace =
+        scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)? - ix;
     ix += n_whitespace;
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
-        ix += scan_while(&data[ix..], whitespace_scanner);
-        ix += scan_attribute_value(&data[ix..], newline_handler)?;
+        ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
+        ix = scan_attribute_value(&data, ix, newline_handler, buffer, buffer_ix)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -876,14 +878,46 @@ fn scan_attribute(data: &[u8], newline_handler: Option<&dyn Fn(&[u8]) -> usize>)
     Some(ix)
 }
 
-/// Returns the number of bytes scanned, and the attribute value string.
-// TODO: return attribute value string
+// TODO: write docs for this fn
+fn scan_whitespace_with_newline_handler(
+    data: &[u8],
+    mut i: usize,
+    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    buffer: &mut Vec<u8>,
+    buffer_ix: &mut usize,
+) -> Option<usize> {
+    while i < data.len() {
+        if !is_ascii_whitespace(data[i]) {
+            return Some(i);
+        }
+        if let Some(eol_bytes) = scan_eol(&data[i..]) {
+            let handler = newline_handler?;
+            i += eol_bytes;
+            let skipped_bytes = handler(&data[i..]);
+
+            if skipped_bytes > 0 {
+                buffer.extend(&data[*buffer_ix..i]);
+                *buffer_ix = i + skipped_bytes;
+            }
+
+            i += skipped_bytes;
+        } else {
+            i += 1;
+        }
+    }
+
+    Some(i)
+}
+
+/// Returns the new index, and the attribute value string.
 fn scan_attribute_value(
     data: &[u8],
+    mut i: usize,
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    buffer: &mut Vec<u8>,
+    buffer_ix: &mut usize,
 ) -> Option<usize> {
-    let mut i = 0;
-    match *data.get(0)? {
+    match *data.get(i)? {
         b @ b'"' | b @ b'\'' => {
             i += 1;
             while i < data.len() {
@@ -893,7 +927,13 @@ fn scan_attribute_value(
                 if let Some(eol_bytes) = scan_eol(&data[i..]) {
                     let handler = newline_handler?;
                     i += eol_bytes;
-                    i += handler(&data[i..]);
+                    let skipped_bytes = handler(&data[i..]);
+
+                    if skipped_bytes > 0 {
+                        buffer.extend(&data[*buffer_ix..i]);
+                        *buffer_ix = i + skipped_bytes;
+                    }
+                    i += skipped_bytes;
                 } else {
                     i += 1;
                 }
@@ -908,6 +948,7 @@ fn scan_attribute_value(
             i += scan_attr_value_chars(&data[i..]);
         }
     }
+
     Some(i)
 }
 
@@ -978,8 +1019,9 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
         .is_ok()
 }
 
-/// Assumes that `data` is preceded by `<`.
-pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<(CowStr<'_>, usize)> {
+/// Assumes that `data` starts with `<`.
+/// Returns the owned bytes that make up the tag, and the new data index.
+pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<(Option<Vec<u8>>, usize)> {
     // Block type html does not allow for newlines, so we
     // do not pass a newline handler.
     let (span, i) = scan_html_block_inner(data, None)?;
@@ -987,26 +1029,22 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<(CowStr<'_>, usize)> {
     Some((span, i))
 }
 
-// FIXME: instead of a newline handler, maybe this should receive
-// a whitespace handler instead.
-// With signature `&dyn Fn(&[u8]) -> Option<usize>`.
-// We currently need to implement whitespace handling in all of
-// this function's dependencies as well.
+/// Assumes that `data` starts with `<`.
 /// Returns the number of bytes scanned and the html in case of
 /// success.
-pub(crate) fn scan_html_block_inner<'a>(
-    data: &'a [u8],
+pub(crate) fn scan_html_block_inner(
+    data: &[u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
-) -> Option<(CowStr<'a>, usize)> {
-    let mut buffer = String::new();
+) -> Option<(Option<Vec<u8>>, usize)> {
+    let mut buffer = Vec::new();
     let mut last_buf_index = 0;
 
-    let close_tag_bytes = scan_ch(data, b'/');
-    let l = scan_while(&data[close_tag_bytes..], is_ascii_alpha);
+    let close_tag_bytes = scan_ch(&data[1..], b'/');
+    let l = scan_while(&data[(1 + close_tag_bytes)..], is_ascii_alpha);
     if l == 0 {
         return None;
     }
-    let mut i = close_tag_bytes + l;
+    let mut i = 1 + close_tag_bytes + l;
     i += scan_while(&data[i..], is_ascii_letterdigitdash);
 
     if close_tag_bytes == 0 {
@@ -1023,11 +1061,7 @@ pub(crate) fn scan_html_block_inner<'a>(
                     let skipped_bytes = handler(&data[i..]);
 
                     if skipped_bytes > 0 {
-                        if buffer.is_empty() {
-                            buffer.push('<');
-                        }
-                        // FIXME: don't do conversion from &[u8] to &str
-                        buffer.push_str(::std::str::from_utf8(&data[last_buf_index..i]).unwrap());
+                        buffer.extend(&data[last_buf_index..i]);
                         i += skipped_bytes;
                         last_buf_index = i;
                     }
@@ -1042,7 +1076,7 @@ pub(crate) fn scan_html_block_inner<'a>(
                 // No whitespace, which is mandatory.
                 return None;
             }
-            i += scan_attribute(&data[i..], newline_handler)?;
+            i = scan_attribute(&data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
         }
     }
 
@@ -1057,12 +1091,10 @@ pub(crate) fn scan_html_block_inner<'a>(
     } else {
         i += 1;
         if !buffer.is_empty() {
-            // FIXME: no conversion etc
-            buffer.push_str(::std::str::from_utf8(&data[last_buf_index..i]).unwrap());
-            dbg!(&buffer);
-            Some((buffer.into(), i))
+            buffer.extend(&data[last_buf_index..i]);
+            Some((Some(buffer), i))
         } else {
-            Some((::std::str::from_utf8(&data[..i]).unwrap().into(), i))
+            Some((None, i))
         }
     }
 }

@@ -855,7 +855,7 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
     }
 }
 
-/// Returns the new index.
+/// Returns the index immediately following the attribute on success.
 fn scan_attribute(
     data: &[u8],
     mut ix: usize,
@@ -878,7 +878,9 @@ fn scan_attribute(
     Some(ix)
 }
 
-// TODO: write docs for this fn
+/// Scans whitespace and possibly newlines according to the
+/// behavior defined by the newline handler. When bytes are skipped,
+/// all preceeding non-skipped bytes are pushed to the buffer.
 fn scan_whitespace_with_newline_handler(
     data: &[u8],
     mut i: usize,
@@ -909,7 +911,7 @@ fn scan_whitespace_with_newline_handler(
     Some(i)
 }
 
-/// Returns the new index, and the attribute value string.
+/// Returns the index immediately following the attribute value on success.
 fn scan_attribute_value(
     data: &[u8],
     mut i: usize,
@@ -1020,18 +1022,21 @@ pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
 }
 
 /// Assumes that `data` starts with `<`.
-/// Returns the owned bytes that make up the tag, and the new data index.
-pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<(Option<Vec<u8>>, usize)> {
+/// Returns the index into data directly after the html tag on success.
+pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
     // Block type html does not allow for newlines, so we
     // do not pass a newline handler.
-    let (span, i) = scan_html_block_inner(data, None)?;
+    let (_span, i) = scan_html_block_inner(data, None)?;
     scan_blank_line(&data[i..])?;
-    Some((span, i))
+    Some(i)
 }
 
 /// Assumes that `data` starts with `<`.
 /// Returns the number of bytes scanned and the html in case of
 /// success.
+/// When some bytes were skipped, because the html was split over
+/// multiple leafs (e.g. over multiple lines in a blockquote),
+/// the html is returned as a vector of bytes.
 pub(crate) fn scan_html_block_inner(
     data: &[u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,

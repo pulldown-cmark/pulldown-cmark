@@ -231,7 +231,7 @@ enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
-    OwnedHtml(CowIndex), // TODO: find better name. InlineHtml?
+    OwnedHtml(CowIndex),
     BlockQuote,
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level

@@ -1699,6 +1699,7 @@ fn scan_nodes_to_ix(
 fn scan_link_label<'text, 'tree>(
     tree: &'tree Tree<Item>,
     text: &'text str,
+    allow_footnote_refs: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
     let bytes = &text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
@@ -1709,7 +1710,7 @@ fn scan_link_label<'text, 'tree>(
         let _ = scan_containers(tree, &mut line_start);
         Some(line_start.bytes_scanned())
     };
-    let pair = if b'^' == bytes[1] {
+    let pair = if allow_footnote_refs && b'^' == bytes[1] {
         let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
@@ -1723,6 +1724,7 @@ fn scan_reference<'a, 'b>(
     tree: &'a Tree<Item>,
     text: &'b str,
     cur: Option<TreeIndex>,
+    allow_footnote_refs: bool,
 ) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
@@ -1734,7 +1736,9 @@ fn scan_reference<'a, 'b>(
     if tail.starts_with(b"[]") {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(tree, &text[start..]) {
+    } else if let Some((ix, ReferenceLabel::Link(label))) =
+        scan_link_label(tree, &text[start..], allow_footnote_refs)
+    {
         let next_node = scan_nodes_to_ix(tree, cur, start + ix);
         RefScan::LinkLabel(label, next_node, start + ix)
     } else {
@@ -1926,6 +1930,7 @@ pub(crate) struct HtmlScanGuard {
 #[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
+    options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'a>,
     broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
@@ -1965,6 +1970,7 @@ impl<'a> Parser<'a> {
         let html_scan_guard = Default::default();
         Parser {
             text,
+            options,
             tree,
             allocs,
             broken_link_callback,
@@ -2147,7 +2153,12 @@ impl<'a> Parser<'a> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result = scan_reference(&self.tree, block_text, next);
+                            let scan_result = scan_reference(
+                                &self.tree,
+                                block_text,
+                                next,
+                                self.options.contains(Options::ENABLE_FOOTNOTES),
+                            );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, next_node, _) => {
@@ -2172,6 +2183,7 @@ impl<'a> Parser<'a> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..self.tree[cur_ix].item.end],
+                                        self.options.contains(Options::ENABLE_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                 }
@@ -2993,7 +3005,7 @@ mod test {
 
     #[test]
     fn footnote_offsets() {
-        let range = Parser::new("Testing this[^1] out.\n\n[^1]: Footnote.")
+        let range = parser_with_extensions("Testing this[^1] out.\n\n[^1]: Footnote.")
             .into_offset_iter()
             .filter_map(|(ev, range)| match ev {
                 Event::FootnoteReference(..) => Some(range),
@@ -3041,6 +3053,16 @@ mod test {
     fn link_def_at_eof() {
         let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
         let expected = "<p><a href=\"https://vincentprouillet.com\">My site</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
+    fn no_footnote_refs_without_option() {
+        let test_str = "a [^a]\n\n[^a]: yolo";
+        let expected = "<p>a <a href=\"yolo\">^a</a></p>\n";
 
         let mut buf = String::new();
         crate::html::push_html(&mut buf, Parser::new(test_str));

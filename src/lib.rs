@@ -59,7 +59,7 @@ extern crate bitflags;
 extern crate unicase;
 
 mod entities;
-mod escape;
+pub mod escape;
 mod linklabel;
 mod parse;
 mod puncttable;

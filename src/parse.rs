@@ -279,7 +279,7 @@ enum TableParseMode {
 }
 
 pub struct BrokenLink<'a> {
-    pub range: ::std::ops::Range<usize>,
+    pub span: ::std::ops::Range<usize>,
     pub link_type: LinkType,
     pub reference: &'a CowStr<'a>,
 }
@@ -1932,12 +1932,8 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-pub struct BrokenLinkFix<'a> {
-    title: CowStr<'a>,
-    url: CowStr<'a>,
-}
-
-pub type BrokenLinkCallback<'a> = Option<&'a dyn Fn(BrokenLink) -> Option<BrokenLinkFix<'a>>>;
+pub type BrokenLinkCallback<'a> =
+    Option<&'a dyn Fn(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
 
 /// Markdown event iterator.
 #[derive(Clone)]
@@ -2175,7 +2171,10 @@ impl<'a> Parser<'a> {
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
-                                    // TODO: explain why we do this
+                                    // Toggle reference viability of the last closing bracket,
+                                    // so that we can skip it on future iterations in case
+                                    // it fails in this one. In particular, we won't call
+                                    // the broken link callback twice on one reference.
                                     let reference_close_node =
                                         scan_nodes_to_ix(&self.tree, next, end_ix - 1).unwrap();
                                     self.tree[reference_close_node].item.body =
@@ -2184,14 +2183,20 @@ impl<'a> Parser<'a> {
 
                                     (next_node, LinkType::Reference)
                                 }
-                                // []
-                                RefScan::Collapsed(next_node) => (next_node, LinkType::Collapsed),
+                                // [reference][]
+                                RefScan::Collapsed(next_node) => {
+                                    // This reference has already been tried, and it's not
+                                    // valid. Skip it.
+                                    if !could_be_ref {
+                                        continue;
+                                    }
+                                    (next_node, LinkType::Collapsed)
+                                }
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
                                 RefScan::Failed => {
                                     if !could_be_ref {
-                                        // TODO: explain why we do this
                                         continue;
                                     }
                                     (next, LinkType::Shortcut)
@@ -2236,7 +2241,6 @@ impl<'a> Parser<'a> {
                                     .get(&UniCase::new(link_label.as_ref().into()))
                                     .map(|matching_def| {
                                         // found a matching definition!
-                                        // FIXME: can we do without cloning here? (or clone a cowstr instead?)
                                         let title = matching_def
                                             .title
                                             .as_ref()
@@ -2251,8 +2255,7 @@ impl<'a> Parser<'a> {
                                                 // Construct brokenlink struct, which is what the callback
                                                 // will take
                                                 let broken_link = BrokenLink {
-                                                    // FIXME: this range is a guess
-                                                    range: (self.tree[tos.node].item.start)..end,
+                                                    span: (self.tree[tos.node].item.start)..end,
                                                     link_type: link_type,
                                                     reference: &link_label,
                                                 };
@@ -2261,7 +2264,9 @@ impl<'a> Parser<'a> {
                                                 // link with callback, if it is defined
                                                 callback(broken_link)
                                             })
-                                            .map(|fix| (link_type.to_unknown(), fix.url, fix.title))
+                                            .map(|(url, title)| {
+                                                (link_type.to_unknown(), url, title)
+                                            })
                                     });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
@@ -3142,6 +3147,7 @@ mod test {
 
         for &(markdown, expected) in &[
             ("See also [`g()`][crate::g].", 1),
+            ("See also [`g()`][crate::g][].", 1),
             ("[brokenlink1] some other node [brokenlink2]", 2),
         ] {
             let times_called = Cell::new(0);
@@ -3164,11 +3170,9 @@ mod test {
             Options::empty(),
             Some(&|broken_link| {
                 assert_eq!("world", broken_link.reference.as_ref());
-                let fix = BrokenLinkFix {
-                    url: "YOLO".into(),
-                    title: "SWAG".to_owned().into(),
-                };
-                Some(fix)
+                let url = "YOLO".into();
+                let title = "SWAG".to_owned().into();
+                Some((url, title))
             }),
         );
         let mut link_tag_count = 0;

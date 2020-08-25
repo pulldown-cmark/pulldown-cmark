@@ -19,7 +19,7 @@
 use crate::parse::LoopInstruction;
 use core::arch::x86_64::*;
 
-const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
+pub(crate) const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 
 /// Generates a lookup table containing the bitmaps for our
 /// special marker bytes. This is effectively a 128 element 2d bitvector,
@@ -51,11 +51,11 @@ const fn compute_lookup() -> [u8; 16] {
 /// It is only safe to call this function when `bytes.len() >= ix + VECTOR_SIZE`.
 #[target_feature(enable = "ssse3")]
 #[inline]
-unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
+unsafe fn compute_mask(lut: &[u8; 16], bytes: &[u8], ix: usize) -> i32 {
     debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
 
-    let lookup = compute_lookup();
-    let bitmap = _mm_loadu_si128(lookup.as_ptr() as *const __m128i);
+    //let lookup = compute_lookup();
+    let bitmap = _mm_loadu_si128(lut.as_ptr() as *const __m128i);
     // Small lookup table to compute single bit bitshifts
     // for 16 bytes at once.
     let bitmask_lookup =

@@ -281,7 +281,7 @@ enum TableParseMode {
 ///
 /// The first pass resolves all block structure, generating an AST. Within a block, items
 /// are in a linear chain with potential inline markup identified.
-struct FirstPass<'a> {
+struct FirstPass<'a, 'b> {
     text: &'a str,
     tree: Tree<Item>,
     begin_list_item: bool,
@@ -289,25 +289,24 @@ struct FirstPass<'a> {
     allocs: Allocations<'a>,
     options: Options,
     list_nesting: usize,
+    lookup_table: &'b [bool; 256],
 }
 
-impl<'a> FirstPass<'a> {
-    fn new(text: &'a str, options: Options) -> FirstPass {
+impl<'a, 'b> FirstPass<'a, 'b> {
+    fn new(text: &'a str, options: Options, lookup_table: &'b [bool; 256]) -> FirstPass<'a, 'b> {
         // This is a very naive heuristic for the number of nodes
         // we'll need.
         let start_capacity = max(128, text.len() / 32);
         let tree = Tree::with_capacity(start_capacity);
-        let begin_list_item = false;
-        let last_line_blank = false;
-        let allocs = Allocations::new();
         FirstPass {
             text,
             tree,
-            begin_list_item,
-            last_line_blank,
-            allocs,
+            begin_list_item: false,
+            last_line_blank: false,
+            allocs: Allocations::new(),
             options,
             list_nesting: 0,
+            lookup_table,
         }
     }
 
@@ -673,7 +672,7 @@ impl<'a> FirstPass<'a> {
         let mut last_pipe_ix = start;
         let mut begin_text = start;
 
-        let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
+        let (final_ix, brk) = iterate_special_bytes(&self.lookup_table, bytes, start, |ix, byte| {
             match byte {
                 b'\n' | b'\r' => {
                     if let TableParseMode::Active = mode {
@@ -1957,7 +1956,8 @@ impl<'a> Parser<'a> {
         options: Options,
         broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
     ) -> Parser<'a> {
-        let first_pass = FirstPass::new(text, options);
+        let lut = special_bytes();
+        let first_pass = FirstPass::new(text, options, &lut);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
         let inline_stack = Default::default();
@@ -2577,6 +2577,9 @@ pub(crate) enum LoopInstruction<T> {
     BreakAtWith(usize, T),
 }
 
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+static COMPUTE_LOOKUP: [u8; 16] = simd::compute_lookup();
+
 /// This function walks the byte slices from the given index and
 /// calls the callback function on all bytes (and their indices) that are in the following set:
 /// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
@@ -2587,17 +2590,17 @@ pub(crate) enum LoopInstruction<T> {
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
 /// If `BreakAtWith(..)` is never returned, this function will return the first
 /// index that is outside the byteslice bound and a `None` value.
-fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
+fn iterate_special_bytes<F, T>(lut: &[bool; 256], bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
-        crate::simd::iterate_special_bytes(bytes, ix, callback)
+        crate::simd::iterate_special_bytes(&COMPUTE_LOOKUP, bytes, ix, callback)
     }
     #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
     {
-        scalar_iterate_special_bytes(bytes, ix, callback)
+        scalar_iterate_special_bytes(lut, bytes, ix, callback)
     }
 }
 
@@ -2620,6 +2623,7 @@ const fn special_bytes() -> [bool; 256] {
 }
 
 pub(crate) fn scalar_iterate_special_bytes<F, T>(
+    lut: &[bool; 256],
     bytes: &[u8],
     mut ix: usize,
     mut callback: F,
@@ -2627,11 +2631,9 @@ pub(crate) fn scalar_iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-    let special_bytes = special_bytes();
-
     while ix < bytes.len() {
         let b = bytes[ix];
-        if special_bytes[b as usize] {
+        if lut[b as usize] {
             match callback(ix, b) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     ix += skip;

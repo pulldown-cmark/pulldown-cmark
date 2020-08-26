@@ -16,7 +16,7 @@
 //!
 //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
-use crate::parse::{LookupTable, LoopInstruction};
+use crate::parse::{LookupTable, LoopInstruction, Options};
 use core::arch::x86_64::*;
 
 pub(crate) const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
@@ -25,14 +25,12 @@ pub(crate) const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 /// special marker bytes. This is effectively a 128 element 2d bitvector,
 /// that can be indexed by a four bit row index (the lower nibble)
 /// and a three bit column index (upper nibble).
-pub(crate) const fn compute_lookup() -> [u8; 16] {
+pub(crate) fn compute_lookup(options: &Options) -> [u8; 16] {
     let mut lookup = [0u8; 16];
     lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
     lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
     lookup[(b'*' & 0x0f) as usize] |= 1 << (b'*' >> 4);
     lookup[(b'_' & 0x0f) as usize] |= 1 << (b'_' >> 4);
-    lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
-    lookup[(b'|' & 0x0f) as usize] |= 1 << (b'|' >> 4);
     lookup[(b'&' & 0x0f) as usize] |= 1 << (b'&' >> 4);
     lookup[(b'\\' & 0x0f) as usize] |= 1 << (b'\\' >> 4);
     lookup[(b'[' & 0x0f) as usize] |= 1 << (b'[' >> 4);
@@ -40,6 +38,14 @@ pub(crate) const fn compute_lookup() -> [u8; 16] {
     lookup[(b'<' & 0x0f) as usize] |= 1 << (b'<' >> 4);
     lookup[(b'!' & 0x0f) as usize] |= 1 << (b'!' >> 4);
     lookup[(b'`' & 0x0f) as usize] |= 1 << (b'`' >> 4);
+
+    if options.contains(Options::ENABLE_TABLES) {
+        lookup[(b'|' & 0x0f) as usize] |= 1 << (b'|' >> 4);
+    }
+    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
+    }
+
     lookup
 }
 
@@ -54,7 +60,6 @@ pub(crate) const fn compute_lookup() -> [u8; 16] {
 unsafe fn compute_mask(lut: &[u8; 16], bytes: &[u8], ix: usize) -> i32 {
     debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
 
-    //let lookup = compute_lookup();
     let bitmap = _mm_loadu_si128(lut.as_ptr() as *const __m128i);
     // Small lookup table to compute single bit bitshifts
     // for 16 bytes at once.

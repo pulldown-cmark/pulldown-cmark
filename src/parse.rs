@@ -891,6 +891,45 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             LoopInstruction::ContinueAndSkip(0)
                         }
                     }
+                    b'-' => {
+                        let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'-');
+                        if count == 1 {
+                            LoopInstruction::ContinueAndSkip(0)
+                        } else {
+                            let cow = if count == 2 {
+                                '–'.into()
+                            } else if count == 3 {
+                                '—'.into()
+                            } else {
+                                let (ems, ens) = match count % 6 {
+                                    0 => (count / 3, 0),
+                                    1 => ((count - 4) / 3, 2),
+                                    2 => (0, count / 2),
+                                    3 => (count / 3, 0),
+                                    4 => (0, count / 2),
+                                    _ => ((count - 2) / 3, 1),
+                                };
+                                // – and — are 3 bytes each in utf8
+                                let mut buf = String::with_capacity(3 * (ems + ens));
+                                for _ in 0..ems {
+                                    buf.push('—');
+                                }
+                                for _ in 0..ens {
+                                    buf.push('–');
+                                }
+                                buf.into()
+                            };
+
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + count,
+                                body: ItemBody::SynthesizeText(self.allocs.allocate_cow(cow)),
+                            });
+                            begin_text = ix + count;
+                            LoopInstruction::ContinueAndSkip(count - 1)
+                        }
+                    }
                     _ => LoopInstruction::ContinueAndSkip(0),
                 }
             });

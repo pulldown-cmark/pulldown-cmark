@@ -45,6 +45,12 @@ pub(crate) fn compute_lookup(options: &Options) -> [u8; 16] {
     if options.contains(Options::ENABLE_STRIKETHROUGH) {
         lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
     }
+    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
+        lookup[(b'.' & 0x0f) as usize] |= 1 << (b'.' >> 4);
+        lookup[(b'-' & 0x0f) as usize] |= 1 << (b'-' >> 4);
+        lookup[(b'"' & 0x0f) as usize] |= 1 << (b'"' >> 4);
+        lookup[(b'\'' & 0x0f) as usize] |= 1 << (b'\'' >> 4);
+    }
 
     lookup
 }

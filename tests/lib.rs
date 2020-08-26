@@ -25,6 +25,7 @@ pub fn test_markdown_html(input: &str, output: &str) {
     opts.insert(Options::ENABLE_FOOTNOTES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TASKLISTS);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
 
     let p = Parser::new_ext(input, opts);
     pulldown_cmark::html::push_html(&mut s, p);

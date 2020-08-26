@@ -29,6 +29,7 @@ fn generate_tests_from_spec() {
     // and make it easy to eventually add other hardcoded paths in the future if needed
     let hardcoded = [
         "./third_party/CommonMark/spec.txt",
+        "./third_party/CommonMark/smart_punct.txt",
         "./third_party/GitHub/gfm_table.txt",
         "./third_party/GitHub/gfm_strikethrough.txt",
         "./third_party/GitHub/gfm_tasklist.txt",

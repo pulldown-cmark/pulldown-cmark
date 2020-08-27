@@ -4,7 +4,7 @@ Open quotes are matched with closed quotes.
 The same method is used for matching openers and closers
 as is used in emphasis parsing:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 "Hello," said the spider.
 "'Shelob' is my name."
 .
@@ -12,13 +12,13 @@ as is used in emphasis parsing:
 “‘Shelob’ is my name.”</p>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 'A', 'B', and 'C' are letters.
 .
 <p>‘A’, ‘B’, and ‘C’ are letters.</p>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 'Oak,' 'elm,' and 'beech' are names of trees.
 So is 'pine.'
 .
@@ -26,7 +26,7 @@ So is 'pine.'
 So is ‘pine.’</p>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 'He said, "I want to go."'
 .
 <p>‘He said, “I want to go.”’</p>
@@ -36,13 +36,13 @@ A single quote that isn't an open quote matched
 with a close quote will be treated as an
 apostrophe:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 Were you alive in the 70's?
 .
 <p>Were you alive in the 70’s?</p>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 Here is some quoted '`code`' and a "[quoted link](url)".
 .
 <p>Here is some quoted ‘<code>code</code>’ and a “<a href="url">quoted link</a>”.</p>
@@ -52,7 +52,7 @@ Here the first `'` is treated as an apostrophe, not
 an open quote, because the final single quote is matched
 by the single quote before `jolly`:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 'tis the season to be 'jolly'
 .
 <p>’tis the season to be ‘jolly’</p>
@@ -60,7 +60,7 @@ by the single quote before `jolly`:
 
 Multiple apostrophes should not be marked as open/closing quotes.
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 'We'll use Jane's boat and John's truck,' Jenna said.
 .
 <p>‘We’ll use Jane’s boat and John’s truck,’ Jenna said.</p>
@@ -69,7 +69,7 @@ Multiple apostrophes should not be marked as open/closing quotes.
 An unmatched double quote will be interpreted as a
 left double quote, to facilitate this style:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 "A paragraph with no closing quote.
 
 "Second paragraph by same speaker, in fiction."
@@ -81,7 +81,7 @@ left double quote, to facilitate this style:
 A quote following a `]` or `)` character cannot
 be an open quote:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 [a]'s b'
 .
 <p>[a]’s b’</p>
@@ -90,7 +90,7 @@ be an open quote:
 Quotes that are escaped come out as literal straight
 quotes:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 \"This is not smart.\"
 This isn\'t either.
 5\'8\"
@@ -102,7 +102,7 @@ This isn't either.
 
 Two hyphens form an en-dash, three an em-dash.
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 Some dashes:  em---em
 en--en
 em --- em
@@ -127,7 +127,7 @@ dashes, and as few en dashes as possible are
 used (so, 7 hyphens = 2 em dashes an 1 en
 dash).
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 one-
 two--
 three---
@@ -153,7 +153,7 @@ thirteen———––.</p>
 
 Hyphens can be escaped:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 Escaped hyphens: \-- \-\-\-.
 .
 <p>Escaped hyphens: -- ---.</p>
@@ -161,7 +161,7 @@ Escaped hyphens: \-- \-\-\-.
 
 Three periods form an ellipsis:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 Ellipses...and...and....
 .
 <p>Ellipses…and…and….</p>
@@ -170,7 +170,7 @@ Ellipses...and...and....
 Periods can be escaped if ellipsis-formation
 is not wanted:
 
-```````````````````````````````` example
+```````````````````````````````` example_smartpunct
 No ellipses\.\.\.
 .
 <p>No ellipses...</p>

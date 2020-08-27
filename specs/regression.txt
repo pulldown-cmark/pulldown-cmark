@@ -213,7 +213,7 @@ ISSUE #315
 
 ISSUE #294
 
-```````````````````````````````` example_disable_smartpunct
+```````````````````````````````` example
 1...
 
 1.2.3.
@@ -267,7 +267,7 @@ YOLO
 
 ISSUE #293
 
-```````````````````````````````` example_disable_smartpunct
+```````````````````````````````` example
 lorem ipsum
 A | B
 ---|---

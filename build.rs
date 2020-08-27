@@ -152,21 +152,18 @@ impl<'a> Iterator for Spec<'a> {
 
     fn next(&mut self) -> Option<TestCase> {
         let spec = self.spec;
+        let prefix = "```````````````````````````````` example";
 
-        let (i_start, smart_punct) = self
-            .spec
-            .find("```````````````````````````````` example")
-            .and_then(|pos| {
-                let prefix_len = "```````````````````````````````` example".len();
-                let suffix = "_disable_smartpunct\n";
-                if spec[(pos + prefix_len)..].starts_with(suffix) {
-                    Some((pos + prefix_len + suffix.len(), false))
-                } else if spec[(pos + prefix_len)..].starts_with('\n') {
-                    Some((pos + prefix_len + 1, true))
-                } else {
-                    None
-                }
-            })?;
+        let (i_start, smart_punct) = self.spec.find(prefix).and_then(|pos| {
+            let suffix = "_smartpunct\n";
+            if spec[(pos + prefix.len())..].starts_with(suffix) {
+                Some((pos + prefix.len() + suffix.len(), true))
+            } else if spec[(pos + prefix.len())..].starts_with('\n') {
+                Some((pos + prefix.len() + 1, false))
+            } else {
+                None
+            }
+        })?;
 
         let i_end = self.spec[i_start..]
             .find("\n.\n")

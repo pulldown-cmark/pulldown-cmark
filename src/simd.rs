@@ -186,7 +186,13 @@ mod simd_test {
     use crate::Options;
 
     fn check_expected_indices(bytes: &[u8], expected: &[usize], skip: usize) {
-        let lut = crate::parse::create_lut(&Options::empty());
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let lut = crate::parse::create_lut(&opts);
         let mut indices = vec![];
 
         iterate_special_bytes::<_, i32>(&lut, bytes, 0, |ix, _byte_ty| {

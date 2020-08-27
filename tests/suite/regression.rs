@@ -16,7 +16,7 @@ This is a test of the details element.
 </details>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn regression_test_2() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn regression_test_3() {
 <a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn regression_test_4() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn regression_test_5() {
     let expected = r##"<p>foo§<strong>(bar)</strong></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn regression_test_6() {
 
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn regression_test_7() {
 <!-- foo -->
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -137,7 +137,7 @@ fn regression_test_8() {
 
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -151,7 +151,7 @@ i8
     let expected = r##"<p><a href="../../../std/primitive.i8.html"><code>i8</code></a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn regression_test_10() {
     let expected = r##"<p><a href="/url" title="title\*">a</a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn regression_test_11() {
     let expected = r##"<p><a href="/url" title="title)">a</a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -188,7 +188,7 @@ fn regression_test_12() {
 <p>[a]: /url (title))</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -201,7 +201,7 @@ b <?php but this is ?>
 <p>b <?php but this is ?></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -212,7 +212,7 @@ foo
     let expected = r##"<p>foo</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -222,7 +222,7 @@ fn regression_test_15() {
     let expected = r##"<p>`foo`</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -234,7 +234,7 @@ bar
 bar</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -247,7 +247,7 @@ fn regression_test_17() {
 <p>1) bar</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -279,7 +279,7 @@ fn regression_test_19() {
     let expected = r##"<p>[](&lt;&lt;&gt;)</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -289,7 +289,7 @@ fn regression_test_20() {
     let expected = r##"<p>`<code>foo``bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -299,7 +299,7 @@ fn regression_test_21() {
     let expected = r##"<p>\<code>foo</code></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -311,7 +311,7 @@ YOLO
     let expected = r##"<p>YOLO</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -341,7 +341,7 @@ foo|bar
 </table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -355,7 +355,7 @@ foo|bar
 </table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -365,7 +365,7 @@ fn regression_test_26() {
     let expected = r##"<p><a href="url"><foo></a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -375,7 +375,7 @@ fn regression_test_27() {
     let expected = r##"<p><a href="url"><foo>bar</foo></a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -385,7 +385,7 @@ fn regression_test_28() {
     let expected = r##"<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -395,7 +395,7 @@ fn regression_test_29() {
     let expected = r##"<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -410,7 +410,7 @@ some text
 <p>some text</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -431,7 +431,7 @@ fn regression_test_31() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -446,7 +446,7 @@ x</p>
 <p>]: f</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -456,7 +456,7 @@ fn regression_test_33() {
     let expected = r##"<p>[foo]:</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -471,7 +471,7 @@ yolo | swag
 <p>yolo | swag</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -481,7 +481,7 @@ fn regression_test_35() {
     let expected = r##"<foo bar>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -493,7 +493,7 @@ fn regression_test_36() {
  "hi"> </p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -506,7 +506,7 @@ __a__
 <p><strong>a</strong></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -519,7 +519,7 @@ fn regression_test_38() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -529,7 +529,7 @@ fn regression_test_39() {
     let expected = r##"<p><code>\|</code></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -542,7 +542,7 @@ Paragraph 2
 <p>Paragraph 2</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -552,7 +552,7 @@ fn regression_test_41() {
     let expected = r##"<p>[<a href="https://www.google.com/">link text</a>]</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -564,7 +564,7 @@ fn regression_test_42() {
     let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>[a](&lt;</td><td>url&gt;)</td></tr></tbody></table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -578,7 +578,7 @@ fn regression_test_43() {
 <p>")</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -591,7 +591,7 @@ fn regression_test_44() {
 <p>)</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -604,7 +604,7 @@ fn regression_test_45() {
 <p>&quot;)</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -614,7 +614,7 @@ fn regression_test_46() {
     let expected = r##"<p>&lt;http:// &gt;</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -624,7 +624,7 @@ fn regression_test_47() {
     let expected = r##"<p>&lt;http://&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -643,7 +643,7 @@ fn regression_test_48() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -662,7 +662,7 @@ fn regression_test_49() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -672,7 +672,7 @@ fn regression_test_50() {
     let expected = r##"<p><sup>*hi</sup>_</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -682,7 +682,7 @@ fn regression_test_51() {
     let expected = r##"<p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -696,7 +696,7 @@ bar">link</a></p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -711,7 +711,7 @@ fn regression_test_53() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -727,7 +727,7 @@ bar</a></p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -745,7 +745,7 @@ fn regression_test_55() {
 <p><a href="/foo">a b c</a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -762,7 +762,7 @@ fn regression_test_56() {
 <p>[a b] [a > b]</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -775,7 +775,7 @@ package`]
     let expected = r##"<p><a href="https://example.com"><code>cargo package</code></a></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -790,7 +790,7 @@ fn regression_test_58() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -802,7 +802,7 @@ fn regression_test_59() {
 <p><code>cargo package</code></p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -826,7 +826,7 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -845,7 +845,7 @@ fn regression_test_61() {
 <h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -890,7 +890,7 @@ fn regression_test_62() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -900,5 +900,5 @@ fn regression_test_63() {
     let expected = r##"<p>&lt;foo</p>
 "##;
 
-    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }

@@ -210,7 +210,8 @@ enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
-    MaybeCode(usize, bool), // number of backticks, preceeded by backslash
+    MaybeSmartQuote(SmartQuoteKind), // before_digit
+    MaybeCode(usize, bool),          // number of backticks, preceeded by backslash
     MaybeHtml,
     MaybeLinkOpen,
     MaybeLinkClose,
@@ -251,6 +252,7 @@ impl<'a> ItemBody {
     fn is_inline(&self) -> bool {
         match *self {
             ItemBody::MaybeEmphasis(..)
+            | ItemBody::MaybeSmartQuote(..)
             | ItemBody::MaybeHtml
             | ItemBody::MaybeCode(..)
             | ItemBody::MaybeLinkOpen
@@ -276,6 +278,64 @@ enum TableParseMode {
     Active,
     /// Inside a paragraph, not scanning for table headers.
     Disabled,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum SmartQuoteKind {
+    Open,
+    Close,
+    Midword,
+}
+
+/// Determines what kind a smart quote should open at this point
+fn quote_kind(
+    character: u8,
+    s: &str,
+    prefix: &str,
+    suffix: &str,
+    ix: usize,
+) -> Option<SmartQuoteKind> {
+    let not_italic_ish = |c: &char| *c != '*' && *c != '~' && *c != '_' && *c != '\'' && *c != '"';
+
+    // Beginning and end of line == whitespace.
+    let next_char = suffix.chars().filter(not_italic_ish).nth(0).unwrap_or(' ');
+    let prev_char = prefix
+        .chars()
+        .rev()
+        .filter(not_italic_ish)
+        .nth(0)
+        .unwrap_or(' ');
+
+    let next_white = next_char.is_whitespace();
+    let prev_white = prev_char.is_whitespace();
+    // i.e. braces and the like
+    let not_term_punc = |c: char| is_punctuation(c) && c != '.' && c != ',';
+    let wordy = |c: char| !is_punctuation(c) && !c.is_whitespace() && !c.is_control();
+
+    if prev_white && next_white {
+        None
+    } else if prev_white && next_char.is_numeric() && character == b'\'' {
+        // '09 -- force a close quote
+        Some(SmartQuoteKind::Midword)
+    } else if !prev_white && next_white {
+        Some(SmartQuoteKind::Close)
+    } else if prev_white && !next_white {
+        Some(SmartQuoteKind::Open)
+    } else if next_white && (prev_char == '.' || prev_char == ',' || prev_char == '!') {
+        Some(SmartQuoteKind::Close)
+    } else if is_punctuation(prev_char) && not_term_punc(next_char) {
+        Some(SmartQuoteKind::Close)
+    } else if not_term_punc(prev_char) && is_punctuation(next_char) {
+        Some(SmartQuoteKind::Open)
+    } else if wordy(prev_char) && wordy(next_char) && character == b'\'' {
+        Some(SmartQuoteKind::Midword)
+    } else if is_punctuation(prev_char) && wordy(next_char) {
+        Some(SmartQuoteKind::Open)
+    } else if wordy(prev_char) && is_punctuation(next_char) {
+        Some(SmartQuoteKind::Close)
+    } else {
+        None
+    }
 }
 
 /// State for the first parsing pass.
@@ -896,18 +956,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         if count == 1 {
                             LoopInstruction::ContinueAndSkip(0)
                         } else {
+                            // TODO: if we make a special itembody for em/ en, we do not
+                            // need to allocate a cow space for them.
                             let cow = if count == 2 {
                                 '–'.into()
                             } else if count == 3 {
                                 '—'.into()
                             } else {
                                 let (ems, ens) = match count % 6 {
-                                    0 => (count / 3, 0),
-                                    1 => ((count - 4) / 3, 2),
-                                    2 => (0, count / 2),
-                                    3 => (count / 3, 0),
-                                    4 => (0, count / 2),
-                                    _ => ((count - 2) / 3, 1),
+                                    0 | 3 => (count / 3, 0),
+                                    2 | 4 => (0, count / 2),
+                                    1 => (count / 3 - 1, 2),
+                                    _ => (count / 3, 1),
                                 };
                                 // – and — are 3 bytes each in utf8
                                 let mut buf = String::with_capacity(3 * (ems + ens));
@@ -929,6 +989,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             begin_text = ix + count;
                             LoopInstruction::ContinueAndSkip(count - 1)
                         }
+                    }
+                    c @ b'\'' | c @ b'"' => {
+                        let string_prefix = &self.text[..ix];
+                        let string_suffix = &self.text[ix..];
+                        let kind = quote_kind(c, &self.text, string_prefix, string_suffix, ix);
+                        //let is_single = c == b'\'';
+
+                        if let Some(kind) = kind {
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 1,
+                                body: ItemBody::MaybeSmartQuote(kind),
+                            });
+                            begin_text = ix + 1;
+                        }
+
+                        LoopInstruction::ContinueAndSkip(0)
                     }
                     _ => LoopInstruction::ContinueAndSkip(0),
                 }
@@ -2371,86 +2449,127 @@ impl<'a> Parser<'a> {
         let mut prev = None;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
+
         while let Some(mut cur_ix) = cur {
-            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) =
-                self.tree[cur_ix].item.body
-            {
-                let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
-                let both = can_open && can_close;
-                if can_close {
-                    while let Some(el) =
-                        self.inline_stack.find_match(&mut self.tree, c, count, both)
-                    {
-                        // have a match!
-                        if let Some(prev_ix) = prev {
-                            self.tree[prev_ix].next = None;
-                        }
-                        let match_count = min(count, el.count);
-                        // start, end are tree node indices
-                        let mut end = cur_ix - 1;
-                        let mut start = el.start + el.count;
+            match self.tree[cur_ix].item.body {
+                ItemBody::MaybeEmphasis(mut count, can_open, can_close) => {
+                    let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
+                    let both = can_open && can_close;
+                    if can_close {
+                        while let Some(el) =
+                            self.inline_stack.find_match(&mut self.tree, c, count, both)
+                        {
+                            // have a match!
+                            if let Some(prev_ix) = prev {
+                                self.tree[prev_ix].next = None;
+                            }
+                            let match_count = min(count, el.count);
+                            // start, end are tree node indices
+                            let mut end = cur_ix - 1;
+                            let mut start = el.start + el.count;
 
-                        // work from the inside out
-                        while start > el.start + el.count - match_count {
-                            let (inc, ty) = if c == b'~' {
-                                (2, ItemBody::Strikethrough)
-                            } else if start > el.start + el.count - match_count + 1 {
-                                (2, ItemBody::Strong)
+                            // work from the inside out
+                            while start > el.start + el.count - match_count {
+                                let (inc, ty) = if c == b'~' {
+                                    (2, ItemBody::Strikethrough)
+                                } else if start > el.start + el.count - match_count + 1 {
+                                    (2, ItemBody::Strong)
+                                } else {
+                                    (1, ItemBody::Emphasis)
+                                };
+
+                                let root = start - inc;
+                                end = end + inc;
+                                self.tree[root].item.body = ty;
+                                self.tree[root].item.end = self.tree[end].item.end;
+                                self.tree[root].child = Some(start);
+                                self.tree[root].next = None;
+                                start = root;
+                            }
+
+                            // set next for top most emph level
+                            prev_ix = el.start + el.count - match_count;
+                            prev = Some(prev_ix);
+                            cur = self.tree[cur_ix + match_count - 1].next;
+                            self.tree[prev_ix].next = cur;
+
+                            if el.count > match_count {
+                                self.inline_stack.push(InlineEl {
+                                    start: el.start,
+                                    count: el.count - match_count,
+                                    c: el.c,
+                                    both,
+                                })
+                            }
+                            count -= match_count;
+                            if count > 0 {
+                                cur_ix = cur.unwrap();
                             } else {
-                                (1, ItemBody::Emphasis)
-                            };
-
-                            let root = start - inc;
-                            end = end + inc;
-                            self.tree[root].item.body = ty;
-                            self.tree[root].item.end = self.tree[end].item.end;
-                            self.tree[root].child = Some(start);
-                            self.tree[root].next = None;
-                            start = root;
+                                break;
+                            }
                         }
-
-                        // set next for top most emph level
-                        prev_ix = el.start + el.count - match_count;
-                        prev = Some(prev_ix);
-                        cur = self.tree[cur_ix + match_count - 1].next;
-                        self.tree[prev_ix].next = cur;
-
-                        if el.count > match_count {
+                    }
+                    if count > 0 {
+                        if can_open {
                             self.inline_stack.push(InlineEl {
-                                start: el.start,
-                                count: el.count - match_count,
-                                c: el.c,
+                                start: cur_ix,
+                                count,
+                                c,
                                 both,
-                            })
-                        }
-                        count -= match_count;
-                        if count > 0 {
-                            cur_ix = cur.unwrap();
+                            });
                         } else {
-                            break;
+                            for i in 0..count {
+                                self.tree[cur_ix + i].item.body = ItemBody::Text;
+                            }
                         }
+                        prev_ix = cur_ix + count - 1;
+                        prev = Some(prev_ix);
+                        cur = self.tree[prev_ix].next;
                     }
                 }
-                if count > 0 {
-                    if can_open {
-                        self.inline_stack.push(InlineEl {
-                            start: cur_ix,
-                            count,
-                            c,
-                            both,
-                        });
-                    } else {
-                        for i in 0..count {
-                            self.tree[cur_ix + i].item.body = ItemBody::Text;
+                ItemBody::MaybeSmartQuote(kind) => {
+                    let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
+                    let ty = |open: bool| match (open, c) {
+                        (true, b'\'') =>
+                        /*ItemBody::SmartQuoteSingleOpen,*/
+                        {
+                            ItemBody::Text
                         }
-                    }
-                    prev_ix = cur_ix + count - 1;
-                    prev = Some(prev_ix);
-                    cur = self.tree[prev_ix].next;
+                        (true, b'"') =>
+                        /*ItemBody::SmartQuoteDoubleOpen,*/
+                        {
+                            ItemBody::Text
+                        }
+                        (false, b'\'') =>
+                        /*ItemBody::SmartQuoteSingleClose,*/
+                        {
+                            ItemBody::Text
+                        }
+                        (false, b'"') =>
+                        /*ItemBody::SmartQuoteDoubleClose,*/
+                        {
+                            ItemBody::Text
+                        }
+                        _ => unreachable!(
+                            "only single and double quotes should be in MaybeSmartQuote"
+                        ),
+                    };
+                    self.tree[cur_ix].item.body = match kind {
+                        SmartQuoteKind::Midword =>
+                        /*ItemBody::SmartMidwordInvertedComma,*/
+                        {
+                            ItemBody::Text
+                        }
+                        SmartQuoteKind::Open => ty(true),
+                        SmartQuoteKind::Close => ty(false),
+                    };
+                    prev = cur;
+                    cur = self.tree[cur_ix].next;
                 }
-            } else {
-                prev = cur;
-                cur = self.tree[cur_ix].next;
+                _ => {
+                    prev = cur;
+                    cur = self.tree[cur_ix].next;
+                }
             }
         }
         self.inline_stack.pop_all(&mut self.tree);

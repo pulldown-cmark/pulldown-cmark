@@ -561,7 +561,7 @@ Wrong characters:
 
 Not enough characters:
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 --
 **
 __
@@ -647,7 +647,7 @@ Spaces are allowed at the end:
 
 However, no other characters may occur in the line:
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 _ _ _ _ a
 
 a------
@@ -1105,7 +1105,7 @@ Foo
 
 Four spaces is too much:
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 Foo
     ---
 .
@@ -1377,7 +1377,7 @@ bar</p>
 
 Authors who want interpretation 3 can use backslash escapes:
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 Foo
 bar
 \---
@@ -9084,7 +9084,7 @@ comment - with hyphen --></p>
 ````````````````````````````````
 
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 foo <!-- not a comment -- two hyphens -->
 .
 <p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
@@ -9093,7 +9093,7 @@ foo <!-- not a comment -- two hyphens -->
 
 Not comments:
 
-```````````````````````````````` example
+```````````````````````````````` example_disable_smartpunct
 foo <!--> foo -->
 
 foo <!-- foo--->

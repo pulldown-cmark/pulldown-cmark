@@ -1933,10 +1933,9 @@ pub(crate) struct HtmlScanGuard {
 }
 
 pub type BrokenLinkCallback<'a> =
-    Option<&'a dyn Fn(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
+    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
 
 /// Markdown event iterator.
-#[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
     options: Options,
@@ -2250,23 +2249,21 @@ impl<'a> Parser<'a> {
                                         (link_type, url, title)
                                     })
                                     .or_else(|| {
-                                        self.broken_link_callback
-                                            .and_then(|callback| {
-                                                // Construct brokenlink struct, which is what the callback
-                                                // will take
+                                        match self.broken_link_callback.as_mut() {
+                                            Some(callback) => {
+                                                // Construct a BrokenLink struct, which will be passed to the callback
                                                 let broken_link = BrokenLink {
                                                     span: (self.tree[tos.node].item.start)..end,
                                                     link_type: link_type,
                                                     reference: &link_label,
                                                 };
 
-                                                // looked for matching definition, but didn't find it. try to fix
-                                                // link with callback, if it is defined
-                                                callback(broken_link)
-                                            })
-                                            .map(|(url, title)| {
-                                                (link_type.to_unknown(), url, title)
-                                            })
+                                                callback(broken_link).map(|(url, title)| {
+                                                    (link_type.to_unknown(), url, title)
+                                                })
+                                            }
+                                            None => None,
+                                        }
                                     });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
@@ -3143,38 +3140,35 @@ mod test {
 
     #[test]
     fn broken_links_called_only_once() {
-        use std::cell::Cell;
-
         for &(markdown, expected) in &[
             ("See also [`g()`][crate::g].", 1),
             ("See also [`g()`][crate::g][].", 1),
             ("[brokenlink1] some other node [brokenlink2]", 2),
         ] {
-            let times_called = Cell::new(0);
-            let callback = &|_broken_link: BrokenLink| {
-                times_called.set(times_called.get() + 1);
+            let mut times_called = 0;
+            let callback = &mut |_broken_link: BrokenLink| {
+                times_called += 1;
                 None
             };
             let parser =
                 Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(callback));
             for _ in parser {}
-            assert_eq!(times_called.get(), expected);
+            assert_eq!(times_called, expected);
         }
     }
 
     #[test]
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
-        let parser = Parser::new_with_broken_link_callback(
-            test_str,
-            Options::empty(),
-            Some(&|broken_link| {
-                assert_eq!("world", broken_link.reference.as_ref());
-                let url = "YOLO".into();
-                let title = "SWAG".to_owned().into();
-                Some((url, title))
-            }),
-        );
+        let mut callback = |broken_link: BrokenLink| {
+            assert_eq!("world", broken_link.reference.as_ref());
+            assert_eq!(&test_str[broken_link.span], "[hello][world]");
+            let url = "YOLO".into();
+            let title = "SWAG".to_owned().into();
+            Some((url, title))
+        };
+        let parser =
+            Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title) in parser.filter_map(|event| match event {
             Event::Start(tag) | Event::End(tag) => match tag {

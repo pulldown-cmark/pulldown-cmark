@@ -237,6 +237,7 @@ enum ItemBody {
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
+    SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
 
     // Tables
@@ -859,6 +860,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     b'&' => match scan_entity(&bytes[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
+                            // TODO: when the cow is a character, we should create
+                            // a synthesizeChar instead
                             self.tree.append(Item {
                                 start: ix,
                                 end: ix + n,
@@ -884,9 +887,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             self.tree.append(Item {
                                 start: ix,
                                 end: ix + 3,
-                                body: ItemBody::SynthesizeText(
-                                    self.allocs.allocate_cow('…'.into()),
-                                ),
+                                body: ItemBody::SynthesizeChar('…'),
                             });
                             begin_text = ix + 3;
                             LoopInstruction::ContinueAndSkip(2)
@@ -901,10 +902,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         } else {
                             // TODO: if we make a special itembody for em/ en, we do not
                             // need to allocate a cow space for them.
-                            let cow = if count == 2 {
-                                '–'.into()
+                            let itembody = if count == 2 {
+                                ItemBody::SynthesizeChar('–')
                             } else if count == 3 {
-                                '—'.into()
+                                ItemBody::SynthesizeChar('—')
                             } else {
                                 let (ems, ens) = match count % 6 {
                                     0 | 3 => (count / 3, 0),
@@ -920,14 +921,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                 for _ in 0..ens {
                                     buf.push('–');
                                 }
-                                buf.into()
+                                ItemBody::SynthesizeText(self.allocs.allocate_cow(buf.into()))
                             };
 
                             self.tree.append_text(begin_text, ix);
                             self.tree.append(Item {
                                 start: ix,
                                 end: ix + count,
-                                body: ItemBody::SynthesizeText(self.allocs.allocate_cow(cow)),
+                                body: itembody,
                             });
                             begin_text = ix + count;
                             LoopInstruction::ContinueAndSkip(count - 1)
@@ -2475,22 +2476,22 @@ impl<'a> Parser<'a> {
                     self.tree[cur_ix].item.body = match c {
                         b'\'' => {
                             if let (Some(open_ix), true) = (single_quote_open, can_close) {
-                                self.tree[open_ix].item.body = ItemBody::SynthesizeText(self.allocs.allocate_cow('‘'.into()));
+                                self.tree[open_ix].item.body = ItemBody::SynthesizeChar('‘');
                                 single_quote_open = None;
                             } else if can_open {
                                 single_quote_open = Some(cur_ix);
                             }
-                            ItemBody::SynthesizeText(self.allocs.allocate_cow('’'.into()))
+                            ItemBody::SynthesizeChar('’')
                         }
                         _ /* double quote */ => {
                             if can_close && double_quote_open {
                                 double_quote_open = false;
-                                ItemBody::SynthesizeText(self.allocs.allocate_cow('”'.into()))
+                                ItemBody::SynthesizeChar('”')
                             } else {
                                 if can_open && !double_quote_open {
                                     double_quote_open = true;
                                 }
-                                ItemBody::SynthesizeText(self.allocs.allocate_cow('“'.into()))
+                                ItemBody::SynthesizeChar('“')
                             }
                         }
                     };
@@ -2883,6 +2884,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,

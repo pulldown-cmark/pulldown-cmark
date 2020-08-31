@@ -2036,9 +2036,9 @@ impl<'a> Parser<'a> {
                         });
                         if let Some((span, ix)) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            self.tree[cur_ix].item.body = if let Some(vek) = span {
+                            self.tree[cur_ix].item.body = if !span.is_empty() {
                                 let converted_string =
-                                    String::from_utf8(vek).expect("invalid utf8");
+                                    String::from_utf8(span).expect("invalid utf8");
                                 ItemBody::OwnedHtml(
                                     self.allocs.allocate_cow(converted_string.into()),
                                 )
@@ -2549,17 +2549,19 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Returns the next byte offset on success.
-    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<(Option<Vec<u8>>, usize)> {
+    /// On success, returns a buffer containing the inline html and byte offset.
+    /// When no bytes were skipped, the buffer will be empty and the html can be
+    /// represented as a subslice of the input string.
+    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<(Vec<u8>, usize)> {
         let c = *bytes.get(ix)?;
         if c == b'!' {
             Some((
-                None,
+                vec![],
                 scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?,
             ))
         } else if c == b'?' {
             Some((
-                None,
+                vec![],
                 scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?,
             ))
         } else {

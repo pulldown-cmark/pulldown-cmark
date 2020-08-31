@@ -856,6 +856,8 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
 }
 
 /// Returns the index immediately following the attribute on success.
+/// The argument `buffer_ix` refers to the index into `data` from which we
+/// should copy into `buffer` when we find bytes to skip.
 fn scan_attribute(
     data: &[u8],
     mut ix: usize,
@@ -1037,10 +1039,11 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
 /// When some bytes were skipped, because the html was split over
 /// multiple leafs (e.g. over multiple lines in a blockquote),
 /// the html is returned as a vector of bytes.
+/// If no bytes were skipped, the buffer will be empty.
 pub(crate) fn scan_html_block_inner(
     data: &[u8],
     newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
-) -> Option<(Option<Vec<u8>>, usize)> {
+) -> Option<(Vec<u8>, usize)> {
     let mut buffer = Vec::new();
     let mut last_buf_index = 0;
 
@@ -1097,10 +1100,8 @@ pub(crate) fn scan_html_block_inner(
         i += 1;
         if !buffer.is_empty() {
             buffer.extend(&data[last_buf_index..i]);
-            Some((Some(buffer), i))
-        } else {
-            Some((None, i))
         }
+        Some((buffer, i))
     }
 }
 

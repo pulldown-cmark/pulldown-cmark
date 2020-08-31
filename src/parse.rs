@@ -279,9 +279,9 @@ enum TableParseMode {
 }
 
 pub struct BrokenLink<'a> {
-    pub span: ::std::ops::Range<usize>,
+    pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
-    pub reference: &'a CowStr<'a>,
+    pub reference: &'a str,
 }
 
 /// State for the first parsing pass.
@@ -2255,7 +2255,7 @@ impl<'a> Parser<'a> {
                                                 let broken_link = BrokenLink {
                                                     span: (self.tree[tos.node].item.start)..end,
                                                     link_type: link_type,
-                                                    reference: &link_label,
+                                                    reference: link_label.as_ref(),
                                                 };
 
                                                 callback(broken_link).map(|(url, title)| {
@@ -3161,7 +3161,7 @@ mod test {
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
         let mut callback = |broken_link: BrokenLink| {
-            assert_eq!("world", broken_link.reference.as_ref());
+            assert_eq!("world", broken_link.reference);
             assert_eq!(&test_str[broken_link.span], "[hello][world]");
             let url = "YOLO".into();
             let title = "SWAG".to_owned().into();

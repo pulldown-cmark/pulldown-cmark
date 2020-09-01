@@ -784,8 +784,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                         let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
                         let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
-                        let is_valid_seq = c != b'~'
-                            || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
+                        let is_valid_seq = c != b'~' || count == 2;
 
                         if (can_open || can_close) && is_valid_seq {
                             self.tree.append_text(begin_text, ix);
@@ -860,8 +859,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     b'&' => match scan_entity(&bytes[ix..]) {
                         (n, Some(value)) => {
                             self.tree.append_text(begin_text, ix);
-                            // TODO: when the cow is a character, we should create
-                            // a synthesizeChar instead
                             self.tree.append(Item {
                                 start: ix,
                                 end: ix + n,
@@ -900,8 +897,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         if count == 1 {
                             LoopInstruction::ContinueAndSkip(0)
                         } else {
-                            // TODO: if we make a special itembody for em/ en, we do not
-                            // need to allocate a cow space for them.
                             let itembody = if count == 2 {
                                 ItemBody::SynthesizeChar('–')
                             } else if count == 3 {
@@ -2000,22 +1995,15 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-// TODO: we can make this const when if inside const fns
-// is stabilized.
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
-    bytes[b'<' as usize] = true;
-    bytes[b'!' as usize] = true;
-    bytes[b'[' as usize] = true;
-    bytes[b'`' as usize] = true;
-    bytes[b'\\' as usize] = true;
-    bytes[b'*' as usize] = true;
-    bytes[b'_' as usize] = true;
-    bytes[b'\r' as usize] = true;
-    bytes[b'\n' as usize] = true;
-    bytes[b']' as usize] = true;
-    bytes[b'&' as usize] = true;
+    let standard_bytes = [
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+    ];
 
+    for &byte in &standard_bytes {
+        bytes[byte as usize] = true;
+    }
     if options.contains(Options::ENABLE_TABLES) {
         bytes[b'|' as usize] = true;
     }
@@ -2023,10 +2011,9 @@ fn special_bytes(options: &Options) -> [bool; 256] {
         bytes[b'~' as usize] = true;
     }
     if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
-        bytes[b'.' as usize] = true;
-        bytes[b'-' as usize] = true;
-        bytes[b'\'' as usize] = true;
-        bytes[b'"' as usize] = true;
+        for &byte in &[b'.', b'-', b'"', b'\''] {
+            bytes[byte as usize] = true;
+        }
     }
 
     bytes

@@ -27,32 +27,30 @@ pub(crate) const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 /// and a three bit column index (upper nibble).
 pub(crate) fn compute_lookup(options: &Options) -> [u8; 16] {
     let mut lookup = [0u8; 16];
-    lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
-    lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
-    lookup[(b'*' & 0x0f) as usize] |= 1 << (b'*' >> 4);
-    lookup[(b'_' & 0x0f) as usize] |= 1 << (b'_' >> 4);
-    lookup[(b'&' & 0x0f) as usize] |= 1 << (b'&' >> 4);
-    lookup[(b'\\' & 0x0f) as usize] |= 1 << (b'\\' >> 4);
-    lookup[(b'[' & 0x0f) as usize] |= 1 << (b'[' >> 4);
-    lookup[(b']' & 0x0f) as usize] |= 1 << (b']' >> 4);
-    lookup[(b'<' & 0x0f) as usize] |= 1 << (b'<' >> 4);
-    lookup[(b'!' & 0x0f) as usize] |= 1 << (b'!' >> 4);
-    lookup[(b'`' & 0x0f) as usize] |= 1 << (b'`' >> 4);
+    let standard_bytes = [
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+    ];
 
+    for &byte in &standard_bytes {
+        add_lookup_byte(&mut lookup, byte);
+    }
     if options.contains(Options::ENABLE_TABLES) {
-        lookup[(b'|' & 0x0f) as usize] |= 1 << (b'|' >> 4);
+        add_lookup_byte(&mut lookup, b'|');
     }
     if options.contains(Options::ENABLE_STRIKETHROUGH) {
-        lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
+        add_lookup_byte(&mut lookup, b'~');
     }
     if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
-        lookup[(b'.' & 0x0f) as usize] |= 1 << (b'.' >> 4);
-        lookup[(b'-' & 0x0f) as usize] |= 1 << (b'-' >> 4);
-        lookup[(b'"' & 0x0f) as usize] |= 1 << (b'"' >> 4);
-        lookup[(b'\'' & 0x0f) as usize] |= 1 << (b'\'' >> 4);
+        for &byte in &[b'.', b'-', b'"', b'\''] {
+            add_lookup_byte(&mut lookup, byte);
+        }
     }
 
     lookup
+}
+
+fn add_lookup_byte(lookup: &mut [u8; 16], byte: u8) {
+    lookup[(byte & 0x0f) as usize] |= 1 << (byte >> 4);
 }
 
 /// Computes a bit mask for the given byteslice starting from the given index,

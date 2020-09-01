@@ -59,7 +59,7 @@ extern crate bitflags;
 extern crate unicase;
 
 mod entities;
-mod escape;
+pub mod escape;
 mod linklabel;
 mod parse;
 mod puncttable;
@@ -71,6 +71,6 @@ mod tree;
 mod simd;
 
 pub use crate::parse::{
-    Alignment, CodeBlockKind, Event, LinkType, OffsetIter, Options, Parser, Tag,
+    Alignment, BrokenLink, CodeBlockKind, Event, LinkType, OffsetIter, Options, Parser, Tag,
 };
 pub use crate::strings::{CowStr, InlineStr};

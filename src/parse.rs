@@ -215,7 +215,8 @@ enum ItemBody {
     MaybeCode(usize, bool), // number of backticks, preceeded by backslash
     MaybeHtml,
     MaybeLinkOpen,
-    MaybeLinkClose,
+    // bool indicates whether or not the preceeding section could be a reference
+    MaybeLinkClose(bool),
     MaybeImage,
 
     // These are inline items after resolution.
@@ -233,6 +234,7 @@ enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
+    OwnedHtml(CowIndex),
     BlockQuote,
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
@@ -258,7 +260,7 @@ impl<'a> ItemBody {
             | ItemBody::MaybeHtml
             | ItemBody::MaybeCode(..)
             | ItemBody::MaybeLinkOpen
-            | ItemBody::MaybeLinkClose
+            | ItemBody::MaybeLinkClose(..)
             | ItemBody::MaybeImage => true,
             _ => false,
         }
@@ -280,6 +282,12 @@ enum TableParseMode {
     Active,
     /// Inside a paragraph, not scanning for table headers.
     Disabled,
+}
+
+pub struct BrokenLink<'a> {
+    pub span: std::ops::Range<usize>,
+    pub link_type: LinkType,
+    pub reference: &'a str,
 }
 
 /// State for the first parsing pass.
@@ -443,7 +451,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             // Detect type 7
-            if let Some(_html_bytes) = scan_html_type_7(&bytes[(ix + 1)..]) {
+            if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
                 return self.parse_html_block_type_6_or_7(ix, remaining_space);
             }
         }
@@ -851,7 +859,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.tree.append(Item {
                             start: ix,
                             end: ix + 1,
-                            body: ItemBody::MaybeLinkClose,
+                            body: ItemBody::MaybeLinkClose(true),
                         });
                         begin_text = ix + 1;
                         LoopInstruction::ContinueAndSkip(0)
@@ -1743,8 +1751,8 @@ impl InlineStack {
 
 #[derive(Debug, Clone)]
 enum RefScan<'a> {
-    // label, next node index, source ix of label end
-    LinkLabel(CowStr<'a>, Option<TreeIndex>, usize),
+    // label, source ix of label end
+    LinkLabel(CowStr<'a>, usize),
     // contains next node index
     Collapsed(Option<TreeIndex>),
     Failed,
@@ -1772,6 +1780,7 @@ fn scan_nodes_to_ix(
 fn scan_link_label<'text, 'tree>(
     tree: &'tree Tree<Item>,
     text: &'text str,
+    allow_footnote_refs: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
     let bytes = &text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
@@ -1782,7 +1791,7 @@ fn scan_link_label<'text, 'tree>(
         let _ = scan_containers(tree, &mut line_start);
         Some(line_start.bytes_scanned())
     };
-    let pair = if b'^' == bytes[1] {
+    let pair = if allow_footnote_refs && b'^' == bytes[1] {
         let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {
@@ -1796,6 +1805,7 @@ fn scan_reference<'a, 'b>(
     tree: &'a Tree<Item>,
     text: &'b str,
     cur: Option<TreeIndex>,
+    allow_footnote_refs: bool,
 ) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
@@ -1807,9 +1817,10 @@ fn scan_reference<'a, 'b>(
     if tail.starts_with(b"[]") {
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) = scan_link_label(tree, &text[start..]) {
-        let next_node = scan_nodes_to_ix(tree, cur, start + ix);
-        RefScan::LinkLabel(label, next_node, start + ix)
+    } else if let Some((ix, ReferenceLabel::Link(label))) =
+        scan_link_label(tree, &text[start..], allow_footnote_refs)
+    {
+        RefScan::LinkLabel(label, start + ix)
     } else {
         RefScan::Failed
     }
@@ -2033,13 +2044,16 @@ pub(crate) fn create_lut(options: &Options) -> LookupTable {
     }
 }
 
+pub type BrokenLinkCallback<'a> =
+    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
+
 /// Markdown event iterator.
-#[derive(Clone)]
 pub struct Parser<'a> {
     text: &'a str,
+    options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'a>,
-    broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
+    broken_link_callback: BrokenLinkCallback<'a>,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
@@ -2066,7 +2080,7 @@ impl<'a> Parser<'a> {
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
-        broken_link_callback: Option<&'a dyn Fn(&str, &str) -> Option<(String, String)>>,
+        broken_link_callback: BrokenLinkCallback<'a>,
     ) -> Parser<'a> {
         let lut = create_lut(&options);
         let first_pass = FirstPass::new(text, options, &lut);
@@ -2077,6 +2091,7 @@ impl<'a> Parser<'a> {
         let html_scan_guard = Default::default();
         Parser {
             text,
+            options,
             tree,
             allocs,
             broken_link_callback,
@@ -2139,17 +2154,23 @@ impl<'a> Parser<'a> {
                         }
                         continue;
                     } else {
-                        let inline_html = if let Some(next_ix) = next {
+                        let inline_html = next.and_then(|next_ix| {
                             self.scan_inline_html(
                                 block_text.as_bytes(),
                                 self.tree[next_ix].item.start,
                             )
-                        } else {
-                            None
-                        };
-                        if let Some(ix) = inline_html {
+                        });
+                        if let Some((span, ix)) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            self.tree[cur_ix].item.body = ItemBody::Html;
+                            self.tree[cur_ix].item.body = if !span.is_empty() {
+                                let converted_string =
+                                    String::from_utf8(span).expect("invalid utf8");
+                                ItemBody::OwnedHtml(
+                                    self.allocs.allocate_cow(converted_string.into()),
+                                )
+                            } else {
+                                ItemBody::Html
+                            };
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
                             prev = cur;
@@ -2223,7 +2244,7 @@ impl<'a> Parser<'a> {
                         ty: LinkStackTy::Image,
                     });
                 }
-                ItemBody::MaybeLinkClose => {
+                ItemBody::MaybeLinkClose(could_be_ref) => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
@@ -2259,23 +2280,53 @@ impl<'a> Parser<'a> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result = scan_reference(&self.tree, block_text, next);
+                            let scan_result = scan_reference(
+                                &self.tree,
+                                block_text,
+                                next,
+                                self.options.contains(Options::ENABLE_FOOTNOTES),
+                            );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
-                                RefScan::LinkLabel(_, next_node, _) => {
+                                RefScan::LinkLabel(_, end_ix) => {
+                                    // Toggle reference viability of the last closing bracket,
+                                    // so that we can skip it on future iterations in case
+                                    // it fails in this one. In particular, we won't call
+                                    // the broken link callback twice on one reference.
+                                    let reference_close_node =
+                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1).unwrap();
+                                    self.tree[reference_close_node].item.body =
+                                        ItemBody::MaybeLinkClose(false);
+                                    let next_node = self.tree[reference_close_node].next;
+
                                     (next_node, LinkType::Reference)
                                 }
-                                // []
-                                RefScan::Collapsed(next_node) => (next_node, LinkType::Collapsed),
+                                // [reference][]
+                                RefScan::Collapsed(next_node) => {
+                                    // This reference has already been tried, and it's not
+                                    // valid. Skip it.
+                                    if !could_be_ref {
+                                        continue;
+                                    }
+                                    (next_node, LinkType::Collapsed)
+                                }
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => (next, LinkType::Shortcut),
+                                RefScan::Failed => {
+                                    if !could_be_ref {
+                                        continue;
+                                    }
+                                    (next, LinkType::Shortcut)
+                                }
                             };
+
+                            // FIXME: references and labels are mixed in the naming of variables
+                            // below. Disambiguate!
 
                             // (label, source_ix end)
                             let label: Option<(ReferenceLabel<'a>, usize)> = match scan_result {
-                                RefScan::LinkLabel(l, _, end_ix) => {
+                                RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
                                 RefScan::Collapsed(..) | RefScan::Failed => {
@@ -2284,6 +2335,7 @@ impl<'a> Parser<'a> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..self.tree[cur_ix].item.end],
+                                        self.options.contains(Options::ENABLE_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                 }
@@ -2316,15 +2368,21 @@ impl<'a> Parser<'a> {
                                         (link_type, url, title)
                                     })
                                     .or_else(|| {
-                                        self.broken_link_callback
-                                            .and_then(|callback| {
-                                                // looked for matching definition, but didn't find it. try to fix
-                                                // link with callback, if it is defined
-                                                callback(link_label.as_ref(), link_label.as_ref())
-                                            })
-                                            .map(|(url, title)| {
-                                                (link_type.to_unknown(), url.into(), title.into())
-                                            })
+                                        match self.broken_link_callback.as_mut() {
+                                            Some(callback) => {
+                                                // Construct a BrokenLink struct, which will be passed to the callback
+                                                let broken_link = BrokenLink {
+                                                    span: (self.tree[tos.node].item.start)..end,
+                                                    link_type: link_type,
+                                                    reference: link_label.as_ref(),
+                                                };
+
+                                                callback(broken_link).map(|(url, title)| {
+                                                    (link_type.to_unknown(), url, title)
+                                                })
+                                            }
+                                            None => None,
+                                        }
                                     });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
@@ -2685,23 +2743,32 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Returns the next byte offset on success.
-    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<usize> {
+    /// On success, returns a buffer containing the inline html and byte offset.
+    /// When no bytes were skipped, the buffer will be empty and the html can be
+    /// represented as a subslice of the input string.
+    fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<(Vec<u8>, usize)> {
         let c = *bytes.get(ix)?;
         if c == b'!' {
-            scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)
+            Some((
+                vec![],
+                scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?,
+            ))
         } else if c == b'?' {
-            scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)
+            Some((
+                vec![],
+                scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?,
+            ))
         } else {
-            let i = scan_html_block_inner(
-                &bytes[ix..],
+            let (span, i) = scan_html_block_inner(
+                // Subtract 1 to include the < character
+                &bytes[(ix - 1)..],
                 Some(&|_bytes| {
                     let mut line_start = LineStart::new(bytes);
                     let _ = scan_containers(&self.tree, &mut line_start);
                     line_start.bytes_scanned()
                 }),
             )?;
-            Some(i + ix)
+            Some((span, i + ix - 1))
         }
     }
 
@@ -2873,6 +2940,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
@@ -3132,7 +3200,7 @@ mod test {
 
     #[test]
     fn footnote_offsets() {
-        let range = Parser::new("Testing this[^1] out.\n\n[^1]: Footnote.")
+        let range = parser_with_extensions("Testing this[^1] out.\n\n[^1]: Footnote.")
             .into_offset_iter()
             .filter_map(|(ev, range)| match ev {
                 Event::FootnoteReference(..) => Some(range),
@@ -3187,6 +3255,16 @@ mod test {
     }
 
     #[test]
+    fn no_footnote_refs_without_option() {
+        let test_str = "a [^a]\n\n[^a]: yolo";
+        let expected = "<p>a <a href=\"yolo\">^a</a></p>\n";
+
+        let mut buf = String::new();
+        crate::html::push_html(&mut buf, Parser::new(test_str));
+        assert_eq!(expected, buf);
+    }
+
+    #[test]
     fn ref_def_at_eof() {
         let test_str = "[test]:\\";
         let expected = "";
@@ -3217,17 +3295,36 @@ mod test {
     }
 
     #[test]
+    fn broken_links_called_only_once() {
+        for &(markdown, expected) in &[
+            ("See also [`g()`][crate::g].", 1),
+            ("See also [`g()`][crate::g][].", 1),
+            ("[brokenlink1] some other node [brokenlink2]", 2),
+        ] {
+            let mut times_called = 0;
+            let callback = &mut |_broken_link: BrokenLink| {
+                times_called += 1;
+                None
+            };
+            let parser =
+                Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(callback));
+            for _ in parser {}
+            assert_eq!(times_called, expected);
+        }
+    }
+
+    #[test]
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
-        let parser = Parser::new_with_broken_link_callback(
-            test_str,
-            Options::empty(),
-            Some(&|norm, raw| {
-                assert_eq!("world", raw);
-                assert_eq!("world", norm);
-                Some(("YOLO".to_owned(), "SWAG".to_owned()))
-            }),
-        );
+        let mut callback = |broken_link: BrokenLink| {
+            assert_eq!("world", broken_link.reference);
+            assert_eq!(&test_str[broken_link.span], "[hello][world]");
+            let url = "YOLO".into();
+            let title = "SWAG".to_owned().into();
+            Some((url, title))
+        };
+        let parser =
+            Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title) in parser.filter_map(|event| match event {
             Event::Start(tag) | Event::End(tag) => match tag {

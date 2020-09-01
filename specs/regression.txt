@@ -388,9 +388,9 @@ ISSUE #295
 <p>[foo]:</p>
 ````````````````````````````````
 
-ISSUE #298 (not yet fixed)
+ISSUE #298
 
-```````````````````````````````` DISABLED example
+```````````````````````````````` example
 > [foo
 > bar]: /url
 >
@@ -697,7 +697,7 @@ ISSUE 398
 
 ISSUE 399
 
-```````````````````````````````` DISABLED example
+```````````````````````````````` example
 > Note: Though you should not rely on this, all pointers to <abbr
 > title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
 > the size of `usize` and have the same alignment.
@@ -797,4 +797,20 @@ ISSUE 437
 <foo
 .
 <p>&lt;foo</p>
+````````````````````````````````
+
+Inline HTML stress test
+
+```````````````````````````````` example
+> > a <a href
+> > ="yo
+> > lo">
+.
+<blockquote>
+<blockquote>
+<p>a <a href
+="yo
+lo"></p>
+</blockquote>
+</blockquote>
 ````````````````````````````````

@@ -2,7 +2,7 @@
 
 extern crate pulldown_cmark;
 
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{html, BrokenLink, Options, Parser};
 
 #[test]
 fn html_test_1() {
@@ -209,8 +209,16 @@ fn html_test_10() {
     assert_eq!(expected, s);
 }
 
-// TODO: add broken link callback feature
-/*
+#[test]
+fn html_test_11() {
+    let original = "hi ~~no~~";
+    let expected = "<p>hi ~~no~~</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
 #[test]
 fn html_test_broken_callback() {
     let original = r##"[foo],
@@ -225,21 +233,20 @@ fn html_test_broken_callback() {
 <a href="https://example.org">baz</a>,</p>
 "##;
 
-    use pulldown_cmark::{Options, Parser, html};
+    use pulldown_cmark::{html, Options, Parser};
 
     let mut s = String::new();
 
-    let callback = |reference: &str, _normalized: &str| -> Option<(String, String)> {
-        if reference == "foo" || reference == "baz" {
+    let mut callback = |broken_link: BrokenLink| {
+        if broken_link.reference == "foo" || broken_link.reference == "baz" {
             Some(("https://replaced.example.org".into(), "some title".into()))
         } else {
             None
         }
     };
 
-    let p = Parser::new_with_broken_link_callback(&original, Options::empty(), Some(&callback));
+    let p = Parser::new_with_broken_link_callback(&original, Options::empty(), Some(&mut callback));
     html::push_html(&mut s, p);
 
     assert_eq!(expected, s);
 }
-*/

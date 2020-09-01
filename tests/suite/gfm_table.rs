@@ -25,7 +25,7 @@ fn gfm_table_test_1() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -50,7 +50,7 @@ bar | baz
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn gfm_table_test_3() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn gfm_table_test_4() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -139,7 +139,7 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -153,7 +153,7 @@ fn gfm_table_test_6() {
 | bar |</p>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn gfm_table_test_7() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -201,5 +201,5 @@ fn gfm_table_test_8() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }

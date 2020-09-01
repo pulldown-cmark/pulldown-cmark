@@ -14,7 +14,7 @@ fn gfm_tasklist_test_1() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -35,5 +35,5 @@ fn gfm_tasklist_test_2() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }

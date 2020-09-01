@@ -188,6 +188,7 @@ bitflags! {
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
+        const ENABLE_SMART_PUNCTUATION = 1 << 5;
     }
 }
 
@@ -209,6 +210,8 @@ enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
+    // quote byte, can_open, can_close
+    MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceeded by backslash
     MaybeHtml,
     MaybeLinkOpen,
@@ -236,6 +239,7 @@ enum ItemBody {
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
+    SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
 
     // Tables
@@ -252,6 +256,7 @@ impl<'a> ItemBody {
     fn is_inline(&self) -> bool {
         match *self {
             ItemBody::MaybeEmphasis(..)
+            | ItemBody::MaybeSmartQuote(..)
             | ItemBody::MaybeHtml
             | ItemBody::MaybeCode(..)
             | ItemBody::MaybeLinkOpen
@@ -289,7 +294,7 @@ pub struct BrokenLink<'a> {
 ///
 /// The first pass resolves all block structure, generating an AST. Within a block, items
 /// are in a linear chain with potential inline markup identified.
-struct FirstPass<'a> {
+struct FirstPass<'a, 'b> {
     text: &'a str,
     tree: Tree<Item>,
     begin_list_item: bool,
@@ -297,25 +302,24 @@ struct FirstPass<'a> {
     allocs: Allocations<'a>,
     options: Options,
     list_nesting: usize,
+    lookup_table: &'b LookupTable,
 }
 
-impl<'a> FirstPass<'a> {
-    fn new(text: &'a str, options: Options) -> FirstPass {
+impl<'a, 'b> FirstPass<'a, 'b> {
+    fn new(text: &'a str, options: Options, lookup_table: &'b LookupTable) -> FirstPass<'a, 'b> {
         // This is a very naive heuristic for the number of nodes
         // we'll need.
         let start_capacity = max(128, text.len() / 32);
         let tree = Tree::with_capacity(start_capacity);
-        let begin_list_item = false;
-        let last_line_blank = false;
-        let allocs = Allocations::new();
         FirstPass {
             text,
             tree,
-            begin_list_item,
-            last_line_blank,
-            allocs,
+            begin_list_item: false,
+            last_line_blank: false,
+            allocs: Allocations::new(),
             options,
             list_nesting: 0,
+            lookup_table,
         }
     }
 
@@ -681,208 +685,276 @@ impl<'a> FirstPass<'a> {
         let mut last_pipe_ix = start;
         let mut begin_text = start;
 
-        let (final_ix, brk) = iterate_special_bytes(bytes, start, |ix, byte| {
-            match byte {
-                b'\n' | b'\r' => {
-                    if let TableParseMode::Active = mode {
-                        return LoopInstruction::BreakAtWith(ix, None);
-                    }
+        let (final_ix, brk) =
+            iterate_special_bytes(&self.lookup_table, bytes, start, |ix, byte| {
+                match byte {
+                    b'\n' | b'\r' => {
+                        if let TableParseMode::Active = mode {
+                            return LoopInstruction::BreakAtWith(ix, None);
+                        }
 
-                    let mut i = ix;
-                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
-                    if mode == TableParseMode::Scan && pipes > 0 {
-                        // check if we may be parsing a table
-                        let next_line_ix = ix + eol_bytes;
-                        let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        if scan_containers(&self.tree, &mut line_start) == self.tree.spine_len() {
-                            let table_head_ix = next_line_ix + line_start.bytes_scanned();
-                            let (table_head_bytes, alignment) =
-                                scan_table_head(&bytes[table_head_ix..]);
+                        let mut i = ix;
+                        let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
+                        if mode == TableParseMode::Scan && pipes > 0 {
+                            // check if we may be parsing a table
+                            let next_line_ix = ix + eol_bytes;
+                            let mut line_start = LineStart::new(&bytes[next_line_ix..]);
+                            if scan_containers(&self.tree, &mut line_start) == self.tree.spine_len()
+                            {
+                                let table_head_ix = next_line_ix + line_start.bytes_scanned();
+                                let (table_head_bytes, alignment) =
+                                    scan_table_head(&bytes[table_head_ix..]);
 
-                            if table_head_bytes > 0 {
-                                // computing header count from number of pipes
-                                let header_count =
-                                    count_header_cols(bytes, pipes, start, last_pipe_ix);
+                                if table_head_bytes > 0 {
+                                    // computing header count from number of pipes
+                                    let header_count =
+                                        count_header_cols(bytes, pipes, start, last_pipe_ix);
 
-                                // make sure they match the number of columns we find in separator line
-                                if alignment.len() == header_count {
-                                    let alignment_ix = self.allocs.allocate_alignment(alignment);
-                                    let end_ix = table_head_ix + table_head_bytes;
-                                    return LoopInstruction::BreakAtWith(
-                                        end_ix,
-                                        Some(Item {
-                                            start: i,
-                                            end: end_ix, // must update later
-                                            body: ItemBody::Table(alignment_ix),
-                                        }),
-                                    );
+                                    // make sure they match the number of columns we find in separator line
+                                    if alignment.len() == header_count {
+                                        let alignment_ix =
+                                            self.allocs.allocate_alignment(alignment);
+                                        let end_ix = table_head_ix + table_head_bytes;
+                                        return LoopInstruction::BreakAtWith(
+                                            end_ix,
+                                            Some(Item {
+                                                start: i,
+                                                end: end_ix, // must update later
+                                                body: ItemBody::Table(alignment_ix),
+                                            }),
+                                        );
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
-                    if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
-                        i -= 1;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(
-                            end_ix,
-                            Some(Item {
-                                start: i,
-                                end: end_ix,
-                                body: ItemBody::HardBreak,
-                            }),
-                        );
-                    }
-                    let trailing_whitespace =
-                        scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
-                    if trailing_whitespace >= 2 {
-                        i -= trailing_whitespace;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(
-                            end_ix,
-                            Some(Item {
-                                start: i,
-                                end: end_ix,
-                                body: ItemBody::HardBreak,
-                            }),
-                        );
-                    }
+                        let end_ix = ix + eol_bytes;
+                        let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
+                        if trailing_backslashes % 2 == 1 && end_ix < self.text.len() {
+                            i -= 1;
+                            self.tree.append_text(begin_text, i);
+                            return LoopInstruction::BreakAtWith(
+                                end_ix,
+                                Some(Item {
+                                    start: i,
+                                    end: end_ix,
+                                    body: ItemBody::HardBreak,
+                                }),
+                            );
+                        }
+                        let trailing_whitespace =
+                            scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
+                        if trailing_whitespace >= 2 {
+                            i -= trailing_whitespace;
+                            self.tree.append_text(begin_text, i);
+                            return LoopInstruction::BreakAtWith(
+                                end_ix,
+                                Some(Item {
+                                    start: i,
+                                    end: end_ix,
+                                    body: ItemBody::HardBreak,
+                                }),
+                            );
+                        }
 
-                    self.tree.append_text(begin_text, ix);
-                    LoopInstruction::BreakAtWith(
-                        end_ix,
-                        Some(Item {
-                            start: i,
-                            end: end_ix,
-                            body: ItemBody::SoftBreak,
-                        }),
-                    )
-                }
-                b'\\' => {
-                    if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) {
                         self.tree.append_text(begin_text, ix);
-                        if bytes[ix + 1] == b'`' {
-                            let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
-                            self.tree.append(Item {
-                                start: ix + 1,
-                                end: ix + count + 1,
-                                body: ItemBody::MaybeCode(count, true),
-                            });
-                            begin_text = ix + 1 + count;
-                            LoopInstruction::ContinueAndSkip(count)
+                        LoopInstruction::BreakAtWith(
+                            end_ix,
+                            Some(Item {
+                                start: i,
+                                end: end_ix,
+                                body: ItemBody::SoftBreak,
+                            }),
+                        )
+                    }
+                    b'\\' => {
+                        if ix + 1 < self.text.len() && is_ascii_punctuation(bytes[ix + 1]) {
+                            self.tree.append_text(begin_text, ix);
+                            if bytes[ix + 1] == b'`' {
+                                let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
+                                self.tree.append(Item {
+                                    start: ix + 1,
+                                    end: ix + count + 1,
+                                    body: ItemBody::MaybeCode(count, true),
+                                });
+                                begin_text = ix + 1 + count;
+                                LoopInstruction::ContinueAndSkip(count)
+                            } else {
+                                begin_text = ix + 1;
+                                LoopInstruction::ContinueAndSkip(1)
+                            }
                         } else {
-                            begin_text = ix + 1;
-                            LoopInstruction::ContinueAndSkip(1)
+                            LoopInstruction::ContinueAndSkip(0)
                         }
-                    } else {
-                        LoopInstruction::ContinueAndSkip(0)
                     }
-                }
-                c @ b'*' | c @ b'_' | c @ b'~' => {
-                    let string_suffix = &self.text[ix..];
-                    let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
-                    let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
-                    let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
-                    let is_valid_seq = c != b'~'
-                        || count == 2 && self.options.contains(Options::ENABLE_STRIKETHROUGH);
+                    c @ b'*' | c @ b'_' | c @ b'~' => {
+                        let string_suffix = &self.text[ix..];
+                        let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
+                        let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
+                        let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
+                        let is_valid_seq = c != b'~' || count == 2;
 
-                    if (can_open || can_close) && is_valid_seq {
-                        self.tree.append_text(begin_text, ix);
-                        for i in 0..count {
-                            self.tree.append(Item {
-                                start: ix + i,
-                                end: ix + i + 1,
-                                body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
-                            });
+                        if (can_open || can_close) && is_valid_seq {
+                            self.tree.append_text(begin_text, ix);
+                            for i in 0..count {
+                                self.tree.append(Item {
+                                    start: ix + i,
+                                    end: ix + i + 1,
+                                    body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
+                                });
+                            }
+                            begin_text = ix + count;
                         }
-                        begin_text = ix + count;
+                        LoopInstruction::ContinueAndSkip(count - 1)
                     }
-                    LoopInstruction::ContinueAndSkip(count - 1)
-                }
-                b'`' => {
-                    self.tree.append_text(begin_text, ix);
-                    let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + count,
-                        body: ItemBody::MaybeCode(count, false),
-                    });
-                    begin_text = ix + count;
-                    LoopInstruction::ContinueAndSkip(count - 1)
-                }
-                b'<' => {
-                    // Note: could detect some non-HTML cases and early escape here, but not
-                    // clear that's a win.
-                    self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::MaybeHtml,
-                    });
-                    begin_text = ix + 1;
-                    LoopInstruction::ContinueAndSkip(0)
-                }
-                b'!' => {
-                    if ix + 1 < self.text.len() && bytes[ix + 1] == b'[' {
+                    b'`' => {
+                        self.tree.append_text(begin_text, ix);
+                        let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + count,
+                            body: ItemBody::MaybeCode(count, false),
+                        });
+                        begin_text = ix + count;
+                        LoopInstruction::ContinueAndSkip(count - 1)
+                    }
+                    b'<' => {
+                        // Note: could detect some non-HTML cases and early escape here, but not
+                        // clear that's a win.
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {
                             start: ix,
-                            end: ix + 2,
-                            body: ItemBody::MaybeImage,
+                            end: ix + 1,
+                            body: ItemBody::MaybeHtml,
                         });
-                        begin_text = ix + 2;
-                        LoopInstruction::ContinueAndSkip(1)
-                    } else {
+                        begin_text = ix + 1;
                         LoopInstruction::ContinueAndSkip(0)
                     }
-                }
-                b'[' => {
-                    self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::MaybeLinkOpen,
-                    });
-                    begin_text = ix + 1;
-                    LoopInstruction::ContinueAndSkip(0)
-                }
-                b']' => {
-                    self.tree.append_text(begin_text, ix);
-                    self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
-                        body: ItemBody::MaybeLinkClose(true),
-                    });
-                    begin_text = ix + 1;
-                    LoopInstruction::ContinueAndSkip(0)
-                }
-                b'&' => match scan_entity(&bytes[ix..]) {
-                    (n, Some(value)) => {
+                    b'!' => {
+                        if ix + 1 < self.text.len() && bytes[ix + 1] == b'[' {
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 2,
+                                body: ItemBody::MaybeImage,
+                            });
+                            begin_text = ix + 2;
+                            LoopInstruction::ContinueAndSkip(1)
+                        } else {
+                            LoopInstruction::ContinueAndSkip(0)
+                        }
+                    }
+                    b'[' => {
                         self.tree.append_text(begin_text, ix);
                         self.tree.append(Item {
                             start: ix,
-                            end: ix + n,
-                            body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
+                            end: ix + 1,
+                            body: ItemBody::MaybeLinkOpen,
                         });
-                        begin_text = ix + n;
-                        LoopInstruction::ContinueAndSkip(n - 1)
+                        begin_text = ix + 1;
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
+                    b']' => {
+                        self.tree.append_text(begin_text, ix);
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + 1,
+                            body: ItemBody::MaybeLinkClose(true),
+                        });
+                        begin_text = ix + 1;
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
+                    b'&' => match scan_entity(&bytes[ix..]) {
+                        (n, Some(value)) => {
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + n,
+                                body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
+                            });
+                            begin_text = ix + n;
+                            LoopInstruction::ContinueAndSkip(n - 1)
+                        }
+                        _ => LoopInstruction::ContinueAndSkip(0),
+                    },
+                    b'|' => {
+                        if let TableParseMode::Active = mode {
+                            LoopInstruction::BreakAtWith(ix, None)
+                        } else {
+                            last_pipe_ix = ix;
+                            pipes += 1;
+                            LoopInstruction::ContinueAndSkip(0)
+                        }
+                    }
+                    b'.' => {
+                        if ix + 2 < bytes.len() && bytes[ix + 1] == b'.' && bytes[ix + 2] == b'.' {
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 3,
+                                body: ItemBody::SynthesizeChar('…'),
+                            });
+                            begin_text = ix + 3;
+                            LoopInstruction::ContinueAndSkip(2)
+                        } else {
+                            LoopInstruction::ContinueAndSkip(0)
+                        }
+                    }
+                    b'-' => {
+                        let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'-');
+                        if count == 1 {
+                            LoopInstruction::ContinueAndSkip(0)
+                        } else {
+                            let itembody = if count == 2 {
+                                ItemBody::SynthesizeChar('–')
+                            } else if count == 3 {
+                                ItemBody::SynthesizeChar('—')
+                            } else {
+                                let (ems, ens) = match count % 6 {
+                                    0 | 3 => (count / 3, 0),
+                                    2 | 4 => (0, count / 2),
+                                    1 => (count / 3 - 1, 2),
+                                    _ => (count / 3, 1),
+                                };
+                                // – and — are 3 bytes each in utf8
+                                let mut buf = String::with_capacity(3 * (ems + ens));
+                                for _ in 0..ems {
+                                    buf.push('—');
+                                }
+                                for _ in 0..ens {
+                                    buf.push('–');
+                                }
+                                ItemBody::SynthesizeText(self.allocs.allocate_cow(buf.into()))
+                            };
+
+                            self.tree.append_text(begin_text, ix);
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + count,
+                                body: itembody,
+                            });
+                            begin_text = ix + count;
+                            LoopInstruction::ContinueAndSkip(count - 1)
+                        }
+                    }
+                    c @ b'\'' | c @ b'"' => {
+                        let string_suffix = &self.text[ix..];
+                        let can_open = delim_run_can_open(self.text, string_suffix, 1, ix);
+                        let can_close = delim_run_can_close(self.text, string_suffix, 1, ix);
+
+                        self.tree.append_text(begin_text, ix);
+                        self.tree.append(Item {
+                            start: ix,
+                            end: ix + 1,
+                            body: ItemBody::MaybeSmartQuote(c, can_open, can_close),
+                        });
+                        begin_text = ix + 1;
+
+                        LoopInstruction::ContinueAndSkip(0)
                     }
                     _ => LoopInstruction::ContinueAndSkip(0),
-                },
-                b'|' => {
-                    if let TableParseMode::Active = mode {
-                        LoopInstruction::BreakAtWith(ix, None)
-                    } else {
-                        last_pipe_ix = ix;
-                        pipes += 1;
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
                 }
-                _ => LoopInstruction::ContinueAndSkip(0),
-            }
-        });
+            });
 
         if brk.is_none() {
             // need to close text at eof
@@ -1471,7 +1543,8 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
 
     let prev_char = s[..ix].chars().last().unwrap();
 
-    prev_char.is_whitespace() || is_punctuation(prev_char)
+    prev_char.is_whitespace()
+        || is_punctuation(prev_char) && (delim != '\'' || ![']', ')'].contains(&prev_char))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -1933,6 +2006,44 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
+fn special_bytes(options: &Options) -> [bool; 256] {
+    let mut bytes = [false; 256];
+    let standard_bytes = [
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+    ];
+
+    for &byte in &standard_bytes {
+        bytes[byte as usize] = true;
+    }
+    if options.contains(Options::ENABLE_TABLES) {
+        bytes[b'|' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        bytes[b'~' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
+        for &byte in &[b'.', b'-', b'"', b'\''] {
+            bytes[byte as usize] = true;
+        }
+    }
+
+    bytes
+}
+
+pub(crate) fn create_lut(options: &Options) -> LookupTable {
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        LookupTable {
+            simd: crate::simd::compute_lookup(options),
+            scalar: special_bytes(options),
+        }
+    }
+    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    {
+        special_bytes(options)
+    }
+}
+
 pub type BrokenLinkCallback<'a> =
     Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
 
@@ -1971,7 +2082,8 @@ impl<'a> Parser<'a> {
         options: Options,
         broken_link_callback: BrokenLinkCallback<'a>,
     ) -> Parser<'a> {
-        let first_pass = FirstPass::new(text, options);
+        let lut = create_lut(&options);
+        let first_pass = FirstPass::new(text, options, &lut);
         let (mut tree, allocs) = first_pass.run();
         tree.reset();
         let inline_stack = Default::default();
@@ -2324,86 +2436,117 @@ impl<'a> Parser<'a> {
         let mut prev = None;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
+
+        let mut single_quote_open: Option<TreeIndex> = None;
+        let mut double_quote_open: bool = false;
+
         while let Some(mut cur_ix) = cur {
-            if let ItemBody::MaybeEmphasis(mut count, can_open, can_close) =
-                self.tree[cur_ix].item.body
-            {
-                let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
-                let both = can_open && can_close;
-                if can_close {
-                    while let Some(el) =
-                        self.inline_stack.find_match(&mut self.tree, c, count, both)
-                    {
-                        // have a match!
-                        if let Some(prev_ix) = prev {
-                            self.tree[prev_ix].next = None;
-                        }
-                        let match_count = min(count, el.count);
-                        // start, end are tree node indices
-                        let mut end = cur_ix - 1;
-                        let mut start = el.start + el.count;
+            match self.tree[cur_ix].item.body {
+                ItemBody::MaybeEmphasis(mut count, can_open, can_close) => {
+                    let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
+                    let both = can_open && can_close;
+                    if can_close {
+                        while let Some(el) =
+                            self.inline_stack.find_match(&mut self.tree, c, count, both)
+                        {
+                            // have a match!
+                            if let Some(prev_ix) = prev {
+                                self.tree[prev_ix].next = None;
+                            }
+                            let match_count = min(count, el.count);
+                            // start, end are tree node indices
+                            let mut end = cur_ix - 1;
+                            let mut start = el.start + el.count;
 
-                        // work from the inside out
-                        while start > el.start + el.count - match_count {
-                            let (inc, ty) = if c == b'~' {
-                                (2, ItemBody::Strikethrough)
-                            } else if start > el.start + el.count - match_count + 1 {
-                                (2, ItemBody::Strong)
+                            // work from the inside out
+                            while start > el.start + el.count - match_count {
+                                let (inc, ty) = if c == b'~' {
+                                    (2, ItemBody::Strikethrough)
+                                } else if start > el.start + el.count - match_count + 1 {
+                                    (2, ItemBody::Strong)
+                                } else {
+                                    (1, ItemBody::Emphasis)
+                                };
+
+                                let root = start - inc;
+                                end = end + inc;
+                                self.tree[root].item.body = ty;
+                                self.tree[root].item.end = self.tree[end].item.end;
+                                self.tree[root].child = Some(start);
+                                self.tree[root].next = None;
+                                start = root;
+                            }
+
+                            // set next for top most emph level
+                            prev_ix = el.start + el.count - match_count;
+                            prev = Some(prev_ix);
+                            cur = self.tree[cur_ix + match_count - 1].next;
+                            self.tree[prev_ix].next = cur;
+
+                            if el.count > match_count {
+                                self.inline_stack.push(InlineEl {
+                                    start: el.start,
+                                    count: el.count - match_count,
+                                    c: el.c,
+                                    both,
+                                })
+                            }
+                            count -= match_count;
+                            if count > 0 {
+                                cur_ix = cur.unwrap();
                             } else {
-                                (1, ItemBody::Emphasis)
-                            };
-
-                            let root = start - inc;
-                            end = end + inc;
-                            self.tree[root].item.body = ty;
-                            self.tree[root].item.end = self.tree[end].item.end;
-                            self.tree[root].child = Some(start);
-                            self.tree[root].next = None;
-                            start = root;
+                                break;
+                            }
                         }
-
-                        // set next for top most emph level
-                        prev_ix = el.start + el.count - match_count;
-                        prev = Some(prev_ix);
-                        cur = self.tree[cur_ix + match_count - 1].next;
-                        self.tree[prev_ix].next = cur;
-
-                        if el.count > match_count {
+                    }
+                    if count > 0 {
+                        if can_open {
                             self.inline_stack.push(InlineEl {
-                                start: el.start,
-                                count: el.count - match_count,
-                                c: el.c,
+                                start: cur_ix,
+                                count,
+                                c,
                                 both,
-                            })
-                        }
-                        count -= match_count;
-                        if count > 0 {
-                            cur_ix = cur.unwrap();
+                            });
                         } else {
-                            break;
+                            for i in 0..count {
+                                self.tree[cur_ix + i].item.body = ItemBody::Text;
+                            }
                         }
+                        prev_ix = cur_ix + count - 1;
+                        prev = Some(prev_ix);
+                        cur = self.tree[prev_ix].next;
                     }
                 }
-                if count > 0 {
-                    if can_open {
-                        self.inline_stack.push(InlineEl {
-                            start: cur_ix,
-                            count,
-                            c,
-                            both,
-                        });
-                    } else {
-                        for i in 0..count {
-                            self.tree[cur_ix + i].item.body = ItemBody::Text;
+                ItemBody::MaybeSmartQuote(c, can_open, can_close) => {
+                    self.tree[cur_ix].item.body = match c {
+                        b'\'' => {
+                            if let (Some(open_ix), true) = (single_quote_open, can_close) {
+                                self.tree[open_ix].item.body = ItemBody::SynthesizeChar('‘');
+                                single_quote_open = None;
+                            } else if can_open {
+                                single_quote_open = Some(cur_ix);
+                            }
+                            ItemBody::SynthesizeChar('’')
                         }
-                    }
-                    prev_ix = cur_ix + count - 1;
-                    prev = Some(prev_ix);
-                    cur = self.tree[prev_ix].next;
+                        _ /* double quote */ => {
+                            if can_close && double_quote_open {
+                                double_quote_open = false;
+                                ItemBody::SynthesizeChar('”')
+                            } else {
+                                if can_open && !double_quote_open {
+                                    double_quote_open = true;
+                                }
+                                ItemBody::SynthesizeChar('“')
+                            }
+                        }
+                    };
+                    prev = cur;
+                    cur = self.tree[cur_ix].next;
                 }
-            } else {
-                prev = cur;
-                cur = self.tree[cur_ix].next;
+                _ => {
+                    prev = cur;
+                    cur = self.tree[cur_ix].next;
+                }
             }
         }
         self.inline_stack.pop_all(&mut self.tree);
@@ -2644,6 +2787,15 @@ pub(crate) enum LoopInstruction<T> {
     BreakAtWith(usize, T),
 }
 
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+pub(crate) struct LookupTable {
+    pub simd: [u8; 16],
+    pub scalar: [bool; 256],
+}
+
+#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+type LookupTable = [bool; 256];
+
 /// This function walks the byte slices from the given index and
 /// calls the callback function on all bytes (and their indices) that are in the following set:
 /// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
@@ -2654,39 +2806,27 @@ pub(crate) enum LoopInstruction<T> {
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
 /// If `BreakAtWith(..)` is never returned, this function will return the first
 /// index that is outside the byteslice bound and a `None` value.
-fn iterate_special_bytes<F, T>(bytes: &[u8], ix: usize, callback: F) -> (usize, Option<T>)
+fn iterate_special_bytes<F, T>(
+    lut: &LookupTable,
+    bytes: &[u8],
+    ix: usize,
+    callback: F,
+) -> (usize, Option<T>)
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
-        crate::simd::iterate_special_bytes(bytes, ix, callback)
+        crate::simd::iterate_special_bytes(lut, bytes, ix, callback)
     }
     #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
     {
-        scalar_iterate_special_bytes(bytes, ix, callback)
+        scalar_iterate_special_bytes(lut, bytes, ix, callback)
     }
 }
 
-const fn special_bytes() -> [bool; 256] {
-    let mut bytes = [false; 256];
-    bytes[b'<' as usize] = true;
-    bytes[b'!' as usize] = true;
-    bytes[b'[' as usize] = true;
-    bytes[b'~' as usize] = true;
-    bytes[b'`' as usize] = true;
-    bytes[b'|' as usize] = true;
-    bytes[b'\\' as usize] = true;
-    bytes[b'*' as usize] = true;
-    bytes[b'_' as usize] = true;
-    bytes[b'\r' as usize] = true;
-    bytes[b'\n' as usize] = true;
-    bytes[b']' as usize] = true;
-    bytes[b'&' as usize] = true;
-    bytes
-}
-
 pub(crate) fn scalar_iterate_special_bytes<F, T>(
+    lut: &[bool; 256],
     bytes: &[u8],
     mut ix: usize,
     mut callback: F,
@@ -2694,11 +2834,9 @@ pub(crate) fn scalar_iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-    let special_bytes = special_bytes();
-
     while ix < bytes.len() {
         let b = bytes[ix];
-        if special_bytes[b as usize] {
+        if lut[b as usize] {
             match callback(ix, b) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     ix += skip;
@@ -2800,6 +2938,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,

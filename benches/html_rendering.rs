@@ -9,6 +9,13 @@ use std::str::from_utf8;
 static CRDT_BYTES: &[u8] = include_bytes!("../third_party/xi-editor/crdt.md");
 
 fn criterion_benchmark(c: &mut Criterion) {
+    let mut full_opts = Options::empty();
+    full_opts.insert(Options::ENABLE_TABLES);
+    full_opts.insert(Options::ENABLE_FOOTNOTES);
+    full_opts.insert(Options::ENABLE_STRIKETHROUGH);
+    full_opts.insert(Options::ENABLE_TASKLISTS);
+    full_opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+
     c.bench_function("crdt_total", |b| {
         let input = from_utf8(CRDT_BYTES).unwrap();
         let mut buf = String::with_capacity(input.len() * 3 / 2);
@@ -30,10 +37,27 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
+    c.bench_function("crdt_all_options_parse", |b| {
+        let input = from_utf8(CRDT_BYTES).unwrap();
+
+        b.iter(|| Parser::new_ext(input, full_opts).count())
+    });
+
     c.bench_function("crdt_parse", |b| {
         let input = from_utf8(CRDT_BYTES).unwrap();
 
         b.iter(|| Parser::new_ext(input, Options::empty()).count())
+    });
+
+    c.bench_function("smart_punctuation", |b| {
+        let input = r#"""'This here a real "quote"'
+
+And -- if you're interested -- some em-dashes. Wait --- she actually said that?
+
+Wow... Becky is so 'mean'!
+"""#;
+
+        b.iter(|| Parser::new_ext(input, full_opts).count());
     });
 
     c.bench_function("links_n_emphasis", |b| {

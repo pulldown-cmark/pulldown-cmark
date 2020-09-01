@@ -11,7 +11,7 @@ fn table_test_1() {
     let expected = r##"<h2>Test header</h2>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn table_test_2() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn table_test_3() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn table_test_4() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn table_test_5() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn table_test_6() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn table_test_7() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn table_test_8() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn table_test_9() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn table_test_10() {
 |ぃ|い|</p>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn table_test_11() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -201,5 +201,5 @@ fn table_test_12() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }

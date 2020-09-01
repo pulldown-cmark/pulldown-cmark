@@ -16,31 +16,41 @@
 //!
 //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
-use crate::parse::LoopInstruction;
+use crate::parse::{LookupTable, LoopInstruction, Options};
 use core::arch::x86_64::*;
 
-const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
+pub(crate) const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
 
 /// Generates a lookup table containing the bitmaps for our
 /// special marker bytes. This is effectively a 128 element 2d bitvector,
 /// that can be indexed by a four bit row index (the lower nibble)
 /// and a three bit column index (upper nibble).
-const fn compute_lookup() -> [u8; 16] {
+pub(crate) fn compute_lookup(options: &Options) -> [u8; 16] {
     let mut lookup = [0u8; 16];
-    lookup[(b'\n' & 0x0f) as usize] |= 1 << (b'\n' >> 4);
-    lookup[(b'\r' & 0x0f) as usize] |= 1 << (b'\r' >> 4);
-    lookup[(b'*' & 0x0f) as usize] |= 1 << (b'*' >> 4);
-    lookup[(b'_' & 0x0f) as usize] |= 1 << (b'_' >> 4);
-    lookup[(b'~' & 0x0f) as usize] |= 1 << (b'~' >> 4);
-    lookup[(b'|' & 0x0f) as usize] |= 1 << (b'|' >> 4);
-    lookup[(b'&' & 0x0f) as usize] |= 1 << (b'&' >> 4);
-    lookup[(b'\\' & 0x0f) as usize] |= 1 << (b'\\' >> 4);
-    lookup[(b'[' & 0x0f) as usize] |= 1 << (b'[' >> 4);
-    lookup[(b']' & 0x0f) as usize] |= 1 << (b']' >> 4);
-    lookup[(b'<' & 0x0f) as usize] |= 1 << (b'<' >> 4);
-    lookup[(b'!' & 0x0f) as usize] |= 1 << (b'!' >> 4);
-    lookup[(b'`' & 0x0f) as usize] |= 1 << (b'`' >> 4);
+    let standard_bytes = [
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+    ];
+
+    for &byte in &standard_bytes {
+        add_lookup_byte(&mut lookup, byte);
+    }
+    if options.contains(Options::ENABLE_TABLES) {
+        add_lookup_byte(&mut lookup, b'|');
+    }
+    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        add_lookup_byte(&mut lookup, b'~');
+    }
+    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
+        for &byte in &[b'.', b'-', b'"', b'\''] {
+            add_lookup_byte(&mut lookup, byte);
+        }
+    }
+
     lookup
+}
+
+fn add_lookup_byte(lookup: &mut [u8; 16], byte: u8) {
+    lookup[(byte & 0x0f) as usize] |= 1 << (byte >> 4);
 }
 
 /// Computes a bit mask for the given byteslice starting from the given index,
@@ -51,11 +61,10 @@ const fn compute_lookup() -> [u8; 16] {
 /// It is only safe to call this function when `bytes.len() >= ix + VECTOR_SIZE`.
 #[target_feature(enable = "ssse3")]
 #[inline]
-unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
+unsafe fn compute_mask(lut: &[u8; 16], bytes: &[u8], ix: usize) -> i32 {
     debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
 
-    let lookup = compute_lookup();
-    let bitmap = _mm_loadu_si128(lookup.as_ptr() as *const __m128i);
+    let bitmap = _mm_loadu_si128(lut.as_ptr() as *const __m128i);
     // Small lookup table to compute single bit bitshifts
     // for 16 bytes at once.
     let bitmask_lookup =
@@ -92,6 +101,7 @@ unsafe fn compute_mask(bytes: &[u8], ix: usize) -> i32 {
 /// number of bytes in callback return value otherwise.
 /// Returns the final index and a possible break value.
 pub(crate) fn iterate_special_bytes<F, T>(
+    lut: &LookupTable,
     bytes: &[u8],
     ix: usize,
     callback: F,
@@ -100,9 +110,9 @@ where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
     if is_x86_feature_detected!("ssse3") && bytes.len() >= VECTOR_SIZE {
-        unsafe { simd_iterate_special_bytes(bytes, ix, callback) }
+        unsafe { simd_iterate_special_bytes(&lut.simd, bytes, ix, callback) }
     } else {
-        crate::parse::scalar_iterate_special_bytes(bytes, ix, callback)
+        crate::parse::scalar_iterate_special_bytes(&lut.scalar, bytes, ix, callback)
     }
 }
 
@@ -137,6 +147,7 @@ where
 /// Important: only call this function when `bytes.len() >= 16`. Doing
 /// so otherwise may exhibit undefined behaviour.
 unsafe fn simd_iterate_special_bytes<F, T>(
+    lut: &[u8; 16],
     bytes: &[u8],
     mut ix: usize,
     mut callback: F,
@@ -148,7 +159,7 @@ where
     let upperbound = bytes.len() - VECTOR_SIZE;
 
     while ix < upperbound {
-        let mask = compute_mask(bytes, ix);
+        let mask = compute_mask(lut, bytes, ix);
         let block_start = ix;
         ix = match process_mask(mask, bytes, ix, &mut callback) {
             Ok(ix) => std::cmp::max(ix, VECTOR_SIZE + block_start),
@@ -158,7 +169,7 @@ where
 
     if bytes.len() > ix {
         // shift off the bytes at start we have already scanned
-        let mask = compute_mask(bytes, upperbound) >> ix - upperbound;
+        let mask = compute_mask(lut, bytes, upperbound) >> ix - upperbound;
         if let Err((end_ix, val)) = process_mask(mask, bytes, ix, &mut callback) {
             return (end_ix, val);
         }
@@ -170,11 +181,19 @@ where
 #[cfg(test)]
 mod simd_test {
     use super::{iterate_special_bytes, LoopInstruction};
+    use crate::Options;
 
     fn check_expected_indices(bytes: &[u8], expected: &[usize], skip: usize) {
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_FOOTNOTES);
+        opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let lut = crate::parse::create_lut(&opts);
         let mut indices = vec![];
 
-        iterate_special_bytes::<_, i32>(bytes, 0, |ix, _byte_ty| {
+        iterate_special_bytes::<_, i32>(&lut, bytes, 0, |ix, _byte_ty| {
             indices.push(ix);
             LoopInstruction::ContinueAndSkip(skip)
         });

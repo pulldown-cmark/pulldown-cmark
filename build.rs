@@ -29,11 +29,12 @@ fn generate_tests_from_spec() {
     // and make it easy to eventually add other hardcoded paths in the future if needed
     let hardcoded = [
         "./third_party/CommonMark/spec.txt",
+        "./third_party/CommonMark/smart_punct.txt",
         "./third_party/GitHub/gfm_table.txt",
         "./third_party/GitHub/gfm_strikethrough.txt",
         "./third_party/GitHub/gfm_tasklist.txt",
     ];
-    let hardcoded_iter = hardcoded.into_iter().map(PathBuf::from);
+    let hardcoded_iter = hardcoded.iter().map(PathBuf::from);
 
     // Create an iterator over the files in the specs/ directory that have a .txt extension
     let spec_files = fs::read_dir("./specs")
@@ -82,13 +83,14 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, {smart_punct});
 }}
 "###,
                     spec_name,
                     i = i + 1,
                     original = testcase.original,
-                    expected = testcase.expected
+                    expected = testcase.expected,
+                    smart_punct = testcase.smart_punct,
                 ))
                 .unwrap();
 
@@ -133,7 +135,7 @@ pub struct Spec<'a> {
 #[cfg(feature = "gen-tests")]
 impl<'a> Spec<'a> {
     pub fn new(spec: &'a str) -> Self {
-        Spec { spec: spec }
+        Spec { spec }
     }
 }
 
@@ -141,6 +143,7 @@ impl<'a> Spec<'a> {
 pub struct TestCase {
     pub original: String,
     pub expected: String,
+    pub smart_punct: bool,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -149,37 +152,33 @@ impl<'a> Iterator for Spec<'a> {
 
     fn next(&mut self) -> Option<TestCase> {
         let spec = self.spec;
+        let prefix = "```````````````````````````````` example";
 
-        let i_start = match self
-            .spec
-            .find("```````````````````````````````` example\n")
-            .map(|pos| pos + 41)
-        {
-            Some(pos) => pos,
-            None => return None,
-        };
+        let (i_start, smart_punct) = self.spec.find(prefix).and_then(|pos| {
+            let suffix = "_smartpunct\n";
+            if spec[(pos + prefix.len())..].starts_with(suffix) {
+                Some((pos + prefix.len() + suffix.len(), true))
+            } else if spec[(pos + prefix.len())..].starts_with('\n') {
+                Some((pos + prefix.len() + 1, false))
+            } else {
+                None
+            }
+        })?;
 
-        let i_end = match self.spec[i_start..]
+        let i_end = self.spec[i_start..]
             .find("\n.\n")
-            .map(|pos| (pos + 1) + i_start)
-        {
-            Some(pos) => pos,
-            None => return None,
-        };
+            .map(|pos| (pos + 1) + i_start)?;
 
-        let e_end = match self.spec[i_end + 2..]
+        let e_end = self.spec[i_end + 2..]
             .find("````````````````````````````````\n")
-            .map(|pos| pos + i_end + 2)
-        {
-            Some(pos) => pos,
-            None => return None,
-        };
+            .map(|pos| pos + i_end + 2)?;
 
         self.spec = &self.spec[e_end + 33..];
 
         let test_case = TestCase {
             original: spec[i_start..i_end].to_string().replace("→", "\t"),
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
+            smart_punct,
         };
 
         Some(test_case)

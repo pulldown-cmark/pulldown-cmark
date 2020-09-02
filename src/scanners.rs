@@ -581,6 +581,41 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     (i, cols)
 }
 
+#[derive(PartialEq)]
+pub enum MathBlockIndicator {
+    DoubleDollar,
+    Bracket,
+}
+
+// Scan math block
+pub(crate) fn scan_math(data: &[u8]) -> Option<(usize, MathBlockIndicator)> {
+    let c = *data.get(0)?;
+    match c {
+        b'\\' => {
+            if let Some(ch) = data.get(1) {
+                if *ch == b'[' {
+                    return Some((2usize, MathBlockIndicator::Bracket));
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
+        b'$' => {
+            let i = 1 + scan_ch_repeat(&data[1..], c);
+            if i >= 2 {
+                return Some((i, MathBlockIndicator::DoubleDollar));
+            } else {
+                return None;
+            }
+        }
+        _ => {
+            return None;
+        }
+    }
+}
+
 /// Scan code fence.
 ///
 /// Returns number of bytes scanned and the char that is repeated to make the code fence.
@@ -1304,5 +1339,14 @@ mod test {
     #[test]
     fn overflow_by_addition() {
         assert!(scan_listitem(b"1844674407370955161615!").is_none());
+    }
+    #[test]
+    fn test_scan_math() {
+        let r = scan_math(b"$$$").unwrap();
+        assert!(r.0 == 3);
+        assert!(r.1 == MathBlockIndicator::DoubleDollar);
+        let r = scan_math(b"\\[").unwrap();
+        assert!(r.0 == 2);
+        assert!(r.1 == MathBlockIndicator::Bracket);
     }
 }

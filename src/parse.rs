@@ -189,6 +189,7 @@ bitflags! {
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
+        const ENABLE_MATH = 1 << 6;
     }
 }
 
@@ -233,6 +234,7 @@ enum ItemBody {
     Heading(u32), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
+    MathBlock,
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
@@ -471,6 +473,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // try to read trailing whitespace or it will register as a completely blank line
             // TODO: shouldn't we do this for all block level items?
             return ix + scan_blank_line(&bytes[ix..]).unwrap_or(0);
+        }
+
+        if self.options.contains(Options::ENABLE_MATH) {
+            if let Some((n, block_indicator)) = scan_math(&bytes[ix..]) {
+                return self.parse_math_block(ix, indent, n, block_indicator);
+            }
         }
 
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
@@ -1093,6 +1101,34 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         self.pop(end_ix);
         ix
+    }
+
+    fn parse_math_block(
+        &mut self,
+        start_ix: usize,
+        indent: usize,
+        _n_indicator_char: usize,
+        indicator: MathBlockIndicator,
+    ) -> usize {
+        let bytes = self.text.as_bytes();
+        // skip the current line
+        let ix = start_ix + scan_nextline(&bytes[start_ix..]);
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0,
+            body: ItemBody::MathBlock,
+        });
+        self.tree.push();
+        loop {
+            let mut line_start = LineStart::new(&bytes[ix..]);
+            let n_containers = scan_containers(&self.tree, &mut line_start);
+            if n_containers < self.tree.spine_len() {
+                break;
+            }
+            line_start.scan_space(indent);
+            let mut close_line_start = line_start.clone();
+        }
+        0
     }
 
     fn parse_fenced_code_block(

@@ -1112,10 +1112,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     ) -> usize {
         let bytes = self.text.as_bytes();
         // skip the current line
-        let ix = start_ix + scan_nextline(&bytes[start_ix..]);
+        let mut ix = start_ix + scan_nextline(&bytes[start_ix..]);
         self.tree.append(Item {
             start: start_ix,
-            end: 0,
+            end: 0, // will get set later
             body: ItemBody::MathBlock,
         });
         self.tree.push();
@@ -1127,8 +1127,43 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             line_start.scan_space(indent);
             let mut close_line_start = line_start.clone();
+            // the closing math_block may be indented up to three spaces
+            if !close_line_start.scan_space(4) {
+                let close_ix = close_line_start.bytes_scanned();
+                if let Some(n) =
+                    scan_closing_math_block(&bytes[close_ix..], indicator, _n_indicator_char)
+                {
+                    ix = close_ix + n;
+                    break;
+                }
+            }
+            let remaining_space = line_start.remaining_space();
+            ix += line_start.bytes_scanned();
+            let next_ix = ix + scan_nextline(&bytes[ix..]);
+            self.append_math_text(remaining_space, ix, next_ix);
+            ix = next_ix;
         }
-        0
+        self.pop(ix);
+        // try to read trailing whitespace or it will register as a completely blank line
+        ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
+    }
+
+    fn append_math_text(&mut self, remaining_space: usize, start: usize, end: usize) {
+        if remaining_space > 0 {
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
+            self.tree.append(Item {
+                start,
+                end: start,
+                body: ItemBody::SynthesizeText(cow_ix),
+            });
+        }
+        if self.text.as_bytes()[end - 2] == b'\r' {
+            // Normalize CRLF to LF
+            self.tree.append_text(start, end - 2);
+            self.tree.append_text(end - 1, end);
+        } else {
+            self.tree.append_text(start, end);
+        }
     }
 
     fn parse_fenced_code_block(
@@ -3406,5 +3441,8 @@ mod test {
             }
         }
         assert_eq!(found, 1);
+    }
+    #[test]
+    fn math_block_bracket() {
     }
 }

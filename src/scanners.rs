@@ -435,6 +435,41 @@ pub(crate) fn scan_closing_code_fence(
     scan_eol(&bytes[i..]).map(|_| i)
 }
 
+pub(crate) fn scan_closing_math_block(
+    bytes: &[u8],
+    indicator: MathBlockIndicator,
+    n_indicator_char: usize,
+) -> Option<usize> {
+    if bytes.is_empty() {
+        return Some(0);
+    }
+    let mut i = 0;
+    match indicator {
+        MathBlockIndicator::Bracket => {
+            if bytes.len() >= 2 {
+                // TODO: equal?
+                if *bytes.get(0).unwrap() == b'\\' && *bytes.get(1).unwrap() == b']' {
+                    i += 2;
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
+        MathBlockIndicator::DoubleDollar => {
+            let num_dollar_chars_found = scan_ch_repeat(&bytes[i..], b'$');
+            if num_dollar_chars_found < n_indicator_char {
+                return None;
+            }
+            i += num_dollar_chars_found;
+        }
+    }
+    let num_trailing_spaces = scan_ch_repeat(&bytes[i..], b' ');
+    i += num_trailing_spaces;
+    scan_eol(&bytes[i..]).map(|_| i)
+}
+
 // returned pair is (number of bytes, number of spaces)
 fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut spaces = 0;
@@ -581,7 +616,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     (i, cols)
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum MathBlockIndicator {
     DoubleDollar,
     Bracket,

@@ -154,7 +154,7 @@ pub enum Event<'a> {
     /// End of a tagged element.
     End(Tag<'a>),
     /// A text node.
-    Text(CowStr<'a>),
+    Text(CowStr<'a>, bool),
     /// An inline code node.
     Code(CowStr<'a>),
     /// An HTML node.
@@ -206,7 +206,8 @@ struct Item {
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum ItemBody {
     Paragraph,
-    Text,
+    // escape or not
+    Text(bool),
     SoftBreak,
     HardBreak,
 
@@ -1162,10 +1163,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
-            self.tree.append_text(start, end - 2);
-            self.tree.append_text(end - 1, end);
+            self.tree.append_text_opt_escape(start, end - 2, false);
+            self.tree.append_text_opt_escape(end - 1, end, false);
         } else {
-            self.tree.append_text(start, end);
+            self.tree.append_text_opt_escape(start, end, false);
         }
     }
 
@@ -1576,20 +1577,25 @@ fn count_header_cols(
 }
 
 impl<'a> Tree<Item> {
-    fn append_text(&mut self, start: usize, end: usize) {
+    fn append_text_opt_escape(&mut self, start: usize, end: usize, escape: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
-                    self[ix].item.end = end;
-                    return;
+                if let ItemBody::Text(_) = self[ix].item.body {
+                    if self[ix].item.end == start {
+                        self[ix].item.end = end;
+                        return;
+                    }
                 }
+                self.append(Item {
+                    start,
+                    end,
+                    body: ItemBody::Text(escape),
+                });
             }
-            self.append(Item {
-                start,
-                end,
-                body: ItemBody::Text,
-            });
         }
+    }
+    fn append_text(&mut self, start: usize, end: usize) {
+        self.append_text_opt_escape(start, end, true);
     }
 }
 
@@ -1742,7 +1748,7 @@ impl InlineStack {
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text;
+                tree[el.start + i].item.body = ItemBody::Text(true);
             }
         }
         self.lower_bounds = [0; 7];
@@ -1807,7 +1813,7 @@ impl InlineStack {
             let matching_ix = matching_ix + lowerbound;
             for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
-                    tree[el.start + i].item.body = ItemBody::Text;
+                    tree[el.start + i].item.body = ItemBody::Text(true);
                 }
             }
             self.stack.truncate(matching_ix);
@@ -2214,7 +2220,7 @@ impl<'a> Parser<'a> {
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
-                            body: ItemBody::Text,
+                            body: ItemBody::Text(true),
                         });
                         let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
@@ -2256,13 +2262,13 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                     }
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text(true);
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
                         if search_count == 0 {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text(true);
                             prev = cur;
                             cur = self.tree[cur_ix].next;
                             continue;
@@ -2275,7 +2281,7 @@ impl<'a> Parser<'a> {
                         if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text(true);
                         }
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
@@ -2300,26 +2306,26 @@ impl<'a> Parser<'a> {
                             scan = self.tree[scan_ix].next;
                         }
                         if scan == None {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text(true);
                         }
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text(true);
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Link,
                     });
                 }
                 ItemBody::MaybeImage => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text(true);
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
                     });
                 }
                 ItemBody::MaybeLinkClose(could_be_ref) => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text(true);
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
@@ -2583,7 +2589,7 @@ impl<'a> Parser<'a> {
                             });
                         } else {
                             for i in 0..count {
-                                self.tree[cur_ix + i].item.body = ItemBody::Text;
+                                self.tree[cur_ix + i].item.body = ItemBody::Text(true);
                             }
                         }
                         prev_ix = cur_ix + count - 1;
@@ -2805,7 +2811,7 @@ impl<'a> Parser<'a> {
             self.text[span_start..span_end].into()
         };
         if preceding_backslash {
-            self.tree[open].item.body = ItemBody::Text;
+            self.tree[open].item.body = ItemBody::Text(true);
             self.tree[open].item.end = self.tree[open].item.start + 1;
             self.tree[open].next = Some(close);
             self.tree[close].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
@@ -3010,10 +3016,10 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
 
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
-        ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
+        ItemBody::Text(escape) => return Event::Text(text[item.start..item.end].into(), escape),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone(), true),
+        ItemBody::SynthesizeChar(c) => return Event::Text(c.into(), true),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,

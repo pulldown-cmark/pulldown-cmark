@@ -92,8 +92,10 @@ where
                 End(tag) => {
                     self.end_tag(tag)?;
                 }
-                Text(text) => {
-                    escape_html(&mut self.writer, &text)?;
+                Text(text, escape) => {
+                    if escape {
+                        escape_html(&mut self.writer, &text)?;
+                    }
                     self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
@@ -367,8 +369,14 @@ where
                     }
                     nest -= 1;
                 }
-                Html(text) | Code(text) | Text(text) => {
+                Html(text) | Code(text) => {
                     escape_html(&mut self.writer, &text)?;
+                    self.end_newline = text.ends_with('\n');
+                }
+                Text(text, escape) => {
+                    if escape {
+                        escape_html(&mut self.writer, &text)?;
+                    }
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak | Rule => {

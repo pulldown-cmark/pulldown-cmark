@@ -12,7 +12,7 @@ fn main() {
     // and image by its alt text.
     let parser = Parser::new_ext(markdown_input, Options::empty())
         .map(|event| match event {
-            Event::Text(text) => Event::Text(text.replace("Peter", "John").into()),
+            Event::Text(text, escape) => Event::Text(text.replace("Peter", "John").into(), escape),
             _ => event,
         })
         .filter(|event| match event {

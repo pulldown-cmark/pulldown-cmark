@@ -1580,18 +1580,19 @@ impl<'a> Tree<Item> {
     fn append_text_opt_escape(&mut self, start: usize, end: usize, escape: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if let ItemBody::Text(_) = self[ix].item.body {
-                    if self[ix].item.end == start {
-                        self[ix].item.end = end;
-                        return;
-                    }
+                if (ItemBody::Text(true) == self[ix].item.body
+                    || ItemBody::Text(false) == self[ix].item.body)
+                    && self[ix].item.end == start
+                {
+                    self[ix].item.end = end;
+                    return;
                 }
-                self.append(Item {
-                    start,
-                    end,
-                    body: ItemBody::Text(escape),
-                });
             }
+            self.append(Item {
+                start,
+                end,
+                body: ItemBody::Text(escape),
+            });
         }
     }
     fn append_text(&mut self, start: usize, end: usize) {

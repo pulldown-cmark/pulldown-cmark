@@ -75,6 +75,9 @@ pub enum Tag<'a> {
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
+    /// A math block
+    MathBlock,
+
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
     List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
@@ -1129,7 +1132,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let mut close_line_start = line_start.clone();
             // the closing math_block may be indented up to three spaces
             if !close_line_start.scan_space(4) {
-                let close_ix = close_line_start.bytes_scanned();
+                let close_ix = ix + close_line_start.bytes_scanned();
                 if let Some(n) =
                     scan_closing_math_block(&bytes[close_ix..], indicator, _n_indicator_char)
                 {
@@ -2985,6 +2988,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
+        ItemBody::MathBlock => Tag::MathBlock,
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
@@ -3036,6 +3040,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
+        ItemBody::MathBlock => Tag::MathBlock,
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
@@ -3444,5 +3449,21 @@ mod test {
     }
     #[test]
     fn math_block_bracket() {
+        let md = r#"$$
+\frac{1}{2}
+$$"#;
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_MATH);
+        let parser = Parser::new_ext(md, opts);
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::MathBlock) => {
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
     }
 }

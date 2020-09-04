@@ -85,6 +85,7 @@ where
 
     pub fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
+            println!("{:?}", event);
             match event {
                 Start(tag) => {
                     self.start_tag(tag)?;
@@ -95,6 +96,8 @@ where
                 Text(text, escape) => {
                     if escape {
                         escape_html(&mut self.writer, &text)?;
+                    } else {
+                        self.writer.write_str(&text)?;
                     }
                     self.end_newline = text.ends_with('\n');
                 }
@@ -211,7 +214,9 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
-            Tag::MathBlock => Ok(()),
+            Tag::MathBlock => {
+                self.write("\\[\n")
+            }
             Tag::List(Some(1)) => {
                 if self.end_newline {
                     self.write("<ol>\n")
@@ -327,7 +332,9 @@ where
             Tag::CodeBlock(_) => {
                 self.write("</code></pre>\n")?;
             }
-            Tag::MathBlock => {}
+            Tag::MathBlock => {
+                self.write("\\]\n")?;
+            }
             Tag::List(Some(_)) => {
                 self.write("</ol>\n")?;
             }
@@ -376,6 +383,8 @@ where
                 Text(text, escape) => {
                     if escape {
                         escape_html(&mut self.writer, &text)?;
+                    } else {
+                        self.writer.write_str(&text)?;
                     }
                     self.end_newline = text.ends_with('\n');
                 }

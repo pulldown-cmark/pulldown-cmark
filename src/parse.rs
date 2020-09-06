@@ -225,7 +225,7 @@ enum ItemBody {
     /// while the closing $ must have a character immediately to its left. Thus, $20,000 and $30,000 won’t parse as math.
     /// If for some reason you need to enclose text in literal $ characters,
     /// backslash-escape them and they won’t be treated as math delimiters.
-    MaybeMath(bool, bool), // char on left, char on right
+    MaybeMath(bool, bool), // preceded by char, follow by char
     MaybeHtml,
     MaybeLinkOpen,
     // bool indicates whether or not the preceeding section could be a reference
@@ -2348,7 +2348,7 @@ impl<'a> Parser<'a> {
                         }
                     }
                 }
-                ItemBody::MaybeMath(_, true) => {
+                ItemBody::MaybeMath(_, true) => { // folowed by char
                     let mut scan = self.tree[cur_ix].next;
                     while let Some(scan_ix) = scan {
                         if let ItemBody::MaybeMath(true, _) = self.tree[scan_ix].item.body {
@@ -2358,11 +2358,13 @@ impl<'a> Parser<'a> {
                             let span_start = self.tree[open].item.end;
                             let span_end = self.tree[close].item.start;
                             let cow = self.text[span_start..span_end].into();
+                            println!("{}", &self.text[span_start..span_end]);
 
                             self.tree[open].item.body =
                                 ItemBody::Math(self.allocs.allocate_cow(cow));
                             self.tree[open].item.end = self.tree[close].item.end;
                             self.tree[open].next = self.tree[close].next;
+                            break;
                         }
                         scan = self.tree[scan_ix].next;
                     }

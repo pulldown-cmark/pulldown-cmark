@@ -85,7 +85,7 @@ where
 
     pub fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
-            println!("{:?}", event);
+            // println!("{:?}", event);
             match event {
                 Start(tag) => {
                     self.start_tag(tag)?;

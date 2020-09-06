@@ -154,7 +154,9 @@ pub enum Event<'a> {
     /// End of a tagged element.
     End(Tag<'a>),
     /// A text node.
-    Text(CowStr<'a>, bool),
+    Text(CowStr<'a>),
+    /// A text node of math
+    MathText(CowStr<'a>),
     /// An inline code node.
     Code(CowStr<'a>),
     /// An HTML node.
@@ -207,7 +209,8 @@ struct Item {
 enum ItemBody {
     Paragraph,
     // escape or not
-    Text(bool),
+    Text,
+    MathText,
     SoftBreak,
     HardBreak,
 
@@ -218,6 +221,11 @@ enum ItemBody {
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceeded by backslash
+    /// Anything between two $ characters will be treated as TeX math. The opening $ must have a character immediately to its right,
+    /// while the closing $ must have a character immediately to its left. Thus, $20,000 and $30,000 won’t parse as math.
+    /// If for some reason you need to enclose text in literal $ characters,
+    /// backslash-escape them and they won’t be treated as math delimiters.
+    MaybeMath(bool, bool), // char on left, char on right
     MaybeHtml,
     MaybeLinkOpen,
     // bool indicates whether or not the preceeding section could be a reference
@@ -229,6 +237,7 @@ enum ItemBody {
     Strong,
     Strikethrough,
     Code(CowIndex),
+    Math(CowIndex),
     Link(LinkIndex),
     Image(LinkIndex),
     FootnoteReference(CowIndex),
@@ -265,6 +274,7 @@ impl<'a> ItemBody {
             | ItemBody::MaybeSmartQuote(..)
             | ItemBody::MaybeHtml
             | ItemBody::MaybeCode(..)
+            | ItemBody::MaybeMath(..)
             | ItemBody::MaybeLinkOpen
             | ItemBody::MaybeLinkClose(..)
             | ItemBody::MaybeImage => true,
@@ -819,6 +829,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                         LoopInstruction::ContinueAndSkip(count - 1)
                     }
+                    b'$' => {
+                        self.tree.append_text(begin_text, ix);
+                        let preceded_by_char = ix > 0 && !is_ascii_whitespace(bytes[ix - 1]);
+                        let followed_by_char =
+                            ix + 1 < self.text.len() && !is_ascii_whitespace(bytes[ix + 1]);
+                        if preceded_by_char || followed_by_char {
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 1,
+                                body: ItemBody::MaybeMath(preceded_by_char, followed_by_char),
+                            });
+                        }
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
                     b'`' => {
                         self.tree.append_text(begin_text, ix);
                         let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
@@ -1163,10 +1187,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
-            self.tree.append_text_opt_escape(start, end - 2, false);
-            self.tree.append_text_opt_escape(end - 1, end, false);
+            self.tree.append_math_text(start, end - 2);
+            self.tree.append_math_text(end - 1, end);
         } else {
-            self.tree.append_text_opt_escape(start, end, false);
+            self.tree.append_math_text(start, end);
         }
     }
 
@@ -1577,13 +1601,10 @@ fn count_header_cols(
 }
 
 impl<'a> Tree<Item> {
-    fn append_text_opt_escape(&mut self, start: usize, end: usize, escape: bool) {
+    fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if (ItemBody::Text(true) == self[ix].item.body
-                    || ItemBody::Text(false) == self[ix].item.body)
-                    && self[ix].item.end == start
-                {
+                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
                     self[ix].item.end = end;
                     return;
                 }
@@ -1591,12 +1612,24 @@ impl<'a> Tree<Item> {
             self.append(Item {
                 start,
                 end,
-                body: ItemBody::Text(escape),
+                body: ItemBody::Text,
             });
         }
     }
-    fn append_text(&mut self, start: usize, end: usize) {
-        self.append_text_opt_escape(start, end, true);
+    fn append_math_text(&mut self, start: usize, end: usize) {
+        if end > start {
+            if let Some(ix) = self.cur() {
+                if ItemBody::MathText == self[ix].item.body && self[ix].item.end == start {
+                    self[ix].item.end = end;
+                    return;
+                }
+            }
+            self.append(Item {
+                start,
+                end,
+                body: ItemBody::MathText,
+            });
+        }
     }
 }
 
@@ -1749,7 +1782,7 @@ impl InlineStack {
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text(true);
+                tree[el.start + i].item.body = ItemBody::Text;
             }
         }
         self.lower_bounds = [0; 7];
@@ -1814,7 +1847,7 @@ impl InlineStack {
             let matching_ix = matching_ix + lowerbound;
             for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
-                    tree[el.start + i].item.body = ItemBody::Text(true);
+                    tree[el.start + i].item.body = ItemBody::Text;
                 }
             }
             self.stack.truncate(matching_ix);
@@ -2107,6 +2140,10 @@ fn special_bytes(options: &Options) -> [bool; 256] {
             bytes[byte as usize] = true;
         }
     }
+    if options.contains(Options::ENABLE_MATH) {
+        bytes[b'$' as usize] = true;
+    }
+    //TOOD: handle \( and \)
 
     bytes
 }
@@ -2221,7 +2258,7 @@ impl<'a> Parser<'a> {
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
-                            body: ItemBody::Text(true),
+                            body: ItemBody::Text,
                         });
                         let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
@@ -2263,13 +2300,13 @@ impl<'a> Parser<'a> {
                             continue;
                         }
                     }
-                    self.tree[cur_ix].item.body = ItemBody::Text(true);
+                    self.tree[cur_ix].item.body = ItemBody::Text;
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
                         if search_count == 0 {
-                            self.tree[cur_ix].item.body = ItemBody::Text(true);
+                            self.tree[cur_ix].item.body = ItemBody::Text;
                             prev = cur;
                             cur = self.tree[cur_ix].next;
                             continue;
@@ -2282,7 +2319,7 @@ impl<'a> Parser<'a> {
                         if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text(true);
+                            self.tree[cur_ix].item.body = ItemBody::Text;
                         }
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
@@ -2307,26 +2344,45 @@ impl<'a> Parser<'a> {
                             scan = self.tree[scan_ix].next;
                         }
                         if scan == None {
-                            self.tree[cur_ix].item.body = ItemBody::Text(true);
+                            self.tree[cur_ix].item.body = ItemBody::Text;
                         }
                     }
                 }
+                ItemBody::MaybeMath(_, true) => {
+                    let mut scan = self.tree[cur_ix].next;
+                    while let Some(scan_ix) = scan {
+                        if let ItemBody::MaybeMath(true, _) = self.tree[scan_ix].item.body {
+                            let open = cur_ix;
+                            let close = scan_ix;
+
+                            let span_start = self.tree[open].item.end;
+                            let span_end = self.tree[close].item.start;
+                            let cow = self.text[span_start..span_end].into();
+
+                            self.tree[open].item.body =
+                                ItemBody::Math(self.allocs.allocate_cow(cow));
+                            self.tree[open].item.end = self.tree[close].item.end;
+                            self.tree[open].next = self.tree[close].next;
+                        }
+                        scan = self.tree[scan_ix].next;
+                    }
+                }
                 ItemBody::MaybeLinkOpen => {
-                    self.tree[cur_ix].item.body = ItemBody::Text(true);
+                    self.tree[cur_ix].item.body = ItemBody::Text;
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Link,
                     });
                 }
                 ItemBody::MaybeImage => {
-                    self.tree[cur_ix].item.body = ItemBody::Text(true);
+                    self.tree[cur_ix].item.body = ItemBody::Text;
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
                     });
                 }
                 ItemBody::MaybeLinkClose(could_be_ref) => {
-                    self.tree[cur_ix].item.body = ItemBody::Text(true);
+                    self.tree[cur_ix].item.body = ItemBody::Text;
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
@@ -2590,7 +2646,7 @@ impl<'a> Parser<'a> {
                             });
                         } else {
                             for i in 0..count {
-                                self.tree[cur_ix + i].item.body = ItemBody::Text(true);
+                                self.tree[cur_ix + i].item.body = ItemBody::Text;
                             }
                         }
                         prev_ix = cur_ix + count - 1;
@@ -2812,7 +2868,7 @@ impl<'a> Parser<'a> {
             self.text[span_start..span_end].into()
         };
         if preceding_backslash {
-            self.tree[open].item.body = ItemBody::Text(true);
+            self.tree[open].item.body = ItemBody::Text;
             self.tree[open].item.end = self.tree[open].item.start + 1;
             self.tree[open].next = Some(close);
             self.tree[close].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
@@ -3017,10 +3073,12 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
 
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
-        ItemBody::Text(escape) => return Event::Text(text[item.start..item.end].into(), escape),
+        ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
+        ItemBody::MathText => return Event::MathText(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone(), true),
-        ItemBody::SynthesizeChar(c) => return Event::Text(c.into(), true),
+        ItemBody::Math(cow_ix) => return Event::MathText(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,

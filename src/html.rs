@@ -93,12 +93,12 @@ where
                 End(tag) => {
                     self.end_tag(tag)?;
                 }
-                Text(text, escape) => {
-                    if escape {
-                        escape_html(&mut self.writer, &text)?;
-                    } else {
-                        self.writer.write_str(&text)?;
-                    }
+                Text(text) => {
+                    escape_html(&mut self.writer, &text)?;
+                    self.end_newline = text.ends_with('\n');
+                }
+                MathText(text) => {
+                    self.writer.write_str(&text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
@@ -214,9 +214,7 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
-            Tag::MathBlock => {
-                self.write("\\[\n")
-            }
+            Tag::MathBlock => self.write("\\[\n"),
             Tag::List(Some(1)) => {
                 if self.end_newline {
                     self.write("<ol>\n")
@@ -376,16 +374,12 @@ where
                     }
                     nest -= 1;
                 }
-                Html(text) | Code(text) => {
+                Html(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
-                Text(text, escape) => {
-                    if escape {
-                        escape_html(&mut self.writer, &text)?;
-                    } else {
-                        self.writer.write_str(&text)?;
-                    }
+                MathText(text) => {
+                    self.writer.write_str(&text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak | Rule => {

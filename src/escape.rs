@@ -148,7 +148,7 @@ const fn create_html_escape_table() -> [u8; 256] {
 
 static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
 
-static HTML_ESCAPES: [&'static str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
+static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.

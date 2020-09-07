@@ -2,11 +2,12 @@ use std::cmp::max;
 
 use crate::linklabel::{scan_link_label_rest, LinkLabel};
 use crate::parse::{
-    scan_containers, Allocations, Item, ItemBody, LinkDef, LookupTable, LoopInstruction, Options,
+    scan_containers, Allocations, Item, ItemBody, LinkDef, LookupTable, LoopInstruction,
 };
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
+use crate::Options;
 
 use unicase::UniCase;
 

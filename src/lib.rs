@@ -60,6 +60,7 @@ extern crate unicase;
 
 mod entities;
 pub mod escape;
+mod firstpass;
 mod linklabel;
 mod parse;
 mod puncttable;

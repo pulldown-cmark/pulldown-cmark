@@ -68,9 +68,6 @@ mod scanners;
 mod strings;
 mod tree;
 
-#[cfg(all(target_arch = "x86_64", feature = "simd"))]
-mod simd;
-
 pub use crate::parse::{BrokenLink, OffsetIter, Parser};
 pub use crate::strings::{CowStr, InlineStr};
 

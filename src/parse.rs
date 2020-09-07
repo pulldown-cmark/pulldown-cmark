@@ -26,7 +26,7 @@ use std::ops::{Index, Range};
 
 use unicase::UniCase;
 
-use crate::firstpass::FirstPass;
+use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
@@ -162,9 +162,7 @@ impl<'a> Parser<'a> {
         options: Options,
         broken_link_callback: BrokenLinkCallback<'a>,
     ) -> Parser<'a> {
-        let lut = create_lut(&options);
-        let first_pass = FirstPass::new(text, options, &lut);
-        let (mut tree, allocs) = first_pass.run();
+        let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
         let link_stack = Default::default();
@@ -1273,62 +1271,8 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-fn special_bytes(options: &Options) -> [bool; 256] {
-    let mut bytes = [false; 256];
-    let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
-    ];
-
-    for &byte in &standard_bytes {
-        bytes[byte as usize] = true;
-    }
-    if options.contains(Options::ENABLE_TABLES) {
-        bytes[b'|' as usize] = true;
-    }
-    if options.contains(Options::ENABLE_STRIKETHROUGH) {
-        bytes[b'~' as usize] = true;
-    }
-    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
-        for &byte in &[b'.', b'-', b'"', b'\''] {
-            bytes[byte as usize] = true;
-        }
-    }
-
-    bytes
-}
-
-pub(crate) fn create_lut(options: &Options) -> LookupTable {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
-    {
-        LookupTable {
-            simd: crate::simd::compute_lookup(options),
-            scalar: special_bytes(options),
-        }
-    }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
-    {
-        special_bytes(options)
-    }
-}
-
 pub type BrokenLinkCallback<'a> =
     Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
-
-pub(crate) enum LoopInstruction<T> {
-    /// Continue looking for more special bytes, but skip next few bytes.
-    ContinueAndSkip(usize),
-    /// Break looping immediately, returning with the given index and value.
-    BreakAtWith(usize, T),
-}
-
-#[cfg(all(target_arch = "x86_64", feature = "simd"))]
-pub(crate) struct LookupTable {
-    pub simd: [u8; 16],
-    pub scalar: [bool; 256],
-}
-
-#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
-pub(crate) type LookupTable = [bool; 256];
 
 /// Markdown event and source range iterator.
 ///

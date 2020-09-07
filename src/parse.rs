@@ -127,460 +127,6 @@ pub struct BrokenLink<'a> {
     pub reference: &'a str,
 }
 
-/// Returns number of containers scanned.
-pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
-    let mut i = 0;
-    for &node_ix in tree.walk_spine() {
-        match tree[node_ix].item.body {
-            ItemBody::BlockQuote => {
-                let save = line_start.clone();
-                if !line_start.scan_blockquote_marker() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::ListItem(indent) => {
-                let save = line_start.clone();
-                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            _ => (),
-        }
-        i += 1;
-    }
-    i
-}
-
-impl<'a> Tree<Item> {
-    pub fn append_text(&mut self, start: usize, end: usize) {
-        if end > start {
-            if let Some(ix) = self.cur() {
-                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
-                    self[ix].item.end = end;
-                    return;
-                }
-            }
-            self.append(Item {
-                start,
-                end,
-                body: ItemBody::Text,
-            });
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-struct InlineEl {
-    start: TreeIndex, // offset of tree node
-    count: usize,
-    c: u8,      // b'*' or b'_'
-    both: bool, // can both open and close
-}
-
-#[derive(Debug, Clone, Default)]
-struct InlineStack {
-    stack: Vec<InlineEl>,
-    // Lower bounds for matching indices in the stack. For example
-    // a strikethrough delimiter will never match with any element
-    // in the stack with index smaller than
-    // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 7],
-}
-
-impl InlineStack {
-    /// These are indices into the lower bounds array.
-    /// Not both refers to the property that the delimiter can not both
-    /// be opener as a closer.
-    const UNDERSCORE_NOT_BOTH: usize = 0;
-    const ASTERISK_NOT_BOTH: usize = 1;
-    const ASTERISK_BASE: usize = 2;
-    const TILDES: usize = 5;
-    const UNDERSCORE_BOTH: usize = 6;
-
-    fn pop_all(&mut self, tree: &mut Tree<Item>) {
-        for el in self.stack.drain(..) {
-            for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text;
-            }
-        }
-        self.lower_bounds = [0; 7];
-    }
-
-    fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
-        if c == b'_' {
-            if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BOTH]
-            } else {
-                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH]
-            }
-        } else if c == b'*' {
-            let mod3_lower = self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3];
-            if both {
-                mod3_lower
-            } else {
-                min(
-                    mod3_lower,
-                    self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH],
-                )
-            }
-        } else {
-            self.lower_bounds[InlineStack::TILDES]
-        }
-    }
-
-    fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
-        if c == b'_' {
-            if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BOTH] = new_bound;
-            } else {
-                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
-            }
-        } else if c == b'*' {
-            self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3] = new_bound;
-            if !both {
-                self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH] = new_bound;
-            }
-        } else {
-            self.lower_bounds[InlineStack::TILDES] = new_bound;
-        }
-    }
-
-    fn find_match(
-        &mut self,
-        tree: &mut Tree<Item>,
-        c: u8,
-        count: usize,
-        both: bool,
-    ) -> Option<InlineEl> {
-        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
-        let res = self.stack[lowerbound..]
-            .iter()
-            .cloned()
-            .enumerate()
-            .rfind(|(_, el)| {
-                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
-            });
-
-        if let Some((matching_ix, matching_el)) = res {
-            let matching_ix = matching_ix + lowerbound;
-            for el in &self.stack[(matching_ix + 1)..] {
-                for i in 0..el.count {
-                    tree[el.start + i].item.body = ItemBody::Text;
-                }
-            }
-            self.stack.truncate(matching_ix);
-            Some(matching_el)
-        } else {
-            self.set_lowerbound(c, count, both, self.stack.len());
-            None
-        }
-    }
-
-    fn push(&mut self, el: InlineEl) {
-        self.stack.push(el)
-    }
-}
-
-#[derive(Debug, Clone)]
-enum RefScan<'a> {
-    // label, source ix of label end
-    LinkLabel(CowStr<'a>, usize),
-    // contains next node index
-    Collapsed(Option<TreeIndex>),
-    Failed,
-}
-
-/// Skips forward within a block to a node which spans (ends inclusive) the given
-/// index into the source.
-fn scan_nodes_to_ix(
-    tree: &Tree<Item>,
-    mut node: Option<TreeIndex>,
-    ix: usize,
-) -> Option<TreeIndex> {
-    while let Some(node_ix) = node {
-        if tree[node_ix].item.end <= ix {
-            node = tree[node_ix].next;
-        } else {
-            break;
-        }
-    }
-    node
-}
-
-/// Scans an inline link label, which cannot be interrupted.
-/// Returns number of bytes (including brackets) and label on success.
-fn scan_link_label<'text, 'tree>(
-    tree: &'tree Tree<Item>,
-    text: &'text str,
-    allow_footnote_refs: bool,
-) -> Option<(usize, ReferenceLabel<'text>)> {
-    let bytes = &text.as_bytes();
-    if bytes.len() < 2 || bytes[0] != b'[' {
-        return None;
-    }
-    let linebreak_handler = |bytes: &[u8]| {
-        let mut line_start = LineStart::new(bytes);
-        let _ = scan_containers(tree, &mut line_start);
-        Some(line_start.bytes_scanned())
-    };
-    let pair = if allow_footnote_refs && b'^' == bytes[1] {
-        let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
-        (byte_index + 2, ReferenceLabel::Footnote(cow))
-    } else {
-        let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
-        (byte_index + 1, ReferenceLabel::Link(cow))
-    };
-    Some(pair)
-}
-
-fn scan_reference<'a, 'b>(
-    tree: &'a Tree<Item>,
-    text: &'b str,
-    cur: Option<TreeIndex>,
-    allow_footnote_refs: bool,
-) -> RefScan<'b> {
-    let cur_ix = match cur {
-        None => return RefScan::Failed,
-        Some(cur_ix) => cur_ix,
-    };
-    let start = tree[cur_ix].item.start;
-    let tail = &text.as_bytes()[start..];
-
-    if tail.starts_with(b"[]") {
-        let closing_node = tree[cur_ix].next.unwrap();
-        RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) =
-        scan_link_label(tree, &text[start..], allow_footnote_refs)
-    {
-        RefScan::LinkLabel(label, start + ix)
-    } else {
-        RefScan::Failed
-    }
-}
-
-#[derive(Clone, Default)]
-struct LinkStack {
-    inner: Vec<LinkStackEl>,
-    disabled_ix: usize,
-}
-
-impl LinkStack {
-    fn push(&mut self, el: LinkStackEl) {
-        self.inner.push(el);
-    }
-
-    fn pop(&mut self) -> Option<LinkStackEl> {
-        let el = self.inner.pop();
-        self.disabled_ix = std::cmp::min(self.disabled_ix, self.inner.len());
-        el
-    }
-
-    fn clear(&mut self) {
-        self.inner.clear();
-        self.disabled_ix = 0;
-    }
-
-    fn disable_all_links(&mut self) {
-        for el in &mut self.inner[self.disabled_ix..] {
-            if el.ty == LinkStackTy::Link {
-                el.ty = LinkStackTy::Disabled;
-            }
-        }
-        self.disabled_ix = self.inner.len();
-    }
-}
-
-#[derive(Clone, Debug)]
-struct LinkStackEl {
-    node: TreeIndex,
-    ty: LinkStackTy,
-}
-
-#[derive(PartialEq, Clone, Debug)]
-enum LinkStackTy {
-    Link,
-    Image,
-    Disabled,
-}
-
-#[derive(Clone)]
-pub(crate) struct LinkDef<'a> {
-    pub dest: CowStr<'a>,
-    pub title: Option<CowStr<'a>>,
-}
-
-/// Tracks tree indices of code span delimiters of each length. It should prevent
-/// quadratic scanning behaviours by providing (amortized) constant time lookups.
-struct CodeDelims {
-    inner: HashMap<usize, VecDeque<TreeIndex>>,
-    seen_first: bool,
-}
-
-impl CodeDelims {
-    fn new() -> Self {
-        Self {
-            inner: Default::default(),
-            seen_first: false,
-        }
-    }
-
-    fn insert(&mut self, count: usize, ix: TreeIndex) {
-        if self.seen_first {
-            self.inner
-                .entry(count)
-                .or_insert_with(Default::default)
-                .push_back(ix);
-        } else {
-            // Skip the first insert, since that delimiter will always
-            // be an opener and not a closer.
-            self.seen_first = true;
-        }
-    }
-
-    fn is_populated(&self) -> bool {
-        !self.inner.is_empty()
-    }
-
-    fn find(&mut self, open_ix: TreeIndex, count: usize) -> Option<TreeIndex> {
-        while let Some(ix) = self.inner.get_mut(&count)?.pop_front() {
-            if ix > open_ix {
-                return Some(ix);
-            }
-        }
-        None
-    }
-
-    fn clear(&mut self) {
-        self.inner.clear();
-        self.seen_first = false;
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct LinkIndex(usize);
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct CowIndex(usize);
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct AlignmentIndex(usize);
-
-#[derive(Clone)]
-pub(crate) struct Allocations<'a> {
-    pub refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
-    cows: Vec<CowStr<'a>>,
-    alignments: Vec<Vec<Alignment>>,
-}
-
-impl<'a> Allocations<'a> {
-    pub fn new() -> Self {
-        Self {
-            refdefs: HashMap::new(),
-            links: Vec::with_capacity(128),
-            cows: Vec::new(),
-            alignments: Vec::new(),
-        }
-    }
-
-    pub fn allocate_cow(&mut self, cow: CowStr<'a>) -> CowIndex {
-        let ix = self.cows.len();
-        self.cows.push(cow);
-        CowIndex(ix)
-    }
-
-    pub fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
-        let ix = self.links.len();
-        self.links.push((ty, url, title));
-        LinkIndex(ix)
-    }
-
-    pub fn allocate_alignment(&mut self, alignment: Vec<Alignment>) -> AlignmentIndex {
-        let ix = self.alignments.len();
-        self.alignments.push(alignment);
-        AlignmentIndex(ix)
-    }
-}
-
-impl<'a> Index<CowIndex> for Allocations<'a> {
-    type Output = CowStr<'a>;
-
-    fn index(&self, ix: CowIndex) -> &Self::Output {
-        self.cows.index(ix.0)
-    }
-}
-
-impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
-
-    fn index(&self, ix: LinkIndex) -> &Self::Output {
-        self.links.index(ix.0)
-    }
-}
-
-impl<'a> Index<AlignmentIndex> for Allocations<'a> {
-    type Output = Vec<Alignment>;
-
-    fn index(&self, ix: AlignmentIndex) -> &Self::Output {
-        self.alignments.index(ix.0)
-    }
-}
-
-/// A struct containing information on the reachability of certain inline HTML
-/// elements. In particular, for cdata elements (`<![CDATA[`), processing
-/// elements (`<?`) and declarations (`<!DECLARATION`). The respectives usizes
-/// represent the indices before which a scan will always fail and can hence
-/// be skipped.
-#[derive(Clone, Default)]
-pub(crate) struct HtmlScanGuard {
-    pub cdata: usize,
-    pub processing: usize,
-    pub declaration: usize,
-}
-
-fn special_bytes(options: &Options) -> [bool; 256] {
-    let mut bytes = [false; 256];
-    let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
-    ];
-
-    for &byte in &standard_bytes {
-        bytes[byte as usize] = true;
-    }
-    if options.contains(Options::ENABLE_TABLES) {
-        bytes[b'|' as usize] = true;
-    }
-    if options.contains(Options::ENABLE_STRIKETHROUGH) {
-        bytes[b'~' as usize] = true;
-    }
-    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
-        for &byte in &[b'.', b'-', b'"', b'\''] {
-            bytes[byte as usize] = true;
-        }
-    }
-
-    bytes
-}
-
-pub(crate) fn create_lut(options: &Options) -> LookupTable {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
-    {
-        LookupTable {
-            simd: crate::simd::compute_lookup(options),
-            scalar: special_bytes(options),
-        }
-    }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
-    {
-        special_bytes(options)
-    }
-}
-
-pub type BrokenLinkCallback<'a> =
-    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
-
 /// Markdown event iterator.
 pub struct Parser<'a> {
     text: &'a str,
@@ -1313,6 +859,460 @@ impl<'a> Parser<'a> {
         OffsetIter { inner: self }
     }
 }
+
+/// Returns number of containers scanned.
+pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
+    let mut i = 0;
+    for &node_ix in tree.walk_spine() {
+        match tree[node_ix].item.body {
+            ItemBody::BlockQuote => {
+                let save = line_start.clone();
+                if !line_start.scan_blockquote_marker() {
+                    *line_start = save;
+                    break;
+                }
+            }
+            ItemBody::ListItem(indent) => {
+                let save = line_start.clone();
+                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                    *line_start = save;
+                    break;
+                }
+            }
+            _ => (),
+        }
+        i += 1;
+    }
+    i
+}
+
+impl<'a> Tree<Item> {
+    pub fn append_text(&mut self, start: usize, end: usize) {
+        if end > start {
+            if let Some(ix) = self.cur() {
+                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
+                    self[ix].item.end = end;
+                    return;
+                }
+            }
+            self.append(Item {
+                start,
+                end,
+                body: ItemBody::Text,
+            });
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct InlineEl {
+    start: TreeIndex, // offset of tree node
+    count: usize,
+    c: u8,      // b'*' or b'_'
+    both: bool, // can both open and close
+}
+
+#[derive(Debug, Clone, Default)]
+struct InlineStack {
+    stack: Vec<InlineEl>,
+    // Lower bounds for matching indices in the stack. For example
+    // a strikethrough delimiter will never match with any element
+    // in the stack with index smaller than
+    // `lower_bounds[InlineStack::TILDES]`.
+    lower_bounds: [usize; 7],
+}
+
+impl InlineStack {
+    /// These are indices into the lower bounds array.
+    /// Not both refers to the property that the delimiter can not both
+    /// be opener as a closer.
+    const UNDERSCORE_NOT_BOTH: usize = 0;
+    const ASTERISK_NOT_BOTH: usize = 1;
+    const ASTERISK_BASE: usize = 2;
+    const TILDES: usize = 5;
+    const UNDERSCORE_BOTH: usize = 6;
+
+    fn pop_all(&mut self, tree: &mut Tree<Item>) {
+        for el in self.stack.drain(..) {
+            for i in 0..el.count {
+                tree[el.start + i].item.body = ItemBody::Text;
+            }
+        }
+        self.lower_bounds = [0; 7];
+    }
+
+    fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
+        if c == b'_' {
+            if both {
+                self.lower_bounds[InlineStack::UNDERSCORE_BOTH]
+            } else {
+                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH]
+            }
+        } else if c == b'*' {
+            let mod3_lower = self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3];
+            if both {
+                mod3_lower
+            } else {
+                min(
+                    mod3_lower,
+                    self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH],
+                )
+            }
+        } else {
+            self.lower_bounds[InlineStack::TILDES]
+        }
+    }
+
+    fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
+        if c == b'_' {
+            if both {
+                self.lower_bounds[InlineStack::UNDERSCORE_BOTH] = new_bound;
+            } else {
+                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
+            }
+        } else if c == b'*' {
+            self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3] = new_bound;
+            if !both {
+                self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH] = new_bound;
+            }
+        } else {
+            self.lower_bounds[InlineStack::TILDES] = new_bound;
+        }
+    }
+
+    fn find_match(
+        &mut self,
+        tree: &mut Tree<Item>,
+        c: u8,
+        count: usize,
+        both: bool,
+    ) -> Option<InlineEl> {
+        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
+        let res = self.stack[lowerbound..]
+            .iter()
+            .cloned()
+            .enumerate()
+            .rfind(|(_, el)| {
+                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
+            });
+
+        if let Some((matching_ix, matching_el)) = res {
+            let matching_ix = matching_ix + lowerbound;
+            for el in &self.stack[(matching_ix + 1)..] {
+                for i in 0..el.count {
+                    tree[el.start + i].item.body = ItemBody::Text;
+                }
+            }
+            self.stack.truncate(matching_ix);
+            Some(matching_el)
+        } else {
+            self.set_lowerbound(c, count, both, self.stack.len());
+            None
+        }
+    }
+
+    fn push(&mut self, el: InlineEl) {
+        self.stack.push(el)
+    }
+}
+
+#[derive(Debug, Clone)]
+enum RefScan<'a> {
+    // label, source ix of label end
+    LinkLabel(CowStr<'a>, usize),
+    // contains next node index
+    Collapsed(Option<TreeIndex>),
+    Failed,
+}
+
+/// Skips forward within a block to a node which spans (ends inclusive) the given
+/// index into the source.
+fn scan_nodes_to_ix(
+    tree: &Tree<Item>,
+    mut node: Option<TreeIndex>,
+    ix: usize,
+) -> Option<TreeIndex> {
+    while let Some(node_ix) = node {
+        if tree[node_ix].item.end <= ix {
+            node = tree[node_ix].next;
+        } else {
+            break;
+        }
+    }
+    node
+}
+
+/// Scans an inline link label, which cannot be interrupted.
+/// Returns number of bytes (including brackets) and label on success.
+fn scan_link_label<'text, 'tree>(
+    tree: &'tree Tree<Item>,
+    text: &'text str,
+    allow_footnote_refs: bool,
+) -> Option<(usize, ReferenceLabel<'text>)> {
+    let bytes = &text.as_bytes();
+    if bytes.len() < 2 || bytes[0] != b'[' {
+        return None;
+    }
+    let linebreak_handler = |bytes: &[u8]| {
+        let mut line_start = LineStart::new(bytes);
+        let _ = scan_containers(tree, &mut line_start);
+        Some(line_start.bytes_scanned())
+    };
+    let pair = if allow_footnote_refs && b'^' == bytes[1] {
+        let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
+        (byte_index + 2, ReferenceLabel::Footnote(cow))
+    } else {
+        let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
+        (byte_index + 1, ReferenceLabel::Link(cow))
+    };
+    Some(pair)
+}
+
+fn scan_reference<'a, 'b>(
+    tree: &'a Tree<Item>,
+    text: &'b str,
+    cur: Option<TreeIndex>,
+    allow_footnote_refs: bool,
+) -> RefScan<'b> {
+    let cur_ix = match cur {
+        None => return RefScan::Failed,
+        Some(cur_ix) => cur_ix,
+    };
+    let start = tree[cur_ix].item.start;
+    let tail = &text.as_bytes()[start..];
+
+    if tail.starts_with(b"[]") {
+        let closing_node = tree[cur_ix].next.unwrap();
+        RefScan::Collapsed(tree[closing_node].next)
+    } else if let Some((ix, ReferenceLabel::Link(label))) =
+        scan_link_label(tree, &text[start..], allow_footnote_refs)
+    {
+        RefScan::LinkLabel(label, start + ix)
+    } else {
+        RefScan::Failed
+    }
+}
+
+#[derive(Clone, Default)]
+struct LinkStack {
+    inner: Vec<LinkStackEl>,
+    disabled_ix: usize,
+}
+
+impl LinkStack {
+    fn push(&mut self, el: LinkStackEl) {
+        self.inner.push(el);
+    }
+
+    fn pop(&mut self) -> Option<LinkStackEl> {
+        let el = self.inner.pop();
+        self.disabled_ix = std::cmp::min(self.disabled_ix, self.inner.len());
+        el
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.disabled_ix = 0;
+    }
+
+    fn disable_all_links(&mut self) {
+        for el in &mut self.inner[self.disabled_ix..] {
+            if el.ty == LinkStackTy::Link {
+                el.ty = LinkStackTy::Disabled;
+            }
+        }
+        self.disabled_ix = self.inner.len();
+    }
+}
+
+#[derive(Clone, Debug)]
+struct LinkStackEl {
+    node: TreeIndex,
+    ty: LinkStackTy,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+enum LinkStackTy {
+    Link,
+    Image,
+    Disabled,
+}
+
+#[derive(Clone)]
+pub(crate) struct LinkDef<'a> {
+    pub dest: CowStr<'a>,
+    pub title: Option<CowStr<'a>>,
+}
+
+/// Tracks tree indices of code span delimiters of each length. It should prevent
+/// quadratic scanning behaviours by providing (amortized) constant time lookups.
+struct CodeDelims {
+    inner: HashMap<usize, VecDeque<TreeIndex>>,
+    seen_first: bool,
+}
+
+impl CodeDelims {
+    fn new() -> Self {
+        Self {
+            inner: Default::default(),
+            seen_first: false,
+        }
+    }
+
+    fn insert(&mut self, count: usize, ix: TreeIndex) {
+        if self.seen_first {
+            self.inner
+                .entry(count)
+                .or_insert_with(Default::default)
+                .push_back(ix);
+        } else {
+            // Skip the first insert, since that delimiter will always
+            // be an opener and not a closer.
+            self.seen_first = true;
+        }
+    }
+
+    fn is_populated(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
+    fn find(&mut self, open_ix: TreeIndex, count: usize) -> Option<TreeIndex> {
+        while let Some(ix) = self.inner.get_mut(&count)?.pop_front() {
+            if ix > open_ix {
+                return Some(ix);
+            }
+        }
+        None
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.seen_first = false;
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct LinkIndex(usize);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct CowIndex(usize);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct AlignmentIndex(usize);
+
+#[derive(Clone)]
+pub(crate) struct Allocations<'a> {
+    pub refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
+    cows: Vec<CowStr<'a>>,
+    alignments: Vec<Vec<Alignment>>,
+}
+
+impl<'a> Allocations<'a> {
+    pub fn new() -> Self {
+        Self {
+            refdefs: HashMap::new(),
+            links: Vec::with_capacity(128),
+            cows: Vec::new(),
+            alignments: Vec::new(),
+        }
+    }
+
+    pub fn allocate_cow(&mut self, cow: CowStr<'a>) -> CowIndex {
+        let ix = self.cows.len();
+        self.cows.push(cow);
+        CowIndex(ix)
+    }
+
+    pub fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
+        let ix = self.links.len();
+        self.links.push((ty, url, title));
+        LinkIndex(ix)
+    }
+
+    pub fn allocate_alignment(&mut self, alignment: Vec<Alignment>) -> AlignmentIndex {
+        let ix = self.alignments.len();
+        self.alignments.push(alignment);
+        AlignmentIndex(ix)
+    }
+}
+
+impl<'a> Index<CowIndex> for Allocations<'a> {
+    type Output = CowStr<'a>;
+
+    fn index(&self, ix: CowIndex) -> &Self::Output {
+        self.cows.index(ix.0)
+    }
+}
+
+impl<'a> Index<LinkIndex> for Allocations<'a> {
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+
+    fn index(&self, ix: LinkIndex) -> &Self::Output {
+        self.links.index(ix.0)
+    }
+}
+
+impl<'a> Index<AlignmentIndex> for Allocations<'a> {
+    type Output = Vec<Alignment>;
+
+    fn index(&self, ix: AlignmentIndex) -> &Self::Output {
+        self.alignments.index(ix.0)
+    }
+}
+
+/// A struct containing information on the reachability of certain inline HTML
+/// elements. In particular, for cdata elements (`<![CDATA[`), processing
+/// elements (`<?`) and declarations (`<!DECLARATION`). The respectives usizes
+/// represent the indices before which a scan will always fail and can hence
+/// be skipped.
+#[derive(Clone, Default)]
+pub(crate) struct HtmlScanGuard {
+    pub cdata: usize,
+    pub processing: usize,
+    pub declaration: usize,
+}
+
+fn special_bytes(options: &Options) -> [bool; 256] {
+    let mut bytes = [false; 256];
+    let standard_bytes = [
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+    ];
+
+    for &byte in &standard_bytes {
+        bytes[byte as usize] = true;
+    }
+    if options.contains(Options::ENABLE_TABLES) {
+        bytes[b'|' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        bytes[b'~' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
+        for &byte in &[b'.', b'-', b'"', b'\''] {
+            bytes[byte as usize] = true;
+        }
+    }
+
+    bytes
+}
+
+pub(crate) fn create_lut(options: &Options) -> LookupTable {
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        LookupTable {
+            simd: crate::simd::compute_lookup(options),
+            scalar: special_bytes(options),
+        }
+    }
+    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    {
+        special_bytes(options)
+    }
+}
+
+pub type BrokenLinkCallback<'a> =
+    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
 
 pub(crate) enum LoopInstruction<T> {
     /// Continue looking for more special bytes, but skip next few bytes.

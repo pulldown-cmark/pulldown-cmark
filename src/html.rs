@@ -24,9 +24,9 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 
 use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
-use crate::parse::Event::*;
-use crate::parse::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 use crate::strings::CowStr;
+use crate::Event::*;
+use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 
 enum TableState {
     Head,

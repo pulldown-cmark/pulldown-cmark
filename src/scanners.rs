@@ -24,9 +24,10 @@ use std::char;
 use std::convert::TryInto;
 
 use crate::entities;
-use crate::parse::{Alignment, HtmlScanGuard, LinkType};
+use crate::parse::HtmlScanGuard;
 pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::strings::CowStr;
+use crate::{Alignment, LinkType};
 
 use memchr::memchr;
 

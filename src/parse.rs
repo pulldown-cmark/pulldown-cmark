@@ -156,7 +156,7 @@ pub enum Event<'a> {
     /// A text node.
     Text(CowStr<'a>),
     /// A text node of math
-    MathText(CowStr<'a>),
+    MathText(CowStr<'a>, bool), // text, inline
     /// An inline code node.
     Code(CowStr<'a>),
     /// An HTML node.
@@ -841,6 +841,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                 body: ItemBody::MaybeMath(preceded_by_char, followed_by_char),
                             });
                         }
+                        begin_text = ix + 1;
                         LoopInstruction::ContinueAndSkip(0)
                     }
                     b'`' => {
@@ -2358,7 +2359,6 @@ impl<'a> Parser<'a> {
                             let span_start = self.tree[open].item.end;
                             let span_end = self.tree[close].item.start;
                             let cow = self.text[span_start..span_end].into();
-                            println!("{}", &self.text[span_start..span_end]);
 
                             self.tree[open].item.body =
                                 ItemBody::Math(self.allocs.allocate_cow(cow));
@@ -2367,6 +2367,9 @@ impl<'a> Parser<'a> {
                             break;
                         }
                         scan = self.tree[scan_ix].next;
+                    }
+                    if scan == None {
+                        self.tree[cur_ix].item.body = ItemBody::Text;
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
@@ -3076,9 +3079,9 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::MathText => return Event::MathText(text[item.start..item.end].into()),
+        ItemBody::MathText => return Event::MathText(text[item.start..item.end].into(), false),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::Math(cow_ix) => return Event::MathText(allocs[cow_ix].clone()),
+        ItemBody::Math(cow_ix) => return Event::MathText(allocs[cow_ix].clone(), true),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),

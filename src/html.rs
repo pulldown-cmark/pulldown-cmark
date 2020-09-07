@@ -97,9 +97,14 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
-                MathText(text) => {
-                    self.writer.write_str(&text)?;
-                    self.end_newline = text.ends_with('\n');
+                MathText(text, inline) => {
+                    if inline {
+                        self.write("$")?;
+                    }
+                    self.write(&text)?;
+                    if inline {
+                        self.write("$")?;
+                    }
                 }
                 Code(text) => {
                     self.write("<code>")?;
@@ -378,7 +383,8 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }
-                MathText(text) => {
+                MathText(text, is_inline) => {
+                    assert!(!is_inline);
                     self.writer.write_str(&text)?;
                     self.end_newline = text.ends_with('\n');
                 }

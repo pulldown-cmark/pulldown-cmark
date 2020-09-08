@@ -2349,7 +2349,8 @@ impl<'a> Parser<'a> {
                         }
                     }
                 }
-                ItemBody::MaybeMath(_, true) => { // folowed by char
+                ItemBody::MaybeMath(_, true) => {
+                    // folowed by char
                     let mut scan = self.tree[cur_ix].next;
                     while let Some(scan_ix) = scan {
                         if let ItemBody::MaybeMath(true, _) = self.tree[scan_ix].item.body {

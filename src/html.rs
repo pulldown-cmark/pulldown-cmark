@@ -85,6 +85,7 @@ where
 
     pub fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
+            // println!("{:?}", event);
             match event {
                 Start(tag) => {
                     self.start_tag(tag)?;
@@ -95,6 +96,15 @@ where
                 Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
+                }
+                MathText(text, inline) => {
+                    if inline {
+                        self.write("$")?;
+                    }
+                    self.write(&text)?;
+                    if inline {
+                        self.write("$")?;
+                    }
                 }
                 Code(text) => {
                     self.write("<code>")?;
@@ -209,6 +219,7 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
+            Tag::MathBlock => self.write("\\[\n"),
             Tag::List(Some(1)) => {
                 if self.end_newline {
                     self.write("<ol>\n")
@@ -324,6 +335,9 @@ where
             Tag::CodeBlock(_) => {
                 self.write("</code></pre>\n")?;
             }
+            Tag::MathBlock => {
+                self.write("\\]\n")?;
+            }
             Tag::List(Some(_)) => {
                 self.write("</ol>\n")?;
             }
@@ -367,6 +381,11 @@ where
                 }
                 Html(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
+                    self.end_newline = text.ends_with('\n');
+                }
+                MathText(text, is_inline) => {
+                    assert!(!is_inline);
+                    self.writer.write_str(&text)?;
                     self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak | Rule => {

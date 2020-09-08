@@ -75,6 +75,9 @@ pub enum Tag<'a> {
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
+    /// A math block
+    MathBlock,
+
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
     List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
@@ -152,6 +155,8 @@ pub enum Event<'a> {
     End(Tag<'a>),
     /// A text node.
     Text(CowStr<'a>),
+    /// A text node of math
+    MathText(CowStr<'a>, bool), // text, inline
     /// An inline code node.
     Code(CowStr<'a>),
     /// An HTML node.
@@ -189,6 +194,7 @@ bitflags! {
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
+        const ENABLE_MATH = 1 << 6;
     }
 }
 
@@ -202,7 +208,9 @@ struct Item {
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum ItemBody {
     Paragraph,
+    // escape or not
     Text,
+    MathText,
     SoftBreak,
     HardBreak,
 
@@ -213,6 +221,11 @@ enum ItemBody {
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceeded by backslash
+    /// Anything between two $ characters will be treated as TeX math. The opening $ must have a character immediately to its right,
+    /// while the closing $ must have a character immediately to its left. Thus, $20,000 and $30,000 won’t parse as math.
+    /// If for some reason you need to enclose text in literal $ characters,
+    /// backslash-escape them and they won’t be treated as math delimiters.
+    MaybeMath(bool, bool), // preceded by char, follow by char
     MaybeHtml,
     MaybeLinkOpen,
     // bool indicates whether or not the preceeding section could be a reference
@@ -224,6 +237,7 @@ enum ItemBody {
     Strong,
     Strikethrough,
     Code(CowIndex),
+    Math(CowIndex),
     Link(LinkIndex),
     Image(LinkIndex),
     FootnoteReference(CowIndex),
@@ -233,6 +247,7 @@ enum ItemBody {
     Heading(u32), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
+    MathBlock,
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
@@ -259,6 +274,7 @@ impl<'a> ItemBody {
             | ItemBody::MaybeSmartQuote(..)
             | ItemBody::MaybeHtml
             | ItemBody::MaybeCode(..)
+            | ItemBody::MaybeMath(..)
             | ItemBody::MaybeLinkOpen
             | ItemBody::MaybeLinkClose(..)
             | ItemBody::MaybeImage => true,
@@ -471,6 +487,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // try to read trailing whitespace or it will register as a completely blank line
             // TODO: shouldn't we do this for all block level items?
             return ix + scan_blank_line(&bytes[ix..]).unwrap_or(0);
+        }
+
+        if self.options.contains(Options::ENABLE_MATH) {
+            if let Some((n, block_indicator)) = scan_math(&bytes[ix..]) {
+                return self.parse_math_block(ix, indent, n, block_indicator);
+            }
         }
 
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
@@ -807,6 +829,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                         LoopInstruction::ContinueAndSkip(count - 1)
                     }
+                    b'$' => {
+                        self.tree.append_text(begin_text, ix);
+                        let preceded_by_char = ix > 0 && !is_ascii_whitespace(bytes[ix - 1]);
+                        let followed_by_char =
+                            ix + 1 < self.text.len() && !is_ascii_whitespace(bytes[ix + 1]);
+                        if preceded_by_char || followed_by_char {
+                            self.tree.append(Item {
+                                start: ix,
+                                end: ix + 1,
+                                body: ItemBody::MaybeMath(preceded_by_char, followed_by_char),
+                            });
+                        }
+                        begin_text = ix + 1;
+                        LoopInstruction::ContinueAndSkip(0)
+                    }
                     b'`' => {
                         self.tree.append_text(begin_text, ix);
                         let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
@@ -1093,6 +1130,69 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         self.pop(end_ix);
         ix
+    }
+
+    fn parse_math_block(
+        &mut self,
+        start_ix: usize,
+        indent: usize,
+        _n_indicator_char: usize,
+        indicator: MathBlockIndicator,
+    ) -> usize {
+        let bytes = self.text.as_bytes();
+        // skip the current line
+        let mut ix = start_ix + scan_nextline(&bytes[start_ix..]);
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // will get set later
+            body: ItemBody::MathBlock,
+        });
+        self.tree.push();
+        loop {
+            let mut line_start = LineStart::new(&bytes[ix..]);
+            let n_containers = scan_containers(&self.tree, &mut line_start);
+            if n_containers < self.tree.spine_len() {
+                break;
+            }
+            line_start.scan_space(indent);
+            let mut close_line_start = line_start.clone();
+            // the closing math_block may be indented up to three spaces
+            if !close_line_start.scan_space(4) {
+                let close_ix = ix + close_line_start.bytes_scanned();
+                if let Some(n) =
+                    scan_closing_math_block(&bytes[close_ix..], indicator, _n_indicator_char)
+                {
+                    ix = close_ix + n;
+                    break;
+                }
+            }
+            let remaining_space = line_start.remaining_space();
+            ix += line_start.bytes_scanned();
+            let next_ix = ix + scan_nextline(&bytes[ix..]);
+            self.append_math_text(remaining_space, ix, next_ix);
+            ix = next_ix;
+        }
+        self.pop(ix);
+        // try to read trailing whitespace or it will register as a completely blank line
+        ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
+    }
+
+    fn append_math_text(&mut self, remaining_space: usize, start: usize, end: usize) {
+        if remaining_space > 0 {
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
+            self.tree.append(Item {
+                start,
+                end: start,
+                body: ItemBody::SynthesizeText(cow_ix),
+            });
+        }
+        if self.text.as_bytes()[end - 2] == b'\r' {
+            // Normalize CRLF to LF
+            self.tree.append_math_text(start, end - 2);
+            self.tree.append_math_text(end - 1, end);
+        } else {
+            self.tree.append_math_text(start, end);
+        }
     }
 
     fn parse_fenced_code_block(
@@ -1514,6 +1614,21 @@ impl<'a> Tree<Item> {
                 start,
                 end,
                 body: ItemBody::Text,
+            });
+        }
+    }
+    fn append_math_text(&mut self, start: usize, end: usize) {
+        if end > start {
+            if let Some(ix) = self.cur() {
+                if ItemBody::MathText == self[ix].item.body && self[ix].item.end == start {
+                    self[ix].item.end = end;
+                    return;
+                }
+            }
+            self.append(Item {
+                start,
+                end,
+                body: ItemBody::MathText,
             });
         }
     }
@@ -2026,6 +2141,10 @@ fn special_bytes(options: &Options) -> [bool; 256] {
             bytes[byte as usize] = true;
         }
     }
+    if options.contains(Options::ENABLE_MATH) {
+        bytes[b'$' as usize] = true;
+    }
+    //TOOD: handle \( and \)
 
     bytes
 }
@@ -2228,6 +2347,30 @@ impl<'a> Parser<'a> {
                         if scan == None {
                             self.tree[cur_ix].item.body = ItemBody::Text;
                         }
+                    }
+                }
+                ItemBody::MaybeMath(_, true) => {
+                    // folowed by char
+                    let mut scan = self.tree[cur_ix].next;
+                    while let Some(scan_ix) = scan {
+                        if let ItemBody::MaybeMath(true, _) = self.tree[scan_ix].item.body {
+                            let open = cur_ix;
+                            let close = scan_ix;
+
+                            let span_start = self.tree[open].item.end;
+                            let span_end = self.tree[close].item.start;
+                            let cow = self.text[span_start..span_end].into();
+
+                            self.tree[open].item.body =
+                                ItemBody::Math(self.allocs.allocate_cow(cow));
+                            self.tree[open].item.end = self.tree[close].item.end;
+                            self.tree[open].next = self.tree[close].next;
+                            break;
+                        }
+                        scan = self.tree[scan_ix].next;
+                    }
+                    if scan == None {
+                        self.tree[cur_ix].item.body = ItemBody::Text;
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
@@ -2914,6 +3057,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
+        ItemBody::MathBlock => Tag::MathBlock,
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
@@ -2936,7 +3080,9 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
+        ItemBody::MathText => return Event::MathText(text[item.start..item.end].into(), false),
         ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
+        ItemBody::Math(cow_ix) => return Event::MathText(allocs[cow_ix].clone(), true),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
@@ -2965,6 +3111,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
+        ItemBody::MathBlock => Tag::MathBlock,
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
         ItemBody::List(_, c, listitem_start) => {
@@ -3364,6 +3511,25 @@ mod test {
         for (ev, _range) in parser.into_offset_iter() {
             match ev {
                 Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
+                    found += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(found, 1);
+    }
+    #[test]
+    fn math_block_bracket() {
+        let md = r#"$$
+\frac{1}{2}
+$$"#;
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_MATH);
+        let parser = Parser::new_ext(md, opts);
+        let mut found = 0;
+        for (ev, _range) in parser.into_offset_iter() {
+            match ev {
+                Event::Start(Tag::MathBlock) => {
                     found += 1;
                 }
                 _ => {}

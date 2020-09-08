@@ -25,12 +25,12 @@ use unicase::UniCase;
 use crate::scanners::{is_ascii_whitespace, scan_eol};
 use crate::strings::CowStr;
 
-pub enum ReferenceLabel<'a> {
+pub(crate) enum ReferenceLabel<'a> {
     Link(CowStr<'a>),
     Footnote(CowStr<'a>),
 }
 
-pub type LinkLabel<'a> = UniCase<CowStr<'a>>;
+pub(crate) type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
 /// Assumes the opening bracket has already been scanned.
 /// The line break handler determines what happens when a linebreak

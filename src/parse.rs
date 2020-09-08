@@ -885,7 +885,7 @@ pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> 
 }
 
 impl<'a> Tree<Item> {
-    pub fn append_text(&mut self, start: usize, end: usize) {
+    pub(crate) fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             if let Some(ix) = self.cur() {
                 if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {

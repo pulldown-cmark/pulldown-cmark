@@ -197,7 +197,7 @@ mod simd {
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(crate) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
+    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading

@@ -303,11 +303,11 @@ const PUNCT_MASKS: [u16; 132] = [
     0x8000, // U+1BC90...U+1BC9F
 ];
 
-pub fn is_ascii_punctuation(c: u8) -> bool {
+pub(crate) fn is_ascii_punctuation(c: u8) -> bool {
     c < 128 && (PUNCT_MASKS_ASCII[(c / 16) as usize] & (1 << (c & 15))) != 0
 }
 
-pub fn is_punctuation(c: char) -> bool {
+pub(crate) fn is_punctuation(c: char) -> bool {
     let cp = c as u32;
     if cp < 128 {
         return is_ascii_punctuation(cp as u8);

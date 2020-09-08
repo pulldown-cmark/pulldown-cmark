@@ -83,7 +83,7 @@ where
         Ok(())
     }
 
-    pub fn run(mut self) -> io::Result<()> {
+    fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {

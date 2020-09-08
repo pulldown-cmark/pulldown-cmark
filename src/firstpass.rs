@@ -15,8 +15,20 @@ use unicase::UniCase;
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
 pub(crate) fn run_first_pass<'a>(text: &'a str, options: Options) -> (Tree<Item>, Allocations<'a>) {
-    let lut = create_lut(&options);
-    let first_pass = FirstPass::new(text, options, &lut);
+    // This is a very naive heuristic for the number of nodes
+    // we'll need.
+    let start_capacity = max(128, text.len() / 32);
+    let lookup_table = &create_lut(&options);
+    let first_pass = FirstPass {
+        text,
+        tree: Tree::with_capacity(start_capacity),
+        begin_list_item: false,
+        last_line_blank: false,
+        allocs: Allocations::new(),
+        options,
+        list_nesting: 0,
+        lookup_table,
+    };
     first_pass.run()
 }
 
@@ -33,28 +45,7 @@ struct FirstPass<'a, 'b> {
 }
 
 impl<'a, 'b> FirstPass<'a, 'b> {
-    pub fn new(
-        text: &'a str,
-        options: Options,
-        lookup_table: &'b LookupTable,
-    ) -> FirstPass<'a, 'b> {
-        // This is a very naive heuristic for the number of nodes
-        // we'll need.
-        let start_capacity = max(128, text.len() / 32);
-        let tree = Tree::with_capacity(start_capacity);
-        FirstPass {
-            text,
-            tree,
-            begin_list_item: false,
-            last_line_blank: false,
-            allocs: Allocations::new(),
-            options,
-            list_nesting: 0,
-            lookup_table,
-        }
-    }
-
-    pub fn run(mut self) -> (Tree<Item>, Allocations<'a>) {
+    fn run(mut self) -> (Tree<Item>, Allocations<'a>) {
         let mut ix = 0;
         while ix < self.text.len() {
             ix = self.parse_block(ix);
@@ -1424,8 +1415,8 @@ enum LoopInstruction<T> {
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]
 struct LookupTable {
-    pub simd: [u8; 16],
-    pub scalar: [bool; 256],
+    simd: [u8; 16],
+    scalar: [bool; 256],
 }
 
 #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]

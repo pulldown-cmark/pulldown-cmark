@@ -1294,10 +1294,9 @@ impl<'a> Iterator for OffsetIter<'a> {
                 let ix = self.inner.tree.pop()?;
                 let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs);
                 self.inner.tree.next_sibling(ix);
-                Some((
-                    Event::End(tag),
-                    self.inner.tree[ix].item.start..self.inner.tree[ix].item.end,
-                ))
+                let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
+                debug_assert!(span.start <= span.end);
+                Some((Event::End(tag), span))
             }
             Some(cur_ix) => {
                 if self.inner.tree[cur_ix].item.body.is_inline() {
@@ -1312,6 +1311,7 @@ impl<'a> Iterator for OffsetIter<'a> {
                 } else {
                     self.inner.tree.next_sibling(cur_ix);
                 }
+                debug_assert!(item.start <= item.end);
                 Some((event, item.start..item.end))
             }
         }
@@ -1599,6 +1599,24 @@ mod test {
             .unwrap();
         let expected_offset = 3..59;
         assert_eq!(expected_offset, event_offset);
+    }
+
+    #[test]
+    fn table_cell_span() {
+        let markdown = "a|b|c\n--|--|--\na|  |c";
+        let event_offset = parser_with_extensions(markdown)
+            .into_offset_iter()
+            .filter_map(|(ev, span)| match ev {
+                Event::Start(Tag::TableCell) => Some(span),
+                _ => None,
+            })
+            .nth(4)
+            .unwrap();
+        let expected_offset_start = "a|b|c\n--|--|--\na|".len();
+        assert_eq!(
+            expected_offset_start..(expected_offset_start + 2),
+            event_offset
+        );
     }
 
     #[test]

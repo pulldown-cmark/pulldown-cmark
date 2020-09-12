@@ -235,6 +235,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         loop {
             ix += scan_ch(&bytes[ix..], b'|');
+            let start_ix = ix;
             ix += scan_whitespace_no_nl(&bytes[ix..]);
 
             if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
@@ -243,19 +244,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let cell_ix = self.tree.append(Item {
-                start: ix,
+                start: start_ix,
                 end: ix,
                 body: ItemBody::TableCell,
             });
             self.tree.push();
             let (next_ix, _brk) = self.parse_line(ix, TableParseMode::Active);
-            let trailing_whitespace = scan_rev_while(&bytes[..next_ix], is_ascii_whitespace);
 
             if let Some(cur_ix) = self.tree.cur() {
+                let trailing_whitespace = scan_rev_while(&bytes[..next_ix], is_ascii_whitespace);
                 self.tree[cur_ix].item.end -= trailing_whitespace;
             }
 
-            self.tree[cell_ix].item.end = next_ix - trailing_whitespace;
+            self.tree[cell_ix].item.end = next_ix;
             self.tree.pop();
 
             ix = next_ix;

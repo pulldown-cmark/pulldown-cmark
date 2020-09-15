@@ -14,7 +14,7 @@ a library.
 It is designed to be:
 
 * Fast; a bare minimum of allocation and copying
-* Safe; written in pure Rust with no unsafe blocks
+* Safe; written in pure Rust with no unsafe blocks (except in the opt-in SIMD feature)
 * Versatile; in particular source-maps are supported
 * Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
 

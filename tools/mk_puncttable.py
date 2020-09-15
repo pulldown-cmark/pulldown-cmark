@@ -83,11 +83,11 @@ const PUNCT_MASKS: [u16; %i] = [""" % len(pshift)
         print '    0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15)
     print """];
 
-pub fn is_ascii_punctuation(c: u8) -> bool {
+pub(crate) fn is_ascii_punctuation(c: u8) -> bool {
     c < 128 && (PUNCT_MASKS_ASCII[(c / 16) as usize] & (1 << (c & 15))) != 0
 }
 
-pub fn is_punctuation(c: char) -> bool {
+pub(crate) fn is_punctuation(c: char) -> bool {
     let cp = c as u32;
     if cp < 128 {return is_ascii_punctuation(cp as u8); }
     if cp > 0x%04X { return false; }

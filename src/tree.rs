@@ -10,7 +10,7 @@ use std::num::NonZeroUsize;
 use std::ops::{Add, Sub};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd)]
-pub struct TreeIndex(NonZeroUsize);
+pub(crate) struct TreeIndex(NonZeroUsize);
 
 impl TreeIndex {
     fn new(i: usize) -> Self {
@@ -41,7 +41,7 @@ impl Sub<usize> for TreeIndex {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Node<T> {
+pub(crate) struct Node<T> {
     pub child: Option<TreeIndex>,
     pub next: Option<TreeIndex>,
     pub item: T,
@@ -49,7 +49,7 @@ pub struct Node<T> {
 
 /// A tree abstraction, intended for fast building as a preorder traversal.
 #[derive(Clone)]
-pub struct Tree<T> {
+pub(crate) struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<TreeIndex>, // indices of nodes on path to current node
     cur: Option<TreeIndex>,
@@ -59,7 +59,7 @@ impl<T: Default> Tree<T> {
     // Indices start at one, so we place a dummy value at index zero.
     // The alternative would be subtracting one from every TreeIndex
     // every time we convert it to usize to index our nodes.
-    pub fn with_capacity(cap: usize) -> Tree<T> {
+    pub(crate) fn with_capacity(cap: usize) -> Tree<T> {
         let mut nodes = Vec::with_capacity(cap);
         nodes.push(Node {
             child: None,
@@ -74,12 +74,12 @@ impl<T: Default> Tree<T> {
     }
 
     /// Returns the index of the element currently in focus.
-    pub fn cur(&self) -> Option<TreeIndex> {
+    pub(crate) fn cur(&self) -> Option<TreeIndex> {
         self.cur
     }
 
     /// Append one item to the current position in the tree.
-    pub fn append(&mut self, item: T) -> TreeIndex {
+    pub(crate) fn append(&mut self, item: T) -> TreeIndex {
         let ix = self.create_node(item);
         let this = Some(ix);
 
@@ -93,7 +93,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Create an isolated node.
-    pub fn create_node(&mut self, item: T) -> TreeIndex {
+    pub(crate) fn create_node(&mut self, item: T) -> TreeIndex {
         let this = self.nodes.len();
         self.nodes.push(Node {
             child: None,
@@ -105,7 +105,7 @@ impl<T: Default> Tree<T> {
 
     /// Push down one level, so that new items become children of the current node.
     /// The new focus index is returned.
-    pub fn push(&mut self) -> TreeIndex {
+    pub(crate) fn push(&mut self) -> TreeIndex {
         let cur_ix = self.cur.unwrap();
         self.spine.push(cur_ix);
         self.cur = self[cur_ix].child;
@@ -113,19 +113,19 @@ impl<T: Default> Tree<T> {
     }
 
     /// Pop back up a level.
-    pub fn pop(&mut self) -> Option<TreeIndex> {
+    pub(crate) fn pop(&mut self) -> Option<TreeIndex> {
         let ix = Some(self.spine.pop()?);
         self.cur = ix;
         ix
     }
 
     /// Look at the parent node.
-    pub fn peek_up(&self) -> Option<TreeIndex> {
+    pub(crate) fn peek_up(&self) -> Option<TreeIndex> {
         self.spine.last().copied()
     }
 
     /// Look at grandparent node.
-    pub fn peek_grandparent(&self) -> Option<TreeIndex> {
+    pub(crate) fn peek_grandparent(&self) -> Option<TreeIndex> {
         if self.spine.len() >= 2 {
             Some(self.spine[self.spine.len() - 2])
         } else {
@@ -133,18 +133,19 @@ impl<T: Default> Tree<T> {
         }
     }
 
-    /// Returns true when there are no nodes in the tree, false otherwise.
-    pub fn is_empty(&self) -> bool {
+    /// Returns true when there are no nodes other than the root node
+    /// in the tree, false otherwise.
+    pub(crate) fn is_empty(&self) -> bool {
         self.nodes.len() <= 1
     }
 
     /// Returns the length of the spine.
-    pub fn spine_len(&self) -> usize {
+    pub(crate) fn spine_len(&self) -> usize {
         self.spine.len()
     }
 
     /// Resets the focus to the first node added to the tree, if it exists.
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.cur = if self.is_empty() {
             None
         } else {
@@ -154,12 +155,12 @@ impl<T: Default> Tree<T> {
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
-    pub fn walk_spine(&self) -> impl std::iter::DoubleEndedIterator<Item = &TreeIndex> {
+    pub(crate) fn walk_spine(&self) -> impl std::iter::DoubleEndedIterator<Item = &TreeIndex> {
         self.spine.iter()
     }
 
     /// Moves focus to the next sibling of the given node.
-    pub fn next_sibling(&mut self, cur_ix: TreeIndex) -> Option<TreeIndex> {
+    pub(crate) fn next_sibling(&mut self, cur_ix: TreeIndex) -> Option<TreeIndex> {
         self.cur = self[cur_ix].next;
         self.cur
     }

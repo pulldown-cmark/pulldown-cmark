@@ -148,7 +148,7 @@ const fn create_html_escape_table() -> [u8; 256] {
 
 static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
 
-static HTML_ESCAPES: [&'static str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
+static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.
@@ -197,7 +197,7 @@ mod simd {
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(crate) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
+    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading

@@ -24,9 +24,10 @@ use std::char;
 use std::convert::TryInto;
 
 use crate::entities;
-use crate::parse::{Alignment, HtmlScanGuard, LinkType};
-pub use crate::puncttable::{is_ascii_punctuation, is_punctuation};
+use crate::parse::HtmlScanGuard;
+pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::strings::CowStr;
+use crate::{Alignment, LinkType};
 
 use memchr::memchr;
 
@@ -99,7 +100,7 @@ const HTML_TAGS: [&str; 62] = [
 /// Analysis of the beginning of a line, including indentation and container
 /// markers.
 #[derive(Clone)]
-pub struct LineStart<'a> {
+pub(crate) struct LineStart<'a> {
     bytes: &'a [u8],
     tab_start: usize,
     ix: usize,

@@ -20,6 +20,8 @@
 
 //! Command line tool to exercise pulldown-cmark.
 
+#![forbid(unsafe_code)]
+
 use pulldown_cmark::{html, Options, Parser};
 
 use std::env;

@@ -814,3 +814,11 @@ lo"></p>
 </blockquote>
 </blockquote>
 ````````````````````````````````
+
+ISSUE 487
+
+```````````````````````````````` example
+	-	the whitespace here are tabs
+.
+<pre><code>-	the whitespace here are tabs</code></pre>
+````````````````````````````````

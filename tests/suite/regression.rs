@@ -951,3 +951,13 @@ lo"></p>
 
     test_markdown_html(original, expected, false);
 }
+
+#[test]
+fn regression_test_67() {
+    let original = r##"	-	the whitespace here are tabs
+"##;
+    let expected = r##"<pre><code>-	the whitespace here are tabs</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false);
+}

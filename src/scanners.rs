@@ -207,8 +207,8 @@ impl<'a> LineStart<'a> {
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
     pub(crate) fn scan_list_marker(&mut self) -> Option<(u8, u64, usize)> {
         let save = self.clone();
-        let indent = self.scan_space_upto(3);
-        if self.ix < self.bytes.len() {
+        let indent = self.scan_space_upto(4);
+        if indent < 4 && self.ix < self.bytes.len() {
             let c = self.bytes[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
                 if self.ix >= self.min_hrule_offset {

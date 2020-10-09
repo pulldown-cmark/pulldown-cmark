@@ -21,9 +21,10 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::fmt::{self, Write};
+use std::io;
 
-use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
+use crate::escape::{escape_href, escape_html, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
@@ -52,7 +53,7 @@ struct HtmlWriter<'a, I, W> {
 impl<'a, I, W> HtmlWriter<'a, I, W>
 where
     I: Iterator<Item = Event<'a>>,
-    W: StrWrite,
+    W: Write,
 {
     fn new(iter: I, writer: W) -> Self {
         Self {
@@ -67,14 +68,14 @@ where
     }
 
     /// Writes a new line.
-    fn write_newline(&mut self) -> io::Result<()> {
+    fn write_newline(&mut self) -> fmt::Result {
         self.end_newline = true;
         self.writer.write_str("\n")
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
-    fn write(&mut self, s: &str) -> io::Result<()> {
+    fn write(&mut self, s: &str) -> fmt::Result {
         self.writer.write_str(s)?;
 
         if !s.is_empty() {
@@ -83,7 +84,7 @@ where
         Ok(())
     }
 
-    fn run(mut self) -> io::Result<()> {
+    fn run(mut self) -> fmt::Result {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
@@ -138,7 +139,7 @@ where
     }
 
     /// Writes the start of an HTML tag.
-    fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
+    fn start_tag(&mut self, tag: Tag<'a>) -> fmt::Result {
         match tag {
             Tag::Paragraph => {
                 if self.end_newline {
@@ -287,7 +288,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: Tag) -> io::Result<()> {
+    fn end_tag(&mut self, tag: Tag) -> fmt::Result {
         match tag {
             Tag::Paragraph => {
                 self.write("</p>\n")?;
@@ -354,7 +355,7 @@ where
     }
 
     // run raw text, consuming end tag
-    fn raw_text(&mut self) -> io::Result<()> {
+    fn raw_text(&mut self) -> fmt::Result {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
@@ -452,10 +453,10 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<()>
+pub fn write_html<'a, I, W>(writer: W, iter: I) -> fmt::Result
 where
     I: Iterator<Item = Event<'a>>,
-    W: Write,
+    W: io::Write,
 {
     HtmlWriter::new(iter, WriteWrapper(writer)).run()
 }

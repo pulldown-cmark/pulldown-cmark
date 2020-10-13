@@ -19,6 +19,15 @@ pub struct InlineStr {
     inner: [u8; MAX_INLINE_STR_LEN],
 }
 
+impl InlineStr {
+    // Returns an empty `InlineStr`.
+    pub fn empty() -> Self {
+        Self {
+            inner: [0; MAX_INLINE_STR_LEN],
+        }
+    }
+}
+
 impl<'a> AsRef<str> for InlineStr {
     fn as_ref(&self) -> &str {
         self.deref()

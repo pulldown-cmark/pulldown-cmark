@@ -121,10 +121,19 @@ impl<'a> Default for ItemBody {
     }
 }
 
+#[derive(Debug)]
 pub struct BrokenLink<'a> {
-    pub span: std::ops::Range<usize>,
+    pub span: Range<usize>,
     pub link_type: LinkType,
-    pub reference: &'a str,
+    pub reference: CowStr<'a>,
+    pub input: &'a str,
+}
+
+impl<'a> BrokenLink<'a> {
+    /// The source text for this broken link
+    pub fn source(&self) -> &'a str {
+        &self.input[self.span.clone()]
+    }
 }
 
 /// Markdown event iterator.
@@ -452,7 +461,8 @@ impl<'a> Parser<'a> {
                                                 let broken_link = BrokenLink {
                                                     span: (self.tree[tos.node].item.start)..end,
                                                     link_type,
-                                                    reference: link_label.as_ref(),
+                                                    reference: link_label,
+                                                    input: &self.text,
                                                 };
 
                                                 callback(broken_link).map(|(url, title)| {
@@ -1272,7 +1282,7 @@ pub(crate) struct HtmlScanGuard {
 }
 
 pub type BrokenLinkCallback<'a> =
-    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
+    Option<&'a mut dyn FnMut(BrokenLink<'a>) -> Option<(CowStr<'a>, CowStr<'a>)>>;
 
 /// Markdown event and source range iterator.
 ///
@@ -1441,6 +1451,8 @@ impl<'a> Iterator for Parser<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::cell::Cell;
+    use std::rc::Rc;
     use crate::tree::Node;
 
     // TODO: move these tests to tests/html.rs?
@@ -1713,8 +1725,8 @@ mod test {
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
         let mut callback = |broken_link: BrokenLink| {
-            assert_eq!("world", broken_link.reference);
-            assert_eq!(&test_str[broken_link.span], "[hello][world]");
+            assert_eq!("world", broken_link.reference.as_ref());
+            assert_eq!(broken_link.source(), "[hello][world]");
             let url = "YOLO".into();
             let title = "SWAG".to_owned().into();
             Some((url, title))
@@ -1735,6 +1747,35 @@ mod test {
             assert_eq!(title.as_ref(), "SWAG");
         }
         assert!(link_tag_count > 0);
+    }
+
+    #[test]
+    fn broken_link_callback_move() {
+        struct Input {
+            input: String,
+            link_cb: Box<dyn for<'a> Fn(BrokenLink<'a>) -> Option<(CowStr<'a>, CowStr<'a>)>>,
+        }
+
+        impl Input {
+            fn parse<'a>(&'a mut self) -> OffsetIter<'a> {
+                Parser::new_with_broken_link_callback(&self.input, Options::empty(), Some(&mut self.link_cb))
+                    .into_offset_iter()
+            }
+        }
+
+        let times_called = Rc::new(Cell::new(0));
+        let times_called2 = times_called.clone();
+        let test_str = "This is a link w/o def: [hello][world]";
+        let mut input = Input {
+            input: test_str.to_owned(),
+            link_cb: Box::new(move |_broken_link| {
+                times_called.set(times_called.get() + 1);
+                None
+            }),
+        };
+
+        for _ in input.parse() {}
+        assert_eq!(times_called2.get(), 1);
     }
 
     #[test]

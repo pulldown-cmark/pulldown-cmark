@@ -9,10 +9,10 @@ fn main() {
     // Setup callback that sets the URL and title when it encounters
     // a reference to our home page.
     let callback = &mut |broken_link: BrokenLink| {
-        if broken_link.reference == "my website" {
+        if broken_link.reference.as_ref() == "my website" {
             println!(
                 "Replacing the markdown `{}` of type {:?} with a working link",
-                &input[broken_link.span], broken_link.link_type,
+                broken_link.source(), broken_link.link_type,
             );
             Some(("http://example.com".into(), "my example website".into()))
         } else {

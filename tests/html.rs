@@ -238,7 +238,7 @@ fn html_test_broken_callback() {
     let mut s = String::new();
 
     let mut callback = |broken_link: BrokenLink| {
-        if broken_link.reference == "foo" || broken_link.reference == "baz" {
+        if broken_link.reference.as_ref() == "foo" || broken_link.reference.as_ref() == "baz" {
             Some(("https://replaced.example.org".into(), "some title".into()))
         } else {
             None

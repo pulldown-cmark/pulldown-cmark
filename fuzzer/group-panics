@@ -29,7 +29,7 @@ def test(pattern, release=True):
     return stderr
 
 for panic in panics:
-    pattern = re.match(br'Panic caught\. Pattern: "(.*)"', panic).group(1)
+    pattern = re.match(br'Panic caught\. Pattern: (.*)', panic).group(1)
     # unescape pattern
     def repl(match):
         codepoint = match.group(1).rjust(4, b"0")

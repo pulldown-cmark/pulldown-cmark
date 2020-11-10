@@ -47,6 +47,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
+use clap::Clap;
 use crossbeam_utils::thread;
 use pulldown_cmark::{Options, Parser};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
@@ -138,27 +139,37 @@ impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
     }
 }
 
+#[derive(Clap)]
+struct Opts {
+    /// Run in retest mode
+    #[clap(long)]
+    retest: bool,
+    /// Run regression tests
+    #[clap(long)]
+    regressions: bool,
+}
+
 fn main() {
     let num_cpus = (num_cpus::get() as f32 * 0.8).ceil() as usize;
+    let Opts {
+        retest,
+        regressions,
+    } = Opts::parse();
 
-    let arg = env::args().nth(1);
-    match arg.as_ref().map(|s| s.as_str()) {
-        Some("--retest") => {
-            for pattern in io::stdin().lock().lines().flatten() {
-                println!("Retesting: {}", &pattern);
-                let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
-                match test_catch_unwind(&pattern) {
-                    Ok(res) => println!("score: {}", res.score()),
-                    Err(()) => (),
-                }
+    if retest {
+        for pattern in io::stdin().lock().lines().flatten() {
+            println!("Retesting: {}", &pattern);
+            let pattern = serde_json::from_str(&pattern).expect("Couldn't deserialize pattern");
+            match test_catch_unwind(&pattern) {
+                Ok(res) => println!("score: {}", res.score()),
+                Err(()) => (),
             }
         }
-        Some("--regressions") => {
-            // previously know cases
-            let exit_code = regression_test();
-            std::process::exit(exit_code);
-        }
-        _ => fuzz(num_cpus),
+    } else if regressions {
+        let exit_code = regression_test();
+        std::process::exit(exit_code);
+    } else {
+        fuzz(num_cpus);
     }
 }
 

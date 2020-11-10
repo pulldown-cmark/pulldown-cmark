@@ -68,7 +68,7 @@ echo "Retesting Panics"
 echo "Panics exported to $PANICFILE"
 
 # Check if there are still errors
-echo "\n"
+echo
 error=0
 join=0
 restart=0
@@ -76,10 +76,11 @@ grep "$UTF8PATTERN" "$OUTFILE" && error=1
 grep "$JOINPATTERN" "$OUTFILE" && join=1
 grep "$TIMEOUTPATTERN" "$OUTFILE" && restart=1
 
-if [ $error -eq 1 -o $join -eq 1 -o $restart -eq 1 ]; then
+if [ $error -eq 1 ] || [ $join -eq 1 ] || [ $restart -eq 1 ]; then
   echo "Finished. Remaining errors / problems found and printed above. They need to be tested manually."
   echo ""
   echo "Panics grouped in file '$PANICFILE'."
   echo "Remaining true positive results in file '$OUTFILE'."
+else
+  echo "Finished. No errors were reproducable."
 fi
-

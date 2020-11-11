@@ -28,8 +28,13 @@ def test(pattern, release=True):
     p.wait()
     return stderr
 
+regex = re.compile(br'Panic caught\. Pattern: (.*)')
 for panic in panics:
-    pattern = re.match(br'Panic caught\. Pattern: (.*)', panic).group(1)
+    pattern = regex.match(panic)
+    if not pattern:
+        continue
+    pattern = pattern.group(1)
+
     # unescape pattern
     def repl(match):
         codepoint = match.group(1).rjust(4, b"0")

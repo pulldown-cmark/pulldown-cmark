@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cargo rustc --release -- -C target-cpu=native -C lto=fat
-nice -20 env RUST_BACKTRACE=1 ./target/release/fuzzer 2>&1 | tee -a output
+cargo rustc --release -- -C target-cpu=native
+sudo nice -n -20 env RUST_BACKTRACE=1 ./target/release/fuzzer 2>&1 | tee -a output

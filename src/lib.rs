@@ -81,17 +81,11 @@ pub enum CodeBlockKind<'a> {
 
 impl<'a> CodeBlockKind<'a> {
     pub fn is_indented(&self) -> bool {
-        match *self {
-            CodeBlockKind::Indented => true,
-            _ => false,
-        }
+        matches!(*self, CodeBlockKind::Indented)
     }
 
     pub fn is_fenced(&self) -> bool {
-        match *self {
-            CodeBlockKind::Fenced(_) => true,
-            _ => false,
-        }
+        matches!(*self, CodeBlockKind::Fenced(_))
     }
 }
 

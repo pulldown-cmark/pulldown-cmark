@@ -22,6 +22,10 @@ doc = false
 name = "html_rendering"
 harness = false
 
+[[bench]]
+name = "lib"
+harness = false
+
 [dependencies]
 bitflags = "1.2"
 unicase = "2.6"

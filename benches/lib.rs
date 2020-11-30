@@ -1,9 +1,36 @@
-#![feature(test)]
-
-extern crate test;
+use criterion::{criterion_group, criterion_main};
 
 mod to_html {
+    use criterion::Criterion;
     use pulldown_cmark::{html, Options, Parser};
+
+    pub fn benchmarks(c: &mut Criterion) {
+        c.bench_function("pathological_codeblocks1", |b| {
+            // Note that `buf` grows quadratically with number of
+            // iterations. The point here is that the render time shouldn't
+            // grow faster than that.
+            let mut buf = String::new();
+            for i in 1..1000 {
+                buf.push_str(&"`".repeat(i));
+                buf.push(' ');
+            }
+
+            b.iter(|| render_html(&buf, Options::empty()));
+        });
+
+        c.bench_function("advanced_pathological_codeblocks", |b| {
+            let mut buf = String::new();
+            let mut i = 1;
+            while buf.len() < 1250 {
+                buf.push_str(&"`".repeat(i));
+                buf.push(' ');
+                i += 1;
+            }
+            buf.push_str(&"*a* ".repeat(buf.len()));
+
+            b.iter(|| render_html(&buf, Options::empty()));
+        });
+    }
 
     fn render_html(text: &str, opts: Options) -> String {
         let mut s = String::with_capacity(text.len() * 3 / 2);
@@ -11,38 +38,7 @@ mod to_html {
         html::push_html(&mut s, p);
         s
     }
-
-    #[bench]
-    fn pathological_codeblocks1(b: &mut test::Bencher) {
-        // Note that `buf` grows quadratically with number of
-        // iterations. The point here is that the render time shouldn't
-        // grow faster than that.
-        let mut buf = String::new();
-        for i in 1..1000 {
-            for _ in 0..i {
-                buf.push('`');
-            }
-            buf.push(' ');
-        }
-
-        b.iter(|| render_html(&buf, Options::empty()));
-    }
-
-    #[bench]
-    fn advanced_pathological_codeblocks(b: &mut test::Bencher) {
-        let mut buf = String::new();
-        let mut i = 1;
-        while buf.len() < 1250 {
-            for _ in 0..i {
-                buf.push('`');
-            }
-            buf.push(' ');
-            i += 1;
-        }
-        for _ in 0..buf.len() {
-            buf.push_str("*a* ");
-        }
-
-        b.iter(|| render_html(&buf, Options::empty()));
-    }
 }
+
+criterion_group!(benches, to_html::benchmarks);
+criterion_main!(benches);

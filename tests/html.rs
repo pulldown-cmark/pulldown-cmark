@@ -1,7 +1,5 @@
 // Tests for HTML spec.
 
-extern crate pulldown_cmark;
-
 use pulldown_cmark::{html, BrokenLink, Options, Parser};
 
 #[test]

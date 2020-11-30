@@ -1,5 +1,3 @@
-extern crate pulldown_cmark;
-
 use std::io::Write as _;
 
 use pulldown_cmark::{html, Event, Options, Parser, Tag};

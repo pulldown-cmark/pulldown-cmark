@@ -1,6 +1,5 @@
 #![feature(test)]
 
-extern crate pulldown_cmark;
 extern crate test;
 
 mod to_html {

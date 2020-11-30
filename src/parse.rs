@@ -23,6 +23,7 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Index, Range};
+use std::iter::FusedIterator;
 
 use unicase::UniCase;
 
@@ -1431,6 +1432,8 @@ impl<'a> Iterator for Parser<'a> {
         }
     }
 }
+
+impl<'a> FusedIterator for Parser<'a> {}
 
 #[cfg(test)]
 mod test {

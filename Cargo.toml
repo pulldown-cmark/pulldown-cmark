@@ -26,6 +26,10 @@ harness = false
 name = "lib"
 harness = false
 
+[[bench]]
+name = "spec"
+harness = false
+
 [dependencies]
 bitflags = "1.2"
 unicase = "2.6"

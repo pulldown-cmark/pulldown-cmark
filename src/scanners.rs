@@ -20,13 +20,13 @@
 
 //! Scanners for fragments of CommonMark syntax
 
-use std::char;
 use std::convert::TryInto;
+use std::{char, convert::TryFrom};
 
-use crate::entities;
 use crate::parse::HtmlScanGuard;
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::strings::CowStr;
+use crate::{entities, HeadingLevel};
 use crate::{Alignment, LinkType};
 
 use memchr::memchr;
@@ -500,10 +500,10 @@ pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
 /// Scan an ATX heading opening sequence.
 ///
 /// Returns number of bytes in prefix and level.
-pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<usize> {
+pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
     let level = scan_ch_repeat(data, b'#');
-    if level >= 1 && level <= 6 && data.get(level).cloned().map_or(true, is_ascii_whitespace) {
-        Some(level)
+    if data.get(level).copied().map_or(true, is_ascii_whitespace) {
+        HeadingLevel::try_from(level).ok()
     } else {
         None
     }
@@ -512,14 +512,18 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<usize> {
 /// Scan a setext heading underline.
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
-pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, u32)> {
+pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> {
     let c = *data.get(0)?;
     if !(c == b'-' || c == b'=') {
         return None;
     }
     let mut i = 1 + scan_ch_repeat(&data[1..], c);
     i += scan_blank_line(&data[i..])?;
-    let level = if c == b'=' { 1 } else { 2 };
+    let level = if c == b'=' {
+        HeadingLevel::H1
+    } else {
+        HeadingLevel::H2
+    };
     Some((i, level))
 }
 

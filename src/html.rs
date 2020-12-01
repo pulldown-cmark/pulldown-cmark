@@ -150,9 +150,9 @@ where
             Tag::Heading(level) => {
                 if self.end_newline {
                     self.end_newline = false;
-                    write!(&mut self.writer, "<h{}>", level)
+                    write!(&mut self.writer, "<{}>", level)
                 } else {
-                    write!(&mut self.writer, "\n<h{}>", level)
+                    write!(&mut self.writer, "\n<{}>", level)
                 }
             }
             Tag::Table(alignments) => {
@@ -293,7 +293,7 @@ where
                 self.write("</p>\n")?;
             }
             Tag::Heading(level) => {
-                self.write("</h")?;
+                self.write("</")?;
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;
             }

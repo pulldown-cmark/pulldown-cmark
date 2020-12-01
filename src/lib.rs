@@ -51,8 +51,7 @@
 // an unstable crate.
 #![cfg_attr(rustbuild, feature(staged_api, rustc_private))]
 #![cfg_attr(rustbuild, unstable(feature = "rustc_private", issue = "27812"))]
-
-// Forbid unsafe code unless the SIMD feature is enabled. 
+// Forbid unsafe code unless the SIMD feature is enabled.
 #![forbid(unsafe_code)]
 #![cfg_attr(feature = "simd", allow(unsafe_code))]
 
@@ -67,6 +66,8 @@ mod puncttable;
 mod scanners;
 mod strings;
 mod tree;
+
+use std::{convert::TryFrom, fmt::Display};
 
 pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
 pub use crate::strings::{CowStr, InlineStr};
@@ -96,7 +97,7 @@ pub enum Tag<'a> {
     Paragraph,
 
     /// A heading. The field indicates the level of the heading.
-    Heading(u32),
+    Heading(HeadingLevel),
 
     BlockQuote,
     /// A code block.
@@ -130,6 +131,50 @@ pub enum Tag<'a> {
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum HeadingLevel {
+    H1 = 1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+}
+
+impl Display for HeadingLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::H1 => write!(f, "h1"),
+            Self::H2 => write!(f, "h2"),
+            Self::H3 => write!(f, "h3"),
+            Self::H4 => write!(f, "h4"),
+            Self::H5 => write!(f, "h5"),
+            Self::H6 => write!(f, "h6"),
+        }
+    }
+}
+
+/// Returned when trying to convert a `usize` into a `Heading` but it fails
+/// because the usize isn't a valid heading level
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct InvalidHeadingLevel(usize);
+
+impl TryFrom<usize> for HeadingLevel {
+    type Error = InvalidHeadingLevel;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Self::H1),
+            2 => Ok(Self::H2),
+            3 => Ok(Self::H3),
+            4 => Ok(Self::H4),
+            5 => Ok(Self::H5),
+            6 => Ok(Self::H6),
+            _ => Err(InvalidHeadingLevel(value)),
+        }
+    }
 }
 
 /// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.

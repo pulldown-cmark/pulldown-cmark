@@ -32,7 +32,7 @@ use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Options, Tag};
+use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -79,7 +79,7 @@ pub(crate) enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(u32), // heading level
+    Heading(HeadingLevel), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,

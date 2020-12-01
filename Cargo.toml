@@ -27,7 +27,7 @@ name = "lib"
 harness = false
 
 [[bench]]
-name = "spec"
+name = "markdown-it"
 harness = false
 
 [dependencies]

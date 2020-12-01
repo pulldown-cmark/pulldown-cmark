@@ -3,12 +3,15 @@
 
 use std::cmp::max;
 
-use crate::linklabel::{scan_link_label_rest, LinkLabel};
 use crate::parse::{scan_containers, Allocations, Item, ItemBody, LinkDef};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::Options;
+use crate::{
+    linklabel::{scan_link_label_rest, LinkLabel},
+    HeadingLevel,
+};
 
 use unicase::UniCase;
 
@@ -986,13 +989,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Parse an ATX heading.
     ///
     /// Returns index of start of next line.
-    fn parse_atx_heading(&mut self, mut ix: usize, atx_size: usize) -> usize {
+    fn parse_atx_heading(&mut self, mut ix: usize, atx_level: HeadingLevel) -> usize {
         let heading_ix = self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Heading(atx_size as u32),
+            body: ItemBody::Heading(atx_level),
         });
-        ix += atx_size;
+        ix += atx_level as usize;
         // next char is space or eol (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {

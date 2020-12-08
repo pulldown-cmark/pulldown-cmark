@@ -22,8 +22,8 @@
 
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
-use std::ops::{Index, Range};
 use std::iter::FusedIterator;
+use std::ops::{Index, Range};
 
 use unicase::UniCase;
 
@@ -125,16 +125,16 @@ impl<'a> Default for ItemBody {
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
-    pub reference: &'a str,
+    pub reference: CowStr<'a>,
 }
 
 /// Markdown event iterator.
-pub struct Parser<'a> {
-    text: &'a str,
+pub struct Parser<'input, 'callback> {
+    text: &'input str,
     options: Options,
     tree: Tree<Item>,
-    allocs: Allocations<'a>,
-    broken_link_callback: BrokenLinkCallback<'a>,
+    allocs: Allocations<'input>,
+    broken_link_callback: BrokenLinkCallback<'input, 'callback>,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
@@ -142,14 +142,14 @@ pub struct Parser<'a> {
     link_stack: LinkStack,
 }
 
-impl<'a> Parser<'a> {
+impl<'a, 'b> Parser<'a, 'b> {
     /// Creates a new event iterator for a markdown string without any options enabled.
-    pub fn new(text: &'a str) -> Parser<'a> {
+    pub fn new(text: &'a str) -> Self {
         Parser::new_ext(text, Options::empty())
     }
 
     /// Creates a new event iterator for a markdown string with given options.
-    pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+    pub fn new_ext(text: &'a str, options: Options) -> Self {
         Parser::new_with_broken_link_callback(text, options, None)
     }
 
@@ -161,8 +161,8 @@ impl<'a> Parser<'a> {
     pub fn new_with_broken_link_callback(
         text: &'a str,
         options: Options,
-        broken_link_callback: BrokenLinkCallback<'a>,
-    ) -> Parser<'a> {
+        broken_link_callback: BrokenLinkCallback<'a, 'b>,
+    ) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
@@ -453,7 +453,7 @@ impl<'a> Parser<'a> {
                                                 let broken_link = BrokenLink {
                                                     span: (self.tree[tos.node].item.start)..end,
                                                     link_type,
-                                                    reference: link_label.as_ref(),
+                                                    reference: link_label,
                                                 };
 
                                                 callback(broken_link).map(|(url, title)| {
@@ -848,7 +848,7 @@ impl<'a> Parser<'a> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'a> {
+    pub fn into_offset_iter(self) -> OffsetIter<'a, 'b> {
         OffsetIter { inner: self }
     }
 }
@@ -1266,8 +1266,8 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-pub type BrokenLinkCallback<'a> =
-    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
+pub type BrokenLinkCallback<'input, 'borrow> =
+    Option<&'borrow mut dyn FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>>;
 
 /// Markdown event and source range iterator.
 ///
@@ -1276,11 +1276,11 @@ pub type BrokenLinkCallback<'a> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
-pub struct OffsetIter<'a> {
-    inner: Parser<'a>,
+pub struct OffsetIter<'a, 'b> {
+    inner: Parser<'a, 'b>,
 }
 
-impl<'a> Iterator for OffsetIter<'a> {
+impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1403,7 +1403,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
     Event::Start(tag)
 }
 
-impl<'a> Iterator for Parser<'a> {
+impl<'a, 'b> Iterator for Parser<'a, 'b> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
@@ -1433,7 +1433,7 @@ impl<'a> Iterator for Parser<'a> {
     }
 }
 
-impl<'a> FusedIterator for Parser<'a> {}
+impl FusedIterator for Parser<'_, '_> {}
 
 #[cfg(test)]
 mod test {
@@ -1442,7 +1442,7 @@ mod test {
 
     // TODO: move these tests to tests/html.rs?
 
-    fn parser_with_extensions(text: &str) -> Parser<'_> {
+    fn parser_with_extensions(text: &str) -> Parser<'_, 'static> {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
@@ -1710,7 +1710,7 @@ mod test {
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
         let mut callback = |broken_link: BrokenLink| {
-            assert_eq!("world", broken_link.reference);
+            assert_eq!("world", broken_link.reference.as_ref());
             assert_eq!(&test_str[broken_link.span], "[hello][world]");
             let url = "YOLO".into();
             let title = "SWAG".to_owned().into();
@@ -1763,5 +1763,43 @@ mod test {
             }
         }
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn common_lifetime_patterns_allowed<'b>() {
+        let temporary_str = String::from("xyz");
+
+        // NOTE: this is a limitation of Rust, it doesn't allow putting lifetime parameters on the closure itself.
+        // Hack it by attaching the lifetime to the test function instead.
+        // TODO: why is the `'b` lifetime required at all? Changing it to `'_` breaks things :(
+        let mut closure = |link: BrokenLink<'b>| Some(("#".into(), link.reference.into()));
+
+        fn function<'a>(link: BrokenLink<'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
+            Some(("#".into(), link.reference))
+        }
+
+        for _ in Parser::new_with_broken_link_callback(
+            "static lifetime",
+            Options::empty(),
+            Some(&mut closure),
+        ) {}
+        /* This fails to compile. Because the closure can't say `for <'a> fn(BrokenLink<'a>) ->
+         * CowStr<'a>` and has to use the enclosing `'b` lifetime parameter, `temporary_str` lives
+         * shorter than `'b`. I think this is unlikely to occur in real life, and if it does, the
+         * fix is simple: move it out to a function that allows annotating the lifetimes.
+         */
+        //for _ in Parser::new_with_broken_link_callback(&temporary_str, Options::empty(), Some(&mut callback)) {
+        //}
+
+        for _ in Parser::new_with_broken_link_callback(
+            "static lifetime",
+            Options::empty(),
+            Some(&mut function),
+        ) {}
+        for _ in Parser::new_with_broken_link_callback(
+            &temporary_str,
+            Options::empty(),
+            Some(&mut function),
+        ) {}
     }
 }

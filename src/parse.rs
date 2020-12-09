@@ -142,14 +142,14 @@ pub struct Parser<'input, 'callback> {
     link_stack: LinkStack,
 }
 
-impl<'a, 'b> Parser<'a, 'b> {
+impl<'input, 'callback> Parser<'input, 'callback> {
     /// Creates a new event iterator for a markdown string without any options enabled.
-    pub fn new(text: &'a str) -> Self {
+    pub fn new(text: &'input str) -> Self {
         Parser::new_ext(text, Options::empty())
     }
 
     /// Creates a new event iterator for a markdown string with given options.
-    pub fn new_ext(text: &'a str, options: Options) -> Self {
+    pub fn new_ext(text: &'input str, options: Options) -> Self {
         Parser::new_with_broken_link_callback(text, options, None)
     }
 
@@ -159,9 +159,9 @@ impl<'a, 'b> Parser<'a, 'b> {
     /// and the returned pair will be used as the link name and title if it is not
     /// `None`.
     pub fn new_with_broken_link_callback(
-        text: &'a str,
+        text: &'input str,
         options: Options,
-        broken_link_callback: BrokenLinkCallback<'a, 'b>,
+        broken_link_callback: BrokenLinkCallback<'input, 'callback>,
     ) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
@@ -404,7 +404,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                             // below. Disambiguate!
 
                             // (label, source_ix end)
-                            let label: Option<(ReferenceLabel<'a>, usize)> = match scan_result {
+                            let label: Option<(ReferenceLabel<'input>, usize)> = match scan_result {
                                 RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
@@ -634,10 +634,10 @@ impl<'a, 'b> Parser<'a, 'b> {
     /// Returns next byte index, url and title.
     fn scan_inline_link(
         &self,
-        underlying: &'a str,
+        underlying: &'input str,
         mut ix: usize,
         node: Option<TreeIndex>,
-    ) -> Option<(usize, CowStr<'a>, CowStr<'a>)> {
+    ) -> Option<(usize, CowStr<'input>, CowStr<'input>)> {
         if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
             return None;
         }
@@ -668,10 +668,10 @@ impl<'a, 'b> Parser<'a, 'b> {
     // returns (bytes scanned, title cow)
     fn scan_link_title(
         &self,
-        text: &'a str,
+        text: &'input str,
         start_ix: usize,
         node: Option<TreeIndex>,
-    ) -> Option<(usize, CowStr<'a>)> {
+    ) -> Option<(usize, CowStr<'input>)> {
         let bytes = text.as_bytes();
         let open = match bytes.get(start_ix) {
             Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
@@ -848,7 +848,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'a, 'b> {
+    pub fn into_offset_iter(self) -> OffsetIter<'input, 'callback> {
         OffsetIter { inner: self }
     }
 }

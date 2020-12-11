@@ -235,7 +235,6 @@ impl<'a> Parser<'a> {
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = Some(text_node);
-                        prev = cur;
                         cur = node;
                         if let Some(node_ix) = cur {
                             self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
@@ -320,7 +319,6 @@ impl<'a> Parser<'a> {
                 }
                 ItemBody::MaybeMath(true, _) => {
                     self.tree[cur_ix].item.body = ItemBody::Text;
-                    prev = cur;
                     cur = self.tree[cur_ix].next;
                 }
                 ItemBody::MaybeMath(_, true) => {

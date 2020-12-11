@@ -1,8 +1,4 @@
-#[macro_use]
-extern crate criterion;
-extern crate pulldown_cmark;
-
-use criterion::Criterion;
+use criterion::{criterion_group, criterion_main, Criterion};
 use pulldown_cmark::{html, Options, Parser};
 use std::str::from_utf8;
 

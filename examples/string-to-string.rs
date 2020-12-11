@@ -1,5 +1,3 @@
-extern crate pulldown_cmark;
-
 use pulldown_cmark::{html, Options, Parser};
 
 fn main() {

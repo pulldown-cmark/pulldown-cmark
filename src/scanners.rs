@@ -330,17 +330,11 @@ pub(crate) fn is_ascii_whitespace_no_nl(c: u8) -> bool {
 }
 
 fn is_ascii_alpha(c: u8) -> bool {
-    match c {
-        b'a'..=b'z' | b'A'..=b'Z' => true,
-        _ => false,
-    }
+    matches!(c, b'a'..=b'z' | b'A'..=b'Z')
 }
 
 fn is_ascii_alphanumeric(c: u8) -> bool {
-    match c {
-        b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' => true,
-        _ => false,
-    }
+    matches!(c, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
 fn is_ascii_letterdigitdash(c: u8) -> bool {
@@ -352,10 +346,10 @@ fn is_digit(c: u8) -> bool {
 }
 
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
-    match c {
-        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => false,
-        _ => true,
-    }
+    !matches!(
+        c,
+        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
+    )
 }
 
 // scan a single character

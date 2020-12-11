@@ -54,10 +54,6 @@
 
 pub mod html;
 
-#[macro_use]
-extern crate bitflags;
-extern crate unicase;
-
 mod entities;
 pub mod escape;
 mod firstpass;
@@ -81,17 +77,11 @@ pub enum CodeBlockKind<'a> {
 
 impl<'a> CodeBlockKind<'a> {
     pub fn is_indented(&self) -> bool {
-        match *self {
-            CodeBlockKind::Indented => true,
-            _ => false,
-        }
+        matches!(*self, CodeBlockKind::Indented)
     }
 
     pub fn is_fenced(&self) -> bool {
-        match *self {
-            CodeBlockKind::Fenced(_) => true,
-            _ => false,
-        }
+        matches!(*self, CodeBlockKind::Fenced(_))
     }
 }
 
@@ -219,7 +209,7 @@ pub enum Alignment {
     Right,
 }
 
-bitflags! {
+bitflags::bitflags! {
     /// Option struct containing flags for enabling extra features
     /// that are not part of the CommonMark spec.
     pub struct Options: u32 {

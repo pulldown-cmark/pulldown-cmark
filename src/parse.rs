@@ -23,6 +23,7 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Index, Range};
+use std::iter::FusedIterator;
 
 use unicase::UniCase;
 
@@ -110,17 +111,17 @@ pub(crate) enum ItemBody {
 
 impl<'a> ItemBody {
     fn is_inline(&self) -> bool {
-        match *self {
+        matches!(
+            *self,
             ItemBody::MaybeEmphasis(..)
-            | ItemBody::MaybeSmartQuote(..)
-            | ItemBody::MaybeHtml
-            | ItemBody::MaybeCode(..)
-            | ItemBody::MaybeMath(..)
-            | ItemBody::MaybeLinkOpen
-            | ItemBody::MaybeLinkClose(..)
-            | ItemBody::MaybeImage => true,
-            _ => false,
-        }
+                | ItemBody::MaybeSmartQuote(..)
+                | ItemBody::MaybeHtml
+                | ItemBody::MaybeCode(..)
+                | ItemBody::MaybeMath(..)
+                | ItemBody::MaybeLinkOpen
+                | ItemBody::MaybeLinkClose(..)
+                | ItemBody::MaybeImage
+        )
     }
 }
 
@@ -782,14 +783,8 @@ impl<'a> Parser<'a> {
 
         // detect all-space sequences, since they are kept as-is as of commonmark 0.29
         if !bytes[span_start..span_end].iter().all(|&b| b == b' ') {
-            let opening = match bytes[span_start] {
-                b' ' | b'\r' | b'\n' => true,
-                _ => false,
-            };
-            let closing = match bytes[span_end - 1] {
-                b' ' | b'\r' | b'\n' => true,
-                _ => false,
-            };
+            let opening = matches!(bytes[span_start], b' ' | b'\r' | b'\n');
+            let closing = matches!(bytes[span_end - 1], b' ' | b'\r' | b'\n');
             let drop_enclosing_whitespace = opening && closing;
 
             if drop_enclosing_whitespace {
@@ -1494,6 +1489,8 @@ impl<'a> Iterator for Parser<'a> {
         }
     }
 }
+
+impl<'a> FusedIterator for Parser<'a> {}
 
 #[cfg(test)]
 mod test {

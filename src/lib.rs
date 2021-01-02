@@ -64,7 +64,7 @@ mod scanners;
 mod strings;
 mod tree;
 
-pub use crate::parse::{BrokenLink, BrokenLinkCallback, OffsetIter, Parser};
+pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
 pub use crate::strings::{CowStr, InlineStr};
 
 /// Codeblock kind.

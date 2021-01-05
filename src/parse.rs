@@ -1210,7 +1210,7 @@ pub(crate) struct Allocations<'a> {
 }
 
 /// Keeps track of the reference definitions defined in the document.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 impl<'input, 'b, 's> RefDefs<'input>
@@ -1231,7 +1231,7 @@ where
 impl<'a> Allocations<'a> {
     pub fn new() -> Self {
         Self {
-            refdefs: RefDefs(HashMap::new()),
+            refdefs: RefDefs::default(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),

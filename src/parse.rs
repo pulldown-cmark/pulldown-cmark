@@ -180,6 +180,12 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         }
     }
 
+    /// Returns a reference to the internal `RefDefs` object, which provides access
+    /// to the internal map of reference definitions.
+    pub fn reference_definitions(&self) -> &RefDefs {
+        &self.allocs.refdefs
+    }
+
     /// Handle inline markup.
     ///
     /// When the parser encounters any item indicating potential inline markup, all
@@ -435,7 +441,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 let type_url_title = self
                                     .allocs
                                     .refdefs
-                                    .get(&UniCase::new(link_label.as_ref().into()))
+                                    .get(link_label.as_ref())
                                     .map(|matching_def| {
                                         // found a matching definition!
                                         let title = matching_def
@@ -1131,10 +1137,12 @@ enum LinkStackTy {
     Disabled,
 }
 
+/// Contains the destination URL, title and source span of a reference definition.
 #[derive(Clone)]
-pub(crate) struct LinkDef<'a> {
+pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
+    pub span: Range<usize>,
 }
 
 /// Tracks tree indices of code span delimiters of each length. It should prevent
@@ -1195,16 +1203,35 @@ pub(crate) struct AlignmentIndex(usize);
 
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
-    pub refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
 }
 
+/// Keeps track of the reference definitions defined in the document.
+#[derive(Clone, Default)]
+pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
+
+impl<'input, 'b, 's> RefDefs<'input>
+where
+    's: 'b,
+{
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn get(&'s self, key: &'b str) -> Option<&'b LinkDef<'input>> {
+        self.0.get(&UniCase::new(key.into()))
+    }
+
+    /// Provides an iterator over all the document's reference definitions.
+    pub fn iter(&'s self) -> impl Iterator<Item = (&'s str, &'s LinkDef<'input>)> {
+        self.0.iter().map(|(k, v)| (k.as_ref(), v))
+    }
+}
+
 impl<'a> Allocations<'a> {
     pub fn new() -> Self {
         Self {
-            refdefs: HashMap::new(),
+            refdefs: RefDefs::default(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
@@ -1278,6 +1305,13 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 pub struct OffsetIter<'a, 'b> {
     inner: Parser<'a, 'b>,
+}
+
+impl<'a, 'b> OffsetIter<'a, 'b> {
+    /// Returns a reference to the internal reference definition tracker.
+    pub fn reference_definitions(&self) -> &RefDefs {
+        self.inner.reference_definitions()
+    }
 }
 
 impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
@@ -1763,6 +1797,29 @@ mod test {
             }
         }
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn ref_defs() {
+        let input = r###"[a B c]: http://example.com
+[another]: https://google.com
+
+text
+
+[final ONE]: http://wikipedia.org
+"###;
+        let mut parser = Parser::new(input);
+
+        assert!(parser.reference_definitions().get("a b c").is_some());
+        assert!(parser.reference_definitions().get("nope").is_none());
+
+        if let Some(_event) = parser.next() {
+            // testing keys with shorter lifetimes than parser and its input
+            let s = "final one".to_owned();
+            let link_def = parser.reference_definitions().get(&s).unwrap();
+            let span = &input[link_def.span.clone()];
+            assert_eq!(span, "[final ONE]: http://wikipedia.org");
+        }
     }
 
     #[test]

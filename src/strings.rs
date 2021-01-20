@@ -115,13 +115,6 @@ mod serde_impl {
             formatter.write_str("a string")
         }
 
-        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(CowStr::Boxed(value.into_boxed_str()))
-        }
-
         fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
         where
             E: de::Error,

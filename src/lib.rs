@@ -55,6 +55,9 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(feature = "simd", allow(unsafe_code))]
 
+// #[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 pub mod html;
 
 mod entities;
@@ -73,10 +76,11 @@ pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Pars
 pub use crate::strings::{CowStr, InlineStr};
 
 /// Codeblock kind.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CodeBlockKind<'a> {
     Indented,
     /// The value contained in the tag describes the language of the code, which may be empty.
+    #[serde(borrow)]
     Fenced(CowStr<'a>),
 }
 
@@ -91,7 +95,7 @@ impl<'a> CodeBlockKind<'a> {
 }
 
 /// Tags for elements that can contain other elements.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
@@ -110,6 +114,7 @@ pub enum Tag<'a> {
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
+    #[serde(borrow)]
     FootnoteDefinition(CowStr<'a>),
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
@@ -133,7 +138,7 @@ pub enum Tag<'a> {
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize)]
 pub enum HeadingLevel {
     H1 = 1,
     H2,
@@ -178,7 +183,7 @@ impl TryFrom<usize> for HeadingLevel {
 }
 
 /// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Copy, Serialize, Deserialize)]
 pub enum LinkType {
     /// Inline link like `[foo](bar)`
     Inline,
@@ -214,23 +219,29 @@ impl LinkType {
 /// Markdown events that are generated in a preorder traversal of the document
 /// tree, with additional `End` events whenever all of an inner node's children
 /// have been visited.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Event<'a> {
     /// Start of a tagged element. Events that are yielded after this event
     /// and before its corresponding `End` event are inside this element.
     /// Start and end events are guaranteed to be balanced.
+    #[serde(borrow)]
     Start(Tag<'a>),
     /// End of a tagged element.
+    #[serde(borrow)]
     End(Tag<'a>),
     /// A text node.
+    #[serde(borrow)]
     Text(CowStr<'a>),
     /// An inline code node.
+    #[serde(borrow)]
     Code(CowStr<'a>),
     /// An HTML node.
+    #[serde(borrow)]
     Html(CowStr<'a>),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.
+    #[serde(borrow)]
     FootnoteReference(CowStr<'a>),
     /// A soft line break.
     SoftBreak,
@@ -243,7 +254,7 @@ pub enum Event<'a> {
 }
 
 /// Table column text alignment.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Alignment {
     /// Default text alignment.
     None,

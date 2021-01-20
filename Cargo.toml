@@ -35,8 +35,7 @@ bitflags = "1.2"
 unicase = "2.6"
 memchr = "2.3"
 getopts = { version = "0.2", optional = true }
-# serde = { version = "1.0", optional = true, features = ["derive"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 html5ever = "0.25"

@@ -5,9 +5,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::str::from_utf8;
 
-// #[cfg(feature = "serde")]
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-
 const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
 
 /// Returned when trying to convert a `&str` into a `InlineStr`
@@ -94,45 +91,52 @@ pub enum CowStr<'a> {
     Inlined(InlineStr),
 }
 
-impl<'a> Serialize for CowStr<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.as_ref())
-    }
-}
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::CowStr;
+    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+    use std::fmt;
 
-struct CowStrVisitor;
-
-impl<'de> de::Visitor<'de> for CowStrVisitor {
-    type Value = CowStr<'de>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a string")
+    impl<'a> Serialize for CowStr<'a> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_str(self.as_ref())
+        }
     }
 
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(CowStr::Boxed(value.into_boxed_str()))
+    struct CowStrVisitor;
+
+    impl<'de> de::Visitor<'de> for CowStrVisitor {
+        type Value = CowStr<'de>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string")
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(CowStr::Boxed(value.into_boxed_str()))
+        }
+
+        fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(CowStr::Borrowed(v))
+        }
     }
 
-    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(CowStr::Borrowed(v))
-    }
-}
-
-impl<'a, 'de: 'a> Deserialize<'de> for CowStr<'a> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(CowStrVisitor)
+    impl<'a, 'de: 'a> Deserialize<'de> for CowStr<'a> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_str(CowStrVisitor)
+        }
     }
 }
 

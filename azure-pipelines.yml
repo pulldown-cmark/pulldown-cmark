@@ -12,6 +12,8 @@ steps:
     displayName: Cargo test
   - script: cargo test --all --features=simd
     displayName: Cargo test with simd feature enabled
+  - script: cargo test --all --features=serde
+    displayName: Cargo test with serde feature enabled
   - script: cargo run --release -- --regressions
     workingDirectory: fuzzer
     displayName: Test for superlinear time regressions

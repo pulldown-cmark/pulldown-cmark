@@ -22,8 +22,8 @@
 
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
-use std::ops::{Index, Range};
 use std::iter::FusedIterator;
+use std::ops::{Index, Range};
 
 use unicase::UniCase;
 
@@ -32,7 +32,7 @@ use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Options, Tag};
+use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -86,7 +86,7 @@ pub(crate) enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(u32), // heading level
+    Heading(HeadingLevel), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     MathBlock,
@@ -134,16 +134,16 @@ impl<'a> Default for ItemBody {
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
-    pub reference: &'a str,
+    pub reference: CowStr<'a>,
 }
 
 /// Markdown event iterator.
-pub struct Parser<'a> {
-    text: &'a str,
+pub struct Parser<'input, 'callback> {
+    text: &'input str,
     options: Options,
     tree: Tree<Item>,
-    allocs: Allocations<'a>,
-    broken_link_callback: BrokenLinkCallback<'a>,
+    allocs: Allocations<'input>,
+    broken_link_callback: BrokenLinkCallback<'input, 'callback>,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
@@ -151,14 +151,14 @@ pub struct Parser<'a> {
     link_stack: LinkStack,
 }
 
-impl<'a> Parser<'a> {
+impl<'input, 'callback> Parser<'input, 'callback> {
     /// Creates a new event iterator for a markdown string without any options enabled.
-    pub fn new(text: &'a str) -> Parser<'a> {
+    pub fn new(text: &'input str) -> Self {
         Parser::new_ext(text, Options::empty())
     }
 
     /// Creates a new event iterator for a markdown string with given options.
-    pub fn new_ext(text: &'a str, options: Options) -> Parser<'a> {
+    pub fn new_ext(text: &'input str, options: Options) -> Self {
         Parser::new_with_broken_link_callback(text, options, None)
     }
 
@@ -168,10 +168,10 @@ impl<'a> Parser<'a> {
     /// and the returned pair will be used as the link name and title if it is not
     /// `None`.
     pub fn new_with_broken_link_callback(
-        text: &'a str,
+        text: &'input str,
         options: Options,
-        broken_link_callback: BrokenLinkCallback<'a>,
-    ) -> Parser<'a> {
+        broken_link_callback: BrokenLinkCallback<'input, 'callback>,
+    ) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
@@ -187,6 +187,12 @@ impl<'a> Parser<'a> {
             link_stack,
             html_scan_guard,
         }
+    }
+
+    /// Returns a reference to the internal `RefDefs` object, which provides access
+    /// to the internal map of reference definitions.
+    pub fn reference_definitions(&self) -> &RefDefs {
+        &self.allocs.refdefs
     }
 
     /// Handle inline markup.
@@ -440,7 +446,7 @@ impl<'a> Parser<'a> {
                             // below. Disambiguate!
 
                             // (label, source_ix end)
-                            let label: Option<(ReferenceLabel<'a>, usize)> = match scan_result {
+                            let label: Option<(ReferenceLabel<'input>, usize)> = match scan_result {
                                 RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
@@ -471,7 +477,7 @@ impl<'a> Parser<'a> {
                                 let type_url_title = self
                                     .allocs
                                     .refdefs
-                                    .get(&UniCase::new(link_label.as_ref().into()))
+                                    .get(link_label.as_ref())
                                     .map(|matching_def| {
                                         // found a matching definition!
                                         let title = matching_def
@@ -489,7 +495,7 @@ impl<'a> Parser<'a> {
                                                 let broken_link = BrokenLink {
                                                     span: (self.tree[tos.node].item.start)..end,
                                                     link_type,
-                                                    reference: link_label.as_ref(),
+                                                    reference: link_label,
                                                 };
 
                                                 callback(broken_link).map(|(url, title)| {
@@ -670,10 +676,10 @@ impl<'a> Parser<'a> {
     /// Returns next byte index, url and title.
     fn scan_inline_link(
         &self,
-        underlying: &'a str,
+        underlying: &'input str,
         mut ix: usize,
         node: Option<TreeIndex>,
-    ) -> Option<(usize, CowStr<'a>, CowStr<'a>)> {
+    ) -> Option<(usize, CowStr<'input>, CowStr<'input>)> {
         if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
             return None;
         }
@@ -704,10 +710,10 @@ impl<'a> Parser<'a> {
     // returns (bytes scanned, title cow)
     fn scan_link_title(
         &self,
-        text: &'a str,
+        text: &'input str,
         start_ix: usize,
         node: Option<TreeIndex>,
-    ) -> Option<(usize, CowStr<'a>)> {
+    ) -> Option<(usize, CowStr<'input>)> {
         let bytes = text.as_bytes();
         let open = match bytes.get(start_ix) {
             Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
@@ -884,7 +890,7 @@ impl<'a> Parser<'a> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'a> {
+    pub fn into_offset_iter(self) -> OffsetIter<'input, 'callback> {
         OffsetIter { inner: self }
     }
 }
@@ -1182,10 +1188,12 @@ enum LinkStackTy {
     Disabled,
 }
 
+/// Contains the destination URL, title and source span of a reference definition.
 #[derive(Clone)]
-pub(crate) struct LinkDef<'a> {
+pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
+    pub span: Range<usize>,
 }
 
 /// Tracks tree indices of code span delimiters of each length. It should prevent
@@ -1246,16 +1254,35 @@ pub(crate) struct AlignmentIndex(usize);
 
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
-    pub refdefs: HashMap<LinkLabel<'a>, LinkDef<'a>>,
+    pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
 }
 
+/// Keeps track of the reference definitions defined in the document.
+#[derive(Clone, Default)]
+pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
+
+impl<'input, 'b, 's> RefDefs<'input>
+where
+    's: 'b,
+{
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn get(&'s self, key: &'b str) -> Option<&'b LinkDef<'input>> {
+        self.0.get(&UniCase::new(key.into()))
+    }
+
+    /// Provides an iterator over all the document's reference definitions.
+    pub fn iter(&'s self) -> impl Iterator<Item = (&'s str, &'s LinkDef<'input>)> {
+        self.0.iter().map(|(k, v)| (k.as_ref(), v))
+    }
+}
+
 impl<'a> Allocations<'a> {
     pub fn new() -> Self {
         Self {
-            refdefs: HashMap::new(),
+            refdefs: RefDefs::default(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
@@ -1317,8 +1344,8 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-pub type BrokenLinkCallback<'a> =
-    Option<&'a mut dyn FnMut(BrokenLink) -> Option<(CowStr<'a>, CowStr<'a>)>>;
+pub type BrokenLinkCallback<'input, 'borrow> =
+    Option<&'borrow mut dyn FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>>;
 
 /// Markdown event and source range iterator.
 ///
@@ -1327,11 +1354,18 @@ pub type BrokenLinkCallback<'a> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
-pub struct OffsetIter<'a> {
-    inner: Parser<'a>,
+pub struct OffsetIter<'a, 'b> {
+    inner: Parser<'a, 'b>,
 }
 
-impl<'a> Iterator for OffsetIter<'a> {
+impl<'a, 'b> OffsetIter<'a, 'b> {
+    /// Returns a reference to the internal reference definition tracker.
+    pub fn reference_definitions(&self) -> &RefDefs {
+        self.inner.reference_definitions()
+    }
+}
+
+impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1458,7 +1492,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
     Event::Start(tag)
 }
 
-impl<'a> Iterator for Parser<'a> {
+impl<'a, 'b> Iterator for Parser<'a, 'b> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
@@ -1488,7 +1522,7 @@ impl<'a> Iterator for Parser<'a> {
     }
 }
 
-impl<'a> FusedIterator for Parser<'a> {}
+impl FusedIterator for Parser<'_, '_> {}
 
 #[cfg(test)]
 mod test {
@@ -1497,7 +1531,7 @@ mod test {
 
     // TODO: move these tests to tests/html.rs?
 
-    fn parser_with_extensions(text: &str) -> Parser<'_> {
+    fn parser_with_extensions(text: &str) -> Parser<'_, 'static> {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
@@ -1765,7 +1799,7 @@ mod test {
     fn simple_broken_link_callback() {
         let test_str = "This is a link w/o def: [hello][world]";
         let mut callback = |broken_link: BrokenLink| {
-            assert_eq!("world", broken_link.reference);
+            assert_eq!("world", broken_link.reference.as_ref());
             assert_eq!(&test_str[broken_link.span], "[hello][world]");
             let url = "YOLO".into();
             let title = "SWAG".to_owned().into();
@@ -1818,5 +1852,66 @@ mod test {
             }
         }
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn ref_defs() {
+        let input = r###"[a B c]: http://example.com
+[another]: https://google.com
+
+text
+
+[final ONE]: http://wikipedia.org
+"###;
+        let mut parser = Parser::new(input);
+
+        assert!(parser.reference_definitions().get("a b c").is_some());
+        assert!(parser.reference_definitions().get("nope").is_none());
+
+        if let Some(_event) = parser.next() {
+            // testing keys with shorter lifetimes than parser and its input
+            let s = "final one".to_owned();
+            let link_def = parser.reference_definitions().get(&s).unwrap();
+            let span = &input[link_def.span.clone()];
+            assert_eq!(span, "[final ONE]: http://wikipedia.org");
+        }
+    }
+
+    #[test]
+    fn common_lifetime_patterns_allowed<'b>() {
+        let temporary_str = String::from("xyz");
+
+        // NOTE: this is a limitation of Rust, it doesn't allow putting lifetime parameters on the closure itself.
+        // Hack it by attaching the lifetime to the test function instead.
+        // TODO: why is the `'b` lifetime required at all? Changing it to `'_` breaks things :(
+        let mut closure = |link: BrokenLink<'b>| Some(("#".into(), link.reference.into()));
+
+        fn function<'a>(link: BrokenLink<'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
+            Some(("#".into(), link.reference))
+        }
+
+        for _ in Parser::new_with_broken_link_callback(
+            "static lifetime",
+            Options::empty(),
+            Some(&mut closure),
+        ) {}
+        /* This fails to compile. Because the closure can't say `for <'a> fn(BrokenLink<'a>) ->
+         * CowStr<'a>` and has to use the enclosing `'b` lifetime parameter, `temporary_str` lives
+         * shorter than `'b`. I think this is unlikely to occur in real life, and if it does, the
+         * fix is simple: move it out to a function that allows annotating the lifetimes.
+         */
+        //for _ in Parser::new_with_broken_link_callback(&temporary_str, Options::empty(), Some(&mut callback)) {
+        //}
+
+        for _ in Parser::new_with_broken_link_callback(
+            "static lifetime",
+            Options::empty(),
+            Some(&mut function),
+        ) {}
+        for _ in Parser::new_with_broken_link_callback(
+            &temporary_str,
+            Options::empty(),
+            Some(&mut function),
+        ) {}
     }
 }

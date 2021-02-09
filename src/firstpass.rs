@@ -3,12 +3,15 @@
 
 use std::cmp::max;
 
-use crate::linklabel::{scan_link_label_rest, LinkLabel};
 use crate::parse::{scan_containers, Allocations, Item, ItemBody, LinkDef};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::Options;
+use crate::{
+    linklabel::{scan_link_label_rest, LinkLabel},
+    HeadingLevel,
+};
 
 use unicase::UniCase;
 
@@ -188,7 +191,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // parse refdef
         if let Some((bytecount, label, link_def)) = self.parse_refdef_total(ix) {
-            self.allocs.refdefs.entry(label).or_insert(link_def);
+            self.allocs.refdefs.0.entry(label).or_insert(link_def);
             let ix = ix + bytecount;
             // try to read trailing whitespace or it will register as a completely blank line
             // TODO: shouldn't we do this for all block level items?
@@ -1068,13 +1071,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Parse an ATX heading.
     ///
     /// Returns index of start of next line.
-    fn parse_atx_heading(&mut self, mut ix: usize, atx_size: usize) -> usize {
+    fn parse_atx_heading(&mut self, mut ix: usize, atx_level: HeadingLevel) -> usize {
         let heading_ix = self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Heading(atx_size as u32),
+            body: ItemBody::Heading(atx_level),
         });
-        ix += atx_size;
+        ix += atx_level as usize;
         // next char is space or eol (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
@@ -1169,7 +1172,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
         i += 1;
-        let (bytecount, link_def) = self.scan_refdef(start + i)?;
+        let (bytecount, link_def) = self.scan_refdef(start, start + i)?;
         Some((bytecount + i, UniCase::new(label), link_def))
     }
 
@@ -1199,7 +1202,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Returns # of bytes and definition.
     /// Assumes the label of the reference including colon has already been scanned.
-    fn scan_refdef(&self, start: usize) -> Option<(usize, LinkDef<'a>)> {
+    fn scan_refdef(&self, span_start: usize, start: usize) -> Option<(usize, LinkDef<'a>)> {
         let bytes = self.text.as_bytes();
 
         // whitespace between label and url (including up to one newline)
@@ -1214,7 +1217,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         i += dest_length;
 
         // no title
-        let mut backup = (i - start, LinkDef { dest, title: None });
+        let mut backup = (
+            i - start,
+            LinkDef {
+                dest,
+                title: None,
+                span: span_start..i,
+            },
+        );
 
         // scan whitespace between dest and label
         let (mut i, newlines) =
@@ -1237,6 +1247,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
             i += title_length;
+            backup.1.span = span_start..i;
             backup.1.title = Some(unescape(title));
         } else if newlines > 0 {
             return Some(backup);

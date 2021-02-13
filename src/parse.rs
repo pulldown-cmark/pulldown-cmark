@@ -32,7 +32,7 @@ use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
+use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag, TagEnd};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -99,6 +99,8 @@ pub(crate) enum ItemBody {
 
     // Dummy node at the top of the tree - should not be used otherwise!
     Root,
+
+    TagEnd(TagEnd),
 }
 
 impl<'a> ItemBody {
@@ -1255,6 +1257,10 @@ impl<'a> Allocations<'a> {
         self.alignments.push(alignment);
         AlignmentIndex(ix)
     }
+
+    pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
+        std::mem::replace(&mut self.cows[ix.0], "".into())
+    }
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {
@@ -1334,7 +1340,7 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
 
                 let node = self.inner.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.inner.text, &self.inner.allocs);
+                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
@@ -1347,6 +1353,7 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     }
 }
 
+// TODO: take from allocations instead of cloning
 fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
     match item.body {
         ItemBody::Paragraph => Tag::Paragraph,
@@ -1384,18 +1391,18 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
-        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs[cow_ix].clone())
+            return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
@@ -1414,7 +1421,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         }
         ItemBody::Heading(level) => Tag::Heading(level),
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -1430,7 +1437,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 
@@ -1455,8 +1462,8 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
 
                 let node = self.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.text, &self.allocs);
-                if let Event::Start(..) = event {
+                let event = item_to_event(item, self.text, &mut self.allocs);
+                if let Event::Start(ref tag) = event {
                     self.tree.push();
                 } else {
                     self.tree.next_sibling(cur_ix);

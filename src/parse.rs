@@ -1325,7 +1325,7 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
                 self.inner.tree.next_sibling(ix);
                 let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
                 debug_assert!(span.start <= span.end);
-                Some((Event::End(tag), span))
+                Some((Event::End(tag.end()), span))
             }
             Some(cur_ix) => {
                 if self.inner.tree[cur_ix].item.body.is_inline() {
@@ -1446,7 +1446,7 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
                 let ix = self.tree.pop()?;
                 let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
                 self.tree.next_sibling(ix);
-                Some(Event::End(tag))
+                Some(Event::End(tag.end()))
             }
             Some(cur_ix) => {
                 if self.tree[cur_ix].item.body.is_inline() {
@@ -1754,7 +1754,7 @@ mod test {
             Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title) in parser.filter_map(|event| match event {
-            Event::Start(tag) | Event::End(tag) => match tag {
+            Event::Start(tag) => match tag {
                 Tag::Link(typ, url, title) => Some((typ, url, title)),
                 _ => None,
             },

@@ -140,6 +140,60 @@ pub enum Tag<'a> {
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 }
 
+impl<'a> Tag<'a> {
+    fn end(&self) -> TagEnd {
+        match self {
+            Tag::Paragraph => TagEnd::Paragraph,
+            Tag::Heading(level) => TagEnd::Heading(*level),
+        
+            Tag::BlockQuote => TagEnd::BlockQuote,
+            Tag::CodeBlock(..) => TagEnd::CodeBlock,
+        
+            Tag::List(order) => TagEnd::List(order.is_some()),
+            Tag::Item => TagEnd::Item,
+            Tag::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
+        
+            Tag::Table(..) => TagEnd::Table,
+            Tag::TableHead => TagEnd::TableHead,
+            Tag::TableRow => TagEnd::TableRow,
+            Tag::TableCell => TagEnd::TableCell,
+        
+            Tag::Emphasis => TagEnd::Emphasis,
+            Tag::Strong => TagEnd::Strong,
+            Tag::Strikethrough => TagEnd::Strikethrough,
+        
+            Tag::Link(..) => TagEnd::Link,
+            Tag::Image(..) => TagEnd::Image,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum TagEnd {
+    Paragraph,
+    Heading(HeadingLevel),
+
+    BlockQuote,
+    CodeBlock,
+
+    List(bool), // true for ordered lists
+    Item,
+    FootnoteDefinition,
+
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+
+    Emphasis,
+    Strong,
+    Strikethrough,
+
+    Link,
+    Image,
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum HeadingLevel {
@@ -233,7 +287,7 @@ pub enum Event<'a> {
     Start(Tag<'a>),
     /// End of a tagged element.
     #[cfg_attr(feature = "serde", serde(borrow))]
-    End(Tag<'a>),
+    End(TagEnd),
     /// A text node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Text(CowStr<'a>),

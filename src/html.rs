@@ -26,7 +26,7 @@ use std::io::{self, Write};
 use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
+use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 
 enum TableState {
     Head,
@@ -287,27 +287,27 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: Tag) -> io::Result<()> {
+    fn end_tag(&mut self, tag: TagEnd) -> io::Result<()> {
         match tag {
-            Tag::Paragraph => {
+            TagEnd::Paragraph => {
                 self.write("</p>\n")?;
             }
-            Tag::Heading(level) => {
+            TagEnd::Heading(level) => {
                 self.write("</")?;
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;
             }
-            Tag::Table(_) => {
+            TagEnd::Table => {
                 self.write("</tbody></table>\n")?;
             }
-            Tag::TableHead => {
+            TagEnd::TableHead => {
                 self.write("</tr></thead><tbody>\n")?;
                 self.table_state = TableState::Body;
             }
-            Tag::TableRow => {
+            TagEnd::TableRow => {
                 self.write("</tr>\n")?;
             }
-            Tag::TableCell => {
+            TagEnd::TableCell => {
                 match self.table_state {
                     TableState::Head => {
                         self.write("</th>")?;
@@ -318,35 +318,35 @@ where
                 }
                 self.table_cell_index += 1;
             }
-            Tag::BlockQuote => {
+            TagEnd::BlockQuote => {
                 self.write("</blockquote>\n")?;
             }
-            Tag::CodeBlock(_) => {
+            TagEnd::CodeBlock => {
                 self.write("</code></pre>\n")?;
             }
-            Tag::List(Some(_)) => {
+            TagEnd::List(true) => {
                 self.write("</ol>\n")?;
             }
-            Tag::List(None) => {
+            TagEnd::List(false) => {
                 self.write("</ul>\n")?;
             }
-            Tag::Item => {
+            TagEnd::Item => {
                 self.write("</li>\n")?;
             }
-            Tag::Emphasis => {
+            TagEnd::Emphasis => {
                 self.write("</em>")?;
             }
-            Tag::Strong => {
+            TagEnd::Strong => {
                 self.write("</strong>")?;
             }
-            Tag::Strikethrough => {
+            TagEnd::Strikethrough => {
                 self.write("</del>")?;
             }
-            Tag::Link(_, _, _) => {
+            TagEnd::Link => {
                 self.write("</a>")?;
             }
-            Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
-            Tag::FootnoteDefinition(_) => {
+            TagEnd::Image => (), // shouldn't happen, handled in start
+            TagEnd::FootnoteDefinition => {
                 self.write("</div>\n")?;
             }
         }

@@ -258,7 +258,6 @@ pub enum Event<'a> {
     #[cfg_attr(feature = "serde", serde(borrow))]
     Start(Tag<'a>),
     /// End of a tagged element.
-    #[cfg_attr(feature = "serde", serde(borrow))]
     End(TagEnd),
     /// A text node.
     #[cfg_attr(feature = "serde", serde(borrow))]

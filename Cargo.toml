@@ -30,6 +30,18 @@ harness = false
 name = "markdown-it"
 harness = false
 
+[[example]]
+name = "event-filter"
+required-features = ["html"]
+
+[[example]]
+name = "string-to-string"
+required-features = ["html"]
+
+[[example]]
+name = "broken-link-callbacks"
+required-features = ["html"]
+
 [dependencies]
 bitflags = "1.2"
 unicase = "2.6"
@@ -48,6 +60,7 @@ serde_json = "1.0.61"
 bincode = "1.3.1"
 
 [features]
-default = ["getopts"]
+default = ["getopts", "html"]
 gen-tests = []
 simd = []
+html = []

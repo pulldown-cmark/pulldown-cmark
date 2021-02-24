@@ -1,3 +1,5 @@
+#![cfg(feature = "html")]
+
 use html5ever::serialize::{serialize, SerializeOpts};
 use html5ever::{driver as html, local_name, namespace_url, ns, QualName};
 use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};

@@ -28,7 +28,7 @@
 //!
 //! # Example
 //! ```rust
-//! use pulldown_cmark::{Parser, Options, html};
+//! use pulldown_cmark::{Parser, Options};
 //!
 //! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
 //!
@@ -38,13 +38,15 @@
 //! options.insert(Options::ENABLE_STRIKETHROUGH);
 //! let parser = Parser::new_ext(markdown_input, options);
 //!
+//! # #[cfg(feature = "html")] {
 //! // Write to String buffer.
 //! let mut html_output = String::new();
-//! html::push_html(&mut html_output, parser);
+//! pulldown_cmark::html::push_html(&mut html_output, parser);
 //!
 //! // Check that the output is what we expected.
 //! let expected_html = "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";
 //! assert_eq!(expected_html, &html_output);
+//! # }
 //! ```
 
 // When compiled for the rustc compiler itself we want to make sure that this is
@@ -58,10 +60,12 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "html")]
 pub mod html;
+#[cfg(feature = "html")]
+pub mod escape;
 
 mod entities;
-pub mod escape;
 mod firstpass;
 mod linklabel;
 mod parse;

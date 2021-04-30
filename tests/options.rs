@@ -42,3 +42,17 @@ paragraph
     html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
+
+#[test]
+fn options_test4() {
+    let original = r##"# hello
+
+:: author: bambam
+paragraph
+
+"##;
+    let expected = "<h1>hello</h1>\n<div class='options'>author: bambam</div>\n<p>paragraph</p>\n";
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}

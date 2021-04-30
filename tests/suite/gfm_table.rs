@@ -228,7 +228,7 @@ fn gfm_table_test_9() {
 </table>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }
 
 #[test]
@@ -262,5 +262,5 @@ Done
 <p>Done</p>
 "##;
 
-    test_markdown_html(original, expected);
+    test_markdown_html(original, expected, false);
 }

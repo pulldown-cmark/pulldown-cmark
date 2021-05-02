@@ -281,3 +281,11 @@ bitflags::bitflags! {
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
     }
 }
+
+bitflags::bitflags! {
+    /// Option struct containing flags for enabling extra rendering features
+    /// that are not part of the CommonMark spec.
+    pub struct RenderingOptions: u32 {
+        const OPEN_LINK_IN_NEW_TAB = 0b00000001;
+    }
+}

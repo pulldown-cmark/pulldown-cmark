@@ -27,6 +27,7 @@ use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
+use crate::{RenderingOptions};
 
 enum TableState {
     Head,
@@ -47,6 +48,7 @@ struct HtmlWriter<'a, I, W> {
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
     numbers: HashMap<CowStr<'a>, usize>,
+    options: RenderingOptions,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>
@@ -55,6 +57,10 @@ where
     W: StrWrite,
 {
     fn new(iter: I, writer: W) -> Self {
+        HtmlWriter::new_ext(iter, writer, RenderingOptions::empty())
+    }
+
+    fn new_ext(iter: I, writer: W, options: RenderingOptions) -> Self {
         Self {
             iter,
             writer,
@@ -63,6 +69,7 @@ where
             table_alignments: vec![],
             table_cell_index: 0,
             numbers: HashMap::new(),
+            options,
         }
     }
 
@@ -252,7 +259,11 @@ where
                 self.write("\">")
             }
             Tag::Link(_link_type, dest, title) => {
-                self.write("<a href=\"")?;
+                if self.options.contains(RenderingOptions::OPEN_LINK_IN_NEW_TAB) {
+                    self.write("<a target=\"_blank\" href=\"")?;
+                } else {
+                    self.write("<a href=\"")?;
+                }
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
@@ -417,6 +428,13 @@ where
     I: Iterator<Item = Event<'a>>,
 {
     HtmlWriter::new(iter, s).run().unwrap();
+}
+
+pub fn push_html_ext<'a, I>(s: &mut String, iter: I, options: RenderingOptions)
+where
+    I: Iterator<Item = Event<'a>>,
+{
+    HtmlWriter::new_ext(iter, s, options).run().unwrap();
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and

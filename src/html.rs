@@ -27,7 +27,7 @@ use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
-use crate::{RenderingOptions};
+use crate::RenderingOptions;
 
 enum TableState {
     Head,

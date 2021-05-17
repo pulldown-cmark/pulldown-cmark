@@ -260,7 +260,7 @@ where
             }
             Tag::Link(_link_type, dest, title) => {
                 if self.options.contains(RenderingOptions::OPEN_LINK_IN_NEW_TAB) {
-                    self.write("<a target=\"_blank\" href=\"")?;
+                    self.write("<a target=\"_blank\" rel=\"noreferrer\" href=\"")?;
                 } else {
                     self.write("<a href=\"")?;
                 }
@@ -430,6 +430,27 @@ where
     HtmlWriter::new(iter, s).run().unwrap();
 }
 
+/// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
+/// push it to a `String`. Can specify rendering extensions.
+///
+/// # Examples
+///
+/// ```
+/// use pulldown_cmark::{html, Parser, RenderingOptions};
+///
+/// let markdown_str = r#"[my link](https://mydomain.net)"#;
+/// let parser = Parser::new(markdown_str);
+///
+/// let mut rendering_options = RenderingOptions::empty();
+/// rendering_options.insert(RenderingOptions::OPEN_LINK_IN_NEW_TAB);
+///
+/// let mut html_buf = String::new();
+/// html::push_html_ext(&mut html_buf, parser, rendering_options);
+///
+/// assert_eq!(html_buf, 
+/// r#"<p><a target="_blank" rel="noreferrer" href="https://mydomain.net">my link</a></p>
+/// "#);
+/// ```
 pub fn push_html_ext<'a, I>(s: &mut String, iter: I, options: RenderingOptions)
 where
     I: Iterator<Item = Event<'a>>,

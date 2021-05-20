@@ -865,9 +865,8 @@ pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> 
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
             ItemBody::BlockQuote => {
-                let save = line_start.clone();
+                // `scan_blockquote_marker` saves & restores internally
                 if !line_start.scan_blockquote_marker() {
-                    *line_start = save;
                     break;
                 }
             }

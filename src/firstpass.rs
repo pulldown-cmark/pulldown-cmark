@@ -1237,12 +1237,12 @@ fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
 
 /// Assumes `text_bytes` is preceded by `<`.
 fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
-    static BEGIN_TAGS: &[&[u8]; 3] = &[b"pre", b"style", b"script"];
+    static BEGIN_TAGS: &[&[u8]; 4] = &[b"pre", b"style", b"script", b"textarea"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
     for (beg_tag, end_tag) in BEGIN_TAGS
         .iter()
-        .zip(["</pre>", "</style>", "</script>"].iter())
+        .zip(["</pre>", "</style>", "</script>", "</textarea>"].iter())
     {
         let tag_len = beg_tag.len();
 

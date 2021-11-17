@@ -1,0 +1,661 @@
+Examples and edge cases for attribute blocks for headings.
+
+# Basic usage
+
+Attribute blocks are attributes wrapped by curly braces (`{` and `}`) at the
+end of heading content.
+
+Strictly speaking, attribute blocks satisfies the conditions below:
+
+* Placed at the end of the heading, with optional following spaces.
+* Starts with `{` and ends with `}`.
+* Does not contain any other `{` and `}` except for opening and ending of the block.
+* Does not contain any `<`s (less-than operators), `>`s (greater-than operators),
+  `\`s (backslashes), or newline characters.
+
+Attributes are separated by ASCII non-newline whitespaces.
+An ID attribute is specified as `#id-fragment-here`, and a class attribute is
+specified as `.class-here`.
+
+Basic usage with setext headings:
+
+```````````````````````````````` example
+with the ID {#myh1}
+===================
+with a class {.myclass}
+------------
+multiple! {.myclass1 #myh3 .myclass2}
+--
+.
+<h1 id="myh1">with the ID</h1>
+<h2 class="myclass">with a class</h2>
+<h2 id="myh3" class="myclass1 myclass2">multiple!</h2>
+````````````````````````````````
+
+Basic usage with ATX headings:
+
+```````````````````````````````` example
+# with the ID {#myh1}
+## with a class {.myclass}
+### multiple! {.myclass1 #myh3 .myclass2}
+.
+<h1 id="myh1">with the ID</h1>
+<h2 class="myclass">with a class</h2>
+<h3 id="myh3" class="myclass1 myclass2">multiple!</h3>
+````````````````````````````````
+
+If an ATX heading has closing `#`s, the attribute block should be placed after them.
+
+```````````````````````````````` example
+# H1 # {#id1}
+## H2 ## with ## multiple ## hashes ## {#id2}
+### with trailing hash # ### {#id3}
+
+#### non-attribute-block {#id4} ####
+.
+<h1 id="id1">H1</h1>
+<h2 id="id2">H2 ## with ## multiple ## hashes</h2>
+<h3 id="id3">with trailing hash #</h3>
+<h4>non-attribute-block {#id4}</h4>
+````````````````````````````````
+
+Trailing ASCII spaces are allowed.
+
+```````````````````````````````` example
+# spaces {#myid1}    
+## tabs {#myid2}		
+.
+<h1 id="myid1">spaces</h1>
+<h2 id="myid2">tabs</h2>
+````````````````````````````````
+
+ATX heading cannot have multiple lines.
+
+```````````````````````````````` example
+# H1 \
+nextline
+.
+<h1>H1 \</h1>
+<p>nextline</p>
+````````````````````````````````
+
+Of course, attribute blocks cannot be another line in ATX headings.
+
+```````````````````````````````` example
+# H1 \
+{#myid}
+
+## H2 \
+nextline {.class}
+
+### H3 [link
+](https://example.com/) {#myid3}
+.
+<h1>H1 \</h1>
+<p>{#myid}</p>
+<h2>H2 \</h2>
+<p>nextline {.class}</p>
+<h3>H3 [link</h3>
+<p>](https://example.com/) {#myid3}</p>
+````````````````````````````````
+
+<!--
+  Note that the `\` at `H1 \</h1>` should be a single backslash, not double.
+  This is due to how `<Spec as Iterator>::next()` in build.rs parses this file.
+  The file is read as a plain string and the tests cases are generated.
+  The lines after a period in examples are not parsed as a markdown.
+-->
+
+Setext header can have multiple lines.
+
+```````````````````````````````` example
+H1
+cont
+{#myid}
+==
+.
+<h1 id="myid">H1
+cont
+</h1>
+````````````````````````````````
+
+However, an attribute block itself cannot have newline characters.
+
+```````````````````````````````` example
+H1
+{
+  .class1
+  .class2
+}
+==
+.
+<h1>H1
+{
+.class1
+.class2
+}</h1>
+````````````````````````````````
+
+## Leading spaces
+
+It is recommended to separate heading content and attribute blocks by spaces.
+Some implementations supports this style, and some others not.
+
+FYI:
+Attribute blocks without leading spaces are supported by cebe
+(markdown-extra) 1.2.0, markdig (advanced) 0.26.0.0, maruku 0.7.3.beta1, and
+pandoc 2.14.2.
+On the other hand, it is not supported by kramdown 1.2.0 and php-markdown-extra
+1.9.0, while they supports attribute blocks with leading spaces.
+
+This style is supported since the majority of other implementations seems to
+support this, but be careful about incompatibility.
+Put spaces before attribute blocks for more compatibility.
+
+```````````````````````````````` example
+# without space, not recommended{#id1}
+## recommended style with spaces {#id2}
+.
+<h1 id="id1">without space, not recommended</h1>
+<h2 id="id2">recommended style with spaces</h2>
+````````````````````````````````
+
+## Spaces inside braces
+
+Braces can be optionally separated by spaces, and contiguous spaces are handled
+in the same way as a single whitespace.
+
+```````````````````````````````` example
+# H1 { #id1 }
+## H2 {.myclass      #id2 }
+### H3 {     .myclass}
+.
+<h1 id="id1">H1</h1>
+<h2 id="id2" class="myclass">H2</h2>
+<h3 class="myclass">H3</h3>
+````````````````````````````````
+
+## Separators
+
+Separators are mandatory. There are no automagical separation.
+
+```````````````````````````````` example
+# H1 {#id1.class1.class2 .class3}
+## H2 {.class1#id2.class2}
+.
+<h1 id="id1.class1.class2" class="class3">H1</h1>
+<h2 class="class1#id2.class2">H2</h2>
+````````````````````````````````
+
+## Unclosed braces
+
+If a left curly brace is present but is not closed, it is not parsed as an
+attribute blocks.
+
+```````````````````````````````` example
+# H1 { #id1
+## H2 {#id2
+.
+<h1>H1 { #id1</h1>
+<h2>H2 {#id2</h2>
+````````````````````````````````
+
+Not-opened braces are also treated as a usual text content.
+
+```````````````````````````````` example
+# H1 #id1 }
+## H2 #id2}
+.
+<h1>H1 #id1 }</h1>
+<h2>H2 #id2}</h2>
+````````````````````````````````
+
+## Non-suffix block
+
+Attribute blocks should be at the end of the heading.
+
+```````````````````````````````` example
+# H1 { #id1 } foo
+## H2 {#id2} <!-- hello -->
+.
+<h1>H1 { #id1 } foo</h1>
+<h2>H2 {#id2} <!-- hello --></h2>
+````````````````````````````````
+
+## Inlines
+
+Inlines can be used in headings.
+
+```````````````````````````````` example
+# *H1* { #id1 }
+## **H2** {#id2}
+### _H3_ {#id3}
+#### ~~H4~~ {#id4}
+##### [text](uri) {#id5}
+.
+<h1 id="id1"><em>H1</em></h1>
+<h2 id="id2"><strong>H2</strong></h2>
+<h3 id="id3"><em>H3</em></h3>
+<h4 id="id4"><del>H4</del></h4>
+<h5 id="id5"><a href="uri">text</a></h5>
+````````````````````````````````
+
+# Ordering and deduplication of attributes
+
+Attributes are handle in quite simple way.
+
+## ID
+
+When a heading have multiple IDs, the last one wins.
+
+```````````````````````````````` example
+# H1 {#first #second #last}
+.
+<h1 id="last">H1</h1>
+````````````````````````````````
+
+## Classes
+
+There are no reordering of classes.
+
+```````````````````````````````` example
+# H1 {.z .a .zz}
+.
+<h1 class="z a zz">H1</h1>
+````````````````````````````````
+
+There are no deduplication of classes.
+
+```````````````````````````````` example
+# H1 {.a .a .a}
+.
+<h1 class="a a a">H1</h1>
+````````````````````````````````
+
+## Combined
+
+When both an ID and classes are specified, ID attribute is always emitted first.
+
+```````````````````````````````` example
+# H1 {.myclass #myid}
+## H2 {.z #m .a}
+.
+<h1 id="myid" class="myclass">H1</h1>
+<h2 id="m" class="z a">H2</h2>
+````````````````````````````````
+
+# Unknown attributes
+
+Unknown attributes are simply ignored.
+Note that it cause neither an error nor a fallback to non-extended markdown,
+since this other attributes can be supported by other implementations or this
+crate in future.
+
+```````````````````````````````` example
+# H1 {foo}
+## H2 {#myid unknown this#is.ignored attr=value .myclass}
+.
+<h1>H1</h1>
+<h2 id="myid" class="myclass">H2</h2>
+````````````````````````````````
+
+# Forbidden characters
+
+Some characters cannot appear in attribute blocks.
+Forbidden characters are:
+
+* left curly brace (`{`),
+* right curly brace (`}`),
+* less-than operator (`<`),
+* greater-than operator (`>`),
+* backslash (`\`), and
+* newline.
+
+Left curly brace (note that `{unknown}` and `{.bar}` are treated as attribute blocks):
+
+```````````````````````````````` example
+# H1 {.foo{unknown}
+## H2 {.foo{.bar}
+.
+<h1>H1 {.foo</h1>
+<h2 class="bar">H2 {.foo</h2>
+````````````````````````````````
+
+Right curly brace:
+
+```````````````````````````````` example
+# H1 {.foo}bar}
+.
+<h1>H1 {.foo}bar}</h1>
+````````````````````````````````
+
+less-than operator and greater-than operator:
+
+```````````````````````````````` example
+# H1 {<i>foo</i>}
+.
+<h1>H1 {<i>foo</i>}</h1>
+````````````````````````````````
+
+Backslash:
+
+```````````````````````````````` example
+# H1 {.foo\}
+.
+<h1>H1 {.foo}</h1>
+````````````````````````````````
+
+Newline:
+
+```````````````````````````````` example
+H1 {.foo
+.bar}
+==
+.
+<h1>H1 {.foo
+.bar}</h1>
+````````````````````````````````
+
+# Cancelling parsing of attribute blocks
+
+If you want to avoid the last `{...}` from being treated as an attribute block,
+you can do it in some ways.
+
+Put a dummy empty attribute block `{}` at the end of line:
+
+```````````````````````````````` example
+H1 {} {}
+=====
+
+## H2 {} {}
+.
+<h1>H1 {}</h1>
+<h2>H2 {}</h2>
+````````````````````````````````
+
+Or, put closing hashes for ATX heading:
+
+```````````````````````````````` example
+## H2 {} ##
+.
+<h2>H2 {}</h2>
+````````````````````````````````
+
+Or, include forbidden characters (a backslash and newline in this example)
+between the braces.
+
+```````````````````````````````` example
+# H1 {\}
+## this is also ok \{\}
+
+newline can be used for setext heading {
+}
+--
+.
+<h1>H1 {}</h1>
+<h2>this is also ok {}</h2>
+<h2>newline can be used for setext heading {
+}</h2>
+````````````````````````````````
+
+Note that escaping only opening braces does not prevent the braces from
+starting attribute blocks.
+Forbidden characters between braces are important.
+
+```````````````````````````````` example
+# H1 \{.foo}
+## H2 \\{.bar}
+### stray backslash at the end is preserved \
+.
+<h1 class="foo">H1 \</h1>
+<h2 class="bar">H2 \</h2>
+<h3>stray backslash at the end is preserved \</h3>
+````````````````````````````````
+
+<!--
+  Note that the `\` at `H1-2 \</h1>` should be a single backslash, not double.
+  This is due to how `<Spec as Iterator>::next()` in build.rs parses this file.
+  The file is read as a plain string and the tests cases are generated.
+  The lines after a period in examples are not parsed as a markdown.
+-->
+
+<!--
+  Note that the `\` at `H1-2 \</h1>` should be a single backslash, not double.
+  This is due to how `<Spec as Iterator>::next()` in build.rs parses this file.
+  The file is read as a plain string and the tests cases are generated.
+  The lines after a period in examples are not parsed as a markdown.
+-->
+
+You may notice the backslash in `# H1 \{.foo}` is preserved.
+The parser strips the `{.foo}` attribute block **before processing backslash
+escapes**, so the heading content `H1 \` is extracted and the stray backslash
+at the end of the heading is preserved as usual.
+
+Same applies to setext headings with stray trailing backslashes.
+
+```````````````````````````````` example
+H1 \{.foo}
+==
+H2 \\{.bar}
+--
+
+stray backslash at the end is preserved \
+--
+.
+<h1 class="foo">H1 \</h1>
+<h2 class="bar">H2 \</h2>
+<h2>stray backslash at the end is preserved \</h2>
+````````````````````````````````
+
+# Disabled inlines
+
+Inlines are disabled and special characters such as `_` and `*` will be treated
+as a plain character inside attribute blocks.
+
+```````````````````````````````` example
+# H1 {#`code`}
+## H2 {#foo__bar__baz}
+### H3 {#foo**bar**baz}
+.
+<h1 id="`code`">H1</h1>
+<h2 id="foo__bar__baz">H2</h2>
+<h3 id="foo**bar**baz">H3</h3>
+````````````````````````````````
+
+```````````````````````````````` example
+H1 {#`code`}
+==
+
+H2-1 {#foo__bar__baz}
+----
+
+H2-2 {#foo**bar**baz}
+--
+.
+<h1 id="`code`">H1</h1>
+<h2 id="foo__bar__baz">H2-1</h2>
+<h2 id="foo**bar**baz">H2-2</h2>
+````````````````````````````````
+
+Parsing of attribute blocks takes precedence, even when unclosed inlines are
+present before the attribute blocks.
+
+````````````````````````````````.example
+# H1 __{#my__id1}
+## H2 **{#my**id2}
+### H3 `{.code` }
+#### H4 ~~{.strike~~ }
+.
+<h1 id="my__id1">H1 __</h1>
+<h2 id="my**id2">H2 **</h2>
+<h3 class="code`">H3 `</h3>
+<h4 class=".strike~~">H4 ~~</h4>
+````````````````````````````````
+
+````````````````````````````````.example
+# H1__ {#my__id1}
+## H2** {#my**id2}
+### H3` {.code` }
+#### H4~~ {.strike~~ }
+.
+<h1 id="my__id1">H1__ </h1>
+<h2 id="my**id2">H2** </h2>
+<h3 class="code`">H3` </h3>
+<h4 class=".strike~~">H4~~ </h4>
+````````````````````````````````
+
+````````````````````````````````.example
+# H1__ {.foo__bar**baz}
+qux**
+.
+<h1 class="foo__bar**baz">H1__</h1>
+<p>qux**</p>
+````````````````````````````````
+
+This behavior helps source writers and generators add attribute blocks to
+headings without necessity to know and parse the heading content.
+
+# Escapes
+
+Only double quotes (`"`) and ampersands (`&`) are escaped into HTML character
+entity references (`&quot;` and `&amp;` respectively), and no more extra escape
+and sanitizing are applied.
+Writers are responsible to write valid (and safe) IDs and classes.
+
+Note that `'` won't be escaped since pulldown-cmark always uses double quotes
+to wrap attributes and it is safe to put single quotes inside them.
+
+```````````````````````````````` example
+# H1 {.foo#bar}
+## H2 {#foo.bar}
+### H3 {.a"b'c&d}
+.
+<h1 class="foo#bar">H1</h1>
+<h2 id="foo.bar">H2</h2>
+<h3 class="a&quot;b'c&amp;d">H3</h3>
+````````````````````````````````
+
+# Edge cases
+
+Markdown processor cannot abort on syntax error, so some output is required for
+any input, even if it is obviously wrong or looks very weird.
+However, attribute blocks is extended syntax with neither de jure nor de facto
+stardard, so uncommon cases will lead to possibly unexpected output that is
+incompatible with other implementations.
+
+Users should not rely on the current behavior on these weird edge case inputs.
+
+## Empty IDs and classes
+
+If IDs and classes are specified with empty name, they are simply ignored.
+
+```````````````````````````````` example
+# H1 {#}
+## H2 {.}
+.
+<h1>H1</h1>
+<h2>H2</h2>
+````````````````````````````````
+
+```````````````````````````````` example
+# H1 {#foo #}
+# H1 {.foo . . .bar}
+.
+<h1 id="foo">H1</h1>
+<h1 class="foo bar">H1</h1>
+````````````````````````````````
+
+## Empty headers
+
+```````````````````````````````` example
+# {}
+## {}
+### {\}
+#### {} {}
+
+#{}
+.
+<h1></h1>
+<h2></h2>
+<h3>{}</h3>
+<h4>{}</h4>
+<p>#{}</p>
+````````````````````````````````
+
+```````````````````````````````` example
+{}
+==
+
+\{}
+--
+
+\
+--
+
+{\}
+==
+
+{}{}
+--
+.
+<h1></h1>
+<h2>\</h2>
+<h2>\</h2>
+<h1>{}</h1>
+<h2>{}</h2>
+````````````````````````````````
+
+## Whitespaces
+
+### Trailing ASCII whitespaces
+
+Trailing non-U+0020 spaces in the heading content are preserved, even when an
+attribute block follows.
+
+```````````````````````````````` example
+# horizontal tab	
+# horizontal tab	{#ht}
+## form feed
+## form feed{#ff}
+### vertical tab
+### vertical tab{#vt}
+.
+<h1>horizontal tab	</h1>
+<h1 id="ht">horizontal tab	</h1>
+<h2>form feed</h2>
+<h2 id="ff">form feed</h2>
+<h3>vertical tab</h3>
+<h3 id="vt">vertical tab</h3>
+````````````````````````````````
+
+### Attributes separators
+
+Attributes are separated by ASCII non-newline whitespaces, as described previously.
+More precisely, the three characters below can be used as a separator:
+
+* U+0020 SPACE,
+* U+0009 HORIZONTAL TAB, and
+* U+000C FORM FEED.
+
+Note that U+000B VERTICAL TAB is not considered as a non-newline whitespace.
+
+```````````````````````````````` example
+# horizontal tab (U+000A) {#ht	.myclass}
+## form feed (U+000C) {#ff.myclass}
+
+# vertical tab (U+000B) {#vt.myclass}
+.
+<h1 id="ht" class="myclass">horizontal tab (U+000A)</h1>
+<h2 id="ff" class="myclass">form feed (U+000C)</h2>
+<h1 id="vt.myclass">vertical tab (U+000B)</h1>
+````````````````````````````````
+
+Non-ASCII whitespaces don't work as separators.
+
+```````````````````````````````` example
+# EN SPACE (U+2002) {#en-space .myclass}
+## IDEOGRAPHIC SPACE (U+3000) {#ideographic-space　.myclass}
+.
+<h1 id="en-space .myclass">EN SPACE (U+2002)</h1>
+<h2 id="ideographic-space　.myclass">IDEOGRAPHIC SPACE (U+3000)</h2>
+````````````````````````````````

@@ -23,6 +23,7 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::iter::FusedIterator;
+use std::num::NonZeroUsize;
 use std::ops::{Index, Range};
 
 use unicase::UniCase;
@@ -79,7 +80,7 @@ pub(crate) enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(HeadingLevel), // heading level
+    Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
@@ -1200,12 +1201,16 @@ pub(crate) struct CowIndex(usize);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub(crate) struct AlignmentIndex(usize);
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct HeadingIndex(NonZeroUsize);
+
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
+    headings: Vec<(Option<&'a str>, Vec<&'a str>)>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1234,6 +1239,7 @@ impl<'a> Allocations<'a> {
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
+            headings: Vec::new(),
         }
     }
 
@@ -1253,6 +1259,15 @@ impl<'a> Allocations<'a> {
         let ix = self.alignments.len();
         self.alignments.push(alignment);
         AlignmentIndex(ix)
+    }
+
+    pub fn allocate_heading(&mut self, attrs: (Option<&'a str>, Vec<&'a str>)) -> HeadingIndex {
+        let ix = self.headings.len();
+        self.headings.push(attrs);
+        // This won't panic. `self.headings.len()` can't be `usize::MAX` since
+        // such a long Vec cannot fit in memory.
+        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
+        HeadingIndex(ix_nonzero)
     }
 }
 
@@ -1277,6 +1292,14 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
 
     fn index(&self, ix: AlignmentIndex) -> &Self::Output {
         self.alignments.index(ix.0)
+    }
+}
+
+impl<'a> Index<HeadingIndex> for Allocations<'a> {
+    type Output = (Option<&'a str>, Vec<&'a str>);
+
+    fn index(&self, ix: HeadingIndex) -> &Self::Output {
+        self.headings.index(ix.0.get() - 1)
     }
 }
 
@@ -1360,7 +1383,11 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Heading(level) => Tag::Heading(level),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let (id, classes) = allocs.index(heading_ix);
+            Tag::Heading(level, *id, classes.clone())
+        }
+        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
@@ -1411,7 +1438,11 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Heading(level) => Tag::Heading(level),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let (id, classes) = allocs.index(heading_ix);
+            Tag::Heading(level, *id, classes.clone())
+        }
+        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }

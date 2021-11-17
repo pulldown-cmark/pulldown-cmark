@@ -101,8 +101,9 @@ pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
 
-    /// A heading. The field indicates the level of the heading.
-    Heading(HeadingLevel),
+    /// A heading. The first field indicates the level of the heading,
+    /// the second the fragment identifier, and the third the classes.
+    Heading(HeadingLevel, Option<&'a str>, Vec<&'a str>),
 
     BlockQuote,
     /// A code block.

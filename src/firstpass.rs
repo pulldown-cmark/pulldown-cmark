@@ -389,7 +389,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_setext_heading(&mut self, ix: usize, node_ix: TreeIndex) -> Option<usize> {
         let bytes = self.text.as_bytes();
         let (n, level) = scan_setext_heading(&bytes[ix..])?;
-        self.tree[node_ix].item.body = ItemBody::Heading(level);
+        self.tree[node_ix].item.body =
+            ItemBody::Heading(level, None);
 
         // strip trailing whitespace
         if let Some(cur_ix) = self.tree.cur() {
@@ -993,7 +994,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let heading_ix = self.tree.append(Item {
             start: ix,
             end: 0, // set later
-            body: ItemBody::Heading(atx_level),
+            body: ItemBody::Heading(atx_level, None),
         });
         ix += atx_level as usize;
         // next char is space or eol (guaranteed by scan_atx_heading)

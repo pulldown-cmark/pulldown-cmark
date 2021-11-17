@@ -9,6 +9,8 @@
 use std::num::NonZeroUsize;
 use std::ops::{Add, Sub};
 
+use crate::parse::{Item, ItemBody};
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd)]
 pub(crate) struct TreeIndex(NonZeroUsize);
 
@@ -162,6 +164,79 @@ impl<T: Default> Tree<T> {
     /// Moves focus to the next sibling of the given node.
     pub(crate) fn next_sibling(&mut self, cur_ix: TreeIndex) -> Option<TreeIndex> {
         self.cur = self[cur_ix].next;
+        self.cur
+    }
+}
+
+impl Tree<Item> {
+    /// Truncates the preceding siblings to the given end position,
+    /// and returns the new current node.
+    pub(crate) fn truncate_siblings(
+        &mut self,
+        bytes: &[u8],
+        end_byte_ix: usize,
+    ) -> Option<TreeIndex> {
+        let parent_ix = self.peek_up()?;
+        let mut next_child_ix = self[parent_ix].child;
+        let mut prev_child_ix = None;
+
+        // drop or truncate children based on its range
+        while let Some(child_ix) = next_child_ix {
+            let child_end = self[child_ix].item.end;
+            if child_end < end_byte_ix {
+                // preserve this node, and go to the next
+                prev_child_ix = Some(child_ix);
+                next_child_ix = self[child_ix].next;
+                continue;
+            }
+
+            if child_end == end_byte_ix {
+                // this will be the last node
+                self[child_ix].next = None;
+                // focus to the new last child (this node)
+                self.cur = Some(child_ix);
+                break;
+            }
+
+            debug_assert!(end_byte_ix < child_end);
+            if self[child_ix].item.start == end_byte_ix {
+                // check whether the previous character is a backslash
+                let is_previous_char_backslash_escape =
+                    end_byte_ix.checked_sub(1).map_or(false, |prev| {
+                        (bytes[prev] == b'\\') && (self[child_ix].item.body == ItemBody::Text)
+                    });
+                if is_previous_char_backslash_escape {
+                    // rescue the backslash as a plain text content
+                    let last_byte_ix = end_byte_ix - 1;
+                    self[child_ix].item.start = last_byte_ix;
+                    self[child_ix].item.end = end_byte_ix;
+                    self.cur = Some(child_ix);
+                    break;
+                }
+
+                // the node will become empty. drop the node
+                if let Some(prev_child_ix) = prev_child_ix {
+                    // a preceding sibling exists
+                    self[prev_child_ix].next = None;
+                    self.cur = Some(prev_child_ix);
+                } else {
+                    // no preceding siblings. remove the node from the parent
+                    self[parent_ix].child = None;
+                    self.cur = None;
+                }
+                break;
+            }
+
+            debug_assert!(self[child_ix].item.start < end_byte_ix);
+            debug_assert!(end_byte_ix < child_end);
+            // truncate the node
+            self[child_ix].item.end = end_byte_ix;
+            self[child_ix].next = None;
+            // focus to the new last child
+            self.cur = Some(child_ix);
+            break;
+        }
+
         self.cur
     }
 }

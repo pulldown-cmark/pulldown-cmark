@@ -279,5 +279,11 @@ bitflags::bitflags! {
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
+        /// Extension to allow headings to have ID and classes.
+        ///
+        /// `# text { #id .class1 .class2 }` is interpreted as a level 1 heading
+        /// with the content `text`, ID `id`, and classes `class1` and `class2`.
+        /// Note that attributes (ID and classes) should be space-separeted.
+        const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
     }
 }

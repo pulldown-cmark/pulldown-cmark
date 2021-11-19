@@ -12,12 +12,16 @@ use tendril::stream::TendrilSink;
 mod suite;
 
 #[inline(never)]
-pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool) {
+pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, standard_footnotes: bool) {
     let mut s = String::new();
 
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
-    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(if standard_footnotes {
+        Options::ENABLE_STANDARD_FOOTNOTES
+    } else {
+        Options::ENABLE_FOOTNOTES
+    });
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TASKLISTS);
     if smart_punct {

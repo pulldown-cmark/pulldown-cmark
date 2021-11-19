@@ -20,7 +20,7 @@ fn standard_footnotes_test_1() {
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -46,7 +46,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#fn-la
 
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn standard_footnotes_test_3() {
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -97,7 +97,7 @@ Exciting![^lorem]
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -121,7 +121,7 @@ If a woodchuck could chuck wood.
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -146,7 +146,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -185,7 +185,7 @@ fn standard_footnotes_test_7() {
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }
 
 #[test]
@@ -209,5 +209,5 @@ fn standard_footnotes_test_8() {
 </section>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, true);
 }

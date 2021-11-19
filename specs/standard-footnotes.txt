@@ -1,0 +1,200 @@
+Run this with `cargo run -- -F -s specs/standard-footnotes.txt`.
+
+This is how footnotes are basically used.
+
+```````````````````````````````` example
+Lorem ipsum.[^a]
+
+[^a]: Cool.
+.
+<p>Lorem ipsum.<sup class="footnote-reference"><a href="#fn-a" id="fn-a-ref">1</a></sup></p>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-a">
+<p>Cool. <a href="#fn-a-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+
+Footnotes can be used inside blockquotes:
+
+```````````````````````````````` example
+> This is the song that never ends.\
+> Yes it goes on and on my friends.[^lambchops]
+>
+> [^lambchops]: <https://www.youtube.com/watch?v=0U2zJOryHKQ>
+.
+<blockquote>
+<p>This is the song that never ends.<br />
+Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#fn-lambchops" id="fn-lambchops-ref">1</a></sup></p>
+</blockquote>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-lambchops">
+<p><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">https://www.youtube.com/watch?v=0U2zJOryHKQ</a> <a href="#fn-lambchops-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+</div>
+
+````````````````````````````````
+
+
+Footnotes can be complex block structures:
+
+```````````````````````````````` example
+Songs that simply loop are a popular way to annoy people. [^examples]
+
+[^examples]:
+ * [The song that never ends](https://www.youtube.com/watch?v=0U2zJOryHKQ)
+ * [I know a song that gets on everybody's nerves](https://www.youtube.com/watch?v=TehWI09qxls)
+ * [Ninety-nine bottles of beer on the wall](https://www.youtube.com/watch?v=qVjCag8XoHQ)
+.
+<p>Songs that simply loop are a popular way to annoy people. <sup class="footnote-reference"><a href="#fn-examples" id="fn-examples-ref">1</a></sup></p>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-examples">
+<ul>
+<li><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">The song that never ends</a></li>
+<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a></li>
+<li><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a></li>
+</ul>
+<a href="#fn-examples-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+
+Footnotes can even have multiple paragraphs. They *do* need to be referenced to show up, but they *don't* have to appear in order.
+
+```````````````````````````````` example
+[^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
+
+    I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
+
+Exciting![^lorem]
+.
+<p>Exciting! <sup class="footnote-reference"><a href="#fn-lorem" id="fn-lorem-ref">1</a></sup></p>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-lorem">
+<p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.</p>
+<p>I had largely given over my inquiries into what Professor Angell called the &quot;Cthulhu Cult&quot;, and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp. <a href="#fn-lorem-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+
+A footnote will end on a double line break if the next item is not indented to a block level, just like a list item.
+
+```````````````````````````````` example
+[^ipsum]: How much wood would a woodchuck chuck.
+
+If a woodchuck could chuck wood.
+
+
+# Forms of entertainment that aren't childish[^ipsum]
+.
+<p>If a woodchuck could chuck wood.</p>
+<h1>Forms of entertainment that aren't childish <sup class="footnote-reference"><a href="#fn-ipsum" id="fn-ipsum-ref">1</a></sup></p></h1>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-ipsum">
+<p>How much wood would a woodchuck chuck. <a href="#fn-ipsum-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+
+A footnote will also break if it's inside another container.
+
+```````````````````````````````` example
+> He's also really stupid. [^why]
+>
+> [^why]: Because your mamma!
+
+As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.
+.
+<blockquote>
+<p>He's also really stupid. <sup class="footnote-reference"><a href="#why" id="why-ref">1</a></sup></p>
+</blockquote>
+<p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="why">
+<p>Because your mamma! <a href="#why-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+
+As a special exception, footnotes cannot be nested directly inside each other.
+
+```````````````````````````````` example
+Nested footnotes are considered poor style. [^a] [^xkcd]
+
+[^a]: This does not mean that footnotes cannot reference each other. [^b]
+
+[^b]: This means that a footnote definition cannot be directly inside another footnote definition.
+> This means that a footnote cannot be directly inside another footnote's body. [^e]
+>
+> [^e]: They can, however, be inside anything else.
+
+[^xkcd]: [The other kind of nested footnote is, however, considered poor style.](https://xkcd.com/1208/)
+.
+<p>Nested footnotes are considered poor style. <sup class="footnote-reference"><a href="#fn-a" id="fn-a-ref">1</a></sup> <sup class="footnote-reference"><a href="#fn-xkcd" id="fn-xkcd-ref">2</a></sup></p>
+<blockquote>
+<p>This means that a footnote cannot be directly inside another footnote's body. <sup class="footnote-reference"><a href="#fn-e" id="fn-e-ref">4</a></sup></p>
+</blockquote>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-a">
+<p>This does not mean that footnotes cannot reference each other. <sup class="footnote-reference"><a href="#fn-b" id="fn-b-ref">3</a></sup> <a href="#fn-a-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+<li class="footnote" id="fn-xkcd">
+<p><a href="https://xkcd.com/1208/">The other kind of nested footnote is, however, considered poor style.</a> <a href="#fn-xkcd-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+<li class="footnote" id="fn-b">
+<p>This means that a footnote definition cannot be directly inside another footnote definition. <a href="#fn-b-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+<li class="footnote" id="fn-e">
+<p>They can, however, be inside anything else. <a href="#fn-e-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````
+
+While it's easier to read the source if they have one line between each other, they render correctly (starting a new definition) regardless.
+
+```````````````````````````````` example
+[^Doh] Ray Me Fa So La Te Do! [^1]
+
+[^Doh]: I know. Wrong Doe. And it doesn't read right.
+[^1]: Common for people practicing music.
+.
+<p><sup class="footnote-reference"><a href="#fn-Doh" id="fn-Doh-ref">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#fn-1" id="fn-1-ref">2</a></sup></p>
+<hr class="footnote-separator">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote" id="fn-Doh">
+<p>I know. Wrong Doe. And it doesn't read right. <a href="#fn-Doh-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+<li class="footnote" id="fn-1">
+<p>Common for people practicing music. <a href="#fn-1-ref" class="footnote-backref" aria-label="back to content" role="doc-backlink">↩︎</a></p>
+</li>
+</ol>
+</section>
+````````````````````````````````

@@ -53,7 +53,7 @@ Songs that simply loop are a popular way to annoy people. [^examples]
 ````````````````````````````````
 
 
-Footnotes can even have multiple paragraphs. They also don't need to be referenced to show up.
+Footnotes cannot have multiple paragraphs. They also don't need to be referenced to show up.
 
 ```````````````````````````````` example
 [^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.

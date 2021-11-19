@@ -51,7 +51,8 @@ pub(crate) struct Node<T> {
 #[derive(Clone)]
 pub(crate) struct Tree<T> {
     nodes: Vec<Node<T>>,
-    spine: Vec<TreeIndex>, // indices of nodes on path to current node
+    /// indices of nodes on path to current node
+    spine: Vec<TreeIndex>,
     cur: Option<TreeIndex>,
 }
 

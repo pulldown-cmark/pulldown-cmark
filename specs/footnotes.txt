@@ -1,4 +1,4 @@
-Run this with `cargo run -- -F -s specs/footnotes.txt`.
+Run this with `cargo test suite::footnotes`.
 
 This is how footnotes are basically used.
 

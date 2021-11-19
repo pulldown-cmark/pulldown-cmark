@@ -1,4 +1,4 @@
-Run this with `cargo run -- -T -F -s specs/regression.txt`.
+Run this with `cargo test suite::regression`.
 
 Regression tests for issues on the github issue tracker.
 

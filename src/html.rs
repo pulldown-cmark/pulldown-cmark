@@ -26,7 +26,7 @@ use std::io::{self, Write};
 use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
+use crate::{Alignment, CodeBlockKind, Event, LinkType, Options, Tag};
 
 enum TableState {
     Head,
@@ -47,6 +47,7 @@ struct HtmlWriter<'a, I, W> {
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
     numbers: HashMap<CowStr<'a>, usize>,
+    options: Option<super::Options>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>
@@ -63,6 +64,20 @@ where
             table_alignments: vec![],
             table_cell_index: 0,
             numbers: HashMap::new(),
+            options: None,
+        }
+    }
+
+    fn new_with_options(iter: I, writer: W, options: Options) -> Self {
+        Self {
+            iter,
+            writer,
+            end_newline: true,
+            table_state: TableState::Head,
+            table_alignments: vec![],
+            table_cell_index: 0,
+            numbers: HashMap::new(),
+            options: Some(options),
         }
     }
 
@@ -121,6 +136,13 @@ where
                     let len = self.numbers.len() + 1;
                     self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
                     escape_html(&mut self.writer, &name)?;
+
+                    if self.has_option(Options::ENABLE_STANDARD_FOOTNOTES) {
+                        self.write("\" id=\"")?;
+                        let link_id = String::from(name.as_ref()) + "-ref";
+                        escape_html(&mut self.writer, &link_id)?;
+                    }
+
                     self.write("\">")?;
                     let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "{}", number)?;
@@ -383,6 +405,13 @@ where
         }
         Ok(())
     }
+
+    fn has_option(&self, option: Options) -> bool {
+        match self.options {
+            Some(options) => options.contains(option),
+            None => false,
+        }
+    }
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -458,4 +487,12 @@ where
     W: Write,
 {
     HtmlWriter::new(iter, WriteWrapper(writer)).run()
+}
+
+pub fn write_html_with_options<'a, I, W>(writer: W, iter: I, options: Options) -> io::Result<()>
+where
+    I: Iterator<Item = Event<'a>>,
+    W: Write,
+{
+    HtmlWriter::new_with_options(iter, WriteWrapper(writer), options).run()
 }

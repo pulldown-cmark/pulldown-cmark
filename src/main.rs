@@ -58,6 +58,11 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
     opts.optflag(
+        "",
+        "enable-standard-footnotes",
+        "enable pandoc/GitHub-style footnotes",
+    );
+    opts.optflag(
         "S",
         "enable-strikethrough",
         "enable GitHub-style strikethrough",

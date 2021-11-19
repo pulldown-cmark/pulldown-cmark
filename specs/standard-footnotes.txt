@@ -1,4 +1,4 @@
-Run this with `cargo run -- -F -s specs/standard-footnotes.txt`.
+Run this with `cargo run -- --enable-standard-footnotes -s specs/standard-footnotes.txt`.
 
 This is how footnotes are basically used.
 

@@ -51,43 +51,59 @@ fn brief(program: &str) -> String {
 
 pub fn main() -> std::io::Result<()> {
     let args: Vec<_> = env::args().collect();
-    let mut opts = getopts::Options::new();
-    opts.optflag("h", "help", "this help message");
-    opts.optflag("d", "dry-run", "dry run, produce no output");
-    opts.optflag("e", "events", "print event sequence instead of rendering");
-    opts.optflag("T", "enable-tables", "enable GitHub-style tables");
-    opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
-    opts.optflag(
-        "",
-        "enable-standard-footnotes",
-        "enable pandoc/GitHub-style footnotes",
+    let mut cli = getopts::Options::new();
+    cli.optflag("h", "help", "this help message");
+    cli.optflag("d", "dry-run", "dry run, produce no output");
+    cli.optflag("e", "events", "print event sequence instead of rendering");
+    cli.optflag("T", "enable-tables", "enable GitHub-style tables");
+    cli.optflag(
+        "F",
+        "enable-footnotes",
+        "enable Hoedown-style footnotes  (mutually exclusive with enable-standard-footnotes)",
     );
-    opts.optflag(
+    cli.optflag(
+        "N",
+        "enable-standard-footnotes",
+        "enable pandoc/GitHub-style (endnote) footnotes (mutually exclusive with enable-footnotes)",
+    );
+    cli.optflag(
         "S",
         "enable-strikethrough",
         "enable GitHub-style strikethrough",
     );
-    opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
-    opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
+    cli.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
+    cli.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
 
-    let matches = match opts.parse(&args[1..]) {
+    let matches = match cli.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            eprintln!("{}\n{}", f, opts.usage(&brief(&args[0])));
+            eprintln!("{}\n{}", f, cli.usage(&brief(&args[0])));
             std::process::exit(1);
         }
     };
     if matches.opt_present("help") {
-        println!("{}", opts.usage(&brief(&args[0])));
+        println!("{}", cli.usage(&brief(&args[0])));
         return Ok(());
     }
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
         opts.insert(Options::ENABLE_TABLES);
     }
-    if matches.opt_present("enable-footnotes") {
-        opts.insert(Options::ENABLE_FOOTNOTES);
-    }
+    match (
+        matches.opt_present("enable-footnotes"),
+        matches.opt_present("enable-standard-footnotes"),
+    ) {
+        (false, false) => {}
+        (true, false) => opts.insert(Options::ENABLE_FOOTNOTES),
+        (false, true) => opts.insert(Options::ENABLE_STANDARD_FOOTNOTES),
+        (true, true) => {
+            eprintln!(
+                "enable-footnotes and enable-standard-footnotes are mutually exclusive\n{usage}",
+                usage = cli.usage(&brief(&args[0]))
+            );
+            std::process::exit(1);
+        }
+    };
     if matches.opt_present("enable-strikethrough") {
         opts.insert(Options::ENABLE_STRIKETHROUGH);
     }

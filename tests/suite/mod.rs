@@ -3,9 +3,10 @@
 
 pub use super::test_markdown_html;
 
+mod standard_footnotes;
+mod regression;
 mod footnotes;
 mod table;
-mod regression;
 mod spec;
 mod smart_punct;
 mod gfm_table;

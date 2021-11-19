@@ -88,6 +88,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&bytes[start_ix..]);
             }
+        } else if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES) {
+            // TODO:
+            // Finish the previous footnote if:
+            //
+            // - it's still open
+            // - there is a new top-level container start
+            //
+            // (That new top-level container start has the same basic rules as
+            // list items do.)
+
+            // TODO: start a new footnote definition of the form
+            // [^bar]:
+            // * anything really
         }
 
         // Process new containers

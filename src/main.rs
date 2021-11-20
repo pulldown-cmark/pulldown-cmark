@@ -124,9 +124,9 @@ pub fn main() -> std::io::Result<()> {
         let mut p = Parser::new_ext(&input, opts);
         let stdio = io::stdout();
         let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
-        html::write_html(buffer, &mut p)?;
+        html::write_html_with_options(buffer, &mut p, opts)?;
         // Since the program will now terminate and the memory will be returned
-        // to the operating system anyway, there is no point in tidely cleaning
+        // to the operating system anyway, there is no point in tidily cleaning
         // up all the datastructures we have used. We shouldn't do this if we'd
         // do other things after this, because this is basically intentionally
         // leaking data. Skipping cleanup lets us return a bit (~5%) faster.

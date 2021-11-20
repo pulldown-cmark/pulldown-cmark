@@ -369,7 +369,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 &self.tree,
                                 block_text,
                                 next,
-                                self.options.contains(Options::ENABLE_FOOTNOTES),
+                                self.supports_footnotes(),
                             );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
@@ -420,7 +420,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..self.tree[cur_ix].item.end],
-                                        self.options.contains(Options::ENABLE_FOOTNOTES),
+                                        self.supports_footnotes(),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                 }
@@ -879,6 +879,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     /// range in the markdown source.
     pub fn into_offset_iter(self) -> OffsetIter<'input, 'callback> {
         OffsetIter { inner: self }
+    }
+
+    fn supports_footnotes(&self) -> bool {
+        self.options.contains(Options::ENABLE_FOOTNOTES)
+            || self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
     }
 }
 

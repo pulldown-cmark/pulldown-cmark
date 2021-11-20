@@ -448,6 +448,15 @@ where
     HtmlWriter::new(iter, s).run().unwrap();
 }
 
+pub fn push_html_with_options<'a, I>(s: &mut String, iter: I, options: Options)
+where
+    I: Iterator<Item = Event<'a>>,
+{
+    HtmlWriter::new_with_options(iter, s, options)
+        .run()
+        .unwrap();
+}
+
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
 /// write it out to a writable stream.
 ///

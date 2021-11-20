@@ -637,6 +637,29 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         self.inline_stack.pop_all(&mut self.tree);
     }
 
+    // TODO: This is WIP state, so it doesn't change the body yet. It'll just
+    // return the passed-in event. Once I actually implement the tree rewriting,
+    // it will instead *build* the next event instead of just returning it.
+    /// Rewrite the tree by pushing the footnote definition body into a data
+    /// structure representing a list of footnote items at the end of the tree.
+    /// Generate the event which is appropriate once the tree has been updated
+    /// with the footnote definition removed.
+    ///
+    /// The captured footnote definitions can then be transformed into the
+    /// appropriate eventts at the end of the parsing iterator, once the rest of
+    /// the document has been emitted.
+    fn handle_standard_footnotes<'e>(&mut self, event: Event<'e>) -> Event<'e> {
+        eprintln!("handle_standard_footnotes doesn't do anything yet!");
+
+        // TODO: once the tree has been fully updated, get the resulting event
+        // from the next node
+        // let node = self.tree[cur_ix];
+        // let item = node.item;
+        // let event = item_to_event(item, self.text, &self.allocs);
+
+        event
+    }
+
     /// Returns next byte index, url and title.
     fn scan_inline_link(
         &self,
@@ -1442,19 +1465,35 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
     fn next(&mut self) -> Option<Event<'a>> {
         match self.tree.cur() {
             None => {
-                let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
-                self.tree.next_sibling(ix);
-                Some(Event::End(tag))
+                if let Some(ix) = self.tree.pop() {
+                    let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
+                    self.tree.next_sibling(ix);
+                    Some(Event::End(tag))
+                } else {
+                    // TODO: insert footnote data structure handling *here*.
+                    None
+                }
             }
             Some(cur_ix) => {
                 if self.tree[cur_ix].item.body.is_inline() {
                     self.handle_inline();
                 }
 
+                // To handle "standard" footnotes, we need to get the next event
+                // and determine if it is a
                 let node = self.tree[cur_ix];
                 let item = node.item;
                 let event = item_to_event(item, self.text, &self.allocs);
+
+                // This can produce
+                let event = if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
+                    && matches!(event, Event::Start(Tag::FootnoteDefinition(..)))
+                {
+                    self.handle_standard_footnotes(event)
+                } else {
+                    event
+                };
+
                 if let Event::Start(..) = event {
                     self.tree.push();
                 } else {

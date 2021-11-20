@@ -101,6 +101,28 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // TODO: start a new footnote definition of the form
             // [^bar]:
             // * anything really
+
+            // TODO: switch this out: it currently just uses the exact same
+            // implementation as the non-standard variant, for the purposes of
+            // understanding-by-debugging. :joy:
+            // finish footnote if it's still open and was preceeded by blank line
+            if let Some(node_ix) = self.tree.peek_up() {
+                if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
+                    if self.last_line_blank {
+                        self.pop(start_ix);
+                    }
+                }
+            }
+
+            // Footnote definitions of the form
+            // [^bar]:
+            // * anything really
+            let container_start = start_ix + line_start.bytes_scanned();
+            if let Some(bytecount) = self.parse_footnote(container_start) {
+                start_ix = container_start + bytecount;
+                start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
+                line_start = LineStart::new(&bytes[start_ix..]);
+            }
         }
 
         // Process new containers

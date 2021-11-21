@@ -1,47 +1,52 @@
 use pulldown_cmark::Parser;
 
+fn parse(md: &str) {
+    let parser = Parser::new(md);
+
+    for _ in parser {}
+}
+
 #[test]
 fn test_wrong_code_block() {
-    let markdown = r##"```
+    parse(
+        r##"```
  * ```
- "##;
-
-    let _ = Parser::new(&markdown);
+ "##,
+    );
 }
 
 #[test]
 fn test_unterminated_link() {
-    let markdown = "[](\\";
-
-    let parser = Parser::new(&markdown);
-    for _ in parser {}
+    parse("[](\\");
 }
 
 #[test]
 fn test_unterminated_autolink() {
-    let _ = Parser::new("<a");
+    parse("<a");
 }
 
 #[test]
 fn test_infinite_loop() {
-    let markdown = "[<!W\n\\\n";
-
-    let parser = Parser::new(&markdown);
-    for _ in parser {}
+    parse("[<!W\n\\\n");
 }
 
 #[test]
 fn test_html_tag() {
-    let markdown = "<script\u{feff}";
+    parse("<script\u{feff}");
+}
 
-    let parser = Parser::new(&markdown);
-    for _ in parser {}
+// all of test_bad_slice_* were found in https://github.com/raphlinus/pulldown-cmark/issues/521
+#[test]
+fn test_bad_slice_a() {
+    parse("><a\n");
 }
 
 #[test]
-fn test_bad_slice() {
-    let markdown = "><a\n";
+fn test_bad_slice_b() {
+    parse("><a a\n");
+}
 
-    let parser = Parser::new(&markdown);
-    for _ in parser {}
+#[test]
+fn test_bad_slice_unicode() {
+    parse("><a a=\n毿>")
 }

@@ -37,3 +37,11 @@ fn test_html_tag() {
     let parser = Parser::new(&markdown);
     for _ in parser {}
 }
+
+#[test]
+fn test_bad_slice() {
+    let markdown = "><a\n";
+
+    let parser = Parser::new(&markdown);
+    for _ in parser {}
+}

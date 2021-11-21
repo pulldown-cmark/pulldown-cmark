@@ -1067,6 +1067,15 @@ pub(crate) fn scan_html_block_inner(
                     i += eol_bytes;
                     let skipped_bytes = handler(&data[i..]);
 
+                    let data_len = data.len() - i;
+
+                    debug_assert!(
+                        skipped_bytes <= data_len,
+                        "Handler tried to skip too many bytes, fed {}, skipped {}",
+                        data_len,
+                        skipped_bytes
+                    );
+
                     if skipped_bytes > 0 {
                         buffer.extend(&data[last_buf_index..i]);
                         i += skipped_bytes;

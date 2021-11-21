@@ -841,7 +841,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
                 &bytes[(ix - 1)..],
-                Some(&|_bytes| {
+                Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
                     let _ = scan_containers(&self.tree, &mut line_start);
                     line_start.bytes_scanned()

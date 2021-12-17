@@ -195,9 +195,9 @@ where
                     }
                 }
                 match self.table_alignments.get(self.table_cell_index) {
-                    Some(&Alignment::Left) => self.write(" align=\"left\">"),
-                    Some(&Alignment::Center) => self.write(" align=\"center\">"),
-                    Some(&Alignment::Right) => self.write(" align=\"right\">"),
+                    Some(&Alignment::Left) => self.write(" style=\"text-align: left\">"),
+                    Some(&Alignment::Center) => self.write(" style=\"text-align: center\">"),
+                    Some(&Alignment::Right) => self.write(" style=\"text-align: right\">"),
                     _ => self.write(">"),
                 }
             }

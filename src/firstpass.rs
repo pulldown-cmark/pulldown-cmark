@@ -30,7 +30,6 @@ pub(crate) fn run_first_pass<'a>(text: &'a str, options: Options) -> (Tree<Item>
         last_line_blank: false,
         allocs: Allocations::new(),
         options,
-        list_nesting: 0,
         lookup_table,
     };
     first_pass.run()
@@ -44,7 +43,6 @@ struct FirstPass<'a, 'b> {
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
-    list_nesting: usize,
     lookup_table: &'b LookupTable,
 }
 
@@ -347,10 +345,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start);
+            let current_container =
+                scan_containers(&self.tree, &mut line_start) == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
-                if n_containers == self.tree.spine_len() {
+                if current_container {
                     let trailing_backslash_pos = match brk {
                         Some(Item {
                             start,
@@ -371,7 +370,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+                if self.interrupt_paragraph_by_list(current_container, suffix)
+                    || scan_paragraph_interrupt(suffix)
+                {
                     break;
                 }
             }
@@ -736,9 +737,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
     /// lists are allowed.
-    fn interrupt_paragraph_by_list(&self, suffix: &[u8]) -> bool {
+    fn interrupt_paragraph_by_list(&self, current_container: bool, suffix: &[u8]) -> bool {
         scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
-            self.list_nesting > 0 ||
+            ! current_container ||
             // we don't allow interruption by either empty lists or
             // numbered lists starting at an index other than 1
             !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
@@ -980,7 +981,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
                 self.pop(ix);
-                self.list_nesting -= 1;
             }
         }
         if self.last_line_blank {
@@ -1014,7 +1014,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             end: 0, // will get set later
             body: ItemBody::List(true, ch, index),
         });
-        self.list_nesting += 1;
         self.tree.push();
         self.last_line_blank = false;
     }
@@ -1135,11 +1134,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_refdef_label(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
         scan_link_label_rest(&self.text[start..], &|bytes| {
             let mut line_start = LineStart::new(bytes);
-            let _ = scan_containers(&self.tree, &mut line_start);
+            let current_container =
+                scan_containers(&self.tree, &mut line_start) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
-
             let suffix = &bytes[bytes_scanned..];
-            if self.interrupt_paragraph_by_list(suffix) || scan_paragraph_interrupt(suffix) {
+            if self.interrupt_paragraph_by_list(current_container, suffix)
+                || scan_paragraph_interrupt(suffix)
+            {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1328,7 +1329,7 @@ fn count_header_cols(
 }
 
 /// Checks whether we should break a paragraph on the given input.
-/// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determing
+/// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determining
 /// whether to break on a list requires additional context.
 fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
     if scan_eol(bytes).is_some()

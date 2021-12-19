@@ -962,3 +962,39 @@ fn regression_test_67() {
 
     test_markdown_html(original, expected, false);
 }
+
+#[test]
+fn regression_test_68() {
+    let original = r##"1. a
+   1. a
+
+a
+2. a
+"##;
+    let expected = r##"<ol>
+<li>a
+<ol>
+<li>a</li>
+</ol>
+</li>
+</ol>
+<p>a
+2. a</p>
+"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn regression_test_69() {
+    let original = r##"1. a
+   2. a
+"##;
+    let expected = r##"<ol>
+<li>a
+2. a</li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected, false);
+}

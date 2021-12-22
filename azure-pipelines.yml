@@ -10,7 +10,7 @@ steps:
     displayName: Cargo build
   - script: cargo test --all
     displayName: Cargo test
-  - script: cargo test --all --features=simd
+  - script: cargo test --all --features=simd,gen-tests
     displayName: Cargo test with simd feature enabled
   - script: cargo test --all --features=serde
     displayName: Cargo test with serde feature enabled

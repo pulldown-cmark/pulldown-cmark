@@ -988,9 +988,11 @@ a
 #[test]
 fn regression_test_69() {
     let original = r##"1. a
+2. a
    2. a
 "##;
     let expected = r##"<ol>
+<li>a</li>
 <li>a
 2. a</li>
 </ol>

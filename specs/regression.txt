@@ -857,3 +857,18 @@ ISSUE 553
 2. a</li>
 </ol>
 ````````````````````````````````
+
+ISSUE 557
+
+```````````````````````````````` example
+* [ ] foo
+
+* [ ] bar
+
+baz
+.
+<ul>
+<li><p><input disabled="" type="checkbox"> foo</p></li><li><p><input disabled="" type="checkbox"> bar</p></li>
+</ul>
+<p>baz</p>
+````````````````````````````````

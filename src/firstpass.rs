@@ -4,7 +4,7 @@
 use std::cmp::max;
 use std::ops::Range;
 
-use crate::parse::{scan_containers, Allocations, Item, ItemBody, LinkDef};
+use crate::parse::{scan_containers, Allocations, HeadingAttributes, Item, ItemBody, LinkDef};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
@@ -18,7 +18,7 @@ use unicase::UniCase;
 
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
-pub(crate) fn run_first_pass<'a>(text: &'a str, options: Options) -> (Tree<Item>, Allocations<'a>) {
+pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Allocations) {
     // This is a very naive heuristic for the number of nodes
     // we'll need.
     let start_capacity = max(128, text.len() / 32);
@@ -1264,7 +1264,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         header_start: usize,
         header_end: usize,
-    ) -> (usize, Option<(Option<&'a str>, Vec<&'a str>)>) {
+    ) -> (usize, Option<HeadingAttributes<'a>>) {
         if header_start >= header_end {
             return (header_end, None);
         }
@@ -1681,7 +1681,7 @@ fn extract_attribute_block_content_from_header_text(
 /// See also: [`Options::ENABLE_HEADING_ATTRIBUTES`].
 ///
 /// [`Options::ENABLE_HEADING_ATTRIBUTES`]: `crate::Options::ENABLE_HEADING_ATTRIBUTES`
-fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<(Option<&str>, Vec<&str>)> {
+fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes> {
     let mut id = None;
     let mut classes = Vec::new();
 
@@ -1702,7 +1702,7 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<(Option<&str>
         // Return `None` to avoid needless allocation of `(None, Vec::new())`.
         return None;
     }
-    Some((id, classes))
+    Some(HeadingAttributes { id, classes })
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

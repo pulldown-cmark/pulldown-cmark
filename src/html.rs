@@ -157,16 +157,16 @@ where
                 write!(&mut self.writer, "{}", level)?;
                 if let Some(id) = id {
                     self.write(" id=\"")?;
-                    escape_html(&mut self.writer, &id)?;
+                    escape_html(&mut self.writer, id)?;
                     self.write("\"")?;
                 }
                 let mut classes = classes.iter();
                 if let Some(class) = classes.next() {
                     self.write(" class=\"")?;
-                    escape_html(&mut self.writer, &class)?;
+                    escape_html(&mut self.writer, class)?;
                     for class in classes {
                         self.write(" ")?;
-                        escape_html(&mut self.writer, &class)?;
+                        escape_html(&mut self.writer, class)?;
                     }
                     self.write("\"")?;
                 }

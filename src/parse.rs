@@ -1210,7 +1210,14 @@ pub(crate) struct Allocations<'a> {
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
-    headings: Vec<(Option<&'a str>, Vec<&'a str>)>,
+    headings: Vec<HeadingAttributes<'a>>,
+}
+
+/// Used by the heading attributes extension.
+#[derive(Clone)]
+pub(crate) struct HeadingAttributes<'a> {
+    pub id: Option<&'a str>,
+    pub classes: Vec<&'a str>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1261,7 +1268,7 @@ impl<'a> Allocations<'a> {
         AlignmentIndex(ix)
     }
 
-    pub fn allocate_heading(&mut self, attrs: (Option<&'a str>, Vec<&'a str>)) -> HeadingIndex {
+    pub fn allocate_heading(&mut self, attrs: HeadingAttributes<'a>) -> HeadingIndex {
         let ix = self.headings.len();
         self.headings.push(attrs);
         // This won't panic. `self.headings.len()` can't be `usize::MAX` since
@@ -1296,7 +1303,7 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
 }
 
 impl<'a> Index<HeadingIndex> for Allocations<'a> {
-    type Output = (Option<&'a str>, Vec<&'a str>);
+    type Output = HeadingAttributes<'a>;
 
     fn index(&self, ix: HeadingIndex) -> &Self::Output {
         self.headings.index(ix.0.get() - 1)
@@ -1384,7 +1391,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
-            let (id, classes) = allocs.index(heading_ix);
+            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
             Tag::Heading(level, *id, classes.clone())
         }
         ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
@@ -1439,7 +1446,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
-            let (id, classes) = allocs.index(heading_ix);
+            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
             Tag::Heading(level, *id, classes.clone())
         }
         ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),

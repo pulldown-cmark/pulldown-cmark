@@ -871,7 +871,7 @@ fn scan_attribute(
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
-        ix = scan_attribute_value(&data, ix, newline_handler, buffer, buffer_ix)?;
+        ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -1092,7 +1092,7 @@ pub(crate) fn scan_html_block_inner(
                 // No whitespace, which is mandatory.
                 return None;
             }
-            i = scan_attribute(&data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
+            i = scan_attribute(data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
         }
     }
 

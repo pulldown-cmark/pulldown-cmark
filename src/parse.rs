@@ -743,8 +743,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     ///
     /// Both `open` and `close` are matching MaybeCode items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
-        let first_ix = open + 1;
-        let last_ix = close - 1;
+        let first_ix = self.tree[open].next.unwrap();
         let bytes = self.text.as_bytes();
         let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
@@ -765,17 +764,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             let mut ix = first_ix;
 
-            while ix < close {
+            while ix != close {
+                let next_ix = self.tree[ix].next.unwrap();
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
                         if ix == first_ix {
-                            ix = ix + 1;
+                            ix = next_ix;
                             span_start = min(span_end, self.tree[ix].item.start);
                             continue;
-                        } else if ix == last_ix && last_ix > first_ix {
-                            ix = ix + 1;
-                            continue;
+                        } else if next_ix == close && ix > first_ix {
+                            break;
                         }
                     }
 
@@ -794,14 +793,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         buf = Some(new_buf);
                     }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if ix == last_ix {
+                    let end = if next_ix == close {
                         span_end
                     } else {
                         self.tree[ix].item.end
                     };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
-                ix = ix + 1;
+                ix = next_ix;
             }
         }
 

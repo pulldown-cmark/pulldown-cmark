@@ -15,6 +15,14 @@ x
   *
   `",
     );
+
+fn test_fuzzer_input_1() {
+    parse(">\n >>><N\n");
+}
+
+#[test]
+fn test_fuzzer_input_2() {
+    parse(" \u{b}\\\r- ");
 }
 
 #[test]

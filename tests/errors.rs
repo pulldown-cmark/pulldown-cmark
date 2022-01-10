@@ -7,6 +7,17 @@ fn parse(md: &str) {
 }
 
 #[test]
+fn test_lists_inside_code_spans() {
+    parse(
+        r"- `
+x
+**
+  *
+  `",
+    );
+}
+
+#[test]
 fn test_wrong_code_block() {
     parse(
         r##"```

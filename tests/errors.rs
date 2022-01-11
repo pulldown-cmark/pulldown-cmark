@@ -1,7 +1,13 @@
-use pulldown_cmark::Parser;
+use pulldown_cmark::{Options, Parser};
 
 fn parse(md: &str) {
     let parser = Parser::new(md);
+
+    for _ in parser {}
+}
+
+fn parse_all_options(md: &str) {
+    let parser = Parser::new_ext(md, Options::all());
 
     for _ in parser {}
 }
@@ -15,7 +21,9 @@ x
   *
   `",
     );
+}
 
+#[test]
 fn test_fuzzer_input_1() {
     parse(">\n >>><N\n");
 }
@@ -24,6 +32,21 @@ fn test_fuzzer_input_1() {
 fn test_fuzzer_input_2() {
     parse(" \u{b}\\\r- ");
 }
+
+#[test]
+fn test_fuzzer_input_3() {
+    parse_all_options("\n # #\r\u{1c} ");
+}
+
+#[test]
+fn test_fuzzer_input_4() {
+    parse_all_options("\u{0}{\tϐ}\n-");
+}
+
+// #[test]
+// fn test_fuzzer_input_5() {
+//     parse_all_options(" \u{c}{}\n-\n{");
+// }
 
 #[test]
 fn test_wrong_code_block() {

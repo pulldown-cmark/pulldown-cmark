@@ -457,7 +457,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut begin_text = start;
 
         let (final_ix, brk) =
-            iterate_special_bytes(&self.lookup_table, bytes, start, |ix, byte| {
+            iterate_special_bytes(self.lookup_table, bytes, start, |ix, byte| {
                 match byte {
                     b'\n' | b'\r' => {
                         if let TableParseMode::Active = mode {
@@ -1052,10 +1052,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let header_end = header_start + scan_nextline(&bytes[header_start..]);
             let (content_end, attrs) =
                 self.extract_and_parse_heading_attribute_block(header_start, header_end);
-            ix = self
-                .parse_line(ix, Some(content_end), TableParseMode::Disabled)
-                .0;
-            debug_assert_eq!(ix, content_end);
+            self.parse_line(ix, Some(content_end), TableParseMode::Disabled);
             (header_end, content_end, attrs)
         } else {
             ix = self.parse_line(ix, None, TableParseMode::Disabled).0;
@@ -1251,32 +1248,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         header_start: usize,
         header_end: usize,
     ) -> (usize, Option<HeadingAttributes<'a>>) {
-        if header_start >= header_end {
+        if header_start >= header_end || !self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES)
+        {
             return (header_end, None);
         }
 
-        let header_bytes = &self.text.as_bytes()[header_start..header_end];
-
         // extract the trailing attribute block
-        let (content_end, attr_block_range) =
-            if self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES) {
-                let (content_len, attr_block_range_rel) =
-                    extract_attribute_block_content_from_header_text(header_bytes);
-                let content_end = header_start + content_len;
-                let attr_block_range =
-                    attr_block_range_rel.map(|r| (header_start + r.start)..(header_start + r.end));
-                (content_end, attr_block_range)
-            } else {
-                (header_end, None)
-            };
-
-        // parse inside the attribute block
-        let attrs = if let Some(attr_block_range) = attr_block_range {
-            parse_inside_attribute_block(&self.text[attr_block_range])
-        } else {
-            None
-        };
-
+        let header_bytes = &self.text.as_bytes()[header_start..header_end];
+        let (content_len, attr_block_range_rel) =
+            extract_attribute_block_content_from_header_text(header_bytes);
+        let content_end = header_start + content_len;
+        let attrs = attr_block_range_rel.and_then(|r| {
+            parse_inside_attribute_block(
+                &self.text[(header_start + r.start)..(header_start + r.end)],
+            )
+        });
         (content_end, attrs)
     }
 }
@@ -1675,14 +1661,14 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
 
     for attr in inside_attr_block.split_ascii_whitespace() {
         // iterator returned by `str::split_ascii_whitespace` never emits empty
-        // strings, so `.split_at(1)` won't panic.
-        match attr.split_at(1) {
-            // Ignore if content (such as ID fragment or class name) is empty.
-            (_, "") => {}
-            ("#", tail) => id = Some(tail),
-            (".", tail) => classes.push(tail),
-            // Ignore unknown.
-            _ => {}
+        // strings, so taking first byte won't panic.
+        if attr.len() > 1 {
+            let first_byte = attr.as_bytes()[0];
+            if first_byte == b'#' {
+                id = Some(&attr[1..]);
+            } else if first_byte == b'.' {
+                classes.push(&attr[1..]);
+            }
         }
     }
 

@@ -213,3 +213,17 @@ No spaces: “like this”.</p>";
 
     test_markdown_html(original, expected, true);
 }
+
+#[test]
+fn smart_punct_test_18() {
+    let original = r##"Single space at start: ' like this'.
+Single space at end: 'like this '.
+Spaces at start and end: ' like this '.
+No spaces: 'like this'."##;
+    let expected = "<p>Single space at start: ’ like this’. \
+Single space at end: ’like this ’. \
+Spaces at start and end: ’ like this ’. \
+No spaces: ‘like this’.</p>";
+
+    test_markdown_html(original, expected, true);
+}

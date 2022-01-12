@@ -42,5 +42,5 @@ fuzz_target!(|data: FuzzingInput<'_>| {
         opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
     }
 
-    for _ in pulldown_cmark::Parser::new(data.markdown) {};
+    for _ in pulldown_cmark::Parser::new_ext(data.markdown, opts) {};
 });

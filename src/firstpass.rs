@@ -1444,18 +1444,24 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
 /// suffix is &s[ix..], which is passed in as an optimization, since taking
 /// a string subslice is O(n).
 fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
-    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+    let delim = suffix.chars().next().unwrap();
+    let mut iter = suffix.chars().skip(run_len);
+    let next_char = if delim == '"' {
+        iter.skip_while(|c| c.is_whitespace()).next()
+    } else {
+        iter.next()
+    };
+    let next_char = if let Some(c) = next_char {
         c
     } else {
         return false;
     };
-    if next_char.is_whitespace() {
+    if delim != '"' && next_char.is_whitespace() {
         return false;
     }
     if ix == 0 {
         return true;
     }
-    let delim = suffix.chars().next().unwrap();
     if delim == '*' && !is_punctuation(next_char) {
         return true;
     }

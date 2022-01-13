@@ -37,13 +37,16 @@ fn generate_tests_from_spec() {
     let hardcoded_iter = hardcoded.iter().map(PathBuf::from);
 
     // Create an iterator over the files in the specs/ directory that have a .txt extension
-    let spec_files = fs::read_dir("./specs")
+    let mut spec_files = fs::read_dir("./specs")
         .expect("Could not find the 'specs' directory")
         .filter_map(Result::ok)
         .map(|d| d.path())
         .filter(|p| p.extension().map(|e| e.to_owned()).is_some())
         .chain(hardcoded_iter)
         .collect::<Vec<_>>();
+    // Sort by spec names
+    spec_files.sort_by(|p, q| p.file_stem().cmp(&q.file_stem()));
+    let spec_files = spec_files;
 
     for file_path in &spec_files {
         let mut raw_spec = String::new();

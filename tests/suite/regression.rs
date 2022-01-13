@@ -69,8 +69,8 @@ fn regression_test_4() {
     let expected = r##"<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
 <tr><td>Content   </td><td>Content   </td></tr>
 </tbody></table>
-<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th align="right">Title D  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th style="text-align: right">Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td style="text-align: right">Content   </td></tr>
 </tbody></table>
 "##;
 
@@ -958,6 +958,44 @@ fn regression_test_67() {
 "##;
     let expected = r##"<pre><code>-	the whitespace here are tabs
 </code></pre>
+"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn regression_test_68() {
+    let original = r##"1. a
+   1. a
+
+a
+2. a
+"##;
+    let expected = r##"<ol>
+<li>a
+<ol>
+<li>a</li>
+</ol>
+</li>
+</ol>
+<p>a
+2. a</p>
+"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn regression_test_69() {
+    let original = r##"1. a
+2. a
+   2. a
+"##;
+    let expected = r##"<ol>
+<li>a</li>
+<li>a
+2. a</li>
+</ol>
 "##;
 
     test_markdown_html(original, expected, false);

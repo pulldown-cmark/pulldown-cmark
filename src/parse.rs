@@ -23,6 +23,7 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::iter::FusedIterator;
+use std::num::NonZeroUsize;
 use std::ops::{Index, Range};
 
 use unicase::UniCase;
@@ -86,7 +87,7 @@ pub(crate) enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(HeadingLevel), // heading level
+    Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     MathBlock,
@@ -778,8 +779,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     ///
     /// Both `open` and `close` are matching MaybeCode items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
-        let first_ix = open + 1;
-        let last_ix = close - 1;
+        let first_ix = self.tree[open].next.unwrap();
         let bytes = self.text.as_bytes();
         let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
@@ -800,17 +800,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             let mut ix = first_ix;
 
-            while ix < close {
+            while ix != close {
+                let next_ix = self.tree[ix].next.unwrap();
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
                         if ix == first_ix {
-                            ix = ix + 1;
+                            ix = next_ix;
                             span_start = min(span_end, self.tree[ix].item.start);
                             continue;
-                        } else if ix == last_ix && last_ix > first_ix {
-                            ix = ix + 1;
-                            continue;
+                        } else if next_ix == close && ix > first_ix {
+                            break;
                         }
                     }
 
@@ -829,14 +829,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         buf = Some(new_buf);
                     }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if ix == last_ix {
+                    let end = if next_ix == close {
                         span_end
                     } else {
                         self.tree[ix].item.end
                     };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
-                ix = ix + 1;
+                ix = next_ix;
             }
         }
 
@@ -877,7 +877,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
                 &bytes[(ix - 1)..],
-                Some(&|_bytes| {
+                Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
                     let _ = scan_containers(&self.tree, &mut line_start);
                     line_start.bytes_scanned()
@@ -1251,12 +1251,23 @@ pub(crate) struct CowIndex(usize);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub(crate) struct AlignmentIndex(usize);
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct HeadingIndex(NonZeroUsize);
+
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
+    headings: Vec<HeadingAttributes<'a>>,
+}
+
+/// Used by the heading attributes extension.
+#[derive(Clone)]
+pub(crate) struct HeadingAttributes<'a> {
+    pub id: Option<&'a str>,
+    pub classes: Vec<&'a str>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1285,6 +1296,7 @@ impl<'a> Allocations<'a> {
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
+            headings: Vec::new(),
         }
     }
 
@@ -1304,6 +1316,15 @@ impl<'a> Allocations<'a> {
         let ix = self.alignments.len();
         self.alignments.push(alignment);
         AlignmentIndex(ix)
+    }
+
+    pub fn allocate_heading(&mut self, attrs: HeadingAttributes<'a>) -> HeadingIndex {
+        let ix = self.headings.len();
+        self.headings.push(attrs);
+        // This won't panic. `self.headings.len()` can't be `usize::MAX` since
+        // such a long Vec cannot fit in memory.
+        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
+        HeadingIndex(ix_nonzero)
     }
 }
 
@@ -1328,6 +1349,14 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
 
     fn index(&self, ix: AlignmentIndex) -> &Self::Output {
         self.alignments.index(ix.0)
+    }
+}
+
+impl<'a> Index<HeadingIndex> for Allocations<'a> {
+    type Output = HeadingAttributes<'a>;
+
+    fn index(&self, ix: HeadingIndex) -> &Self::Output {
+        self.headings.index(ix.0.get() - 1)
     }
 }
 
@@ -1411,7 +1440,11 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Heading(level) => Tag::Heading(level),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
+            Tag::Heading(level, *id, classes.clone())
+        }
+        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
@@ -1465,7 +1498,11 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
             Tag::Image(*link_type, url.clone(), title.clone())
         }
-        ItemBody::Heading(level) => Tag::Heading(level),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
+            Tag::Heading(level, *id, classes.clone())
+        }
+        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }

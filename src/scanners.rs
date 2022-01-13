@@ -941,7 +941,7 @@ fn scan_attribute(
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
-        ix = scan_attribute_value(&data, ix, newline_handler, buffer, buffer_ix)?;
+        ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -1137,6 +1137,15 @@ pub(crate) fn scan_html_block_inner(
                     i += eol_bytes;
                     let skipped_bytes = handler(&data[i..]);
 
+                    let data_len = data.len() - i;
+
+                    debug_assert!(
+                        skipped_bytes <= data_len,
+                        "Handler tried to skip too many bytes, fed {}, skipped {}",
+                        data_len,
+                        skipped_bytes
+                    );
+
                     if skipped_bytes > 0 {
                         buffer.extend(&data[last_buf_index..i]);
                         i += skipped_bytes;
@@ -1153,7 +1162,7 @@ pub(crate) fn scan_html_block_inner(
                 // No whitespace, which is mandatory.
                 return None;
             }
-            i = scan_attribute(&data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
+            i = scan_attribute(data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
         }
     }
 

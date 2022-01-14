@@ -25,6 +25,21 @@ Further, it optionally supports parsing footnotes,
 
 Rustc 1.46 or newer is required to build the crate.
 
+## Example
+
+Example usage:
+
+```rust
+// Create parser with example Markdown text.
+let markdown_input = "hello world";
+let parser = pulldown_cmark::Parser::new(markdown_input);
+
+// Write to a new String buffer.
+let mut html_output = String::new();
+pulldown_cmark::html::push_html(&mut html_output, parser);
+assert_eq!(&html_output, "<p>hello world</p>\n");
+```
+
 ## Why a pull parser?
 
 There are many parsers for Markdown and its variants, but to my knowledge none

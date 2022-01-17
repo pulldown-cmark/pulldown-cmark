@@ -294,13 +294,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
-        let containers = scan_containers(&self.tree, &mut line_start);
-        if containers != self.tree.spine_len() {
+        let current_container =
+            scan_containers(&self.tree, &mut line_start) == self.tree.spine_len();
+        if !current_container {
             return None;
         }
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
-        if scan_paragraph_interrupt(&bytes[ix..]) {
+        if scan_paragraph_interrupt(&bytes[ix..], current_container) {
             return None;
         }
 
@@ -370,9 +371,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if self.interrupt_paragraph_by_list(current_container, suffix)
-                    || scan_paragraph_interrupt(suffix)
-                {
+                if scan_paragraph_interrupt(suffix, current_container) {
                     break;
                 }
             }
@@ -733,17 +732,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.tree.append_text(begin_text, final_ix);
         }
         (final_ix, brk)
-    }
-
-    /// Check whether we should allow a paragraph interrupt by lists. Only non-empty
-    /// lists are allowed.
-    fn interrupt_paragraph_by_list(&self, current_container: bool, suffix: &[u8]) -> bool {
-        scan_listitem(suffix).map_or(false, |(ix, delim, index, _)| {
-            ! current_container ||
-            // we don't allow interruption by either empty lists or
-            // numbered lists starting at an index other than 1
-            !scan_empty_list(&suffix[ix..]) && (delim == b'*' || delim == b'-' || index == 1)
-        })
     }
 
     /// When start_ix is at the beginning of an HTML block of type 1 to 5,
@@ -1138,9 +1126,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 scan_containers(&self.tree, &mut line_start) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[bytes_scanned..];
-            if self.interrupt_paragraph_by_list(current_container, suffix)
-                || scan_paragraph_interrupt(suffix)
-            {
+            if scan_paragraph_interrupt(suffix, current_container) {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1329,20 +1315,22 @@ fn count_header_cols(
 }
 
 /// Checks whether we should break a paragraph on the given input.
-/// Note: lists are dealt with in `interrupt_paragraph_by_list`, because determining
-/// whether to break on a list requires additional context.
-fn scan_paragraph_interrupt(bytes: &[u8]) -> bool {
-    if scan_eol(bytes).is_some()
+fn scan_paragraph_interrupt(bytes: &[u8], current_container: bool) -> bool {
+    scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
         || scan_blockquote_start(bytes).is_some()
-    {
-        return true;
-    }
-    bytes.starts_with(b"<")
-        && (get_html_end_tag(&bytes[1..]).is_some()
-            || is_html_tag(scan_html_block_tag(&bytes[1..]).1))
+        || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
+            ! current_container ||
+            // we don't allow interruption by either empty lists or
+            // numbered lists starting at an index other than 1
+            (delim == b'*' || delim == b'-' || delim == b'+' || index == 1)
+                && !scan_empty_list(&bytes[ix..])
+        })
+        || bytes.starts_with(b"<")
+            && (get_html_end_tag(&bytes[1..]).is_some()
+                || is_html_tag(scan_html_block_tag(&bytes[1..]).1))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

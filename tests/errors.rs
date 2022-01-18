@@ -43,10 +43,10 @@ fn test_fuzzer_input_4() {
     parse_all_options("\u{0}{\tϐ}\n-");
 }
 
-// #[test]
-// fn test_fuzzer_input_5() {
-//     parse_all_options(" \u{c}{}\n-\n{");
-// }
+#[test]
+fn test_fuzzer_input_5() {
+    parse_all_options(" \u{c}{}\n-\n");
+}
 
 #[test]
 fn test_fuzzer_input_6() {

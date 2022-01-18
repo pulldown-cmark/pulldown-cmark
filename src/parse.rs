@@ -1080,6 +1080,7 @@ fn scan_reference<'a, 'b>(
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
+        // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) =

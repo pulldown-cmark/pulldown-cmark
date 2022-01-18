@@ -422,7 +422,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let trailing_ws = if has_trailing_content {
                     0
                 } else {
-                    scan_rev_while(&bytes[..content_end], is_ascii_whitespace_no_nl)
+                    scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl)
                 };
                 self.tree[cur_ix].item.end = content_end - trailing_ws;
             }

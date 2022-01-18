@@ -49,6 +49,11 @@ fn test_fuzzer_input_4() {
 // }
 
 #[test]
+fn test_fuzzer_input_6() {
+    parse("*\t[][\n\t<p]>\n\t[]");
+}
+
+#[test]
 fn test_wrong_code_block() {
     parse(
         r##"```

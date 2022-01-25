@@ -171,12 +171,8 @@ impl<T: Default> Tree<T> {
 impl Tree<Item> {
     /// Truncates the preceding siblings to the given end position,
     /// and returns the new current node.
-    pub(crate) fn truncate_siblings(
-        &mut self,
-        bytes: &[u8],
-        end_byte_ix: usize,
-    ) -> Option<TreeIndex> {
-        let parent_ix = self.peek_up()?;
+    pub(crate) fn truncate_siblings(&mut self, bytes: &[u8], end_byte_ix: usize) {
+        let parent_ix = self.peek_up().unwrap();
         let mut next_child_ix = self[parent_ix].child;
         let mut prev_child_ix = None;
 
@@ -188,18 +184,12 @@ impl Tree<Item> {
                 prev_child_ix = Some(child_ix);
                 next_child_ix = self[child_ix].next;
                 continue;
-            }
-
-            if child_end == end_byte_ix {
+            } else if child_end == end_byte_ix {
                 // this will be the last node
                 self[child_ix].next = None;
                 // focus to the new last child (this node)
                 self.cur = Some(child_ix);
-                break;
-            }
-
-            debug_assert!(end_byte_ix < child_end);
-            if self[child_ix].item.start == end_byte_ix {
+            } else if self[child_ix].item.start == end_byte_ix {
                 // check whether the previous character is a backslash
                 let is_previous_char_backslash_escape =
                     end_byte_ix.checked_sub(1).map_or(false, |prev| {
@@ -211,11 +201,8 @@ impl Tree<Item> {
                     self[child_ix].item.start = last_byte_ix;
                     self[child_ix].item.end = end_byte_ix;
                     self.cur = Some(child_ix);
-                    break;
-                }
-
-                // the node will become empty. drop the node
-                if let Some(prev_child_ix) = prev_child_ix {
+                } else if let Some(prev_child_ix) = prev_child_ix {
+                    // the node will become empty. drop the node
                     // a preceding sibling exists
                     self[prev_child_ix].next = None;
                     self.cur = Some(prev_child_ix);
@@ -224,20 +211,17 @@ impl Tree<Item> {
                     self[parent_ix].child = None;
                     self.cur = None;
                 }
-                break;
+            } else {
+                debug_assert!(self[child_ix].item.start < end_byte_ix);
+                debug_assert!(end_byte_ix < child_end);
+                // truncate the node
+                self[child_ix].item.end = end_byte_ix;
+                self[child_ix].next = None;
+                // focus to the new last child
+                self.cur = Some(child_ix);
             }
-
-            debug_assert!(self[child_ix].item.start < end_byte_ix);
-            debug_assert!(end_byte_ix < child_end);
-            // truncate the node
-            self[child_ix].item.end = end_byte_ix;
-            self[child_ix].next = None;
-            // focus to the new last child
-            self.cur = Some(child_ix);
             break;
         }
-
-        self.cur
     }
 }
 

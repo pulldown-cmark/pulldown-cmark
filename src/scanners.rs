@@ -514,16 +514,15 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> {
     let c = *data.get(0)?;
-    if !(c == b'-' || c == b'=') {
-        return None;
-    }
-    let mut i = 1 + scan_ch_repeat(&data[1..], c);
-    i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' {
         HeadingLevel::H1
-    } else {
+    } else if c == b'-' {
         HeadingLevel::H2
+    } else {
+        return None;
     };
+    let mut i = 1 + scan_ch_repeat(&data[1..], c);
+    i += scan_blank_line(&data[i..])?;
     Some((i, level))
 }
 

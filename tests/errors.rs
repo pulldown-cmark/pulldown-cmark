@@ -54,6 +54,38 @@ fn test_fuzzer_input_6() {
 }
 
 #[test]
+fn test_fuzzer_input_7() {
+    parse_all_options("[][{]}\n-");
+}
+
+#[test]
+fn test_fuzzer_input_8() {
+    parse_all_options("a\n \u{c}{}\n-");
+}
+
+#[test]
+fn test_fuzzer_input_9() {
+    parse_all_options("a\n \u{c}{}\\\n-");
+}
+
+#[test]
+fn test_fuzzer_input_10() {
+    parse_all_options("[[    \t\n   \u{c}\u{c}\u{c}\u{c}\u{c}    {}\n-\r\u{e}\u{0}\u{0}{# }\n\u{b}\u{b}\u{b}\u{b}\u{b}\u{b}\u{b}\u{b}\u{b}\u{b}\u{0}\u{0}");
+}
+
+#[test]
+fn test_fuzzer_input_11() {
+    parse_all_options(
+        "[[\u{c}\u{c}   \t\n   \u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}       {}\n-\r\u{e}",
+    );
+}
+
+#[test]
+fn test_fuzzer_input_12() {
+    parse_all_options("\u{c}-\n\u{c}\n-");
+}
+
+#[test]
 fn test_wrong_code_block() {
     parse(
         r##"```

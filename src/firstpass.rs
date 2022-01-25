@@ -412,19 +412,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.extract_and_parse_heading_attribute_block(header_start, header_end);
             attrs = attrs_;
 
-            // remove trailing block attributes
-            let cur_ix = self
-                .tree
-                .truncate_siblings(self.text.as_bytes(), content_end);
+            // strip trailing whitespace
+            let new_end = if has_trailing_content {
+                content_end
+            } else {
+                let trailing_ws =
+                    scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl);
+                content_end - trailing_ws
+            };
 
-            if let Some(cur_ix) = cur_ix {
-                // strip trailing whitespace
-                let trailing_ws = if has_trailing_content {
-                    0
-                } else {
-                    scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl)
-                };
-                self.tree[cur_ix].item.end = content_end - trailing_ws;
+            if attrs.is_some() {
+                // remove trailing block attributes
+                self.tree.truncate_siblings(self.text.as_bytes(), new_end);
+            }
+
+            if let Some(cur_ix) = self.tree.cur() {
+                self.tree[cur_ix].item.end = new_end;
             }
         }
 
@@ -1244,8 +1247,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         header_start: usize,
         header_end: usize,
     ) -> (usize, Option<HeadingAttributes<'a>>) {
-        if header_start >= header_end || !self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES)
-        {
+        if !self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES) {
             return (header_end, None);
         }
 
@@ -1667,10 +1669,6 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
         }
     }
 
-    if id.is_none() && classes.is_empty() {
-        // Return `None` to avoid needless allocation of `(None, Vec::new())`.
-        return None;
-    }
     Some(HeadingAttributes { id, classes })
 }
 

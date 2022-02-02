@@ -30,7 +30,11 @@ use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
-use crate::scanners::*;
+use crate::scanners::{
+    is_ascii_punctuation, is_ascii_whitespace, scan_autolink, scan_ch, scan_entity,
+    scan_html_block_inner, scan_inline_html_comment, scan_inline_html_processing, scan_link_dest,
+    scan_while, unescape, LineStart,
+};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
@@ -175,9 +179,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             tree,
             allocs,
             broken_link_callback,
+            html_scan_guard,
             inline_stack,
             link_stack,
-            html_scan_guard,
         }
     }
 
@@ -239,34 +243,26 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
                         }
                         continue;
-                    } else {
-                        let inline_html = next.and_then(|next_ix| {
-                            self.scan_inline_html(
-                                block_text.as_bytes(),
-                                self.tree[next_ix].item.start,
-                            )
-                        });
-                        if let Some((span, ix)) = inline_html {
-                            let node = scan_nodes_to_ix(&self.tree, next, ix);
-                            self.tree[cur_ix].item.body = if !span.is_empty() {
-                                let converted_string =
-                                    String::from_utf8(span).expect("invalid utf8");
-                                ItemBody::OwnedHtml(
-                                    self.allocs.allocate_cow(converted_string.into()),
-                                )
-                            } else {
-                                ItemBody::Html
-                            };
-                            self.tree[cur_ix].item.end = ix;
-                            self.tree[cur_ix].next = node;
-                            prev = cur;
-                            cur = node;
-                            if let Some(node_ix) = cur {
-                                self.tree[node_ix].item.start =
-                                    max(self.tree[node_ix].item.start, ix);
-                            }
-                            continue;
+                    }
+                    let inline_html = next.and_then(|next_ix| {
+                        self.scan_inline_html(block_text.as_bytes(), self.tree[next_ix].item.start)
+                    });
+                    if let Some((span, ix)) = inline_html {
+                        let node = scan_nodes_to_ix(&self.tree, next, ix);
+                        self.tree[cur_ix].item.body = if span.is_empty() {
+                            ItemBody::Html
+                        } else {
+                            let converted_string = String::from_utf8(span).expect("invalid utf8");
+                            ItemBody::OwnedHtml(self.allocs.allocate_cow(converted_string.into()))
+                        };
+                        self.tree[cur_ix].item.end = ix;
+                        self.tree[cur_ix].next = node;
+                        prev = cur;
+                        cur = node;
+                        if let Some(node_ix) = cur {
+                            self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
                         }
+                        continue;
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text;
                 }
@@ -305,9 +301,8 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                                     code_delims.clear();
                                     break;
-                                } else {
-                                    code_delims.insert(delim_count, scan_ix);
                                 }
+                                code_delims.insert(delim_count, scan_ix);
                             }
                             scan = self.tree[scan_ix].next;
                         }
@@ -580,7 +575,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     count: el.count - match_count,
                                     c: el.c,
                                     both,
-                                })
+                                });
                             }
                             count -= match_count;
                             if count > 0 {
@@ -686,7 +681,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     ) -> Option<(usize, CowStr<'input>)> {
         let bytes = text.as_bytes();
         let open = match bytes.get(start_ix) {
-            Some(b @ b'\'') | Some(b @ b'\"') | Some(b @ b'(') => *b,
+            Some(b @ (b'\'' | b'\"' | b'(')) => *b,
             _ => return None,
         };
         let close = if open == b'(' { b')' } else { open };
@@ -746,7 +741,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
     /// Make a code span.
     ///
-    /// Both `open` and `close` are matching MaybeCode items.
+    /// Both `open` and `close` are matching `MaybeCode` items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
         let first_ix = self.tree[open].next.unwrap();
         let bytes = self.text.as_bytes();
@@ -993,7 +988,7 @@ impl InlineStack {
         let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
         let res = self.stack[lowerbound..]
             .iter()
-            .cloned()
+            .copied()
             .enumerate()
             .rfind(|(_, el)| {
                 el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
@@ -1015,7 +1010,7 @@ impl InlineStack {
     }
 
     fn push(&mut self, el: InlineEl) {
-        self.stack.push(el)
+        self.stack.push(el);
     }
 }
 

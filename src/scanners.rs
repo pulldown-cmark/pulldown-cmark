@@ -175,8 +175,7 @@ impl<'a> LineStart<'a> {
     pub(crate) fn is_at_eol(&self) -> bool {
         self.bytes
             .get(self.ix)
-            .map(|&c| c == b'\r' || c == b'\n')
-            .unwrap_or(true)
+            .map_or(true, |&c| c == b'\r' || c == b'\n')
     }
 
     fn scan_ch(&mut self, c: u8) -> bool {
@@ -222,7 +221,7 @@ impl<'a> LineStart<'a> {
                 }
                 self.ix += 1;
                 if self.scan_space(1) || self.is_at_eol() {
-                    return self.finish_list_marker(c, 0, indent + 2);
+                    return Some(self.finish_list_marker(c, 0, indent + 2));
                 }
             } else if c >= b'0' && c <= b'9' {
                 let start_ix = self.ix;
@@ -236,10 +235,13 @@ impl<'a> LineStart<'a> {
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
                         if self.scan_space(1) || self.is_at_eol() {
-                            return self.finish_list_marker(c, val, indent + self.ix - start_ix);
-                        } else {
-                            break;
+                            return Some(self.finish_list_marker(
+                                c,
+                                val,
+                                indent + self.ix - start_ix,
+                            ));
                         }
+                        break;
                     } else {
                         break;
                     }
@@ -250,17 +252,12 @@ impl<'a> LineStart<'a> {
         None
     }
 
-    fn finish_list_marker(
-        &mut self,
-        c: u8,
-        start: u64,
-        mut indent: usize,
-    ) -> Option<(u8, u64, usize)> {
+    fn finish_list_marker(&mut self, c: u8, start: u64, mut indent: usize) -> (u8, u64, usize) {
         let save = self.clone();
 
         // skip the rest of the line if it's blank
         if scan_blank_line(&self.bytes[self.ix..]).is_some() {
-            return Some((c, start, indent));
+            return (c, start, indent);
         }
 
         let post_indent = self.scan_space_upto(4);
@@ -269,10 +266,10 @@ impl<'a> LineStart<'a> {
         } else {
             *self = save;
         }
-        Some((c, start, indent))
+        (c, start, indent)
     }
 
-    /// Returns Some(is_checked) when a task list marker was found. Resets itself
+    /// Returns `Some(is_checked)` when a task list marker was found. Resets itself
     /// to original state otherwise.
     pub(crate) fn scan_task_list_marker(&mut self) -> Option<bool> {
         let save = self.clone();
@@ -287,7 +284,7 @@ impl<'a> LineStart<'a> {
                 self.ix += 1;
                 false
             }
-            Some(b'x') | Some(b'X') => {
+            Some(b'x' | b'X') => {
                 self.ix += 1;
                 true
             }
@@ -303,8 +300,7 @@ impl<'a> LineStart<'a> {
         if !self
             .bytes
             .get(self.ix)
-            .map(|&b| is_ascii_whitespace_no_nl(b))
-            .unwrap_or(false)
+            .map_or(false, |&b| is_ascii_whitespace_no_nl(b))
         {
             *self = save;
             return None;
@@ -794,7 +790,7 @@ pub(crate) fn scan_link_dest(
     let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
 
-    if i != 0 {
+    if i > 0 {
         // pointy links
         while i < bytes.len() {
             match bytes[i] {
@@ -920,7 +916,7 @@ fn scan_attribute_value(
     buffer_ix: &mut usize,
 ) -> Option<usize> {
     match *data.get(i)? {
-        b @ b'"' | b @ b'\'' => {
+        b @ (b'"' | b'\'') => {
             i += 1;
             while i < data.len() {
                 if data[i] == b {
@@ -1096,7 +1092,7 @@ pub(crate) fn scan_html_block_inner(
                     break;
                 }
             }
-            if let Some(b'/') | Some(b'>') = data.get(i) {
+            if let Some(b'/' | b'>') = data.get(i) {
                 break;
             }
             if old_i == i {
@@ -1124,7 +1120,7 @@ pub(crate) fn scan_html_block_inner(
     }
 }
 
-/// Returns (next_byte_offset, uri, type)
+/// Returns `(next_byte_offset, uri, type)`
 pub(crate) fn scan_autolink(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>, LinkType)> {
     scan_uri(text, start_ix)
         .map(|(bytes, uri)| (bytes, uri, LinkType::Autolink))
@@ -1171,7 +1167,7 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
     None
 }
 
-/// Returns (next_byte_offset, email)
+/// Returns `(next_byte_offset, email)`
 fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
     // using a regex library would be convenient, but doing it by hand is not too bad
     let bytes = &text.as_bytes()[start_ix..];

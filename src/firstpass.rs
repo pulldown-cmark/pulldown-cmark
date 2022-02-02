@@ -5,7 +5,14 @@ use std::cmp::max;
 use std::ops::Range;
 
 use crate::parse::{scan_containers, Allocations, HeadingAttributes, Item, ItemBody, LinkDef};
-use crate::scanners::*;
+use crate::scanners::{
+    is_ascii_punctuation, is_ascii_whitespace, is_ascii_whitespace_no_nl, is_punctuation,
+    scan_atx_heading, scan_blank_line, scan_blockquote_start, scan_ch, scan_ch_repeat,
+    scan_closing_code_fence, scan_code_fence, scan_empty_list, scan_entity, scan_eol, scan_hrule,
+    scan_html_type_7, scan_link_dest, scan_listitem, scan_nextline, scan_refdef_title,
+    scan_rev_while, scan_setext_heading, scan_table_head, scan_whitespace_no_nl,
+    starts_html_block_type_6, unescape, LineStart,
+};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::Options;
@@ -22,7 +29,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
     // This is a very naive heuristic for the number of nodes
     // we'll need.
     let start_capacity = max(128, text.len() / 32);
-    let lookup_table = &create_lut(&options);
+    let lookup_table = &create_lut(options);
     let first_pass = FirstPass {
         text,
         tree: Tree::with_capacity(start_capacity),
@@ -131,15 +138,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
-                match self.tree[node_ix].item.body {
-                    ItemBody::BlockQuote => (),
-                    _ => {
-                        if self.begin_list_item {
-                            // A list item can begin with at most one blank line.
-                            self.pop(start_ix);
-                        }
-                        self.last_line_blank = true;
+                if self.tree[node_ix].item.body != ItemBody::BlockQuote {
+                    if self.begin_list_item {
+                        // A list item can begin with at most one blank line.
+                        self.pop(start_ix);
                     }
+                    self.last_line_blank = true;
                 }
             }
             return ix + n;
@@ -221,7 +225,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Call this when containers are taken care of.
-    /// Returns bytes scanned, row_ix
+    /// Returns `(bytes_scanned, row_ix)`
     fn parse_table_row_inner(&mut self, mut ix: usize, row_cells: usize) -> (usize, TreeIndex) {
         let bytes = self.text.as_bytes();
         let mut cells = 0;
@@ -388,7 +392,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         ix
     }
 
-    /// Returns end ix of setext_heading on success.
+    /// Returns the end ix of the setext heading on success.
     fn parse_setext_heading(
         &mut self,
         ix: usize,
@@ -557,7 +561,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(0)
                     }
                 }
-                c @ b'*' | c @ b'_' | c @ b'~' => {
+                c @ (b'*' | b'_' | b'~') => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
@@ -707,7 +711,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(count - 1)
                     }
                 }
-                c @ b'\'' | c @ b'"' => {
+                c @ (b'\'' | b'"') => {
                     let string_suffix = &self.text[ix..];
                     let can_open = delim_run_can_open(self.text, string_suffix, 1, ix);
                     let can_close = delim_run_can_close(self.text, string_suffix, 1, ix);
@@ -733,11 +737,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         (final_ix, brk)
     }
 
-    /// When start_ix is at the beginning of an HTML block of type 1 to 5,
+    /// When `start_ix` is at the beginning of an HTML block of type 1 to 5,
     /// this will find the end of the block, adding the block itself to the
     /// tree and also keeping track of the lines of HTML within the block.
     ///
-    /// The html_end_tag is the tag that must be found on a line to end the block.
+    /// The argument `html_end_tag` is the tag that must be found on a line to
+    /// end the block.
     fn parse_html_block_type_1_to_5(
         &mut self,
         start_ix: usize,
@@ -771,7 +776,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         ix
     }
 
-    /// When start_ix is at the beginning of an HTML block of type 6 or 7,
+    /// When `start_ix` is at the beginning of an HTML block of type 6 or 7,
     /// this will consume lines until there is a blank line and keep track of
     /// the HTML within the block.
     fn parse_html_block_type_6_or_7(
@@ -1256,7 +1261,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let (content_len, attr_block_range_rel) =
             extract_attribute_block_content_from_header_text(header_bytes);
         let content_end = header_start + content_len;
-        let attrs = attr_block_range_rel.and_then(|r| {
+        let attrs = attr_block_range_rel.map(|r| {
             parse_inside_attribute_block(
                 &self.text[(header_start + r.start)..(header_start + r.end)],
             )
@@ -1461,7 +1466,7 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     next_char.is_whitespace() || is_punctuation(next_char)
 }
 
-fn create_lut(options: &Options) -> LookupTable {
+fn create_lut(options: Options) -> LookupTable {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
         LookupTable {
@@ -1475,7 +1480,7 @@ fn create_lut(options: &Options) -> LookupTable {
     }
 }
 
-fn special_bytes(options: &Options) -> [bool; 256] {
+fn special_bytes(options: Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
         b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
@@ -1652,7 +1657,7 @@ fn extract_attribute_block_content_from_header_text(
 /// See also: [`Options::ENABLE_HEADING_ATTRIBUTES`].
 ///
 /// [`Options::ENABLE_HEADING_ATTRIBUTES`]: `crate::Options::ENABLE_HEADING_ATTRIBUTES`
-fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes> {
+fn parse_inside_attribute_block(inside_attr_block: &str) -> HeadingAttributes {
     let mut id = None;
     let mut classes = Vec::new();
 
@@ -1669,7 +1674,7 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
         }
     }
 
-    Some(HeadingAttributes { id, classes })
+    HeadingAttributes { id, classes }
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

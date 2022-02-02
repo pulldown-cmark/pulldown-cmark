@@ -1,5 +1,5 @@
 fn main() {
-    generate_tests_from_spec()
+    generate_tests_from_spec();
 }
 
 // If the "gen-tests" feature is absent,

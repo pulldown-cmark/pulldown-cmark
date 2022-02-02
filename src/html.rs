@@ -25,7 +25,9 @@ use std::io::{self, Write};
 
 use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
-use crate::Event::*;
+use crate::Event::{
+    Code, End, FootnoteReference, HardBreak, Html, Rule, SoftBreak, Start, TaskListMarker, Text,
+};
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 
 enum TableState {

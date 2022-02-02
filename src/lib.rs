@@ -185,7 +185,7 @@ impl TryFrom<usize> for HeadingLevel {
     }
 }
 
-/// Type specifier for inline links. See [the Tag::Link](enum.Tag.html#variant.Link) for more information.
+/// Type specifier for inline links. See [the `Tag::Link`](enum.Tag.html#variant.Link) for more information.
 #[derive(Clone, Debug, PartialEq, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum LinkType {

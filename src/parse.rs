@@ -415,8 +415,13 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     // so that we can skip it on future iterations in case
                                     // it fails in this one. In particular, we won't call
                                     // the broken link callback twice on one reference.
-                                    let reference_close_node =
-                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1).unwrap();
+                                    let reference_close_node = if let Some(node) =
+                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1)
+                                    {
+                                        node
+                                    } else {
+                                        continue;
+                                    };
                                     self.tree[reference_close_node].item.body =
                                         ItemBody::MaybeLinkClose(false);
                                     let next_node = self.tree[reference_close_node].next;
@@ -1131,6 +1136,7 @@ fn scan_reference<'a, 'b>(
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
+        // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) =

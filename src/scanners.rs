@@ -549,16 +549,15 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> {
     let c = *data.get(0)?;
-    if !(c == b'-' || c == b'=') {
-        return None;
-    }
-    let mut i = 1 + scan_ch_repeat(&data[1..], c);
-    i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' {
         HeadingLevel::H1
-    } else {
+    } else if c == b'-' {
         HeadingLevel::H2
+    } else {
+        return None;
     };
+    let mut i = 1 + scan_ch_repeat(&data[1..], c);
+    i += scan_blank_line(&data[i..])?;
     Some((i, level))
 }
 
@@ -1064,14 +1063,26 @@ pub(crate) fn unescape(input: &str) -> CowStr<'_> {
 }
 
 /// Assumes `data` is preceded by `<`.
-pub(crate) fn scan_html_block_tag(data: &[u8]) -> (usize, &[u8]) {
+pub(crate) fn starts_html_block_type_6(data: &[u8]) -> bool {
     let i = scan_ch(data, b'/');
-    let n = scan_while(&data[i..], is_ascii_alphanumeric);
-    // TODO: scan attributes and >
-    (i + n, &data[i..i + n])
+    let tail = &data[i..];
+    let n = scan_while(tail, is_ascii_alphanumeric);
+    if !is_html_tag(&tail[..n]) {
+        return false;
+    }
+    // Starting condition says the next byte must be either a space, a tab,
+    // the end of the line, the string >, or the string />
+    let tail = &tail[n..];
+    tail.is_empty()
+        || tail[0] == b' '
+        || tail[0] == b'\t'
+        || tail[0] == b'\r'
+        || tail[0] == b'\n'
+        || tail[0] == b'>'
+        || tail.len() >= 2 && &tail[..2] == b"/>"
 }
 
-pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
+fn is_html_tag(tag: &[u8]) -> bool {
     HTML_TAGS
         .binary_search_by(|probe| {
             let probe_bytes_iter = probe.as_bytes().iter();

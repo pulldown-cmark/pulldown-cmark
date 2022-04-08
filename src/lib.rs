@@ -289,7 +289,7 @@ bitflags::bitflags! {
         ///
         /// `# text { #id .class1 .class2 }` is interpreted as a level 1 heading
         /// with the content `text`, ID `id`, and classes `class1` and `class2`.
-        /// Note that attributes (ID and classes) should be space-separeted.
+        /// Note that attributes (ID and classes) should be space-separated.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
         const ENABLE_MATH = 1 << 7;
     }

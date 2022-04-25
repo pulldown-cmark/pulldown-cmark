@@ -101,8 +101,9 @@ pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
 
-    /// A heading. The field indicates the level of the heading.
-    Heading(HeadingLevel),
+    /// A heading. The first field indicates the level of the heading,
+    /// the second the fragment identifier, and the third the classes.
+    Heading(HeadingLevel, Option<&'a str>, Vec<&'a str>),
 
     BlockQuote,
     /// A code block.
@@ -120,7 +121,7 @@ pub enum Tag<'a> {
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
-    /// A table header. Contains only `TableRow`s. Note that the table body starts immediately
+    /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     TableHead,
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
@@ -278,6 +279,14 @@ bitflags::bitflags! {
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
-        const ENABLE_STANDARD_FOOTNOTES = 1 << 6;
+        /// Extension to allow headings to have ID and classes.
+        ///
+        /// `# text { #id .class1 .class2 }` is interpreted as a level 1 heading
+        /// with the content `text`, ID `id`, and classes `class1` and `class2`.
+        /// Note that attributes (ID and classes) should be space-separated.
+        const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
+        /// Extension to enable "standard" footnotes. Mutually exclusive with
+        /// `ENABLE_FOOTNOTES`.
+        const ENABLE_STANDARD_FOOTNOTES = 1 << 7;
     }
 }

@@ -27,6 +27,7 @@ pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, standard
     if smart_punct {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
+    opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
     let p = Parser::new_ext(input, opts);
     pulldown_cmark::html::push_html_with_options(&mut s, p, opts);

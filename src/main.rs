@@ -73,6 +73,11 @@ pub fn main() -> std::io::Result<()> {
     );
     cli.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     cli.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
+    cli.optflag(
+        "H",
+        "enable-heading-attributes",
+        "enable heading attributes",
+    );
 
     let matches = match cli.parse(&args[1..]) {
         Ok(m) => m,
@@ -112,6 +117,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-smart-punctuation") {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    }
+    if matches.opt_present("enable-heading-attributes") {
+        opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
     }
 
     let mut input = String::new();

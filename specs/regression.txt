@@ -63,8 +63,8 @@ ISSUE #145
 <table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
 <tr><td>Content   </td><td>Content   </td></tr>
 </tbody></table>
-<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th align="right">Title D  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td align="right">Content   </td></tr>
+<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th style="text-align: right">Title D  </th></tr></thead><tbody>
+<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td style="text-align: right">Content   </td></tr>
 </tbody></table>
 ````````````````````````````````
 
@@ -822,4 +822,55 @@ ISSUE 487
 .
 <pre><code>-	the whitespace here are tabs
 </code></pre>
+````````````````````````````````
+
+ISSUE 553
+
+```````````````````````````````` example
+1. a
+   1. a
+
+a
+2. a
+.
+<ol>
+<li>a
+<ol>
+<li>a</li>
+</ol>
+</li>
+</ol>
+<p>a
+2. a</p>
+````````````````````````````````
+
+ISSUE 553
+
+```````````````````````````````` example
+1. a
+2. a
+   2. a
+.
+<ol>
+<li>a</li>
+<li>a
+2. a</li>
+</ol>
+````````````````````````````````
+
+ISSUE 567
+
+```````````````````````````````` example
+* foo
+    + bar
+    + baz
+.
+<ul>
+<li>foo
+<ul>
+<li>bar</li>
+<li>baz</li>
+</ul>
+</li>
+</ul>
 ````````````````````````````````

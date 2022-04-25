@@ -3,12 +3,13 @@
 
 pub use super::test_markdown_html;
 
-mod standard_footnotes;
-mod regression;
 mod footnotes;
-mod table;
-mod spec;
-mod smart_punct;
-mod gfm_table;
 mod gfm_strikethrough;
+mod gfm_table;
 mod gfm_tasklist;
+mod heading_attrs;
+mod regression;
+mod smart_punct;
+mod spec;
+mod standard_footnotes;
+mod table;

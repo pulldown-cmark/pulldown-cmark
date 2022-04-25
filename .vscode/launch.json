@@ -1,0 +1,38 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "sourceLanguages": ["rust"],
+      "name": "Debug unit tests in library 'pulldown-cmark'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=pulldown-cmark"],
+        "filter": {
+          "name": "pulldown-cmark",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "sourceLanguages": ["rust"],
+      "name": "Debug executable 'pulldown-cmark'",
+      "cargo": {
+        "args": ["build", "--bin=pulldown-cmark", "--package=pulldown-cmark"],
+        "filter": {
+          "name": "pulldown-cmark",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

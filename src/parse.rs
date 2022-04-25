@@ -135,11 +135,75 @@ pub struct Parser<'input, 'callback> {
     tree: Tree<Item>,
     allocs: Allocations<'input>,
     broken_link_callback: BrokenLinkCallback<'input, 'callback>,
+    broken_footnote_callback: BrokenFootnoteCallback<'input, 'callback>,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+}
+
+pub struct ParserBuilder<'input, 'callback> {
+    text: &'input str,
+    options: Option<Options>,
+    broken_link_callback: BrokenLinkCallback<'input, 'callback>,
+    broken_footnote_callback: BrokenFootnoteCallback<'input, 'callback>,
+}
+
+impl<'input, 'callback> ParserBuilder<'input, 'callback> {
+    pub fn new(text: &'input str) -> Self {
+        ParserBuilder {
+            text,
+            options: None,
+            broken_link_callback: None,
+            broken_footnote_callback: None,
+        }
+    }
+
+    pub fn with_options(mut self, options: Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    pub fn with_broken_link_callback(
+        mut self,
+        callback: BrokenLinkCallbackFn<'input, 'callback>,
+    ) -> Self {
+        self.broken_link_callback = Some(callback);
+        self
+    }
+
+    pub fn with_broken_footnote_callback(
+        mut self,
+        callback: BrokenFootnoteCallbackFn<'input, 'callback>,
+    ) -> Self {
+        self.broken_footnote_callback = Some(callback);
+        self
+    }
+
+    pub fn build(self) -> Parser<'input, 'callback> {
+        self.into()
+    }
+}
+
+impl<'input, 'callback> From<ParserBuilder<'input, 'callback>> for Parser<'input, 'callback> {
+    fn from(builder: ParserBuilder<'input, 'callback>) -> Self {
+        let text = builder.text;
+        let options = builder.options.unwrap_or_else(Options::empty);
+        let (mut tree, allocs) = run_first_pass(text, options);
+        tree.reset();
+        Parser {
+            text,
+            options,
+            tree,
+            allocs,
+            broken_link_callback: builder.broken_link_callback,
+            broken_footnote_callback: builder.broken_footnote_callback,
+            inline_stack: Default::default(),
+            link_stack: Default::default(),
+            html_scan_guard: Default::default(),
+        }
+    }
 }
 
 impl<'input, 'callback> Parser<'input, 'callback> {
@@ -174,6 +238,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             tree,
             allocs,
             broken_link_callback,
+            broken_footnote_callback: None,
             inline_stack,
             link_stack,
             html_scan_guard,
@@ -1320,8 +1385,24 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-pub type BrokenLinkCallback<'input, 'borrow> =
-    Option<&'borrow mut dyn FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>>;
+pub type BrokenLinkCallbackFn<'input, 'borrow> =
+    &'borrow mut dyn FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>;
+
+pub type BrokenLinkCallback<'input, 'borrow> = Option<BrokenLinkCallbackFn<'input, 'borrow>>;
+
+pub type BrokenFootnoteCallbackFn<'input, 'borrow> =
+    &'borrow mut dyn FnMut(BrokenFootnote<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>;
+
+pub type BrokenFootnoteCallback<'input, 'borrow> =
+    Option<BrokenFootnoteCallbackFn<'input, 'borrow>>;
+
+pub type UnusedFootnoteDefinitionCallbackFn<'input, 'borrow> =
+    &'borrow mut dyn FnMut(
+        ParsedFootnoteReference<'input>,
+    ) -> Option<(CowStr<'input>, CowStr<'input>)>;
+
+pub type UnusedFootnoteDefinitionCallback<'input, 'borrow> =
+    Option<UnusedFootnoteDefinitionCallbackFn<'input, 'borrow>>;
 
 /// Markdown event and source range iterator.
 ///

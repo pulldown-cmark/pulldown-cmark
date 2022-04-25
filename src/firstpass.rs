@@ -123,6 +123,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&bytes[start_ix..]);
             }
+
+            unimplemented!("The above footnotes pass is copy pasta WRONG!")
         }
 
         // Process new containers

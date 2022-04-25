@@ -202,34 +202,34 @@ impl<'a> From<ParsedFootnotes<'a>> for EmittableFootnotes<'a> {
             references,
             mut definitions,
         } = parsed;
-        let (used, _, undefined_references) = references.into_iter().fold(
-            (
-                Vec::<FootnoteForEmit<'a>>::with_capacity(definitions.len()),
-                // Index into the emittable footnote list to avoid repeatedly
-                // traversing it when checking for existing footnotes.
-                HashMap::<CowStr<'a>, usize>::new(),
-                Vec::<ParsedFootnoteReference<'a>>::new(),
-            ),
-            |(mut used, used_idx, mut undefined_references), parsed_ref| {
-                // If there is a definition for this reference, remove it from
-                // the `HashMap`: this has the double effect of (a) moving the
-                // definitions/body so we can use it in the emitted data without
-                // a copy and (b) draining the definitions so that all we have
-                // left at the end is the *unused* definitions.
-                if let Some(definitions) = definitions.remove(&parsed_ref.def_name) {
-                    match used_idx.get(&parsed_ref.def_name) {
-                        Some(&idx) => used[idx].back_references.push(parsed_ref.back_ref_name),
-                        None => used.push(FootnoteForEmit {
+
+        let mut used = Vec::<FootnoteForEmit<'a>>::with_capacity(definitions.len());
+        // Index into the emittable footnote list to avoid repeatedly
+        // traversing it when checking for existing footnotes.
+        let mut used_idx = HashMap::<CowStr<'a>, usize>::new();
+        let mut undefined_references = Vec::<ParsedFootnoteReference<'a>>::new();
+
+        for parsed_ref in references.into_iter() {
+            // If there is a definition for this reference, remove it from
+            // the `HashMap`: this has the double effect of (a) moving the
+            // definitions/body so we can use it in the emitted data without
+            // a copy and (b) draining the definitions so that all we have
+            // left at the end is the *unused* definitions.
+            if let Some(definitions) = definitions.remove(&parsed_ref.def_name) {
+                match used_idx.get(&parsed_ref.def_name) {
+                    Some(&idx) => used[idx].back_references.push(parsed_ref.back_ref_name),
+                    None => {
+                        used.push(FootnoteForEmit {
                             body: definitions,
                             back_references: vec![parsed_ref.back_ref_name],
-                        }),
+                        });
+                        used_idx.insert(parsed_ref.def_name, used.len() - 1);
                     }
-                } else {
-                    undefined_references.push(parsed_ref)
-                };
-                (used, used_idx, undefined_references)
-            },
-        );
+                }
+            } else {
+                undefined_references.push(parsed_ref)
+            };
+        }
 
         // With the traversal finished, we can now be confident that any
         // remaining definitions are not included in the emittable footnotes

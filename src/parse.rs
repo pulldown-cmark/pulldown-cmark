@@ -128,6 +128,119 @@ pub struct BrokenLink<'a> {
     pub reference: CowStr<'a>,
 }
 
+pub struct BrokenFootnote<'a> {
+    pub span: std::ops::Range<usize>,
+    pub reference: CowStr<'a>,
+}
+
+/// A reference consists of both the reference and a back-reference.
+pub struct ParsedFootnoteReference<'a> {
+    def_name: CowStr<'a>,
+    back_ref_name: CowStr<'a>,
+}
+
+/// A data structure for tracking (caching) the contents of footnote definitions
+/// and references to them for emitting as "standard" footnotes at the end of a
+/// document. When walking the tree, any time a footnote definition is
+/// encountered, it is added to the map of definitions, and any time a reference
+/// is encountered, it is added to the list of emit order.
+///
+/// For emitting the items at the end, the parser can walk through the list of
+/// references and look up the corresponding definitions, and emit the
+/// definitions as a list in the order they are referenced in the document.
+///
+/// This is complicated by the fact that we support multiple references to the
+/// same definition. To support that, we generate the intermediate
+/// [EmittableFootnotes] type.
+struct ParsedFootnotes<'a> {
+    /// A map of definitions to their contents, by name. The value is the
+    /// contents of the footnote (not inclusive of any wrapping `li` or the
+    /// return tags).
+    definitions: HashMap<CowStr<'a>, Vec<Item>>,
+    /// The order in which to emit the definitions at the end of the file, based
+    /// on the order in which they appear in the contents of the original
+    /// document. The same definition reference may appear multiple times.
+    references: Vec<ParsedFootnoteReference<'a>>,
+}
+
+impl<'a> ParsedFootnotes<'a> {
+    fn try_add_def(&mut self, ref_def: CowStr<'a>, body: Vec<Item>) -> Result<(), String> {
+        // TODO: switch to `try_insert` when stable
+        match self.definitions.entry(ref_def.clone()) {
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(body);
+                Ok(())
+            }
+            _ => Err(format!("Duplicate key {ref_def}")),
+        }
+    }
+}
+
+/// An intermediate representation for footnotes, which can be used to append
+/// corresponding `Item`s into the end of the parse tree for later emit.
+struct FootnoteForEmit<'a> {
+    body: Vec<Item>,
+    back_references: Vec<CowStr<'a>>,
+}
+
+struct EmittableFootnotes<'a> {
+    /// Emittable footnote list. It cannot be a HashMap or similar because it
+    /// *must* be ordered.
+    used: Vec<FootnoteForEmit<'a>>,
+    /// A list of the parsed references whcih are never actually defined, to be
+    /// used with a broken footnote callback.
+    undefined_references: Vec<ParsedFootnoteReference<'a>>,
+    /// A list of unused definitions, which can be used with an unused footnote
+    /// callback.
+    unused_definitions: HashMap<CowStr<'a>, Vec<Item>>,
+}
+
+impl<'a> From<ParsedFootnotes<'a>> for EmittableFootnotes<'a> {
+    fn from(parsed: ParsedFootnotes<'a>) -> Self {
+        let ParsedFootnotes {
+            references,
+            mut definitions,
+        } = parsed;
+        let (used, _, undefined_references) = references.into_iter().fold(
+            (
+                Vec::<FootnoteForEmit<'a>>::with_capacity(definitions.len()),
+                // Index into the emittable footnote list to avoid repeatedly
+                // traversing it when checking for existing footnotes.
+                HashMap::<CowStr<'a>, usize>::new(),
+                Vec::<ParsedFootnoteReference<'a>>::new(),
+            ),
+            |(mut used, used_idx, mut undefined_references), parsed_ref| {
+                // If there is a definition for this reference, remove it from
+                // the `HashMap`: this has the double effect of (a) moving the
+                // definitions/body so we can use it in the emitted data without
+                // a copy and (b) draining the definitions so that all we have
+                // left at the end is the *unused* definitions.
+                if let Some(definitions) = definitions.remove(&parsed_ref.def_name) {
+                    match used_idx.get(&parsed_ref.def_name) {
+                        Some(&idx) => used[idx].back_references.push(parsed_ref.back_ref_name),
+                        None => used.push(FootnoteForEmit {
+                            body: definitions,
+                            back_references: vec![parsed_ref.back_ref_name],
+                        }),
+                    }
+                } else {
+                    undefined_references.push(parsed_ref)
+                };
+                (used, used_idx, undefined_references)
+            },
+        );
+
+        // With the traversal finished, we can now be confident that any
+        // remaining definitions are not included in the emittable footnotes
+        // list, so we can collect and warn about them.
+        EmittableFootnotes {
+            used,
+            undefined_references,
+            unused_definitions: definitions,
+        }
+    }
+}
+
 /// Markdown event iterator.
 pub struct Parser<'input, 'callback> {
     text: &'input str,

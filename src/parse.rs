@@ -153,6 +153,7 @@ pub struct ParsedFootnoteReference<'a> {
 /// This is complicated by the fact that we support multiple references to the
 /// same definition. To support that, we generate the intermediate
 /// [EmittableFootnotes] type.
+#[derive(Default)]
 struct ParsedFootnotes<'a> {
     /// A map of definitions to their contents, by name. The value is the
     /// contents of the footnote (not inclusive of any wrapping `li` or the
@@ -175,6 +176,11 @@ impl<'a> ParsedFootnotes<'a> {
             _ => Err(format!("Duplicate key {ref_def}")),
         }
     }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        return self.definitions.len() == 0 && self.references.len() == 0;
+    }
 }
 
 /// An intermediate representation for footnotes, which can be used to append
@@ -184,73 +190,29 @@ struct FootnoteForEmit<'a> {
     back_references: Vec<CowStr<'a>>,
 }
 
-struct EmittableFootnotes<'a> {
-    /// Emittable footnote list. It cannot be a HashMap or similar because it
-    /// *must* be ordered.
-    used: Vec<FootnoteForEmit<'a>>,
-    /// A list of the parsed references whcih are never actually defined, to be
-    /// used with a broken footnote callback.
-    undefined_references: Vec<ParsedFootnoteReference<'a>>,
-    /// A list of unused definitions, which can be used with an unused footnote
-    /// callback.
-    unused_definitions: HashMap<CowStr<'a>, Vec<Item>>,
-}
-
-impl<'a> From<ParsedFootnotes<'a>> for EmittableFootnotes<'a> {
-    fn from(parsed: ParsedFootnotes<'a>) -> Self {
-        let ParsedFootnotes {
-            references,
-            mut definitions,
-        } = parsed;
-
-        let mut used = Vec::<FootnoteForEmit<'a>>::with_capacity(definitions.len());
-        // Index into the emittable footnote list to avoid repeatedly
-        // traversing it when checking for existing footnotes.
-        let mut used_idx = HashMap::<CowStr<'a>, usize>::new();
-        let mut undefined_references = Vec::<ParsedFootnoteReference<'a>>::new();
-
-        for parsed_ref in references.into_iter() {
-            // If there is a definition for this reference, remove it from
-            // the `HashMap`: this has the double effect of (a) moving the
-            // definitions/body so we can use it in the emitted data without
-            // a copy and (b) draining the definitions so that all we have
-            // left at the end is the *unused* definitions.
-            if let Some(definitions) = definitions.remove(&parsed_ref.def_name) {
-                match used_idx.get(&parsed_ref.def_name) {
-                    Some(&idx) => used[idx].back_references.push(parsed_ref.back_ref_name),
-                    None => {
-                        used.push(FootnoteForEmit {
-                            body: definitions,
-                            back_references: vec![parsed_ref.back_ref_name],
-                        });
-                        used_idx.insert(parsed_ref.def_name, used.len() - 1);
-                    }
-                }
-            } else {
-                undefined_references.push(parsed_ref)
-            };
-        }
-
-        // With the traversal finished, we can now be confident that any
-        // remaining definitions are not included in the emittable footnotes
-        // list, so we can collect and warn about them.
-        EmittableFootnotes {
-            used,
-            undefined_references,
-            unused_definitions: definitions,
-        }
-    }
+enum EmittableFootnoteState {
+    NotStarted,
+    EmittedHrule,
+    EmittedSectionStart,
+    EmittedSectionEnd,
+    EmittedListStart,
+    EmittedListEnd,
+    EmittedListItemStart,
+    EmittedListItemEnd,
+    EmittingItem,
 }
 
 /// Markdown event iterator.
-pub struct Parser<'input, 'callback> {
+pub struct Parser<'input, 'callback: 'input> {
     text: &'input str,
     options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'input>,
     broken_link_callback: BrokenLinkCallback<'input, 'callback>,
     broken_footnote_callback: BrokenFootnoteCallback<'input, 'callback>,
+    unused_footnote_definition_callback: UnusedFootnoteDefinitionCallback<'input, 'callback>,
     html_scan_guard: HtmlScanGuard,
+    parsed_footnotes: ParsedFootnotes<'input>,
 
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
@@ -262,6 +224,7 @@ pub struct ParserBuilder<'input, 'callback> {
     options: Option<Options>,
     broken_link_callback: BrokenLinkCallback<'input, 'callback>,
     broken_footnote_callback: BrokenFootnoteCallback<'input, 'callback>,
+    unused_footnote_defn_callback: UnusedFootnoteDefinitionCallback<'input, 'callback>,
 }
 
 impl<'input, 'callback> ParserBuilder<'input, 'callback> {
@@ -271,6 +234,7 @@ impl<'input, 'callback> ParserBuilder<'input, 'callback> {
             options: None,
             broken_link_callback: None,
             broken_footnote_callback: None,
+            unused_footnote_defn_callback: None,
         }
     }
 
@@ -295,6 +259,14 @@ impl<'input, 'callback> ParserBuilder<'input, 'callback> {
         self
     }
 
+    pub fn with_unused_footnote_defn_callback(
+        mut self,
+        callback: UnusedFootnoteDefinitionCallbackFn<'input, 'callback>,
+    ) -> Self {
+        self.unused_footnote_defn_callback = Some(callback);
+        self
+    }
+
     pub fn build(self) -> Parser<'input, 'callback> {
         self.into()
     }
@@ -313,9 +285,11 @@ impl<'input, 'callback> From<ParserBuilder<'input, 'callback>> for Parser<'input
             allocs,
             broken_link_callback: builder.broken_link_callback,
             broken_footnote_callback: builder.broken_footnote_callback,
+            unused_footnote_definition_callback: builder.unused_footnote_defn_callback,
             inline_stack: Default::default(),
             link_stack: Default::default(),
             html_scan_guard: Default::default(),
+            parsed_footnotes: Default::default(),
         }
     }
 }
@@ -346,6 +320,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         let inline_stack = Default::default();
         let link_stack = Default::default();
         let html_scan_guard = Default::default();
+        let parsed_footnotes = Default::default();
         Parser {
             text,
             options,
@@ -353,9 +328,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             allocs,
             broken_link_callback,
             broken_footnote_callback: None,
+            unused_footnote_definition_callback: None,
             inline_stack,
             link_stack,
             html_scan_guard,
+            parsed_footnotes,
         }
     }
 
@@ -832,7 +809,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     /// The captured footnote definitions can then be transformed into the
     /// appropriate eventts at the end of the parsing iterator, once the rest of
     /// the document has been emitted.
-    fn handle_standard_footnotes<'e>(&mut self, event: Event<'e>) -> Event<'e> {
+    fn handle_standard_footnotes_pass1<'e>(&mut self, event: Event<'e>) -> Event<'e> {
         eprintln!("handle_standard_footnotes doesn't do anything yet!");
 
         // TODO: once the tree has been fully updated, get the resulting event
@@ -842,6 +819,67 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         // let event = item_to_event(item, self.text, &self.allocs);
 
         event
+    }
+
+    /// A pass for taking the result of fully iterating the document and thus
+    /// generating all the data required to emit footnotes, and generating the
+    /// corresponding output
+    fn handle_standard_footnotes_pass2<'a>(&'a mut self) {
+        // To begin, take the state from the
+        let ParsedFootnotes {
+            ref mut definitions,
+            ..
+        } = self.parsed_footnotes;
+
+        // Use a VecDeque so that we can consume the resulting data structure
+        // from the *front* rather than the back, for the sake of ordering.
+        let mut used = VecDeque::<FootnoteForEmit<'a>>::with_capacity(definitions.len());
+        // Index into the emittable footnote list to avoid repeatedly
+        // traversing it when checking for existing footnotes.
+        let mut used_idx = HashMap::<CowStr<'a>, usize>::new();
+        let mut undefined_references = Vec::<&ParsedFootnoteReference<'a>>::new();
+
+        for parsed_ref in self.parsed_footnotes.references.iter() {
+            // If there is a definition for this reference, remove it from
+            // the `HashMap`: this has the double effect of (a) moving the
+            // definitions/body so we can use it in the emitted data without
+            // a copy and (b) draining the definitions so that all we have
+            // left at the end is the *unused* definitions.
+            let def_name = parsed_ref.def_name.clone();
+            if let Some(definition_items) = definitions.remove(&def_name) {
+                let back_ref = parsed_ref.back_ref_name.clone();
+                match used_idx.get(&def_name) {
+                    Some(&idx) => used[idx].back_references.push(back_ref),
+                    None => {
+                        used.push_back(FootnoteForEmit {
+                            body: definition_items,
+                            back_references: vec![back_ref],
+                        });
+                        used_idx.insert(def_name, used.len() - 1);
+                    }
+                }
+            } else {
+                undefined_references.push(parsed_ref)
+            };
+        }
+
+        // for undefined_reference in undefined_references.into_iter() {
+        //     match self.broken_footnote_callback.as_mut() {
+        //         // TODO: need to do some work to align the types here!
+        //         Some(callback) => unimplemented!(), // callback(broken_fn)
+        //         None => None::<()>,
+        //     };
+        // }
+
+        // Since we removed used definitions from the list, we know that all
+        // definitions which remain are unused and can be reported.
+        // for unused_definition in definitions.iter() {
+        //     match self.unused_footnote_definition_callback.as_mut() {
+        //         // TODO: need to do some work to align the types here!
+        //         Some(callback) => unimplemented!(), // callback(unused_definition),
+        //         None => None::<()>,
+        //     };
+        // }
     }
 
     /// Returns next byte index, url and title.
@@ -1545,9 +1583,7 @@ pub type BrokenFootnoteCallback<'input, 'borrow> =
     Option<BrokenFootnoteCallbackFn<'input, 'borrow>>;
 
 pub type UnusedFootnoteDefinitionCallbackFn<'input, 'borrow> =
-    &'borrow mut dyn FnMut(
-        ParsedFootnoteReference<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)>;
+    &'borrow mut dyn FnMut(CowStr<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>;
 
 pub type UnusedFootnoteDefinitionCallback<'input, 'borrow> =
     Option<UnusedFootnoteDefinitionCallbackFn<'input, 'borrow>>;
@@ -1705,14 +1741,13 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        match self.tree.cur() {
+        let tree_output = match self.tree.cur() {
             None => {
                 if let Some(ix) = self.tree.pop() {
                     let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
                     self.tree.next_sibling(ix);
                     Some(Event::End(tag))
                 } else {
-                    // TODO: insert footnote data structure handling *here*.
                     None
                 }
             }
@@ -1731,7 +1766,7 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
                 let event = if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
                     && matches!(event, Event::Start(Tag::FootnoteDefinition(..)))
                 {
-                    self.handle_standard_footnotes(event)
+                    self.handle_standard_footnotes_pass1(event)
                 } else {
                     event
                 };
@@ -1743,7 +1778,21 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
                 }
                 Some(event)
             }
+        };
+
+        // While still walking the tree, emit its events.
+        if tree_output.is_some() {
+            return tree_output;
         }
+
+        // Once the tree is exhausted, emit any footnote definitions, but don't
+        // bother doing any of the further emit if there are no footnotes in the
+        // first place.
+        if !self.parsed_footnotes.is_empty() {
+            self.handle_standard_footnotes_pass2();
+        }
+
+        None
     }
 }
 

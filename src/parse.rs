@@ -809,7 +809,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     /// The captured footnote definitions can then be transformed into the
     /// appropriate eventts at the end of the parsing iterator, once the rest of
     /// the document has been emitted.
-    fn handle_standard_footnotes_pass1<'e>(&mut self, event: Event<'e>) -> Event<'e> {
+    fn handle_standard_footnotes_pass1<'e>(&mut self, event: Event<'e>) {
         eprintln!("handle_standard_footnotes doesn't do anything yet!");
 
         // TODO: once the tree has been fully updated, get the resulting event
@@ -1756,27 +1756,34 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
                     self.handle_inline();
                 }
 
-                // To handle "standard" footnotes, we need to get the next event
-                // and determine if it is a
                 let node = self.tree[cur_ix];
                 let item = node.item;
                 let event = item_to_event(item, self.text, &self.allocs);
 
-                // This can produce
-                let event = if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
+                if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
                     && matches!(event, Event::Start(Tag::FootnoteDefinition(..)))
                 {
-                    self.handle_standard_footnotes_pass1(event)
-                } else {
-                    event
-                };
+                    // To handle "standard" footnotes, we need to check if the
+                    // next event is a footnote definition. If so, then we need
+                    // to do a partial rewrite of the tree, pushing the footnote
+                    // definition into our footnote tracking state to emit at
+                    // the end.
+                    self.handle_standard_footnotes_pass1(event);
 
-                if let Event::Start(..) = event {
-                    self.tree.push();
+                    // Then return an empty text node in place of the
+                    // definition, since we must keep emitting events or else
+                    // the iterator will end up in the next state.
+                    //
+                    // TODO: we really need theh ability to "skip" here. How?
+                    Some(Event::Text("".into()))
                 } else {
-                    self.tree.next_sibling(cur_ix);
+                    if let Event::Start(..) = event {
+                        self.tree.push();
+                    } else {
+                        self.tree.next_sibling(cur_ix);
+                    }
+                    Some(event)
                 }
-                Some(event)
             }
         };
 
@@ -1787,8 +1794,10 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
 
         // Once the tree is exhausted, emit any footnote definitions, but don't
         // bother doing any of the further emit if there are no footnotes in the
-        // first place.
-        if !self.parsed_footnotes.is_empty() {
+        // first place *or* if we are not in the standard footnotes mode.
+        if self.options.contains(Options::ENABLE_STANDARD_FOOTNOTES)
+            && !self.parsed_footnotes.is_empty()
+        {
             self.handle_standard_footnotes_pass2();
         }
 

@@ -817,8 +817,6 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         // let node = self.tree[cur_ix];
         // let item = node.item;
         // let event = item_to_event(item, self.text, &self.allocs);
-
-        event
     }
 
     /// A pass for taking the result of fully iterating the document and thus
@@ -831,12 +829,15 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             ..
         } = self.parsed_footnotes;
 
-        // Use a VecDeque so that we can consume the resulting data structure
-        // from the *front* rather than the back, for the sake of ordering.
+        // Use a `VecDeque` for the footnotes to emit, so that we can consume
+        // the resulting data structure from the *front* rather than the back,
+        // for the sake of properly ordering them in the outputs.
         let mut used = VecDeque::<FootnoteForEmit<'a>>::with_capacity(definitions.len());
         // Index into the emittable footnote list to avoid repeatedly
         // traversing it when checking for existing footnotes.
         let mut used_idx = HashMap::<CowStr<'a>, usize>::new();
+        // Additionally, track undefined references to allow users to provide a
+        // callback which operates on them (e.g. to warn, replace, etc.).
         let mut undefined_references = Vec::<&ParsedFootnoteReference<'a>>::new();
 
         for parsed_ref in self.parsed_footnotes.references.iter() {
@@ -1764,17 +1765,17 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
                     && matches!(event, Event::Start(Tag::FootnoteDefinition(..)))
                 {
                     // To handle "standard" footnotes, we need to check if the
-                    // next event is a footnote definition. If so, then we need
-                    // to do a partial rewrite of the tree, pushing the footnote
+                    // event is a footnote definition. If so, then we need to do
+                    // a partial rewrite of the tree, pushing the footnote
                     // definition into our footnote tracking state to emit at
-                    // the end.
+                    // the end of the parse pass.
                     self.handle_standard_footnotes_pass1(event);
 
                     // Then return an empty text node in place of the
                     // definition, since we must keep emitting events or else
                     // the iterator will end up in the next state.
                     //
-                    // TODO: we really need theh ability to "skip" here. How?
+                    // TODO: we really need the ability to "skip" here. How?
                     Some(Event::Text("".into()))
                 } else {
                     if let Event::Start(..) = event {

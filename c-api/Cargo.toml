@@ -1,0 +1,21 @@
+[package]
+name = "pulldowncmark"
+version = "0.1.0"
+authors = [ "Raph Levien <raph.levien@gmail.com>", "Marcus Klaas de Vries <mail@marcusklaas.nl>" ]
+edition = "2018"
+
+[dependencies]
+encoding_rs = "0.8.13"
+pulldown-cmark = { path = "../" }
+libc = "0"
+thiserror = "1"
+
+[build-dependencies]
+cc = "1.0.46"
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]

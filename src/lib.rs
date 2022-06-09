@@ -124,7 +124,7 @@ pub enum Tag<'a> {
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
-    /// A table header. Contains only `TableRow`s. Note that the table body starts immediately
+    /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     TableHead,
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.

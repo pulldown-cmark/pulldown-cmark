@@ -62,10 +62,10 @@ pub(crate) enum ItemBody {
     MaybeEmphasis(usize, bool, bool),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
-    MaybeCode(usize, bool), // number of backticks, preceeded by backslash
+    MaybeCode(usize, bool), // number of backticks, preceded by backslash
     MaybeHtml,
     MaybeLinkOpen,
-    // bool indicates whether or not the preceeding section could be a reference
+    // bool indicates whether or not the preceding section could be a reference
     MaybeLinkClose(bool),
     MaybeImage,
 

@@ -46,7 +46,7 @@ pub(crate) fn scan_link_label_rest<'t>(
     let mut ix = 0;
     let mut only_white_space = true;
     let mut codepoints = 0;
-    // no worries, doesnt allocate until we push things onto it
+    // no worries, doesn't allocate until we push things onto it
     let mut label = String::new();
     let mut mark = 0;
 

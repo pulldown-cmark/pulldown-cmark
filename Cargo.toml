@@ -7,7 +7,7 @@ description = "A pull parser for CommonMark"
 repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
-edition = "2018"
+edition = "2021"
 readme = "README.md"
 exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/azure-pipelines.yml"]
 

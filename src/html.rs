@@ -28,6 +28,11 @@ use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 
+#[cfg(feature = "no-backline")]
+const BACKLINE: &str = "";
+#[cfg(not(feature = "no-backline"))]
+const BACKLINE: &str = "\n";
+
 enum TableState {
     Head,
     Body,
@@ -108,13 +113,13 @@ where
                     self.write_newline()?;
                 }
                 HardBreak => {
-                    self.write("<br />\n")?;
+                    self.write(&(String::from("<br />") + BACKLINE))?;
                 }
                 Rule => {
                     if self.end_newline {
-                        self.write("<hr />\n")?;
+                        self.write(&(String::from("<hr />") + BACKLINE))?;
                     } else {
-                        self.write("\n<hr />\n")?;
+                        self.write(&(String::from("\n<hr />") + BACKLINE))?;
                     }
                 }
                 FootnoteReference(name) => {
@@ -127,10 +132,10 @@ where
                     self.write("</a></sup>")?;
                 }
                 TaskListMarker(true) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
+                    self.write(&(String::from("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>") + BACKLINE))?;
                 }
                 TaskListMarker(false) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
+                    self.write(&(String::from("<input disabled=\"\" type=\"checkbox\"/>") + BACKLINE))?;
                 }
             }
         }
@@ -141,14 +146,14 @@ where
     fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
         match tag {
             Tag::Paragraph => {
-                if self.end_newline {
+                if self.end_newline || BACKLINE.is_empty() {
                     self.write("<p>")
                 } else {
                     self.write("\n<p>")
                 }
             }
             Tag::Heading(level, id, classes) => {
-                if self.end_newline {
+                if self.end_newline || BACKLINE.is_empty() {
                     self.end_newline = false;
                     self.write("<")?;
                 } else {
@@ -202,7 +207,9 @@ where
                 }
             }
             Tag::BlockQuote => {
-                if self.end_newline {
+                if BACKLINE.is_empty() {
+                    self.write("<blockquote>")
+                } else if self.end_newline || BACKLINE.is_empty() {
                     self.write("<blockquote>\n")
                 } else {
                     self.write("\n<blockquote>\n")
@@ -227,30 +234,34 @@ where
                 }
             }
             Tag::List(Some(1)) => {
-                if self.end_newline {
+                if BACKLINE.is_empty() {
+                    self.write("<ol>")
+                } else if self.end_newline {
                     self.write("<ol>\n")
                 } else {
                     self.write("\n<ol>\n")
                 }
             }
             Tag::List(Some(start)) => {
-                if self.end_newline {
+                if self.end_newline || BACKLINE.is_empty() {
                     self.write("<ol start=\"")?;
                 } else {
                     self.write("\n<ol start=\"")?;
                 }
                 write!(&mut self.writer, "{}", start)?;
-                self.write("\">\n")
+                self.write(&(String::from("\">") + BACKLINE))
             }
             Tag::List(None) => {
-                if self.end_newline {
+                if BACKLINE.is_empty() {
+                    self.write("<ul>")
+                } else if self.end_newline {
                     self.write("<ul>\n")
                 } else {
                     self.write("\n<ul>\n")
                 }
             }
             Tag::Item => {
-                if self.end_newline {
+                if self.end_newline || BACKLINE.is_empty() {
                     self.write("<li>")
                 } else {
                     self.write("\n<li>")
@@ -289,7 +300,7 @@ where
                 self.write("\" />")
             }
             Tag::FootnoteDefinition(name) => {
-                if self.end_newline {
+                if self.end_newline || BACKLINE.is_empty() {
                     self.write("<div class=\"footnote-definition\" id=\"")?;
                 } else {
                     self.write("\n<div class=\"footnote-definition\" id=\"")?;
@@ -307,22 +318,22 @@ where
     fn end_tag(&mut self, tag: Tag) -> io::Result<()> {
         match tag {
             Tag::Paragraph => {
-                self.write("</p>\n")?;
+                self.write(&(String::from("</p>") + BACKLINE))?;
             }
             Tag::Heading(level, _id, _classes) => {
                 self.write("</")?;
                 write!(&mut self.writer, "{}", level)?;
-                self.write(">\n")?;
+                self.write(&(String::from(">") + BACKLINE))?;
             }
             Tag::Table(_) => {
-                self.write("</tbody></table>\n")?;
+                self.write(&(String::from("</tbody></table>") + BACKLINE))?;
             }
             Tag::TableHead => {
-                self.write("</tr></thead><tbody>\n")?;
+                self.write(&(String::from("</tr></thead><tbody>") + BACKLINE))?;
                 self.table_state = TableState::Body;
             }
             Tag::TableRow => {
-                self.write("</tr>\n")?;
+                self.write(&(String::from("</tr>") + BACKLINE))?;
             }
             Tag::TableCell => {
                 match self.table_state {
@@ -336,19 +347,19 @@ where
                 self.table_cell_index += 1;
             }
             Tag::BlockQuote => {
-                self.write("</blockquote>\n")?;
+                self.write(&(String::from("</blockquote>") + BACKLINE))?;
             }
             Tag::CodeBlock(_) => {
-                self.write("</code></pre>\n")?;
+                self.write(&(String::from("</code></pre>") + BACKLINE))?;
             }
             Tag::List(Some(_)) => {
-                self.write("</ol>\n")?;
+                self.write(&(String::from("</ol>") + BACKLINE))?;
             }
             Tag::List(None) => {
-                self.write("</ul>\n")?;
+                self.write(&(String::from("</ul>") + BACKLINE))?;
             }
             Tag::Item => {
-                self.write("</li>\n")?;
+                self.write(&(String::from("</li>") + BACKLINE))?;
             }
             Tag::Emphasis => {
                 self.write("</em>")?;
@@ -364,7 +375,7 @@ where
             }
             Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
-                self.write("</div>\n")?;
+                self.write(&(String::from("</div>") + BACKLINE))?;
             }
         }
         Ok(())

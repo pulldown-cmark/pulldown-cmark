@@ -950,7 +950,7 @@ fn scan_attribute(
 
 /// Scans whitespace and possibly newlines according to the
 /// behavior defined by the newline handler. When bytes are skipped,
-/// all preceeding non-skipped bytes are pushed to the buffer.
+/// all preceding non-skipped bytes are pushed to the buffer.
 fn scan_whitespace_with_newline_handler(
     data: &[u8],
     mut i: usize,

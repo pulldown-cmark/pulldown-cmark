@@ -71,7 +71,7 @@ pub(crate) enum ItemBody {
     MaybeMath(bool, bool), // preceded by char, follow by char
     MaybeHtml,
     MaybeLinkOpen,
-    // bool indicates whether or not the preceeding section could be a reference
+    // bool indicates whether or not the preceding section could be a reference
     MaybeLinkClose(bool),
     MaybeImage,
 

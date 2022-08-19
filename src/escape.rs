@@ -39,7 +39,7 @@ static HREF_SAFE: [u8; 128] = [
 
 static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &str = "&amp;";
-static SLASH_ESCAPE: &str = "&#x27;";
+static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 
 /// This wrapper exists because we can't have both a blanket implementation
 /// for all types implementing `Write` and types of the for `&mut W` where
@@ -120,7 +120,7 @@ where
                     w.write_str(AMP_ESCAPE)?;
                 }
                 b'\'' => {
-                    w.write_str(SLASH_ESCAPE)?;
+                    w.write_str(SINGLE_QUOTE_ESCAPE)?;
                 }
                 _ => {
                     let mut buf = [0u8; 3];

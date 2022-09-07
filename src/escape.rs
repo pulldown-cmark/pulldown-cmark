@@ -45,6 +45,7 @@ static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 /// for all types implementing `Write` and types of the for `&mut W` where
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
+#[derive(Debug)]
 pub struct WriteWrapper<W>(pub W);
 
 /// Trait that allows writing string slices. This is basically an extension

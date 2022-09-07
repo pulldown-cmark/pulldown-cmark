@@ -123,6 +123,7 @@ impl<'a> Default for ItemBody {
     }
 }
 
+#[derive(Debug)]
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
@@ -141,6 +142,24 @@ pub struct Parser<'input, 'callback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+}
+
+impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Parser")
+            .field("text", &self.text)
+            .field("options", &self.options)
+            .field("tree", &self.tree)
+            .field("allocs", &self.allocs)
+            .field(
+                "broken_link_callback",
+                &self.broken_link_callback.as_ref().map(|_| ..),
+            )
+            .field("html_scan_guard", &self.html_scan_guard)
+            .field("inline_stack", &self.inline_stack)
+            .field("link_stack", &self.link_stack)
+            .finish()
+    }
 }
 
 impl<'input, 'callback> Parser<'input, 'callback> {
@@ -1097,7 +1116,7 @@ fn scan_reference<'a, 'b>(
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 struct LinkStack {
     inner: Vec<LinkStackEl>,
     disabled_ix: usize,
@@ -1143,7 +1162,7 @@ enum LinkStackTy {
 }
 
 /// Contains the destination URL, title and source span of a reference definition.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
@@ -1209,7 +1228,7 @@ pub(crate) struct AlignmentIndex(usize);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub(crate) struct HeadingIndex(NonZeroUsize);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
@@ -1219,14 +1238,14 @@ pub(crate) struct Allocations<'a> {
 }
 
 /// Used by the heading attributes extension.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct HeadingAttributes<'a> {
     pub id: Option<&'a str>,
     pub classes: Vec<&'a str>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 impl<'input, 'b, 's> RefDefs<'input>
@@ -1320,7 +1339,7 @@ impl<'a> Index<HeadingIndex> for Allocations<'a> {
 /// elements (`<?`) and declarations (`<!DECLARATION`). The respectives usizes
 /// represent the indices before which a scan will always fail and can hence
 /// be skipped.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub(crate) struct HtmlScanGuard {
     pub cdata: usize,
     pub processing: usize,
@@ -1337,6 +1356,7 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
+#[derive(Debug)]
 pub struct OffsetIter<'a, 'b> {
     inner: Parser<'a, 'b>,
 }

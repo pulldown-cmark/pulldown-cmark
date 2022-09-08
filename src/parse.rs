@@ -123,6 +123,7 @@ impl<'a> Default for ItemBody {
     }
 }
 
+#[derive(Debug)]
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
@@ -141,6 +142,20 @@ pub struct Parser<'input, 'callback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+}
+
+impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Only print the fileds that have public types.
+        f.debug_struct("Parser")
+            .field("text", &self.text)
+            .field("options", &self.options)
+            .field(
+                "broken_link_callback",
+                &self.broken_link_callback.as_ref().map(|_| ..),
+            )
+            .finish()
+    }
 }
 
 impl<'input, 'callback> Parser<'input, 'callback> {
@@ -1143,7 +1158,7 @@ enum LinkStackTy {
 }
 
 /// Contains the destination URL, title and source span of a reference definition.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
@@ -1226,7 +1241,7 @@ pub(crate) struct HeadingAttributes<'a> {
 }
 
 /// Keeps track of the reference definitions defined in the document.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 impl<'input, 'b, 's> RefDefs<'input>
@@ -1337,6 +1352,7 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
+#[derive(Debug)]
 pub struct OffsetIter<'a, 'b> {
     inner: Parser<'a, 'b>,
 }

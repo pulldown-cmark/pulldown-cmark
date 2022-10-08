@@ -104,7 +104,7 @@ pub enum Tag<'a> {
 
     /// A heading. The first field indicates the level of the heading,
     /// the second the fragment identifier, and the third the classes.
-    Heading(HeadingLevel, Option<&'a str>, Vec<&'a str>),
+    Heading(HeadingLevel, Option<CowStr<'a>>, Vec<CowStr<'a>>),
 
     BlockQuote,
     /// A code block.

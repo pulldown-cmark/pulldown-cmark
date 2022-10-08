@@ -157,7 +157,7 @@ where
                 write!(&mut self.writer, "{}", level)?;
                 if let Some(id) = id {
                     self.write(" id=\"")?;
-                    escape_html(&mut self.writer, id)?;
+                    escape_html(&mut self.writer, &id)?;
                     self.write("\"")?;
                 }
                 let mut classes = classes.iter();

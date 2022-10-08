@@ -1236,8 +1236,8 @@ pub(crate) struct Allocations<'a> {
 /// Used by the heading attributes extension.
 #[derive(Clone)]
 pub(crate) struct HeadingAttributes<'a> {
-    pub id: Option<&'a str>,
-    pub classes: Vec<&'a str>,
+    pub id: Option<CowStr<'a>>,
+    pub classes: Vec<CowStr<'a>>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1413,7 +1413,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes } = allocs.index(heading_ix);
-            Tag::Heading(level, *id, classes.clone())
+            Tag::Heading(level, id.clone(), classes.clone())
         }
         ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {
@@ -1468,7 +1468,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes } = allocs.index(heading_ix);
-            Tag::Heading(level, *id, classes.clone())
+            Tag::Heading(level, id.clone(), classes.clone())
         }
         ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
         ItemBody::FencedCodeBlock(cow_ix) => {

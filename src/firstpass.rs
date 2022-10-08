@@ -1662,9 +1662,9 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
         if attr.len() > 1 {
             let first_byte = attr.as_bytes()[0];
             if first_byte == b'#' {
-                id = Some(&attr[1..]);
+                id = Some(attr[1..].into());
             } else if first_byte == b'.' {
-                classes.push(&attr[1..]);
+                classes.push(attr[1..].into());
             }
         }
     }

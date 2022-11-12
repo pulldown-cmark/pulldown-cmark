@@ -32,19 +32,20 @@ static HREF_SAFE: [u8; 128] = [
     0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1,
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
 ];
 
 static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &str = "&amp;";
-static SLASH_ESCAPE: &str = "&#x27;";
+static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 
 /// This wrapper exists because we can't have both a blanket implementation
 /// for all types implementing `Write` and types of the for `&mut W` where
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
+#[derive(Debug)]
 pub struct WriteWrapper<W>(pub W);
 
 /// Trait that allows writing string slices. This is basically an extension
@@ -120,7 +121,7 @@ where
                     w.write_str(AMP_ESCAPE)?;
                 }
                 b'\'' => {
-                    w.write_str(SLASH_ESCAPE)?;
+                    w.write_str(SINGLE_QUOTE_ESCAPE)?;
                 }
                 _ => {
                     let mut buf = [0u8; 3];
@@ -352,5 +353,17 @@ mod simd {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    pub use super::escape_href;
+
+    #[test]
+    fn check_href_escape() {
+        let mut s = String::new();
+        escape_href(&mut s, "&^_").unwrap();
+        assert_eq!(s.as_str(), "&amp;^_");
     }
 }

@@ -266,13 +266,13 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                                 pos != 0,
                                 "If node is not first, then node's position shall not be zero"
                             );
-                            let mut preceeding = siblings[pos - 1].clone();
+                            let mut preceding = siblings[pos - 1].clone();
                             'descent: loop {
-                                if let NodeData::Text { .. } = preceeding.data {
+                                if let NodeData::Text { .. } = preceding.data {
                                     break 'descent;
                                 }
-                                preceeding = {
-                                    let ch = preceeding.children.borrow();
+                                preceding = {
+                                    let ch = preceding.children.borrow();
                                     if ch.len() == 0 {
                                         break 'descent;
                                     }
@@ -283,7 +283,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                                     }
                                 };
                             }
-                            if let NodeData::Text { ref contents, .. } = preceeding.data {
+                            if let NodeData::Text { ref contents, .. } = preceding.data {
                                 break 'ascent TRAILING_WHITESPACE_RE.is_match(&*contents.borrow());
                             } else {
                                 break 'ascent false;

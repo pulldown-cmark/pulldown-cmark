@@ -69,7 +69,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         if self.options.contains(Options::ENABLE_FOOTNOTES) {
-            // finish footnote if it's still open and was preceeded by blank line
+            // finish footnote if it's still open and was preceded by blank line
             if let Some(node_ix) = self.tree.peek_up() {
                 if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
                     if self.last_line_blank {
@@ -901,7 +901,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let bytes = self.text.as_bytes();
         let mut info_start = start_ix + n_fence_char;
         info_start += scan_whitespace_no_nl(&bytes[info_start..]);
-        // TODO: info strings are typically very short. wouldnt it be faster
+        // TODO: info strings are typically very short. wouldn't it be faster
         // to just do a forward scan here?
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
@@ -1314,14 +1314,14 @@ enum TableParseMode {
 }
 
 /// Computes the number of header columns in a table line by computing the number of dividing pipes
-/// that aren't followed or preceeded by whitespace.
+/// that aren't followed or preceded by whitespace.
 fn count_header_cols(
     bytes: &[u8],
     mut pipes: usize,
     mut start: usize,
     last_pipe_ix: usize,
 ) -> usize {
-    // was first pipe preceeded by whitespace? if so, subtract one
+    // was first pipe preceded by whitespace? if so, subtract one
     start += scan_whitespace_no_nl(&bytes[start..]);
     if bytes[start] == b'|' {
         pipes -= 1;

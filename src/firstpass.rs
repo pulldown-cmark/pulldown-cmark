@@ -69,12 +69,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         if self.options.contains(Options::ENABLE_FOOTNOTES) {
-            // finish footnote if it's still open and was preceded by blank line
+            // finish footnote if it's still open
             if let Some(node_ix) = self.tree.peek_up() {
                 if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
-                    if self.last_line_blank {
-                        self.pop(start_ix);
-                    }
+                    self.pop(start_ix);
                 }
             }
 
@@ -300,7 +298,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
-        if scan_paragraph_interrupt(&bytes[ix..], current_container) {
+        if self.scan_paragraph_interrupt(&bytes[ix..], current_container) {
             return None;
         }
 
@@ -325,6 +323,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             } else {
                 TableParseMode::Disabled
             };
+
             let (next_ix, brk) = self.parse_line(ix, None, scan_mode);
 
             // break out when we find a table
@@ -370,7 +369,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if scan_paragraph_interrupt(suffix, current_container) {
+                if self.scan_paragraph_interrupt(suffix, current_container) {
                     break;
                 }
             }
@@ -1122,7 +1121,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 scan_containers(&self.tree, &mut line_start) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[bytes_scanned..];
-            if scan_paragraph_interrupt(suffix, current_container) {
+            if self.scan_paragraph_interrupt(suffix, current_container) {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1263,6 +1262,27 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         });
         (content_end, attrs)
     }
+
+    /// Checks whether we should break a paragraph on the given input.
+    fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
+        scan_eol(bytes).is_some()
+            || scan_hrule(bytes).is_ok()
+            || scan_atx_heading(bytes).is_some()
+            || scan_code_fence(bytes).is_some()
+            || scan_blockquote_start(bytes).is_some()
+            || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
+                ! current_container ||
+                // we don't allow interruption by either empty lists or
+                // numbered lists starting at an index other than 1
+                (delim == b'*' || delim == b'-' || delim == b'+' || index == 1)
+                    && !scan_empty_list(&bytes[ix..])
+            })
+            || bytes.starts_with(b"<")
+                && (get_html_end_tag(&bytes[1..]).is_some()
+                    || starts_html_block_type_6(&bytes[1..]))
+            || self.options.contains(Options::ENABLE_FOOTNOTES)
+                && scan_footnote_refdef_label(bytes).is_some()
+    }
 }
 
 /// Scanning modes for `Parser`'s `parse_line` method.
@@ -1296,24 +1316,6 @@ fn count_header_cols(
     } else {
         pipes + 1
     }
-}
-
-/// Checks whether we should break a paragraph on the given input.
-fn scan_paragraph_interrupt(bytes: &[u8], current_container: bool) -> bool {
-    scan_eol(bytes).is_some()
-        || scan_hrule(bytes).is_ok()
-        || scan_atx_heading(bytes).is_some()
-        || scan_code_fence(bytes).is_some()
-        || scan_blockquote_start(bytes).is_some()
-        || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
-            ! current_container ||
-            // we don't allow interruption by either empty lists or
-            // numbered lists starting at an index other than 1
-            (delim == b'*' || delim == b'-' || delim == b'+' || index == 1)
-                && !scan_empty_list(&bytes[ix..])
-        })
-        || bytes.starts_with(b"<")
-            && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

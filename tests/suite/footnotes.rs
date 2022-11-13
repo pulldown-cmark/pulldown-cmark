@@ -119,10 +119,10 @@ fn footnotes_test_7() {
 
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
 
-[^b]: This means that a footnote definition cannot be directly inside another footnote definition.
-> This means that a footnote cannot be directly inside another footnote's body. [^e]
+[^b]: This means that a footnote definition cannot be inside another footnote definition.
+> This means that a footnote cannot be inside another footnote's body. [^e]
 >
-> [^e]: They can, however, be inside anything else.
+> [^e]: They also cannot be inside anything else.
 
 [^xkcd]: [The other kind of nested footnote is, however, considered poor style.](https://xkcd.com/1208/)
 "##;
@@ -131,14 +131,14 @@ fn footnotes_test_7() {
 <p>This does not mean that footnotes cannot reference each other. <sup class="footnote-reference"><a href="#b">3</a></sup></p>
 </div>
 <div class="footnote-definition" id="b"><sup class="footnote-definition-label">3</sup>
-<p>This means that a footnote definition cannot be directly inside another footnote definition.</p>
+<p>This means that a footnote definition cannot be inside another footnote definition.</p>
+</div>
 <blockquote>
-<p>This means that a footnote cannot be directly inside another footnote's body. <sup class="footnote-reference"><a href="#e">4</a></sup></p>
+<p>This means that a footnote cannot be inside another footnote's body. <sup class="footnote-reference"><a href="#e">4</a></sup></p>
 <div class="footnote-definition" id="e"><sup class="footnote-definition-label">4</sup>
-<p>They can, however, be inside anything else.</p>
+<p>They also cannot be inside anything else.</p>
 </div>
 </blockquote>
-</div>
 <div class="footnote-definition" id="xkcd"><sup class="footnote-definition-label">2</sup>
 <p><a href="https://xkcd.com/1208/">The other kind of nested footnote is, however, considered poor style.</a></p>
 </div>
@@ -151,13 +151,17 @@ fn footnotes_test_7() {
 fn footnotes_test_8() {
     let original = r##"[^Doh] Ray Me Fa So La Te Do! [^1]
 
-[^Doh]: I know. Wrong Doe. And it won't render right.
+This line does not prevent the following footnote definitions.
+[^Doh]: I know. Doe. And it will render right.
 [^1]: Common for people practicing music.
 "##;
     let expected = r##"<p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p>
+<p>This line does not prevent the following footnote definitions.</p>
 <div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup>
-<p>I know. Wrong Doe. And it won't render right.
-<sup class="footnote-reference"><a href="#1">2</a></sup>: Common for people practicing music.</p>
+<p>I know. Doe. And it will render right.</p>
+</div>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup>
+<p>Common for people practicing music.</p>
 </div>
 "##;
 

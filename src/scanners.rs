@@ -1310,6 +1310,21 @@ pub(crate) fn scan_inline_html_processing(
     None
 }
 
+pub(crate) fn scan_footnote_refdef_label(bytes: &[u8]) -> Option<usize> {
+    if !bytes.starts_with(b"[^") {
+        return None;
+    }
+    let mut prev = bytes[1];
+    for (i, b) in bytes[2..].iter().copied().enumerate() {
+        match b {
+            b'\n' | b'\r' => break,
+            b':' if prev == b']' => return Some(i + 2),
+            _ => prev = b,
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

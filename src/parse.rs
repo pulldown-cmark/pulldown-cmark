@@ -566,12 +566,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                             // work from the inside out
                             while start > el.start + el.count - match_count {
-                                let (inc, ty) = if c == b'~' {
-                                    (2, ItemBody::Strikethrough)
-                                } else if start > el.start + el.count - match_count + 1 {
-                                    (2, ItemBody::Strong)
+                                let inc = if start > el.start + el.count - match_count + 1 {
+                                    2
                                 } else {
-                                    (1, ItemBody::Emphasis)
+                                    1
+                                };
+                                let ty = if c == b'~' {
+                                    ItemBody::Strikethrough
+                                } else if inc == 2 {
+                                    ItemBody::Strong
+                                } else {
+                                    ItemBody::Emphasis
                                 };
 
                                 let root = start - inc;

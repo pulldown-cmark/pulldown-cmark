@@ -562,7 +562,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
                     let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
-                    let is_valid_seq = c != b'~' || count == 2;
+                    let is_valid_seq = c != b'~' || count <= 2;
 
                     if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix);

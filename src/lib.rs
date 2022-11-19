@@ -297,5 +297,10 @@ bitflags::bitflags! {
         /// with the content `text`, ID `id`, and classes `class1` and `class2`.
         /// Note that attributes (ID and classes) should be space-separated.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
+        /// Extension to parse mathematical expressions wrapped by `$`.
+        ///
+        /// See the following document to know the syntax.
+        /// https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions
+        const ENABLE_MATH = 1 << 7;
     }
 }

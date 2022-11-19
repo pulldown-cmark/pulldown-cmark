@@ -200,8 +200,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
 
-        if let Some(len) = scan_math_block(&bytes[ix..]) {
-            return self.parse_math_block(ix, len);
+        if self.options.contains(Options::ENABLE_MATH) {
+            if let Some(len) = scan_math_block(&bytes[ix..]) {
+                return self.parse_math_block(ix, len);
+            }
         }
 
         self.parse_paragraph(ix)
@@ -1505,7 +1507,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'$',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
     ];
 
     for &byte in &standard_bytes {
@@ -1521,6 +1523,9 @@ fn special_bytes(options: &Options) -> [bool; 256] {
         for &byte in &[b'.', b'-', b'"', b'\''] {
             bytes[byte as usize] = true;
         }
+    }
+    if options.contains(Options::ENABLE_MATH) {
+        bytes[b'$' as usize] = true;
     }
 
     bytes
@@ -1732,7 +1737,7 @@ mod simd {
     pub(super) fn compute_lookup(options: &Options) -> [u8; 16] {
         let mut lookup = [0u8; 16];
         let standard_bytes = [
-            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'$',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
         ];
 
         for &byte in &standard_bytes {
@@ -1748,6 +1753,9 @@ mod simd {
             for &byte in &[b'.', b'-', b'"', b'\''] {
                 add_lookup_byte(&mut lookup, byte);
             }
+        }
+        if options.contains(Options::ENABLE_MATH) {
+            add_lookup_byte(&mut lookup, b'$');
         }
 
         lookup

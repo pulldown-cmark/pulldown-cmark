@@ -1319,7 +1319,8 @@ pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
     if data[i - 1] == b'\r' {
         i -= 1;
     }
-    if !data[..i].ends_with(b"$$") {
+    // `i <= 4` means the content is empty like `$$$$`.
+    if !data[..i].ends_with(b"$$") || i <= 4 {
         return None;
     }
 

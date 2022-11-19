@@ -11,7 +11,7 @@ use crate::tree::{Tree, TreeIndex};
 use crate::Options;
 use crate::{
     linklabel::{scan_link_label_rest, LinkLabel},
-    HeadingLevel,
+    HeadingLevel, MathDisplay,
 };
 
 use unicase::UniCase;
@@ -199,6 +199,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
+
+        if let Some(len) = scan_math_block(&bytes[ix..]) {
+            return self.parse_math_block(ix, len);
+        }
+
         self.parse_paragraph(ix)
     }
 
@@ -588,6 +593,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
+                b'$' => {
+                    self.tree.append_text(begin_text, ix);
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeMath,
+                    });
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
+                }
                 b'<' => {
                     // Note: could detect some non-HTML cases and early escape here, but not
                     // clear that's a win.
@@ -902,6 +917,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // try to read trailing whitespace or it will register as a completely blank line
         ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
+    }
+
+    fn parse_math_block(&mut self, start_ix: usize, length: usize) -> usize {
+        let end_ix = start_ix + length;
+        let text = &self.text[start_ix + 2..end_ix - 2];
+        let cow_ix = self.allocs.allocate_cow(text.into());
+        self.tree.append(Item {
+            start: start_ix,
+            end: end_ix,
+            body: ItemBody::Math(MathDisplay::Block, cow_ix),
+        });
+        end_ix
     }
 
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
@@ -1478,7 +1505,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'$',
     ];
 
     for &byte in &standard_bytes {
@@ -1705,7 +1732,7 @@ mod simd {
     pub(super) fn compute_lookup(options: &Options) -> [u8; 16] {
         let mut lookup = [0u8; 16];
         let standard_bytes = [
-            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'$',
         ];
 
         for &byte in &standard_bytes {

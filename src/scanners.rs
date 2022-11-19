@@ -1310,6 +1310,22 @@ pub(crate) fn scan_inline_html_processing(
     None
 }
 
+pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
+    if !data.starts_with(b"$$") {
+        return None;
+    }
+
+    let mut i = scan_nextline(data) - 1;
+    if data[i - 1] == b'\r' {
+        i -= 1;
+    }
+    if !data[..i].ends_with(b"$$") {
+        return None;
+    }
+
+    Some(i)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

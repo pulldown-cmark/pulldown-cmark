@@ -13,6 +13,7 @@ struct FuzzingInput<'a> {
     tasklists: bool,
     smart_punctuation: bool,
     heading_attributes: bool,
+    math: bool,
 }
 
 fuzz_target!(|data: FuzzingInput<'_>| {
@@ -42,5 +43,9 @@ fuzz_target!(|data: FuzzingInput<'_>| {
         opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
     }
 
-    for _ in pulldown_cmark::Parser::new_ext(data.markdown, opts) {};
+    if data.math {
+        opts.insert(Options::ENABLE_MATH);
+    }
+
+    for _ in pulldown_cmark::Parser::new_ext(data.markdown, opts) {}
 });

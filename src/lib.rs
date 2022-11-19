@@ -257,18 +257,29 @@ pub enum Event<'a> {
     Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
+    /// A mathematical expression wrapped by a pair of one or two `$` characters.
+    Math(MathDisplay, CowStr<'a>),
 }
 
 /// Table column text alignment.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-
 pub enum Alignment {
     /// Default text alignment.
     None,
     Left,
     Center,
     Right,
+}
+
+/// Display kind of mathematical expression.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum MathDisplay {
+    /// Inline-level mathematical expression like `$x^2$`.
+    Inline,
+    /// Block-level mathematical expression like `$$y = x^2$$`.
+    Block,
 }
 
 bitflags::bitflags! {

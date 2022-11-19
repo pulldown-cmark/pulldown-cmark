@@ -33,7 +33,7 @@ use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
+use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, MathDisplay, Options, Tag};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -68,6 +68,7 @@ pub(crate) enum ItemBody {
     // bool indicates whether or not the preceding section could be a reference
     MaybeLinkClose(bool),
     MaybeImage,
+    MaybeMath,
 
     // These are inline items after resolution.
     Emphasis,
@@ -78,6 +79,7 @@ pub(crate) enum ItemBody {
     Image(LinkIndex),
     FootnoteReference(CowIndex),
     TaskListMarker(bool), // true for checked
+    Math(MathDisplay, CowIndex),
 
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
@@ -113,6 +115,7 @@ impl<'a> ItemBody {
                 | ItemBody::MaybeLinkOpen
                 | ItemBody::MaybeLinkClose(..)
                 | ItemBody::MaybeImage
+                | ItemBody::MaybeMath
         )
     }
 }
@@ -527,6 +530,27 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                ItemBody::MaybeMath => {
+                    let next = self.tree[cur_ix].next;
+                    if let Some(next_ix) = next {
+                        let start_ix = self.tree[next_ix].item.start;
+                        if let Some(i) = block_text.as_bytes()[start_ix..]
+                            .iter()
+                            .position(|&b| b == b'$')
+                        {
+                            let end_ix = start_ix + i;
+                            let node = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
+                            let cow_ix = self
+                                .allocs
+                                .allocate_cow(block_text[start_ix + 1..end_ix].into());
+                            self.tree[cur_ix].item.body =
+                                ItemBody::Math(MathDisplay::Inline, cow_ix);
+                            self.tree[cur_ix].item.start = self.tree[cur_ix].item.start + 1;
+                            self.tree[cur_ix].item.end = end_ix;
+                            self.tree[cur_ix].next = node;
                         }
                     }
                 }
@@ -1494,6 +1518,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::Math(display, cow_ix) => return Event::Math(display, allocs[cow_ix].clone()),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

@@ -1,0 +1,58 @@
+Run this with `cargo run -- -M -s specs/math.txt`.
+
+Mathematical expressions extension.
+See the following link to know the syntax.
+https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions
+
+Inline-level mathematical expressions:
+
+```````````````````````````````` example
+This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
+$\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
+.
+<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math">sqrt{3x-1}+(1+x)^2</span>
+<span class="math">sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+````````````````````````````````
+
+Block-level mathematical expressions:
+
+```````````````````````````````` example
+**The Cauchy-Schwarz Inequality**
+
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
+.
+<p><strong>The Cauchy-Schwarz Inequality</strong></p>
+<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
+````````````````````````````````
+
+Empty expressions are edge cases that are not parsed as mathematical expressions:
+
+```````````````````````````````` example
+Oops empty $$ expression.
+
+$$$$
+.
+<p>Oops empty $$ expression.</p>
+<p>$$$$</p>
+````````````````````````````````
+
+Sole `$` character is handled as normal text. And Inline-level mathematical expressions cannot continue across newlines:
+
+```````````````````````````````` example
+Hello $ world.
+
+Dollar at end of line: $
+.
+<p>Hello $ world.</p>
+<p>Dollar at end of line: $</p>
+````````````````````````````````
+
+Block-level mathematical expressions can continue across multiple lines
+
+```````````````````````````````` example
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+\left( \sum_{k=1}^n b_k^2 \right)$$
+.
+<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+\left( \sum_{k=1}^n b_k^2 \right)</div>
+````````````````````````````````

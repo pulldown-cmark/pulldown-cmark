@@ -29,7 +29,7 @@ use crate::strings::CowStr;
 use crate::{entities, HeadingLevel};
 use crate::{Alignment, LinkType};
 
-use memchr::memchr;
+use memchr::{memchr, memchr2, memchr_iter};
 
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
@@ -1315,16 +1315,30 @@ pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
         return None;
     }
 
-    let mut i = scan_nextline(data) - 1;
-    if data[i - 1] == b'\r' {
-        i -= 1;
+    for mut i in memchr_iter(b'\n', data) {
+        if data[i - 1] == b'\r' {
+            i -= 1;
+        }
+        // `i <= 4` means the content is empty like `$$$$`.
+        if data[..i].ends_with(b"$$") && i > 4 {
+            return Some(i);
+        }
     }
-    // `i <= 4` means the content is empty like `$$$$`.
-    if !data[..i].ends_with(b"$$") || i <= 4 {
-        return None;
+    if data.ends_with(b"$$") && data.len() > 4 {
+        return Some(data.len());
     }
 
-    Some(i)
+    None
+}
+
+pub(crate) fn scan_math_inline(data: &[u8]) -> Option<usize> {
+    // Inline-level math expressions cannot continue across a newline.
+    let i = memchr2(b'$', b'\n', data)?;
+    if data[i] == b'$' {
+        Some(i)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

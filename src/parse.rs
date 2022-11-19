@@ -535,31 +535,40 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 }
                 ItemBody::MaybeMath => {
                     let next = self.tree[cur_ix].next;
-                    if let Some(next_ix) = next {
-                        let start_ix = self.tree[next_ix].item.start;
-                        if let Some(i) = block_text.as_bytes()[start_ix..]
-                            .iter()
-                            .position(|&b| b == b'$')
-                        {
-                            let end_ix = start_ix + i;
-                            let node = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
-                            if i > 0 {
-                                let cow_ix = self
-                                    .allocs
-                                    .allocate_cow(block_text[start_ix + 1..end_ix].into());
-                                self.tree[cur_ix].item.body =
-                                    ItemBody::Math(MathDisplay::Inline, cow_ix);
-                                self.tree[cur_ix].item.start = self.tree[cur_ix].item.start + 1;
-                                self.tree[cur_ix].item.end = end_ix;
-                            } else {
-                                // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.
-                                self.tree[cur_ix].item.body = ItemBody::Text;
-                                self.tree[cur_ix].item.start = self.tree[cur_ix].item.start;
-                                self.tree[cur_ix].item.end = end_ix + 1;
-                            }
-                            self.tree[cur_ix].next = node;
-                        }
+                    let start_ix = if let Some(next_ix) = next {
+                        self.tree[next_ix].item.start
+                    } else {
+                        self.tree[cur_ix].item.body = ItemBody::Text;
+                        prev = cur;
+                        cur = self.tree[cur_ix].next;
+                        continue;
+                    };
+
+                    let end_ix =
+                        if let Some(i) = scan_math_inline(&block_text.as_bytes()[start_ix..]) {
+                            start_ix + i
+                        } else {
+                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            prev = cur;
+                            cur = self.tree[cur_ix].next;
+                            continue;
+                        };
+
+                    let node = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
+                    if end_ix > start_ix {
+                        let cow_ix = self
+                            .allocs
+                            .allocate_cow(block_text[start_ix + 1..end_ix].into());
+                        self.tree[cur_ix].item.body = ItemBody::Math(MathDisplay::Inline, cow_ix);
+                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start + 1;
+                        self.tree[cur_ix].item.end = end_ix;
+                    } else {
+                        // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.
+                        self.tree[cur_ix].item.body = ItemBody::Text;
+                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start;
+                        self.tree[cur_ix].item.end = end_ix + 1;
                     }
+                    self.tree[cur_ix].next = node;
                 }
                 _ => (),
             }

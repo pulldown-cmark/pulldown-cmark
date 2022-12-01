@@ -8,8 +8,8 @@ fn math_test_1() {
     let original = r##"This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 "##;
-    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math">\sqrt{3x-1}+(1+x)^2</span>
-<span class="math">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
+<span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
 "##;
 
     test_markdown_html(original, expected, false);
@@ -22,7 +22,7 @@ fn math_test_2() {
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
 "##;
     let expected = r##"<p><strong>The Cauchy-Schwarz Inequality</strong></p>
-<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
+<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 
     test_markdown_html(original, expected, false);
@@ -59,7 +59,7 @@ fn math_test_5() {
     let original = r##"$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)$$
 "##;
-    let expected = r##"<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+    let expected = r##"<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 

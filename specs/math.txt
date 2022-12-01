@@ -10,8 +10,8 @@ Inline-level mathematical expressions:
 This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 .
-<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math">\sqrt{3x-1}+(1+x)^2</span>
-<span class="math">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
+<span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
 ````````````````````````````````
 
 Block-level mathematical expressions:
@@ -22,7 +22,7 @@ Block-level mathematical expressions:
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
 .
 <p><strong>The Cauchy-Schwarz Inequality</strong></p>
-<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
+<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
 ````````````````````````````````
 
 Empty expressions are edge cases that are not parsed as mathematical expressions:
@@ -53,6 +53,6 @@ Block-level mathematical expressions can continue across multiple lines
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)$$
 .
-<div class="math">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</div>
 ````````````````````````````````

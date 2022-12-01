@@ -558,9 +558,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     if end_ix > start_ix {
                         let cow_ix = self
                             .allocs
-                            .allocate_cow(block_text[start_ix + 1..end_ix].into());
+                            .allocate_cow(block_text[start_ix..end_ix].into());
                         self.tree[cur_ix].item.body = ItemBody::Math(MathDisplay::Inline, cow_ix);
-                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start + 1;
+                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start;
                         self.tree[cur_ix].item.end = end_ix;
                     } else {
                         // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.

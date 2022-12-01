@@ -8,8 +8,8 @@ fn math_test_1() {
     let original = r##"This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 "##;
-    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math">sqrt{3x-1}+(1+x)^2</span>
-<span class="math">sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math">\sqrt{3x-1}+(1+x)^2</span>
+<span class="math">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
 "##;
 
     test_markdown_html(original, expected, false);

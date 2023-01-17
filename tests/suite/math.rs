@@ -7,9 +7,12 @@ use super::test_markdown_html;
 fn math_test_1() {
     let original = r##"This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
+
+`\` may follow just after the first `$`: $\{1, 2, 3\}$
 "##;
     let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
 <span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+<p><code>\</code> may follow just after the first <code>$</code>:  <span class="math inline">\{1, 2, 3\}</span>
 "##;
 
     test_markdown_html(original, expected, false);

@@ -535,15 +535,18 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 }
                 ItemBody::MaybeMath => {
                     let next = self.tree[cur_ix].next;
-                    let start_ix = if let Some(next_ix) = next {
-                        self.tree[next_ix].item.start
-                    } else {
+                    if next.is_none() {
                         self.tree[cur_ix].item.body = ItemBody::Text;
                         prev = cur;
                         cur = self.tree[cur_ix].next;
                         continue;
-                    };
+                    }
 
+                    // The next item's start index can not be used as the start index of this node because it skips
+                    // backslashes.
+                    // For example, when parsing $\{\}$, the next item's start index points { but this node's start
+                    // index should point the first \.
+                    let start_ix = self.tree[cur_ix].item.end;
                     let end_ix =
                         if let Some(i) = scan_math_inline(&block_text.as_bytes()[start_ix..]) {
                             start_ix + i
@@ -560,7 +563,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             .allocs
                             .allocate_cow(block_text[start_ix..end_ix].into());
                         self.tree[cur_ix].item.body = ItemBody::Math(MathDisplay::Inline, cow_ix);
-                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start;
+                        self.tree[cur_ix].item.start = start_ix;
                         self.tree[cur_ix].item.end = end_ix;
                     } else {
                         // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.

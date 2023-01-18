@@ -29,7 +29,7 @@ use crate::strings::CowStr;
 use crate::{entities, HeadingLevel};
 use crate::{Alignment, LinkType};
 
-use memchr::{memchr, memchr2, memchr_iter};
+use memchr::{memchr, memchr2_iter, memchr_iter};
 
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
@@ -1333,12 +1333,17 @@ pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
 
 pub(crate) fn scan_math_inline(data: &[u8]) -> Option<usize> {
     // Inline-level math expressions cannot continue across a newline.
-    let i = memchr2(b'$', b'\n', data)?;
-    if data[i] == b'$' {
-        Some(i)
-    } else {
-        None
+    for i in memchr2_iter(b'$', b'\n', data) {
+        if data[i] == b'$' {
+            if i > 0 && data[i - 1] == b'\\' {
+                continue; // Escaped dollar "\$"
+            }
+            return Some(i);
+        } else {
+            return None;
+        }
     }
+    None
 }
 
 #[cfg(test)]

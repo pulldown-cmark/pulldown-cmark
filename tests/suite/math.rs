@@ -68,3 +68,16 @@ fn math_test_5() {
 
     test_markdown_html(original, expected, false);
 }
+
+#[test]
+fn math_test_6() {
+    let original = r##"$\$$
+
+$$y = \$ x$$
+"##;
+    let expected = r##"<p><span class="math inline">\$</span></p>
+<div class="math block">y = \$ x</div>
+"##;
+
+    test_markdown_html(original, expected, false);
+}

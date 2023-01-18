@@ -50,7 +50,7 @@ Dollar at end of line: $
 <p>Dollar at end of line: $</p>
 ````````````````````````````````
 
-Block-level mathematical expressions can continue across multiple lines
+Block-level mathematical expressions can continue across multiple lines:
 
 ```````````````````````````````` example
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
@@ -58,4 +58,15 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 .
 <div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</div>
+````````````````````````````````
+
+`$` character can be escaped with backslash in mathematical expressions:
+
+```````````````````````````````` example
+$\$$
+
+$$y = \$ x$$
+.
+<p><span class="math inline">\$</span></p>
+<div class="math block">y = \$ x</div>
 ````````````````````````````````

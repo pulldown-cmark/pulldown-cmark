@@ -1331,17 +1331,16 @@ pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
     None
 }
 
-pub(crate) fn scan_math_inline(data: &[u8]) -> Option<usize> {
+pub(crate) fn scan_math_inline_end(data: &[u8]) -> Option<usize> {
     // Inline-level math expressions cannot continue across a newline.
     for i in memchr2_iter(b'$', b'\n', data) {
-        if data[i] == b'$' {
-            if i > 0 && data[i - 1] == b'\\' {
-                continue; // Escaped dollar "\$"
-            }
-            return Some(i);
-        } else {
+        if data[i] != b'$' {
             return None;
         }
+        if i > 0 && data[i - 1] == b'\\' {
+            continue; // Escaped dollar "\$"
+        }
+        return Some(i);
     }
     None
 }

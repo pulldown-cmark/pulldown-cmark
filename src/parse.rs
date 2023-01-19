@@ -548,7 +548,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     // index should point the first \.
                     let start_ix = self.tree[cur_ix].item.end;
                     let end_ix =
-                        if let Some(i) = scan_math_inline(&block_text.as_bytes()[start_ix..]) {
+                        if let Some(i) = scan_math_inline_end(&block_text.as_bytes()[start_ix..]) {
                             start_ix + i
                         } else {
                             self.tree[cur_ix].item.body = ItemBody::Text;
@@ -557,7 +557,6 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             continue;
                         };
 
-                    let node = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
                     if end_ix > start_ix {
                         let cow_ix = self
                             .allocs
@@ -568,10 +567,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     } else {
                         // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.
                         self.tree[cur_ix].item.body = ItemBody::Text;
-                        self.tree[cur_ix].item.start = self.tree[cur_ix].item.start;
                         self.tree[cur_ix].item.end = end_ix + 1;
                     }
-                    self.tree[cur_ix].next = node;
+                    self.tree[cur_ix].next = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
                 }
                 _ => (),
             }

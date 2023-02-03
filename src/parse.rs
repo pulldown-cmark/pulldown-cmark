@@ -1434,10 +1434,10 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::TableHead => Tag::TableHead,
+        ItemBody::TableHead => Tag::TableHead(Vec::<&str>::new()),
         ItemBody::TableCell => Tag::TableCell,
-        ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
+        ItemBody::TableRow => Tag::TableRow(Vec::<&str>::new()),
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone(),Vec::<&str>::new()),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
         _ => panic!("unexpected item body {:?}", item.body),
     }
@@ -1489,10 +1489,10 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::TableHead => Tag::TableHead,
+        ItemBody::TableHead => Tag::TableHead(Vec::<&str>::new()),
         ItemBody::TableCell => Tag::TableCell,
-        ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
+        ItemBody::TableRow => Tag::TableRow(Vec::<&str>::new()),
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone(),Vec::<&str>::new()),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
         _ => panic!("unexpected item body {:?}", item.body),
     };

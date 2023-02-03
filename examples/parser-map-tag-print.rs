@@ -55,9 +55,9 @@ fn main() {
                     Tag::CodeBlock(code_block_kind) => println!("CodeBlock code_block_kind: {:?}", code_block_kind),
                     Tag::Link(link_type, url, title) => println!("Link link_type: {:?} url: {} title: {}", link_type, url, title),
                     Tag::Image(link_type, url, title) => println!("Image link_type: {:?} url: {} title: {}", link_type, url, title),
-                    Tag::Table(column_text_alignment_list) => println!("Table column_text_alignment_list: {:?}", column_text_alignment_list),
-                    Tag::TableHead => println!("TableHead (contains TableRow tags"),
-                    Tag::TableRow => println!("TableRow (contains TableCell tags)"),
+                    Tag::Table(column_text_alignment_list, class_list) => println!("Table column_text_alignment_list: {:?} class_list: {:?}", column_text_alignment_list, class_list),
+                    Tag::TableHead(class_list) => println!("TableHead (contains TableRow tags) class_list: {:?}", class_list),
+                    Tag::TableRow(class_list) => println!("TableRow (contains TableCell tags) class_list: {:?}", class_list),
                     Tag::TableCell => println!("TableCell (contains inline tags)"),
                     Tag::FootnoteDefinition(label) => println!("FootnoteDefinition label: {}", label),
                 }

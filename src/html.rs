@@ -72,6 +72,19 @@ where
         self.writer.write_str("\n")
     }
 
+    fn write_classes(&mut self,classes: Vec<&str>) -> io::Result<()>{
+        let mut classes = classes.iter();
+        if let Some(class) = classes.next() {
+            self.write(" class=\"")?;
+            escape_html(&mut self.writer, class)?;
+            for class in classes {
+                self.write(" ")?;
+                escape_html(&mut self.writer, class)?;
+            }
+            self.write("\"")?;
+        }
+        Ok(())
+    }
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
     fn write(&mut self, s: &str) -> io::Result<()> {
@@ -160,30 +173,27 @@ where
                     escape_html(&mut self.writer, id)?;
                     self.write("\"")?;
                 }
-                let mut classes = classes.iter();
-                if let Some(class) = classes.next() {
-                    self.write(" class=\"")?;
-                    escape_html(&mut self.writer, class)?;
-                    for class in classes {
-                        self.write(" ")?;
-                        escape_html(&mut self.writer, class)?;
-                    }
-                    self.write("\"")?;
-                }
+                self.write_classes(classes)?;
                 self.write(">")
             }
-            Tag::Table(alignments) => {
+            Tag::Table(alignments, classes) => {
                 self.table_alignments = alignments;
-                self.write("<table>")
+                self.write("<table")?;
+                self.write_classes(classes)?;
+                self.write(">")
             }
-            Tag::TableHead => {
+            Tag::TableHead(classes) => {
                 self.table_state = TableState::Head;
                 self.table_cell_index = 0;
-                self.write("<thead><tr>")
+                self.write("<thead><tr")?;
+                self.write_classes(classes)?;
+                self.write(">")
             }
-            Tag::TableRow => {
+            Tag::TableRow(classes) => {
                 self.table_cell_index = 0;
-                self.write("<tr>")
+                self.write("<tr")?;
+                self.write_classes(classes)?;
+                self.write(">")
             }
             Tag::TableCell => {
                 match self.table_state {
@@ -314,14 +324,14 @@ where
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;
             }
-            Tag::Table(_) => {
+            Tag::Table(_,_) => {
                 self.write("</tbody></table>\n")?;
             }
-            Tag::TableHead => {
+            Tag::TableHead(_) => {
                 self.write("</tr></thead><tbody>\n")?;
                 self.table_state = TableState::Body;
             }
-            Tag::TableRow => {
+            Tag::TableRow(_) => {
                 self.write("</tr>\n")?;
             }
             Tag::TableCell => {

@@ -85,55 +85,61 @@ where
 
     fn run(mut self) -> io::Result<()> {
         while let Some(event) = self.iter.next() {
-            match event {
-                Start(tag) => {
-                    self.start_tag(tag)?;
-                }
-                End(tag) => {
-                    self.end_tag(tag)?;
-                }
-                Text(text) => {
-                    escape_html(&mut self.writer, &text)?;
-                    self.end_newline = text.ends_with('\n');
-                }
-                Code(text) => {
-                    self.write("<code>")?;
-                    escape_html(&mut self.writer, &text)?;
-                    self.write("</code>")?;
-                }
-                Html(html) => {
-                    self.write(&html)?;
-                }
-                SoftBreak => {
-                    self.write_newline()?;
-                }
-                HardBreak => {
-                    self.write("<br />\n")?;
-                }
-                Rule => {
-                    if self.end_newline {
-                        self.write("<hr />\n")?;
-                    } else {
-                        self.write("\n<hr />\n")?;
-                    }
-                }
-                FootnoteReference(name) => {
-                    let len = self.numbers.len() + 1;
-                    self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
-                    escape_html(&mut self.writer, &name)?;
-                    self.write("\">")?;
-                    let number = *self.numbers.entry(name).or_insert(len);
-                    write!(&mut self.writer, "{}", number)?;
-                    self.write("</a></sup>")?;
-                }
-                TaskListMarker(true) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
-                }
-                TaskListMarker(false) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
+            self.render_event(event)?;
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn render_event(&mut self, event: Event<'a>) -> io::Result<()> {
+        match event {
+            Start(tag) => {
+                self.start_tag(tag)?;
+            }
+            End(tag) => {
+                self.end_tag(tag)?;
+            }
+            Text(text) => {
+                escape_html(&mut self.writer, &text)?;
+                self.end_newline = text.ends_with('\n');
+            }
+            Code(text) => {
+                self.write("<code>")?;
+                escape_html(&mut self.writer, &text)?;
+                self.write("</code>")?;
+            }
+            Html(html) => {
+                self.write(&html)?;
+            }
+            SoftBreak => {
+                self.write_newline()?;
+            }
+            HardBreak => {
+                self.write("<br />\n")?;
+            }
+            Rule => {
+                if self.end_newline {
+                    self.write("<hr />\n")?;
+                } else {
+                    self.write("\n<hr />\n")?;
                 }
             }
-        }
+            FootnoteReference(name) => {
+                let len = self.numbers.len() + 1;
+                self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
+                escape_html(&mut self.writer, &name)?;
+                self.write("\">")?;
+                let number = *self.numbers.entry(name).or_insert(len);
+                write!(&mut self.writer, "{}", number)?;
+                self.write("</a></sup>")?;
+            }
+            TaskListMarker(true) => {
+                self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
+            }
+            TaskListMarker(false) => {
+                self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
+            }
+        }      
         Ok(())
     }
 

@@ -28,17 +28,19 @@ use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag};
 
+#[derive(Debug)]
 enum TableState {
     Head,
     Body,
 }
 
-struct HtmlWriter<'a, I, W> {
+#[derive(Debug)]
+pub struct HtmlWriter<'a, I, W> {
     /// Iterator supplying events.
-    iter: I,
+    pub iter: I,
 
     /// Writer to write to.
-    writer: W,
+    pub writer: W,
 
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
@@ -54,7 +56,7 @@ where
     I: Iterator<Item = Event<'a>>,
     W: StrWrite,
 {
-    fn new(iter: I, writer: W) -> Self {
+    pub fn new(iter: I, writer: W) -> Self {
         Self {
             iter,
             writer,
@@ -74,7 +76,7 @@ where
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
-    fn write(&mut self, s: &str) -> io::Result<()> {
+    pub fn write(&mut self, s: &str) -> io::Result<()> {
         self.writer.write_str(s)?;
 
         if !s.is_empty() {
@@ -91,7 +93,7 @@ where
     }
 
     #[inline]
-    fn render_event(&mut self, event: Event<'a>) -> io::Result<()> {
+    pub fn render_event(&mut self, event: Event<'a>) -> io::Result<()> {
         match event {
             Start(tag) => {
                 self.start_tag(tag)?;

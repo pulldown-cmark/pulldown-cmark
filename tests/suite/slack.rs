@@ -2,7 +2,20 @@ use pulldown_cmark::{Options, Parser};
 
 use crate::normalize_html;
 
-use super::test_markdown_html;
+pub fn test_markdown_html(input: &str, output: &str, slack_dialect: bool) {
+    let mut s = String::new();
+
+    let mut opts = Options::empty();
+
+    if slack_dialect {
+        opts.insert(Options::ENABLE_SINGLE_EMPHASIS_IS_STRONG);
+    }
+
+    let p = Parser::new_ext(input, opts);
+    pulldown_cmark::html::push_html(&mut s, p);
+
+    assert_eq!(normalize_html(output), normalize_html(&s));
+}
 
 #[test]
 fn default_is_emphasis() {
@@ -14,14 +27,17 @@ fn default_is_emphasis() {
 
 #[test]
 fn with_option_is_strong() {
-    let input = "*hi*";
-    let output = "<p><strong>hi</strong></p>";
+    let original = "*hi*";
+    let expected = "<p><strong>hi</strong></p>";
 
-    let mut s = String::new();
-    let mut opts = Options::empty();
-    opts.insert(Options::ENABLE_SINGLE_EMPHASIS_IS_STRONG);
-    let p = Parser::new_ext(input, opts);
-    pulldown_cmark::html::push_html(&mut s, p);
+    test_markdown_html(original, expected, true);
+}
 
-    assert_eq!(normalize_html(output), normalize_html(&s));
+#[test]
+fn underline_with_option_is_emphasis() {
+    let original = "_hi_";
+    let expected = "<p><em>hi</em></p>";
+
+    test_markdown_html(original, expected, true);
+    test_markdown_html(original, expected, false);
 }

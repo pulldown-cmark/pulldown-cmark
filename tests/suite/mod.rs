@@ -9,6 +9,7 @@ mod gfm_table;
 mod gfm_tasklist;
 mod heading_attrs;
 mod regression;
+mod slack;
 mod smart_punct;
 mod spec;
 mod table;

@@ -573,7 +573,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 };
                                 let ty = if c == b'~' {
                                     ItemBody::Strikethrough
-                                } else if inc == 2 {
+                                } else if inc == 2
+                                    || self
+                                        .options
+                                        .contains(Options::ENABLE_SINGLE_EMPHASIS_IS_STRONG)
+                                {
                                     ItemBody::Strong
                                 } else {
                                     ItemBody::Emphasis

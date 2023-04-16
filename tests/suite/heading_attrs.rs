@@ -270,8 +270,8 @@ fn heading_attrs_test_20() {
     let original = r##"# H1 {foo}
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 "##;
-    let expected = r##"<h1>H1</h1>
-<h2 id="myid" class="myclass">H2</h2>
+    let expected = r##"<h1 foo>H1</h1>
+<h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
 "##;
 
     test_markdown_html(original, expected, false);
@@ -282,7 +282,7 @@ fn heading_attrs_test_21() {
     let original = r##"# H1 {.foo{unknown}
 ## H2 {.foo{.bar}
 "##;
-    let expected = r##"<h1>H1 {.foo</h1>
+    let expected = r##"<h1 unknown="">H1 {.foo</h1>
 <h2 class="bar">H2 {.foo</h2>
 "##;
 
@@ -566,6 +566,22 @@ fn heading_attrs_test_40() {
     let expected = r##"<h1 id="en-space .myclass">EN SPACE (U+2002)</h1>
 <h2 id="ideographic-space　.myclass">IDEOGRAPHIC SPACE (U+3000)</h2>
 "##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn heading_attrs_test_41() {
+    let original = r##"# Header # {myattr=value other_attr}"##;
+    let expected = r##"<h1 myattr="value" other_attr="">Header</h1>"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn heading_attrs_test_42() {
+    let original = r##"#### Header {#id myattr= .class1 other_attr=false}"##;
+    let expected = r##"<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>"##;
 
     test_markdown_html(original, expected, false);
 }

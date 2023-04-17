@@ -306,6 +306,18 @@ that characters are their value.
 <h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
 ````````````````````````````````
 
+```````````````````````````````` example
+# Header # {myattr=value other_attr}
+.
+<h1 myattr="value" other_attr="">Header</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+#### Header {#id myattr= .class1 other_attr=false}
+.
+<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
+````````````````````````````````
+
 # Forbidden characters
 
 Some characters cannot appear in attribute blocks.
@@ -324,7 +336,7 @@ Left curly brace (note that `{unknown}` and `{.bar}` are treated as attribute bl
 # H1 {.foo{unknown}
 ## H2 {.foo{.bar}
 .
-<h1>H1 {.foo</h1>
+<h1 unknown="">H1 {.foo</h1>
 <h2 class="bar">H2 {.foo</h2>
 ````````````````````````````````
 

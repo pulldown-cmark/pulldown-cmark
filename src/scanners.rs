@@ -430,6 +430,28 @@ pub(crate) fn scan_closing_code_fence(
     scan_eol(&bytes[i..]).map(|_| i)
 }
 
+// return: end byte for closing metadata block, or None
+// if the line is not a closing metadata block
+pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Option<usize> {
+    let mut i = scan_nextline(bytes);
+    let mut num_fence_chars_found = scan_ch_repeat(&bytes[i..], fence_char);
+    if num_fence_chars_found != 3 {
+        // if YAML style metadata block the closing character can also be `.`
+        if fence_char == b'-' {
+            num_fence_chars_found = scan_ch_repeat(&bytes[i..], b'.');
+            if num_fence_chars_found != 3 {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+    i += num_fence_chars_found;
+    let num_trailing_spaces = scan_ch_repeat(&bytes[i..], b' ');
+    i += num_trailing_spaces;
+    scan_eol(&bytes[i..]).map(|_| i)
+}
+
 // returned pair is (number of bytes, number of spaces)
 fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut spaces = 0;
@@ -598,6 +620,63 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
             }
         }
         Some((i, c))
+    } else {
+        None
+    }
+}
+
+/// Scan metadata block, returning the number of delimiter bytes
+/// (always 3 for now) and the delimiter character.
+///
+/// Differently to code blocks, metadata blocks must be closed with the closing
+/// sequence not being a valid terminator the end of the file.
+///
+/// In addition, they cannot be empty (closing sequence in the next line) and
+/// the next line cannot be an empty line.
+pub(crate) fn scan_metadata_block(
+    data: &[u8],
+    yaml_style_enabled: bool,
+    pluses_style_enabled: bool,
+) -> Option<(usize, u8)> {
+    // Only if metadata blocks are enabled
+    if yaml_style_enabled || pluses_style_enabled {
+        let c = *data.get(0)?;
+        if !((c == b'-' && yaml_style_enabled) || (c == b'+' && pluses_style_enabled)) {
+            return None;
+        }
+        let i = 1 + scan_ch_repeat(&data[1..], c);
+        // Only trailing spaces after the delimiters in the line
+        let next_line = scan_nextline(&data[i..]);
+        for c in &data[i..i + next_line] {
+            if !c.is_ascii_whitespace() {
+                return None;
+            }
+        }
+        if i == 3 {
+            // Search the closing sequence
+            let mut j = i;
+            let mut first_line = true;
+            while j < data.len() {
+                // `scan_closing_metadata_block` scan next line as the first step,
+                // so it must be executed before scanning next line
+                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
+                j += scan_nextline(&data[j..]);
+                // The first line of the metadata block cannot be an empty line
+                // nor the end of the block
+                if first_line {
+                    if closed || scan_blank_line(&data[j..]).is_some() {
+                        return None;
+                    }
+                    first_line = false;
+                }
+                if closed {
+                    return Some((i, c));
+                }
+            }
+            None
+        } else {
+            None
+        }
     } else {
         None
     }

@@ -95,6 +95,13 @@ impl<'a> CodeBlockKind<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum MetadataBlockKind {
+    YamlStyle,
+    PlusesStyle,
+}
+
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -139,6 +146,9 @@ pub enum Tag<'a> {
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
+
+    /// A metadata block.
+    MetadataBlock(MetadataBlockKind),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -286,5 +296,13 @@ bitflags::bitflags! {
         /// with the content `text`, ID `id`, and classes `class1` and `class2`.
         /// Note that attributes (ID and classes) should be space-separated.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
+        /// Metadata blocks in YAML style, i.e.:
+        /// - starting with a `---` line
+        /// - ending with a `---` or `...` line
+        const ENABLE_YAML_STYLE_METADATA_BLOCKS = 1 << 7;
+        /// Metadata blocks delimited by:
+        /// - `+++` line at start
+        /// - `+++` line at end
+        const ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS = 1 << 8;
     }
 }

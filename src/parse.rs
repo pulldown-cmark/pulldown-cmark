@@ -30,9 +30,9 @@ use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
-use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
+use crate::{scanners::*, MetadataBlockKind};
 use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -91,6 +91,7 @@ pub(crate) enum ItemBody {
     SynthesizeText(CowIndex),
     SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
+    MetadataBlock(MetadataBlockKind),
 
     // Tables
     Table(AlignmentIndex),
@@ -146,7 +147,7 @@ pub struct Parser<'input, 'callback> {
 
 impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Only print the fileds that have public types.
+        // Only print the fields that have public types.
         f.debug_struct("Parser")
             .field("text", &self.text)
             .field("options", &self.options)
@@ -1439,6 +1440,7 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     }
 }
@@ -1494,6 +1496,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableRow => Tag::TableRow,
         ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

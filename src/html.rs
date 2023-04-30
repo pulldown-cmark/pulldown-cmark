@@ -43,6 +43,9 @@ struct HtmlWriter<'a, I, W> {
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
 
+    /// Whether if inside a metadata block (text should not be written)
+    in_non_writing_block: bool,
+
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -59,6 +62,7 @@ where
             iter,
             writer,
             end_newline: true,
+            in_non_writing_block: false,
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -93,8 +97,10 @@ where
                     self.end_tag(tag)?;
                 }
                 Text(text) => {
-                    escape_html(&mut self.writer, &text)?;
-                    self.end_newline = text.ends_with('\n');
+                    if !self.in_non_writing_block {
+                        escape_html(&mut self.writer, &text)?;
+                        self.end_newline = text.ends_with('\n');
+                    }
                 }
                 Code(text) => {
                     self.write("<code>")?;
@@ -301,6 +307,10 @@ where
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
+            Tag::MetadataBlock(_) => {
+                self.in_non_writing_block = true;
+                Ok(())
+            }
         }
     }
 
@@ -365,6 +375,9 @@ where
             Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
                 self.write("</div>\n")?;
+            }
+            Tag::MetadataBlock(_) => {
+                self.in_non_writing_block = false;
             }
         }
         Ok(())

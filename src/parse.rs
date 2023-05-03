@@ -1072,7 +1072,7 @@ fn scan_link_label<'text, 'tree>(
     text: &'text str,
     allow_footnote_refs: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
-    let bytes = &text.as_bytes();
+    let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
         return None;
     }

@@ -15,7 +15,8 @@ Strictly speaking, attribute blocks satisfies the conditions below:
 
 Attributes are separated by ASCII non-newline whitespaces.
 An ID attribute is specified as `#id-fragment-here`, and a class attribute is
-specified as `.class-here`.
+specified as `.class-here`. Custom attributes has not a prefix and can optionally
+have a value (`myattr`, `myattr=myvalue`).
 
 Basic usage with setext headings:
 
@@ -24,12 +25,15 @@ with the ID {#myh1}
 ===================
 with a class {.myclass}
 ------------
-multiple! {.myclass1 #myh3 .myclass2}
+with a custom attribute {myattr=myvalue}
+========================================
+multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 --
 .
 <h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
-<h2 id="myh3" class="myclass1 myclass2">multiple!</h2>
+<h1 myattr="myvalue">with a custom attribute</h1>
+<h2 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h2>
 ````````````````````````````````
 
 Basic usage with ATX headings:
@@ -37,11 +41,13 @@ Basic usage with ATX headings:
 ```````````````````````````````` example
 # with the ID {#myh1}
 ## with a class {.myclass}
-### multiple! {.myclass1 #myh3 .myclass2}
+#### with a custom attribute {myattr=myvalue}
+### multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 .
 <h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
-<h3 id="myh3" class="myclass1 myclass2">multiple!</h3>
+<h4 myattr="myvalue">with a custom attribute</h4>
+<h3 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h3>
 ````````````````````````````````
 
 If an ATX heading has closing `#`s, the attribute block should be placed after them.
@@ -284,19 +290,32 @@ When both an ID and classes are specified, ID attribute is always emitted first.
 <h2 id="m" class="z a">H2</h2>
 ````````````````````````````````
 
-# Unknown attributes
+# Custom attributes
 
-Unknown attributes are simply ignored.
-Note that it cause neither an error nor a fallback to non-extended markdown,
-since this other attributes can be supported by other implementations or this
-crate in future.
+Custom attributes can optionally have a value. If they don't have a `=` symbol,
+their value is `None` and they are written in HTML with an empty value. When 
+nothing follows a `=` symbol, their value is an empty string and they are
+written in HTML with an empty value too. When something follows a `=` symbol,
+that characters are their value.
 
 ```````````````````````````````` example
 # H1 {foo}
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 .
-<h1>H1</h1>
-<h2 id="myid" class="myclass">H2</h2>
+<h1 foo="">H1</h1>
+<h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
+````````````````````````````````
+
+```````````````````````````````` example
+# Header # {myattr=value other_attr}
+.
+<h1 myattr="value" other_attr="">Header</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+#### Header {#id myattr= .class1 other_attr=false}
+.
+<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
 ````````````````````````````````
 
 # Forbidden characters
@@ -317,7 +336,7 @@ Left curly brace (note that `{unknown}` and `{.bar}` are treated as attribute bl
 # H1 {.foo{unknown}
 ## H2 {.foo{.bar}
 .
-<h1>H1 {.foo</h1>
+<h1 unknown="">H1 {.foo</h1>
 <h2 class="bar">H2 {.foo</h2>
 ````````````````````````````````
 
@@ -540,7 +559,7 @@ to wrap attributes and it is safe to put single quotes inside them.
 Markdown processor cannot abort on syntax error, so some output is required for
 any input, even if it is obviously wrong or looks very weird.
 However, attribute blocks is extended syntax with neither de jure nor de facto
-stardard, so uncommon cases will lead to possibly unexpected output that is
+standard, so uncommon cases will lead to possibly unexpected output that is
 incompatible with other implementations.
 
 Users should not rely on the current behavior on these weird edge case inputs.

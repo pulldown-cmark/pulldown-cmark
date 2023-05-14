@@ -299,7 +299,7 @@ fn heading_attrs_test_22() {
     let expected = r##"<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -311,7 +311,7 @@ fn heading_attrs_test_23() {
 <h2 class="bar">H2 {.foo</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]

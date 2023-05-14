@@ -1244,6 +1244,7 @@ pub(crate) struct Allocations<'a> {
 pub(crate) struct HeadingAttributes<'a> {
     pub id: Option<&'a str>,
     pub classes: Vec<&'a str>,
+    pub attrs: Vec<(&'a str, Option<&'a str>)>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1418,10 +1419,20 @@ fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
-            Tag::Heading(level, *id, classes.clone())
+            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+            Tag::Heading {
+                level,
+                id: *id,
+                classes: classes.clone(),
+                attrs: attrs.clone(),
+            }
         }
-        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
+        ItemBody::Heading(level, None) => Tag::Heading {
+            level,
+            id: None,
+            classes: Vec::new(),
+            attrs: Vec::new(),
+        },
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
@@ -1474,10 +1485,20 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes } = allocs.index(heading_ix);
-            Tag::Heading(level, *id, classes.clone())
+            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+            Tag::Heading {
+                level,
+                id: *id,
+                classes: classes.clone(),
+                attrs: attrs.clone(),
+            }
         }
-        ItemBody::Heading(level, None) => Tag::Heading(level, None, Vec::new()),
+        ItemBody::Heading(level, None) => Tag::Heading {
+            level,
+            id: None,
+            classes: Vec::new(),
+            attrs: Vec::new(),
+        },
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }

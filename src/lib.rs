@@ -109,9 +109,17 @@ pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
 
-    /// A heading. The first field indicates the level of the heading,
-    /// the second the fragment identifier, and the third the classes.
-    Heading(HeadingLevel, Option<&'a str>, Vec<&'a str>),
+    /// A heading, with optional identifier, classes and custom attributes.
+    /// The identifier is prefixed with `#` and the last one in the attributes
+    /// list is chosen, classes are prefixed with `.` and custom attributes
+    /// have no prefix and can optionally have a value (`myattr` o `myattr=myvalue`).
+    Heading {
+        level: HeadingLevel,
+        id: Option<&'a str>,
+        classes: Vec<&'a str>,
+        /// The first item of the tuple is the attr and second one the value.
+        attrs: Vec<(&'a str, Option<&'a str>)>,
+    },
 
     BlockQuote,
     /// A code block.
@@ -292,8 +300,11 @@ bitflags::bitflags! {
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
         /// Extension to allow headings to have ID and classes.
         ///
-        /// `# text { #id .class1 .class2 }` is interpreted as a level 1 heading
-        /// with the content `text`, ID `id`, and classes `class1` and `class2`.
+        /// `# text { #id .class1 .class2 myattr, other_attr=myvalue }`
+        /// is interpreted as a level 1 heading
+        /// with the content `text`, ID `id`, classes `class1` and `class2` and
+        /// custom attributes `myattr` (without value) and
+        /// `other_attr` with value `myvalue`.
         /// Note that attributes (ID and classes) should be space-separated.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
         /// Metadata blocks in YAML style, i.e.:

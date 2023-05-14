@@ -1715,6 +1715,7 @@ fn extract_attribute_block_content_from_header_text(
 fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes> {
     let mut id = None;
     let mut classes = Vec::new();
+    let mut attrs = Vec::new();
 
     for attr in inside_attr_block.split_ascii_whitespace() {
         // iterator returned by `str::split_ascii_whitespace` never emits empty
@@ -1725,11 +1726,18 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
                 id = Some(&attr[1..]);
             } else if first_byte == b'.' {
                 classes.push(&attr[1..]);
+            } else {
+                let split = attr.split_once('=');
+                if let Some((key, value)) = split {
+                    attrs.push((key, Some(value)));
+                } else {
+                    attrs.push((attr, None));
+                }
             }
         }
     }
 
-    Some(HeadingAttributes { id, classes })
+    Some(HeadingAttributes { id, classes, attrs })
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

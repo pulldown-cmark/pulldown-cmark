@@ -9,12 +9,15 @@ fn heading_attrs_test_1() {
 ===================
 with a class {.myclass}
 ------------
-multiple! {.myclass1 #myh3 .myclass2}
+with a custom attribute {myattr=myvalue}
+========================================
+multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 --
 "##;
     let expected = r##"<h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
-<h2 id="myh3" class="myclass1 myclass2">multiple!</h2>
+<h1 myattr="myvalue">with a custom attribute</h1>
+<h2 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h2>
 "##;
 
     test_markdown_html(original, expected, false, false);
@@ -24,11 +27,13 @@ multiple! {.myclass1 #myh3 .myclass2}
 fn heading_attrs_test_2() {
     let original = r##"# with the ID {#myh1}
 ## with a class {.myclass}
-### multiple! {.myclass1 #myh3 .myclass2}
+#### with a custom attribute {myattr=myvalue}
+### multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 "##;
     let expected = r##"<h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
-<h3 id="myh3" class="myclass1 myclass2">multiple!</h3>
+<h4 myattr="myvalue">with a custom attribute</h4>
+<h3 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h3>
 "##;
 
     test_markdown_html(original, expected, false, false);
@@ -270,8 +275,8 @@ fn heading_attrs_test_20() {
     let original = r##"# H1 {foo}
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 "##;
-    let expected = r##"<h1>H1</h1>
-<h2 id="myid" class="myclass">H2</h2>
+    let expected = r##"<h1 foo="">H1</h1>
+<h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
 "##;
 
     test_markdown_html(original, expected, false, false);
@@ -279,11 +284,9 @@ fn heading_attrs_test_20() {
 
 #[test]
 fn heading_attrs_test_21() {
-    let original = r##"# H1 {.foo{unknown}
-## H2 {.foo{.bar}
+    let original = r##"# Header # {myattr=value other_attr}
 "##;
-    let expected = r##"<h1>H1 {.foo</h1>
-<h2 class="bar">H2 {.foo</h2>
+    let expected = r##"<h1 myattr="value" other_attr="">Header</h1>
 "##;
 
     test_markdown_html(original, expected, false, false);
@@ -291,6 +294,28 @@ fn heading_attrs_test_21() {
 
 #[test]
 fn heading_attrs_test_22() {
+    let original = r##"#### Header {#id myattr= .class1 other_attr=false}
+"##;
+    let expected = r##"<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
+"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn heading_attrs_test_23() {
+    let original = r##"# H1 {.foo{unknown}
+## H2 {.foo{.bar}
+"##;
+    let expected = r##"<h1 unknown="">H1 {.foo</h1>
+<h2 class="bar">H2 {.foo</h2>
+"##;
+
+    test_markdown_html(original, expected, false);
+}
+
+#[test]
+fn heading_attrs_test_24() {
     let original = r##"# H1 {.foo}bar}
 "##;
     let expected = r##"<h1>H1 {.foo}bar}</h1>
@@ -300,7 +325,7 @@ fn heading_attrs_test_22() {
 }
 
 #[test]
-fn heading_attrs_test_23() {
+fn heading_attrs_test_25() {
     let original = r##"# H1 {<i>foo</i>}
 "##;
     let expected = r##"<h1>H1 {<i>foo</i>}</h1>
@@ -310,7 +335,7 @@ fn heading_attrs_test_23() {
 }
 
 #[test]
-fn heading_attrs_test_24() {
+fn heading_attrs_test_26() {
     let original = r##"# H1 {.foo\}
 "##;
     let expected = r##"<h1>H1 {.foo}</h1>
@@ -320,7 +345,7 @@ fn heading_attrs_test_24() {
 }
 
 #[test]
-fn heading_attrs_test_25() {
+fn heading_attrs_test_27() {
     let original = r##"H1 {.foo
 .bar}
 ==
@@ -333,7 +358,7 @@ fn heading_attrs_test_25() {
 }
 
 #[test]
-fn heading_attrs_test_26() {
+fn heading_attrs_test_28() {
     let original = r##"H1 {} {}
 =====
 
@@ -347,7 +372,7 @@ fn heading_attrs_test_26() {
 }
 
 #[test]
-fn heading_attrs_test_27() {
+fn heading_attrs_test_29() {
     let original = r##"## H2 {} ##
 "##;
     let expected = r##"<h2>H2 {}</h2>
@@ -357,7 +382,7 @@ fn heading_attrs_test_27() {
 }
 
 #[test]
-fn heading_attrs_test_28() {
+fn heading_attrs_test_30() {
     let original = r##"# H1 {\}
 ## this is also ok \{\}
 
@@ -375,7 +400,7 @@ newline can be used for setext heading {
 }
 
 #[test]
-fn heading_attrs_test_29() {
+fn heading_attrs_test_31() {
     let original = r##"# H1 \{.foo}
 ## H2 \\{.bar}
 ### stray backslash at the end is preserved \
@@ -389,7 +414,7 @@ fn heading_attrs_test_29() {
 }
 
 #[test]
-fn heading_attrs_test_30() {
+fn heading_attrs_test_32() {
     let original = r##"H1 \{.foo}
 ==
 H2 \\{.bar}
@@ -407,7 +432,7 @@ stray backslash at the end is preserved \
 }
 
 #[test]
-fn heading_attrs_test_31() {
+fn heading_attrs_test_33() {
     let original = r##"# H1 {#`code`}
 ## H2 {#foo__bar__baz}
 ### H3 {#foo**bar**baz}
@@ -421,7 +446,7 @@ fn heading_attrs_test_31() {
 }
 
 #[test]
-fn heading_attrs_test_32() {
+fn heading_attrs_test_34() {
     let original = r##"H1 {#`code`}
 ==
 
@@ -440,7 +465,7 @@ H2-2 {#foo**bar**baz}
 }
 
 #[test]
-fn heading_attrs_test_33() {
+fn heading_attrs_test_35() {
     let original = r##"# H1 {.foo#bar}
 ## H2 {#foo.bar}
 ### H3 {.a"b'c&d}
@@ -454,7 +479,7 @@ fn heading_attrs_test_33() {
 }
 
 #[test]
-fn heading_attrs_test_34() {
+fn heading_attrs_test_36() {
     let original = r##"# H1 {#}
 ## H2 {.}
 "##;
@@ -466,7 +491,7 @@ fn heading_attrs_test_34() {
 }
 
 #[test]
-fn heading_attrs_test_35() {
+fn heading_attrs_test_37() {
     let original = r##"# H1 {#foo #}
 # H1 {.foo . . .bar}
 "##;
@@ -478,7 +503,7 @@ fn heading_attrs_test_35() {
 }
 
 #[test]
-fn heading_attrs_test_36() {
+fn heading_attrs_test_38() {
     let original = r##"# {}
 ## {}
 ### {\}
@@ -497,7 +522,7 @@ fn heading_attrs_test_36() {
 }
 
 #[test]
-fn heading_attrs_test_37() {
+fn heading_attrs_test_39() {
     let original = r##"{}
 ==
 
@@ -524,7 +549,7 @@ fn heading_attrs_test_37() {
 }
 
 #[test]
-fn heading_attrs_test_38() {
+fn heading_attrs_test_40() {
     let original = r##"# horizontal tab	
 # horizontal tab	{#ht}
 ## form feed
@@ -544,7 +569,7 @@ fn heading_attrs_test_38() {
 }
 
 #[test]
-fn heading_attrs_test_39() {
+fn heading_attrs_test_41() {
     let original = r##"# horizontal tab (U+000A) {#ht	.myclass}
 ## form feed (U+000C) {#ff.myclass}
 
@@ -559,7 +584,7 @@ fn heading_attrs_test_39() {
 }
 
 #[test]
-fn heading_attrs_test_40() {
+fn heading_attrs_test_42() {
     let original = r##"# EN SPACE (U+2002) {#en-space .myclass}
 ## IDEOGRAPHIC SPACE (U+3000) {#ideographic-space　.myclass}
 "##;

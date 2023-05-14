@@ -45,9 +45,14 @@ fn main() {
     let parser = Parser::new_ext(markdown_input, Options::all()).map(|event| {
         match &event {
             Event::Start(tag) => match tag {
-                Tag::Heading(heading_level, fragment_identifier, class_list) => println!(
-                    "Heading heading_level: {} fragment identifier: {:?} classes: {:?}",
-                    heading_level, fragment_identifier, class_list
+                Tag::Heading {
+                    level,
+                    id,
+                    classes,
+                    attrs,
+                } => println!(
+                    "Heading heading_level: {} fragment identifier: {:?} classes: {:?} attrs: {:?}",
+                    level, id, classes, attrs
                 ),
                 Tag::Paragraph => println!("Paragraph"),
                 Tag::List(ordered_list_first_item_number) => println!(

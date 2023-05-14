@@ -153,7 +153,12 @@ where
                     self.write("\n<p>")
                 }
             }
-            Tag::Heading(level, id, classes) => {
+            Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            } => {
                 if self.end_newline {
                     self.end_newline = false;
                     self.write("<")?;
@@ -175,6 +180,17 @@ where
                         escape_html(&mut self.writer, class)?;
                     }
                     self.write("\"")?;
+                }
+                for (attr, value) in attrs {
+                    self.write(" ")?;
+                    escape_html(&mut self.writer, attr)?;
+                    if let Some(val) = value {
+                        self.write("=\"")?;
+                        escape_html(&mut self.writer, val)?;
+                        self.write("\"")?;
+                    } else {
+                        self.write("=\"\"")?;
+                    }
                 }
                 self.write(">")
             }
@@ -319,7 +335,12 @@ where
             Tag::Paragraph => {
                 self.write("</p>\n")?;
             }
-            Tag::Heading(level, _id, _classes) => {
+            Tag::Heading {
+                level,
+                id: _,
+                classes: _,
+                attrs: _,
+            } => {
                 self.write("</")?;
                 write!(&mut self.writer, "{}", level)?;
                 self.write(">\n")?;

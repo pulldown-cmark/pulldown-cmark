@@ -1,0 +1,139 @@
+Examples and edge cases for metadata blocks.
+
+YAML-style and pluses-style metadata blocks are supported.
+
+YAML-style metadata blocks:
+ - Start by a `---` line.
+ - End by a `---` or a `...` line.
+
+Pluses-style metadata blocks:
+ - Start by a `+++` line.
+ - End by a `+++` line.
+
+In both cases, only trailing spaces can be in the delimiting lines.
+
+All metadata blocks must be ended, EOF is not a valid ending of the block.
+
+Basic usage:
+```````````````````````````````` example_metadata_blocks
+---
+title: example
+another_field: 0
+---
+.
+````````````````````````````````
+
+EOF is not a valid ending of the block:
+```````````````````````````````` example_metadata_blocks
+---
+title: example
+another_field: 0
+.
+<hr>
+<p>title: example
+another_field: 0</p>
+````````````````````````````````
+
+A metadata block cannot be empty:
+```````````````````````````````` example_metadata_blocks
+---
+---
+.
+<hr>
+<hr>
+````````````````````````````````
+
+A blank line cannot be after the start of the metadata block:
+```````````````````````````````` example_metadata_blocks
+---
+
+title: example
+another_field: 0
+---
+.
+<hr>
+<h2>title: example
+another_field: 0</h2>
+````````````````````````````````
+
+A metadata block cannot interrumpt a paragraph:
+```````````````````````````````` example_metadata_blocks
+My paragraph here.
+---
+title: example
+another_field: 0
+---
+.
+<h2>My paragraph here.</h2>
+<h2>title: example
+another_field: 0</h2>
+````````````````````````````````
+
+But it can be after a blank line:
+```````````````````````````````` example_metadata_blocks
+My paragraph here.
+
+---
+title: example
+another_field: 0
+---
+.
+<p>My paragraph here.</p>
+
+````````````````````````````````
+
+After the start sequence nothing but spaces can be in the same line:
+```````````````````````````````` example_metadata_blocks
+---    
+title: example
+another_field: 0
+---
+
+--- -
+title: example
+another_field: 0
+---
+.
+<hr>
+<h2>title: example
+another_field: 0</h2>
+````````````````````````````````
+
+The same applies for the end sequence:
+```````````````````````````````` example_metadata_blocks
+---
+title: example
+another_field: 0
+---        
+
+---
+title: example
+another_field: 0
+---a
+.
+<hr>
+<p>title: example
+another_field: 0
+---a</p>
+````````````````````````````````
+
+
+The end sequence for YAML-style blocks can be three dots:
+```````````````````````````````` example_metadata_blocks
+---
+title: example
+another_field: 0
+...
+.
+````````````````````````````````
+
+
+Finally, pluses-style blocks also work following the same rules except the
+closing sequence must be `+++`:
+```````````````````````````````` example_metadata_blocks
++++
+title: example
+another_field: 0
++++
+.
+````````````````````````````````

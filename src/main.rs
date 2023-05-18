@@ -64,6 +64,12 @@ pub fn main() -> std::io::Result<()> {
     );
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
+    opts.optflag(
+        "H",
+        "enable-heading-attributes",
+        "enable heading attributes",
+    );
+    opts.optflag("M", "enable-metadata-blocks", "enable metadata blocks");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -91,6 +97,13 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-smart-punctuation") {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    }
+    if matches.opt_present("enable-heading-attributes") {
+        opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+    }
+    if matches.opt_present("enable-metadata-blocks") {
+        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+        opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
     }
 
     let mut input = String::new();

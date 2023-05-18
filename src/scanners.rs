@@ -430,6 +430,28 @@ pub(crate) fn scan_closing_code_fence(
     scan_eol(&bytes[i..]).map(|_| i)
 }
 
+// return: end byte for closing metadata block, or None
+// if the line is not a closing metadata block
+pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Option<usize> {
+    let mut i = scan_nextline(bytes);
+    let mut num_fence_chars_found = scan_ch_repeat(&bytes[i..], fence_char);
+    if num_fence_chars_found != 3 {
+        // if YAML style metadata block the closing character can also be `.`
+        if fence_char == b'-' {
+            num_fence_chars_found = scan_ch_repeat(&bytes[i..], b'.');
+            if num_fence_chars_found != 3 {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+    i += num_fence_chars_found;
+    let num_trailing_spaces = scan_ch_repeat(&bytes[i..], b' ');
+    i += num_trailing_spaces;
+    scan_eol(&bytes[i..]).map(|_| i)
+}
+
 // returned pair is (number of bytes, number of spaces)
 fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut spaces = 0;
@@ -514,16 +536,15 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> {
     let c = *data.get(0)?;
-    if !(c == b'-' || c == b'=') {
-        return None;
-    }
-    let mut i = 1 + scan_ch_repeat(&data[1..], c);
-    i += scan_blank_line(&data[i..])?;
     let level = if c == b'=' {
         HeadingLevel::H1
-    } else {
+    } else if c == b'-' {
         HeadingLevel::H2
+    } else {
+        return None;
     };
+    let mut i = 1 + scan_ch_repeat(&data[1..], c);
+    i += scan_blank_line(&data[i..])?;
     Some((i, level))
 }
 
@@ -599,6 +620,63 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
             }
         }
         Some((i, c))
+    } else {
+        None
+    }
+}
+
+/// Scan metadata block, returning the number of delimiter bytes
+/// (always 3 for now) and the delimiter character.
+///
+/// Differently to code blocks, metadata blocks must be closed with the closing
+/// sequence not being a valid terminator the end of the file.
+///
+/// In addition, they cannot be empty (closing sequence in the next line) and
+/// the next line cannot be an empty line.
+pub(crate) fn scan_metadata_block(
+    data: &[u8],
+    yaml_style_enabled: bool,
+    pluses_style_enabled: bool,
+) -> Option<(usize, u8)> {
+    // Only if metadata blocks are enabled
+    if yaml_style_enabled || pluses_style_enabled {
+        let c = *data.get(0)?;
+        if !((c == b'-' && yaml_style_enabled) || (c == b'+' && pluses_style_enabled)) {
+            return None;
+        }
+        let i = 1 + scan_ch_repeat(&data[1..], c);
+        // Only trailing spaces after the delimiters in the line
+        let next_line = scan_nextline(&data[i..]);
+        for c in &data[i..i + next_line] {
+            if !c.is_ascii_whitespace() {
+                return None;
+            }
+        }
+        if i == 3 {
+            // Search the closing sequence
+            let mut j = i;
+            let mut first_line = true;
+            while j < data.len() {
+                // `scan_closing_metadata_block` scan next line as the first step,
+                // so it must be executed before scanning next line
+                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
+                j += scan_nextline(&data[j..]);
+                // The first line of the metadata block cannot be an empty line
+                // nor the end of the block
+                if first_line {
+                    if closed || scan_blank_line(&data[j..]).is_some() {
+                        return None;
+                    }
+                    first_line = false;
+                }
+                if closed {
+                    return Some((i, c));
+                }
+            }
+            None
+        } else {
+            None
+        }
     } else {
         None
     }
@@ -871,7 +949,7 @@ fn scan_attribute(
     if scan_ch(&data[ix..], b'=') == 1 {
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
-        ix = scan_attribute_value(&data, ix, newline_handler, buffer, buffer_ix)?;
+        ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;
     } else if n_whitespace > 0 {
         // Leave whitespace for next attribute.
         ix -= 1;
@@ -881,7 +959,7 @@ fn scan_attribute(
 
 /// Scans whitespace and possibly newlines according to the
 /// behavior defined by the newline handler. When bytes are skipped,
-/// all preceeding non-skipped bytes are pushed to the buffer.
+/// all preceding non-skipped bytes are pushed to the buffer.
 fn scan_whitespace_with_newline_handler(
     data: &[u8],
     mut i: usize,
@@ -994,14 +1072,26 @@ pub(crate) fn unescape(input: &str) -> CowStr<'_> {
 }
 
 /// Assumes `data` is preceded by `<`.
-pub(crate) fn scan_html_block_tag(data: &[u8]) -> (usize, &[u8]) {
+pub(crate) fn starts_html_block_type_6(data: &[u8]) -> bool {
     let i = scan_ch(data, b'/');
-    let n = scan_while(&data[i..], is_ascii_alphanumeric);
-    // TODO: scan attributes and >
-    (i + n, &data[i..i + n])
+    let tail = &data[i..];
+    let n = scan_while(tail, is_ascii_alphanumeric);
+    if !is_html_tag(&tail[..n]) {
+        return false;
+    }
+    // Starting condition says the next byte must be either a space, a tab,
+    // the end of the line, the string >, or the string />
+    let tail = &tail[n..];
+    tail.is_empty()
+        || tail[0] == b' '
+        || tail[0] == b'\t'
+        || tail[0] == b'\r'
+        || tail[0] == b'\n'
+        || tail[0] == b'>'
+        || tail.len() >= 2 && &tail[..2] == b"/>"
 }
 
-pub(crate) fn is_html_tag(tag: &[u8]) -> bool {
+fn is_html_tag(tag: &[u8]) -> bool {
     HTML_TAGS
         .binary_search_by(|probe| {
             let probe_bytes_iter = probe.as_bytes().iter();
@@ -1092,7 +1182,7 @@ pub(crate) fn scan_html_block_inner(
                 // No whitespace, which is mandatory.
                 return None;
             }
-            i = scan_attribute(&data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
+            i = scan_attribute(data, i, newline_handler, &mut buffer, &mut last_buf_index)?;
         }
     }
 

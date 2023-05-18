@@ -28,7 +28,7 @@
 //!
 //! # Example
 //! ```rust
-//! use pulldown_cmark::{Parser, Options, html};
+//! use pulldown_cmark::{Parser, Options};
 //!
 //! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
 //!
@@ -38,13 +38,15 @@
 //! options.insert(Options::ENABLE_STRIKETHROUGH);
 //! let parser = Parser::new_ext(markdown_input, options);
 //!
+//! # #[cfg(feature = "html")] {
 //! // Write to String buffer.
 //! let mut html_output = String::new();
-//! html::push_html(&mut html_output, parser);
+//! pulldown_cmark::html::push_html(&mut html_output, parser);
 //!
 //! // Check that the output is what we expected.
 //! let expected_html = "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";
 //! assert_eq!(expected_html, &html_output);
+//! # }
 //! ```
 
 // When compiled for the rustc compiler itself we want to make sure that this is
@@ -53,14 +55,17 @@
 #![cfg_attr(rustbuild, unstable(feature = "rustc_private", issue = "27812"))]
 // Forbid unsafe code unless the SIMD feature is enabled.
 #![cfg_attr(not(feature = "simd"), forbid(unsafe_code))]
+#![warn(missing_debug_implementations)]
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "html")]
 pub mod html;
+#[cfg(feature = "html")]
+pub mod escape;
 
 mod entities;
-pub mod escape;
 mod firstpass;
 mod linklabel;
 mod parse;
@@ -94,6 +99,13 @@ impl<'a> CodeBlockKind<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum MetadataBlockKind {
+    YamlStyle,
+    PlusesStyle,
+}
+
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -101,9 +113,17 @@ pub enum Tag<'a> {
     /// A paragraph of text and other inline elements.
     Paragraph,
 
-    /// A heading. The first field indicates the level of the heading,
-    /// the second the fragment identifier, and the third the classes.
-    Heading(HeadingLevel, Option<&'a str>, Vec<&'a str>),
+    /// A heading, with optional identifier, classes and custom attributes.
+    /// The identifier is prefixed with `#` and the last one in the attributes
+    /// list is chosen, classes are prefixed with `.` and custom attributes
+    /// have no prefix and can optionally have a value (`myattr` o `myattr=myvalue`).
+    Heading {
+        level: HeadingLevel,
+        id: Option<&'a str>,
+        classes: Vec<&'a str>,
+        /// The first item of the tuple is the attr and second one the value.
+        attrs: Vec<(&'a str, Option<&'a str>)>,
+    },
 
     BlockQuote,
     /// A code block.
@@ -121,7 +141,7 @@ pub enum Tag<'a> {
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
-    /// A table header. Contains only `TableRow`s. Note that the table body starts immediately
+    /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     TableHead,
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
@@ -138,6 +158,9 @@ pub enum Tag<'a> {
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
+
+    /// A metadata block.
+    MetadataBlock(MetadataBlockKind),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -281,9 +304,20 @@ bitflags::bitflags! {
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
         /// Extension to allow headings to have ID and classes.
         ///
-        /// `# text { #id .class1 .class2 }` is interpreted as a level 1 heading
-        /// with the content `text`, ID `id`, and classes `class1` and `class2`.
-        /// Note that attributes (ID and classes) should be space-separeted.
+        /// `# text { #id .class1 .class2 myattr, other_attr=myvalue }`
+        /// is interpreted as a level 1 heading
+        /// with the content `text`, ID `id`, classes `class1` and `class2` and
+        /// custom attributes `myattr` (without value) and
+        /// `other_attr` with value `myvalue`.
+        /// Note that attributes (ID and classes) should be space-separated.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
+        /// Metadata blocks in YAML style, i.e.:
+        /// - starting with a `---` line
+        /// - ending with a `---` or `...` line
+        const ENABLE_YAML_STYLE_METADATA_BLOCKS = 1 << 7;
+        /// Metadata blocks delimited by:
+        /// - `+++` line at start
+        /// - `+++` line at end
+        const ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS = 1 << 8;
     }
 }

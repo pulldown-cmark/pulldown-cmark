@@ -3,7 +3,7 @@ pool:
 
 steps:
   - script: |
-      curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.46.0
+      curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.56.0
       echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
     displayName: Install rust
   - script: cargo build --all
@@ -14,6 +14,8 @@ steps:
     displayName: Cargo test with simd feature enabled
   - script: cargo test --all --features=serde
     displayName: Cargo test with serde feature enabled
+  - script: cargo test --all --no-default-features
+    displayName: Cargo test without default features    
   - script: cargo run --release -- --regressions
     workingDirectory: fuzzer
     displayName: Test for superlinear time regressions

@@ -23,7 +23,22 @@ Further, it optionally supports parsing footnotes,
 [Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
-Rustc 1.46 or newer is required to build the crate.
+Rustc 1.56 or newer is required to build the crate.
+
+## Example
+
+Example usage:
+
+```rust
+// Create parser with example Markdown text.
+let markdown_input = "hello world";
+let parser = pulldown_cmark::Parser::new(markdown_input);
+
+// Write to a new String buffer.
+let mut html_output = String::new();
+pulldown_cmark::html::push_html(&mut html_output, parser);
+assert_eq!(&html_output, "<p>hello world</p>\n");
+```
 
 ## Why a pull parser?
 
@@ -126,7 +141,7 @@ By default, the binary is built as well. If you don't want/need it, then build l
 Or put in your `Cargo.toml` file:
 
 ```toml
-pulldown-cmark = { version = "0.8", default-features = false }
+pulldown-cmark = { version = "0.9.2", default-features = false }
 ```
 
 SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
@@ -139,7 +154,7 @@ enable them, build with simd feature:
 Or add the feature to your project's `Cargo.toml`:
 
 ```toml
-pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
+pulldown-cmark = { version = "0.9.2", default-features = false, features = ["simd"] }
 ```
 
 ## Authors

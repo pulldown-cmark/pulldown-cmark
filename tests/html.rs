@@ -1,4 +1,5 @@
 // Tests for HTML spec.
+#![cfg(feature = "html")]
 
 use pulldown_cmark::{html, BrokenLink, Options, Parser};
 

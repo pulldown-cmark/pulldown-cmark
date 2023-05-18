@@ -1,3 +1,5 @@
+#![cfg(feature = "html")]
+
 use html5ever::serialize::{serialize, SerializeOpts};
 use html5ever::{driver as html, local_name, namespace_url, ns, QualName};
 use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};
@@ -12,7 +14,7 @@ use tendril::stream::TendrilSink;
 mod suite;
 
 #[inline(never)]
-pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool) {
+pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata_blocks: bool) {
     let mut s = String::new();
 
     let mut opts = Options::empty();
@@ -20,6 +22,10 @@ pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool) {
     opts.insert(Options::ENABLE_FOOTNOTES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TASKLISTS);
+    if metadata_blocks {
+        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+        opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    }
     if smart_punct {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
@@ -262,13 +268,13 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                                 pos != 0,
                                 "If node is not first, then node's position shall not be zero"
                             );
-                            let mut preceeding = siblings[pos - 1].clone();
+                            let mut preceding = siblings[pos - 1].clone();
                             'descent: loop {
-                                if let NodeData::Text { .. } = preceeding.data {
+                                if let NodeData::Text { .. } = preceding.data {
                                     break 'descent;
                                 }
-                                preceeding = {
-                                    let ch = preceeding.children.borrow();
+                                preceding = {
+                                    let ch = preceding.children.borrow();
                                     if ch.len() == 0 {
                                         break 'descent;
                                     }
@@ -279,7 +285,7 @@ fn normalize_node(parent: &Handle, node: &mut Handle) -> bool {
                                     }
                                 };
                             }
-                            if let NodeData::Text { ref contents, .. } = preceeding.data {
+                            if let NodeData::Text { ref contents, .. } = preceding.data {
                                 break 'ascent TRAILING_WHITESPACE_RE.is_match(&*contents.borrow());
                             } else {
                                 break 'ascent false;

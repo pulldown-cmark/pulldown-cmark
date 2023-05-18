@@ -1760,6 +1760,7 @@ mod test {
     }
 
     // FIXME: add this one regression suite
+    #[cfg(feature = "html")]
     #[test]
     fn link_def_at_eof() {
         let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
@@ -1770,6 +1771,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn no_footnote_refs_without_option() {
         let test_str = "a [^a]\n\n[^a]: yolo";
@@ -1780,6 +1782,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn ref_def_at_eof() {
         let test_str = "[test]:\\";
@@ -1790,6 +1793,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn ref_def_cr_lf() {
         let test_str = "[a]: /u\r\n\n[a]";
@@ -1800,6 +1804,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn no_dest_refdef() {
         let test_str = "[a]:";

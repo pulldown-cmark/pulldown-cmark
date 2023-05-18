@@ -439,12 +439,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
+                                    let label_end = self.tree[cur_ix].item.end;
                                     scan_link_label(
                                         &self.tree,
-                                        &self.text[label_start..self.tree[cur_ix].item.end],
+                                        &self.text[label_start..label_end],
                                         self.options.contains(Options::ENABLE_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
+                                    .filter(|(_, end)| *end == label_end)
                                 }
                             };
 
@@ -1073,7 +1075,7 @@ fn scan_link_label<'text, 'tree>(
     text: &'text str,
     allow_footnote_refs: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
-    let bytes = &text.as_bytes();
+    let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
         return None;
     }

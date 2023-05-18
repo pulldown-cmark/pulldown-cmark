@@ -31,6 +31,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         allocs: Allocations::new(),
         options,
         lookup_table,
+        next_paragraph_task: None,
     };
     first_pass.run()
 }
@@ -44,6 +45,9 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
+    /// This is `Some(item)` when the next paragraph
+    /// starts with a task list marker.
+    next_paragraph_task: Option<Item>,
 }
 
 impl<'a, 'b> FirstPass<'a, 'b> {
@@ -106,13 +110,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    if let Some(is_checked) = line_start.scan_task_list_marker() {
-                        self.tree.append(Item {
+                    self.next_paragraph_task =
+                        line_start.scan_task_list_marker().map(|is_checked| Item {
                             start: after_marker_index,
                             end: start_ix + line_start.bytes_scanned(),
                             body: ItemBody::TaskListMarker(is_checked),
                         });
-                    }
                 }
             } else if line_start.scan_blockquote_marker() {
                 self.finish_list(start_ix);
@@ -327,8 +330,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             body: ItemBody::Paragraph,
         });
         self.tree.push();
-        let bytes = self.text.as_bytes();
 
+        if let Some(item) = self.next_paragraph_task {
+            self.tree.append(item);
+            self.next_paragraph_task = None;
+        }
+
+        let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         loop {
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {

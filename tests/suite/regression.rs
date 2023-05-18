@@ -1031,3 +1031,20 @@ fn regression_test_71() {
 
     test_markdown_html(original, expected, false);
 }
+
+#[test]
+fn regression_test_70() {
+    let original = r##"* [ ] foo
+
+* [ ] bar
+
+baz
+"##;
+    let expected = r##"<ul>
+<li><p><input disabled="" type="checkbox"> foo</p></li><li><p><input disabled="" type="checkbox"> bar</p></li>
+</ul>
+<p>baz</p>
+"##;
+
+    test_markdown_html(original, expected, false);
+}

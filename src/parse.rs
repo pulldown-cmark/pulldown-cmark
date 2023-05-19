@@ -1377,29 +1377,31 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        None => {
-            let ix = self.inner.tree.pop()?;
-            let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
-            self.inner.tree.next_sibling(ix);
-            let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
-            debug_assert!(span.start <= span.end);
-            Some((Event::End(tag_end), span))
-        }
-        Some(cur_ix) => {
-            if self.inner.tree[cur_ix].item.body.is_inline() {
-                self.inner.handle_inline();
+        match self.inner.tree.cur() {
+            None => {
+                let ix = self.inner.tree.pop()?;
+                let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
+                self.inner.tree.next_sibling(ix);
+                let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
+                debug_assert!(span.start <= span.end);
+                Some((Event::End(tag_end), span))
             }
+            Some(cur_ix) => {
+                if self.inner.tree[cur_ix].item.body.is_inline() {
+                    self.inner.handle_inline();
+                }
 
-            let node = self.inner.tree[cur_ix];
-            let item = node.item;
-            let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
-            if let Event::Start(..) = event {
-                self.inner.tree.push();
-            } else {
-                self.inner.tree.next_sibling(cur_ix);
+                let node = self.inner.tree[cur_ix];
+                let item = node.item;
+                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
+                if let Event::Start(..) = event {
+                    self.inner.tree.push();
+                } else {
+                    self.inner.tree.next_sibling(cur_ix);
+                }
+                debug_assert!(item.start <= item.end);
+                Some((event, item.start..item.end))
             }
-            debug_assert!(item.start <= item.end);
-            Some((event, item.start..item.end))
         }
     }
 }

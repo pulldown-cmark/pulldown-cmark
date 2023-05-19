@@ -1428,7 +1428,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Table(..) => TagEnd::Table,
         ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
         ItemBody::MetadataBlock(kind) => TagEnd::MetadataBlock(kind),
-        _ => panic!("unexpected item body {:?}", item.body),
+        _ => panic!("unexpected item body {:?}", body),
     }
 }
 

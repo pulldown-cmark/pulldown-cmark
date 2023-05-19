@@ -7,6 +7,8 @@ mod footnotes;
 mod gfm_strikethrough;
 mod gfm_table;
 mod gfm_tasklist;
+mod heading_attrs;
+mod metadata_blocks;
 mod regression;
 mod smart_punct;
 mod spec;

@@ -53,14 +53,14 @@ bar | baz
 <table>
 <thead>
 <tr>
-<th align="center">abc</th>
-<th align="right">defghi</th>
+<th style="text-align: center">abc</th>
+<th style="text-align: right">defghi</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">bar</td>
-<td align="right">baz</td>
+<td style="text-align: center">bar</td>
+<td style="text-align: right">baz</td>
 </tr>
 </tbody>
 </table>

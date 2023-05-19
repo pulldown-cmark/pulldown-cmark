@@ -43,6 +43,9 @@ struct HtmlWriter<'a, I, W> {
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
 
+    /// Whether if inside a metadata block (text should not be written)
+    in_non_writing_block: bool,
+
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -59,6 +62,7 @@ where
             iter,
             writer,
             end_newline: true,
+            in_non_writing_block: false,
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -93,8 +97,10 @@ where
                     self.end_tag(tag)?;
                 }
                 Text(text) => {
-                    escape_html(&mut self.writer, &text)?;
-                    self.end_newline = text.ends_with('\n');
+                    if !self.in_non_writing_block {
+                        escape_html(&mut self.writer, &text)?;
+                        self.end_newline = text.ends_with('\n');
+                    }
                 }
                 Code(text) => {
                     self.write("<code>")?;
@@ -147,13 +153,46 @@ where
                     self.write("\n<p>")
                 }
             }
-            Tag::Heading(level) => {
+            Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            } => {
                 if self.end_newline {
                     self.end_newline = false;
-                    write!(&mut self.writer, "<{}>", level)
+                    self.write("<")?;
                 } else {
-                    write!(&mut self.writer, "\n<{}>", level)
+                    self.write("\n<")?;
                 }
+                write!(&mut self.writer, "{}", level)?;
+                if let Some(id) = id {
+                    self.write(" id=\"")?;
+                    escape_html(&mut self.writer, id)?;
+                    self.write("\"")?;
+                }
+                let mut classes = classes.iter();
+                if let Some(class) = classes.next() {
+                    self.write(" class=\"")?;
+                    escape_html(&mut self.writer, class)?;
+                    for class in classes {
+                        self.write(" ")?;
+                        escape_html(&mut self.writer, class)?;
+                    }
+                    self.write("\"")?;
+                }
+                for (attr, value) in attrs {
+                    self.write(" ")?;
+                    escape_html(&mut self.writer, attr)?;
+                    if let Some(val) = value {
+                        self.write("=\"")?;
+                        escape_html(&mut self.writer, val)?;
+                        self.write("\"")?;
+                    } else {
+                        self.write("=\"\"")?;
+                    }
+                }
+                self.write(">")
             }
             Tag::Table(alignments) => {
                 self.table_alignments = alignments;
@@ -178,9 +217,9 @@ where
                     }
                 }
                 match self.table_alignments.get(self.table_cell_index) {
-                    Some(&Alignment::Left) => self.write(" align=\"left\">"),
-                    Some(&Alignment::Center) => self.write(" align=\"center\">"),
-                    Some(&Alignment::Right) => self.write(" align=\"right\">"),
+                    Some(&Alignment::Left) => self.write(" style=\"text-align: left\">"),
+                    Some(&Alignment::Center) => self.write(" style=\"text-align: center\">"),
+                    Some(&Alignment::Right) => self.write(" style=\"text-align: right\">"),
                     _ => self.write(">"),
                 }
             }
@@ -284,6 +323,10 @@ where
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
+            Tag::MetadataBlock(_) => {
+                self.in_non_writing_block = true;
+                Ok(())
+            }
         }
     }
 
@@ -348,6 +391,9 @@ where
             TagEnd::Image => (), // shouldn't happen, handled in start
             TagEnd::FootnoteDefinition => {
                 self.write("</div>\n")?;
+            }
+            Tag::MetadataBlock(_) => {
+                self.in_non_writing_block = false;
             }
         }
         Ok(())

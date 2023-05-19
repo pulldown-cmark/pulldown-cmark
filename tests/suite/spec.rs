@@ -11,7 +11,7 @@ fn spec_test_1() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn spec_test_2() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn spec_test_3() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn spec_test_4() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn spec_test_5() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn spec_test_6() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn spec_test_7() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -111,7 +111,7 @@ bar
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -133,7 +133,7 @@ fn spec_test_9() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn spec_test_10() {
     let expected = r##"<h1>Foo</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -153,11 +153,363 @@ fn spec_test_11() {
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
 fn spec_test_12() {
+    let original = r##"\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
+"##;
+    let expected = r##"<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_13() {
+    let original = r##"\	\A\a\ \3\φ\«
+"##;
+    let expected = r##"<p>\	\A\a\ \3\φ\«</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_14() {
+    let original = r##"\*not emphasized*
+\<br/> not a tag
+\[not a link](/foo)
+\`not code`
+1\. not a list
+\* not a list
+\# not a heading
+\[foo]: /url "not a reference"
+\&ouml; not a character entity
+"##;
+    let expected = r##"<p>*not emphasized*
+&lt;br/&gt; not a tag
+[not a link](/foo)
+`not code`
+1. not a list
+* not a list
+# not a heading
+[foo]: /url &quot;not a reference&quot;
+&amp;ouml; not a character entity</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_15() {
+    let original = r##"\\*emphasis*
+"##;
+    let expected = r##"<p>\<em>emphasis</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_16() {
+    let original = r##"foo\
+bar
+"##;
+    let expected = r##"<p>foo<br />
+bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_17() {
+    let original = r##"`` \[\` ``
+"##;
+    let expected = r##"<p><code>\[\`</code></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_18() {
+    let original = r##"    \[\]
+"##;
+    let expected = r##"<pre><code>\[\]
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_19() {
+    let original = r##"~~~
+\[\]
+~~~
+"##;
+    let expected = r##"<pre><code>\[\]
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_20() {
+    let original = r##"<http://example.com?find=\*>
+"##;
+    let expected = r##"<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_21() {
+    let original = r##"<a href="/bar\/)">
+"##;
+    let expected = r##"<a href="/bar\/)">
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_22() {
+    let original = r##"[foo](/bar\* "ti\*tle")
+"##;
+    let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_23() {
+    let original = r##"[foo]
+
+[foo]: /bar\* "ti\*tle"
+"##;
+    let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_24() {
+    let original = r##"``` foo\+bar
+foo
+```
+"##;
+    let expected = r##"<pre><code class="language-foo+bar">foo
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_25() {
+    let original = r##"&nbsp; &amp; &copy; &AElig; &Dcaron;
+&frac34; &HilbertSpace; &DifferentialD;
+&ClockwiseContourIntegral; &ngE;
+"##;
+    let expected = r##"<p>  &amp; © Æ Ď
+¾ ℋ ⅆ
+∲ ≧̸</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_26() {
+    let original = r##"&#35; &#1234; &#992; &#0;
+"##;
+    let expected = r##"<p># Ӓ Ϡ �</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_27() {
+    let original = r##"&#X22; &#XD06; &#xcab;
+"##;
+    let expected = r##"<p>&quot; ആ ಫ</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_28() {
+    let original = r##"&nbsp &x; &#; &#x;
+&#87654321;
+&#abcdef0;
+&ThisIsNotDefined; &hi?;
+"##;
+    let expected = r##"<p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
+&amp;#87654321;
+&amp;#abcdef0;
+&amp;ThisIsNotDefined; &amp;hi?;</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_29() {
+    let original = r##"&copy
+"##;
+    let expected = r##"<p>&amp;copy</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_30() {
+    let original = r##"&MadeUpEntity;
+"##;
+    let expected = r##"<p>&amp;MadeUpEntity;</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_31() {
+    let original = r##"<a href="&ouml;&ouml;.html">
+"##;
+    let expected = r##"<a href="&ouml;&ouml;.html">
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_32() {
+    let original = r##"[foo](/f&ouml;&ouml; "f&ouml;&ouml;")
+"##;
+    let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_33() {
+    let original = r##"[foo]
+
+[foo]: /f&ouml;&ouml; "f&ouml;&ouml;"
+"##;
+    let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_34() {
+    let original = r##"``` f&ouml;&ouml;
+foo
+```
+"##;
+    let expected = r##"<pre><code class="language-föö">foo
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_35() {
+    let original = r##"`f&ouml;&ouml;`
+"##;
+    let expected = r##"<p><code>f&amp;ouml;&amp;ouml;</code></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_36() {
+    let original = r##"    f&ouml;f&ouml;
+"##;
+    let expected = r##"<pre><code>f&amp;ouml;f&amp;ouml;
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_37() {
+    let original = r##"&#42;foo&#42;
+*foo*
+"##;
+    let expected = r##"<p>*foo*
+<em>foo</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_38() {
+    let original = r##"&#42; foo
+
+* foo
+"##;
+    let expected = r##"<p>* foo</p>
+<ul>
+<li>foo</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_39() {
+    let original = r##"foo&#10;&#10;bar
+"##;
+    let expected = r##"<p>foo
+
+bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_40() {
+    let original = r##"&#9;foo
+"##;
+    let expected = r##"<p>	foo</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_41() {
+    let original = r##"[a](url &quot;tit&quot;)
+"##;
+    let expected = r##"<p>[a](url &quot;tit&quot;)</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_42() {
     let original = r##"- `one
 - two`
 "##;
@@ -167,11 +519,11 @@ fn spec_test_12() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_13() {
+fn spec_test_43() {
     let original = r##"***
 ---
 ___
@@ -181,31 +533,31 @@ ___
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_14() {
+fn spec_test_44() {
     let original = r##"+++
 "##;
     let expected = r##"<p>+++</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_15() {
+fn spec_test_45() {
     let original = r##"===
 "##;
     let expected = r##"<p>===</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_16() {
+fn spec_test_46() {
     let original = r##"--
 **
 __
@@ -215,11 +567,11 @@ __
 __</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_17() {
+fn spec_test_47() {
     let original = r##" ***
   ***
    ***
@@ -229,22 +581,22 @@ fn spec_test_17() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_18() {
+fn spec_test_48() {
     let original = r##"    ***
 "##;
     let expected = r##"<pre><code>***
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_19() {
+fn spec_test_49() {
     let original = r##"Foo
     ***
 "##;
@@ -252,61 +604,61 @@ fn spec_test_19() {
 ***</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_20() {
+fn spec_test_50() {
     let original = r##"_____________________________________
 "##;
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_21() {
+fn spec_test_51() {
     let original = r##" - - -
 "##;
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_22() {
+fn spec_test_52() {
     let original = r##" **  * ** * ** * **
 "##;
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_23() {
+fn spec_test_53() {
     let original = r##"-     -      -      -
 "##;
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_24() {
+fn spec_test_54() {
     let original = r##"- - - -    
 "##;
     let expected = r##"<hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_25() {
+fn spec_test_55() {
     let original = r##"_ _ _ _ a
 
 a------
@@ -318,21 +670,21 @@ a------
 <p>---a---</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_26() {
+fn spec_test_56() {
     let original = r##" *-*
 "##;
     let expected = r##"<p><em>-</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_27() {
+fn spec_test_57() {
     let original = r##"- foo
 ***
 - bar
@@ -346,11 +698,11 @@ fn spec_test_27() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_28() {
+fn spec_test_58() {
     let original = r##"Foo
 ***
 bar
@@ -360,11 +712,11 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_29() {
+fn spec_test_59() {
     let original = r##"Foo
 ---
 bar
@@ -373,11 +725,11 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_30() {
+fn spec_test_60() {
     let original = r##"* Foo
 * * *
 * Bar
@@ -391,11 +743,11 @@ fn spec_test_30() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_31() {
+fn spec_test_61() {
     let original = r##"- Foo
 - * * *
 "##;
@@ -407,11 +759,11 @@ fn spec_test_31() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_32() {
+fn spec_test_62() {
     let original = r##"# foo
 ## foo
 ### foo
@@ -427,21 +779,21 @@ fn spec_test_32() {
 <h6>foo</h6>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_33() {
+fn spec_test_63() {
     let original = r##"####### foo
 "##;
     let expected = r##"<p>####### foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_34() {
+fn spec_test_64() {
     let original = r##"#5 bolt
 
 #hashtag
@@ -450,41 +802,41 @@ fn spec_test_34() {
 <p>#hashtag</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_35() {
+fn spec_test_65() {
     let original = r##"\## foo
 "##;
     let expected = r##"<p>## foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_36() {
+fn spec_test_66() {
     let original = r##"# foo *bar* \*baz\*
 "##;
     let expected = r##"<h1>foo <em>bar</em> *baz*</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_37() {
+fn spec_test_67() {
     let original = r##"#                  foo                     
 "##;
     let expected = r##"<h1>foo</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_38() {
+fn spec_test_68() {
     let original = r##" ### foo
   ## foo
    # foo
@@ -494,22 +846,22 @@ fn spec_test_38() {
 <h1>foo</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_39() {
+fn spec_test_69() {
     let original = r##"    # foo
 "##;
     let expected = r##"<pre><code># foo
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_40() {
+fn spec_test_70() {
     let original = r##"foo
     # bar
 "##;
@@ -517,11 +869,11 @@ fn spec_test_40() {
 # bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_41() {
+fn spec_test_71() {
     let original = r##"## foo ##
   ###   bar    ###
 "##;
@@ -529,11 +881,11 @@ fn spec_test_41() {
 <h3>bar</h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_42() {
+fn spec_test_72() {
     let original = r##"# foo ##################################
 ##### foo ##
 "##;
@@ -541,41 +893,41 @@ fn spec_test_42() {
 <h5>foo</h5>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_43() {
+fn spec_test_73() {
     let original = r##"### foo ###     
 "##;
     let expected = r##"<h3>foo</h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_44() {
+fn spec_test_74() {
     let original = r##"### foo ### b
 "##;
     let expected = r##"<h3>foo ### b</h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_45() {
+fn spec_test_75() {
     let original = r##"# foo#
 "##;
     let expected = r##"<h1>foo#</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_46() {
+fn spec_test_76() {
     let original = r##"### foo \###
 ## foo #\##
 # foo \#
@@ -585,11 +937,11 @@ fn spec_test_46() {
 <h1>foo #</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_47() {
+fn spec_test_77() {
     let original = r##"****
 ## foo
 ****
@@ -599,11 +951,11 @@ fn spec_test_47() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_48() {
+fn spec_test_78() {
     let original = r##"Foo bar
 # baz
 Bar foo
@@ -613,11 +965,11 @@ Bar foo
 <p>Bar foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_49() {
+fn spec_test_79() {
     let original = r##"## 
 #
 ### ###
@@ -627,11 +979,11 @@ fn spec_test_49() {
 <h3></h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_50() {
+fn spec_test_80() {
     let original = r##"Foo *bar*
 =========
 
@@ -642,11 +994,11 @@ Foo *bar*
 <h2>Foo <em>bar</em></h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_51() {
+fn spec_test_81() {
     let original = r##"Foo *bar
 baz*
 ====
@@ -655,11 +1007,11 @@ baz*
 baz</em></h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_52() {
+fn spec_test_82() {
     let original = r##"  Foo *bar
 baz*	
 ====
@@ -668,11 +1020,11 @@ baz*
 baz</em></h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_53() {
+fn spec_test_83() {
     let original = r##"Foo
 -------------------------
 
@@ -683,11 +1035,11 @@ Foo
 <h1>Foo</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_54() {
+fn spec_test_84() {
     let original = r##"   Foo
 ---
 
@@ -702,11 +1054,11 @@ fn spec_test_54() {
 <h1>Foo</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_55() {
+fn spec_test_85() {
     let original = r##"    Foo
     ---
 
@@ -721,22 +1073,22 @@ Foo
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_56() {
+fn spec_test_86() {
     let original = r##"Foo
    ----      
 "##;
     let expected = r##"<h2>Foo</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_57() {
+fn spec_test_87() {
     let original = r##"Foo
     ---
 "##;
@@ -744,11 +1096,11 @@ fn spec_test_57() {
 ---</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_58() {
+fn spec_test_88() {
     let original = r##"Foo
 = =
 
@@ -761,33 +1113,33 @@ Foo
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_59() {
+fn spec_test_89() {
     let original = r##"Foo  
 -----
 "##;
     let expected = r##"<h2>Foo</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_60() {
+fn spec_test_90() {
     let original = r##"Foo\
 ----
 "##;
     let expected = r##"<h2>Foo\</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_61() {
+fn spec_test_91() {
     let original = r##"`Foo
 ----
 `
@@ -802,11 +1154,11 @@ of dashes"/>
 <p>of dashes&quot;/&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_62() {
+fn spec_test_92() {
     let original = r##"> Foo
 ---
 "##;
@@ -816,11 +1168,11 @@ fn spec_test_62() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_63() {
+fn spec_test_93() {
     let original = r##"> foo
 bar
 ===
@@ -832,11 +1184,11 @@ bar
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_64() {
+fn spec_test_94() {
     let original = r##"- Foo
 ---
 "##;
@@ -846,11 +1198,11 @@ fn spec_test_64() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_65() {
+fn spec_test_95() {
     let original = r##"Foo
 Bar
 ---
@@ -859,11 +1211,11 @@ Bar
 Bar</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_66() {
+fn spec_test_96() {
     let original = r##"---
 Foo
 ---
@@ -877,22 +1229,22 @@ Baz
 <p>Baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_67() {
+fn spec_test_97() {
     let original = r##"
 ====
 "##;
     let expected = r##"<p>====</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_68() {
+fn spec_test_98() {
     let original = r##"---
 ---
 "##;
@@ -900,11 +1252,11 @@ fn spec_test_68() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_69() {
+fn spec_test_99() {
     let original = r##"- foo
 -----
 "##;
@@ -914,11 +1266,11 @@ fn spec_test_69() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_70() {
+fn spec_test_100() {
     let original = r##"    foo
 ---
 "##;
@@ -927,11 +1279,11 @@ fn spec_test_70() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_71() {
+fn spec_test_101() {
     let original = r##"> foo
 -----
 "##;
@@ -941,22 +1293,22 @@ fn spec_test_71() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_72() {
+fn spec_test_102() {
     let original = r##"\> foo
 ------
 "##;
     let expected = r##"<h2>&gt; foo</h2>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_73() {
+fn spec_test_103() {
     let original = r##"Foo
 
 bar
@@ -968,11 +1320,11 @@ baz
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_74() {
+fn spec_test_104() {
     let original = r##"Foo
 bar
 
@@ -986,11 +1338,11 @@ bar</p>
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_75() {
+fn spec_test_105() {
     let original = r##"Foo
 bar
 * * *
@@ -1002,11 +1354,11 @@ bar</p>
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_76() {
+fn spec_test_106() {
     let original = r##"Foo
 bar
 \---
@@ -1018,11 +1370,11 @@ bar
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_77() {
+fn spec_test_107() {
     let original = r##"    a simple
       indented code block
 "##;
@@ -1031,11 +1383,11 @@ fn spec_test_77() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_78() {
+fn spec_test_108() {
     let original = r##"  - foo
 
     bar
@@ -1048,11 +1400,11 @@ fn spec_test_78() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_79() {
+fn spec_test_109() {
     let original = r##"1.  foo
 
     - bar
@@ -1067,11 +1419,11 @@ fn spec_test_79() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_80() {
+fn spec_test_110() {
     let original = r##"    <a/>
     *hi*
 
@@ -1084,11 +1436,11 @@ fn spec_test_80() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_81() {
+fn spec_test_111() {
     let original = r##"    chunk1
 
     chunk2
@@ -1107,11 +1459,11 @@ chunk3
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_82() {
+fn spec_test_112() {
     let original = r##"    chunk1
       
       chunk2
@@ -1122,11 +1474,11 @@ fn spec_test_82() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_83() {
+fn spec_test_113() {
     let original = r##"Foo
     bar
 
@@ -1135,11 +1487,11 @@ fn spec_test_83() {
 bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_84() {
+fn spec_test_114() {
     let original = r##"    foo
 bar
 "##;
@@ -1148,11 +1500,11 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_85() {
+fn spec_test_115() {
     let original = r##"# Heading
     foo
 Heading
@@ -1169,11 +1521,11 @@ Heading
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_86() {
+fn spec_test_116() {
     let original = r##"        foo
     bar
 "##;
@@ -1182,11 +1534,11 @@ bar
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_87() {
+fn spec_test_117() {
     let original = r##"
     
     foo
@@ -1197,22 +1549,22 @@ fn spec_test_87() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_88() {
+fn spec_test_118() {
     let original = r##"    foo  
 "##;
     let expected = r##"<pre><code>foo  
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_89() {
+fn spec_test_119() {
     let original = r##"```
 <
  >
@@ -1223,11 +1575,11 @@ fn spec_test_89() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_90() {
+fn spec_test_120() {
     let original = r##"~~~
 <
  >
@@ -1238,11 +1590,11 @@ fn spec_test_90() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_91() {
+fn spec_test_121() {
     let original = r##"``
 foo
 ``
@@ -1250,11 +1602,11 @@ foo
     let expected = r##"<p><code>foo</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_92() {
+fn spec_test_122() {
     let original = r##"```
 aaa
 ~~~
@@ -1265,11 +1617,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_93() {
+fn spec_test_123() {
     let original = r##"~~~
 aaa
 ```
@@ -1280,11 +1632,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_94() {
+fn spec_test_124() {
     let original = r##"````
 aaa
 ```
@@ -1295,11 +1647,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_95() {
+fn spec_test_125() {
     let original = r##"~~~~
 aaa
 ~~~
@@ -1310,21 +1662,21 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_96() {
+fn spec_test_126() {
     let original = r##"```
 "##;
     let expected = r##"<pre><code></code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_97() {
+fn spec_test_127() {
     let original = r##"`````
 
 ```
@@ -1336,11 +1688,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_98() {
+fn spec_test_128() {
     let original = r##"> ```
 > aaa
 
@@ -1353,11 +1705,11 @@ bbb
 <p>bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_99() {
+fn spec_test_129() {
     let original = r##"```
 
   
@@ -1368,22 +1720,22 @@ fn spec_test_99() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_100() {
+fn spec_test_130() {
     let original = r##"```
 ```
 "##;
     let expected = r##"<pre><code></code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_101() {
+fn spec_test_131() {
     let original = r##" ```
  aaa
 aaa
@@ -1394,11 +1746,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_102() {
+fn spec_test_132() {
     let original = r##"  ```
 aaa
   aaa
@@ -1411,11 +1763,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_103() {
+fn spec_test_133() {
     let original = r##"   ```
    aaa
     aaa
@@ -1428,11 +1780,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_104() {
+fn spec_test_134() {
     let original = r##"    ```
     aaa
     ```
@@ -1443,11 +1795,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_105() {
+fn spec_test_135() {
     let original = r##"```
 aaa
   ```
@@ -1456,11 +1808,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_106() {
+fn spec_test_136() {
     let original = r##"   ```
 aaa
   ```
@@ -1469,11 +1821,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_107() {
+fn spec_test_137() {
     let original = r##"```
 aaa
     ```
@@ -1483,11 +1835,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_108() {
+fn spec_test_138() {
     let original = r##"``` ```
 aaa
 "##;
@@ -1495,11 +1847,11 @@ aaa
 aaa</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_109() {
+fn spec_test_139() {
     let original = r##"~~~~~~
 aaa
 ~~~ ~~
@@ -1509,11 +1861,11 @@ aaa
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_110() {
+fn spec_test_140() {
     let original = r##"foo
 ```
 bar
@@ -1526,11 +1878,11 @@ baz
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_111() {
+fn spec_test_141() {
     let original = r##"foo
 ---
 ~~~
@@ -1544,11 +1896,11 @@ bar
 <h1>baz</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_112() {
+fn spec_test_142() {
     let original = r##"```ruby
 def foo(x)
   return 3
@@ -1561,11 +1913,11 @@ end
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_113() {
+fn spec_test_143() {
     let original = r##"~~~~    ruby startline=3 $%@#$
 def foo(x)
   return 3
@@ -1578,22 +1930,22 @@ end
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_114() {
+fn spec_test_144() {
     let original = r##"````;
 ````
 "##;
     let expected = r##"<pre><code class="language-;"></code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_115() {
+fn spec_test_145() {
     let original = r##"``` aa ```
 foo
 "##;
@@ -1601,11 +1953,11 @@ foo
 foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_116() {
+fn spec_test_146() {
     let original = r##"~~~ aa ``` ~~~
 foo
 ~~~
@@ -1614,11 +1966,11 @@ foo
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_117() {
+fn spec_test_147() {
     let original = r##"```
 ``` aaa
 ```
@@ -1627,11 +1979,11 @@ fn spec_test_117() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_118() {
+fn spec_test_148() {
     let original = r##"<table><tr><td>
 <pre>
 **Hello**,
@@ -1648,11 +2000,11 @@ _world_.
 </td></tr></table>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_119() {
+fn spec_test_149() {
     let original = r##"<table>
   <tr>
     <td>
@@ -1673,11 +2025,11 @@ okay.
 <p>okay.</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_120() {
+fn spec_test_150() {
     let original = r##" <div>
   *hello*
          <foo><a>
@@ -1687,11 +2039,11 @@ fn spec_test_120() {
          <foo><a>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_121() {
+fn spec_test_151() {
     let original = r##"</div>
 *foo*
 "##;
@@ -1699,11 +2051,11 @@ fn spec_test_121() {
 *foo*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_122() {
+fn spec_test_152() {
     let original = r##"<DIV CLASS="foo">
 
 *Markdown*
@@ -1715,11 +2067,11 @@ fn spec_test_122() {
 </DIV>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_123() {
+fn spec_test_153() {
     let original = r##"<div id="foo"
   class="bar">
 </div>
@@ -1729,11 +2081,11 @@ fn spec_test_123() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_124() {
+fn spec_test_154() {
     let original = r##"<div id="foo" class="bar
   baz">
 </div>
@@ -1743,11 +2095,11 @@ fn spec_test_124() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_125() {
+fn spec_test_155() {
     let original = r##"<div>
 *foo*
 
@@ -1758,11 +2110,11 @@ fn spec_test_125() {
 <p><em>bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_126() {
+fn spec_test_156() {
     let original = r##"<div id="foo"
 *hi*
 "##;
@@ -1770,11 +2122,11 @@ fn spec_test_126() {
 *hi*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_127() {
+fn spec_test_157() {
     let original = r##"<div class
 foo
 "##;
@@ -1782,11 +2134,11 @@ foo
 foo
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_128() {
+fn spec_test_158() {
     let original = r##"<div *???-&&&-<---
 *foo*
 "##;
@@ -1794,21 +2146,21 @@ fn spec_test_128() {
 *foo*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_129() {
+fn spec_test_159() {
     let original = r##"<div><a href="bar">*foo*</a></div>
 "##;
     let expected = r##"<div><a href="bar">*foo*</a></div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_130() {
+fn spec_test_160() {
     let original = r##"<table><tr><td>
 foo
 </td></tr></table>
@@ -1818,11 +2170,11 @@ foo
 </td></tr></table>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_131() {
+fn spec_test_161() {
     let original = r##"<div></div>
 ``` c
 int x = 33;
@@ -1834,11 +2186,11 @@ int x = 33;
 ```
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_132() {
+fn spec_test_162() {
     let original = r##"<a href="foo">
 *bar*
 </a>
@@ -1848,11 +2200,11 @@ fn spec_test_132() {
 </a>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_133() {
+fn spec_test_163() {
     let original = r##"<Warning>
 *bar*
 </Warning>
@@ -1862,11 +2214,11 @@ fn spec_test_133() {
 </Warning>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_134() {
+fn spec_test_164() {
     let original = r##"<i class="foo">
 *bar*
 </i>
@@ -1876,11 +2228,11 @@ fn spec_test_134() {
 </i>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_135() {
+fn spec_test_165() {
     let original = r##"</ins>
 *bar*
 "##;
@@ -1888,11 +2240,11 @@ fn spec_test_135() {
 *bar*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_136() {
+fn spec_test_166() {
     let original = r##"<del>
 *foo*
 </del>
@@ -1902,11 +2254,11 @@ fn spec_test_136() {
 </del>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_137() {
+fn spec_test_167() {
     let original = r##"<del>
 
 *foo*
@@ -1918,21 +2270,21 @@ fn spec_test_137() {
 </del>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_138() {
+fn spec_test_168() {
     let original = r##"<del>*foo*</del>
 "##;
     let expected = r##"<p><del><em>foo</em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_139() {
+fn spec_test_169() {
     let original = r##"<pre language="haskell"><code>
 import Text.HTML.TagSoup
 
@@ -1950,11 +2302,11 @@ main = print $ parseTags tags
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_140() {
+fn spec_test_170() {
     let original = r##"<script type="text/javascript">
 // JavaScript example
 
@@ -1970,11 +2322,33 @@ document.getElementById("demo").innerHTML = "Hello JavaScript!";
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_141() {
+fn spec_test_171() {
+    let original = r##"<textarea>
+
+*foo*
+
+_bar_
+
+</textarea>
+"##;
+    let expected = r##"<textarea>
+
+*foo*
+
+_bar_
+
+</textarea>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_172() {
     let original = r##"<style
   type="text/css">
 h1 {color:red;}
@@ -1992,11 +2366,11 @@ p {color:blue;}
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_142() {
+fn spec_test_173() {
     let original = r##"<style
   type="text/css">
 
@@ -2008,11 +2382,11 @@ foo
 foo
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_143() {
+fn spec_test_174() {
     let original = r##"> <div>
 > foo
 
@@ -2025,11 +2399,11 @@ foo
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_144() {
+fn spec_test_175() {
     let original = r##"- <div>
 - foo
 "##;
@@ -2041,11 +2415,11 @@ fn spec_test_144() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_145() {
+fn spec_test_176() {
     let original = r##"<style>p{color:red;}</style>
 *foo*
 "##;
@@ -2053,11 +2427,11 @@ fn spec_test_145() {
 <p><em>foo</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_146() {
+fn spec_test_177() {
     let original = r##"<!-- foo -->*bar*
 *baz*
 "##;
@@ -2065,11 +2439,11 @@ fn spec_test_146() {
 <p><em>baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_147() {
+fn spec_test_178() {
     let original = r##"<script>
 foo
 </script>1. *bar*
@@ -2079,11 +2453,11 @@ foo
 </script>1. *bar*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_148() {
+fn spec_test_179() {
     let original = r##"<!-- Foo
 
 bar
@@ -2097,11 +2471,11 @@ bar
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_149() {
+fn spec_test_180() {
     let original = r##"<?php
 
   echo '>';
@@ -2117,21 +2491,21 @@ okay
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_150() {
+fn spec_test_181() {
     let original = r##"<!DOCTYPE html>
 "##;
     let expected = r##"<!DOCTYPE html>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_151() {
+fn spec_test_182() {
     let original = r##"<![CDATA[
 function matchwo(a,b)
 {
@@ -2161,11 +2535,11 @@ function matchwo(a,b)
 <p>okay</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_152() {
+fn spec_test_183() {
     let original = r##"  <!-- foo -->
 
     <!-- foo -->
@@ -2175,11 +2549,11 @@ fn spec_test_152() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_153() {
+fn spec_test_184() {
     let original = r##"  <div>
 
     <div>
@@ -2189,11 +2563,11 @@ fn spec_test_153() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_154() {
+fn spec_test_185() {
     let original = r##"Foo
 <div>
 bar
@@ -2205,11 +2579,11 @@ bar
 </div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_155() {
+fn spec_test_186() {
     let original = r##"<div>
 bar
 </div>
@@ -2221,11 +2595,11 @@ bar
 *foo*
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_156() {
+fn spec_test_187() {
     let original = r##"Foo
 <a href="bar">
 baz
@@ -2235,11 +2609,11 @@ baz
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_157() {
+fn spec_test_188() {
     let original = r##"<div>
 
 *Emphasized* text.
@@ -2251,11 +2625,11 @@ fn spec_test_157() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_158() {
+fn spec_test_189() {
     let original = r##"<div>
 *Emphasized* text.
 </div>
@@ -2265,11 +2639,11 @@ fn spec_test_158() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_159() {
+fn spec_test_190() {
     let original = r##"<table>
 
 <tr>
@@ -2291,11 +2665,11 @@ Hi
 </table>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_160() {
+fn spec_test_191() {
     let original = r##"<table>
 
   <tr>
@@ -2318,11 +2692,11 @@ fn spec_test_160() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_161() {
+fn spec_test_192() {
     let original = r##"[foo]: /url "title"
 
 [foo]
@@ -2330,11 +2704,11 @@ fn spec_test_161() {
     let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_162() {
+fn spec_test_193() {
     let original = r##"   [foo]: 
       /url  
            'the title'  
@@ -2344,11 +2718,11 @@ fn spec_test_162() {
     let expected = r##"<p><a href="/url" title="the title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_163() {
+fn spec_test_194() {
     let original = r##"[Foo*bar\]]:my_(url) 'title (with parens)'
 
 [Foo*bar\]]
@@ -2356,11 +2730,11 @@ fn spec_test_163() {
     let expected = r##"<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_164() {
+fn spec_test_195() {
     let original = r##"[Foo bar]:
 <my url>
 'title'
@@ -2370,11 +2744,11 @@ fn spec_test_164() {
     let expected = r##"<p><a href="my%20url" title="title">Foo bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_165() {
+fn spec_test_196() {
     let original = r##"[foo]: /url '
 title
 line1
@@ -2390,11 +2764,11 @@ line2
 ">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_166() {
+fn spec_test_197() {
     let original = r##"[foo]: /url 'title
 
 with blank line'
@@ -2406,11 +2780,11 @@ with blank line'
 <p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_167() {
+fn spec_test_198() {
     let original = r##"[foo]:
 /url
 
@@ -2419,11 +2793,11 @@ fn spec_test_167() {
     let expected = r##"<p><a href="/url">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_168() {
+fn spec_test_199() {
     let original = r##"[foo]:
 
 [foo]
@@ -2432,11 +2806,11 @@ fn spec_test_168() {
 <p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_169() {
+fn spec_test_200() {
     let original = r##"[foo]: <>
 
 [foo]
@@ -2444,11 +2818,11 @@ fn spec_test_169() {
     let expected = r##"<p><a href="">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_170() {
+fn spec_test_201() {
     let original = r##"[foo]: <bar>(baz)
 
 [foo]
@@ -2457,11 +2831,11 @@ fn spec_test_170() {
 <p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_171() {
+fn spec_test_202() {
     let original = r##"[foo]: /url\bar\*baz "foo\"bar\baz"
 
 [foo]
@@ -2469,11 +2843,11 @@ fn spec_test_171() {
     let expected = r##"<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_172() {
+fn spec_test_203() {
     let original = r##"[foo]
 
 [foo]: url
@@ -2481,11 +2855,11 @@ fn spec_test_172() {
     let expected = r##"<p><a href="url">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_173() {
+fn spec_test_204() {
     let original = r##"[foo]
 
 [foo]: first
@@ -2494,11 +2868,11 @@ fn spec_test_173() {
     let expected = r##"<p><a href="first">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_174() {
+fn spec_test_205() {
     let original = r##"[FOO]: /url
 
 [Foo]
@@ -2506,11 +2880,11 @@ fn spec_test_174() {
     let expected = r##"<p><a href="/url">Foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_175() {
+fn spec_test_206() {
     let original = r##"[ΑΓΩ]: /φου
 
 [αγω]
@@ -2518,20 +2892,20 @@ fn spec_test_175() {
     let expected = r##"<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_176() {
+fn spec_test_207() {
     let original = r##"[foo]: /url
 "##;
     let expected = r##""##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_177() {
+fn spec_test_208() {
     let original = r##"[
 foo
 ]: /url
@@ -2540,32 +2914,32 @@ bar
     let expected = r##"<p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_178() {
+fn spec_test_209() {
     let original = r##"[foo]: /url "title" ok
 "##;
     let expected = r##"<p>[foo]: /url &quot;title&quot; ok</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_179() {
+fn spec_test_210() {
     let original = r##"[foo]: /url
 "title" ok
 "##;
     let expected = r##"<p>&quot;title&quot; ok</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_180() {
+fn spec_test_211() {
     let original = r##"    [foo]: /url "title"
 
 [foo]
@@ -2575,11 +2949,11 @@ fn spec_test_180() {
 <p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_181() {
+fn spec_test_212() {
     let original = r##"```
 [foo]: /url
 ```
@@ -2591,11 +2965,11 @@ fn spec_test_181() {
 <p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_182() {
+fn spec_test_213() {
     let original = r##"Foo
 [bar]: /baz
 
@@ -2606,11 +2980,11 @@ fn spec_test_182() {
 <p>[bar]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_183() {
+fn spec_test_214() {
     let original = r##"# [Foo]
 [foo]: /url
 > bar
@@ -2621,11 +2995,11 @@ fn spec_test_183() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_184() {
+fn spec_test_215() {
     let original = r##"[foo]: /url
 bar
 ===
@@ -2635,11 +3009,11 @@ bar
 <p><a href="/url">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_185() {
+fn spec_test_216() {
     let original = r##"[foo]: /url
 ===
 [foo]
@@ -2648,11 +3022,11 @@ fn spec_test_185() {
 <a href="/url">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_186() {
+fn spec_test_217() {
     let original = r##"[foo]: /foo-url "foo"
 [bar]: /bar-url
   "bar"
@@ -2667,11 +3041,11 @@ fn spec_test_186() {
 <a href="/baz-url">baz</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_187() {
+fn spec_test_218() {
     let original = r##"[foo]
 
 > [foo]: /url
@@ -2681,20 +3055,11 @@ fn spec_test_187() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_188() {
-    let original = r##"[foo]: /url
-"##;
-    let expected = r##""##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_189() {
+fn spec_test_219() {
     let original = r##"aaa
 
 bbb
@@ -2703,11 +3068,11 @@ bbb
 <p>bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_190() {
+fn spec_test_220() {
     let original = r##"aaa
 bbb
 
@@ -2720,11 +3085,11 @@ bbb</p>
 ddd</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_191() {
+fn spec_test_221() {
     let original = r##"aaa
 
 
@@ -2734,11 +3099,11 @@ bbb
 <p>bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_192() {
+fn spec_test_222() {
     let original = r##"  aaa
  bbb
 "##;
@@ -2746,11 +3111,11 @@ fn spec_test_192() {
 bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_193() {
+fn spec_test_223() {
     let original = r##"aaa
              bbb
                                        ccc
@@ -2760,11 +3125,11 @@ bbb
 ccc</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_194() {
+fn spec_test_224() {
     let original = r##"   aaa
 bbb
 "##;
@@ -2772,11 +3137,11 @@ bbb
 bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_195() {
+fn spec_test_225() {
     let original = r##"    aaa
 bbb
 "##;
@@ -2785,11 +3150,11 @@ bbb
 <p>bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_196() {
+fn spec_test_226() {
     let original = r##"aaa     
 bbb     
 "##;
@@ -2797,11 +3162,11 @@ bbb
 bbb</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_197() {
+fn spec_test_227() {
     let original = r##"  
 
 aaa
@@ -2815,11 +3180,11 @@ aaa
 <h1>aaa</h1>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_198() {
+fn spec_test_228() {
     let original = r##"> # Foo
 > bar
 > baz
@@ -2831,11 +3196,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_199() {
+fn spec_test_229() {
     let original = r##"># Foo
 >bar
 > baz
@@ -2847,11 +3212,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_200() {
+fn spec_test_230() {
     let original = r##"   > # Foo
    > bar
  > baz
@@ -2863,11 +3228,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_201() {
+fn spec_test_231() {
     let original = r##"    > # Foo
     > bar
     > baz
@@ -2878,11 +3243,11 @@ fn spec_test_201() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_202() {
+fn spec_test_232() {
     let original = r##"> # Foo
 > bar
 baz
@@ -2894,11 +3259,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_203() {
+fn spec_test_233() {
     let original = r##"> bar
 baz
 > foo
@@ -2910,11 +3275,11 @@ foo</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_204() {
+fn spec_test_234() {
     let original = r##"> foo
 ---
 "##;
@@ -2924,11 +3289,11 @@ fn spec_test_204() {
 <hr />
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_205() {
+fn spec_test_235() {
     let original = r##"> - foo
 - bar
 "##;
@@ -2942,11 +3307,11 @@ fn spec_test_205() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_206() {
+fn spec_test_236() {
     let original = r##">     foo
     bar
 "##;
@@ -2958,11 +3323,11 @@ fn spec_test_206() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_207() {
+fn spec_test_237() {
     let original = r##"> ```
 foo
 ```
@@ -2974,11 +3339,11 @@ foo
 <pre><code></code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_208() {
+fn spec_test_238() {
     let original = r##"> foo
     - bar
 "##;
@@ -2988,22 +3353,22 @@ fn spec_test_208() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_209() {
+fn spec_test_239() {
     let original = r##">
 "##;
     let expected = r##"<blockquote>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_210() {
+fn spec_test_240() {
     let original = r##">
 >  
 > 
@@ -3012,11 +3377,11 @@ fn spec_test_210() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_211() {
+fn spec_test_241() {
     let original = r##">
 > foo
 >  
@@ -3026,11 +3391,11 @@ fn spec_test_211() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_212() {
+fn spec_test_242() {
     let original = r##"> foo
 
 > bar
@@ -3043,11 +3408,11 @@ fn spec_test_212() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_213() {
+fn spec_test_243() {
     let original = r##"> foo
 > bar
 "##;
@@ -3057,11 +3422,11 @@ bar</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_214() {
+fn spec_test_244() {
     let original = r##"> foo
 >
 > bar
@@ -3072,11 +3437,11 @@ fn spec_test_214() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_215() {
+fn spec_test_245() {
     let original = r##"foo
 > bar
 "##;
@@ -3086,11 +3451,11 @@ fn spec_test_215() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_216() {
+fn spec_test_246() {
     let original = r##"> aaa
 ***
 > bbb
@@ -3104,11 +3469,11 @@ fn spec_test_216() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_217() {
+fn spec_test_247() {
     let original = r##"> bar
 baz
 "##;
@@ -3118,11 +3483,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_218() {
+fn spec_test_248() {
     let original = r##"> bar
 
 baz
@@ -3133,11 +3498,11 @@ baz
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_219() {
+fn spec_test_249() {
     let original = r##"> bar
 >
 baz
@@ -3148,11 +3513,11 @@ baz
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_220() {
+fn spec_test_250() {
     let original = r##"> > > foo
 bar
 "##;
@@ -3166,11 +3531,11 @@ bar</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_221() {
+fn spec_test_251() {
     let original = r##">>> foo
 > bar
 >>baz
@@ -3186,11 +3551,11 @@ baz</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_222() {
+fn spec_test_252() {
     let original = r##">     code
 
 >    not code
@@ -3204,11 +3569,11 @@ fn spec_test_222() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_223() {
+fn spec_test_253() {
     let original = r##"A paragraph
 with two lines.
 
@@ -3225,11 +3590,11 @@ with two lines.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_224() {
+fn spec_test_254() {
     let original = r##"1.  A paragraph
     with two lines.
 
@@ -3250,11 +3615,11 @@ with two lines.</p>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_225() {
+fn spec_test_255() {
     let original = r##"- one
 
  two
@@ -3265,11 +3630,11 @@ fn spec_test_225() {
 <p>two</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_226() {
+fn spec_test_256() {
     let original = r##"- one
 
   two
@@ -3282,11 +3647,11 @@ fn spec_test_226() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_227() {
+fn spec_test_257() {
     let original = r##" -    one
 
      two
@@ -3298,11 +3663,11 @@ fn spec_test_227() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_228() {
+fn spec_test_258() {
     let original = r##" -    one
 
       two
@@ -3315,11 +3680,11 @@ fn spec_test_228() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_229() {
+fn spec_test_259() {
     let original = r##"   > > 1.  one
 >>
 >>     two
@@ -3336,11 +3701,11 @@ fn spec_test_229() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_230() {
+fn spec_test_260() {
     let original = r##">>- one
 >>
   >  > two
@@ -3355,11 +3720,11 @@ fn spec_test_230() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_231() {
+fn spec_test_261() {
     let original = r##"-one
 
 2.two
@@ -3368,11 +3733,11 @@ fn spec_test_231() {
 <p>2.two</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_232() {
+fn spec_test_262() {
     let original = r##"- foo
 
 
@@ -3386,11 +3751,11 @@ fn spec_test_232() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_233() {
+fn spec_test_263() {
     let original = r##"1.  foo
 
     ```
@@ -3414,11 +3779,11 @@ fn spec_test_233() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_234() {
+fn spec_test_264() {
     let original = r##"- Foo
 
       bar
@@ -3438,11 +3803,11 @@ baz
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_235() {
+fn spec_test_265() {
     let original = r##"123456789. ok
 "##;
     let expected = r##"<ol start="123456789">
@@ -3450,21 +3815,21 @@ fn spec_test_235() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_236() {
+fn spec_test_266() {
     let original = r##"1234567890. not ok
 "##;
     let expected = r##"<p>1234567890. not ok</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_237() {
+fn spec_test_267() {
     let original = r##"0. ok
 "##;
     let expected = r##"<ol start="0">
@@ -3472,11 +3837,11 @@ fn spec_test_237() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_238() {
+fn spec_test_268() {
     let original = r##"003. ok
 "##;
     let expected = r##"<ol start="3">
@@ -3484,21 +3849,21 @@ fn spec_test_238() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_239() {
+fn spec_test_269() {
     let original = r##"-1. not ok
 "##;
     let expected = r##"<p>-1. not ok</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_240() {
+fn spec_test_270() {
     let original = r##"- foo
 
       bar
@@ -3512,11 +3877,11 @@ fn spec_test_240() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_241() {
+fn spec_test_271() {
     let original = r##"  10.  foo
 
            bar
@@ -3530,11 +3895,11 @@ fn spec_test_241() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_242() {
+fn spec_test_272() {
     let original = r##"    indented code
 
 paragraph
@@ -3548,11 +3913,11 @@ paragraph
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_243() {
+fn spec_test_273() {
     let original = r##"1.     indented code
 
    paragraph
@@ -3570,11 +3935,11 @@ fn spec_test_243() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_244() {
+fn spec_test_274() {
     let original = r##"1.      indented code
 
    paragraph
@@ -3592,11 +3957,11 @@ fn spec_test_244() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_245() {
+fn spec_test_275() {
     let original = r##"   foo
 
 bar
@@ -3605,11 +3970,11 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_246() {
+fn spec_test_276() {
     let original = r##"-    foo
 
   bar
@@ -3620,11 +3985,11 @@ fn spec_test_246() {
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_247() {
+fn spec_test_277() {
     let original = r##"-  foo
 
    bar
@@ -3637,11 +4002,11 @@ fn spec_test_247() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_248() {
+fn spec_test_278() {
     let original = r##"-
   foo
 -
@@ -3664,11 +4029,11 @@ fn spec_test_248() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_249() {
+fn spec_test_279() {
     let original = r##"-   
   foo
 "##;
@@ -3677,11 +4042,11 @@ fn spec_test_249() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_250() {
+fn spec_test_280() {
     let original = r##"-
 
   foo
@@ -3692,11 +4057,11 @@ fn spec_test_250() {
 <p>foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_251() {
+fn spec_test_281() {
     let original = r##"- foo
 -
 - bar
@@ -3708,11 +4073,11 @@ fn spec_test_251() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_252() {
+fn spec_test_282() {
     let original = r##"- foo
 -   
 - bar
@@ -3724,11 +4089,11 @@ fn spec_test_252() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_253() {
+fn spec_test_283() {
     let original = r##"1. foo
 2.
 3. bar
@@ -3740,11 +4105,11 @@ fn spec_test_253() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_254() {
+fn spec_test_284() {
     let original = r##"*
 "##;
     let expected = r##"<ul>
@@ -3752,11 +4117,11 @@ fn spec_test_254() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_255() {
+fn spec_test_285() {
     let original = r##"foo
 *
 
@@ -3769,11 +4134,11 @@ foo
 1.</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_256() {
+fn spec_test_286() {
     let original = r##" 1.  A paragraph
      with two lines.
 
@@ -3794,11 +4159,11 @@ with two lines.</p>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_257() {
+fn spec_test_287() {
     let original = r##"  1.  A paragraph
       with two lines.
 
@@ -3819,11 +4184,11 @@ with two lines.</p>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_258() {
+fn spec_test_288() {
     let original = r##"   1.  A paragraph
        with two lines.
 
@@ -3844,11 +4209,11 @@ with two lines.</p>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_259() {
+fn spec_test_289() {
     let original = r##"    1.  A paragraph
         with two lines.
 
@@ -3865,11 +4230,11 @@ fn spec_test_259() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_260() {
+fn spec_test_290() {
     let original = r##"  1.  A paragraph
 with two lines.
 
@@ -3890,11 +4255,11 @@ with two lines.</p>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_261() {
+fn spec_test_291() {
     let original = r##"  1.  A paragraph
     with two lines.
 "##;
@@ -3904,11 +4269,11 @@ with two lines.</li>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_262() {
+fn spec_test_292() {
     let original = r##"> 1. > Blockquote
 continued here.
 "##;
@@ -3924,11 +4289,11 @@ continued here.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_263() {
+fn spec_test_293() {
     let original = r##"> 1. > Blockquote
 > continued here.
 "##;
@@ -3944,11 +4309,11 @@ continued here.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_264() {
+fn spec_test_294() {
     let original = r##"- foo
   - bar
     - baz
@@ -3971,11 +4336,11 @@ fn spec_test_264() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_265() {
+fn spec_test_295() {
     let original = r##"- foo
  - bar
   - baz
@@ -3989,11 +4354,11 @@ fn spec_test_265() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_266() {
+fn spec_test_296() {
     let original = r##"10) foo
     - bar
 "##;
@@ -4006,11 +4371,11 @@ fn spec_test_266() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_267() {
+fn spec_test_297() {
     let original = r##"10) foo
    - bar
 "##;
@@ -4022,11 +4387,11 @@ fn spec_test_267() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_268() {
+fn spec_test_298() {
     let original = r##"- - foo
 "##;
     let expected = r##"<ul>
@@ -4038,11 +4403,11 @@ fn spec_test_268() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_269() {
+fn spec_test_299() {
     let original = r##"1. - 2. foo
 "##;
     let expected = r##"<ol>
@@ -4058,11 +4423,11 @@ fn spec_test_269() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_270() {
+fn spec_test_300() {
     let original = r##"- # Foo
 - Bar
   ---
@@ -4078,11 +4443,11 @@ baz</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_271() {
+fn spec_test_301() {
     let original = r##"- foo
 - bar
 + baz
@@ -4096,11 +4461,11 @@ fn spec_test_271() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_272() {
+fn spec_test_302() {
     let original = r##"1. foo
 2. bar
 3) baz
@@ -4114,11 +4479,11 @@ fn spec_test_272() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_273() {
+fn spec_test_303() {
     let original = r##"Foo
 - bar
 - baz
@@ -4130,11 +4495,11 @@ fn spec_test_273() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_274() {
+fn spec_test_304() {
     let original = r##"The number of windows in my house is
 14.  The number of doors is 6.
 "##;
@@ -4142,11 +4507,11 @@ fn spec_test_274() {
 14.  The number of doors is 6.</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_275() {
+fn spec_test_305() {
     let original = r##"The number of windows in my house is
 1.  The number of doors is 6.
 "##;
@@ -4156,11 +4521,11 @@ fn spec_test_275() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_276() {
+fn spec_test_306() {
     let original = r##"- foo
 
 - bar
@@ -4181,11 +4546,11 @@ fn spec_test_276() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_277() {
+fn spec_test_307() {
     let original = r##"- foo
   - bar
     - baz
@@ -4209,11 +4574,11 @@ fn spec_test_277() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_278() {
+fn spec_test_308() {
     let original = r##"- foo
 - bar
 
@@ -4233,11 +4598,11 @@ fn spec_test_278() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_279() {
+fn spec_test_309() {
     let original = r##"-   foo
 
     notcode
@@ -4262,11 +4627,11 @@ fn spec_test_279() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_280() {
+fn spec_test_310() {
     let original = r##"- a
  - b
   - c
@@ -4286,11 +4651,11 @@ fn spec_test_280() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_281() {
+fn spec_test_311() {
     let original = r##"1. a
 
   2. b
@@ -4310,11 +4675,11 @@ fn spec_test_281() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_282() {
+fn spec_test_312() {
     let original = r##"- a
  - b
   - c
@@ -4330,11 +4695,11 @@ fn spec_test_282() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_283() {
+fn spec_test_313() {
     let original = r##"1. a
 
   2. b
@@ -4353,11 +4718,11 @@ fn spec_test_283() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_284() {
+fn spec_test_314() {
     let original = r##"- a
 - b
 
@@ -4376,11 +4741,11 @@ fn spec_test_284() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_285() {
+fn spec_test_315() {
     let original = r##"* a
 *
 
@@ -4397,11 +4762,11 @@ fn spec_test_285() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_286() {
+fn spec_test_316() {
     let original = r##"- a
 - b
 
@@ -4422,11 +4787,11 @@ fn spec_test_286() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_287() {
+fn spec_test_317() {
     let original = r##"- a
 - b
 
@@ -4446,11 +4811,11 @@ fn spec_test_287() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_288() {
+fn spec_test_318() {
     let original = r##"- a
 - ```
   b
@@ -4471,11 +4836,11 @@ fn spec_test_288() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_289() {
+fn spec_test_319() {
     let original = r##"- a
   - b
 
@@ -4495,11 +4860,11 @@ fn spec_test_289() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_290() {
+fn spec_test_320() {
     let original = r##"* a
   > b
   >
@@ -4515,11 +4880,11 @@ fn spec_test_290() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_291() {
+fn spec_test_321() {
     let original = r##"- a
   > b
   ```
@@ -4539,11 +4904,11 @@ fn spec_test_291() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_292() {
+fn spec_test_322() {
     let original = r##"- a
 "##;
     let expected = r##"<ul>
@@ -4551,11 +4916,11 @@ fn spec_test_292() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_293() {
+fn spec_test_323() {
     let original = r##"- a
   - b
 "##;
@@ -4568,11 +4933,11 @@ fn spec_test_293() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_294() {
+fn spec_test_324() {
     let original = r##"1. ```
    foo
    ```
@@ -4588,11 +4953,11 @@ fn spec_test_294() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_295() {
+fn spec_test_325() {
     let original = r##"* foo
   * bar
 
@@ -4609,11 +4974,11 @@ fn spec_test_295() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_296() {
+fn spec_test_326() {
     let original = r##"- a
   - b
   - c
@@ -4640,369 +5005,17 @@ fn spec_test_296() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_297() {
+fn spec_test_327() {
     let original = r##"`hi`lo`
 "##;
     let expected = r##"<p><code>hi</code>lo`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_298() {
-    let original = r##"\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
-"##;
-    let expected = r##"<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_299() {
-    let original = r##"\	\A\a\ \3\φ\«
-"##;
-    let expected = r##"<p>\	\A\a\ \3\φ\«</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_300() {
-    let original = r##"\*not emphasized*
-\<br/> not a tag
-\[not a link](/foo)
-\`not code`
-1\. not a list
-\* not a list
-\# not a heading
-\[foo]: /url "not a reference"
-\&ouml; not a character entity
-"##;
-    let expected = r##"<p>*not emphasized*
-&lt;br/&gt; not a tag
-[not a link](/foo)
-`not code`
-1. not a list
-* not a list
-# not a heading
-[foo]: /url &quot;not a reference&quot;
-&amp;ouml; not a character entity</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_301() {
-    let original = r##"\\*emphasis*
-"##;
-    let expected = r##"<p>\<em>emphasis</em></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_302() {
-    let original = r##"foo\
-bar
-"##;
-    let expected = r##"<p>foo<br />
-bar</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_303() {
-    let original = r##"`` \[\` ``
-"##;
-    let expected = r##"<p><code>\[\`</code></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_304() {
-    let original = r##"    \[\]
-"##;
-    let expected = r##"<pre><code>\[\]
-</code></pre>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_305() {
-    let original = r##"~~~
-\[\]
-~~~
-"##;
-    let expected = r##"<pre><code>\[\]
-</code></pre>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_306() {
-    let original = r##"<http://example.com?find=\*>
-"##;
-    let expected = r##"<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_307() {
-    let original = r##"<a href="/bar\/)">
-"##;
-    let expected = r##"<a href="/bar\/)">
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_308() {
-    let original = r##"[foo](/bar\* "ti\*tle")
-"##;
-    let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_309() {
-    let original = r##"[foo]
-
-[foo]: /bar\* "ti\*tle"
-"##;
-    let expected = r##"<p><a href="/bar*" title="ti*tle">foo</a></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_310() {
-    let original = r##"``` foo\+bar
-foo
-```
-"##;
-    let expected = r##"<pre><code class="language-foo+bar">foo
-</code></pre>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_311() {
-    let original = r##"&nbsp; &amp; &copy; &AElig; &Dcaron;
-&frac34; &HilbertSpace; &DifferentialD;
-&ClockwiseContourIntegral; &ngE;
-"##;
-    let expected = r##"<p>  &amp; © Æ Ď
-¾ ℋ ⅆ
-∲ ≧̸</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_312() {
-    let original = r##"&#35; &#1234; &#992; &#0;
-"##;
-    let expected = r##"<p># Ӓ Ϡ �</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_313() {
-    let original = r##"&#X22; &#XD06; &#xcab;
-"##;
-    let expected = r##"<p>&quot; ആ ಫ</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_314() {
-    let original = r##"&nbsp &x; &#; &#x;
-&#87654321;
-&#abcdef0;
-&ThisIsNotDefined; &hi?;
-"##;
-    let expected = r##"<p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
-&amp;#87654321;
-&amp;#abcdef0;
-&amp;ThisIsNotDefined; &amp;hi?;</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_315() {
-    let original = r##"&copy
-"##;
-    let expected = r##"<p>&amp;copy</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_316() {
-    let original = r##"&MadeUpEntity;
-"##;
-    let expected = r##"<p>&amp;MadeUpEntity;</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_317() {
-    let original = r##"<a href="&ouml;&ouml;.html">
-"##;
-    let expected = r##"<a href="&ouml;&ouml;.html">
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_318() {
-    let original = r##"[foo](/f&ouml;&ouml; "f&ouml;&ouml;")
-"##;
-    let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_319() {
-    let original = r##"[foo]
-
-[foo]: /f&ouml;&ouml; "f&ouml;&ouml;"
-"##;
-    let expected = r##"<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_320() {
-    let original = r##"``` f&ouml;&ouml;
-foo
-```
-"##;
-    let expected = r##"<pre><code class="language-föö">foo
-</code></pre>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_321() {
-    let original = r##"`f&ouml;&ouml;`
-"##;
-    let expected = r##"<p><code>f&amp;ouml;&amp;ouml;</code></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_322() {
-    let original = r##"    f&ouml;f&ouml;
-"##;
-    let expected = r##"<pre><code>f&amp;ouml;f&amp;ouml;
-</code></pre>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_323() {
-    let original = r##"&#42;foo&#42;
-*foo*
-"##;
-    let expected = r##"<p>*foo*
-<em>foo</em></p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_324() {
-    let original = r##"&#42; foo
-
-* foo
-"##;
-    let expected = r##"<p>* foo</p>
-<ul>
-<li>foo</li>
-</ul>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_325() {
-    let original = r##"foo&#10;&#10;bar
-"##;
-    let expected = r##"<p>foo
-
-bar</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_326() {
-    let original = r##"&#9;foo
-"##;
-    let expected = r##"<p>	foo</p>
-"##;
-
-    test_markdown_html(original, expected, false);
-}
-
-#[test]
-fn spec_test_327() {
-    let original = r##"[a](url &quot;tit&quot;)
-"##;
-    let expected = r##"<p>[a](url &quot;tit&quot;)</p>
-"##;
-
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5012,7 +5025,7 @@ fn spec_test_328() {
     let expected = r##"<p><code>foo</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5022,7 +5035,7 @@ fn spec_test_329() {
     let expected = r##"<p><code>foo ` bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5032,7 +5045,7 @@ fn spec_test_330() {
     let expected = r##"<p><code>``</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5042,7 +5055,7 @@ fn spec_test_331() {
     let expected = r##"<p><code> `` </code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5052,7 +5065,7 @@ fn spec_test_332() {
     let expected = r##"<p><code> a</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5062,7 +5075,7 @@ fn spec_test_333() {
     let expected = r##"<p><code> b </code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5074,7 +5087,7 @@ fn spec_test_334() {
 <code>  </code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5088,7 +5101,7 @@ baz
     let expected = r##"<p><code>foo bar   baz</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5100,7 +5113,7 @@ foo
     let expected = r##"<p><code>foo </code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5111,7 +5124,7 @@ baz`
     let expected = r##"<p><code>foo   bar  baz</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5121,7 +5134,7 @@ fn spec_test_338() {
     let expected = r##"<p><code>foo\</code>bar`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5131,7 +5144,7 @@ fn spec_test_339() {
     let expected = r##"<p><code>foo`bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5141,7 +5154,7 @@ fn spec_test_340() {
     let expected = r##"<p><code>foo `` bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5151,7 +5164,7 @@ fn spec_test_341() {
     let expected = r##"<p>*foo<code>*</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5161,7 +5174,7 @@ fn spec_test_342() {
     let expected = r##"<p>[not a <code>link](/foo</code>)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5171,7 +5184,7 @@ fn spec_test_343() {
     let expected = r##"<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5181,7 +5194,7 @@ fn spec_test_344() {
     let expected = r##"<p><a href="`">`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5191,7 +5204,7 @@ fn spec_test_345() {
     let expected = r##"<p><code>&lt;http://foo.bar.</code>baz&gt;`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5201,7 +5214,7 @@ fn spec_test_346() {
     let expected = r##"<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5211,7 +5224,7 @@ fn spec_test_347() {
     let expected = r##"<p>```foo``</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5221,7 +5234,7 @@ fn spec_test_348() {
     let expected = r##"<p>`foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5231,7 +5244,7 @@ fn spec_test_349() {
     let expected = r##"<p>`foo<code>bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5241,7 +5254,7 @@ fn spec_test_350() {
     let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5251,7 +5264,7 @@ fn spec_test_351() {
     let expected = r##"<p>a * foo bar*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5261,7 +5274,7 @@ fn spec_test_352() {
     let expected = r##"<p>a*&quot;foo&quot;*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5271,7 +5284,7 @@ fn spec_test_353() {
     let expected = r##"<p>* a *</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5281,7 +5294,7 @@ fn spec_test_354() {
     let expected = r##"<p>foo<em>bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5291,7 +5304,7 @@ fn spec_test_355() {
     let expected = r##"<p>5<em>6</em>78</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5301,7 +5314,7 @@ fn spec_test_356() {
     let expected = r##"<p><em>foo bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5311,7 +5324,7 @@ fn spec_test_357() {
     let expected = r##"<p>_ foo bar_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5321,7 +5334,7 @@ fn spec_test_358() {
     let expected = r##"<p>a_&quot;foo&quot;_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5331,7 +5344,7 @@ fn spec_test_359() {
     let expected = r##"<p>foo_bar_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5341,7 +5354,7 @@ fn spec_test_360() {
     let expected = r##"<p>5_6_78</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5351,7 +5364,7 @@ fn spec_test_361() {
     let expected = r##"<p>пристаням_стремятся_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5361,7 +5374,7 @@ fn spec_test_362() {
     let expected = r##"<p>aa_&quot;bb&quot;_cc</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5371,7 +5384,7 @@ fn spec_test_363() {
     let expected = r##"<p>foo-<em>(bar)</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5381,7 +5394,7 @@ fn spec_test_364() {
     let expected = r##"<p>_foo*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5391,7 +5404,7 @@ fn spec_test_365() {
     let expected = r##"<p>*foo bar *</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5403,7 +5416,7 @@ fn spec_test_366() {
 *</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5413,7 +5426,7 @@ fn spec_test_367() {
     let expected = r##"<p>*(*foo)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5423,7 +5436,7 @@ fn spec_test_368() {
     let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5433,7 +5446,7 @@ fn spec_test_369() {
     let expected = r##"<p><em>foo</em>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5443,7 +5456,7 @@ fn spec_test_370() {
     let expected = r##"<p>_foo bar _</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5453,7 +5466,7 @@ fn spec_test_371() {
     let expected = r##"<p>_(_foo)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5463,7 +5476,7 @@ fn spec_test_372() {
     let expected = r##"<p><em>(<em>foo</em>)</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5473,7 +5486,7 @@ fn spec_test_373() {
     let expected = r##"<p>_foo_bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5483,7 +5496,7 @@ fn spec_test_374() {
     let expected = r##"<p>_пристаням_стремятся</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5493,7 +5506,7 @@ fn spec_test_375() {
     let expected = r##"<p><em>foo_bar_baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5503,7 +5516,7 @@ fn spec_test_376() {
     let expected = r##"<p><em>(bar)</em>.</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5513,7 +5526,7 @@ fn spec_test_377() {
     let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5523,7 +5536,7 @@ fn spec_test_378() {
     let expected = r##"<p>** foo bar**</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5533,7 +5546,7 @@ fn spec_test_379() {
     let expected = r##"<p>a**&quot;foo&quot;**</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5543,7 +5556,7 @@ fn spec_test_380() {
     let expected = r##"<p>foo<strong>bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5553,7 +5566,7 @@ fn spec_test_381() {
     let expected = r##"<p><strong>foo bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5563,7 +5576,7 @@ fn spec_test_382() {
     let expected = r##"<p>__ foo bar__</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5575,7 +5588,7 @@ foo bar__
 foo bar__</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5585,7 +5598,7 @@ fn spec_test_384() {
     let expected = r##"<p>a__&quot;foo&quot;__</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5595,7 +5608,7 @@ fn spec_test_385() {
     let expected = r##"<p>foo__bar__</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5605,7 +5618,7 @@ fn spec_test_386() {
     let expected = r##"<p>5__6__78</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5615,7 +5628,7 @@ fn spec_test_387() {
     let expected = r##"<p>пристаням__стремятся__</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5625,7 +5638,7 @@ fn spec_test_388() {
     let expected = r##"<p><strong>foo, <strong>bar</strong>, baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5635,7 +5648,7 @@ fn spec_test_389() {
     let expected = r##"<p>foo-<strong>(bar)</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5645,7 +5658,7 @@ fn spec_test_390() {
     let expected = r##"<p>**foo bar **</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5655,7 +5668,7 @@ fn spec_test_391() {
     let expected = r##"<p>**(**foo)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5665,7 +5678,7 @@ fn spec_test_392() {
     let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5677,7 +5690,7 @@ fn spec_test_393() {
 <em>Asclepias physocarpa</em>)</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5687,7 +5700,7 @@ fn spec_test_394() {
     let expected = r##"<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5697,7 +5710,7 @@ fn spec_test_395() {
     let expected = r##"<p><strong>foo</strong>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5707,7 +5720,7 @@ fn spec_test_396() {
     let expected = r##"<p>__foo bar __</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5717,7 +5730,7 @@ fn spec_test_397() {
     let expected = r##"<p>__(__foo)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5727,7 +5740,7 @@ fn spec_test_398() {
     let expected = r##"<p><em>(<strong>foo</strong>)</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5737,7 +5750,7 @@ fn spec_test_399() {
     let expected = r##"<p>__foo__bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5747,7 +5760,7 @@ fn spec_test_400() {
     let expected = r##"<p>__пристаням__стремятся</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5757,7 +5770,7 @@ fn spec_test_401() {
     let expected = r##"<p><strong>foo__bar__baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5767,7 +5780,7 @@ fn spec_test_402() {
     let expected = r##"<p><strong>(bar)</strong>.</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5777,7 +5790,7 @@ fn spec_test_403() {
     let expected = r##"<p><em>foo <a href="/url">bar</a></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5789,7 +5802,7 @@ bar*
 bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5799,7 +5812,7 @@ fn spec_test_405() {
     let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5809,7 +5822,7 @@ fn spec_test_406() {
     let expected = r##"<p><em>foo <em>bar</em> baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5819,7 +5832,7 @@ fn spec_test_407() {
     let expected = r##"<p><em><em>foo</em> bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5829,7 +5842,7 @@ fn spec_test_408() {
     let expected = r##"<p><em>foo <em>bar</em></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5839,7 +5852,7 @@ fn spec_test_409() {
     let expected = r##"<p><em>foo <strong>bar</strong> baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5849,7 +5862,7 @@ fn spec_test_410() {
     let expected = r##"<p><em>foo<strong>bar</strong>baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5859,7 +5872,7 @@ fn spec_test_411() {
     let expected = r##"<p><em>foo**bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5869,7 +5882,7 @@ fn spec_test_412() {
     let expected = r##"<p><em><strong>foo</strong> bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5879,7 +5892,7 @@ fn spec_test_413() {
     let expected = r##"<p><em>foo <strong>bar</strong></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5889,7 +5902,7 @@ fn spec_test_414() {
     let expected = r##"<p><em>foo<strong>bar</strong></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5899,7 +5912,7 @@ fn spec_test_415() {
     let expected = r##"<p>foo<em><strong>bar</strong></em>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5909,7 +5922,7 @@ fn spec_test_416() {
     let expected = r##"<p>foo<strong><strong><strong>bar</strong></strong></strong>***baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5919,7 +5932,7 @@ fn spec_test_417() {
     let expected = r##"<p><em>foo <strong>bar <em>baz</em> bim</strong> bop</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5929,7 +5942,7 @@ fn spec_test_418() {
     let expected = r##"<p><em>foo <a href="/url"><em>bar</em></a></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5939,7 +5952,7 @@ fn spec_test_419() {
     let expected = r##"<p>** is not an empty emphasis</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5949,7 +5962,7 @@ fn spec_test_420() {
     let expected = r##"<p>**** is not an empty strong emphasis</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5959,7 +5972,7 @@ fn spec_test_421() {
     let expected = r##"<p><strong>foo <a href="/url">bar</a></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5971,7 +5984,7 @@ bar**
 bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5981,7 +5994,7 @@ fn spec_test_423() {
     let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -5991,7 +6004,7 @@ fn spec_test_424() {
     let expected = r##"<p><strong>foo <strong>bar</strong> baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6001,7 +6014,7 @@ fn spec_test_425() {
     let expected = r##"<p><strong><strong>foo</strong> bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6011,7 +6024,7 @@ fn spec_test_426() {
     let expected = r##"<p><strong>foo <strong>bar</strong></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6021,7 +6034,7 @@ fn spec_test_427() {
     let expected = r##"<p><strong>foo <em>bar</em> baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6031,7 +6044,7 @@ fn spec_test_428() {
     let expected = r##"<p><strong>foo<em>bar</em>baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6041,7 +6054,7 @@ fn spec_test_429() {
     let expected = r##"<p><strong><em>foo</em> bar</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6051,7 +6064,7 @@ fn spec_test_430() {
     let expected = r##"<p><strong>foo <em>bar</em></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6063,7 +6076,7 @@ bim* bop**
 bim</em> bop</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6073,7 +6086,7 @@ fn spec_test_432() {
     let expected = r##"<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6083,7 +6096,7 @@ fn spec_test_433() {
     let expected = r##"<p>__ is not an empty emphasis</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6093,7 +6106,7 @@ fn spec_test_434() {
     let expected = r##"<p>____ is not an empty strong emphasis</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6103,7 +6116,7 @@ fn spec_test_435() {
     let expected = r##"<p>foo ***</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6113,7 +6126,7 @@ fn spec_test_436() {
     let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6123,7 +6136,7 @@ fn spec_test_437() {
     let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6133,7 +6146,7 @@ fn spec_test_438() {
     let expected = r##"<p>foo *****</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6143,7 +6156,7 @@ fn spec_test_439() {
     let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6153,7 +6166,7 @@ fn spec_test_440() {
     let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6163,7 +6176,7 @@ fn spec_test_441() {
     let expected = r##"<p>*<em>foo</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6173,7 +6186,7 @@ fn spec_test_442() {
     let expected = r##"<p><em>foo</em>*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6183,7 +6196,7 @@ fn spec_test_443() {
     let expected = r##"<p>*<strong>foo</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6193,7 +6206,7 @@ fn spec_test_444() {
     let expected = r##"<p>***<em>foo</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6203,7 +6216,7 @@ fn spec_test_445() {
     let expected = r##"<p><strong>foo</strong>*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6213,7 +6226,7 @@ fn spec_test_446() {
     let expected = r##"<p><em>foo</em>***</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6223,7 +6236,7 @@ fn spec_test_447() {
     let expected = r##"<p>foo ___</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6233,7 +6246,7 @@ fn spec_test_448() {
     let expected = r##"<p>foo <em>_</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6243,7 +6256,7 @@ fn spec_test_449() {
     let expected = r##"<p>foo <em>*</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6253,7 +6266,7 @@ fn spec_test_450() {
     let expected = r##"<p>foo _____</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6263,7 +6276,7 @@ fn spec_test_451() {
     let expected = r##"<p>foo <strong>_</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6273,7 +6286,7 @@ fn spec_test_452() {
     let expected = r##"<p>foo <strong>*</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6283,7 +6296,7 @@ fn spec_test_453() {
     let expected = r##"<p>_<em>foo</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6293,7 +6306,7 @@ fn spec_test_454() {
     let expected = r##"<p><em>foo</em>_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6303,7 +6316,7 @@ fn spec_test_455() {
     let expected = r##"<p>_<strong>foo</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6313,7 +6326,7 @@ fn spec_test_456() {
     let expected = r##"<p>___<em>foo</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6323,7 +6336,7 @@ fn spec_test_457() {
     let expected = r##"<p><strong>foo</strong>_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6333,7 +6346,7 @@ fn spec_test_458() {
     let expected = r##"<p><em>foo</em>___</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6343,7 +6356,7 @@ fn spec_test_459() {
     let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6353,7 +6366,7 @@ fn spec_test_460() {
     let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6363,7 +6376,7 @@ fn spec_test_461() {
     let expected = r##"<p><strong>foo</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6373,7 +6386,7 @@ fn spec_test_462() {
     let expected = r##"<p><em><em>foo</em></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6383,7 +6396,7 @@ fn spec_test_463() {
     let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6393,7 +6406,7 @@ fn spec_test_464() {
     let expected = r##"<p><strong><strong>foo</strong></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6403,7 +6416,7 @@ fn spec_test_465() {
     let expected = r##"<p><strong><strong><strong>foo</strong></strong></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6413,7 +6426,7 @@ fn spec_test_466() {
     let expected = r##"<p><em><strong>foo</strong></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6423,7 +6436,7 @@ fn spec_test_467() {
     let expected = r##"<p><em><strong><strong>foo</strong></strong></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6433,7 +6446,7 @@ fn spec_test_468() {
     let expected = r##"<p><em>foo _bar</em> baz_</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6443,7 +6456,7 @@ fn spec_test_469() {
     let expected = r##"<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6453,7 +6466,7 @@ fn spec_test_470() {
     let expected = r##"<p>**foo <strong>bar baz</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6463,7 +6476,7 @@ fn spec_test_471() {
     let expected = r##"<p>*foo <em>bar baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6473,7 +6486,7 @@ fn spec_test_472() {
     let expected = r##"<p>*<a href="/url">bar*</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6483,7 +6496,7 @@ fn spec_test_473() {
     let expected = r##"<p>_foo <a href="/url">bar_</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6493,7 +6506,7 @@ fn spec_test_474() {
     let expected = r##"<p>*<img src="foo" title="*"/></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6503,7 +6516,7 @@ fn spec_test_475() {
     let expected = r##"<p>**<a href="**"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6513,7 +6526,7 @@ fn spec_test_476() {
     let expected = r##"<p>__<a href="__"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6523,7 +6536,7 @@ fn spec_test_477() {
     let expected = r##"<p><em>a <code>*</code></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6533,7 +6546,7 @@ fn spec_test_478() {
     let expected = r##"<p><em>a <code>_</code></em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6543,7 +6556,7 @@ fn spec_test_479() {
     let expected = r##"<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6553,7 +6566,7 @@ fn spec_test_480() {
     let expected = r##"<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6563,7 +6576,7 @@ fn spec_test_481() {
     let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -6573,51 +6586,71 @@ fn spec_test_482() {
     let expected = r##"<p><a href="/uri">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
 fn spec_test_483() {
+    let original = r##"[](./target.md)
+"##;
+    let expected = r##"<p><a href="./target.md"></a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_484() {
     let original = r##"[link]()
 "##;
     let expected = r##"<p><a href="">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_484() {
+fn spec_test_485() {
     let original = r##"[link](<>)
 "##;
     let expected = r##"<p><a href="">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_485() {
+fn spec_test_486() {
+    let original = r##"[]()
+"##;
+    let expected = r##"<p><a href=""></a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_487() {
     let original = r##"[link](/my uri)
 "##;
     let expected = r##"<p>[link](/my uri)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_486() {
+fn spec_test_488() {
     let original = r##"[link](</my uri>)
 "##;
     let expected = r##"<p><a href="/my%20uri">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_487() {
+fn spec_test_489() {
     let original = r##"[link](foo
 bar)
 "##;
@@ -6625,11 +6658,11 @@ bar)
 bar)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_488() {
+fn spec_test_490() {
     let original = r##"[link](<foo
 bar>)
 "##;
@@ -6637,31 +6670,31 @@ bar>)
 bar>)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_489() {
+fn spec_test_491() {
     let original = r##"[a](<b)c>)
 "##;
     let expected = r##"<p><a href="b)c">a</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_490() {
+fn spec_test_492() {
     let original = r##"[link](<foo\>)
 "##;
     let expected = r##"<p>[link](&lt;foo&gt;)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_491() {
+fn spec_test_493() {
     let original = r##"[a](<b)c
 [a](<b)c>
 [a](<b>c)
@@ -6671,61 +6704,71 @@ fn spec_test_491() {
 [a](<b>c)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_492() {
+fn spec_test_494() {
     let original = r##"[link](\(foo\))
 "##;
     let expected = r##"<p><a href="(foo)">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_493() {
+fn spec_test_495() {
     let original = r##"[link](foo(and(bar)))
 "##;
     let expected = r##"<p><a href="foo(and(bar))">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_494() {
+fn spec_test_496() {
+    let original = r##"[link](foo(and(bar))
+"##;
+    let expected = r##"<p>[link](foo(and(bar))</p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn spec_test_497() {
     let original = r##"[link](foo\(and\(bar\))
 "##;
     let expected = r##"<p><a href="foo(and(bar)">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_495() {
+fn spec_test_498() {
     let original = r##"[link](<foo(and(bar)>)
 "##;
     let expected = r##"<p><a href="foo(and(bar)">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_496() {
+fn spec_test_499() {
     let original = r##"[link](foo\)\:)
 "##;
     let expected = r##"<p><a href="foo):">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_497() {
+fn spec_test_500() {
     let original = r##"[link](#fragment)
 
 [link](http://example.com#fragment)
@@ -6737,41 +6780,41 @@ fn spec_test_497() {
 <p><a href="http://example.com?foo=3#frag">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_498() {
+fn spec_test_501() {
     let original = r##"[link](foo\bar)
 "##;
     let expected = r##"<p><a href="foo%5Cbar">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_499() {
+fn spec_test_502() {
     let original = r##"[link](foo%20b&auml;)
 "##;
     let expected = r##"<p><a href="foo%20b%C3%A4">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_500() {
+fn spec_test_503() {
     let original = r##"[link]("title")
 "##;
     let expected = r##"<p><a href="%22title%22">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_501() {
+fn spec_test_504() {
     let original = r##"[link](/url "title")
 [link](/url 'title')
 [link](/url (title))
@@ -6781,222 +6824,222 @@ fn spec_test_501() {
 <a href="/url" title="title">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_502() {
+fn spec_test_505() {
     let original = r##"[link](/url "title \"&quot;")
 "##;
     let expected = r##"<p><a href="/url" title="title &quot;&quot;">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_503() {
+fn spec_test_506() {
     let original = r##"[link](/url "title")
 "##;
     let expected = r##"<p><a href="/url%C2%A0%22title%22">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_504() {
+fn spec_test_507() {
     let original = r##"[link](/url "title "and" title")
 "##;
     let expected = r##"<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_505() {
+fn spec_test_508() {
     let original = r##"[link](/url 'title "and" title')
 "##;
     let expected = r##"<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_506() {
+fn spec_test_509() {
     let original = r##"[link](   /uri
   "title"  )
 "##;
     let expected = r##"<p><a href="/uri" title="title">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_507() {
+fn spec_test_510() {
     let original = r##"[link] (/uri)
 "##;
     let expected = r##"<p>[link] (/uri)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_508() {
+fn spec_test_511() {
     let original = r##"[link [foo [bar]]](/uri)
 "##;
     let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_509() {
+fn spec_test_512() {
     let original = r##"[link] bar](/uri)
 "##;
     let expected = r##"<p>[link] bar](/uri)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_510() {
+fn spec_test_513() {
     let original = r##"[link [bar](/uri)
 "##;
     let expected = r##"<p>[link <a href="/uri">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_511() {
+fn spec_test_514() {
     let original = r##"[link \[bar](/uri)
 "##;
     let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_512() {
+fn spec_test_515() {
     let original = r##"[link *foo **bar** `#`*](/uri)
 "##;
     let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_513() {
+fn spec_test_516() {
     let original = r##"[![moon](moon.jpg)](/uri)
 "##;
     let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_514() {
+fn spec_test_517() {
     let original = r##"[foo [bar](/uri)](/uri)
 "##;
     let expected = r##"<p>[foo <a href="/uri">bar</a>](/uri)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_515() {
+fn spec_test_518() {
     let original = r##"[foo *[bar [baz](/uri)](/uri)*](/uri)
 "##;
     let expected = r##"<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_516() {
+fn spec_test_519() {
     let original = r##"![[[foo](uri1)](uri2)](uri3)
 "##;
     let expected = r##"<p><img src="uri3" alt="[foo](uri2)" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_517() {
+fn spec_test_520() {
     let original = r##"*[foo*](/uri)
 "##;
     let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_518() {
+fn spec_test_521() {
     let original = r##"[foo *bar](baz*)
 "##;
     let expected = r##"<p><a href="baz*">foo *bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_519() {
+fn spec_test_522() {
     let original = r##"*foo [bar* baz]
 "##;
     let expected = r##"<p><em>foo [bar</em> baz]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_520() {
+fn spec_test_523() {
     let original = r##"[foo <bar attr="](baz)">
 "##;
     let expected = r##"<p>[foo <bar attr="](baz)"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_521() {
+fn spec_test_524() {
     let original = r##"[foo`](/uri)`
 "##;
     let expected = r##"<p>[foo<code>](/uri)</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_522() {
+fn spec_test_525() {
     let original = r##"[foo<http://example.com/?search=](uri)>
 "##;
     let expected = r##"<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_523() {
+fn spec_test_526() {
     let original = r##"[foo][bar]
 
 [bar]: /url "title"
@@ -7004,11 +7047,11 @@ fn spec_test_523() {
     let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_524() {
+fn spec_test_527() {
     let original = r##"[link [foo [bar]]][ref]
 
 [ref]: /uri
@@ -7016,11 +7059,11 @@ fn spec_test_524() {
     let expected = r##"<p><a href="/uri">link [foo [bar]]</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_525() {
+fn spec_test_528() {
     let original = r##"[link \[bar][ref]
 
 [ref]: /uri
@@ -7028,11 +7071,11 @@ fn spec_test_525() {
     let expected = r##"<p><a href="/uri">link [bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_526() {
+fn spec_test_529() {
     let original = r##"[link *foo **bar** `#`*][ref]
 
 [ref]: /uri
@@ -7040,11 +7083,11 @@ fn spec_test_526() {
     let expected = r##"<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_527() {
+fn spec_test_530() {
     let original = r##"[![moon](moon.jpg)][ref]
 
 [ref]: /uri
@@ -7052,11 +7095,11 @@ fn spec_test_527() {
     let expected = r##"<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_528() {
+fn spec_test_531() {
     let original = r##"[foo [bar](/uri)][ref]
 
 [ref]: /uri
@@ -7064,11 +7107,11 @@ fn spec_test_528() {
     let expected = r##"<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_529() {
+fn spec_test_532() {
     let original = r##"[foo *bar [baz][ref]*][ref]
 
 [ref]: /uri
@@ -7076,11 +7119,11 @@ fn spec_test_529() {
     let expected = r##"<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_530() {
+fn spec_test_533() {
     let original = r##"*[foo*][ref]
 
 [ref]: /uri
@@ -7088,23 +7131,23 @@ fn spec_test_530() {
     let expected = r##"<p>*<a href="/uri">foo*</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_531() {
-    let original = r##"[foo *bar][ref]
+fn spec_test_534() {
+    let original = r##"[foo *bar][ref]*
 
 [ref]: /uri
 "##;
-    let expected = r##"<p><a href="/uri">foo *bar</a></p>
+    let expected = r##"<p><a href="/uri">foo *bar</a>*</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_532() {
+fn spec_test_535() {
     let original = r##"[foo <bar attr="][ref]">
 
 [ref]: /uri
@@ -7112,11 +7155,11 @@ fn spec_test_532() {
     let expected = r##"<p>[foo <bar attr="][ref]"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_533() {
+fn spec_test_536() {
     let original = r##"[foo`][ref]`
 
 [ref]: /uri
@@ -7124,11 +7167,11 @@ fn spec_test_533() {
     let expected = r##"<p>[foo<code>][ref]</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_534() {
+fn spec_test_537() {
     let original = r##"[foo<http://example.com/?search=][ref]>
 
 [ref]: /uri
@@ -7136,11 +7179,11 @@ fn spec_test_534() {
     let expected = r##"<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_535() {
+fn spec_test_538() {
     let original = r##"[foo][BaR]
 
 [bar]: /url "title"
@@ -7148,23 +7191,23 @@ fn spec_test_535() {
     let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_536() {
-    let original = r##"[Толпой][Толпой] is a Russian word.
+fn spec_test_539() {
+    let original = r##"[ẞ]
 
-[ТОЛПОЙ]: /url
+[SS]: /url
 "##;
-    let expected = r##"<p><a href="/url">Толпой</a> is a Russian word.</p>
+    let expected = r##"<p><a href="/url">ẞ</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_537() {
+fn spec_test_540() {
     let original = r##"[Foo
   bar]: /url
 
@@ -7173,11 +7216,11 @@ fn spec_test_537() {
     let expected = r##"<p><a href="/url">Baz</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_538() {
+fn spec_test_541() {
     let original = r##"[foo] [bar]
 
 [bar]: /url "title"
@@ -7185,11 +7228,11 @@ fn spec_test_538() {
     let expected = r##"<p>[foo] <a href="/url" title="title">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_539() {
+fn spec_test_542() {
     let original = r##"[foo]
 [bar]
 
@@ -7199,11 +7242,11 @@ fn spec_test_539() {
 <a href="/url" title="title">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_540() {
+fn spec_test_543() {
     let original = r##"[foo]: /url1
 
 [foo]: /url2
@@ -7213,11 +7256,11 @@ fn spec_test_540() {
     let expected = r##"<p><a href="/url1">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_541() {
+fn spec_test_544() {
     let original = r##"[bar][foo\!]
 
 [foo!]: /url
@@ -7225,11 +7268,11 @@ fn spec_test_541() {
     let expected = r##"<p>[bar][foo!]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_542() {
+fn spec_test_545() {
     let original = r##"[foo][ref[]
 
 [ref[]: /uri
@@ -7238,11 +7281,11 @@ fn spec_test_542() {
 <p>[ref[]: /uri</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_543() {
+fn spec_test_546() {
     let original = r##"[foo][ref[bar]]
 
 [ref[bar]]: /uri
@@ -7251,11 +7294,11 @@ fn spec_test_543() {
 <p>[ref[bar]]: /uri</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_544() {
+fn spec_test_547() {
     let original = r##"[[[foo]]]
 
 [[[foo]]]: /url
@@ -7264,11 +7307,11 @@ fn spec_test_544() {
 <p>[[[foo]]]: /url</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_545() {
+fn spec_test_548() {
     let original = r##"[foo][ref\[]
 
 [ref\[]: /uri
@@ -7276,11 +7319,11 @@ fn spec_test_545() {
     let expected = r##"<p><a href="/uri">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_546() {
+fn spec_test_549() {
     let original = r##"[bar\\]: /uri
 
 [bar\\]
@@ -7288,11 +7331,11 @@ fn spec_test_546() {
     let expected = r##"<p><a href="/uri">bar\</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_547() {
+fn spec_test_550() {
     let original = r##"[]
 
 []: /uri
@@ -7301,11 +7344,11 @@ fn spec_test_547() {
 <p>[]: /uri</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_548() {
+fn spec_test_551() {
     let original = r##"[
  ]
 
@@ -7318,11 +7361,11 @@ fn spec_test_548() {
 ]: /uri</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_549() {
+fn spec_test_552() {
     let original = r##"[foo][]
 
 [foo]: /url "title"
@@ -7330,11 +7373,11 @@ fn spec_test_549() {
     let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_550() {
+fn spec_test_553() {
     let original = r##"[*foo* bar][]
 
 [*foo* bar]: /url "title"
@@ -7342,11 +7385,11 @@ fn spec_test_550() {
     let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_551() {
+fn spec_test_554() {
     let original = r##"[Foo][]
 
 [foo]: /url "title"
@@ -7354,11 +7397,11 @@ fn spec_test_551() {
     let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_552() {
+fn spec_test_555() {
     let original = r##"[foo] 
 []
 
@@ -7368,11 +7411,11 @@ fn spec_test_552() {
 []</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_553() {
+fn spec_test_556() {
     let original = r##"[foo]
 
 [foo]: /url "title"
@@ -7380,11 +7423,11 @@ fn spec_test_553() {
     let expected = r##"<p><a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_554() {
+fn spec_test_557() {
     let original = r##"[*foo* bar]
 
 [*foo* bar]: /url "title"
@@ -7392,11 +7435,11 @@ fn spec_test_554() {
     let expected = r##"<p><a href="/url" title="title"><em>foo</em> bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_555() {
+fn spec_test_558() {
     let original = r##"[[*foo* bar]]
 
 [*foo* bar]: /url "title"
@@ -7404,11 +7447,11 @@ fn spec_test_555() {
     let expected = r##"<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_556() {
+fn spec_test_559() {
     let original = r##"[[bar [foo]
 
 [foo]: /url
@@ -7416,11 +7459,11 @@ fn spec_test_556() {
     let expected = r##"<p>[[bar <a href="/url">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_557() {
+fn spec_test_560() {
     let original = r##"[Foo]
 
 [foo]: /url "title"
@@ -7428,11 +7471,11 @@ fn spec_test_557() {
     let expected = r##"<p><a href="/url" title="title">Foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_558() {
+fn spec_test_561() {
     let original = r##"[foo] bar
 
 [foo]: /url
@@ -7440,11 +7483,11 @@ fn spec_test_558() {
     let expected = r##"<p><a href="/url">foo</a> bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_559() {
+fn spec_test_562() {
     let original = r##"\[foo]
 
 [foo]: /url "title"
@@ -7452,11 +7495,11 @@ fn spec_test_559() {
     let expected = r##"<p>[foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_560() {
+fn spec_test_563() {
     let original = r##"[foo*]: /url
 
 *[foo*]
@@ -7464,11 +7507,11 @@ fn spec_test_560() {
     let expected = r##"<p>*<a href="/url">foo*</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_561() {
+fn spec_test_564() {
     let original = r##"[foo][bar]
 
 [foo]: /url1
@@ -7477,11 +7520,11 @@ fn spec_test_561() {
     let expected = r##"<p><a href="/url2">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_562() {
+fn spec_test_565() {
     let original = r##"[foo][]
 
 [foo]: /url1
@@ -7489,11 +7532,11 @@ fn spec_test_562() {
     let expected = r##"<p><a href="/url1">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_563() {
+fn spec_test_566() {
     let original = r##"[foo]()
 
 [foo]: /url1
@@ -7501,11 +7544,11 @@ fn spec_test_563() {
     let expected = r##"<p><a href="">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_564() {
+fn spec_test_567() {
     let original = r##"[foo](not a link)
 
 [foo]: /url1
@@ -7513,11 +7556,11 @@ fn spec_test_564() {
     let expected = r##"<p><a href="/url1">foo</a>(not a link)</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_565() {
+fn spec_test_568() {
     let original = r##"[foo][bar][baz]
 
 [baz]: /url
@@ -7525,11 +7568,11 @@ fn spec_test_565() {
     let expected = r##"<p>[foo]<a href="/url">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_566() {
+fn spec_test_569() {
     let original = r##"[foo][bar][baz]
 
 [baz]: /url1
@@ -7538,11 +7581,11 @@ fn spec_test_566() {
     let expected = r##"<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_567() {
+fn spec_test_570() {
     let original = r##"[foo][bar][baz]
 
 [baz]: /url1
@@ -7551,21 +7594,21 @@ fn spec_test_567() {
     let expected = r##"<p>[foo]<a href="/url1">bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_568() {
+fn spec_test_571() {
     let original = r##"![foo](/url "title")
 "##;
     let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_569() {
+fn spec_test_572() {
     let original = r##"![foo *bar*]
 
 [foo *bar*]: train.jpg "train & tracks"
@@ -7573,31 +7616,31 @@ fn spec_test_569() {
     let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_570() {
+fn spec_test_573() {
     let original = r##"![foo ![bar](/url)](/url2)
 "##;
     let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_571() {
+fn spec_test_574() {
     let original = r##"![foo [bar](/url)](/url2)
 "##;
     let expected = r##"<p><img src="/url2" alt="foo bar" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_572() {
+fn spec_test_575() {
     let original = r##"![foo *bar*][]
 
 [foo *bar*]: train.jpg "train & tracks"
@@ -7605,11 +7648,11 @@ fn spec_test_572() {
     let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_573() {
+fn spec_test_576() {
     let original = r##"![foo *bar*][foobar]
 
 [FOOBAR]: train.jpg "train & tracks"
@@ -7617,51 +7660,51 @@ fn spec_test_573() {
     let expected = r##"<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_574() {
+fn spec_test_577() {
     let original = r##"![foo](train.jpg)
 "##;
     let expected = r##"<p><img src="train.jpg" alt="foo" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_575() {
+fn spec_test_578() {
     let original = r##"My ![foo bar](/path/to/train.jpg  "title"   )
 "##;
     let expected = r##"<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_576() {
+fn spec_test_579() {
     let original = r##"![foo](<url>)
 "##;
     let expected = r##"<p><img src="url" alt="foo" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_577() {
+fn spec_test_580() {
     let original = r##"![](/url)
 "##;
     let expected = r##"<p><img src="/url" alt="" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_578() {
+fn spec_test_581() {
     let original = r##"![foo][bar]
 
 [bar]: /url
@@ -7669,11 +7712,11 @@ fn spec_test_578() {
     let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_579() {
+fn spec_test_582() {
     let original = r##"![foo][bar]
 
 [BAR]: /url
@@ -7681,11 +7724,11 @@ fn spec_test_579() {
     let expected = r##"<p><img src="/url" alt="foo" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_580() {
+fn spec_test_583() {
     let original = r##"![foo][]
 
 [foo]: /url "title"
@@ -7693,11 +7736,11 @@ fn spec_test_580() {
     let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_581() {
+fn spec_test_584() {
     let original = r##"![*foo* bar][]
 
 [*foo* bar]: /url "title"
@@ -7705,11 +7748,11 @@ fn spec_test_581() {
     let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_582() {
+fn spec_test_585() {
     let original = r##"![Foo][]
 
 [foo]: /url "title"
@@ -7717,11 +7760,11 @@ fn spec_test_582() {
     let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_583() {
+fn spec_test_586() {
     let original = r##"![foo] 
 []
 
@@ -7731,11 +7774,11 @@ fn spec_test_583() {
 []</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_584() {
+fn spec_test_587() {
     let original = r##"![foo]
 
 [foo]: /url "title"
@@ -7743,11 +7786,11 @@ fn spec_test_584() {
     let expected = r##"<p><img src="/url" alt="foo" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_585() {
+fn spec_test_588() {
     let original = r##"![*foo* bar]
 
 [*foo* bar]: /url "title"
@@ -7755,11 +7798,11 @@ fn spec_test_585() {
     let expected = r##"<p><img src="/url" alt="foo bar" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_586() {
+fn spec_test_589() {
     let original = r##"![[foo]]
 
 [[foo]]: /url "title"
@@ -7768,11 +7811,11 @@ fn spec_test_586() {
 <p>[[foo]]: /url &quot;title&quot;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_587() {
+fn spec_test_590() {
     let original = r##"![Foo]
 
 [foo]: /url "title"
@@ -7780,11 +7823,11 @@ fn spec_test_587() {
     let expected = r##"<p><img src="/url" alt="Foo" title="title" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_588() {
+fn spec_test_591() {
     let original = r##"!\[foo]
 
 [foo]: /url "title"
@@ -7792,11 +7835,11 @@ fn spec_test_588() {
     let expected = r##"<p>![foo]</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_589() {
+fn spec_test_592() {
     let original = r##"\![foo]
 
 [foo]: /url "title"
@@ -7804,221 +7847,221 @@ fn spec_test_589() {
     let expected = r##"<p>!<a href="/url" title="title">foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_590() {
+fn spec_test_593() {
     let original = r##"<http://foo.bar.baz>
 "##;
     let expected = r##"<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_591() {
+fn spec_test_594() {
     let original = r##"<http://foo.bar.baz/test?q=hello&id=22&boolean>
 "##;
     let expected = r##"<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_592() {
+fn spec_test_595() {
     let original = r##"<irc://foo.bar:2233/baz>
 "##;
     let expected = r##"<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_593() {
+fn spec_test_596() {
     let original = r##"<MAILTO:FOO@BAR.BAZ>
 "##;
     let expected = r##"<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_594() {
+fn spec_test_597() {
     let original = r##"<a+b+c:d>
 "##;
     let expected = r##"<p><a href="a+b+c:d">a+b+c:d</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_595() {
+fn spec_test_598() {
     let original = r##"<made-up-scheme://foo,bar>
 "##;
     let expected = r##"<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_596() {
+fn spec_test_599() {
     let original = r##"<http://../>
 "##;
     let expected = r##"<p><a href="http://../">http://../</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_597() {
+fn spec_test_600() {
     let original = r##"<localhost:5001/foo>
 "##;
     let expected = r##"<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_598() {
+fn spec_test_601() {
     let original = r##"<http://foo.bar/baz bim>
 "##;
     let expected = r##"<p>&lt;http://foo.bar/baz bim&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_599() {
+fn spec_test_602() {
     let original = r##"<http://example.com/\[\>
 "##;
     let expected = r##"<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_600() {
+fn spec_test_603() {
     let original = r##"<foo@bar.example.com>
 "##;
     let expected = r##"<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_601() {
+fn spec_test_604() {
     let original = r##"<foo+special@Bar.baz-bar0.com>
 "##;
     let expected = r##"<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_602() {
+fn spec_test_605() {
     let original = r##"<foo\+@bar.example.com>
 "##;
     let expected = r##"<p>&lt;foo+@bar.example.com&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_603() {
+fn spec_test_606() {
     let original = r##"<>
 "##;
     let expected = r##"<p>&lt;&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_604() {
+fn spec_test_607() {
     let original = r##"< http://foo.bar >
 "##;
     let expected = r##"<p>&lt; http://foo.bar &gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_605() {
+fn spec_test_608() {
     let original = r##"<m:abc>
 "##;
     let expected = r##"<p>&lt;m:abc&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_606() {
+fn spec_test_609() {
     let original = r##"<foo.bar.baz>
 "##;
     let expected = r##"<p>&lt;foo.bar.baz&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_607() {
+fn spec_test_610() {
     let original = r##"http://example.com
 "##;
     let expected = r##"<p>http://example.com</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_608() {
+fn spec_test_611() {
     let original = r##"foo@bar.example.com
 "##;
     let expected = r##"<p>foo@bar.example.com</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_609() {
+fn spec_test_612() {
     let original = r##"<a><bab><c2c>
 "##;
     let expected = r##"<p><a><bab><c2c></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_610() {
+fn spec_test_613() {
     let original = r##"<a/><b2/>
 "##;
     let expected = r##"<p><a/><b2/></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_611() {
+fn spec_test_614() {
     let original = r##"<a  /><b2
 data="foo" >
 "##;
@@ -8026,11 +8069,11 @@ data="foo" >
 data="foo" ></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_612() {
+fn spec_test_615() {
     let original = r##"<a foo="bar" bam = 'baz <em>"</em>'
 _boolean zoop:33=zoop:33 />
 "##;
@@ -8038,51 +8081,51 @@ _boolean zoop:33=zoop:33 />
 _boolean zoop:33=zoop:33 /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_613() {
+fn spec_test_616() {
     let original = r##"Foo <responsive-image src="foo.jpg" />
 "##;
     let expected = r##"<p>Foo <responsive-image src="foo.jpg" /></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_614() {
+fn spec_test_617() {
     let original = r##"<33> <__>
 "##;
     let expected = r##"<p>&lt;33&gt; &lt;__&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_615() {
+fn spec_test_618() {
     let original = r##"<a h*#ref="hi">
 "##;
     let expected = r##"<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_616() {
+fn spec_test_619() {
     let original = r##"<a href="hi'> <a href=hi'>
 "##;
     let expected = r##"<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_617() {
+fn spec_test_620() {
     let original = r##"< a><
 foo><bar/ >
 <foo bar=baz
@@ -8094,41 +8137,41 @@ foo&gt;&lt;bar/ &gt;
 bim!bop /&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_618() {
+fn spec_test_621() {
     let original = r##"<a href='bar'title=title>
 "##;
     let expected = r##"<p>&lt;a href='bar'title=title&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_619() {
+fn spec_test_622() {
     let original = r##"</a></foo >
 "##;
     let expected = r##"<p></a></foo ></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_620() {
+fn spec_test_623() {
     let original = r##"</a href="foo">
 "##;
     let expected = r##"<p>&lt;/a href=&quot;foo&quot;&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_621() {
+fn spec_test_624() {
     let original = r##"foo <!-- this is a
 comment - with hyphen -->
 "##;
@@ -8136,21 +8179,21 @@ comment - with hyphen -->
 comment - with hyphen --></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_622() {
+fn spec_test_625() {
     let original = r##"foo <!-- not a comment -- two hyphens -->
 "##;
     let expected = r##"<p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_623() {
+fn spec_test_626() {
     let original = r##"foo <!--> foo -->
 
 foo <!-- foo--->
@@ -8159,71 +8202,71 @@ foo <!-- foo--->
 <p>foo &lt;!-- foo---&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_624() {
+fn spec_test_627() {
     let original = r##"foo <?php echo $a; ?>
 "##;
     let expected = r##"<p>foo <?php echo $a; ?></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_625() {
+fn spec_test_628() {
     let original = r##"foo <!ELEMENT br EMPTY>
 "##;
     let expected = r##"<p>foo <!ELEMENT br EMPTY></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_626() {
+fn spec_test_629() {
     let original = r##"foo <![CDATA[>&<]]>
 "##;
     let expected = r##"<p>foo <![CDATA[>&<]]></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_627() {
+fn spec_test_630() {
     let original = r##"foo <a href="&ouml;">
 "##;
     let expected = r##"<p>foo <a href="&ouml;"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_628() {
+fn spec_test_631() {
     let original = r##"foo <a href="\*">
 "##;
     let expected = r##"<p>foo <a href="\*"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_629() {
+fn spec_test_632() {
     let original = r##"<a href="\"">
 "##;
     let expected = r##"<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_630() {
+fn spec_test_633() {
     let original = r##"foo  
 baz
 "##;
@@ -8231,11 +8274,11 @@ baz
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_631() {
+fn spec_test_634() {
     let original = r##"foo\
 baz
 "##;
@@ -8243,11 +8286,11 @@ baz
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_632() {
+fn spec_test_635() {
     let original = r##"foo       
 baz
 "##;
@@ -8255,11 +8298,11 @@ baz
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_633() {
+fn spec_test_636() {
     let original = r##"foo  
      bar
 "##;
@@ -8267,11 +8310,11 @@ fn spec_test_633() {
 bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_634() {
+fn spec_test_637() {
     let original = r##"foo\
      bar
 "##;
@@ -8279,11 +8322,11 @@ fn spec_test_634() {
 bar</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_635() {
+fn spec_test_638() {
     let original = r##"*foo  
 bar*
 "##;
@@ -8291,11 +8334,11 @@ bar*
 bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_636() {
+fn spec_test_639() {
     let original = r##"*foo\
 bar*
 "##;
@@ -8303,33 +8346,33 @@ bar*
 bar</em></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_637() {
-    let original = r##"`code 
+fn spec_test_640() {
+    let original = r##"`code  
 span`
 "##;
-    let expected = r##"<p><code>code  span</code></p>
+    let expected = r##"<p><code>code   span</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_638() {
+fn spec_test_641() {
     let original = r##"`code\
 span`
 "##;
     let expected = r##"<p><code>code\ span</code></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_639() {
+fn spec_test_642() {
     let original = r##"<a href="foo  
 bar">
 "##;
@@ -8337,11 +8380,11 @@ bar">
 bar"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_640() {
+fn spec_test_643() {
     let original = r##"<a href="foo\
 bar">
 "##;
@@ -8349,51 +8392,51 @@ bar">
 bar"></p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_641() {
+fn spec_test_644() {
     let original = r##"foo\
 "##;
     let expected = r##"<p>foo\</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_642() {
+fn spec_test_645() {
     let original = r##"foo  
 "##;
     let expected = r##"<p>foo</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_643() {
+fn spec_test_646() {
     let original = r##"### foo\
 "##;
     let expected = r##"<h3>foo\</h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_644() {
+fn spec_test_647() {
     let original = r##"### foo  
 "##;
     let expected = r##"<h3>foo</h3>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_645() {
+fn spec_test_648() {
     let original = r##"foo
 baz
 "##;
@@ -8401,11 +8444,11 @@ baz
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_646() {
+fn spec_test_649() {
     let original = r##"foo 
  baz
 "##;
@@ -8413,35 +8456,35 @@ fn spec_test_646() {
 baz</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_647() {
+fn spec_test_650() {
     let original = r##"hello $.;'there
 "##;
     let expected = r##"<p>hello $.;'there</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_648() {
+fn spec_test_651() {
     let original = r##"Foo χρῆν
 "##;
     let expected = r##"<p>Foo χρῆν</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
-fn spec_test_649() {
+fn spec_test_652() {
     let original = r##"Multiple     spaces
 "##;
     let expected = r##"<p>Multiple     spaces</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }

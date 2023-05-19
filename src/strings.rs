@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::str::from_utf8;
 
-const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 1;
+const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 2;
 
 /// Returned when trying to convert a `&str` into a `InlineStr`
 /// but it fails because it doesn't fit.
@@ -17,6 +17,7 @@ pub struct StringTooLongError;
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct InlineStr {
     inner: [u8; MAX_INLINE_STR_LEN],
+    len: u8,
 }
 
 impl<'a> AsRef<str> for InlineStr {
@@ -35,8 +36,8 @@ impl From<char> for InlineStr {
     fn from(c: char) -> Self {
         let mut inner = [0u8; MAX_INLINE_STR_LEN];
         c.encode_utf8(&mut inner);
-        inner[MAX_INLINE_STR_LEN - 1] = c.len_utf8() as u8;
-        Self { inner }
+        let len = c.len_utf8() as u8;
+        Self { inner, len }
     }
 }
 
@@ -51,11 +52,11 @@ impl TryFrom<&str> for InlineStr {
 
     fn try_from(s: &str) -> Result<InlineStr, StringTooLongError> {
         let len = s.len();
-        if len < MAX_INLINE_STR_LEN {
+        if len <= MAX_INLINE_STR_LEN {
             let mut inner = [0u8; MAX_INLINE_STR_LEN];
             inner[..len].copy_from_slice(s.as_bytes());
-            inner[MAX_INLINE_STR_LEN - 1] = len as u8;
-            Ok(Self { inner })
+            let len = len as u8;
+            Ok(Self { inner, len })
         } else {
             Err(StringTooLongError)
         }
@@ -66,7 +67,7 @@ impl Deref for InlineStr {
     type Target = str;
 
     fn deref(&self) -> &str {
-        let len = self.inner[MAX_INLINE_STR_LEN - 1] as usize;
+        let len = self.len as usize;
         from_utf8(&self.inner[..len]).unwrap()
     }
 }
@@ -274,10 +275,9 @@ mod test_special_string {
     }
 
     #[test]
-    fn max_inline_str_len_atleast_five() {
-        // we need 4 bytes to store a char and then one more to store
-        // its length
-        assert!(MAX_INLINE_STR_LEN >= 5);
+    fn max_inline_str_len_atleast_four() {
+        // we need 4 bytes to store a char
+        assert!(MAX_INLINE_STR_LEN >= 4);
     }
 
     #[test]

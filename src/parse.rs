@@ -23,15 +23,16 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::iter::FusedIterator;
+use std::num::NonZeroUsize;
 use std::ops::{Index, Range};
 
 use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
-use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
+use crate::{scanners::*, MetadataBlockKind};
 use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag, TagEnd};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -61,10 +62,10 @@ pub(crate) enum ItemBody {
     MaybeEmphasis(usize, bool, bool),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
-    MaybeCode(usize, bool), // number of backticks, preceeded by backslash
+    MaybeCode(usize, bool), // number of backticks, preceded by backslash
     MaybeHtml,
     MaybeLinkOpen,
-    // bool indicates whether or not the preceeding section could be a reference
+    // bool indicates whether or not the preceding section could be a reference
     MaybeLinkClose(bool),
     MaybeImage,
 
@@ -79,7 +80,7 @@ pub(crate) enum ItemBody {
     TaskListMarker(bool), // true for checked
 
     Rule,
-    Heading(HeadingLevel), // heading level
+    Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     Html,
@@ -90,6 +91,7 @@ pub(crate) enum ItemBody {
     SynthesizeText(CowIndex),
     SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
+    MetadataBlock(MetadataBlockKind),
 
     // Tables
     Table(AlignmentIndex),
@@ -122,6 +124,7 @@ impl<'a> Default for ItemBody {
     }
 }
 
+#[derive(Debug)]
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
@@ -140,6 +143,20 @@ pub struct Parser<'input, 'callback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+}
+
+impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Only print the fields that have public types.
+        f.debug_struct("Parser")
+            .field("text", &self.text)
+            .field("options", &self.options)
+            .field(
+                "broken_link_callback",
+                &self.broken_link_callback.as_ref().map(|_| ..),
+            )
+            .finish()
+    }
 }
 
 impl<'input, 'callback> Parser<'input, 'callback> {
@@ -378,8 +395,13 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     // so that we can skip it on future iterations in case
                                     // it fails in this one. In particular, we won't call
                                     // the broken link callback twice on one reference.
-                                    let reference_close_node =
-                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1).unwrap();
+                                    let reference_close_node = if let Some(node) =
+                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1)
+                                    {
+                                        node
+                                    } else {
+                                        continue;
+                                    };
                                     self.tree[reference_close_node].item.body =
                                         ItemBody::MaybeLinkClose(false);
                                     let next_node = self.tree[reference_close_node].next;
@@ -417,12 +439,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
+                                    let label_end = self.tree[cur_ix].item.end;
                                     scan_link_label(
                                         &self.tree,
-                                        &self.text[label_start..self.tree[cur_ix].item.end],
+                                        &self.text[label_start..label_end],
                                         self.options.contains(Options::ENABLE_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
+                                    .filter(|(_, end)| *end == label_end)
                                 }
                             };
 
@@ -545,12 +569,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                             // work from the inside out
                             while start > el.start + el.count - match_count {
-                                let (inc, ty) = if c == b'~' {
-                                    (2, ItemBody::Strikethrough)
-                                } else if start > el.start + el.count - match_count + 1 {
-                                    (2, ItemBody::Strong)
+                                let inc = if start > el.start + el.count - match_count + 1 {
+                                    2
                                 } else {
-                                    (1, ItemBody::Emphasis)
+                                    1
+                                };
+                                let ty = if c == b'~' {
+                                    ItemBody::Strikethrough
+                                } else if inc == 2 {
+                                    ItemBody::Strong
+                                } else {
+                                    ItemBody::Emphasis
                                 };
 
                                 let root = start - inc;
@@ -742,8 +771,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     ///
     /// Both `open` and `close` are matching MaybeCode items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
-        let first_ix = open + 1;
-        let last_ix = close - 1;
+        let first_ix = self.tree[open].next.unwrap();
         let bytes = self.text.as_bytes();
         let mut span_start = self.tree[open].item.end;
         let mut span_end = self.tree[close].item.start;
@@ -764,17 +792,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             let mut ix = first_ix;
 
-            while ix < close {
+            while ix != close {
+                let next_ix = self.tree[ix].next.unwrap();
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
                         if ix == first_ix {
-                            ix = ix + 1;
+                            ix = next_ix;
                             span_start = min(span_end, self.tree[ix].item.start);
                             continue;
-                        } else if ix == last_ix && last_ix > first_ix {
-                            ix = ix + 1;
-                            continue;
+                        } else if next_ix == close && ix > first_ix {
+                            break;
                         }
                     }
 
@@ -793,14 +821,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         buf = Some(new_buf);
                     }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if ix == last_ix {
+                    let end = if next_ix == close {
                         span_end
                     } else {
                         self.tree[ix].item.end
                     };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
-                ix = ix + 1;
+                ix = next_ix;
             }
         }
 
@@ -841,7 +869,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
                 &bytes[(ix - 1)..],
-                Some(&|_bytes| {
+                Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
                     let _ = scan_containers(&self.tree, &mut line_start);
                     line_start.bytes_scanned()
@@ -865,9 +893,8 @@ pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> 
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
             ItemBody::BlockQuote => {
-                let save = line_start.clone();
+                // `scan_blockquote_marker` saves & restores internally
                 if !line_start.scan_blockquote_marker() {
-                    *line_start = save;
                     break;
                 }
             }
@@ -1048,7 +1075,7 @@ fn scan_link_label<'text, 'tree>(
     text: &'text str,
     allow_footnote_refs: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
-    let bytes = &text.as_bytes();
+    let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
         return None;
     }
@@ -1081,6 +1108,7 @@ fn scan_reference<'a, 'b>(
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
+        // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) =
@@ -1138,7 +1166,7 @@ enum LinkStackTy {
 }
 
 /// Contains the destination URL, title and source span of a reference definition.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
@@ -1201,16 +1229,28 @@ pub(crate) struct CowIndex(usize);
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub(crate) struct AlignmentIndex(usize);
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct HeadingIndex(NonZeroUsize);
+
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
+    headings: Vec<HeadingAttributes<'a>>,
+}
+
+/// Used by the heading attributes extension.
+#[derive(Clone)]
+pub(crate) struct HeadingAttributes<'a> {
+    pub id: Option<&'a str>,
+    pub classes: Vec<&'a str>,
+    pub attrs: Vec<(&'a str, Option<&'a str>)>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 impl<'input, 'b, 's> RefDefs<'input>
@@ -1235,6 +1275,7 @@ impl<'a> Allocations<'a> {
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
+            headings: Vec::new(),
         }
     }
 
@@ -1256,6 +1297,19 @@ impl<'a> Allocations<'a> {
         AlignmentIndex(ix)
     }
 
+    pub fn allocate_heading(&mut self, attrs: HeadingAttributes<'a>) -> HeadingIndex {
+        let ix = self.headings.len();
+        self.headings.push(attrs);
+        // This won't panic. `self.headings.len()` can't be `usize::MAX` since
+        // such a long Vec cannot fit in memory.
+        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
+        HeadingIndex(ix_nonzero)
+    }
+}
+
+impl<'a> Index<CowIndex> for Allocations<'a> {
+    type Output = CowStr<'a>;
+
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
@@ -1275,6 +1329,14 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
 
     fn index(&self, ix: AlignmentIndex) -> &Self::Output {
         self.alignments.index(ix.0)
+    }
+}
+
+impl<'a> Index<HeadingIndex> for Allocations<'a> {
+    type Output = HeadingAttributes<'a>;
+
+    fn index(&self, ix: HeadingIndex) -> &Self::Output {
+        self.headings.index(ix.0.get() - 1)
     }
 }
 
@@ -1300,6 +1362,7 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
+#[derive(Debug)]
 pub struct OffsetIter<'a, 'b> {
     inner: Parser<'a, 'b>,
 }
@@ -1359,13 +1422,41 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
         }
-        ItemBody::ListItem(_) => TagEnd::Item,
-        ItemBody::TableHead => TagEnd::TableHead,
-        ItemBody::TableCell => TagEnd::TableCell,
-        ItemBody::TableRow => TagEnd::TableRow,
-        ItemBody::Table(..) => TagEnd::Table,
-        ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
-        _ => panic!("unexpected item body"),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+            Tag::Heading {
+                level,
+                id: *id,
+                classes: classes.clone(),
+                attrs: attrs.clone(),
+            }
+        }
+        ItemBody::Heading(level, None) => Tag::Heading {
+            level,
+            id: None,
+            classes: Vec::new(),
+            attrs: Vec::new(),
+        },
+        ItemBody::FencedCodeBlock(cow_ix) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+        }
+        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
+        ItemBody::BlockQuote => Tag::BlockQuote,
+        ItemBody::List(_, c, listitem_start) => {
+            if c == b'.' || c == b')' {
+                Tag::List(Some(listitem_start))
+            } else {
+                Tag::List(None)
+            }
+        }
+        ItemBody::ListItem(_) => Tag::Item,
+        ItemBody::TableHead => Tag::TableHead,
+        ItemBody::TableCell => Tag::TableCell,
+        ItemBody::TableRow => Tag::TableRow,
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
+        _ => panic!("unexpected item body {:?}", item.body),
     }
 }
 
@@ -1397,7 +1488,21 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             let (link_type, url, title) = allocs.take_link(link_ix);
             Tag::Image(link_type, url, title)
         }
-        ItemBody::Heading(level) => Tag::Heading(level),
+        ItemBody::Heading(level, Some(heading_ix)) => {
+            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+            Tag::Heading {
+                level,
+                id: *id,
+                classes: classes.clone(),
+                attrs: attrs.clone(),
+            }
+        }
+        ItemBody::Heading(level, None) => Tag::Heading {
+            level,
+            id: None,
+            classes: Vec::new(),
+            attrs: Vec::new(),
+        },
         ItemBody::FencedCodeBlock(cow_ix) => {
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
@@ -1414,8 +1519,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 
@@ -1656,6 +1762,7 @@ mod test {
     }
 
     // FIXME: add this one regression suite
+    #[cfg(feature = "html")]
     #[test]
     fn link_def_at_eof() {
         let test_str = "[My site][world]\n\n[world]: https://vincentprouillet.com";
@@ -1666,6 +1773,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn no_footnote_refs_without_option() {
         let test_str = "a [^a]\n\n[^a]: yolo";
@@ -1676,6 +1784,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn ref_def_at_eof() {
         let test_str = "[test]:\\";
@@ -1686,6 +1795,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn ref_def_cr_lf() {
         let test_str = "[a]: /u\r\n\n[a]";
@@ -1696,6 +1806,7 @@ mod test {
         assert_eq!(expected, buf);
     }
 
+    #[cfg(feature = "html")]
     #[test]
     fn no_dest_refdef() {
         let test_str = "[a]:";

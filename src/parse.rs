@@ -1310,17 +1310,16 @@ impl<'a> Allocations<'a> {
 impl<'a> Index<CowIndex> for Allocations<'a> {
     type Output = CowStr<'a>;
 
-    pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
-        std::mem::replace(&mut self.cows[ix.0], "".into())
+    fn index(&self, ix: CowIndex) -> &Self::Output {
+        self.cows.index(ix.0)
     }
+}
 
-    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
-        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
-        std::mem::replace(&mut self.links[ix.0], default_link)
-    }
+impl<'a> Index<LinkIndex> for Allocations<'a> {
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
 
-    pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
-        std::mem::replace(&mut self.alignments[ix.0], Default::default())
+    fn index(&self, ix: LinkIndex) -> &Self::Output {
+        self.links.index(ix.0)
     }
 }
 
@@ -1379,7 +1378,12 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.inner.tree.cur() {
-            None => {
+            None        ItemBody::ListItem(_) => TagEnd::Item,
+        ItemBody::TableHead => TagEnd::TableHead,
+        ItemBody::TableCell => TagEnd::TableCell,
+        ItemBody::TableRow => TagEnd::TableRow,
+        ItemBody::Table(..) => TagEnd::Table,
+        ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition, => {
                 let ix = self.inner.tree.pop()?;
                 let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
                 self.inner.tree.next_sibling(ix);
@@ -1422,40 +1426,13 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
         }
-        ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
-            Tag::Heading {
-                level,
-                id: *id,
-                classes: classes.clone(),
-                attrs: attrs.clone(),
-            }
-        }
-        ItemBody::Heading(level, None) => Tag::Heading {
-            level,
-            id: None,
-            classes: Vec::new(),
-            attrs: Vec::new(),
-        },
-        ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
-        }
-        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::BlockQuote => Tag::BlockQuote,
-        ItemBody::List(_, c, listitem_start) => {
-            if c == b'.' || c == b')' {
-                Tag::List(Some(listitem_start))
-            } else {
-                Tag::List(None)
-            }
-        }
-        ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::TableHead => Tag::TableHead,
-        ItemBody::TableCell => Tag::TableCell,
-        ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
-        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
+        ItemBody::ListItem(_) => TagEnd::Item,
+        ItemBody::TableHead => TagEnd::TableHead,
+        ItemBody::TableCell => TagEnd::TableCell,
+        ItemBody::TableRow => TagEnd::TableRow,
+        ItemBody::Table(..) => TagEnd::Table,
+        ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
+        ItemBody::MetadataBlock(kind) => TagEnd::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     }
 }

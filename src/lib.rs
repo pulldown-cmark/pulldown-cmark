@@ -99,7 +99,7 @@ impl<'a> CodeBlockKind<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MetadataBlockKind {
     YamlStyle,

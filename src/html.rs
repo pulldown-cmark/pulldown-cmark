@@ -392,7 +392,7 @@ where
             TagEnd::FootnoteDefinition => {
                 self.write("</div>\n")?;
             }
-            Tag::MetadataBlock(_) => {
+            TagEnd::MetadataBlock(_) => {
                 self.in_non_writing_block = false;
             }
         }

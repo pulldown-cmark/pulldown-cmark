@@ -1448,22 +1448,21 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs.take_cow(cow_ix))
+            return Event::FootnoteReference(allocs[cow_ix].clone())
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
-
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Link(link_type, url, title)
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
+            Tag::Link(*link_type, url.clone(), title.clone())
         }
         ItemBody::Image(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Image(link_type, url, title)
+            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
+            Tag::Image(*link_type, url.clone(), title.clone())
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
@@ -1481,7 +1480,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             attrs: Vec::new(),
         },
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,

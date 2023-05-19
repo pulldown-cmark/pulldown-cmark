@@ -1377,13 +1377,7 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.tree.cur() {
-            None        ItemBody::ListItem(_) => TagEnd::Item,
-        ItemBody::TableHead => TagEnd::TableHead,
-        ItemBody::TableCell => TagEnd::TableCell,
-        ItemBody::TableRow => TagEnd::TableRow,
-        ItemBody::Table(..) => TagEnd::Table,
-        ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition, => {
+            None => {
                 let ix = self.inner.tree.pop()?;
                 let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
                 self.inner.tree.next_sibling(ix);
@@ -1419,7 +1413,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Strikethrough => TagEnd::Strikethrough,
         ItemBody::Link(..) => TagEnd::Link,
         ItemBody::Image(..) => TagEnd::Image,
-        ItemBody::Heading(level) => TagEnd::Heading(level),
+        ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
         ItemBody::BlockQuote => TagEnd::BlockQuote,
         ItemBody::List(_, c, _) => {
@@ -1440,11 +1434,11 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
+        ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
-        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {

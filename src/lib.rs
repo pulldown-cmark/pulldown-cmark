@@ -187,6 +187,9 @@ pub enum TagEnd {
 
     Link,
     Image,
+    
+    /// A metadata block.
+    MetadataBlock(MetadataBlockKind),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]

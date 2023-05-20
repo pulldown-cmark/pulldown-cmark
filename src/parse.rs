@@ -33,7 +33,7 @@ use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{scanners::*, MetadataBlockKind};
-use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag};
+use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag, TagEnd};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -1305,6 +1305,19 @@ impl<'a> Allocations<'a> {
         let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
         HeadingIndex(ix_nonzero)
     }
+        
+    pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
+        std::mem::replace(&mut self.cows[ix.0], "".into())
+    }
+    
+    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
+        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
+        std::mem::replace(&mut self.links[ix.0], default_link)
+    }
+
+    pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
+        std::mem::replace(&mut self.alignments[ix.0], Default::default())
+    }    
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {
@@ -1380,11 +1393,11 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
         match self.inner.tree.cur() {
             None => {
                 let ix = self.inner.tree.pop()?;
-                let tag = item_to_tag(&self.inner.tree[ix].item, &self.inner.allocs);
+                let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
                 self.inner.tree.next_sibling(ix);
                 let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
                 debug_assert!(span.start <= span.end);
-                Some((Event::End(tag), span))
+                Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
                 if self.inner.tree[cur_ix].item.body.is_inline() {
@@ -1393,7 +1406,7 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
 
                 let node = self.inner.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.inner.text, &self.inner.allocs);
+                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
@@ -1406,85 +1419,58 @@ impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
     }
 }
 
-fn item_to_tag<'a>(item: &Item, allocs: &Allocations<'a>) -> Tag<'a> {
-    match item.body {
-        ItemBody::Paragraph => Tag::Paragraph,
-        ItemBody::Emphasis => Tag::Emphasis,
-        ItemBody::Strong => Tag::Strong,
-        ItemBody::Strikethrough => Tag::Strikethrough,
-        ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+fn body_to_tag_end(body: &ItemBody) -> TagEnd {
+    match *body {
+        ItemBody::Paragraph => TagEnd::Paragraph,
+        ItemBody::Emphasis => TagEnd::Emphasis,
+        ItemBody::Strong => TagEnd::Strong,
+        ItemBody::Strikethrough => TagEnd::Strikethrough,
+        ItemBody::Link(..) => TagEnd::Link,
+        ItemBody::Image(..) => TagEnd::Image,
+        ItemBody::Heading(level, _) => TagEnd::Heading(level),
+        ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
+        ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::List(_, c, _) => {
+            let is_ordered = c == b'.' || c == b')';
+            TagEnd::List(is_ordered)
         }
-        ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
-        }
-        ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
-            Tag::Heading {
-                level,
-                id: *id,
-                classes: classes.clone(),
-                attrs: attrs.clone(),
-            }
-        }
-        ItemBody::Heading(level, None) => Tag::Heading {
-            level,
-            id: None,
-            classes: Vec::new(),
-            attrs: Vec::new(),
-        },
-        ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
-        }
-        ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::BlockQuote => Tag::BlockQuote,
-        ItemBody::List(_, c, listitem_start) => {
-            if c == b'.' || c == b')' {
-                Tag::List(Some(listitem_start))
-            } else {
-                Tag::List(None)
-            }
-        }
-        ItemBody::ListItem(_) => Tag::Item,
-        ItemBody::TableHead => Tag::TableHead,
-        ItemBody::TableCell => Tag::TableCell,
-        ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
-        ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
-        _ => panic!("unexpected item body {:?}", item.body),
+        ItemBody::ListItem(_) => TagEnd::Item,
+        ItemBody::TableHead => TagEnd::TableHead,
+        ItemBody::TableCell => TagEnd::TableCell,
+        ItemBody::TableRow => TagEnd::TableRow,
+        ItemBody::Table(..) => TagEnd::Table,
+        ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
+        ItemBody::MetadataBlock(kind) => TagEnd::MetadataBlock(kind),
+        _ => panic!("unexpected item body {:?}", body),
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
-        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs[cow_ix].clone())
+            return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
-
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.take_link(link_ix);
+            Tag::Link(link_type, url, title)
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.take_link(link_ix);
+            Tag::Image(link_type, url, title)
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
@@ -1502,7 +1488,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
             attrs: Vec::new(),
         },
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -1517,8 +1503,8 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &Allocations<'a>) -> Eve
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     };
@@ -1533,9 +1519,9 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
         match self.tree.cur() {
             None => {
                 let ix = self.tree.pop()?;
-                let tag = item_to_tag(&self.tree[ix].item, &self.allocs);
+                let tag_end = body_to_tag_end(&self.tree[ix].item.body);
                 self.tree.next_sibling(ix);
-                Some(Event::End(tag))
+                Some(Event::End(tag_end))
             }
             Some(cur_ix) => {
                 if self.tree[cur_ix].item.body.is_inline() {
@@ -1544,8 +1530,8 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
 
                 let node = self.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.text, &self.allocs);
-                if let Event::Start(..) = event {
+                let event = item_to_event(item, self.text, &mut self.allocs);
+                if let Event::Start(ref _tag) = event {
                     self.tree.push();
                 } else {
                     self.tree.next_sibling(cur_ix);
@@ -1848,7 +1834,7 @@ mod test {
             Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title) in parser.filter_map(|event| match event {
-            Event::Start(tag) | Event::End(tag) => match tag {
+            Event::Start(tag) => match tag {
                 Tag::Link(typ, url, title) => Some((typ, url, title)),
                 _ => None,
             },

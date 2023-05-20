@@ -99,7 +99,7 @@ impl<'a> CodeBlockKind<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MetadataBlockKind {
     YamlStyle,
@@ -159,6 +159,35 @@ pub enum Tag<'a> {
     /// An image. The first field is the link type, the second the destination URL and the third is a title.
     Image(LinkType, CowStr<'a>, CowStr<'a>),
 
+    /// A metadata block.
+    MetadataBlock(MetadataBlockKind),
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum TagEnd {
+    Paragraph,
+    Heading(HeadingLevel),
+
+    BlockQuote,
+    CodeBlock,
+
+    List(bool), // true for ordered lists
+    Item,
+    FootnoteDefinition,
+
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+
+    Emphasis,
+    Strong,
+    Strikethrough,
+
+    Link,
+    Image,
+    
     /// A metadata block.
     MetadataBlock(MetadataBlockKind),
 }
@@ -255,8 +284,7 @@ pub enum Event<'a> {
     #[cfg_attr(feature = "serde", serde(borrow))]
     Start(Tag<'a>),
     /// End of a tagged element.
-    #[cfg_attr(feature = "serde", serde(borrow))]
-    End(Tag<'a>),
+    End(TagEnd),
     /// A text node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Text(CowStr<'a>),

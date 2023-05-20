@@ -1309,6 +1309,15 @@ impl<'a> Allocations<'a> {
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
+    
+    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
+        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
+        std::mem::replace(&mut self.links[ix.0], default_link)
+    }
+
+    pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
+        std::mem::replace(&mut self.alignments[ix.0], Default::default())
+    }    
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {
@@ -1317,10 +1326,6 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
     fn index(&self, ix: CowIndex) -> &Self::Output {
         self.cows.index(ix.0)
     }
-    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
-        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
-        std::mem::replace(&mut self.links[ix.0], default_link)
-    }
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
@@ -1328,9 +1333,6 @@ impl<'a> Index<LinkIndex> for Allocations<'a> {
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
-    }
-    pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
-        std::mem::replace(&mut self.alignments[ix.0], Default::default())
     }
 }
 

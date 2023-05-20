@@ -1305,6 +1305,10 @@ impl<'a> Allocations<'a> {
         let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
         HeadingIndex(ix_nonzero)
     }
+        
+    pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
+        std::mem::replace(&mut self.cows[ix.0], "".into())
+    }
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {
@@ -1313,6 +1317,10 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
     fn index(&self, ix: CowIndex) -> &Self::Output {
         self.cows.index(ix.0)
     }
+    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
+        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
+        std::mem::replace(&mut self.links[ix.0], default_link)
+    }
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
@@ -1320,6 +1328,9 @@ impl<'a> Index<LinkIndex> for Allocations<'a> {
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
+    }
+    pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
+        std::mem::replace(&mut self.alignments[ix.0], Default::default())
     }
 }
 
@@ -1435,15 +1446,15 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
-        ItemBody::Code(cow_ix) => return Event::Code(allocs[cow_ix].clone()),
-        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs[cow_ix].clone()),
+        ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
+        ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
-        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs[cow_ix].clone()),
+        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs[cow_ix].clone())
+            return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
@@ -1452,12 +1463,12 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Link(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.take_link(link_ix);
+            Tag::Link(link_type, url, title)
         }
         ItemBody::Image(link_ix) => {
-            let &(ref link_type, ref url, ref title) = allocs.index(link_ix);
-            Tag::Image(*link_type, url.clone(), title.clone())
+            let (link_type, url, title) = allocs.take_link(link_ix);
+            Tag::Image(link_type, url, title)
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
@@ -1475,7 +1486,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             attrs: Vec::new(),
         },
         ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs[cow_ix].clone()))
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote => Tag::BlockQuote,
@@ -1490,8 +1501,8 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
-        ItemBody::Table(alignment_ix) => Tag::Table(allocs[alignment_ix].clone()),
-        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs[cow_ix].clone()),
+        ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
+        ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
         _ => panic!("unexpected item body {:?}", item.body),
     };

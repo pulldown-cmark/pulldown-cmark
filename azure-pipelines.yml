@@ -4,7 +4,6 @@ pool:
 steps:
   - script: |
       rustup default 1.56.0
-      echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
     displayName: Set default Rust toolchain
   - script: cargo build --all
     displayName: Cargo build

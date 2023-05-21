@@ -1495,7 +1495,8 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !is_punctuation(next_char) {
+    // `*` and `~~` can be intraword, `_` cannot
+    if (delim == '*' || delim == '~') && !is_punctuation(next_char) {
         return true;
     }
 
@@ -1506,7 +1507,7 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec (and isn't intraword
+/// right-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
 fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
     if ix == 0 {
@@ -1522,7 +1523,8 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
         return true;
     };
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !is_punctuation(prev_char) {
+    // `*` and `~~` can be intraword, `_` cannot
+    if (delim == '*' || delim == '~') && !is_punctuation(prev_char) {
         return true;
     }
 

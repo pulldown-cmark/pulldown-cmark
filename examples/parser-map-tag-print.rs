@@ -84,6 +84,7 @@ fn main() {
                 Tag::TableCell => println!("TableCell (contains inline tags)"),
                 Tag::FootnoteDefinition(label) => println!("FootnoteDefinition label: {}", label),
                 Tag::MetadataBlock(kind) => println!("MetadataBlock: {:?}", kind),
+                Tag::MathBlock => println!("MathBlock"),
             },
             _ => (),
         };

@@ -21,6 +21,7 @@ fn main() {
             Event::SoftBreak => println!("SoftBreak"),
             Event::HardBreak => println!("HardBreak"),
             Event::Rule => println!("Rule"),
+            Event::MathText(_, _) => println!("Math"),
         };
         event
     });

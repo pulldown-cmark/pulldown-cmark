@@ -1,6 +1,6 @@
 use std::io::Write as _;
 
-use pulldown_cmark::{html, Event, Options, Parser, Tag};
+use pulldown_cmark::{html, Event, Options, Parser, Tag, TagEnd};
 
 fn main() {
     let markdown_input: &str = "This is Peter on ![holiday in Greece](pearl_beach.jpg).";
@@ -14,7 +14,7 @@ fn main() {
             _ => event,
         })
         .filter(|event| match event {
-            Event::Start(Tag::Image(..)) | Event::End(Tag::Image(..)) => false,
+            Event::Start(Tag::Image(..)) | Event::End(TagEnd::Image) => false,
             _ => true,
         });
 

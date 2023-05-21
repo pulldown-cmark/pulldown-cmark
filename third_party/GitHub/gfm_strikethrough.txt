@@ -6,12 +6,12 @@
 GFM enables the `strikethrough` extension, where an additional emphasis type is
 available.
 
-Strikethrough text is any text wrapped in two tildes (`~`).
+Strikethrough text is any text wrapped in a matching pair of one or two tildes (`~`).
 
 ```````````````````````````````` example
-~~Hi~~ Hello, world!
+~~Hi~~ Hello, ~there~ world!
 .
-<p><del>Hi</del> Hello, world!</p>
+<p><del>Hi</del> Hello, <del>there</del> world!</p>
 ````````````````````````````````
 
 As with regular emphasis delimiters, a new paragraph will cause strikethrough
@@ -24,4 +24,12 @@ new paragraph~~.
 .
 <p>This ~~has a</p>
 <p>new paragraph~~.</p>
+````````````````````````````````
+
+Three or more tildes do not create a strikethrough:
+
+```````````````````````````````` example
+This will ~~~not~~~ strike.
+.
+<p>This will ~~~not~~~ strike.</p>
 ````````````````````````````````

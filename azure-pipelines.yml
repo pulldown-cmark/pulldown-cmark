@@ -1,20 +1,13 @@
 pool:
   vmImage: 'ubuntu-20.04'
 
-steps:
-  - script: |
-      rustup default 1.56.0
-    displayName: Set default Rust toolchain
-  - script: cargo build --all
-    displayName: Cargo build
-  - script: cargo test --all
-    displayName: Cargo test
-  - script: cargo test --all --features=simd,gen-tests
-    displayName: Cargo test with simd feature enabled
-  - script: cargo test --all --features=serde
-    displayName: Cargo test with serde feature enabled
-  - script: cargo test --all --no-default-features
-    displayName: Cargo test without default features    
-  - script: cargo run --release -- --regressions
-    workingDirectory: fuzzer
-    displayName: Test for superlinear time regressions
+jobs:
+ - template: default.yml@templates
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: crate-ci/azure-pipelines
+      ref: refs/heads/v0.4
+      endpoint: marcusklaas

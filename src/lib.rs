@@ -53,6 +53,7 @@
 #![cfg_attr(rustbuild, unstable(feature = "rustc_private", issue = "27812"))]
 // Forbid unsafe code unless the SIMD feature is enabled.
 #![cfg_attr(not(feature = "simd"), forbid(unsafe_code))]
+#![warn(missing_debug_implementations)]
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

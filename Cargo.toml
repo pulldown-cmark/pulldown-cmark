@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.9.2"
+version = "0.9.3"
 authors = [ "Raph Levien <raph.levien@gmail.com>", "Marcus Klaas de Vries <mail@marcusklaas.nl>" ]
 license = "MIT"
 description = "A pull parser for CommonMark"
@@ -38,8 +38,8 @@ getopts = { version = "0.2", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [dev-dependencies]
-html5ever = "0.25"
-markup5ever_rcdom = "0.1"
+html5ever = "0.26"
+markup5ever_rcdom = "0.2"
 lazy_static = "1.4"
 tendril = "0.4"
 criterion = "0.3"

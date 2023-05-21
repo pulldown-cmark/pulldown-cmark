@@ -123,6 +123,7 @@ impl<'a> Default for ItemBody {
     }
 }
 
+#[derive(Debug)]
 pub struct BrokenLink<'a> {
     pub span: std::ops::Range<usize>,
     pub link_type: LinkType,
@@ -141,6 +142,20 @@ pub struct Parser<'input, 'callback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+}
+
+impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Only print the fileds that have public types.
+        f.debug_struct("Parser")
+            .field("text", &self.text)
+            .field("options", &self.options)
+            .field(
+                "broken_link_callback",
+                &self.broken_link_callback.as_ref().map(|_| ..),
+            )
+            .finish()
+    }
 }
 
 impl<'input, 'callback> Parser<'input, 'callback> {
@@ -423,12 +438,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 RefScan::Collapsed(..) | RefScan::Failed => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
+                                    let label_end = self.tree[cur_ix].item.end;
                                     scan_link_label(
                                         &self.tree,
-                                        &self.text[label_start..self.tree[cur_ix].item.end],
+                                        &self.text[label_start..label_end],
                                         self.options.contains(Options::ENABLE_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
+                                    .filter(|(_, end)| *end == label_end)
                                 }
                             };
 
@@ -551,12 +568,17 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                             // work from the inside out
                             while start > el.start + el.count - match_count {
-                                let (inc, ty) = if c == b'~' {
-                                    (2, ItemBody::Strikethrough)
-                                } else if start > el.start + el.count - match_count + 1 {
-                                    (2, ItemBody::Strong)
+                                let inc = if start > el.start + el.count - match_count + 1 {
+                                    2
                                 } else {
-                                    (1, ItemBody::Emphasis)
+                                    1
+                                };
+                                let ty = if c == b'~' {
+                                    ItemBody::Strikethrough
+                                } else if inc == 2 {
+                                    ItemBody::Strong
+                                } else {
+                                    ItemBody::Emphasis
                                 };
 
                                 let root = start - inc;
@@ -1143,7 +1165,7 @@ enum LinkStackTy {
 }
 
 /// Contains the destination URL, title and source span of a reference definition.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
@@ -1226,7 +1248,7 @@ pub(crate) struct HeadingAttributes<'a> {
 }
 
 /// Keeps track of the reference definitions defined in the document.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 impl<'input, 'b, 's> RefDefs<'input>
@@ -1337,6 +1359,7 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 ///
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
+#[derive(Debug)]
 pub struct OffsetIter<'a, 'b> {
     inner: Parser<'a, 'b>,
 }

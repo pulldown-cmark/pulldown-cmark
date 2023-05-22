@@ -15,7 +15,7 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 <p><code>\</code> may follow just after the first <code>$</code>:  <span class="math inline">\{1, 2, 3\}</span>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -28,7 +28,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -41,7 +41,7 @@ $$$$
 <p>$$$$</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -54,7 +54,7 @@ Dollar at end of line: $
 <p>Dollar at end of line: $</p>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn math_test_5() {
 \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }
 
 #[test]
@@ -79,5 +79,5 @@ $$y = \$ x$$
 <div class="math block">y = \$ x</div>
 "##;
 
-    test_markdown_html(original, expected, false);
+    test_markdown_html(original, expected, false, false);
 }

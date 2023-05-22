@@ -25,6 +25,7 @@ use unicase::UniCase;
 use crate::scanners::{is_ascii_whitespace, scan_eol};
 use crate::strings::CowStr;
 
+#[derive(Debug)]
 pub(crate) enum ReferenceLabel<'a> {
     Link(CowStr<'a>),
     Footnote(CowStr<'a>),

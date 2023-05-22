@@ -5,7 +5,6 @@ use std::cmp::max;
 use std::ops::Range;
 
 use crate::parse::{scan_containers, Allocations, HeadingAttributes, Item, ItemBody, LinkDef};
-use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::Options;
@@ -13,6 +12,7 @@ use crate::{
     linklabel::{scan_link_label_rest, LinkLabel},
     HeadingLevel, MathDisplay,
 };
+use crate::{scanners::*, MetadataBlockKind};
 
 use unicase::UniCase;
 
@@ -31,6 +31,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         allocs: Allocations::new(),
         options,
         lookup_table,
+        next_paragraph_task: None,
     };
     first_pass.run()
 }
@@ -44,6 +45,9 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
+    /// This is `Some(item)` when the next paragraph
+    /// starts with a task list marker.
+    next_paragraph_task: Option<Item>,
 }
 
 impl<'a, 'b> FirstPass<'a, 'b> {
@@ -106,13 +110,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    if let Some(is_checked) = line_start.scan_task_list_marker() {
-                        self.tree.append(Item {
+                    self.next_paragraph_task =
+                        line_start.scan_task_list_marker().map(|is_checked| Item {
                             start: after_marker_index,
                             end: start_ix + line_start.bytes_scanned(),
                             body: ItemBody::TaskListMarker(is_checked),
                         });
-                    }
                 }
             } else if line_start.scan_blockquote_marker() {
                 self.finish_list(start_ix);
@@ -159,6 +162,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         let ix = start_ix + line_start.bytes_scanned();
+
+        if let Some((_n, metadata_block_ch)) = scan_metadata_block(
+            &bytes[ix..],
+            self.options
+                .contains(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS),
+            self.options
+                .contains(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS),
+        ) {
+            return self.parse_metadata_block(ix, indent, metadata_block_ch);
+        }
 
         // HTML Blocks
         if bytes[ix] == b'<' {
@@ -323,8 +336,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             body: ItemBody::Paragraph,
         });
         self.tree.push();
-        let bytes = self.text.as_bytes();
 
+        if let Some(item) = self.next_paragraph_task {
+            self.tree.append(item);
+            self.next_paragraph_task = None;
+        }
+
+        let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         loop {
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
@@ -933,6 +951,55 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         end_ix
     }
 
+    fn parse_metadata_block(
+        &mut self,
+        start_ix: usize,
+        indent: usize,
+        metadata_block_ch: u8,
+    ) -> usize {
+        let bytes = self.text.as_bytes();
+        let metadata_block_kind = match metadata_block_ch {
+            b'-' => MetadataBlockKind::YamlStyle,
+            b'+' => MetadataBlockKind::PlusesStyle,
+            _ => panic!("Erroneous metadata block character when parsing metadata block"),
+        };
+        // 3 delimiter characters
+        let mut ix = start_ix + 3 + scan_nextline(&bytes[start_ix + 3..]);
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // will get set later
+            body: ItemBody::MetadataBlock(metadata_block_kind),
+        });
+        self.tree.push();
+        loop {
+            let mut line_start = LineStart::new(&bytes[ix..]);
+            let n_containers = scan_containers(&self.tree, &mut line_start);
+            if n_containers < self.tree.spine_len() {
+                break;
+            }
+            line_start.scan_space(indent);
+            let mut close_line_start = line_start.clone();
+            if !close_line_start.scan_space(4) {
+                let close_ix = ix + close_line_start.bytes_scanned();
+                if let Some(n) = scan_closing_metadata_block(&bytes[close_ix..], metadata_block_ch)
+                {
+                    ix = close_ix + n;
+                    break;
+                }
+            }
+            let remaining_space = line_start.remaining_space();
+            ix += line_start.bytes_scanned();
+            let next_ix = ix + scan_nextline(&bytes[ix..]);
+            self.append_code_text(remaining_space, ix, next_ix);
+            ix = next_ix;
+        }
+
+        self.pop(ix);
+
+        // try to read trailing whitespace or it will register as a completely blank line
+        ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
+    }
+
     fn append_code_text(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
             let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
@@ -1456,7 +1523,8 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
         return true;
     }
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !is_punctuation(next_char) {
+    // `*` and `~~` can be intraword, `_` cannot
+    if (delim == '*' || delim == '~') && !is_punctuation(next_char) {
         return true;
     }
 
@@ -1467,7 +1535,7 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
 }
 
 /// Determines whether the delimiter run starting at given index is
-/// left-flanking, as defined by the commonmark spec (and isn't intraword
+/// right-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
 fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
     if ix == 0 {
@@ -1483,7 +1551,8 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
         return true;
     };
     let delim = suffix.chars().next().unwrap();
-    if delim == '*' && !is_punctuation(prev_char) {
+    // `*` and `~~` can be intraword, `_` cannot
+    if (delim == '*' || delim == '~') && !is_punctuation(prev_char) {
         return true;
     }
 
@@ -1687,6 +1756,7 @@ fn extract_attribute_block_content_from_header_text(
 fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes> {
     let mut id = None;
     let mut classes = Vec::new();
+    let mut attrs = Vec::new();
 
     for attr in inside_attr_block.split_ascii_whitespace() {
         // iterator returned by `str::split_ascii_whitespace` never emits empty
@@ -1697,11 +1767,18 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
                 id = Some(&attr[1..]);
             } else if first_byte == b'.' {
                 classes.push(&attr[1..]);
+            } else {
+                let split = attr.split_once('=');
+                if let Some((key, value)) = split {
+                    attrs.push((key, Some(value)));
+                } else {
+                    attrs.push((attr, None));
+                }
             }
         }
     }
 
-    Some(HeadingAttributes { id, classes })
+    Some(HeadingAttributes { id, classes, attrs })
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

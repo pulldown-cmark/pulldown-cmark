@@ -1013,7 +1013,10 @@ impl InlineStack {
         count: usize,
         both: bool,
     ) -> Option<InlineEl> {
-        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
+        if self.stack.is_empty() {
+            return None;
+        }
+        let lowerbound = min(self.stack.len() - 1, self.get_lowerbound(c, count, both));
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
@@ -1305,11 +1308,11 @@ impl<'a> Allocations<'a> {
         let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
         HeadingIndex(ix_nonzero)
     }
-        
+
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
-    
+
     pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
         let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
         std::mem::replace(&mut self.links[ix.0], default_link)
@@ -1317,7 +1320,7 @@ impl<'a> Allocations<'a> {
 
     pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
         std::mem::replace(&mut self.alignments[ix.0], Default::default())
-    }    
+    }
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {

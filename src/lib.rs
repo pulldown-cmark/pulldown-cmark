@@ -61,9 +61,9 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "html")]
-pub mod html;
-#[cfg(feature = "html")]
 pub mod escape;
+#[cfg(feature = "html")]
+pub mod html;
 
 mod entities;
 mod firstpass;
@@ -119,10 +119,10 @@ pub enum Tag<'a> {
     /// have no prefix and can optionally have a value (`myattr` o `myattr=myvalue`).
     Heading {
         level: HeadingLevel,
-        id: Option<&'a str>,
-        classes: Vec<&'a str>,
+        id: Option<CowStr<'a>>,
+        classes: Vec<CowStr<'a>>,
         /// The first item of the tuple is the attr and second one the value.
-        attrs: Vec<(&'a str, Option<&'a str>)>,
+        attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
     BlockQuote,
@@ -187,7 +187,7 @@ pub enum TagEnd {
 
     Link,
     Image,
-    
+
     /// A metadata block.
     MetadataBlock(MetadataBlockKind),
 }

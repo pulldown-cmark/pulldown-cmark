@@ -1244,9 +1244,9 @@ pub(crate) struct Allocations<'a> {
 /// Used by the heading attributes extension.
 #[derive(Clone)]
 pub(crate) struct HeadingAttributes<'a> {
-    pub id: Option<&'a str>,
-    pub classes: Vec<&'a str>,
-    pub attrs: Vec<(&'a str, Option<&'a str>)>,
+    pub id: Option<CowStr<'a>>,
+    pub classes: Vec<CowStr<'a>>,
+    pub attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -1305,11 +1305,11 @@ impl<'a> Allocations<'a> {
         let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
         HeadingIndex(ix_nonzero)
     }
-        
+
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
-    
+
     pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
         let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
         std::mem::replace(&mut self.links[ix.0], default_link)
@@ -1317,7 +1317,7 @@ impl<'a> Allocations<'a> {
 
     pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
         std::mem::replace(&mut self.alignments[ix.0], Default::default())
-    }    
+    }
 }
 
 impl<'a> Index<CowIndex> for Allocations<'a> {
@@ -1476,7 +1476,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
             Tag::Heading {
                 level,
-                id: *id,
+                id: id.clone(),
                 classes: classes.clone(),
                 attrs: attrs.clone(),
             }

@@ -168,7 +168,7 @@ where
                 write!(&mut self.writer, "{}", level)?;
                 if let Some(id) = id {
                     self.write(" id=\"")?;
-                    escape_html(&mut self.writer, id)?;
+                    escape_html(&mut self.writer, &id)?;
                     self.write("\"")?;
                 }
                 let mut classes = classes.iter();
@@ -183,10 +183,10 @@ where
                 }
                 for (attr, value) in attrs {
                     self.write(" ")?;
-                    escape_html(&mut self.writer, attr)?;
+                    escape_html(&mut self.writer, &attr)?;
                     if let Some(val) = value {
                         self.write("=\"")?;
-                        escape_html(&mut self.writer, val)?;
+                        escape_html(&mut self.writer, &val)?;
                         self.write("\"")?;
                     } else {
                         self.write("=\"\"")?;

@@ -1890,7 +1890,7 @@ mod simd {
             match callback(offset, *bytes.get_unchecked(offset)) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     offset += skip + 1;
-                    mask >>= skip + 1 + mask_ix;
+                    mask = mask.wrapping_shr((skip + 1 + mask_ix) as u32);
                 }
                 LoopInstruction::BreakAtWith(ix, val) => return Err((ix, val)),
             }

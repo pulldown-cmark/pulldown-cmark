@@ -1481,12 +1481,22 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let (link_type, url, title, id) = allocs.take_link(link_ix);
-            Tag::Link(link_type, url, title, id)
+            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            }
         }
         ItemBody::Image(link_ix) => {
-            let (link_type, url, title, id) = allocs.take_link(link_ix);
-            Tag::Image(link_type, url, title, id)
+            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            Tag::Image {
+                link_type,
+                dest_url,
+                title,
+                id,
+            }
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
@@ -1690,7 +1700,13 @@ mod test {
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
                 .into_offset_iter()
                 .filter_map(|(ev, range)| match ev {
-                    Event::Start(Tag::Link(LinkType::Reference, ..), ..) => Some(range),
+                    Event::Start(
+                        Tag::Link {
+                            link_type: LinkType::Reference,
+                            ..
+                        },
+                        ..,
+                    ) => Some(range),
                     _ => None,
                 })
                 .next()
@@ -1851,7 +1867,12 @@ mod test {
         let mut link_tag_count = 0;
         for (typ, url, title, id) in parser.filter_map(|event| match event {
             Event::Start(tag) => match tag {
-                Tag::Link(typ, url, title, id) => Some((typ, url, title, id)),
+                Tag::Link {
+                    link_type,
+                    dest_url,
+                    title,
+                    id,
+                } => Some((link_type, dest_url, title, id)),
                 _ => None,
             },
             _ => None,

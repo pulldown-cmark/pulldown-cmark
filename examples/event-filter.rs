@@ -14,7 +14,7 @@ fn main() {
             _ => event,
         })
         .filter(|event| match event {
-            Event::Start(Tag::Image(..)) | Event::End(TagEnd::Image) => false,
+            Event::Start(Tag::Image { .. }) | Event::End(TagEnd::Image) => false,
             _ => true,
         });
 

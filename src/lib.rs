@@ -153,13 +153,22 @@ pub enum Tag<'a> {
     Strong,
     Strikethrough,
 
-    /// A link. The first field is the link type, the second the destination URL and the third is a title,
-    /// the fourth is the link identifier.
-    Link(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>),
+    /// A link.
+    Link {
+        link_type: LinkType,
+        dest_url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    },
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title,
     /// the fourth is the link identifier.
-    Image(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>),
+    Image {
+        link_type: LinkType,
+        dest_url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    },
 
     /// A metadata block.
     MetadataBlock(MetadataBlockKind),

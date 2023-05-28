@@ -207,3 +207,28 @@ If there are no rows in the body, no `<tbody>` is generated in HTML output:
 </thead>
 </table>
 ````````````````````````````````
+
+Tables can interrupt paragraphs:
+
+```````````````````````````````` example
+Hello World
+| abc | def |
+| --- | --- |
+| bar | baz |
+.
+<p>Hello World</p>
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````

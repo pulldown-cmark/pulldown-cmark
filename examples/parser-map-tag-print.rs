@@ -67,13 +67,13 @@ fn main() {
                 Tag::CodeBlock(code_block_kind) => {
                     println!("CodeBlock code_block_kind: {:?}", code_block_kind)
                 }
-                Tag::Link(link_type, url, title) => println!(
-                    "Link link_type: {:?} url: {} title: {}",
-                    link_type, url, title
+                Tag::Link(link_type, url, title, id) => println!(
+                    "Link link_type: {:?} url: {} title: {} id: {}",
+                    link_type, url, title, id
                 ),
-                Tag::Image(link_type, url, title) => println!(
-                    "Image link_type: {:?} url: {} title: {}",
-                    link_type, url, title
+                Tag::Image(link_type, url, title, id) => println!(
+                    "Image link_type: {:?} url: {} title: {} id: {}",
+                    link_type, url, title, id
                 ),
                 Tag::Table(column_text_alignment_list) => println!(
                     "Table column_text_alignment_list: {:?}",

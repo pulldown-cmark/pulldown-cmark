@@ -244,7 +244,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
+                        let link_ix =
+                            self.allocs
+                                .allocate_link(link_type, uri, "".into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -362,7 +364,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             }
                             cur = Some(tos.node);
                             cur_ix = tos.node;
-                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title);
+                            let link_ix =
+                                self.allocs
+                                    .allocate_link(LinkType::Inline, url, title, "".into());
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -450,6 +454,12 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 }
                             };
 
+                            let id = match &label {
+                                Some((ReferenceLabel::Link(l), _)) => l.clone(),
+                                Some((ReferenceLabel::Footnote(l), _)) => l.clone(),
+                                None => "".into(),
+                            };
+
                             // see if it's a footnote reference
                             if let Some((ReferenceLabel::Footnote(l), end)) = label {
                                 self.tree[tos.node].next = node_after_link;
@@ -496,7 +506,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
                                     let link_ix =
-                                        self.allocs.allocate_link(def_link_type, url, title);
+                                        self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
                                     {
                                         ItemBody::Image(link_ix)
@@ -1235,7 +1245,7 @@ pub(crate) struct HeadingIndex(NonZeroUsize);
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
+    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
     headings: Vec<HeadingAttributes<'a>>,
@@ -1285,9 +1295,15 @@ impl<'a> Allocations<'a> {
         CowIndex(ix)
     }
 
-    pub fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
+    pub fn allocate_link(
+        &mut self,
+        ty: LinkType,
+        url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    ) -> LinkIndex {
         let ix = self.links.len();
-        self.links.push((ty, url, title));
+        self.links.push((ty, url, title, id));
         LinkIndex(ix)
     }
 
@@ -1310,8 +1326,8 @@ impl<'a> Allocations<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
 
-    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
-        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
+    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>) {
+        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into(), "".into());
         std::mem::replace(&mut self.links[ix.0], default_link)
     }
 
@@ -1329,7 +1345,7 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>);
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
@@ -1465,12 +1481,12 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Link(link_type, url, title)
+            let (link_type, url, title, id) = allocs.take_link(link_ix);
+            Tag::Link(link_type, url, title, id)
         }
         ItemBody::Image(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Image(link_type, url, title)
+            let (link_type, url, title, id) = allocs.take_link(link_ix);
+            Tag::Image(link_type, url, title, id)
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
@@ -1833,9 +1849,9 @@ mod test {
         let parser =
             Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
-        for (typ, url, title) in parser.filter_map(|event| match event {
+        for (typ, url, title, id) in parser.filter_map(|event| match event {
             Event::Start(tag) => match tag {
-                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                Tag::Link(typ, url, title, id) => Some((typ, url, title, id)),
                 _ => None,
             },
             _ => None,
@@ -1844,6 +1860,7 @@ mod test {
             assert_eq!(typ, LinkType::ReferenceUnknown);
             assert_eq!(url.as_ref(), "YOLO");
             assert_eq!(title.as_ref(), "SWAG");
+            assert_eq!(id.as_ref(), "world");
         }
         assert!(link_tag_count > 0);
     }

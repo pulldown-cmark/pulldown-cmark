@@ -281,7 +281,7 @@ where
             Tag::Emphasis => self.write("<em>"),
             Tag::Strong => self.write("<strong>"),
             Tag::Strikethrough => self.write("<del>"),
-            Tag::Link(LinkType::Email, dest, title) => {
+            Tag::Link(LinkType::Email, dest, title, _id) => {
                 self.write("<a href=\"mailto:")?;
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
@@ -290,7 +290,7 @@ where
                 }
                 self.write("\">")
             }
-            Tag::Link(_link_type, dest, title) => {
+            Tag::Link(_link_type, dest, title, _id) => {
                 self.write("<a href=\"")?;
                 escape_href(&mut self.writer, &dest)?;
                 if !title.is_empty() {
@@ -299,7 +299,7 @@ where
                 }
                 self.write("\">")
             }
-            Tag::Image(_link_type, dest, title) => {
+            Tag::Image(_link_type, dest, title, _id) => {
                 self.write("<img src=\"")?;
                 escape_href(&mut self.writer, &dest)?;
                 self.write("\" alt=\"")?;

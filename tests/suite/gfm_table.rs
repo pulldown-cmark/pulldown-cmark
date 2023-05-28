@@ -203,3 +203,30 @@ fn gfm_table_test_8() {
 
     test_markdown_html(original, expected, false, false);
 }
+
+#[test]
+fn gfm_table_test_9() {
+    let original = r##"Hello World
+| abc | def |
+| --- | --- |
+| bar | baz |
+"##;
+    let expected = r##"<p>Hello World</p>
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+</tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}

@@ -484,6 +484,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }
 
+                    // If tables are not enabled yet and the next char is a pipe,
+                    // and there was content before then a table begins here but
+                    // there was content before the table:
+                    // ```
+                    // Hello
+                    // | a | b | c |
+                    // ```
+                    if TableParseMode::Scan == mode
+                        && bytes.len() > (ix + 1)
+                        && bytes[ix + 1] == b'|'
+                        && begin_text < ix
+                        && pipes == 0
+                    {
+                        return LoopInstruction::BreakAtWith(ix, None);
+                    }
+
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
                     if mode == TableParseMode::Scan && pipes > 0 {

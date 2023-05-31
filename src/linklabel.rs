@@ -33,6 +33,8 @@ pub(crate) enum ReferenceLabel<'a> {
 
 pub(crate) type LinkLabel<'a> = UniCase<CowStr<'a>>;
 
+pub(crate) type FootnoteLabel<'a> = UniCase<CowStr<'a>>;
+
 /// Assumes the opening bracket has already been scanned.
 /// The line break handler determines what happens when a linebreak
 /// is found. It is passed the bytes following the line break and

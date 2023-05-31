@@ -64,7 +64,7 @@ fn generate_tests_from_spec() {
 
         let spec_name = file_path.file_stem().unwrap().to_str().unwrap();
 
-        let spec = Spec::new(&raw_spec);
+        let spec = Spec::new(&raw_spec, spec_name.starts_with("gfm_"));
         let mut n_tests = 0;
 
         spec_rs
@@ -86,7 +86,7 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks});
+    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {is_gfm});
 }}
 "###,
                     spec_name,
@@ -95,6 +95,7 @@ fn {}_test_{i}() {{
                     expected = testcase.expected,
                     smart_punct = testcase.smart_punct,
                     metadata_blocks = testcase.metadata_blocks,
+                    is_gfm = testcase.is_gfm,
                 ))
                 .unwrap();
 
@@ -134,12 +135,13 @@ fn {}_test_{i}() {{
 #[cfg(feature = "gen-tests")]
 pub struct Spec<'a> {
     spec: &'a str,
+    is_gfm: bool,
 }
 
 #[cfg(feature = "gen-tests")]
 impl<'a> Spec<'a> {
-    pub fn new(spec: &'a str) -> Self {
-        Spec { spec }
+    pub fn new(spec: &'a str, is_gfm: bool) -> Self {
+        Spec { spec, is_gfm }
     }
 }
 
@@ -149,6 +151,7 @@ pub struct TestCase {
     pub expected: String,
     pub smart_punct: bool,
     pub metadata_blocks: bool,
+    pub is_gfm: bool,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -190,6 +193,7 @@ impl<'a> Iterator for Spec<'a> {
         let test_case = TestCase {
             original: spec[i_start..i_end].to_string().replace("→", "\t"),
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
+            is_gfm: self.is_gfm,
             smart_punct,
             metadata_blocks,
         };

@@ -29,7 +29,7 @@ use std::ops::{Index, Range};
 use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
-use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
+use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel, FootnoteLabel};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{scanners::*, MetadataBlockKind};
@@ -390,7 +390,8 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 &self.tree,
                                 block_text,
                                 next,
-                                self.options.contains(Options::ENABLE_FOOTNOTES),
+                                self.options.has_footnotes(),
+                                self.options.contains(Options::ENABLE_GFM_FOOTNOTES),
                             );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
@@ -447,7 +448,8 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..label_end],
-                                        self.options.contains(Options::ENABLE_FOOTNOTES),
+                                        self.options.has_footnotes(),
+                                        self.options.contains(Options::ENABLE_GFM_FOOTNOTES),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
@@ -462,15 +464,21 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                             // see if it's a footnote reference
                             if let Some((ReferenceLabel::Footnote(l), end)) = label {
-                                self.tree[tos.node].next = node_after_link;
-                                self.tree[tos.node].child = None;
-                                self.tree[tos.node].item.body =
-                                    ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
-                                self.tree[tos.node].item.end = end;
-                                prev = Some(tos.node);
-                                cur = node_after_link;
-                                self.link_stack.clear();
-                                continue;
+                                let footref = self.allocs.allocate_cow(l);
+                                if let Some(def) = self.allocs.footdefs.get_mut(self.allocs.cows[footref.0].to_owned().into()) {
+                                    def.use_count += 1;
+                                }
+                                if !self.options.contains(Options::ENABLE_GFM_FOOTNOTES) || self.allocs.footdefs.contains(&self.allocs.cows[footref.0]) {
+                                    self.tree[tos.node].next = node_after_link;
+                                    self.tree[tos.node].child = None;
+                                    self.tree[tos.node].item.body =
+                                        ItemBody::FootnoteReference(footref);
+                                    self.tree[tos.node].item.end = end;
+                                    prev = Some(tos.node);
+                                    cur = node_after_link;
+                                    self.link_stack.clear();
+                                    continue;
+                                }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
                                 let type_url_title = self
                                     .allocs
@@ -881,7 +889,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 &bytes[(ix - 1)..],
                 Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
-                    let _ = scan_containers(&self.tree, &mut line_start);
+                    let _ = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
                     line_start.bytes_scanned()
                 }),
             )?;
@@ -898,7 +906,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 }
 
 /// Returns number of containers scanned.
-pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
+pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart, gfm_footnotes: bool) -> usize {
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
@@ -911,6 +919,13 @@ pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> 
             ItemBody::ListItem(indent) => {
                 let save = line_start.clone();
                 if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                    *line_start = save;
+                    break;
+                }
+            }
+            ItemBody::FootnoteDefinition(..) if gfm_footnotes => {
+                let save = line_start.clone();
+                if !line_start.scan_space(4) && !line_start.is_at_eol() {
                     *line_start = save;
                     break;
                 }
@@ -1084,6 +1099,7 @@ fn scan_link_label<'text, 'tree>(
     tree: &'tree Tree<Item>,
     text: &'text str,
     allow_footnote_refs: bool,
+    gfm_footnotes: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
     let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
@@ -1091,7 +1107,7 @@ fn scan_link_label<'text, 'tree>(
     }
     let linebreak_handler = |bytes: &[u8]| {
         let mut line_start = LineStart::new(bytes);
-        let _ = scan_containers(tree, &mut line_start);
+        let _ = scan_containers(tree, &mut line_start, gfm_footnotes);
         Some(line_start.bytes_scanned())
     };
     let pair = if allow_footnote_refs && b'^' == bytes[1] {
@@ -1109,6 +1125,7 @@ fn scan_reference<'a, 'b>(
     text: &'b str,
     cur: Option<TreeIndex>,
     allow_footnote_refs: bool,
+    gfm_footnotes: bool,
 ) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
@@ -1122,7 +1139,7 @@ fn scan_reference<'a, 'b>(
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) =
-        scan_link_label(tree, &text[start..], allow_footnote_refs)
+        scan_link_label(tree, &text[start..], allow_footnote_refs, gfm_footnotes)
     {
         RefScan::LinkLabel(label, start + ix)
     } else {
@@ -1181,6 +1198,13 @@ pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
     pub span: Range<usize>,
+}
+
+/// Contains the destination URL, title and source span of a reference definition.
+#[derive(Clone, Debug)]
+pub struct FootnoteDef {
+    pub span: Range<usize>,
+    pub use_count: usize,
 }
 
 /// Tracks tree indices of code span delimiters of each length. It should prevent
@@ -1245,6 +1269,7 @@ pub(crate) struct HeadingIndex(NonZeroUsize);
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
+    pub footdefs: FootnoteDefs<'a>,
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
@@ -1263,6 +1288,10 @@ pub(crate) struct HeadingAttributes<'a> {
 #[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
 
+/// Keeps track of the footnote definitions defined in the document.
+#[derive(Clone, Default, Debug)]
+pub struct FootnoteDefs<'input>(pub(crate) HashMap<FootnoteLabel<'input>, FootnoteDef>);
+
 impl<'input, 'b, 's> RefDefs<'input>
 where
     's: 'b,
@@ -1278,10 +1307,25 @@ where
     }
 }
 
+impl<'input, 'b, 's> FootnoteDefs<'input>
+where
+    's: 'b,
+{
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn contains(&'s self, key: &'b str) -> bool {
+        self.0.contains_key(&UniCase::new(key.into()))
+    }
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn get_mut(&'s mut self, key: CowStr<'input>) -> Option<&'s mut FootnoteDef> {
+        self.0.get_mut(&UniCase::new(key.into()))
+    }
+}
+
 impl<'a> Allocations<'a> {
     pub fn new() -> Self {
         Self {
             refdefs: RefDefs::default(),
+            footdefs: FootnoteDefs::default(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),

@@ -14,8 +14,8 @@ fn main() {
     let mut footnotes = Vec::new();
     let mut in_footnote = Vec::new();
     let mut footnote_numbers = HashMap::new();
-    // ENABLE_GFM_FOOTNOTES is used in this example, but ENABLE_FOOTNOTES would work, too.
-    let parser = Parser::new_ext(markdown_input, Options::ENABLE_GFM_FOOTNOTES)
+    // ENABLE_FOOTNOTES is used in this example, but ENABLE_OLD_FOOTNOTES would work, too.
+    let parser = Parser::new_ext(markdown_input, Options::ENABLE_FOOTNOTES)
         .filter_map(|event| {
             match event {
                 Event::Start(Tag::FootnoteDefinition(_)) => {

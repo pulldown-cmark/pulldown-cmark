@@ -390,8 +390,8 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 &self.tree,
                                 block_text,
                                 next,
-                                self.options.has_footnotes(),
-                                self.options.contains(Options::ENABLE_GFM_FOOTNOTES),
+                                self.options.contains(Options::ENABLE_FOOTNOTES),
+                                self.options.has_gfm_footnotes(),
                             );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
@@ -448,8 +448,8 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..label_end],
-                                        self.options.has_footnotes(),
-                                        self.options.contains(Options::ENABLE_GFM_FOOTNOTES),
+                                        self.options.contains(Options::ENABLE_FOOTNOTES),
+                                        self.options.has_gfm_footnotes(),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
@@ -468,7 +468,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 if let Some(def) = self.allocs.footdefs.get_mut(self.allocs.cows[footref.0].to_owned().into()) {
                                     def.use_count += 1;
                                 }
-                                if !self.options.contains(Options::ENABLE_GFM_FOOTNOTES) || self.allocs.footdefs.contains(&self.allocs.cows[footref.0]) {
+                                if !self.options.has_gfm_footnotes() || self.allocs.footdefs.contains(&self.allocs.cows[footref.0]) {
                                     self.tree[tos.node].next = node_after_link;
                                     self.tree[tos.node].child = None;
                                     self.tree[tos.node].item.body =
@@ -889,7 +889,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 &bytes[(ix - 1)..],
                 Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
-                    let _ = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+                    let _ = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
                     line_start.bytes_scanned()
                 }),
             )?;

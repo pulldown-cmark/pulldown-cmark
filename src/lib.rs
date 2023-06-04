@@ -337,7 +337,7 @@ bitflags::bitflags! {
     /// that are not part of the CommonMark spec.
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
-        /// Older footnote syntax.
+        /// GitHub-compatible footnote syntax.
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
@@ -359,13 +359,13 @@ bitflags::bitflags! {
         /// - `+++` line at start
         /// - `+++` line at end
         const ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS = 1 << 8;
-        /// GitHub-compatible footnote syntax. Mutually-exclusive with `ENABLE_FOOTNOTES`.
-        const ENABLE_GFM_FOOTNOTES = 1 << 9;
+        /// Older footnote syntax. Implies `ENABLE_FOOTNOTES`.
+        const ENABLE_OLD_FOOTNOTES = (1 << 9) | (1 << 2);
     }
 }
 
 impl Options {
-    pub(crate) fn has_footnotes(&self) -> bool {
-        self.contains(Options::ENABLE_FOOTNOTES) || self.contains(Options::ENABLE_GFM_FOOTNOTES)
+    pub(crate) fn has_gfm_footnotes(&self) -> bool {
+        self.contains(Options::ENABLE_FOOTNOTES) && !self.contains(Options::ENABLE_OLD_FOOTNOTES)
     }
 }

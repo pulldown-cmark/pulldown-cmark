@@ -4,12 +4,12 @@
 pub use super::test_markdown_html;
 
 mod footnotes;
-mod gfm_footnotes;
 mod gfm_strikethrough;
 mod gfm_table;
 mod gfm_tasklist;
 mod heading_attrs;
 mod metadata_blocks;
+mod old_footnotes;
 mod regression;
 mod smart_punct;
 mod spec;

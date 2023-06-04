@@ -67,12 +67,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[start_ix..]);
 
-        let i = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+        let i = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
         for _ in i..self.tree.spine_len() {
             self.pop(start_ix);
         }
 
-        if self.options.contains(Options::ENABLE_FOOTNOTES) {
+        if self.options.contains(Options::ENABLE_OLD_FOOTNOTES) {
             // finish footnote if it's still open and was preceded by blank line
             if let Some(node_ix) = self.tree.peek_up() {
                 if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
@@ -91,7 +91,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&bytes[start_ix..]);
             }
-        } else if self.options.contains(Options::ENABLE_GFM_FOOTNOTES) {
+        } else if self.options.contains(Options::ENABLE_FOOTNOTES) {
             // Footnote definitions of the form
             // [^bar]:
             //     * anything really
@@ -317,13 +317,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
         let current_container =
-            scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) == self.tree.spine_len();
+            scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) == self.tree.spine_len();
         if !current_container {
             return None;
         }
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
-        if scan_paragraph_interrupt(&bytes[ix..], current_container, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) {
+        if scan_paragraph_interrupt(&bytes[ix..], current_container, self.options.has_gfm_footnotes()) {
             return None;
         }
 
@@ -374,7 +374,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
             let current_container =
-                scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) == self.tree.spine_len();
+                scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
                 if current_container {
@@ -398,7 +398,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if scan_paragraph_interrupt(suffix, current_container, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) {
+                if scan_paragraph_interrupt(suffix, current_container, self.options.has_gfm_footnotes()) {
                     break;
                 }
             }
@@ -515,7 +515,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        if scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) == self.tree.spine_len() {
+                        if scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) == self.tree.spine_len() {
                             let table_head_ix = next_line_ix + line_start.bytes_scanned();
                             let (table_head_bytes, alignment) =
                                 scan_table_head(&bytes[table_head_ix..]);
@@ -796,7 +796,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
             if n_containers < self.tree.spine_len() {
                 break;
             }
@@ -831,7 +831,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
                 break;
             }
@@ -874,7 +874,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
             if n_containers < self.tree.spine_len()
                 || !(line_start.scan_space(4) || line_start.is_at_eol())
             {
@@ -921,7 +921,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
             if n_containers < self.tree.spine_len() {
                 break;
             }
@@ -970,7 +970,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES));
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
             if n_containers < self.tree.spine_len() {
                 break;
             }
@@ -1196,7 +1196,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         i += 1;
         self.finish_list(start);
-        if self.options.contains(Options::ENABLE_GFM_FOOTNOTES) {
+        if self.options.has_gfm_footnotes() {
             if let Some(node_ix) = self.tree.peek_up() {
                 if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
                     // finish previous footnote if it's still open
@@ -1225,10 +1225,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         scan_link_label_rest(&self.text[start..], &|bytes| {
             let mut line_start = LineStart::new(bytes);
             let current_container =
-                scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) == self.tree.spine_len();
+                scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[bytes_scanned..];
-            if scan_paragraph_interrupt(suffix, current_container, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) {
+            if scan_paragraph_interrupt(suffix, current_container, self.options.has_gfm_footnotes()) {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1268,7 +1268,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            if self.tree.spine_len() != scan_containers(&self.tree, &mut line_start, self.options.contains(Options::ENABLE_GFM_FOOTNOTES)) {
+            if self.tree.spine_len() != scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) {
                 return None;
             }
             i += line_start.bytes_scanned();

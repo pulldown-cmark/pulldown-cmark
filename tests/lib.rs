@@ -14,15 +14,15 @@ use tendril::stream::TendrilSink;
 mod suite;
 
 #[inline(never)]
-pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata_blocks: bool, is_gfm: bool) {
+pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata_blocks: bool, old_footnotes: bool) {
     let mut s = String::new();
 
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TASKLISTS);
-    if is_gfm {
-        opts.insert(Options::ENABLE_GFM_FOOTNOTES);
+    if old_footnotes {
+        opts.insert(Options::ENABLE_OLD_FOOTNOTES);
     } else {
         opts.insert(Options::ENABLE_FOOTNOTES);
     }

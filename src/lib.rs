@@ -338,6 +338,21 @@ bitflags::bitflags! {
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
         /// GitHub-compatible footnote syntax.
+        ///
+        /// Footnotes are referenced with the syntax `[^IDENT]`,
+        /// and defined with an identifier followed by a colon at top level.
+        /// 
+        /// ---
+        ///
+        /// ```markdown
+        /// Footnote referenced [^1].
+        /// 
+        /// [^1]: footnote defined
+        /// ```
+        /// 
+        /// Footnote referenced [^1].
+        /// 
+        /// [^1]: footnote defined
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
@@ -359,7 +374,25 @@ bitflags::bitflags! {
         /// - `+++` line at start
         /// - `+++` line at end
         const ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS = 1 << 8;
-        /// Older footnote syntax. Implies `ENABLE_FOOTNOTES`.
+        /// Older footnote syntax. This flag implies `ENABLE_FOOTNOTES`, changing it to use an
+        /// older syntax instead of the new, default, GitHub-compatible syntax.
+        ///
+        /// New syntax is different from the old syntax regarding
+        /// indentation, nesting, and footnote references with no definition:
+        /// 
+        /// ```markdown
+        /// [^1]: In new syntax, this is two footnote definitions.
+        /// [^2]: In old syntax, this is a single footnote definition with two lines.
+        /// 
+        /// [^3]:
+        /// 
+        ///     In new syntax, this is a footnote with two paragraphs.
+        /// 
+        ///     In old syntax, this is a footnote followed by a code block.
+        /// 
+        /// In new syntax, this undefined footnote definition renders as
+        /// literal text [^4]. In old syntax, it creates a dangling link.
+        /// ```
         const ENABLE_OLD_FOOTNOTES = (1 << 9) | (1 << 2);
     }
 }

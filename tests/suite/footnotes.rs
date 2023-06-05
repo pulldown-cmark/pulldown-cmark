@@ -478,3 +478,56 @@ fn footnotes_test_18() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn footnotes_test_19() {
+    let original = r##"* First
+  [^1]: test
+* Second [^1] test
+
+
+> first
+> [^2]: test
+> Second [^2] test
+
+
+   First   | Second
+-----------|----------
+first      | second
+[^3]: test | test [^3]
+
+
+|    First   | Second    |
+|------------|-----------|
+| first      | second    |
+| [^4]: test | test [^4] |
+"##;
+    let expected = r##"<ul>
+<li>First
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>test</p>
+</div>
+</li>
+<li>Second <sup class="footnote-reference"><a href="#1">1</a></sup> test</li>
+</ul>
+<blockquote>
+<p>first</p>
+<div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup>
+<p>test
+Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
+</div>
+</blockquote>
+<table><thead><tr><th>First</th><th>Second</th></tr></thead><tbody>
+<tr><td>first</td><td>second</td></tr>
+</tbody></table>
+<div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup>
+<p>test | test <sup class="footnote-reference"><a href="#3">3</a></sup></p>
+</div>
+<table><thead><tr><th>First</th><th>Second</th></tr></thead><tbody>
+<tr><td>first</td><td>second</td></tr>
+<tr><td>[^4]: test</td><td>test [^4]</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

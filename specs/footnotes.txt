@@ -482,3 +482,61 @@ When migrating to the new Edition, a table within a footnote can be written like
 <tr><td>row2a</td><td>row2b</td></tr>
 </div>
 ````````````````````````````````
+
+
+While [Markdown Guide] claims that you can't put footnote definitions inside lists, block quotes,
+or tables. When [I try it][nesttest] in GitHub, footnote definitions are parsed when nested within
+lists and blockquotes, but not tables. A footnote definition will interrupt a table if it's at the
+start of a line, or just not be parsed if the table has a pipe at the start of the line.
+
+[Markdown Guide]: https://www.markdownguide.org/extended-syntax/#footnotes
+[nesttest]: https://gist.github.com/notriddle/169e8735d79639cdf6b5c4b5ba643861
+
+```````````````````````````````` example
+* First
+  [^1]: test
+* Second [^1] test
+
+
+> first
+> [^2]: test
+> Second [^2] test
+
+
+   First   | Second
+-----------|----------
+first      | second
+[^3]: test | test [^3]
+
+
+|    First   | Second    |
+|------------|-----------|
+| first      | second    |
+| [^4]: test | test [^4] |
+.
+<ul>
+<li>First
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>test</p>
+</div>
+</li>
+<li>Second <sup class="footnote-reference"><a href="#1">1</a></sup> test</li>
+</ul>
+<blockquote>
+<p>first</p>
+<div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup>
+<p>test
+Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
+</div>
+</blockquote>
+<table><thead><tr><th>First</th><th>Second</th></tr></thead><tbody>
+<tr><td>first</td><td>second</td></tr>
+</tbody></table>
+<div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup>
+<p>test | test <sup class="footnote-reference"><a href="#3">3</a></sup></p>
+</div>
+<table><thead><tr><th>First</th><th>Second</th></tr></thead><tbody>
+<tr><td>first</td><td>second</td></tr>
+<tr><td>[^4]: test</td><td>test [^4]</td></tr>
+</tbody></table>
+````````````````````````````````

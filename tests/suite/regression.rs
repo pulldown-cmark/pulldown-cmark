@@ -1068,3 +1068,96 @@ fn regression_test_74() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_75() {
+    let original = r##"  | foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+  |-----|------|
+| baz | alef |
+
+  | foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+  |-----|------|
+| baz | alef |
+
+    | foo | bar  |
+    |-----|------|
+    | baz | alef |
+
+| foo | bar  |
+    |-----|------|
+| baz | alef |
+
+	| foo | bar  |
+	|-----|------|
+	| baz | alef |
+
+| foo | bar  |
+	|-----|------|
+| baz | alef |
+"##;
+    let expected = r##"<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+    |-----|------|
+| baz | alef |</p>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+	|-----|------|
+| baz | alef |</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

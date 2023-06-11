@@ -458,6 +458,7 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut offset = 0;
 
     for (i, &b) in text.iter().enumerate() {
+        offset = i;
         match b {
             b' ' => {
                 spaces += 1;
@@ -474,7 +475,6 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
             }
             _ => break,
         }
-        offset = i;
     }
 
     (offset, spaces)

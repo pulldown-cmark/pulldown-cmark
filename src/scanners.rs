@@ -551,8 +551,8 @@ pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> 
 // returns number of bytes in line (including trailing
 // newline) and column alignments
 pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
-    let (mut i, spaces) = calc_indent(data, 4);
-    if spaces > 3 || i == data.len() {
+    let mut i = scan_ch_repeat(data, b' ');
+    if i > 3 || i == data.len() {
         return (0, vec![]);
     }
     let mut cols = vec![];

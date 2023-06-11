@@ -964,3 +964,93 @@ ISSUE 551
 <p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 ````````````````````````````````
 
+ISSUE 656
+
+```````````````````````````````` example
+  | foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+  |-----|------|
+| baz | alef |
+
+  | foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+  |-----|------|
+| baz | alef |
+
+    | foo | bar  |
+    |-----|------|
+    | baz | alef |
+
+| foo | bar  |
+    |-----|------|
+| baz | alef |
+
+→| foo | bar  |
+→|-----|------|
+→| baz | alef |
+
+| foo | bar  |
+→|-----|------|
+| baz | alef |
+.
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+    |-----|------|
+| baz | alef |</p>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+→|-----|------|
+| baz | alef |</p>
+````````````````````````````````

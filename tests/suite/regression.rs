@@ -1076,7 +1076,7 @@ fn regression_test_75() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1086,7 +1086,7 @@ fn regression_test_76() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1096,7 +1096,7 @@ fn regression_test_77() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1106,7 +1106,7 @@ fn regression_test_78() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1116,7 +1116,7 @@ fn regression_test_79() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1126,7 +1126,7 @@ fn regression_test_80() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1136,7 +1136,7 @@ fn regression_test_81() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -1146,5 +1146,5 @@ fn regression_test_82() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }

@@ -1013,10 +1013,7 @@ impl InlineStack {
         count: usize,
         both: bool,
     ) -> Option<InlineEl> {
-        if self.stack.is_empty() {
-            return None;
-        }
-        let lowerbound = min(self.stack.len() - 1, self.get_lowerbound(c, count, both));
+        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
@@ -1040,7 +1037,14 @@ impl InlineStack {
         }
     }
 
+    fn trim_lower_bound(&mut self, ix: usize) {
+        self.lower_bounds[ix] = self.lower_bounds[ix].min(self.stack.len());
+    }
+
     fn push(&mut self, el: InlineEl) {
+        if el.c == b'~' {
+            self.trim_lower_bound(InlineStack::TILDES);
+        }
         self.stack.push(el)
     }
 }

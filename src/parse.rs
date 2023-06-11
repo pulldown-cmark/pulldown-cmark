@@ -1062,7 +1062,14 @@ impl InlineStack {
         }
     }
 
+    fn trim_lower_bound(&mut self, ix: usize) {
+        self.lower_bounds[ix] = self.lower_bounds[ix].min(self.stack.len());
+    }
+
     fn push(&mut self, el: InlineEl) {
+        if el.c == b'~' {
+            self.trim_lower_bound(InlineStack::TILDES);
+        }
         self.stack.push(el)
     }
 }

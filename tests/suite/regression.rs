@@ -1068,3 +1068,83 @@ fn regression_test_74() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_75() {
+    let original = r##"*~~__emphasis strike strong__~~* ~~*__strike emphasis strong__*~~
+"##;
+    let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_76() {
+    let original = r##"*~~__emphasis strike strong__~~* ~~*__`strike emphasis strong code`__*~~
+"##;
+    let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_77() {
+    let original = r##"*~~`emphasis strike code`~~* ~~*__strike emphasis strong__*~~
+"##;
+    let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_78() {
+    let original = r##"*~~`emphasis strike code`~~* ~~*__`strike emphasis strong code`__*~~
+"##;
+    let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_79() {
+    let original = r##"**~~_strong strike emphasis_~~** ~~*__strike emphasis strong__*~~
+"##;
+    let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_80() {
+    let original = r##"**~~_strong strike emphasis_~~** ~~*__`strike emphasis strong code`__*~~
+"##;
+    let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_81() {
+    let original = r##"**~~`strong strike code`~~** ~~*__strike emphasis strong__*~~
+"##;
+    let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn regression_test_82() {
+    let original = r##"**~~`strong strike code`~~** ~~*__`strike emphasis strong code`__*~~
+"##;
+    let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}

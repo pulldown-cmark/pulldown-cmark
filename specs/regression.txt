@@ -914,3 +914,53 @@ foo~~bar~~
 <p>foo<del>bar</del></p>
 ````````````````````````````````
 
+ISSUE 551
+
+```````````````````````````````` example
+*~~__emphasis strike strong__~~* ~~*__strike emphasis strong__*~~
+.
+<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~__emphasis strike strong__~~* ~~*__`strike emphasis strong code`__*~~
+.
+<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~`emphasis strike code`~~* ~~*__strike emphasis strong__*~~
+.
+<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~`emphasis strike code`~~* ~~*__`strike emphasis strong code`__*~~
+.
+<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~_strong strike emphasis_~~** ~~*__strike emphasis strong__*~~
+.
+<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~_strong strike emphasis_~~** ~~*__`strike emphasis strong code`__*~~
+.
+<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~`strong strike code`~~** ~~*__strike emphasis strong__*~~
+.
+<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~`strong strike code`~~** ~~*__`strike emphasis strong code`__*~~
+.
+<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+

@@ -1420,9 +1420,10 @@ fn scan_paragraph_interrupt(bytes: &[u8], current_container: bool, gfm_footnote:
         })
         || bytes.starts_with(b"<")
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
-        || (gfm_footnote && bytes.starts_with(b"[^") && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None).map_or(false, |(len, _)| {
-            bytes[2 + len] == b':'
-        }))
+        || (gfm_footnote
+            && bytes.starts_with(b"[^")
+            && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None)
+                .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

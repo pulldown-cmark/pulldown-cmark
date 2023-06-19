@@ -13,7 +13,7 @@ anyhow = "1.0.71"
 libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
 once_cell = "1.18.0"
 pretty_assertions = "1.3.0"
-quick-xml = "0.28.2"
+quick-xml = "0.29"
 rquickjs = { version = "0.3.0", features = ["parallel"] }
 urlencoding = "2.1.2"
 

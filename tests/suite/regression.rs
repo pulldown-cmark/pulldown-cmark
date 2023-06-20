@@ -1241,3 +1241,13 @@ fn regression_test_83() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_84() {
+    let original = r##"<!doctype html>
+"##;
+    let expected = r##"<!doctype html>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

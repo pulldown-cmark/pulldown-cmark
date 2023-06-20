@@ -1312,6 +1312,8 @@ pub(crate) fn scan_inline_html_comment(
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
+        // An HTML comment consists of `<!--` + text + `-->`, where text does not start with `>`
+        // or `->`, does not end with -, and does not contain --.
         b'-' => {
             let dashes = scan_ch_repeat(&bytes[ix..], b'-');
             if dashes < 1 {
@@ -1336,6 +1338,8 @@ pub(crate) fn scan_inline_html_comment(
             }
             None
         }
+        // A CDATA section consists of the string `<![CDATA[`, a string of characters not
+        // including the string `]]>`, and the string `]]>`.
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata => {
             ix += b"CDATA[".len();
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
@@ -1349,14 +1353,9 @@ pub(crate) fn scan_inline_html_comment(
                 Some(ix + 1)
             }
         }
-        b'A'..=b'Z' if ix > scan_guard.declaration => {
-            // Scan declaration.
-            ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
-            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-            if whitespace == 0 {
-                return None;
-            }
-            ix += whitespace;
+        // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
+        // including the character >, and the character >.
+        _ if c.is_ascii_alphabetic() && ix > scan_guard.declaration => {
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             if scan_ch(&bytes[ix..], b'>') == 0 {
                 scan_guard.declaration = ix;

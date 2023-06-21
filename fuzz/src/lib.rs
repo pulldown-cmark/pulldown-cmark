@@ -200,25 +200,30 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
     let mut normalized = Vec::with_capacity(events.len());
     for event in events.into_iter() {
         match (normalized.last_mut(), &event) {
-            // Join adjacent text events.
+            // Join adjacent text and HTML events.
             (Some(Event::Text(prev)), Event::Text(next)) => *prev = format!("{prev}{next}").into(),
-            // Join adjacent HTML events.
             (Some(Event::Html(prev)), Event::Html(next)) => *prev = format!("{prev}{next}").into(),
-            // commonmark.js always wraps list items in a paragraph
-            (Some(Event::Start(Tag::Item)), next) if next != &Event::Start(Tag::Paragraph) => {
+
+            // commonmark.js wraps non-empty list items in a paragraph.
+            (Some(Event::Start(Tag::Item)), next)
+                if next != &Event::Start(Tag::Paragraph) && next != &Event::End(TagEnd::Item) =>
+            {
                 normalized.push(Event::Start(Tag::Paragraph));
                 normalized.push(event);
             }
-            // commonmark.js always wraps list items in a paragraph
-            (Some(prev), Event::End(TagEnd::Item)) if prev != &Event::End(TagEnd::Paragraph) => {
+            (Some(prev), Event::End(TagEnd::Item))
+                if prev != &Event::End(TagEnd::Paragraph) && prev != &Event::Start(Tag::Item) =>
+            {
                 normalized.push(Event::End(TagEnd::Paragraph));
                 normalized.push(event);
             }
+
             // commonmark.js adds an empty text event to an empty code block.
             (Some(Event::Start(Tag::CodeBlock(_))), Event::End(TagEnd::CodeBlock)) => {
                 normalized.push(Event::Text("".into()));
                 normalized.push(event);
             }
+
             // commonmark.js always adds a final newline to code blocks.
             (Some(Event::Text(prev)), Event::End(TagEnd::CodeBlock))
                 if !prev.is_empty() && !prev.ends_with('\n') =>
@@ -226,6 +231,8 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 *prev = format!("{prev}\n").into();
                 normalized.push(event);
             }
+
+            // Other events are passed through.
             (_, _) => normalized.push(event),
         }
     }
@@ -282,4 +289,51 @@ pub fn print_events(text: &str, events: &[Event]) {
         }
     }
     eprintln!("]");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use pulldown_cmark::{Event, Tag, TagEnd};
+
+    #[test]
+    fn test_normalize_non_empty_list() {
+        assert_eq!(
+            normalize(vec![
+                Event::Start(Tag::List(None)),
+                Event::Start(Tag::Item),
+                Event::Text("foo".into()),
+                Event::End(TagEnd::Item),
+                Event::End(TagEnd::List(false)),
+            ]),
+            vec![
+                Event::Start(Tag::List(None)),
+                Event::Start(Tag::Item),
+                Event::Start(Tag::Paragraph),
+                Event::Text("foo".into()),
+                Event::End(TagEnd::Paragraph),
+                Event::End(TagEnd::Item),
+                Event::End(TagEnd::List(false)),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_normalize_empty_list() {
+        assert_eq!(
+            normalize(vec![
+                Event::Start(Tag::List(None)),
+                Event::Start(Tag::Item),
+                Event::End(TagEnd::Item),
+                Event::End(TagEnd::List(false)),
+            ]),
+            vec![
+                Event::Start(Tag::List(None)),
+                Event::Start(Tag::Item),
+                Event::End(TagEnd::Item),
+                Event::End(TagEnd::List(false)),
+            ]
+        );
+    }
 }

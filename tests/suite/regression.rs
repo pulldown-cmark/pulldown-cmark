@@ -1251,3 +1251,65 @@ fn regression_test_84() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_85() {
+    let original = r##"| A | table    |
+| ------ | ---- |
+| not   |  in  |
+| a     | list|
+
+* A blockquote:
+  > inside a list item
+* A Heading:
+  # inside a list item
+* A table:
+
+  | inside | a       |
+  | ------ | ------- |
+  | list   | item    |
+  | with   | leading |
+  | empty  | lines   |
+* A table:
+  | inside  | a       |
+  | ------- | ------- |
+  | list    | item    |
+  | without | leading |
+  | empty   | lines   |
+"##;
+    let expected = r##"<table><thead><tr><th>A</th><th>table</th></tr></thead><tbody>
+<tr><td>not</td><td>in</td></tr>
+<tr><td>a</td><td>list</td></tr>
+</tbody></table>
+<ul>
+<li>
+<p>A blockquote:</p>
+<blockquote>
+<p>inside a list item</p>
+</blockquote>
+</li>
+<li>
+<p>A Heading:</p>
+<h1>inside a list item</h1>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>with</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>without</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

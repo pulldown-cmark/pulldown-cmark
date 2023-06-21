@@ -300,7 +300,31 @@ pub fn print_events(text: &str, events: &[Event]) {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use pulldown_cmark::{Event, Tag, TagEnd};
+    use pulldown_cmark::{CodeBlockKind, Event, Tag, TagEnd};
+
+    #[test]
+    fn test_normalize_text() {
+        assert_eq!(
+            normalize(vec![
+                Event::Text("foo".into()),
+                Event::Text("bar".into()),
+                Event::Text("baz".into())
+            ]),
+            vec![Event::Text("foobarbaz".into())]
+        );
+    }
+
+    #[test]
+    fn test_normalize_html() {
+        assert_eq!(
+            normalize(vec![
+                Event::Html("<foo>".into()),
+                Event::Html("<bar>".into()),
+                Event::Html("<baz>".into())
+            ]),
+            vec![Event::Html("<foo><bar><baz>".into())]
+        );
+    }
 
     #[test]
     fn test_normalize_non_empty_list() {
@@ -338,6 +362,37 @@ mod tests {
                 Event::Start(Tag::Item),
                 Event::End(TagEnd::Item),
                 Event::End(TagEnd::List(false)),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_normalize_empty_code_block() {
+        assert_eq!(
+            normalize(vec![
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::End(TagEnd::CodeBlock)
+            ]),
+            vec![
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Text("".into()),
+                Event::End(TagEnd::CodeBlock)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_normalize_non_empty_code_block() {
+        assert_eq!(
+            normalize(vec![
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Text("fn main() {}".into()),
+                Event::End(TagEnd::CodeBlock)
+            ]),
+            vec![
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Text("fn main() {}\n".into()),
+                Event::End(TagEnd::CodeBlock)
             ]
         );
     }

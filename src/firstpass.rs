@@ -1466,8 +1466,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
 
     if text_bytes.len() > 1
         && text_bytes[0] == b'!'
-        && text_bytes[1] >= b'A'
-        && text_bytes[1] <= b'Z'
+        && text_bytes[1].is_ascii_alphabetic()
     {
         Some(">")
     } else {

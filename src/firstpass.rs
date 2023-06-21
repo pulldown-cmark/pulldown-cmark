@@ -502,9 +502,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     // ```
                     if TableParseMode::Scan == mode
                         && bytes.len() > (ix + 1)
-                        && bytes[ix + 1] == b'|'
                         && begin_text < ix
                         && pipes == 0
+                        && line_starts_with_pipe(&bytes[ix + 1..])
                     {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }

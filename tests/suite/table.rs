@@ -203,3 +203,118 @@ fn table_test_12() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_13() {
+    let original = r##"table a
+|  a  |  b  |
+| --- | --- |
+|  c  |  d  |
+
+
+table b
+    |  a  |  b  |
+    | --- | --- |
+    |  c  |  d  |
+
+
+table c
+ a  |  b
+--- | ---
+ c  |  d
+
+
+table d
+    a | b
+    --|--
+    c | d
+
+
+table e
+a | b
+--|--
+c | d
+
+table f
+  |  a  |  b  |
+  | --- | --- |
+  |  c  |  d  |
+
+
+table g
+   a  |  b
+  --- | ---
+   c  |  d
+
+table h
+a
+|-|
+b
+
+table i
+| a
+|-
+b
+
+table j
+| a
+-
+b
+"##;
+    let expected = r##"<p>table a</p>
+<table><thead><tr><th>a</th><th>b</th></tr></thead>
+<tr><td>c</td><td>d</td></tr>
+</table>
+<p>table b
+|  a  |  b  |
+| --- | --- |
+|  c  |  d  |</p>
+<p>table c
+a  |  b
+--- | ---
+c  |  d</p>
+<p>table d
+a | b
+--|--
+c | d</p>
+<p>table e
+a | b
+--|--
+c | d</p>
+<p>table f</p>
+<table><thead><tr><th>a</th><th>b</th></tr></thead>
+<tr><td>c</td><td>d</td></tr>
+</table>
+<p>table g
+a  |  b
+--- | ---
+c  |  d</p>
+<p>table h
+a
+|-|
+b</p>
+<p>table i</p>
+<table><thead><tr><th>a</th></tr></thead><tbody>
+<tr><td>b</td></tr>
+</tbody></table>
+<p>table j</p>
+<h2>| a</h2>
+<p>b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_14() {
+    let original = r##"a | b
+- | -
+1 | 2
+"##;
+    let expected = r##"<table><thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+<tr><td>1</td><td>2</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

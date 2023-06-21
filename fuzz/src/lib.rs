@@ -1,3 +1,5 @@
+//! Fuzzin helper functions.
+
 use std::convert::TryInto;
 
 use anyhow::anyhow;
@@ -276,6 +278,9 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
         .collect()
 }
 
+/// Print Markdown events with indentation.
+///
+/// The `text` label indicates the source of the events.
 pub fn print_events(text: &str, events: &[Event]) {
     eprintln!("{text:?} -> [");
     let mut width = 0;

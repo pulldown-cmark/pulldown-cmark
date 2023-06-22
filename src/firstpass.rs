@@ -493,6 +493,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }
 
+                    let mut i = ix;
+                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
+
+                    let end_ix = ix + eol_bytes;
+                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
+                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
+                        i -= 1;
+                        self.tree.append_text(begin_text, i);
+                        return LoopInstruction::BreakAtWith(
+                            end_ix,
+                            Some(Item {
+                                start: i,
+                                end: end_ix,
+                                body: ItemBody::HardBreak,
+                            }),
+                        );
+                    }
+
                     // If tables are not enabled yet and the next char is a pipe,
                     // and there was content before then a table begins here but
                     // there was content before the table:
@@ -509,8 +527,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }
 
-                    let mut i = ix;
-                    let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
                     if mode == TableParseMode::Scan && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
@@ -542,20 +558,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                     }
 
-                    let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
-                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
-                        i -= 1;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(
-                            end_ix,
-                            Some(Item {
-                                start: i,
-                                end: end_ix,
-                                body: ItemBody::HardBreak,
-                            }),
-                        );
-                    }
                     let trailing_whitespace =
                         scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
                     if trailing_whitespace >= 2 {

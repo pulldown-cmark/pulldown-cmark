@@ -398,3 +398,38 @@ a | b
 <tr><td>1</td><td>2</td></tr>
 </tbody></table>
 ````````````````````````````````
+
+
+Hard line breaks are not allowed at the end of table header lines.
+It's about a 50:50 split on babelmark, but this change makes pulldown-cmark
+consistent with GFM and Pandoc.
+
+| Implementation     -> | parsed as |
+| --------------------- | --------- |
+| **pulldown-cmark**    | paragraph |
+| github/cmark-gfm      | paragraph |
+| pycmarkgfm            | paragraph |
+| markdown-it           | table     |
+| php-markdown-extra    | table     |
+| DFM                   | table     |
+| league/commonmark GFM | paragraph |
+| s9e/TextFormatter     | table     |
+| markdig               | paragraph |
+| MD4C                  | paragraph |
+| parsedown             | table     |
+| maruku                | table     |
+| cebe                  | paragraph |
+| pandoc                | paragraph |
+| multimarkdown         | table     |
+
+
+```````````````````````````````` example
+a | b\
+- | -
+1 | 2
+.
+<p>a | b</p>
+<ul>
+<li>| - 1 | 2</li>
+</ul>
+````````````````````````````````

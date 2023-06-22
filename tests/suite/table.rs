@@ -318,3 +318,18 @@ fn table_test_14() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_15() {
+    let original = r##"a | b\
+- | -
+1 | 2
+"##;
+    let expected = r##"<p>a | b</p>
+<ul>
+<li>| - 1 | 2</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

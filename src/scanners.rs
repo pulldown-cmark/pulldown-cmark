@@ -548,6 +548,14 @@ pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> 
     Some((i, level))
 }
 
+pub(crate) fn line_starts_with_pipe(data: &[u8]) -> bool {
+    let (i, spaces) = calc_indent(data, 4);
+    if spaces > 3 || i == data.len() {
+        return false;
+    }
+    data[i] == b'|'
+}
+
 // returns number of bytes in line (including trailing
 // newline) and column alignments
 pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
@@ -558,8 +566,10 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     let mut cols = vec![];
     let mut active_col = Alignment::None;
     let mut start_col = true;
+    let mut found_pipe = false;
     if data[i] == b'|' {
         i += 1;
+        found_pipe = true;
     }
     for c in &data[i..] {
         if let Some(n) = scan_eol(&data[i..]) {
@@ -582,6 +592,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
             }
             b'|' => {
                 start_col = true;
+                found_pipe = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
             }
@@ -596,6 +607,11 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
 
     if !start_col {
         cols.push(active_col);
+    }
+    if !found_pipe {
+        // It isn't a table head if it doesn't have a least one pipe.
+        // It's a list, a header, or a thematic break.
+        return (0, vec![]);
     }
 
     (i, cols)

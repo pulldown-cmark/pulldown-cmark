@@ -333,3 +333,19 @@ fn table_test_15() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_16() {
+    let original = r##"a\
+| b | c |
+|---|---|
+| d | e |
+"##;
+    let expected = r##"<p>a\</p>
+<table><thead><tr><th>b</th><th>c</th></tr></thead><tbody>
+<tr><td>d</td><td>e</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

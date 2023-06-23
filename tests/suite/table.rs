@@ -325,7 +325,7 @@ fn table_test_15() {
 - | -
 1 | 2
 "##;
-    let expected = r##"<p>a | b</p>
+    let expected = r##"<p>a | b\</p>
 <ul>
 <li>| - 1 | 2</li>
 </ul>

@@ -220,12 +220,6 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 normalized.push(event);
             }
 
-            // commonmark.js adds an empty text event to an empty code block.
-            (Some(Event::Start(Tag::CodeBlock(_))), Event::End(TagEnd::CodeBlock)) => {
-                normalized.push(Event::Text("".into()));
-                normalized.push(event);
-            }
-
             // commonmark.js always adds a final newline to code blocks.
             (Some(Event::Text(prev)), Event::End(TagEnd::CodeBlock))
                 if !prev.is_empty() && !prev.ends_with('\n') =>
@@ -241,39 +235,45 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
 
     normalized
         .into_iter()
-        .map(|event| match event {
+        .filter_map(|event| match event {
             // commonmark.js does not record the link type.
             Event::Start(Tag::Link {
                 dest_url,
                 title,
                 id,
                 ..
-            }) => Event::Start(Tag::Link {
+            }) => Some(Event::Start(Tag::Link {
                 link_type: LinkType::Inline,
                 dest_url: dest_url.clone(),
                 title: title.clone(),
                 id: id.clone(),
-            }),
+            })),
             // commonmark.js does not record the link type.
             Event::Start(Tag::Image {
                 dest_url,
                 title,
                 id,
                 ..
-            }) => Event::Start(Tag::Image {
+            }) => Some(Event::Start(Tag::Image {
                 link_type: LinkType::Inline,
                 dest_url: dest_url.clone(),
                 title: title.clone(),
                 id: id.clone(),
-            }),
+            })),
             // commonmark.js does not distinguish between fenced code
             // blocks with a "" info string and indented code blocks.
-            Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into())))
-            }
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => Some(Event::Start(
+                Tag::CodeBlock(CodeBlockKind::Fenced("".into())),
+            )),
+
+            // pulldown-cmark can generate empty text and HTML events.
+            Event::Text(text) if text.is_empty() => None,
+            Event::Html(html) if html.is_empty() => None,
+
             // pulldown-cmark includes trailing newlines in HTML.
-            Event::Html(html) => Event::Html(html.trim_end_matches('\n').to_string().into()),
-            event => event,
+            Event::Html(html) => Some(Event::Html(html.trim_end_matches('\n').to_string().into())),
+
+            event => Some(event),
         })
         .collect()
 }
@@ -315,6 +315,11 @@ mod tests {
     }
 
     #[test]
+    fn test_normalize_empty_text() {
+        assert_eq!(normalize(vec![Event::Text("".into())]), vec![]);
+    }
+
+    #[test]
     fn test_normalize_html() {
         assert_eq!(
             normalize(vec![
@@ -324,6 +329,11 @@ mod tests {
             ]),
             vec![Event::Html("<foo><bar><baz>".into())]
         );
+    }
+
+    #[test]
+    fn test_normalize_empty_hmlt() {
+        assert_eq!(normalize(vec![Event::Html("".into())]), vec![]);
     }
 
     #[test]
@@ -371,11 +381,11 @@ mod tests {
         assert_eq!(
             normalize(vec![
                 Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Text("".into()),
                 Event::End(TagEnd::CodeBlock)
             ]),
             vec![
                 Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
-                Event::Text("".into()),
                 Event::End(TagEnd::CodeBlock)
             ]
         );

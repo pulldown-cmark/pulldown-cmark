@@ -422,14 +422,30 @@ consistent with GFM and Pandoc.
 | pandoc                | paragraph |
 | multimarkdown         | table     |
 
-
 ```````````````````````````````` example
 a | b\
 - | -
 1 | 2
 .
-<p>a | b</p>
+<p>a | b\</p>
 <ul>
 <li>| - 1 | 2</li>
 </ul>
+````````````````````````````````
+
+
+As a block structure, table parsing has a higher priority than backslashes.
+This is consistent with how other paragraph-interrupting structures work,
+and is what GitHub does.
+
+```````````````````````````````` example
+a\
+| b | c |
+|---|---|
+| d | e |
+.
+<p>a\</p>
+<table><thead><tr><th>b</th><th>c</th></tr></thead><tbody>
+<tr><td>d</td><td>e</td></tr>
+</tbody></table>
 ````````````````````````````````

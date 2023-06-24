@@ -375,17 +375,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let current_container =
                 scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes()) == self.tree.spine_len();
+            let trailing_backslash_pos = match brk {
+                Some(Item {
+                    start,
+                    body: ItemBody::HardBreak,
+                    ..
+                }) if bytes[start] == b'\\' => Some(start),
+                _ => None,
+            };
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
                 if current_container {
-                    let trailing_backslash_pos = match brk {
-                        Some(Item {
-                            start,
-                            body: ItemBody::HardBreak,
-                            ..
-                        }) if bytes[start] == b'\\' => Some(start),
-                        _ => None,
-                    };
                     if let Some(ix_setext) =
                         self.parse_setext_heading(ix_new, node_ix, trailing_backslash_pos.is_some())
                     {
@@ -399,11 +399,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
                 if scan_paragraph_interrupt(suffix, current_container, self.options.has_gfm_footnotes()) {
+                    if let Some(pos) = trailing_backslash_pos {
+                        self.tree.append_text(pos, pos + 1);
+                    }
                     break;
                 }
             }
             line_start.scan_all_space();
             if line_start.is_at_eol() {
+                if let Some(pos) = trailing_backslash_pos {
+                    self.tree.append_text(pos, pos + 1);
+                }
                 break;
             }
             ix = next_ix + line_start.bytes_scanned();
@@ -496,21 +502,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
 
-                    let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
-                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
-                        i -= 1;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(
-                            end_ix,
-                            Some(Item {
-                                start: i,
-                                end: end_ix,
-                                body: ItemBody::HardBreak,
-                            }),
-                        );
-                    }
-
                     // If tables are not enabled yet and the next char is a pipe,
                     // and there was content before then a table begins here but
                     // there was content before the table:
@@ -525,6 +516,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         && line_starts_with_pipe(&bytes[ix + 1..])
                     {
                         return LoopInstruction::BreakAtWith(ix, None);
+                    }
+
+                    let end_ix = ix + eol_bytes;
+                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
+                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
+                        i -= 1;
+                        self.tree.append_text(begin_text, i);
+                        return LoopInstruction::BreakAtWith(
+                            end_ix,
+                            Some(Item {
+                                start: i,
+                                end: end_ix,
+                                body: ItemBody::HardBreak,
+                            }),
+                        );
                     }
 
                     if mode == TableParseMode::Scan && pipes > 0 {

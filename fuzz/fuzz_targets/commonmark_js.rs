@@ -21,11 +21,6 @@ fuzz_target!(|text: String| {
         return;
     }
 
-    // https://github.com/raphlinus/pulldown-cmark/issues/659
-    if text.contains("<!") {
-        return;
-    }
-
     // There are some trivial differences due to trailing whitespace.
     let text = text
         .lines()

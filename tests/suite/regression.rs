@@ -1390,3 +1390,22 @@ fn regression_test_91() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_92() {
+    let original = r##"> alpha
+> | a | b |
+> |---|---|
+> | c | d |
+"##;
+    let expected = r##"<blockquote>
+<p>alpha</p>
+<table>
+<thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+<tr><td>c</td><td>d</td></tr>
+</tbody></table>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

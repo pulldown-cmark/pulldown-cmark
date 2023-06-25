@@ -358,8 +358,8 @@ b</p>
 <table><thead><tr><th>a</th></tr></thead><tbody>
 <tr><td>b</td></tr>
 </tbody></table>
-<p>table j</p>
-<h2>| a</h2>
+<h2>table j
+| a</h2>
 <p>b</p>
 ````````````````````````````````
 

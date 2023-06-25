@@ -548,14 +548,6 @@ pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> 
     Some((i, level))
 }
 
-pub(crate) fn line_starts_with_pipe(data: &[u8]) -> bool {
-    let (i, spaces) = calc_indent(data, 4);
-    if spaces > 3 || i == data.len() {
-        return false;
-    }
-    data[i] == b'|'
-}
-
 // returns number of bytes in line (including trailing
 // newline) and column alignments
 pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {

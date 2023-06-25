@@ -699,8 +699,9 @@ pub(crate) fn scan_metadata_block(
 }
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.starts_with(b"> ") {
-        Some(2)
+    if data.get(0).copied() == Some(b'>') {
+        let space = if data.get(1).copied() == Some(b' ') { 1 } else { 0 };
+        Some(1 + space)
     } else {
         None
     }

@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_empty_hmlt() {
+    fn test_normalize_empty_html() {
         assert_eq!(normalize(vec![Event::Html("".into())]), vec![]);
     }
 

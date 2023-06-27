@@ -699,20 +699,7 @@ pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
     }
 }
 
-/// This already assumes the list item has been scanned.
-pub(crate) fn scan_empty_list(data: &[u8]) -> bool {
-    let mut ix = 0;
-    for _ in 0..2 {
-        if let Some(bytes) = scan_blank_line(&data[ix..]) {
-            ix += bytes;
-        } else {
-            return false;
-        }
-    }
-    true
-}
-
-// return number of bytes scanned, delimiter, start index, and indent
+/// return number of bytes scanned, delimiter, start index, and indent
 pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     let mut c = *bytes.get(0)?;
     let (w, start) = match c {

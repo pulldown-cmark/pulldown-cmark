@@ -1481,3 +1481,23 @@ fn regression_test_98() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_99() {
+    let original = r##"***R]*-*
+"##;
+    let expected = r##"<p>*<em><em>R]</em>-</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_100() {
+    let original = r##"****foo*bar*baz****
+"##;
+    let expected = r##"<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -1248,3 +1248,20 @@ Table interruption when nested inside paragraph.
 </tbody></table>
 </blockquote>
 ````````````````````````````````
+
+
+ISSUE 657
+
+```````````````````````````````` example
+***R]*-*
+.
+<p>*<em><em>R]</em>-</em></p>
+````````````````````````````````
+
+The below example adds a trailing space.
+
+```````````````````````````````` example
+****foo*bar*baz****
+.
+<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
+````````````````````````````````

@@ -1501,3 +1501,31 @@ fn regression_test_100() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_101() {
+    let original = r##";
+*
+%
+"##;
+    let expected = r##"<p>;
+*
+%</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_102() {
+    let original = r##";
+* 
+%
+"##;
+    let expected = r##"<p>;
+* 
+%</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

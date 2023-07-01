@@ -1492,7 +1492,7 @@ fn scan_paragraph_interrupt_no_table(bytes: &[u8], current_container: bool, gfm_
             // we don't allow interruption by either empty lists or
             // numbered lists starting at an index other than 1
             (delim == b'*' || delim == b'-' || delim == b'+' || index == 1)
-                && !scan_empty_list(&bytes[ix..])
+                && scan_blank_line(&bytes[ix..]).is_none()
         })
         || bytes.starts_with(b"<")
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))

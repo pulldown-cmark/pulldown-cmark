@@ -48,6 +48,26 @@
 //! assert_eq!(expected_html, &html_output);
 //! # }
 //! ```
+//!
+//! Note that consecutive text events can happen due to the manner in which the
+//! parser evaluates the source. A utility `TextMergeStream` exists to improve
+//! the comfort of iterating the events:
+//!
+//! ```rust
+//! use pulldown_cmark::{Event, Parser, TextMergeStream};
+//!
+//! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
+//!
+//! let iterator = TextMergeStream::new(Parser::new(markdown_input));
+//!
+//! for event in iterator {
+//!     match event {
+//!         Event::Text(text) => println!("{}", text),
+//!         _ => {}
+//!     }
+//! }
+//! ```
+//!
 
 // When compiled for the rustc compiler itself we want to make sure that this is
 // an unstable crate.
@@ -65,6 +85,8 @@ pub mod escape;
 #[cfg(feature = "html")]
 pub mod html;
 
+pub mod utils;
+
 mod entities;
 mod firstpass;
 mod linklabel;
@@ -78,6 +100,7 @@ use std::{convert::TryFrom, fmt::Display};
 
 pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
 pub use crate::strings::{CowStr, InlineStr};
+pub use crate::utils::*;
 
 /// Codeblock kind.
 #[derive(Clone, Debug, PartialEq)]
@@ -341,17 +364,17 @@ bitflags::bitflags! {
         ///
         /// Footnotes are referenced with the syntax `[^IDENT]`,
         /// and defined with an identifier followed by a colon at top level.
-        /// 
+        ///
         /// ---
         ///
         /// ```markdown
         /// Footnote referenced [^1].
-        /// 
+        ///
         /// [^1]: footnote defined
         /// ```
-        /// 
+        ///
         /// Footnote referenced [^1].
-        /// 
+        ///
         /// [^1]: footnote defined
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
@@ -379,17 +402,17 @@ bitflags::bitflags! {
         ///
         /// New syntax is different from the old syntax regarding
         /// indentation, nesting, and footnote references with no definition:
-        /// 
+        ///
         /// ```markdown
         /// [^1]: In new syntax, this is two footnote definitions.
         /// [^2]: In old syntax, this is a single footnote definition with two lines.
-        /// 
+        ///
         /// [^3]:
-        /// 
+        ///
         ///     In new syntax, this is a footnote with two paragraphs.
-        /// 
+        ///
         ///     In old syntax, this is a footnote followed by a code block.
-        /// 
+        ///
         /// In new syntax, this undefined footnote definition renders as
         /// literal text [^4]. In old syntax, it creates a dangling link.
         /// ```

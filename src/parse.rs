@@ -620,7 +620,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     start: el.start,
                                     count: el.count - match_count,
                                     c: el.c,
-                                    both,
+                                    both: el.both,
                                 })
                             }
                             count -= match_count;

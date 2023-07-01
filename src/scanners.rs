@@ -558,8 +558,10 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     let mut cols = vec![];
     let mut active_col = Alignment::None;
     let mut start_col = true;
+    let mut found_pipe = false;
     if data[i] == b'|' {
         i += 1;
+        found_pipe = true;
     }
     for c in &data[i..] {
         if let Some(n) = scan_eol(&data[i..]) {
@@ -582,6 +584,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
             }
             b'|' => {
                 start_col = true;
+                found_pipe = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
             }
@@ -596,6 +599,11 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
 
     if !start_col {
         cols.push(active_col);
+    }
+    if !found_pipe {
+        // It isn't a table head if it doesn't have a least one pipe.
+        // It's a list, a header, or a thematic break.
+        return (0, vec![]);
     }
 
     (i, cols)
@@ -683,8 +691,9 @@ pub(crate) fn scan_metadata_block(
 }
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.starts_with(b"> ") {
-        Some(2)
+    if data.get(0).copied() == Some(b'>') {
+        let space = if data.get(1).copied() == Some(b' ') { 1 } else { 0 };
+        Some(1 + space)
     } else {
         None
     }
@@ -1312,6 +1321,8 @@ pub(crate) fn scan_inline_html_comment(
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
+        // An HTML comment consists of `<!--` + text + `-->`, where text does not start with `>`
+        // or `->`, does not end with -, and does not contain --.
         b'-' => {
             let dashes = scan_ch_repeat(&bytes[ix..], b'-');
             if dashes < 1 {
@@ -1336,6 +1347,8 @@ pub(crate) fn scan_inline_html_comment(
             }
             None
         }
+        // A CDATA section consists of the string `<![CDATA[`, a string of characters not
+        // including the string `]]>`, and the string `]]>`.
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata => {
             ix += b"CDATA[".len();
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
@@ -1349,14 +1362,9 @@ pub(crate) fn scan_inline_html_comment(
                 Some(ix + 1)
             }
         }
-        b'A'..=b'Z' if ix > scan_guard.declaration => {
-            // Scan declaration.
-            ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
-            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-            if whitespace == 0 {
-                return None;
-            }
-            ix += whitespace;
+        // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
+        // including the character >, and the character >.
+        _ if c.is_ascii_alphabetic() && ix > scan_guard.declaration => {
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             if scan_ch(&bytes[ix..], b'>') == 0 {
                 scan_guard.declaration = ix;

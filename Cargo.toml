@@ -35,6 +35,18 @@ name = "event-filter"
 required-features = ["html"]
 
 [[example]]
+name = "footnote-rewrite"
+required-features = ["html"]
+
+[[example]]
+name = "parser-map-event-print"
+required-features = ["html"]
+
+[[example]]
+name = "parser-map-tag-print"
+required-features = ["html"]
+
+[[example]]
 name = "string-to-string"
 required-features = ["html"]
 

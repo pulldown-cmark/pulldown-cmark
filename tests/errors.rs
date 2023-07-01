@@ -86,6 +86,15 @@ fn test_fuzzer_input_12() {
 }
 
 #[test]
+fn test_fuzzer_input_13() {
+    // Does not fail with Options::all():
+    Parser::new_ext(
+        ".\r> ^](\r\u{c}\r\0\0\r.\r[^\0\0\\\0\0\0^^^^^]",
+        Options::ENABLE_FOOTNOTES,
+    );
+}
+
+#[test]
 fn test_wrong_code_block() {
     parse(
         r##"```

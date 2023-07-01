@@ -1055,6 +1055,7 @@ ISSUE 656
 | baz | alef |</p>
 ````````````````````````````````
 
+
 ISSUE 592
 
 ```````````````````````````````` example
@@ -1069,3 +1070,214 @@ ISSUE 592
 <h3></h3>
 ````````````````````````````````
 
+
+
+ISSUE 659
+
+```````````````````````````````` example
+<!doctype html>
+.
+<!doctype html>
+````````````````````````````````
+
+
+ISSUE 540
+
+```````````````````````````````` example
+| A | table    |
+| ------ | ---- |
+| not   |  in  |
+| a     | list|
+
+* A blockquote:
+  > inside a list item
+* A Heading:
+  # inside a list item
+* A table:
+
+  | inside | a       |
+  | ------ | ------- |
+  | list   | item    |
+  | with   | leading |
+  | empty  | lines   |
+* A table:
+  | inside  | a       |
+  | ------- | ------- |
+  | list    | item    |
+  | without | leading |
+  | empty   | lines   |
+.
+<table><thead><tr><th>A</th><th>table</th></tr></thead><tbody>
+<tr><td>not</td><td>in</td></tr>
+<tr><td>a</td><td>list</td></tr>
+</tbody></table>
+<ul>
+<li>
+<p>A blockquote:</p>
+<blockquote>
+<p>inside a list item</p>
+</blockquote>
+</li>
+<li>
+<p>A Heading:</p>
+<h1>inside a list item</h1>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>with</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>without</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+</ul>
+````````````````````````````````
+
+
+ISSUE 658
+
+```````````````````````````````` example
+a\
+
+b
+.
+<p>a\</p>
+<p>b</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+* b
+.
+<p>a\</p>
+<ul>
+<li>b</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+> b
+.
+<p>a\</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+# b
+.
+<p>a\</p>
+<h1>b</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+==
+.
+<h1>a\</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+> a\
+>
+.
+<blockquote>
+<p>a\</p>
+</blockquote>
+````````````````````````````````
+
+
+ISSUE 674
+
+```````````````````````````````` example
+<a
+>
+.
+<p>&lt;a</p>
+<blockquote></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+>
+.
+<div
+>
+````````````````````````````````
+
+```````````````````````````````` example
+<a
+> quote
+.
+<p>&lt;a</p>
+<blockquote><p>quote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+> not quote
+.
+<div
+> not quote
+````````````````````````````````
+
+```````````````````````````````` example
+<a
+>quote
+.
+<p>&lt;a</p>
+<blockquote><p>quote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+>not quote
+.
+<div
+>not quote
+````````````````````````````````
+
+Table interruption when nested inside paragraph.
+
+```````````````````````````````` example
+> alpha
+> | a | b |
+> |---|---|
+> | c | d |
+.
+<blockquote>
+<p>alpha</p>
+<table>
+<thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+<tr><td>c</td><td>d</td></tr>
+</tbody></table>
+</blockquote>
+````````````````````````````````
+
+
+ISSUE 657
+
+```````````````````````````````` example
+***R]*-*
+.
+<p>*<em><em>R]</em>-</em></p>
+````````````````````````````````
+
+The below example adds a trailing space.
+
+```````````````````````````````` example
+****foo*bar*baz****
+.
+<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
+````````````````````````````````

@@ -332,7 +332,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
-        if scan_paragraph_interrupt(
+        if scan_paragraph_interrupt_no_table(
             &bytes[ix..],
             current_container,
             self.options.has_gfm_footnotes(),
@@ -391,17 +391,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 &mut line_start,
                 self.options.has_gfm_footnotes(),
             ) == self.tree.spine_len();
+            let trailing_backslash_pos = match brk {
+                Some(Item {
+                    start,
+                    body: ItemBody::HardBreak,
+                    ..
+                }) if bytes[start] == b'\\' => Some(start),
+                _ => None,
+            };
             if !line_start.scan_space(4) {
                 let ix_new = ix + line_start.bytes_scanned();
                 if current_container {
-                    let trailing_backslash_pos = match brk {
-                        Some(Item {
-                            start,
-                            body: ItemBody::HardBreak,
-                            ..
-                        }) if bytes[start] == b'\\' => Some(start),
-                        _ => None,
-                    };
                     if let Some(ix_setext) =
                         self.parse_setext_heading(ix_new, node_ix, trailing_backslash_pos.is_some())
                     {
@@ -414,16 +414,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if scan_paragraph_interrupt(
-                    suffix,
-                    current_container,
-                    self.options.has_gfm_footnotes(),
-                ) {
+                if self.scan_paragraph_interrupt(suffix, current_container) {
+                    if let Some(pos) = trailing_backslash_pos {
+                        self.tree.append_text(pos, pos + 1);
+                    }
                     break;
                 }
             }
             line_start.scan_all_space();
             if line_start.is_at_eol() {
+                if let Some(pos) = trailing_backslash_pos {
+                    self.tree.append_text(pos, pos + 1);
+                }
                 break;
             }
             ix = next_ix + line_start.bytes_scanned();
@@ -513,24 +515,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(ix, None);
                     }
 
-                    // If tables are not enabled yet and the next char is a pipe,
-                    // and there was content before then a table begins here but
-                    // there was content before the table:
-                    // ```
-                    // Hello
-                    // | a | b | c |
-                    // ```
-                    if TableParseMode::Scan == mode
-                        && bytes.len() > (ix + 1)
-                        && bytes[ix + 1] == b'|'
-                        && begin_text < ix
-                        && pipes == 0
-                    {
-                        return LoopInstruction::BreakAtWith(ix, None);
-                    }
-
                     let mut i = ix;
                     let eol_bytes = scan_eol(&bytes[ix..]).unwrap();
+
+                    let end_ix = ix + eol_bytes;
+                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
+                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
+                        i -= 1;
+                        self.tree.append_text(begin_text, i);
+                        return LoopInstruction::BreakAtWith(
+                            end_ix,
+                            Some(Item {
+                                start: i,
+                                end: end_ix,
+                                body: ItemBody::HardBreak,
+                            }),
+                        );
+                    }
+
                     if mode == TableParseMode::Scan && pipes > 0 {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
@@ -567,20 +569,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                     }
 
-                    let end_ix = ix + eol_bytes;
-                    let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
-                    if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
-                        i -= 1;
-                        self.tree.append_text(begin_text, i);
-                        return LoopInstruction::BreakAtWith(
-                            end_ix,
-                            Some(Item {
-                                start: i,
-                                end: end_ix,
-                                body: ItemBody::HardBreak,
-                            }),
-                        );
-                    }
                     let trailing_whitespace =
                         scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
                     if trailing_whitespace >= 2 {
@@ -1291,8 +1279,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[bytes_scanned..];
-            if scan_paragraph_interrupt(suffix, current_container, self.options.has_gfm_footnotes())
-            {
+            if self.scan_paragraph_interrupt(suffix, current_container) {
                 None
             } else {
                 Some(bytes_scanned)
@@ -1412,6 +1399,91 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
     }
 
+    /// Checks whether we should break a paragraph on the given input.
+    fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
+        let gfm_footnote = self.options.has_gfm_footnotes();
+        if scan_paragraph_interrupt_no_table(bytes, current_container, gfm_footnote) {
+            return true;
+        }
+        // pulldown-cmark allows heavy tables, that have a `|` on the header row,
+        // to interrupt paragraphs.
+        //
+        // ```markdown
+        // This is a table
+        // | a | b | c |
+        // |---|---|---|
+        // | d | e | f |
+        //
+        // This is not a table
+        //  a | b | c
+        // ---|---|---
+        //  d | e | f
+        // ```
+        if !self.options.contains(Options::ENABLE_TABLES) || !bytes.starts_with(b"|") {
+            return false;
+        }
+
+        // Checking if something's a valid table or not requires looking at two lines.
+        // First line, count unescaped pipes.
+        let mut pipes = 0;
+        let mut next_line_ix = 0;
+        let mut bsesc = false;
+        let mut last_pipe_ix = 0;
+        for (i, &byte) in bytes.iter().enumerate() {
+            match byte {
+                b'\\' => bsesc = !bsesc,
+                b'|' if !bsesc => {
+                    pipes += 1;
+                    last_pipe_ix = i;
+                }
+                b'\r' | b'\n' => {
+                    next_line_ix = i + scan_eol(&bytes[i..]).unwrap();
+                    break;
+                }
+                _ => {}
+            }
+        }
+
+        // scan_eol can't return 0, so this can't be zero
+        if next_line_ix == 0 {
+            return false;
+        }
+
+        // Scan the table head. The part that looks like:
+        //
+        //     |---|---|---|
+        //
+        // Also scan any containing items, since it's on its own line, and
+        // might be nested inside a block quote or something
+        //
+        //     > Table: First
+        //     > | first col | second col |
+        //     > |-----------|------------|
+        //     ^
+        //     | need to skip over the `>` when checking for the table
+        let mut line_start = LineStart::new(&bytes[next_line_ix..]);
+        if scan_containers(
+            &self.tree,
+            &mut line_start,
+            self.options.has_gfm_footnotes(),
+        ) != self.tree.spine_len()
+        {
+            return false;
+        }
+        let table_head_ix = next_line_ix + line_start.bytes_scanned();
+        let (table_head_bytes, alignment) = scan_table_head(&bytes[table_head_ix..]);
+
+        if table_head_bytes == 0 {
+            return false;
+        }
+
+        // computing header count from number of pipes
+        let header_count = count_header_cols(bytes, pipes, 0, last_pipe_ix);
+
+        // make sure they match the number of columns we find in separator line
+        alignment.len() == header_count
+    }
+
     /// Extracts and parses a heading attribute block if exists.
     ///
     /// Returns `(end_offset_of_heading_content, (id, classes))`.
@@ -1475,7 +1547,14 @@ fn count_header_cols(
 }
 
 /// Checks whether we should break a paragraph on the given input.
-fn scan_paragraph_interrupt(bytes: &[u8], current_container: bool, gfm_footnote: bool) -> bool {
+///
+/// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
+/// tables to interrupt the paragraph.
+fn scan_paragraph_interrupt_no_table(
+    bytes: &[u8],
+    current_container: bool,
+    gfm_footnote: bool,
+) -> bool {
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
@@ -1493,7 +1572,7 @@ fn scan_paragraph_interrupt(bytes: &[u8], current_container: bool, gfm_footnote:
         || (gfm_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None)
-                .map_or(false, |(len, _)| bytes[2 + len] == b':'))
+                .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.
@@ -1534,11 +1613,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
         }
     }
 
-    if text_bytes.len() > 1
-        && text_bytes[0] == b'!'
-        && text_bytes[1] >= b'A'
-        && text_bytes[1] <= b'Z'
-    {
+    if text_bytes.len() > 1 && text_bytes[0] == b'!' && text_bytes[1].is_ascii_alphabetic() {
         Some(">")
     } else {
         None

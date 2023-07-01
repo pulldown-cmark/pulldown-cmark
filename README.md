@@ -23,7 +23,7 @@ Further, it optionally supports parsing footnotes,
 [Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
-Rustc 1.63 or newer is required to build the crate.
+Rustc 1.64 or newer is required to build the crate.
 
 ## Example
 

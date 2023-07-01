@@ -2,7 +2,7 @@ pool:
   vmImage: 'ubuntu-20.04'
 
 steps:
-  - script: rustup default 1.60.0
+  - script: rustup default 1.63.0
     displayName: Install rust
   - script: cargo build --all
     displayName: Cargo build

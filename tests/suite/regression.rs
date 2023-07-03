@@ -1244,6 +1244,26 @@ fn regression_test_83() {
 
 #[test]
 fn regression_test_84() {
+    let original = r##"### ###
+"##;
+    let expected = r##"<h3></h3>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_85() {
+    let original = r##"### 
+"##;
+    let expected = r##"<h3></h3>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_86() {
     let original = r##"<!doctype html>
 "##;
     let expected = r##"<!doctype html>
@@ -1253,7 +1273,7 @@ fn regression_test_84() {
 }
 
 #[test]
-fn regression_test_85() {
+fn regression_test_87() {
     let original = r##"| A | table    |
 | ------ | ---- |
 | not   |  in  |
@@ -1315,7 +1335,7 @@ fn regression_test_85() {
 }
 
 #[test]
-fn regression_test_86() {
+fn regression_test_88() {
     let original = r##"a\
 
 b
@@ -1328,7 +1348,7 @@ b
 }
 
 #[test]
-fn regression_test_87() {
+fn regression_test_89() {
     let original = r##"a\
 * b
 "##;
@@ -1342,7 +1362,7 @@ fn regression_test_87() {
 }
 
 #[test]
-fn regression_test_88() {
+fn regression_test_90() {
     let original = r##"a\
 > b
 "##;
@@ -1356,7 +1376,7 @@ fn regression_test_88() {
 }
 
 #[test]
-fn regression_test_89() {
+fn regression_test_91() {
     let original = r##"a\
 # b
 "##;
@@ -1368,7 +1388,7 @@ fn regression_test_89() {
 }
 
 #[test]
-fn regression_test_90() {
+fn regression_test_92() {
     let original = r##"a\
 ==
 "##;
@@ -1379,7 +1399,7 @@ fn regression_test_90() {
 }
 
 #[test]
-fn regression_test_91() {
+fn regression_test_93() {
     let original = r##"> a\
 >
 "##;
@@ -1392,7 +1412,7 @@ fn regression_test_91() {
 }
 
 #[test]
-fn regression_test_92() {
+fn regression_test_94() {
     let original = r##"<a
 >
 "##;
@@ -1404,7 +1424,7 @@ fn regression_test_92() {
 }
 
 #[test]
-fn regression_test_93() {
+fn regression_test_95() {
     let original = r##"<div
 >
 "##;
@@ -1416,7 +1436,7 @@ fn regression_test_93() {
 }
 
 #[test]
-fn regression_test_94() {
+fn regression_test_96() {
     let original = r##"<a
 > quote
 "##;
@@ -1428,7 +1448,7 @@ fn regression_test_94() {
 }
 
 #[test]
-fn regression_test_95() {
+fn regression_test_97() {
     let original = r##"<div
 > not quote
 "##;
@@ -1440,7 +1460,7 @@ fn regression_test_95() {
 }
 
 #[test]
-fn regression_test_96() {
+fn regression_test_98() {
     let original = r##"<a
 >quote
 "##;
@@ -1452,7 +1472,7 @@ fn regression_test_96() {
 }
 
 #[test]
-fn regression_test_97() {
+fn regression_test_99() {
     let original = r##"<div
 >not quote
 "##;
@@ -1464,7 +1484,7 @@ fn regression_test_97() {
 }
 
 #[test]
-fn regression_test_98() {
+fn regression_test_100() {
     let original = r##"> alpha
 > | a | b |
 > |---|---|
@@ -1483,7 +1503,7 @@ fn regression_test_98() {
 }
 
 #[test]
-fn regression_test_99() {
+fn regression_test_101() {
     let original = r##"***R]*-*
 "##;
     let expected = r##"<p>*<em><em>R]</em>-</em></p>
@@ -1493,7 +1513,7 @@ fn regression_test_99() {
 }
 
 #[test]
-fn regression_test_100() {
+fn regression_test_102() {
     let original = r##"****foo*bar*baz****
 "##;
     let expected = r##"<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>

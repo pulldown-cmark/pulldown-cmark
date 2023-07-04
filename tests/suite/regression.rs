@@ -1523,7 +1523,7 @@ fn regression_test_102() {
 }
 
 #[test]
-fn regression_test_101() {
+fn regression_test_103() {
     let original = r##";
 *
 %
@@ -1537,7 +1537,7 @@ fn regression_test_101() {
 }
 
 #[test]
-fn regression_test_102() {
+fn regression_test_104() {
     let original = r##";
 * 
 %
@@ -1545,6 +1545,16 @@ fn regression_test_102() {
     let expected = r##"<p>;
 * 
 %</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_105() {
+    let original = r##"<@1>
+"##;
+    let expected = r##"<p>&lt;@1&gt;</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

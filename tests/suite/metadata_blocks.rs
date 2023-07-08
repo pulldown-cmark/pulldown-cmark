@@ -153,3 +153,30 @@ another_field: 0
 
     test_markdown_html(original, expected, false, true, false);
 }
+
+#[test]
+fn metadata_blocks_test_11() {
+    let original = r##"    ---
+    Things
+    ---
+"##;
+    let expected = r##"<pre><code>---
+Things
+---
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn metadata_blocks_test_12() {
+    let original = r##"---
+- Item 1
+- Item 2
+---
+"##;
+    let expected = r##""##;
+
+    test_markdown_html(original, expected, false, true, false);
+}

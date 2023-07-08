@@ -1313,3 +1313,37 @@ ISSUE 687
 .
 <p>&lt;@1&gt;</p>
 ````````````````````````````````
+
+
+ISSUE 689
+
+```````````````````````````````` example_metadata_blocks
+---
+anything:
+    indented4Spaces: true
+---
+Things
+.
+<p>Things</p>
+````````````````````````````````
+
+```````````````````````````````` example_metadata_blocks
+---
+something:
+  nested:
+    twice: true
+---
+Things
+.
+<p>Things</p>
+````````````````````````````````
+
+```````````````````````````````` example_metadata_blocks
+---
+lists:
+    - indented 4 spaces
+---
+Things
+.
+<p>Things</p>
+````````````````````````````````

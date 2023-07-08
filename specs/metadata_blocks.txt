@@ -150,3 +150,13 @@ Things
 ---
 </code></pre>
 ````````````````````````````````
+
+Metadata blocks may contain lists:
+
+```````````````````````````````` example_metadata_blocks
+---
+- Item 1
+- Item 2
+---
+.
+````````````````````````````````

@@ -1011,13 +1011,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if n_containers < self.tree.spine_len() {
                 break;
             }
-            line_start.scan_space(indent);
-            let mut close_line_start = line_start.clone();
-            if !close_line_start.scan_space(4) {
-                let close_ix = ix + close_line_start.bytes_scanned();
-                if let Some(n) = scan_closing_metadata_block(&bytes[close_ix..], metadata_block_ch)
-                {
-                    ix = close_ix + n;
+            if let (_, 0) = calc_indent(&bytes[ix..], 4) {
+                if let Some(n) = scan_closing_metadata_block(&bytes[ix..], metadata_block_ch) {
+                    ix += n;
                     break;
                 }
             }

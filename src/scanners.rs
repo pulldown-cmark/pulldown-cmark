@@ -433,7 +433,7 @@ pub(crate) fn scan_closing_code_fence(
 // return: end byte for closing metadata block, or None
 // if the line is not a closing metadata block
 pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Option<usize> {
-    let mut i = scan_nextline(bytes);
+    let mut i = 0;
     let mut num_fence_chars_found = scan_ch_repeat(&bytes[i..], fence_char);
     if num_fence_chars_found != 3 {
         // if YAML style metadata block the closing character can also be `.`
@@ -453,7 +453,7 @@ pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Optio
 }
 
 // returned pair is (number of bytes, number of spaces)
-fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
+pub(crate) fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut spaces = 0;
     let mut offset = 0;
 
@@ -665,10 +665,8 @@ pub(crate) fn scan_metadata_block(
             let mut j = i;
             let mut first_line = true;
             while j < data.len() {
-                // `scan_closing_metadata_block` scan next line as the first step,
-                // so it must be executed before scanning next line
-                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
                 j += scan_nextline(&data[j..]);
+                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
                 // The first line of the metadata block cannot be an empty line
                 // nor the end of the block
                 if first_line {
@@ -692,7 +690,11 @@ pub(crate) fn scan_metadata_block(
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
     if data.get(0).copied() == Some(b'>') {
-        let space = if data.get(1).copied() == Some(b' ') { 1 } else { 0 };
+        let space = if data.get(1).copied() == Some(b' ') {
+            1
+        } else {
+            0
+        };
         Some(1 + space)
     } else {
         None

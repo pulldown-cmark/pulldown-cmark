@@ -1559,3 +1559,46 @@ fn regression_test_105() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_106() {
+    let original = r##"---
+anything:
+    indented4Spaces: true
+---
+Things
+"##;
+    let expected = r##"<p>Things</p>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn regression_test_107() {
+    let original = r##"---
+something:
+  nested:
+    twice: true
+---
+Things
+"##;
+    let expected = r##"<p>Things</p>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn regression_test_108() {
+    let original = r##"---
+lists:
+    - indented 4 spaces
+---
+Things
+"##;
+    let expected = r##"<p>Things</p>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}

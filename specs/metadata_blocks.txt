@@ -137,3 +137,16 @@ another_field: 0
 +++
 .
 ````````````````````````````````
+
+Metadata blocks cannot be indented:
+
+```````````````````````````````` example_metadata_blocks
+    ---
+    Things
+    ---
+.
+<pre><code>---
+Things
+---
+</code></pre>
+````````````````````````````````

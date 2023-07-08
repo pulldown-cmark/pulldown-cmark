@@ -983,6 +983,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         indent: usize,
         metadata_block_ch: u8,
     ) -> usize {
+        // metadata blocks cannot be indented
+        if indent > 0 {
+            return 0;
+        }
         let bytes = self.text.as_bytes();
         let metadata_block_kind = match metadata_block_ch {
             b'-' => MetadataBlockKind::YamlStyle,

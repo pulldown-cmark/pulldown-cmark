@@ -606,6 +606,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                             begin_text = ix + 1 + count;
                             LoopInstruction::ContinueAndSkip(count)
+                        } else if ix + 2 < bytes_len && bytes[ix + 2] == b'|' && TableParseMode::Active == mode {
+                            // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
+                            begin_text = ix + 2;
+                            LoopInstruction::ContinueAndSkip(2)
                         } else {
                             begin_text = ix + 1;
                             LoopInstruction::ContinueAndSkip(1)
@@ -705,7 +709,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     _ => LoopInstruction::ContinueAndSkip(0),
                 },
                 b'|' => {
-                    if let TableParseMode::Active = mode {
+                    if ix != 0 && bytes[ix - 1] == b'\\' {
+                        LoopInstruction::ContinueAndSkip(0)
+                    } else if let TableParseMode::Active = mode {
                         LoopInstruction::BreakAtWith(ix, None)
                     } else {
                         last_pipe_ix = ix;

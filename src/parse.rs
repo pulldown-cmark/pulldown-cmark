@@ -812,6 +812,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             while ix != close {
                 let next_ix = self.tree[ix].next.unwrap();
+                let end = if next_ix == close {
+                    span_end
+                } else {
+                    self.tree[next_ix].item.start
+                };
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
@@ -838,12 +843,37 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         new_buf.push(' ');
                         buf = Some(new_buf);
                     }
+                } else if self.tree.is_in_table() && self.text[self.tree[ix].item.start..end].contains("|") {
+                    for (i, c) in bytes[self.tree[ix].item.start..end].into_iter().copied().enumerate() {
+                        if c != b'|' {
+                            continue;
+                        }
+                        let pipe_position = self.tree[ix].item.start + i;
+                        let buf = if let Some(ref mut buf) = buf {
+                            buf.push_str(&self.text[self.tree[ix].item.start..pipe_position]);
+                            buf
+                        } else {
+                            let mut new_buf = String::with_capacity(pipe_position - span_start);
+                            new_buf.push_str(&self.text[span_start..pipe_position]);
+                            buf.insert(new_buf)
+                        };
+                        let mut backslash_count = 0;
+                        for c in buf.bytes().rev() {
+                            if c == b'\\' {
+                                backslash_count += 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        assert!(
+                            backslash_count % 2 == 1,
+                            "if number of backslashes were even, pipe wouldn't be escaped",
+                        );
+                        let trim = (backslash_count / 2) + 1;
+                        buf.truncate(buf.len() - trim);
+                        buf.push_str(&self.text[pipe_position..end]);
+                    }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if next_ix == close {
-                        span_end
-                    } else {
-                        self.tree[ix].item.end
-                    };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
                 ix = next_ix;
@@ -952,6 +982,31 @@ impl<'a> Tree<Item> {
                 body: ItemBody::Text,
             });
         }
+    }
+    /// Returns true if the current node is inside a table.
+    ///
+    /// If `cur` is an ItemBody::Table, it would return false,
+    /// but since the `TableRow` and `TableHead` and `TableCell`
+    /// are children of the table, anything doing inline parsing
+    /// doesn't need to care about that.
+    pub(crate) fn is_in_table(&self) -> bool {
+        fn might_be_in_table(item: &Item) -> bool {
+            item.body.is_inline() || matches!(
+                item.body,
+                | ItemBody::TableHead
+                | ItemBody::TableRow
+                | ItemBody::TableCell
+            )
+        }
+        for &ix in self.walk_spine().rev() {
+            if matches!(self[ix].item.body, ItemBody::Table(_)) {
+                return true;
+            }
+            if !might_be_in_table(&self[ix].item) {
+                return false;
+            }
+        }
+        false
     }
 }
 

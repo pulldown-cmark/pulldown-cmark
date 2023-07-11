@@ -449,3 +449,66 @@ a\
 <tr><td>d</td><td>e</td></tr>
 </tbody></table>
 ````````````````````````````````
+
+
+As a special case, pipes in code blocks in tables are escaped
+with backslashes.
+
+The rule is that, if a backslash run (a series of at least one uninterrupted
+backslashes) comes immediately before a pipe:
+
+* If the number of backslashes is even, then it doesn't escape the pipe.
+* If the number of backslashes is odd, then it escapes the pipe, and it
+  renders `floor(n / 2)` backslashes.
+
+This rule is similar to GitHub's, but not identical. See
+<https://gist.github.com/notriddle/c027512ee849f12098fec3a3256c89d3>
+for what they do. The "Wait, what?" examples are where we diverge,
+and the final three examples are why. In any case, all of GitHub's
+documented examples pass: it just differs in really weird corner cases.
+
+It's a lot closer to the behavior of Pandoc's `commonmark_x`, but they don't
+do the divide-by-two behavior. This means Pandoc's version turns `\|` into a
+literal pipe (just like GitHub and pulldown-cmark do), turns `\\|` into a
+literal backslash plus a table cell marker (which is what pulldown-cmark does,
+but not what GitHub does), and turns `\\\|` into two literal backslashes
+plus a literal pipe (which means there's no way to represent a single
+backslash followed by a single pipe in their syntax).
+
+```````````````````````````````` example
+| Description | Test case |
+|-------------|-----------|
+| Single      | `\`       |
+| Double      | `\\`      |
+| Basic test  | `\|`      |
+| Basic test 2| `\|\|\`   |
+| Basic test 3| `x\|y\|z\`|
+| Not pipe    | `\.`      |
+| Combo       | `\.\|\`   |
+| Extra       | `\\\.`    |
+| Wait, what? | `\\|`     |
+| Wait, what? | `\\\|`    |
+| Wait, what? | `\\\\|`   |
+| Wait, what? | `\\\\\|`  |
+| Wait, what? |          \|
+| Wait, what? |         \\|
+| Wait, what? |        \\\|
+.
+<table><thead><tr><th>Description</th><th>Test case</th></tr></thead><tbody>
+<tr><td>Single</td><td><code>\</code></td></tr>
+<tr><td>Double</td><td><code>\\</code></td></tr>
+<tr><td>Basic test</td><td><code>|</code></td></tr>
+<tr><td>Basic test 2</td><td><code>||\</code></td></tr>
+<tr><td>Basic test 3</td><td><code>x|y|z\</code></td></tr>
+<tr><td>Not pipe</td><td><code>\.</code></td></tr>
+<tr><td>Combo</td><td><code>\.|\</code></td></tr>
+<tr><td>Extra</td><td><code>\\\.</code></td></tr>
+<tr><td>Wait, what?</td><td>`\</td></tr>
+<tr><td>Wait, what?</td><td><code>\|</code></td></tr>
+<tr><td>Wait, what?</td><td>`\\</td></tr>
+<tr><td>Wait, what?</td><td><code>\\|</code></td></tr>
+<tr><td>Wait, what?</td><td>|</td></tr>
+<tr><td>Wait, what?</td><td>\</td></tr>
+<tr><td>Wait, what?</td><td>\|</td></tr>
+</tbody></table>
+````````````````````````````````

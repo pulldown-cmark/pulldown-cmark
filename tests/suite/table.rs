@@ -349,3 +349,45 @@ fn table_test_16() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_17() {
+    let original = r##"| Description | Test case |
+|-------------|-----------|
+| Single      | `\`       |
+| Double      | `\\`      |
+| Basic test  | `\|`      |
+| Basic test 2| `\|\|\`   |
+| Basic test 3| `x\|y\|z\`|
+| Not pipe    | `\.`      |
+| Combo       | `\.\|\`   |
+| Extra       | `\\\.`    |
+| Wait, what? | `\\|`     |
+| Wait, what? | `\\\|`    |
+| Wait, what? | `\\\\|`   |
+| Wait, what? | `\\\\\|`  |
+| Wait, what? |          \|
+| Wait, what? |         \\|
+| Wait, what? |        \\\|
+"##;
+    let expected = r##"<table><thead><tr><th>Description</th><th>Test case</th></tr></thead><tbody>
+<tr><td>Single</td><td><code>\</code></td></tr>
+<tr><td>Double</td><td><code>\\</code></td></tr>
+<tr><td>Basic test</td><td><code>|</code></td></tr>
+<tr><td>Basic test 2</td><td><code>||\</code></td></tr>
+<tr><td>Basic test 3</td><td><code>x|y|z\</code></td></tr>
+<tr><td>Not pipe</td><td><code>\.</code></td></tr>
+<tr><td>Combo</td><td><code>\.|\</code></td></tr>
+<tr><td>Extra</td><td><code>\\\.</code></td></tr>
+<tr><td>Wait, what?</td><td>`\</td></tr>
+<tr><td>Wait, what?</td><td><code>\|</code></td></tr>
+<tr><td>Wait, what?</td><td>`\\</td></tr>
+<tr><td>Wait, what?</td><td><code>\\|</code></td></tr>
+<tr><td>Wait, what?</td><td>|</td></tr>
+<tr><td>Wait, what?</td><td>\</td></tr>
+<tr><td>Wait, what?</td><td>\|</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

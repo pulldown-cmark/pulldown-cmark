@@ -801,8 +801,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         html_end_tag: &str,
         mut remaining_space: usize,
     ) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock,
+        });
+        self.tree.push();
+
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
+        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -815,20 +823,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options.has_gfm_footnotes(),
             );
             if n_containers < self.tree.spine_len() {
+                end_ix = ix;
                 break;
             }
 
             if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
+                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() {
+                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
+        self.pop(end_ix);
         ix
     }
 
@@ -840,8 +852,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         start_ix: usize,
         mut remaining_space: usize,
     ) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock,
+        });
+        self.tree.push();
+
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
+        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -854,17 +874,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options.has_gfm_footnotes(),
             );
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
+                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() || scan_blank_line(&bytes[next_line_ix..]).is_some()
             {
+                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
+        self.pop(end_ix);
         ix
     }
 

@@ -29,7 +29,7 @@ use std::ops::{Index, Range};
 use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
-use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel, FootnoteLabel};
+use crate::linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{scanners::*, MetadataBlockKind};
@@ -83,6 +83,8 @@ pub(crate) enum ItemBody {
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
+    HtmlBlock,
+    InlineHtml,
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
@@ -273,7 +275,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     self.allocs.allocate_cow(converted_string.into()),
                                 )
                             } else {
-                                ItemBody::Html
+                                ItemBody::InlineHtml
                             };
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
@@ -465,10 +467,16 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             // see if it's a footnote reference
                             if let Some((ReferenceLabel::Footnote(l), end)) = label {
                                 let footref = self.allocs.allocate_cow(l);
-                                if let Some(def) = self.allocs.footdefs.get_mut(self.allocs.cows[footref.0].to_owned().into()) {
+                                if let Some(def) = self
+                                    .allocs
+                                    .footdefs
+                                    .get_mut(self.allocs.cows[footref.0].to_owned().into())
+                                {
                                     def.use_count += 1;
                                 }
-                                if !self.options.has_gfm_footnotes() || self.allocs.footdefs.contains(&self.allocs.cows[footref.0]) {
+                                if !self.options.has_gfm_footnotes()
+                                    || self.allocs.footdefs.contains(&self.allocs.cows[footref.0])
+                                {
                                     self.tree[tos.node].next = node_after_link;
                                     self.tree[tos.node].child = None;
                                     self.tree[tos.node].item.body =
@@ -889,7 +897,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 &bytes[(ix - 1)..],
                 Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
-                    let _ = scan_containers(&self.tree, &mut line_start, self.options.has_gfm_footnotes());
+                    let _ = scan_containers(
+                        &self.tree,
+                        &mut line_start,
+                        self.options.has_gfm_footnotes(),
+                    );
                     line_start.bytes_scanned()
                 }),
             )?;
@@ -906,7 +918,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 }
 
 /// Returns number of containers scanned.
-pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart, gfm_footnotes: bool) -> usize {
+pub(crate) fn scan_containers(
+    tree: &Tree<Item>,
+    line_start: &mut LineStart,
+    gfm_footnotes: bool,
+) -> usize {
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
@@ -1497,6 +1513,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
         ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
@@ -1518,7 +1535,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
+        ItemBody::HtmlBlock => Tag::HtmlBlock,
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
+        ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,

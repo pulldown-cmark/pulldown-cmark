@@ -8,6 +8,7 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
+rust-version = "1.64" # Update README.md and azure-pipelines.yml if this changes.
 readme = "README.md"
 exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/azure-pipelines.yml"]
 

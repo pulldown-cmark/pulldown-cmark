@@ -1410,16 +1410,19 @@ pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
     None
 }
 
-pub(crate) fn scan_math_inline_end(data: &[u8]) -> Option<usize> {
+pub(crate) fn scan_math_inline_end(data: &[u8], backtick: bool) -> Option<usize> {
     // Inline-level math expressions cannot continue across a newline.
     for i in memchr2_iter(b'$', b'\n', data) {
         if data[i] != b'$' {
             return None;
         }
-        if i > 0 && data[i - 1] == b'\\' {
-            continue; // Escaped dollar "\$"
+        if i > 0 {
+            let b = data[i - 1];
+            if b == b'\\' || backtick && b != b'`' {
+                continue;
+            }
         }
-        return Some(i);
+        return Some(if backtick { i - 1 } else { i });
     }
     None
 }

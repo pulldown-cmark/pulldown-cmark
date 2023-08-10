@@ -36,9 +36,12 @@ fn math_test_3() {
     let original = r##"Oops empty $$ expression.
 
 $$$$
+
+This is also empty: $``$
 "##;
     let expected = r##"<p>Oops empty $$ expression.</p>
 <p>$$$$</p>
+<p>This is also empty: $``$</p>
 "##;
 
     test_markdown_html(original, expected, false, false);
@@ -77,6 +80,18 @@ $$y = \$ x$$
 "##;
     let expected = r##"<p><span class="math inline">\$</span></p>
 <div class="math block">y = \$ x</div>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}
+
+#[test]
+fn math_test_7() {
+    let original = r##"this is math inline $`y=x`$ test.
+dollar can be contained: $`foo$bar`$
+"##;
+    let expected = r##"<p>this is math inline <span class="math inline">y=x</span> test.
+dollar can be contained: <span class="math inline">foo$bar</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false);

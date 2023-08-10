@@ -551,30 +551,38 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     // backslashes.
                     // For example, when parsing $\{\}$, the next item's start index points { but this node's start
                     // index should point the first \.
-                    let start_ix = self.tree[cur_ix].item.end;
-                    let end_ix =
-                        if let Some(i) = scan_math_inline_end(&block_text.as_bytes()[start_ix..]) {
-                            start_ix + i
-                        } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
-                            prev = cur;
-                            cur = self.tree[cur_ix].next;
-                            continue;
-                        };
+                    let mut start_ix = self.tree[cur_ix].item.end;
+                    let backtick = block_text.as_bytes()[start_ix] == b'`';
+                    if backtick {
+                        start_ix += 1;
+                    }
 
-                    if end_ix > start_ix {
+                    let end_ix = if let Some(i) =
+                        scan_math_inline_end(&block_text.as_bytes()[start_ix..], backtick)
+                    {
+                        start_ix + i
+                    } else {
+                        self.tree[cur_ix].item.body = ItemBody::Text;
+                        prev = cur;
+                        cur = self.tree[cur_ix].next;
+                        continue;
+                    };
+
+                    let end_ix = if end_ix > start_ix {
                         let cow_ix = self
                             .allocs
                             .allocate_cow(block_text[start_ix..end_ix].into());
                         self.tree[cur_ix].item.body = ItemBody::Math(MathDisplay::Inline, cow_ix);
                         self.tree[cur_ix].item.start = start_ix;
                         self.tree[cur_ix].item.end = end_ix;
+                        end_ix + if backtick { 2 } else { 1 }
                     } else {
                         // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.
                         self.tree[cur_ix].item.body = ItemBody::Text;
                         self.tree[cur_ix].item.end = end_ix + 1;
-                    }
-                    self.tree[cur_ix].next = scan_nodes_to_ix(&self.tree, next, end_ix + 1);
+                        end_ix + 1
+                    };
+                    self.tree[cur_ix].next = scan_nodes_to_ix(&self.tree, next, end_ix);
                 }
                 _ => (),
             }

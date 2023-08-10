@@ -34,9 +34,12 @@ Empty expressions are edge cases that are not parsed as mathematical expressions
 Oops empty $$ expression.
 
 $$$$
+
+This is also empty: $``$
 .
 <p>Oops empty $$ expression.</p>
 <p>$$$$</p>
+<p>This is also empty: $``$</p>
 ````````````````````````````````
 
 Sole `$` character is handled as normal text. And Inline-level mathematical expressions cannot continue across newlines:
@@ -69,4 +72,14 @@ $$y = \$ x$$
 .
 <p><span class="math inline">\$</span></p>
 <div class="math block">y = \$ x</div>
+````````````````````````````````
+
+Inline math text with backticks ``$`...`$``:
+
+```````````````````````````````` example
+this is math inline $`y=x`$ test.
+dollar can be contained: $`foo$bar`$
+.
+<p>this is math inline <span class="math inline">y=x</span> test.
+dollar can be contained: <span class="math inline">foo$bar</span></p>
 ````````````````````````````````

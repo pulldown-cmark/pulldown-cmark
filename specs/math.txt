@@ -83,3 +83,13 @@ dollar can be contained: $`foo$bar`$
 <p>this is math inline <span class="math inline">y=x</span> test.
 dollar can be contained: <span class="math inline">foo$bar</span></p>
 ````````````````````````````````
+
+Math expression without backtick cannot start/end with spaces but Math expression with backtick can:
+
+```````````````````````````````` example
+these are not math texts: $ y=x$ and $y=x $ and $ y=x $
+but these are math texts too: $` y=x`$ and $`y=x `$ and $` y=x `$
+.
+<p>these are not math texts: $ y=x$ and $y=x $ and $ y=x $
+but these are math texts too: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
+````````````````````````````````

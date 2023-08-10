@@ -96,3 +96,15 @@ dollar can be contained: <span class="math inline">foo$bar</span></p>
 
     test_markdown_html(original, expected, false, false);
 }
+
+#[test]
+fn math_test_8() {
+    let original = r##"these are not math texts: $ y=x$ and $y=x $ and $ y=x $
+but these are math texts too: $` y=x`$ and $`y=x `$ and $` y=x `$
+"##;
+    let expected = r##"<p>these are not math texts: $ y=x$ and $y=x $ and $ y=x $
+but these are math texts too: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false);
+}

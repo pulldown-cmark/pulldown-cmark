@@ -552,7 +552,15 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     // For example, when parsing $\{\}$, the next item's start index points { but this node's start
                     // index should point the first \.
                     let mut start_ix = self.tree[cur_ix].item.end;
-                    let backtick = block_text.as_bytes()[start_ix] == b'`';
+                    let start_byte = block_text.as_bytes()[start_ix];
+                    // Math expression cannot start with spaces like $ ...$ but $` ...`$ is OK
+                    if start_byte == b' ' {
+                        self.tree[cur_ix].item.body = ItemBody::Text;
+                        prev = cur;
+                        cur = self.tree[cur_ix].next;
+                        continue;
+                    }
+                    let backtick = start_byte == b'`';
                     if backtick {
                         start_ix += 1;
                     }

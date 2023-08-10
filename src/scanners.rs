@@ -1421,6 +1421,10 @@ pub(crate) fn scan_math_inline_end(data: &[u8], backtick: bool) -> Option<usize>
             if b == b'\\' || backtick && b != b'`' {
                 continue;
             }
+            // Math expression cannot end with spaces like $... $ but $`... `$ is OK
+            if b == b' ' {
+                return None;
+            }
         }
         return Some(if backtick { i - 1 } else { i });
     }

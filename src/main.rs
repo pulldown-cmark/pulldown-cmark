@@ -56,7 +56,8 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
-    opts.optflag("F", "enable-footnotes", "enable Hoedown-style footnotes");
+    opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
+    opts.optflag("", "enable-old-footnotes", "enable Hoedown-style footnotes");
     opts.optflag(
         "S",
         "enable-strikethrough",
@@ -89,6 +90,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-footnotes") {
         opts.insert(Options::ENABLE_FOOTNOTES);
+    }
+    if matches.opt_present("enable-old-footnotes") {
+        opts.insert(Options::ENABLE_OLD_FOOTNOTES);
     }
     if matches.opt_present("enable-strikethrough") {
         opts.insert(Options::ENABLE_STRIKETHROUGH);

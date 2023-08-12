@@ -47,7 +47,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-use clap::Clap;
+use clap;
 use crossbeam_utils::thread;
 use pulldown_cmark::{Options, Parser};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, SeedableRng};
@@ -139,13 +139,13 @@ impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
     }
 }
 
-#[derive(Clap)]
+#[derive(clap::Parser)]
 struct Opts {
     /// Run in retest mode
-    #[clap(long)]
+    #[arg(long)]
     retest: bool,
     /// Run regression tests
-    #[clap(long)]
+    #[arg(long)]
     regressions: bool,
 }
 
@@ -154,7 +154,7 @@ fn main() {
     let Opts {
         retest,
         regressions,
-    } = Opts::parse();
+    } = clap::Parser::parse();
 
     if retest {
         for pattern in io::stdin().lock().lines().flatten() {

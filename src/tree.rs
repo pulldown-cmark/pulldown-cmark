@@ -121,6 +121,15 @@ impl<T: Default> Tree<T> {
         ix
     }
 
+    /// Remove the last node, as `pop` but removing it.
+    pub(crate) fn remove_node(&mut self) -> Option<TreeIndex> {
+        let ix = Some(self.spine.pop()?);
+        self.cur = ix;
+        self.nodes.pop()?;
+        self[ix.unwrap()].child = None;
+        ix
+    }
+
     /// Look at the parent node.
     pub(crate) fn peek_up(&self) -> Option<TreeIndex> {
         self.spine.last().copied()

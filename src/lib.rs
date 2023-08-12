@@ -48,6 +48,26 @@
 //! assert_eq!(expected_html, &html_output);
 //! # }
 //! ```
+//!
+//! Note that consecutive text events can happen due to the manner in which the
+//! parser evaluates the source. A utility `TextMergeStream` exists to improve
+//! the comfort of iterating the events:
+//!
+//! ```rust
+//! use pulldown_cmark::{Event, Parser, TextMergeStream};
+//!
+//! let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
+//!
+//! let iterator = TextMergeStream::new(Parser::new(markdown_input));
+//!
+//! for event in iterator {
+//!     match event {
+//!         Event::Text(text) => println!("{}", text),
+//!         _ => {}
+//!     }
+//! }
+//! ```
+//!
 
 // When compiled for the rustc compiler itself we want to make sure that this is
 // an unstable crate.
@@ -65,6 +85,8 @@ pub mod escape;
 #[cfg(feature = "html")]
 pub mod html;
 
+pub mod utils;
+
 mod entities;
 mod firstpass;
 mod linklabel;
@@ -78,6 +100,7 @@ use std::{convert::TryFrom, fmt::Display};
 
 pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
 pub use crate::strings::{CowStr, InlineStr};
+pub use crate::utils::*;
 
 /// Codeblock kind.
 #[derive(Clone, Debug, PartialEq)]
@@ -107,6 +130,8 @@ pub enum MetadataBlockKind {
 }
 
 /// Tags for elements that can contain other elements.
+/// Note that variants are in the same order than in `TagEnd`, so the
+/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Tag<'a> {
@@ -119,10 +144,10 @@ pub enum Tag<'a> {
     /// have no prefix and can optionally have a value (`myattr` o `myattr=myvalue`).
     Heading {
         level: HeadingLevel,
-        id: Option<&'a str>,
-        classes: Vec<&'a str>,
+        id: Option<CowStr<'a>>,
+        classes: Vec<CowStr<'a>>,
         /// The first item of the tuple is the attr and second one the value.
-        attrs: Vec<(&'a str, Option<&'a str>)>,
+        attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
     BlockQuote,
@@ -153,16 +178,30 @@ pub enum Tag<'a> {
     Strong,
     Strikethrough,
 
-    /// A link. The first field is the link type, the second the destination URL and the third is a title.
-    Link(LinkType, CowStr<'a>, CowStr<'a>),
+    /// A link.
+    Link {
+        link_type: LinkType,
+        dest_url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    },
 
-    /// An image. The first field is the link type, the second the destination URL and the third is a title.
-    Image(LinkType, CowStr<'a>, CowStr<'a>),
+    /// An image. The first field is the link type, the second the destination URL and the third is a title,
+    /// the fourth is the link identifier.
+    Image {
+        link_type: LinkType,
+        dest_url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    },
 
     /// A metadata block.
     MetadataBlock(MetadataBlockKind),
 }
 
+/// The end of a `Tag`.
+/// Note that variants are in the same order than in `Tag`, so the
+/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TagEnd {
@@ -335,8 +374,25 @@ pub enum MathDisplay {
 bitflags::bitflags! {
     /// Option struct containing flags for enabling extra features
     /// that are not part of the CommonMark spec.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
+        /// GitHub-compatible footnote syntax.
+        ///
+        /// Footnotes are referenced with the syntax `[^IDENT]`,
+        /// and defined with an identifier followed by a colon at top level.
+        ///
+        /// ---
+        ///
+        /// ```markdown
+        /// Footnote referenced [^1].
+        ///
+        /// [^1]: footnote defined
+        /// ```
+        ///
+        /// Footnote referenced [^1].
+        ///
+        /// [^1]: footnote defined
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
@@ -358,10 +414,36 @@ bitflags::bitflags! {
         /// - `+++` line at start
         /// - `+++` line at end
         const ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS = 1 << 8;
+        /// Older footnote syntax. This flag implies `ENABLE_FOOTNOTES`, changing it to use an
+        /// older syntax instead of the new, default, GitHub-compatible syntax.
+        ///
+        /// New syntax is different from the old syntax regarding
+        /// indentation, nesting, and footnote references with no definition:
+        ///
+        /// ```markdown
+        /// [^1]: In new syntax, this is two footnote definitions.
+        /// [^2]: In old syntax, this is a single footnote definition with two lines.
+        ///
+        /// [^3]:
+        ///
+        ///     In new syntax, this is a footnote with two paragraphs.
+        ///
+        ///     In old syntax, this is a footnote followed by a code block.
+        ///
+        /// In new syntax, this undefined footnote definition renders as
+        /// literal text [^4]. In old syntax, it creates a dangling link.
+        /// ```
+        const ENABLE_OLD_FOOTNOTES = (1 << 9) | (1 << 2);
         /// Extension to parse mathematical expressions wrapped by `$`.
         ///
         /// See the following document to know the syntax.
         /// https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions
-        const ENABLE_MATH = 1 << 9;
+        const ENABLE_MATH = 1 << 10;
+    }
+}
+
+impl Options {
+    pub(crate) fn has_gfm_footnotes(&self) -> bool {
+        self.contains(Options::ENABLE_FOOTNOTES) && !self.contains(Options::ENABLE_OLD_FOOTNOTES)
     }
 }

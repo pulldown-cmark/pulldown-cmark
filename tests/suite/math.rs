@@ -15,7 +15,7 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 <p><code>\</code> may follow just after the first <code>$</code>:  <span class="math inline">\{1, 2, 3\}</span>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -28,7 +28,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ This is also empty: $``$
 <p>This is also empty: $``$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -57,7 +57,7 @@ Dollar at end of line: $
 <p>Dollar at end of line: $</p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn math_test_5() {
 \left( \sum_{k=1}^n b_k^2 \right)</div>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -82,7 +82,7 @@ $$y = \$ x$$
 <div class="math block">y = \$ x</div>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -94,7 +94,7 @@ dollar can be contained: $`foo$bar`$
 dollar can be contained: <span class="math inline">foo$bar</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -106,5 +106,5 @@ but these are math texts too: $` y=x`$ and $`y=x `$ and $` y=x `$
 but these are math texts too: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }

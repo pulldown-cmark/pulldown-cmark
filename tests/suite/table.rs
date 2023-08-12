@@ -11,7 +11,7 @@ fn table_test_1() {
     let expected = r##"<h2>Test header</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn table_test_2() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn table_test_3() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn table_test_4() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn table_test_5() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn table_test_6() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn table_test_7() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn table_test_8() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn table_test_9() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn table_test_10() {
 |ぃ|い|</p>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn table_test_11() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
@@ -201,5 +201,151 @@ fn table_test_12() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false);
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_13() {
+    let original = r##"table a
+|  a  |  b  |
+| --- | --- |
+|  c  |  d  |
+
+
+table b
+    |  a  |  b  |
+    | --- | --- |
+    |  c  |  d  |
+
+
+table c
+ a  |  b
+--- | ---
+ c  |  d
+
+
+table d
+    a | b
+    --|--
+    c | d
+
+
+table e
+a | b
+--|--
+c | d
+
+table f
+  |  a  |  b  |
+  | --- | --- |
+  |  c  |  d  |
+
+
+table g
+   a  |  b
+  --- | ---
+   c  |  d
+
+table h
+a
+|-|
+b
+
+table i
+| a
+|-
+b
+
+table j
+| a
+-
+b
+"##;
+    let expected = r##"<p>table a</p>
+<table><thead><tr><th>a</th><th>b</th></tr></thead>
+<tr><td>c</td><td>d</td></tr>
+</table>
+<p>table b
+|  a  |  b  |
+| --- | --- |
+|  c  |  d  |</p>
+<p>table c
+a  |  b
+--- | ---
+c  |  d</p>
+<p>table d
+a | b
+--|--
+c | d</p>
+<p>table e
+a | b
+--|--
+c | d</p>
+<p>table f</p>
+<table><thead><tr><th>a</th><th>b</th></tr></thead>
+<tr><td>c</td><td>d</td></tr>
+</table>
+<p>table g
+a  |  b
+--- | ---
+c  |  d</p>
+<p>table h
+a
+|-|
+b</p>
+<p>table i</p>
+<table><thead><tr><th>a</th></tr></thead><tbody>
+<tr><td>b</td></tr>
+</tbody></table>
+<h2>table j
+| a</h2>
+<p>b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_14() {
+    let original = r##"a | b
+- | -
+1 | 2
+"##;
+    let expected = r##"<table><thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+<tr><td>1</td><td>2</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_15() {
+    let original = r##"a | b\
+- | -
+1 | 2
+"##;
+    let expected = r##"<p>a | b\</p>
+<ul>
+<li>| - 1 | 2</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_16() {
+    let original = r##"a\
+| b | c |
+|---|---|
+| d | e |
+"##;
+    let expected = r##"<p>a\</p>
+<table><thead><tr><th>b</th><th>c</th></tr></thead><tbody>
+<tr><td>d</td><td>e</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
 }

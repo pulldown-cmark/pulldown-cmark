@@ -100,10 +100,48 @@ dollar can be contained: <span class="math inline">foo$bar</span></p>
 #[test]
 fn math_test_8() {
     let original = r##"these are not math texts: $ y=x$ and $y=x $ and $ y=x $
-but these are math texts too: $` y=x`$ and $`y=x `$ and $` y=x `$
+but these are math texts: $` y=x`$ and $`y=x `$ and $` y=x `$
 "##;
     let expected = r##"<p>these are not math texts: $ y=x$ and $y=x $ and $ y=x $
-but these are math texts too: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
+but these are math texts: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_9() {
+    let original = r##"these are not math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
+but these are math texts: foo$`y=x`$bar and $`y=x`$bar and foo$`y=x`$ bar
+"##;
+    let expected = r##"<p>these are not math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
+but these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_10() {
+    let original = r##"math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$.
+not math texts: !$x=y$! and ?x=y$? and :$x=y$: and .$x=y$.
+backticks doesn't have the edge case: !$`x=y`$! and ?`x=y`$? and :$`x=y`$: and .$`x=y`$.
+"##;
+    let expected = r##"<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>.
+not math texts: !$x=y$! and ?x=y$? and :$x=y$: and .$x=y$.
+backticks doesn't have the edge case: !<span class="math inline">x=y</span>! and ?<code>x=y</code>$? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_11() {
+    let original = r##"$x=y$
+$`x=y`$
+"##;
+    let expected = r##"<p><span class="math inline">x=y</span>
+<span class="math inline">x=y</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

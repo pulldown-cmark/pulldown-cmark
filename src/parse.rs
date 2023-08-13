@@ -575,19 +575,16 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     // backslashes.
                     // For example, when parsing $\{\}$, the next item's start index points { but this node's start
                     // index should point the first \.
-                    let mut start_ix = self.tree[cur_ix].item.end;
-                    let start_byte = block_text.as_bytes()[start_ix];
-                    // Math expression cannot start with spaces like $ ...$ but $` ...`$ is OK
-                    if start_byte == b' ' {
+                    let (start_ix, backtick) = if let Some((i, b)) =
+                        scan_math_inline_start(block_text.as_bytes(), self.tree[cur_ix].item.end)
+                    {
+                        (i, b)
+                    } else {
                         self.tree[cur_ix].item.body = ItemBody::Text;
                         prev = cur;
                         cur = self.tree[cur_ix].next;
                         continue;
-                    }
-                    let backtick = start_byte == b'`';
-                    if backtick {
-                        start_ix += 1;
-                    }
+                    };
 
                     let end_ix = if let Some(i) =
                         scan_math_inline_end(&block_text.as_bytes()[start_ix..], backtick)

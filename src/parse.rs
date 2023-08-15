@@ -132,12 +132,12 @@ pub struct BrokenLink<'a> {
 }
 
 /// Markdown event iterator.
-pub struct Parser<'input, 'callback> {
+pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     text: &'input str,
     options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'input>,
-    broken_link_callback: BrokenLinkCallback<'input, 'callback>,
+    broken_link_callback: Option<F>,
     html_scan_guard: HtmlScanGuard,
 
     // used by inline passes. store them here for reuse
@@ -145,7 +145,7 @@ pub struct Parser<'input, 'callback> {
     link_stack: LinkStack,
 }
 
-impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
+impl<'input, F> std::fmt::Debug for Parser<'input, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only print the fields that have public types.
         f.debug_struct("Parser")
@@ -159,17 +159,19 @@ impl<'input, 'callback> std::fmt::Debug for Parser<'input, 'callback> {
     }
 }
 
-impl<'input, 'callback> Parser<'input, 'callback> {
+impl<'input> Parser<'input, DefaultBrokenLinkCallback> {
     /// Creates a new event iterator for a markdown string without any options enabled.
     pub fn new(text: &'input str) -> Self {
-        Parser::new_ext(text, Options::empty())
+        Self::new_ext(text, Options::empty())
     }
 
     /// Creates a new event iterator for a markdown string with given options.
     pub fn new_ext(text: &'input str, options: Options) -> Self {
-        Parser::new_with_broken_link_callback(text, options, None)
+        Self::new_with_broken_link_callback(text, options, None)
     }
+}
 
+impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
@@ -178,7 +180,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     pub fn new_with_broken_link_callback(
         text: &'input str,
         options: Options,
-        broken_link_callback: BrokenLinkCallback<'input, 'callback>,
+        broken_link_callback: Option<F>,
     ) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
@@ -504,9 +506,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                                     reference: link_label,
                                                 };
 
-                                                callback(broken_link).map(|(url, title)| {
-                                                    (link_type.to_unknown(), url, title)
-                                                })
+                                                callback.handle_broken_link(broken_link).map(
+                                                    |(url, title)| {
+                                                        (link_type.to_unknown(), url, title)
+                                                    },
+                                                )
                                             }
                                             None => None,
                                         }
@@ -900,7 +904,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'input, 'callback> {
+    pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
         OffsetIter { inner: self }
     }
 }
@@ -1431,8 +1435,41 @@ pub(crate) struct HtmlScanGuard {
     pub declaration: usize,
 }
 
-pub type BrokenLinkCallback<'input, 'borrow> =
-    Option<&'borrow mut dyn FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>>;
+/// Trait for broken link callbacks.
+///
+/// See [Parser::new_with_broken_link_callback].
+/// Automatically implemented for closures with the appropriate signature.
+pub trait BrokenLinkCallback<'input> {
+    fn handle_broken_link(
+        &mut self,
+        link: BrokenLink<'input>,
+    ) -> Option<(CowStr<'input>, CowStr<'input>)>;
+}
+
+impl<'input, T> BrokenLinkCallback<'input> for T
+where
+    T: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
+{
+    fn handle_broken_link(
+        &mut self,
+        link: BrokenLink<'input>,
+    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+        self(link)
+    }
+}
+
+/// Broken link callback that does nothing.
+#[derive(Debug)]
+pub struct DefaultBrokenLinkCallback;
+
+impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
+    fn handle_broken_link(
+        &mut self,
+        _link: BrokenLink<'input>,
+    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+        None
+    }
+}
 
 /// Markdown event and source range iterator.
 ///
@@ -1442,18 +1479,18 @@ pub type BrokenLinkCallback<'input, 'borrow> =
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 #[derive(Debug)]
-pub struct OffsetIter<'a, 'b> {
-    inner: Parser<'a, 'b>,
+pub struct OffsetIter<'a, F> {
+    inner: Parser<'a, F>,
 }
 
-impl<'a, 'b> OffsetIter<'a, 'b> {
+impl<'a, F: BrokenLinkCallback<'a>> OffsetIter<'a, F> {
     /// Returns a reference to the internal reference definition tracker.
     pub fn reference_definitions(&self) -> &RefDefs {
         self.inner.reference_definitions()
     }
 }
 
-impl<'a, 'b> Iterator for OffsetIter<'a, 'b> {
+impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1589,7 +1626,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
     Event::Start(tag)
 }
 
-impl<'a, 'b> Iterator for Parser<'a, 'b> {
+impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
@@ -1619,7 +1656,7 @@ impl<'a, 'b> Iterator for Parser<'a, 'b> {
     }
 }
 
-impl FusedIterator for Parser<'_, '_> {}
+impl<'a, F: BrokenLinkCallback<'a>> FusedIterator for Parser<'a, F> {}
 
 #[cfg(test)]
 mod test {
@@ -1628,7 +1665,7 @@ mod test {
 
     // TODO: move these tests to tests/html.rs?
 
-    fn parser_with_extensions(text: &str) -> Parser<'_, 'static> {
+    fn parser_with_extensions(text: &str) -> Parser<'_> {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);

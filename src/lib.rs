@@ -98,7 +98,9 @@ mod tree;
 
 use std::{convert::TryFrom, fmt::Display};
 
-pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
+pub use crate::parse::{
+    BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+};
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;
 

@@ -347,7 +347,7 @@ pub enum Event<'a> {
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
     /// A mathematical expression wrapped by a pair of one or two `$` characters.
-    Math(MathDisplay, CowStr<'a>),
+    Math(MathMode, CowStr<'a>),
 }
 
 /// Table column text alignment.
@@ -361,14 +361,14 @@ pub enum Alignment {
     Right,
 }
 
-/// Display kind of mathematical expression.
+/// Math expression mode.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum MathDisplay {
-    /// Inline-level mathematical expression like `$x^2$`.
+pub enum MathMode {
+    /// Inline mode mathematical expression like `$x^2$`.
     Inline,
-    /// Block-level mathematical expression like `$$y = x^2$$`.
-    Block,
+    /// Display mode mathematical expression like `$$y = x^2$$`.
+    Display,
 }
 
 bitflags::bitflags! {
@@ -434,10 +434,7 @@ bitflags::bitflags! {
         /// literal text [^4]. In old syntax, it creates a dangling link.
         /// ```
         const ENABLE_OLD_FOOTNOTES = (1 << 9) | (1 << 2);
-        /// Extension to parse mathematical expressions wrapped by `$`.
-        ///
-        /// See the following document to know the syntax.
-        /// https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions
+        /// Extension to parse mathematical expressions wrapped by `$` or `$$`.
         const ENABLE_MATH = 1 << 10;
     }
 }

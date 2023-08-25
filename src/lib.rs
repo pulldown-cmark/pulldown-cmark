@@ -347,7 +347,10 @@ pub enum Event<'a> {
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
     /// A mathematical expression wrapped by a pair of one or two `$` characters.
-    Math(MathMode, CowStr<'a>),
+    Math(
+        MathMode,
+        #[cfg_attr(feature = "serde", serde(borrow))] CowStr<'a>,
+    ),
 }
 
 /// Table column text alignment.

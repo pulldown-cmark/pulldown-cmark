@@ -435,7 +435,7 @@ fn footnotes_test_16() {
 <!-- -->
 <pre><code>// indented code block
 fn main() {
-    println!("hello world!");
+    println!(&quot;hello world!&quot;);
 }
 </code></pre>
 "##;

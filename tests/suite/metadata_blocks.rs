@@ -83,7 +83,6 @@ another_field: 0
 ---
 "##;
     let expected = r##"<p>My paragraph here.</p>
-
 "##;
 
     test_markdown_html(original, expected, false, true, false);

@@ -79,7 +79,6 @@ another_field: 0
 ---
 .
 <p>My paragraph here.</p>
-
 ````````````````````````````````
 
 After the start sequence nothing but spaces can be in the same line:

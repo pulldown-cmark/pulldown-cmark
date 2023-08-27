@@ -14,7 +14,13 @@ use tendril::stream::TendrilSink;
 mod suite;
 
 #[inline(never)]
-pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata_blocks: bool, old_footnotes: bool) {
+pub fn test_markdown_html(
+    input: &str,
+    output: &str,
+    smart_punct: bool,
+    metadata_blocks: bool,
+    old_footnotes: bool,
+) {
     let mut s = String::new();
 
     let mut opts = Options::empty();
@@ -38,7 +44,24 @@ pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata
     let p = Parser::new_ext(input, opts);
     pulldown_cmark::html::push_html(&mut s, p);
 
-    assert_eq!(normalize_html(output), normalize_html(&s));
+    // normalizing the HTML using html5ever may hide actual errors
+    // assert_eq!(normalize_html(output), normalize_html(&s));
+    assert_eq!(html_standardize(output), html_standardize(&s));
+}
+
+fn html_standardize(s: &str) -> String {
+    s.trim()
+        .replace("<br>", "<br />")
+        .replace("<br/>", "<br />")
+        .replace("<hr>", "<hr />")
+        .replace("<hr/>", "<hr />")
+        .replace('\t', "")
+        .replace("    ", "")
+        .replace("  \n", "\n")
+        .replace(" \n", "\n")
+        .replace("\n  ", "\n")
+        .replace("\n ", "\n")
+        .replace(">\n<", "><")
 }
 
 lazy_static::lazy_static! {

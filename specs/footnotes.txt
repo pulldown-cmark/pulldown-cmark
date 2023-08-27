@@ -442,7 +442,7 @@ If a footnote definition is followed by text indented four spaces or one tab, th
 <!-- -->
 <pre><code>// indented code block
 fn main() {
-    println!("hello world!");
+    println!(&quot;hello world!&quot;);
 }
 </code></pre>
 ````````````````````````````````

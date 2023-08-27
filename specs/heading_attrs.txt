@@ -33,7 +33,7 @@ multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 <h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
 <h1 myattr="myvalue">with a custom attribute</h1>
-<h2 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h2>
+<h2 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h2>
 ````````````````````````````````
 
 Basic usage with ATX headings:
@@ -47,7 +47,7 @@ Basic usage with ATX headings:
 <h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
 <h4 myattr="myvalue">with a custom attribute</h4>
-<h3 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h3>
+<h3 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h3>
 ````````````````````````````````
 
 If an ATX heading has closing `#`s, the attribute block should be placed after them.
@@ -303,7 +303,7 @@ that characters are their value.
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 .
 <h1 foo="">H1</h1>
-<h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
+<h2 id="myid" class="myclass" unknown="" this#is.ignored="" attr="value">H2</h2>
 ````````````````````````````````
 
 ```````````````````````````````` example
@@ -315,7 +315,7 @@ that characters are their value.
 ```````````````````````````````` example
 #### Header {#id myattr= .class1 other_attr=false}
 .
-<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
+<h4 id="id" class="class1" myattr="" other_attr="false">Header</h4>
 ````````````````````````````````
 
 # Forbidden characters

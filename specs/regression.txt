@@ -693,6 +693,7 @@ ISSUE 398
 .
 <blockquote>
 <p><code>cargo package</code></p>
+</blockquote>
 ````````````````````````````````
 
 ISSUE 399

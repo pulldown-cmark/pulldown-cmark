@@ -480,6 +480,8 @@ When migrating to the new Edition, a table within a footnote can be written like
 <tbody>
 <tr><td>row1a</td><td>row1b</td></tr>
 <tr><td>row2a</td><td>row2b</td></tr>
+</tbody>
+</table>
 </div>
 ````````````````````````````````
 

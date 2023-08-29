@@ -130,8 +130,6 @@ pub enum MetadataBlockKind {
 }
 
 /// Tags for elements that can contain other elements.
-/// Note that variants are in the same order than in `TagEnd`, so the
-/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Tag<'a> {
@@ -200,8 +198,6 @@ pub enum Tag<'a> {
 }
 
 /// The end of a `Tag`.
-/// Note that variants are in the same order than in `Tag`, so the
-/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TagEnd {

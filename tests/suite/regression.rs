@@ -1231,7 +1231,7 @@ fn regression_test_83() {
 | baz | alef |
 </code></pre>
 <p>| foo | bar  |
-	|-----|------|
+|-----|------|
 | baz | alef |</p>
 "##;
 

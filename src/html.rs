@@ -107,7 +107,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
-                Html(html) => {
+                Html(html) | InlineHtml(html) => {
                     self.write(&html)?;
                 }
                 SoftBreak => {
@@ -146,6 +146,7 @@ where
     /// Writes the start of an HTML tag.
     fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
         match tag {
+            Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
                 if self.end_newline {
                     self.write("<p>")
@@ -347,6 +348,7 @@ where
 
     fn end_tag(&mut self, tag: TagEnd) -> io::Result<()> {
         match tag {
+            TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
                 self.write("</p>\n")?;
             }
@@ -426,7 +428,8 @@ where
                     }
                     nest -= 1;
                 }
-                Html(text) | Code(text) | Text(text) => {
+                Html(_) => {}
+                InlineHtml(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }

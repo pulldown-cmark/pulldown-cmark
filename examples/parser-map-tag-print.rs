@@ -45,6 +45,7 @@ fn main() {
     let parser = Parser::new_ext(markdown_input, Options::all()).map(|event| {
         match &event {
             Event::Start(tag) => match tag {
+                Tag::HtmlBlock => println!("HtmlBlock"),
                 Tag::Heading {
                     level,
                     id,

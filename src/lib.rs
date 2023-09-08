@@ -152,6 +152,9 @@ pub enum Tag<'a> {
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
+    /// A HTML block.
+    HtmlBlock,
+
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
     List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
@@ -207,7 +210,10 @@ pub enum TagEnd {
     BlockQuote,
     CodeBlock,
 
-    List(bool), // true for ordered lists
+    HtmlBlock,
+
+    /// A list, `true` for ordered lists.
+    List(bool),
     Item,
     FootnoteDefinition,
 
@@ -223,7 +229,6 @@ pub enum TagEnd {
     Link,
     Image,
 
-    /// A metadata block.
     MetadataBlock(MetadataBlockKind),
 }
 
@@ -329,6 +334,9 @@ pub enum Event<'a> {
     /// An HTML node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Html(CowStr<'a>),
+    /// An inline HTML node.
+    #[cfg_attr(feature = "serde", serde(borrow))]
+    InlineHtml(CowStr<'a>),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.

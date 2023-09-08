@@ -60,7 +60,7 @@ fn html_standardize(s: &str) -> String {
         .replace(" \n", "\n")
         .replace("\n  ", "\n")
         .replace("\n ", "\n")
-        // permit line breaks only between tags
+        // permit extra or missing line breaks only between tags
         .replace(">\n<", "><")
 }
 

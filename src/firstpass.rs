@@ -626,7 +626,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                             begin_text = ix + 1 + count;
                             LoopInstruction::ContinueAndSkip(count)
-                        } else if ix + 2 < bytes_len && bytes[ix + 2] == b'|' && TableParseMode::Active == mode {
+                        } else if ix + 2 < bytes_len
+                            && bytes[ix + 2] == b'|'
+                            && TableParseMode::Active == mode
+                        {
                             // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
                             begin_text = ix + 2;
                             LoopInstruction::ContinueAndSkip(2)

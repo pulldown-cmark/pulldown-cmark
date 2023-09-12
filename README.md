@@ -23,7 +23,7 @@ Further, it optionally supports parsing footnotes,
 [Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
-Rustc 1.56 or newer is required to build the crate.
+Rustc 1.64 or newer is required to build the crate.
 
 ## Example
 
@@ -98,6 +98,25 @@ for event in parser {
 		Event::End(_) => level -= 1,
 		_ => ()
 	}
+}
+```
+
+Note that consecutive text events can happen due to the manner in which the
+parser evaluates the source. A utility `TextMergeStream` exists to improve
+the comfort of iterating the events:
+
+```rust
+use pulldown_cmark::{Event, Parser, Options};
+
+let markdown_input = "Hello world, this is a ~~complicated~~ *very simple* example.";
+
+let iterator = TextMergeStream::new(Parser::new(markdown_input));
+
+for event in iterator {
+    match event {
+        Event::Text(text) => println!("{}", text),
+        _ => {}
+    }
 }
 ```
 

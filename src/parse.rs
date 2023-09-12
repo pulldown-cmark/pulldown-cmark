@@ -29,7 +29,7 @@ use std::ops::{Index, Range};
 use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
-use crate::linklabel::{scan_link_label_rest, LinkLabel, ReferenceLabel};
+use crate::linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel};
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{scanners::*, MetadataBlockKind};
@@ -91,6 +91,8 @@ pub(crate) enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     MathBlock,
+    HtmlBlock,
+    InlineHtml,
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
@@ -253,7 +255,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             end: ix - 1,
                             body: ItemBody::Text,
                         });
-                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into());
+                        let link_ix =
+                            self.allocs
+                                .allocate_link(link_type, uri, "".into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -279,7 +283,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     self.allocs.allocate_cow(converted_string.into()),
                                 )
                             } else {
-                                ItemBody::Html
+                                ItemBody::InlineHtml
                             };
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
@@ -398,7 +402,9 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                             }
                             cur = Some(tos.node);
                             cur_ix = tos.node;
-                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title);
+                            let link_ix =
+                                self.allocs
+                                    .allocate_link(LinkType::Inline, url, title, "".into());
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -423,6 +429,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 block_text,
                                 next,
                                 self.options.contains(Options::ENABLE_FOOTNOTES),
+                                self.options.has_gfm_footnotes(),
                             );
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
@@ -480,23 +487,42 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                         &self.tree,
                                         &self.text[label_start..label_end],
                                         self.options.contains(Options::ENABLE_FOOTNOTES),
+                                        self.options.has_gfm_footnotes(),
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
                                 }
                             };
 
+                            let id = match &label {
+                                Some((ReferenceLabel::Link(l), _)) => l.clone(),
+                                Some((ReferenceLabel::Footnote(l), _)) => l.clone(),
+                                None => "".into(),
+                            };
+
                             // see if it's a footnote reference
                             if let Some((ReferenceLabel::Footnote(l), end)) = label {
-                                self.tree[tos.node].next = node_after_link;
-                                self.tree[tos.node].child = None;
-                                self.tree[tos.node].item.body =
-                                    ItemBody::FootnoteReference(self.allocs.allocate_cow(l));
-                                self.tree[tos.node].item.end = end;
-                                prev = Some(tos.node);
-                                cur = node_after_link;
-                                self.link_stack.clear();
-                                continue;
+                                let footref = self.allocs.allocate_cow(l);
+                                if let Some(def) = self
+                                    .allocs
+                                    .footdefs
+                                    .get_mut(self.allocs.cows[footref.0].to_owned().into())
+                                {
+                                    def.use_count += 1;
+                                }
+                                if !self.options.has_gfm_footnotes()
+                                    || self.allocs.footdefs.contains(&self.allocs.cows[footref.0])
+                                {
+                                    self.tree[tos.node].next = node_after_link;
+                                    self.tree[tos.node].child = None;
+                                    self.tree[tos.node].item.body =
+                                        ItemBody::FootnoteReference(footref);
+                                    self.tree[tos.node].item.end = end;
+                                    prev = Some(tos.node);
+                                    cur = node_after_link;
+                                    self.link_stack.clear();
+                                    continue;
+                                }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
                                 let type_url_title = self
                                     .allocs
@@ -532,7 +558,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
                                     let link_ix =
-                                        self.allocs.allocate_link(def_link_type, url, title);
+                                        self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
                                     {
                                         ItemBody::Image(link_ix)
@@ -638,7 +664,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     start: el.start,
                                     count: el.count - match_count,
                                     c: el.c,
-                                    both,
+                                    both: el.both,
                                 })
                             }
                             count -= match_count;
@@ -830,6 +856,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             while ix != close {
                 let next_ix = self.tree[ix].next.unwrap();
+                let end = if next_ix == close {
+                    span_end
+                } else {
+                    self.tree[next_ix].item.start
+                };
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
@@ -856,12 +887,26 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         new_buf.push(' ');
                         buf = Some(new_buf);
                     }
+                } else if self.tree.is_in_table() && self.text[self.tree[ix].item.start..end].contains("|") {
+                    for (i, c) in bytes[self.tree[ix].item.start..end].into_iter().copied().enumerate() {
+                        if c != b'|' {
+                            continue;
+                        }
+                        let pipe_position = self.tree[ix].item.start + i;
+                        let buf = if let Some(ref mut buf) = buf {
+                            buf.push_str(&self.text[self.tree[ix].item.start..pipe_position]);
+                            buf
+                        } else {
+                            let mut new_buf = String::with_capacity(pipe_position - span_start);
+                            new_buf.push_str(&self.text[span_start..pipe_position]);
+                            buf.insert(new_buf)
+                        };
+                        let ends_in_backslash = buf.as_bytes().last() == Some(&b'\\');
+                        let trim = if ends_in_backslash { 1 } else { 0 };
+                        buf.truncate(buf.len() - trim);
+                        buf.push_str(&self.text[pipe_position..end]);
+                    }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if next_ix == close {
-                        span_end
-                    } else {
-                        self.tree[ix].item.end
-                    };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
                 ix = next_ix;
@@ -907,7 +952,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                 &bytes[(ix - 1)..],
                 Some(&|bytes| {
                     let mut line_start = LineStart::new(bytes);
-                    let _ = scan_containers(&self.tree, &mut line_start);
+                    let _ = scan_containers(
+                        &self.tree,
+                        &mut line_start,
+                        self.options.has_gfm_footnotes(),
+                    );
                     line_start.bytes_scanned()
                 }),
             )?;
@@ -924,7 +973,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 }
 
 /// Returns number of containers scanned.
-pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> usize {
+pub(crate) fn scan_containers(
+    tree: &Tree<Item>,
+    line_start: &mut LineStart,
+    gfm_footnotes: bool,
+) -> usize {
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
@@ -937,6 +990,13 @@ pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart) -> 
             ItemBody::ListItem(indent) => {
                 let save = line_start.clone();
                 if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                    *line_start = save;
+                    break;
+                }
+            }
+            ItemBody::FootnoteDefinition(..) if gfm_footnotes => {
+                let save = line_start.clone();
+                if !line_start.scan_space(4) && !line_start.is_at_eol() {
                     *line_start = save;
                     break;
                 }
@@ -978,6 +1038,31 @@ impl<'a> Tree<Item> {
                 body: ItemBody::MathText,
             });
         }
+    }
+    /// Returns true if the current node is inside a table.
+    ///
+    /// If `cur` is an ItemBody::Table, it would return false,
+    /// but since the `TableRow` and `TableHead` and `TableCell`
+    /// are children of the table, anything doing inline parsing
+    /// doesn't need to care about that.
+    pub(crate) fn is_in_table(&self) -> bool {
+        fn might_be_in_table(item: &Item) -> bool {
+            item.body.is_inline() || matches!(
+                item.body,
+                | ItemBody::TableHead
+                | ItemBody::TableRow
+                | ItemBody::TableCell
+            )
+        }
+        for &ix in self.walk_spine().rev() {
+            if matches!(self[ix].item.body, ItemBody::Table(_)) {
+                return true;
+            }
+            if !might_be_in_table(&self[ix].item) {
+                return false;
+            }
+        }
+        false
     }
 }
 
@@ -1088,7 +1173,14 @@ impl InlineStack {
         }
     }
 
+    fn trim_lower_bound(&mut self, ix: usize) {
+        self.lower_bounds[ix] = self.lower_bounds[ix].min(self.stack.len());
+    }
+
     fn push(&mut self, el: InlineEl) {
+        if el.c == b'~' {
+            self.trim_lower_bound(InlineStack::TILDES);
+        }
         self.stack.push(el)
     }
 }
@@ -1125,6 +1217,7 @@ fn scan_link_label<'text, 'tree>(
     tree: &'tree Tree<Item>,
     text: &'text str,
     allow_footnote_refs: bool,
+    gfm_footnotes: bool,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
     let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
@@ -1132,7 +1225,7 @@ fn scan_link_label<'text, 'tree>(
     }
     let linebreak_handler = |bytes: &[u8]| {
         let mut line_start = LineStart::new(bytes);
-        let _ = scan_containers(tree, &mut line_start);
+        let _ = scan_containers(tree, &mut line_start, gfm_footnotes);
         Some(line_start.bytes_scanned())
     };
     let pair = if allow_footnote_refs && b'^' == bytes[1] {
@@ -1150,6 +1243,7 @@ fn scan_reference<'a, 'b>(
     text: &'b str,
     cur: Option<TreeIndex>,
     allow_footnote_refs: bool,
+    gfm_footnotes: bool,
 ) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
@@ -1163,7 +1257,7 @@ fn scan_reference<'a, 'b>(
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else if let Some((ix, ReferenceLabel::Link(label))) =
-        scan_link_label(tree, &text[start..], allow_footnote_refs)
+        scan_link_label(tree, &text[start..], allow_footnote_refs, gfm_footnotes)
     {
         RefScan::LinkLabel(label, start + ix)
     } else {
@@ -1222,6 +1316,13 @@ pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
     pub span: Range<usize>,
+}
+
+/// Contains the destination URL, title and source span of a reference definition.
+#[derive(Clone, Debug)]
+pub struct FootnoteDef {
+    pub span: Range<usize>,
+    pub use_count: usize,
 }
 
 /// Tracks tree indices of code span delimiters of each length. It should prevent
@@ -1286,7 +1387,8 @@ pub(crate) struct HeadingIndex(NonZeroUsize);
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>)>,
+    pub footdefs: FootnoteDefs<'a>,
+    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
     headings: Vec<HeadingAttributes<'a>>,
@@ -1295,14 +1397,18 @@ pub(crate) struct Allocations<'a> {
 /// Used by the heading attributes extension.
 #[derive(Clone)]
 pub(crate) struct HeadingAttributes<'a> {
-    pub id: Option<&'a str>,
-    pub classes: Vec<&'a str>,
-    pub attrs: Vec<(&'a str, Option<&'a str>)>,
+    pub id: Option<CowStr<'a>>,
+    pub classes: Vec<CowStr<'a>>,
+    pub attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
 #[derive(Clone, Default, Debug)]
 pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
+
+/// Keeps track of the footnote definitions defined in the document.
+#[derive(Clone, Default, Debug)]
+pub struct FootnoteDefs<'input>(pub(crate) HashMap<FootnoteLabel<'input>, FootnoteDef>);
 
 impl<'input, 'b, 's> RefDefs<'input>
 where
@@ -1319,10 +1425,25 @@ where
     }
 }
 
+impl<'input, 'b, 's> FootnoteDefs<'input>
+where
+    's: 'b,
+{
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn contains(&'s self, key: &'b str) -> bool {
+        self.0.contains_key(&UniCase::new(key.into()))
+    }
+    /// Performs a lookup on reference label using unicode case folding.
+    pub fn get_mut(&'s mut self, key: CowStr<'input>) -> Option<&'s mut FootnoteDef> {
+        self.0.get_mut(&UniCase::new(key.into()))
+    }
+}
+
 impl<'a> Allocations<'a> {
     pub fn new() -> Self {
         Self {
             refdefs: RefDefs::default(),
+            footdefs: FootnoteDefs::default(),
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
@@ -1336,9 +1457,15 @@ impl<'a> Allocations<'a> {
         CowIndex(ix)
     }
 
-    pub fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>) -> LinkIndex {
+    pub fn allocate_link(
+        &mut self,
+        ty: LinkType,
+        url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+    ) -> LinkIndex {
         let ix = self.links.len();
-        self.links.push((ty, url, title));
+        self.links.push((ty, url, title, id));
         LinkIndex(ix)
     }
 
@@ -1361,8 +1488,8 @@ impl<'a> Allocations<'a> {
         std::mem::replace(&mut self.cows[ix.0], "".into())
     }
 
-    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>) {
-        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into());
+    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>) {
+        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into(), "".into());
         std::mem::replace(&mut self.links[ix.0], default_link)
     }
 
@@ -1380,7 +1507,7 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>);
+    type Output = (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>);
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
@@ -1481,6 +1608,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
         ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
@@ -1505,7 +1633,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Math(cow_ix) => return Event::MathText(allocs[cow_ix].clone(), true),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
+        ItemBody::HtmlBlock => Tag::HtmlBlock,
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
+        ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,
@@ -1519,18 +1649,28 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Link(link_type, url, title)
+            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            }
         }
         ItemBody::Image(link_ix) => {
-            let (link_type, url, title) = allocs.take_link(link_ix);
-            Tag::Image(link_type, url, title)
+            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            Tag::Image {
+                link_type,
+                dest_url,
+                title,
+                id,
+            }
         }
         ItemBody::Heading(level, Some(heading_ix)) => {
             let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
             Tag::Heading {
                 level,
-                id: *id,
+                id: id.clone(),
                 classes: classes.clone(),
                 attrs: attrs.clone(),
             }
@@ -1729,7 +1869,13 @@ mod test {
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
                 .into_offset_iter()
                 .filter_map(|(ev, range)| match ev {
-                    Event::Start(Tag::Link(LinkType::Reference, ..), ..) => Some(range),
+                    Event::Start(
+                        Tag::Link {
+                            link_type: LinkType::Reference,
+                            ..
+                        },
+                        ..,
+                    ) => Some(range),
                     _ => None,
                 })
                 .next()
@@ -1888,9 +2034,14 @@ mod test {
         let parser =
             Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
-        for (typ, url, title) in parser.filter_map(|event| match event {
+        for (typ, url, title, id) in parser.filter_map(|event| match event {
             Event::Start(tag) => match tag {
-                Tag::Link(typ, url, title) => Some((typ, url, title)),
+                Tag::Link {
+                    link_type,
+                    dest_url,
+                    title,
+                    id,
+                } => Some((link_type, dest_url, title, id)),
                 _ => None,
             },
             _ => None,
@@ -1899,6 +2050,7 @@ mod test {
             assert_eq!(typ, LinkType::ReferenceUnknown);
             assert_eq!(url.as_ref(), "YOLO");
             assert_eq!(title.as_ref(), "SWAG");
+            assert_eq!(id.as_ref(), "world");
         }
         assert!(link_tag_count > 0);
     }

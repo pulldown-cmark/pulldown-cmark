@@ -137,3 +137,26 @@ another_field: 0
 +++
 .
 ````````````````````````````````
+
+Metadata blocks cannot be indented:
+
+```````````````````````````````` example_metadata_blocks
+    ---
+    Things
+    ---
+.
+<pre><code>---
+Things
+---
+</code></pre>
+````````````````````````````````
+
+Metadata blocks may contain lists:
+
+```````````````````````````````` example_metadata_blocks
+---
+- Item 1
+- Item 2
+---
+.
+````````````````````````````````

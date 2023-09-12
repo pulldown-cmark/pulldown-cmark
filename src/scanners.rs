@@ -468,7 +468,7 @@ pub(crate) fn scan_closing_math_block(
 // return: end byte for closing metadata block, or None
 // if the line is not a closing metadata block
 pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Option<usize> {
-    let mut i = scan_nextline(bytes);
+    let mut i = 0;
     let mut num_fence_chars_found = scan_ch_repeat(&bytes[i..], fence_char);
     if num_fence_chars_found != 3 {
         // if YAML style metadata block the closing character can also be `.`
@@ -488,11 +488,12 @@ pub(crate) fn scan_closing_metadata_block(bytes: &[u8], fence_char: u8) -> Optio
 }
 
 // returned pair is (number of bytes, number of spaces)
-fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
+pub(crate) fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
     let mut spaces = 0;
     let mut offset = 0;
 
     for (i, &b) in text.iter().enumerate() {
+        offset = i;
         match b {
             b' ' => {
                 spaces += 1;
@@ -509,7 +510,6 @@ fn calc_indent(text: &[u8], max: usize) -> (usize, usize) {
             }
             _ => break,
         }
-        offset = i;
     }
 
     (offset, spaces)
@@ -593,8 +593,10 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     let mut cols = vec![];
     let mut active_col = Alignment::None;
     let mut start_col = true;
+    let mut found_pipe = false;
     if data[i] == b'|' {
         i += 1;
+        found_pipe = true;
     }
     for c in &data[i..] {
         if let Some(n) = scan_eol(&data[i..]) {
@@ -617,6 +619,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
             }
             b'|' => {
                 start_col = true;
+                found_pipe = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
             }
@@ -631,6 +634,11 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
 
     if !start_col {
         cols.push(active_col);
+    }
+    if !found_pipe {
+        // It isn't a table head if it doesn't have a least one pipe.
+        // It's a list, a header, or a thematic break.
+        return (0, vec![]);
     }
 
     (i, cols)
@@ -727,10 +735,8 @@ pub(crate) fn scan_metadata_block(
             let mut j = i;
             let mut first_line = true;
             while j < data.len() {
-                // `scan_closing_metadata_block` scan next line as the first step,
-                // so it must be executed before scanning next line
-                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
                 j += scan_nextline(&data[j..]);
+                let closed = scan_closing_metadata_block(&data[j..], c).is_some();
                 // The first line of the metadata block cannot be an empty line
                 // nor the end of the block
                 if first_line {
@@ -753,27 +759,19 @@ pub(crate) fn scan_metadata_block(
 }
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.starts_with(b"> ") {
-        Some(2)
+    if data.get(0).copied() == Some(b'>') {
+        let space = if data.get(1).copied() == Some(b' ') {
+            1
+        } else {
+            0
+        };
+        Some(1 + space)
     } else {
         None
     }
 }
 
-/// This already assumes the list item has been scanned.
-pub(crate) fn scan_empty_list(data: &[u8]) -> bool {
-    let mut ix = 0;
-    for _ in 0..2 {
-        if let Some(bytes) = scan_blank_line(&data[ix..]) {
-            ix += bytes;
-        } else {
-            return false;
-        }
-    }
-    true
-}
-
-// return number of bytes scanned, delimiter, start index, and indent
+/// return number of bytes scanned, delimiter, start index, and indent
 pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     let mut c = *bytes.get(0)?;
     let (w, start) = match c {
@@ -1333,7 +1331,7 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
             c if is_ascii_alphanumeric(c) => (),
             b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' | b'=' | b'?'
             | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
-            b'@' => break,
+            b'@' if i > 1 => break,
             _ => return None,
         }
     }
@@ -1382,6 +1380,8 @@ pub(crate) fn scan_inline_html_comment(
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
+        // An HTML comment consists of `<!--` + text + `-->`, where text does not start with `>`
+        // or `->`, does not end with -, and does not contain --.
         b'-' => {
             let dashes = scan_ch_repeat(&bytes[ix..], b'-');
             if dashes < 1 {
@@ -1406,6 +1406,8 @@ pub(crate) fn scan_inline_html_comment(
             }
             None
         }
+        // A CDATA section consists of the string `<![CDATA[`, a string of characters not
+        // including the string `]]>`, and the string `]]>`.
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata => {
             ix += b"CDATA[".len();
             ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
@@ -1419,14 +1421,9 @@ pub(crate) fn scan_inline_html_comment(
                 Some(ix + 1)
             }
         }
-        b'A'..=b'Z' if ix > scan_guard.declaration => {
-            // Scan declaration.
-            ix += scan_while(&bytes[ix..], |c| c >= b'A' && c <= b'Z');
-            let whitespace = scan_while(&bytes[ix..], is_ascii_whitespace);
-            if whitespace == 0 {
-                return None;
-            }
-            ix += whitespace;
+        // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
+        // including the character >, and the character >.
+        _ if c.is_ascii_alphabetic() && ix > scan_guard.declaration => {
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
             if scan_ch(&bytes[ix..], b'>') == 0 {
                 scan_guard.declaration = ix;
@@ -1481,5 +1478,34 @@ mod test {
         let r = scan_math(b"\\[").unwrap();
         assert!(r.0 == 2);
         assert!(r.1 == MathBlockIndicator::Bracket);
+    }
+
+    #[test]
+    fn good_emails() {
+        const EMAILS: &[&str] = &[
+            "<a@b.c>",
+            "<a@b>",
+            "<a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-@example.com>",
+            "<a@sixty-three-letters-in-this-identifier-----------------------63>",
+        ];
+        for email in EMAILS {
+            assert!(scan_email(email, 1).is_some());
+        }
+    }
+
+    #[test]
+    fn bad_emails() {
+        const EMAILS: &[&str] = &[
+            "<@b.c>",
+            "<foo@-example.com>",
+            "<foo@example-.com>",
+            "<a@notrailingperiod.>",
+            "<a(noparens)@example.com>",
+            "<\"noquotes\"@example.com>",
+            "<a@sixty-four-letters-in-this-identifier-------------------------64>",
+        ];
+        for email in EMAILS {
+            assert!(scan_email(email, 1).is_none());
+        }
     }
 }

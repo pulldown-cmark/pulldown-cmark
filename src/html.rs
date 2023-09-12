@@ -117,7 +117,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
-                Html(html) => {
+                Html(html) | InlineHtml(html) => {
                     self.write(&html)?;
                 }
                 SoftBreak => {
@@ -156,6 +156,7 @@ where
     /// Writes the start of an HTML tag.
     fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
         match tag {
+            Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
                 if self.end_newline {
                     self.write("<p>")
@@ -178,7 +179,7 @@ where
                 write!(&mut self.writer, "{}", level)?;
                 if let Some(id) = id {
                     self.write(" id=\"")?;
-                    escape_html(&mut self.writer, id)?;
+                    escape_html(&mut self.writer, &id)?;
                     self.write("\"")?;
                 }
                 let mut classes = classes.iter();
@@ -193,10 +194,10 @@ where
                 }
                 for (attr, value) in attrs {
                     self.write(" ")?;
-                    escape_html(&mut self.writer, attr)?;
+                    escape_html(&mut self.writer, &attr)?;
                     if let Some(val) = value {
                         self.write("=\"")?;
-                        escape_html(&mut self.writer, val)?;
+                        escape_html(&mut self.writer, &val)?;
                         self.write("\"")?;
                     } else {
                         self.write("=\"\"")?;
@@ -292,27 +293,42 @@ where
             Tag::Emphasis => self.write("<em>"),
             Tag::Strong => self.write("<strong>"),
             Tag::Strikethrough => self.write("<del>"),
-            Tag::Link(LinkType::Email, dest, title) => {
+            Tag::Link {
+                link_type: LinkType::Email,
+                dest_url,
+                title,
+                id: _,
+            } => {
                 self.write("<a href=\"mailto:")?;
-                escape_href(&mut self.writer, &dest)?;
+                escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\">")
             }
-            Tag::Link(_link_type, dest, title) => {
+            Tag::Link {
+                link_type: _,
+                dest_url,
+                title,
+                id: _,
+            } => {
                 self.write("<a href=\"")?;
-                escape_href(&mut self.writer, &dest)?;
+                escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\">")
             }
-            Tag::Image(_link_type, dest, title) => {
+            Tag::Image {
+                link_type: _,
+                dest_url,
+                title,
+                id: _,
+            } => {
                 self.write("<img src=\"")?;
-                escape_href(&mut self.writer, &dest)?;
+                escape_href(&mut self.writer, &dest_url)?;
                 self.write("\" alt=\"")?;
                 self.raw_text()?;
                 if !title.is_empty() {
@@ -343,6 +359,7 @@ where
 
     fn end_tag(&mut self, tag: TagEnd) -> io::Result<()> {
         match tag {
+            TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
                 self.write("</p>\n")?;
             }
@@ -425,7 +442,8 @@ where
                     }
                     nest -= 1;
                 }
-                Html(text) | Code(text) | Text(text) => {
+                Html(_) => {}
+                InlineHtml(text) | Code(text) | Text(text) => {
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }

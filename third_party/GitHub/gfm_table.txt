@@ -83,7 +83,7 @@ inline spans:
 </thead>
 <tbody>
 <tr>
-<td>b <code>\|</code> az</td>
+<td>b <code>|</code> az</td>
 </tr>
 <tr>
 <td>b <strong>|</strong> im</td>
@@ -205,5 +205,30 @@ If there are no rows in the body, no `<tbody>` is generated in HTML output:
 <th>def</th>
 </tr>
 </thead>
+</table>
+````````````````````````````````
+
+Tables can interrupt paragraphs:
+
+```````````````````````````````` example
+Hello World
+| abc | def |
+| --- | --- |
+| bar | baz |
+.
+<p>Hello World</p>
+<table>
+<thead>
+<tr>
+<th>abc</th>
+<th>def</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bar</td>
+<td>baz</td>
+</tr>
+</tbody>
 </table>
 ````````````````````````````````

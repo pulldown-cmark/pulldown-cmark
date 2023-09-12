@@ -8,6 +8,7 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
+rust-version = "1.64" # Update README.md and azure-pipelines.yml if this changes.
 readme = "README.md"
 exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/azure-pipelines.yml"]
 
@@ -35,6 +36,18 @@ name = "event-filter"
 required-features = ["html"]
 
 [[example]]
+name = "footnote-rewrite"
+required-features = ["html"]
+
+[[example]]
+name = "parser-map-event-print"
+required-features = ["html"]
+
+[[example]]
+name = "parser-map-tag-print"
+required-features = ["html"]
+
+[[example]]
 name = "string-to-string"
 required-features = ["html"]
 
@@ -43,7 +56,7 @@ name = "broken-link-callbacks"
 required-features = ["html"]
 
 [dependencies]
-bitflags = "1.3"
+bitflags = "2"
 unicase = "2.6"
 memchr = "2.5"
 getopts = { version = "0.2", optional = true }
@@ -54,7 +67,7 @@ html5ever = "0.26"
 markup5ever_rcdom = "0.2"
 lazy_static = "1.4"
 tendril = "0.4"
-criterion = "0.4"
+criterion = "0.5"
 regex = "1.6"
 serde_json = "1.0.61"
 bincode = "1.3.1"

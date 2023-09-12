@@ -86,7 +86,7 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks});
+    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {old_footnotes});
 }}
 "###,
                     spec_name,
@@ -95,6 +95,7 @@ fn {}_test_{i}() {{
                     expected = testcase.expected,
                     smart_punct = testcase.smart_punct,
                     metadata_blocks = testcase.metadata_blocks,
+                    old_footnotes = testcase.old_footnotes,
                 ))
                 .unwrap();
 
@@ -149,6 +150,7 @@ pub struct TestCase {
     pub expected: String,
     pub smart_punct: bool,
     pub metadata_blocks: bool,
+    pub old_footnotes: bool,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -159,19 +161,23 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (i_start, smart_punct, metadata_blocks) = self.spec.find(prefix).and_then(|pos| {
+        let (i_start, smart_punct, metadata_blocks, old_footnotes) = self.spec.find(prefix).and_then(|pos| {
             let smartpunct_suffix = "_smartpunct\n";
             let metadata_blocks_suffix = "_metadata_blocks\n";
+            let old_footnotes_suffix = "_old_footnotes\n";
             if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
-                Some((pos + prefix.len() + smartpunct_suffix.len(), true, false))
+                Some((pos + prefix.len() + smartpunct_suffix.len(), true, false, false))
             } else if spec[(pos + prefix.len())..].starts_with(metadata_blocks_suffix) {
                 Some((
                     pos + prefix.len() + metadata_blocks_suffix.len(),
                     false,
                     true,
+                    false,
                 ))
+            } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
+                Some((pos + prefix.len() + old_footnotes_suffix.len(), false, false, true))
             } else if spec[(pos + prefix.len())..].starts_with('\n') {
-                Some((pos + prefix.len() + 1, false, false))
+                Some((pos + prefix.len() + 1, false, false, false))
             } else {
                 None
             }
@@ -192,6 +198,7 @@ impl<'a> Iterator for Spec<'a> {
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
             smart_punct,
             metadata_blocks,
+            old_footnotes,
         };
 
         Some(test_case)

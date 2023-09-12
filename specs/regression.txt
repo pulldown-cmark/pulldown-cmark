@@ -693,6 +693,7 @@ ISSUE 398
 .
 <blockquote>
 <p><code>cargo package</code></p>
+</blockquote>
 ````````````````````````````````
 
 ISSUE 399
@@ -898,4 +899,452 @@ ISSUE 642
 [`]`]
 .
 <p>[<code>]</code>]</p>
+````````````````````````````````
+
+ISSUE 532
+
+```````````````````````````````` example
+~~foo~~bar
+.
+<p><del>foo</del>bar</p>
+````````````````````````````````
+
+```````````````````````````````` example
+foo~~bar~~
+.
+<p>foo<del>bar</del></p>
+````````````````````````````````
+
+ISSUE 551
+
+```````````````````````````````` example
+*~~__emphasis strike strong__~~* ~~*__strike emphasis strong__*~~
+.
+<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~__emphasis strike strong__~~* ~~*__`strike emphasis strong code`__*~~
+.
+<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~`emphasis strike code`~~* ~~*__strike emphasis strong__*~~
+.
+<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*~~`emphasis strike code`~~* ~~*__`strike emphasis strong code`__*~~
+.
+<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~_strong strike emphasis_~~** ~~*__strike emphasis strong__*~~
+.
+<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~_strong strike emphasis_~~** ~~*__`strike emphasis strong code`__*~~
+.
+<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~`strong strike code`~~** ~~*__strike emphasis strong__*~~
+.
+<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+**~~`strong strike code`~~** ~~*__`strike emphasis strong code`__*~~
+.
+<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
+````````````````````````````````
+
+ISSUE 656
+
+```````````````````````````````` example
+  | foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+  |-----|------|
+| baz | alef |
+
+  | foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+  |-----|------|
+  | baz | alef |
+
+  | foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+|-----|------|
+  | baz | alef |
+
+| foo | bar  |
+|-----|------|
+| baz | alef |
+
+| foo | bar  |
+  |-----|------|
+| baz | alef |
+
+    | foo | bar  |
+    |-----|------|
+    | baz | alef |
+
+| foo | bar  |
+    |-----|------|
+| baz | alef |
+
+→| foo | bar  |
+→|-----|------|
+→| baz | alef |
+
+| foo | bar  |
+→|-----|------|
+| baz | alef |
+.
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
+<tr><td> baz </td><td> alef </td></tr>
+</table>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+    |-----|------|
+| baz | alef |</p>
+<pre><code>| foo | bar  |
+|-----|------|
+| baz | alef |
+</code></pre>
+<p>| foo | bar  |
+→|-----|------|
+| baz | alef |</p>
+````````````````````````````````
+
+
+ISSUE 592
+
+```````````````````````````````` example
+### ###
+.
+<h3></h3>
+````````````````````````````````
+
+```````````````````````````````` example
+### 
+.
+<h3></h3>
+````````````````````````````````
+
+
+
+ISSUE 659
+
+```````````````````````````````` example
+<!doctype html>
+.
+<!doctype html>
+````````````````````````````````
+
+
+ISSUE 540
+
+```````````````````````````````` example
+| A | table    |
+| ------ | ---- |
+| not   |  in  |
+| a     | list|
+
+* A blockquote:
+  > inside a list item
+* A Heading:
+  # inside a list item
+* A table:
+
+  | inside | a       |
+  | ------ | ------- |
+  | list   | item    |
+  | with   | leading |
+  | empty  | lines   |
+* A table:
+  | inside  | a       |
+  | ------- | ------- |
+  | list    | item    |
+  | without | leading |
+  | empty   | lines   |
+.
+<table><thead><tr><th>A</th><th>table</th></tr></thead><tbody>
+<tr><td>not</td><td>in</td></tr>
+<tr><td>a</td><td>list</td></tr>
+</tbody></table>
+<ul>
+<li>
+<p>A blockquote:</p>
+<blockquote>
+<p>inside a list item</p>
+</blockquote>
+</li>
+<li>
+<p>A Heading:</p>
+<h1>inside a list item</h1>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>with</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+<li>
+<p>A table:</p>
+<table><thead><tr><th>inside</th><th>a</th></tr></thead><tbody>
+<tr><td>list</td><td>item</td></tr>
+<tr><td>without</td><td>leading</td></tr>
+<tr><td>empty</td><td>lines</td></tr>
+</tbody></table>
+</li>
+</ul>
+````````````````````````````````
+
+
+ISSUE 658
+
+```````````````````````````````` example
+a\
+
+b
+.
+<p>a\</p>
+<p>b</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+* b
+.
+<p>a\</p>
+<ul>
+<li>b</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+> b
+.
+<p>a\</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+# b
+.
+<p>a\</p>
+<h1>b</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+a\
+==
+.
+<h1>a\</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+> a\
+>
+.
+<blockquote>
+<p>a\</p>
+</blockquote>
+````````````````````````````````
+
+
+ISSUE 674
+
+```````````````````````````````` example
+<a
+>
+.
+<p>&lt;a</p>
+<blockquote></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+>
+.
+<div
+>
+````````````````````````````````
+
+```````````````````````````````` example
+<a
+> quote
+.
+<p>&lt;a</p>
+<blockquote><p>quote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+> not quote
+.
+<div
+> not quote
+````````````````````````````````
+
+```````````````````````````````` example
+<a
+>quote
+.
+<p>&lt;a</p>
+<blockquote><p>quote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+<div
+>not quote
+.
+<div
+>not quote
+````````````````````````````````
+
+Table interruption when nested inside paragraph.
+
+```````````````````````````````` example
+> alpha
+> | a | b |
+> |---|---|
+> | c | d |
+.
+<blockquote>
+<p>alpha</p>
+<table>
+<thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+<tr><td>c</td><td>d</td></tr>
+</tbody></table>
+</blockquote>
+````````````````````````````````
+
+
+ISSUE 657
+
+```````````````````````````````` example
+***R]*-*
+.
+<p>*<em><em>R]</em>-</em></p>
+````````````````````````````````
+
+```````````````````````````````` example
+****foo*bar*baz****
+.
+<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
+````````````````````````````````
+
+
+ISSUE 680
+
+```````````````````````````````` example
+;
+*
+%
+.
+<p>;
+*
+%</p>
+````````````````````````````````
+
+The below example adds a trailing space.
+
+```````````````````````````````` example
+;
+* 
+%
+.
+<p>;
+* 
+%</p>
+````````````````````````````````
+
+
+ISSUE 687
+
+```````````````````````````````` example
+<@1>
+.
+<p>&lt;@1&gt;</p>
+````````````````````````````````
+
+
+ISSUE 689
+
+```````````````````````````````` example_metadata_blocks
+---
+anything:
+    indented4Spaces: true
+---
+Things
+.
+<p>Things</p>
+````````````````````````````````
+
+```````````````````````````````` example_metadata_blocks
+---
+something:
+  nested:
+    twice: true
+---
+Things
+.
+<p>Things</p>
+````````````````````````````````
+
+```````````````````````````````` example_metadata_blocks
+---
+lists:
+    - indented 4 spaces
+---
+Things
+.
+<p>Things</p>
 ````````````````````````````````

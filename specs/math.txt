@@ -2,7 +2,7 @@ Run this with `cargo run -- -M -s specs/math.txt`.
 
 Mathematical expressions extension. Syntax based on
 <https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md>
-with slight modifications and excluding the handling for balanced curly braces.
+excluding the handling for balanced curly braces.
 
 Inline mode mathematical expressions:
 
@@ -28,23 +28,36 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 ````````````````````````````````
 
-Math expressions pass their content through as-is, ignoring any other Markdown constructs:
-
-```````````````````````````````` example
-$a<b>c$
-
-$$a*b*c$$
-.
-<p><span class="math inline">a&lt;b&gt;c</span></p>
-<p><span class="math display">a*b*c</span></p>
-````````````````````````````````
-
-Inline math expressions cannot be empty.
+Inline math expressions cannot be empty, but display mode expressions can.
 
 ```````````````````````````````` example
 Oops empty $$ expression.
+
+$$$$
 .
 <p>Oops empty $$ expression.</p>
+<p><span class="math display"></span></p>
+````````````````````````````````
+
+Math expressions pass their content through as-is, ignoring any other inline
+Markdown constructs:
+
+```````````````````````````````` example
+$a<b>c</b>$
+
+$${a*b*c} _c_ d$$
+
+$not `code`$
+
+$![not an](/image)$
+
+$<https://not.a.link/>$
+.
+<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
+<p><span class="math display">{a*b*c} _c_ d</span></p>
+<p><span class="math inline">not `code`</span></p>
+<p><span class="math inline">![not an](/image)</span></p>
+<p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
 ````````````````````````````````
 
 Sole `$` characters without a matching pair in the same block element
@@ -73,6 +86,19 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 <p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 ````````````````````````````````
+
+Markdown hard breaks are also not recognized inside math expressions:
+
+```````````````````````````````` example
+$not a\
+hard break  
+either$
+.
+<p><span class="math inline">not a\
+hard break  
+either</span></p>
+````````````````````````````````
+
 
 `$` character can be escaped with backslash in mathematical expressions:
 
@@ -118,6 +144,28 @@ Inline math expressions do not need to be surrounded with whitespace:
 these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
 .
 <p>these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
+````````````````````````````````
+
+Inline math expressions can be surrounded by punctuation:
+
+```````````````````````````````` example
+math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$. and $x=y$"
+
+also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
+
+braces: ($x=y$) [$x=y$] {$x=y$}
+.
+<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>&quot;</p>
+<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and &quot;<span class="math inline">x=y</span>&quot;</p>
+<p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
+````````````````````````````````
+
+Math expression as only item on a line:
+
+```````````````````````````````` example
+$x=y$
+.
+<p><span class="math inline">x=y</span></p>
 ````````````````````````````````
 
 Math expressions can be immediately followed by other math expressions:

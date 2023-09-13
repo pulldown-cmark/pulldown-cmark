@@ -33,12 +33,12 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 
 #[test]
 fn math_test_3() {
-    let original = r##"$a<b>c$
+    let original = r##"Oops empty $$ expression.
 
-$$a*b*c$$
+$$$$
 "##;
-    let expected = r##"<p><span class="math inline">a&lt;b&gt;c</span></p>
-<p><span class="math display">a*b*c</span></p>
+    let expected = r##"<p>Oops empty $$ expression.</p>
+<p><span class="math display"></span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -46,9 +46,21 @@ $$a*b*c$$
 
 #[test]
 fn math_test_4() {
-    let original = r##"Oops empty $$ expression.
+    let original = r##"$a<b>c</b>$
+
+$${a*b*c} _c_ d$$
+
+$not `code`$
+
+$![not an](/image)$
+
+$<https://not.a.link/>$
 "##;
-    let expected = r##"<p>Oops empty $$ expression.</p>
+    let expected = r##"<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
+<p><span class="math display">{a*b*c} _c_ d</span></p>
+<p><span class="math inline">not `code`</span></p>
+<p><span class="math inline">![not an](/image)</span></p>
+<p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -86,6 +98,20 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 
 #[test]
 fn math_test_7() {
+    let original = r##"$not a\
+hard break  
+either$
+"##;
+    let expected = r##"<p><span class="math inline">not a\
+hard break  
+either</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_8() {
     let original = r##"$\$$
 
 $$y = \$ x$$
@@ -98,7 +124,7 @@ $$y = \$ x$$
 }
 
 #[test]
-fn math_test_8() {
+fn math_test_9() {
     let original = r##"$x $ x$
 
 $$ $ $$
@@ -114,7 +140,7 @@ $$ $$ $$
 }
 
 #[test]
-fn math_test_9() {
+fn math_test_10() {
     let original = r##"these are not math texts: $ y=x$, $y=x $, $
 y=x$ and $y=x
 $
@@ -128,7 +154,7 @@ $</p>
 }
 
 #[test]
-fn math_test_10() {
+fn math_test_11() {
     let original = r##"these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
 "##;
     let expected = r##"<p>these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
@@ -138,7 +164,33 @@ fn math_test_10() {
 }
 
 #[test]
-fn math_test_11() {
+fn math_test_12() {
+    let original = r##"math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$. and $x=y$"
+
+also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
+
+braces: ($x=y$) [$x=y$] {$x=y$}
+"##;
+    let expected = r##"<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>&quot;</p>
+<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and &quot;<span class="math inline">x=y</span>&quot;</p>
+<p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_13() {
+    let original = r##"$x=y$
+"##;
+    let expected = r##"<p><span class="math inline">x=y</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_14() {
     let original = r##"$a$$b$
 
 $a$$$b$$
@@ -157,7 +209,7 @@ $$a$$$$b$$
 }
 
 #[test]
-fn math_test_12() {
+fn math_test_15() {
     let original = r##"$Inline `first$ then` code
 
 `Code $first` then$ inline
@@ -176,7 +228,7 @@ $$ Display `first $$ then` code
 }
 
 #[test]
-fn math_test_13() {
+fn math_test_16() {
     let original = r##"$x + y - z$
 
 $x + y

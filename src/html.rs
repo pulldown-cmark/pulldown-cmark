@@ -304,7 +304,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: Tag) -> io::Result<()> {
+    fn end_tag(&mut self, tag: Tag<'_>) -> io::Result<()> {
         match tag {
             Tag::Paragraph => {
                 self.write("</p>\n")?;

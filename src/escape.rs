@@ -53,7 +53,7 @@ pub struct WriteWrapper<W>(pub W);
 pub trait StrWrite {
     fn write_str(&mut self, s: &str) -> io::Result<()>;
 
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
+    fn write_fmt(&mut self, args: Arguments<'_>) -> io::Result<()>;
 }
 
 impl<W> StrWrite for WriteWrapper<W>
@@ -66,12 +66,12 @@ where
     }
 
     #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+    fn write_fmt(&mut self, args: Arguments<'_>) -> io::Result<()> {
         self.0.write_fmt(args)
     }
 }
 
-impl<'w> StrWrite for String {
+impl StrWrite for String {
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.push_str(s);
@@ -79,7 +79,7 @@ impl<'w> StrWrite for String {
     }
 
     #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+    fn write_fmt(&mut self, args: Arguments<'_>) -> io::Result<()> {
         // FIXME: translate fmt error to io error?
         FmtWrite::write_fmt(self, args).map_err(|_| ErrorKind::Other.into())
     }
@@ -95,7 +95,7 @@ where
     }
 
     #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+    fn write_fmt(&mut self, args: Arguments<'_>) -> io::Result<()> {
         (**self).write_fmt(args)
     }
 }

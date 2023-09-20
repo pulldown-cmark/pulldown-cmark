@@ -229,12 +229,12 @@ impl<T> std::fmt::Debug for Tree<T>
 where
     T: std::fmt::Debug,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn debug_tree<T>(
             tree: &Tree<T>,
             cur: TreeIndex,
             indent: usize,
-            f: &mut std::fmt::Formatter,
+            f: &mut std::fmt::Formatter<'_>,
         ) -> std::fmt::Result
         where
             T: std::fmt::Debug,

@@ -111,7 +111,7 @@ pub(crate) struct LineStart<'a> {
 }
 
 impl<'a> LineStart<'a> {
-    pub(crate) fn new(bytes: &[u8]) -> LineStart {
+    pub(crate) fn new(bytes: &[u8]) -> LineStart<'_> {
         LineStart {
             bytes,
             tab_start: 0,

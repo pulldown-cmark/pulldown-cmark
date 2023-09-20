@@ -1,8 +1,8 @@
 //! Miscellaneous utilities to incraese comfort.
 //! Special thanks to
-//! https://github.com/BenjaminRi/Redwood-Wiki/blob/master/src/markdown_utils.rs.
+//! <https://github.com/BenjaminRi/Redwood-Wiki/blob/master/src/markdown_utils.rs>.
 //! Its author authorized the use of this GPL code in this project in
-//! https://github.com/raphlinus/pulldown-cmark/issues/507.
+//! <https://github.com/raphlinus/pulldown-cmark/issues/507>.
 
 use crate::{CowStr, Event};
 

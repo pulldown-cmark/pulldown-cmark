@@ -175,7 +175,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
-    /// and the returned pair will be used as the link name and title if it is not
+    /// and the returned pair will be used as the link URL and title if it is not
     /// `None`.
     pub fn new_with_broken_link_callback(
         text: &'input str,

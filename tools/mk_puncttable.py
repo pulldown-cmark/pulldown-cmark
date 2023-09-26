@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# get ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt
+# curl -O https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 # Usage: python tools/mk_puncttable.py UnicodeData.txt > src/puncttable.rs
 
 import sys

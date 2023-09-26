@@ -74,13 +74,13 @@ const PUNCT_MASKS_ASCII: [u16; 8] = [""")
 
 const PUNCT_TAB: [u16; %i] = [""" % len(pshift))
     for x in pshift:
-        print('    {:<5s} // U+{:04X}...U+{:04X}'.format(str(x)+",", x * 16, x * 16 + 15))
+        print('    {:<7s} // U+{:04X}...U+{:04X}'.format(hex(x)+",", x * 16, x * 16 + 15))
     print("""];
 
 const PUNCT_MASKS: [u16; %i] = [""" % len(pshift))
     for i, y in enumerate(bits):
         x = pshift[i]
-        print('    0x{:04x}, // U+{:04X}...U+{:04X}'.format(y, x * 16, x * 16 + 15))
+        print('    0b{:016b}, // U+{:04X}...U+{:04X}'.format(y, x * 16, x * 16 + 15))
     print("""];
 
 pub(crate) fn is_ascii_punctuation(c: u8) -> bool {

@@ -69,18 +69,18 @@ def main(args):
 const PUNCT_MASKS_ASCII: [u16; 8] = [""")
     for x in range(8):
         y = get_bits(x, ascii_set)
-        print('    0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15))
+        print('    0x%04x, // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15))
     print("""];
 
 const PUNCT_TAB: [u16; %i] = [""" % len(pshift))
     for x in pshift:
-        print('    %d,  // U+%04X...U+%04X' % (x, x * 16, x * 16 + 15))
+        print('    %-5s // U+%04X...U+%04X' % (str(x)+",", x * 16, x * 16 + 15))
     print("""];
 
 const PUNCT_MASKS: [u16; %i] = [""" % len(pshift))
     for i, y in enumerate(bits):
         x = pshift[i]
-        print('    0x%04x,  // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15))
+        print('    0x%04x, // U+%04X...U+%04X' % (y, x * 16, x * 16 + 15))
     print("""];
 
 pub(crate) fn is_ascii_punctuation(c: u8) -> bool {
@@ -89,12 +89,16 @@ pub(crate) fn is_ascii_punctuation(c: u8) -> bool {
 
 pub(crate) fn is_punctuation(c: char) -> bool {
     let cp = c as u32;
-    if cp < 128 {return is_ascii_punctuation(cp as u8); }
-    if cp > 0x%04X { return false; }
+    if cp < 128 {
+        return is_ascii_punctuation(cp as u8);
+    }
+    if cp > 0x%04X {
+        return false;
+    }
     let high = (cp / 16) as u16;
     match PUNCT_TAB.binary_search(&high) {
         Ok(index) => (PUNCT_MASKS[index] & (1 << (cp & 15))) != 0,
-        _ => false
+        _ => false,
     }
 }
 
@@ -124,7 +128,6 @@ mod tests {
         assert!(is_punctuation('\\u{1BC9F}'));
         assert!(!is_punctuation('\\u{1BCA0}'));
     }
-}
-""" % max(punct))
+}""" % max(punct))
 
 main(sys.argv)

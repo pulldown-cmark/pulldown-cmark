@@ -52,12 +52,15 @@ $not `code`$
 $![not an](/image)$
 
 $<https://not.a.link/>$
+
+$&alpha;$
 .
 <p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
 <p><span class="math display">{a*b*c} _c_ d</span></p>
 <p><span class="math inline">not `code`</span></p>
 <p><span class="math inline">![not an](/image)</span></p>
 <p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
+<p><span class="math inline">&amp;alpha;</span></p>
 ````````````````````````````````
 
 Sole `$` characters without a matching pair in the same block element

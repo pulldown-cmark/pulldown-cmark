@@ -55,12 +55,15 @@ $not `code`$
 $![not an](/image)$
 
 $<https://not.a.link/>$
+
+$&alpha;$
 "##;
     let expected = r##"<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
 <p><span class="math display">{a*b*c} _c_ d</span></p>
 <p><span class="math inline">not `code`</span></p>
 <p><span class="math inline">![not an](/image)</span></p>
 <p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
+<p><span class="math inline">&amp;alpha;</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

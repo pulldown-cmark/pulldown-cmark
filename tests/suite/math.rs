@@ -253,3 +253,26 @@ $$ x + y
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn math_test_17() {
+    let original = r##"$not
+
+math$
+
+$$
+not
+
+math
+$$
+"##;
+    let expected = r##"<p>$not</p>
+<p>math$</p>
+<p>$$
+not</p>
+<p>math
+$$</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

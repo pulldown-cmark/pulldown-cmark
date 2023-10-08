@@ -227,3 +227,25 @@ $$ x + y
 <p>z $$</p>
 </blockquote>
 ````````````````````````````````
+
+This also means that math expressions cannot contain empty lines, since they
+start a new paragraph:
+
+```````````````````````````````` example
+$not
+
+math$
+
+$$
+not
+
+math
+$$
+.
+<p>$not</p>
+<p>math$</p>
+<p>$$
+not</p>
+<p>math
+$$</p>
+````````````````````````````````

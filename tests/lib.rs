@@ -14,7 +14,13 @@ use tendril::stream::TendrilSink;
 mod suite;
 
 #[inline(never)]
-pub fn test_markdown_html(input: &str, output: &str, smart_punct: bool, metadata_blocks: bool, old_footnotes: bool) {
+pub fn test_markdown_html(
+    input: &str,
+    output: &str,
+    smart_punct: bool,
+    metadata_blocks: bool,
+    old_footnotes: bool,
+) {
     let mut s = String::new();
 
     let mut opts = Options::empty();

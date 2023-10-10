@@ -161,27 +161,38 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (i_start, smart_punct, metadata_blocks, old_footnotes) = self.spec.find(prefix).and_then(|pos| {
-            let smartpunct_suffix = "_smartpunct\n";
-            let metadata_blocks_suffix = "_metadata_blocks\n";
-            let old_footnotes_suffix = "_old_footnotes\n";
-            if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
-                Some((pos + prefix.len() + smartpunct_suffix.len(), true, false, false))
-            } else if spec[(pos + prefix.len())..].starts_with(metadata_blocks_suffix) {
-                Some((
-                    pos + prefix.len() + metadata_blocks_suffix.len(),
-                    false,
-                    true,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
-                Some((pos + prefix.len() + old_footnotes_suffix.len(), false, false, true))
-            } else if spec[(pos + prefix.len())..].starts_with('\n') {
-                Some((pos + prefix.len() + 1, false, false, false))
-            } else {
-                None
-            }
-        })?;
+        let (i_start, smart_punct, metadata_blocks, old_footnotes) =
+            self.spec.find(prefix).and_then(|pos| {
+                let smartpunct_suffix = "_smartpunct\n";
+                let metadata_blocks_suffix = "_metadata_blocks\n";
+                let old_footnotes_suffix = "_old_footnotes\n";
+                if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
+                    Some((
+                        pos + prefix.len() + smartpunct_suffix.len(),
+                        true,
+                        false,
+                        false,
+                    ))
+                } else if spec[(pos + prefix.len())..].starts_with(metadata_blocks_suffix) {
+                    Some((
+                        pos + prefix.len() + metadata_blocks_suffix.len(),
+                        false,
+                        true,
+                        false,
+                    ))
+                } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
+                    Some((
+                        pos + prefix.len() + old_footnotes_suffix.len(),
+                        false,
+                        false,
+                        true,
+                    ))
+                } else if spec[(pos + prefix.len())..].starts_with('\n') {
+                    Some((pos + prefix.len() + 1, false, false, false))
+                } else {
+                    None
+                }
+            })?;
 
         let i_end = self.spec[i_start..]
             .find("\n.\n")

@@ -851,8 +851,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         new_buf.push(' ');
                         buf = Some(new_buf);
                     }
-                } else if self.tree.is_in_table() && self.text[self.tree[ix].item.start..end].contains("|") {
-                    for (i, c) in bytes[self.tree[ix].item.start..end].into_iter().copied().enumerate() {
+                } else if self.tree.is_in_table()
+                    && self.text[self.tree[ix].item.start..end].contains("|")
+                {
+                    for (i, c) in bytes[self.tree[ix].item.start..end]
+                        .into_iter()
+                        .copied()
+                        .enumerate()
+                    {
                         if c != b'|' {
                             continue;
                         }
@@ -996,12 +1002,9 @@ impl Tree<Item> {
     /// doesn't need to care about that.
     pub(crate) fn is_in_table(&self) -> bool {
         fn might_be_in_table(item: &Item) -> bool {
-            item.body.is_inline() || matches!(
-                item.body,
-                | ItemBody::TableHead
-                | ItemBody::TableRow
-                | ItemBody::TableCell
-            )
+            item.body.is_inline()
+                || matches!(item.body, |ItemBody::TableHead| ItemBody::TableRow
+                    | ItemBody::TableCell)
         }
         for &ix in self.walk_spine().rev() {
             if matches!(self[ix].item.body, ItemBody::Table(_)) {

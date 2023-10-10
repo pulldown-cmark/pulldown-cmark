@@ -20,7 +20,7 @@ pub struct InlineStr {
     len: u8,
 }
 
-impl<'a> AsRef<str> for InlineStr {
+impl AsRef<str> for InlineStr {
     fn as_ref(&self) -> &str {
         self.deref()
     }
@@ -41,7 +41,7 @@ impl From<char> for InlineStr {
     }
 }
 
-impl<'a> std::cmp::PartialEq<InlineStr> for InlineStr {
+impl std::cmp::PartialEq<InlineStr> for InlineStr {
     fn eq(&self, other: &InlineStr) -> bool {
         self.deref() == other.deref()
     }
@@ -73,7 +73,7 @@ impl Deref for InlineStr {
 }
 
 impl fmt::Display for InlineStr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_ref())
     }
 }
@@ -160,7 +160,7 @@ impl<'a> std::clone::Clone for CowStr<'a> {
 }
 
 impl<'a> std::cmp::PartialEq<CowStr<'a>> for CowStr<'a> {
-    fn eq(&self, other: &CowStr) -> bool {
+    fn eq(&self, other: &CowStr<'_>) -> bool {
         self.deref() == other.deref()
     }
 }
@@ -237,7 +237,7 @@ impl<'a> CowStr<'a> {
 }
 
 impl<'a> fmt::Display for CowStr<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_ref())
     }
 }

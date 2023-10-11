@@ -105,7 +105,7 @@ pub(crate) enum ItemBody {
     Root,
 }
 
-impl<'a> ItemBody {
+impl ItemBody {
     fn is_inline(&self) -> bool {
         matches!(
             *self,
@@ -120,7 +120,7 @@ impl<'a> ItemBody {
     }
 }
 
-impl<'a> Default for ItemBody {
+impl Default for ItemBody {
     fn default() -> Self {
         ItemBody::Root
     }
@@ -201,7 +201,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
-    pub fn reference_definitions(&self) -> &RefDefs {
+    pub fn reference_definitions(&self) -> &RefDefs<'_> {
         &self.allocs.refdefs
     }
 
@@ -851,8 +851,14 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         new_buf.push(' ');
                         buf = Some(new_buf);
                     }
-                } else if self.tree.is_in_table() && self.text[self.tree[ix].item.start..end].contains("|") {
-                    for (i, c) in bytes[self.tree[ix].item.start..end].into_iter().copied().enumerate() {
+                } else if self.tree.is_in_table()
+                    && self.text[self.tree[ix].item.start..end].contains("|")
+                {
+                    for (i, c) in bytes[self.tree[ix].item.start..end]
+                        .into_iter()
+                        .copied()
+                        .enumerate()
+                    {
                         if c != b'|' {
                             continue;
                         }
@@ -939,7 +945,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 /// Returns number of containers scanned.
 pub(crate) fn scan_containers(
     tree: &Tree<Item>,
-    line_start: &mut LineStart,
+    line_start: &mut LineStart<'_>,
     gfm_footnotes: bool,
 ) -> usize {
     let mut i = 0;
@@ -972,7 +978,7 @@ pub(crate) fn scan_containers(
     i
 }
 
-impl<'a> Tree<Item> {
+impl Tree<Item> {
     pub(crate) fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             if let Some(ix) = self.cur() {
@@ -996,12 +1002,9 @@ impl<'a> Tree<Item> {
     /// doesn't need to care about that.
     pub(crate) fn is_in_table(&self) -> bool {
         fn might_be_in_table(item: &Item) -> bool {
-            item.body.is_inline() || matches!(
-                item.body,
-                | ItemBody::TableHead
-                | ItemBody::TableRow
-                | ItemBody::TableCell
-            )
+            item.body.is_inline()
+                || matches!(item.body, |ItemBody::TableHead| ItemBody::TableRow
+                    | ItemBody::TableCell)
         }
         for &ix in self.walk_spine().rev() {
             if matches!(self[ix].item.body, ItemBody::Table(_)) {
@@ -1508,7 +1511,7 @@ pub struct OffsetIter<'a, 'b> {
 
 impl<'a, 'b> OffsetIter<'a, 'b> {
     /// Returns a reference to the internal reference definition tracker.
-    pub fn reference_definitions(&self) -> &RefDefs {
+    pub fn reference_definitions(&self) -> &RefDefs<'_> {
         self.inner.reference_definitions()
     }
 }

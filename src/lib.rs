@@ -184,6 +184,7 @@ pub enum Tag<'a> {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
+        /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
     },
 
@@ -193,6 +194,7 @@ pub enum Tag<'a> {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
+        /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
     },
 

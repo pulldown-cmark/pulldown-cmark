@@ -27,6 +27,8 @@ use pulldown_cmark::{html, Options, Parser};
 use std::env;
 use std::io::{self, Read};
 use std::mem;
+use std::fs::File;
+use std::path::PathBuf;
 
 fn dry_run(text: &str, opts: Options) {
     let p = Parser::new_ext(text, opts);
@@ -45,7 +47,7 @@ fn print_events(text: &str, opts: Options) {
 fn brief(program: &str) -> String {
     format!(
         "Usage: {} [options]\n\n{}",
-        program, "Reads markdown from standard input and emits HTML.",
+        program, "Reads markdown from file or standard input and emits HTML.",
     )
 }
 
@@ -111,22 +113,43 @@ pub fn main() -> std::io::Result<()> {
     }
 
     let mut input = String::new();
-    io::stdin().lock().read_to_string(&mut input)?;
-    if matches.opt_present("events") {
-        print_events(&input, opts);
-    } else if matches.opt_present("dry-run") {
-        dry_run(&input, opts);
+    if !&matches.free.is_empty() {
+        for filename in &matches.free {
+            let real_path = PathBuf::from(filename);
+            let mut f = File::open(&real_path).expect("file not found");
+            f.read_to_string(&mut input)
+                .expect("something went wrong reading the file");
+            if matches.opt_present("events") {
+                print_events(&input, opts);
+            } else if matches.opt_present("dry-run") {
+                dry_run(&input, opts);
+            } else {
+                pulldown_cmark(&input, opts);
+            }
+        }
     } else {
-        let mut p = Parser::new_ext(&input, opts);
-        let stdio = io::stdout();
-        let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
-        html::write_html(buffer, &mut p)?;
-        // Since the program will now terminate and the memory will be returned
-        // to the operating system anyway, there is no point in tidely cleaning
-        // up all the datastructures we have used. We shouldn't do this if we'd
-        // do other things after this, because this is basically intentionally
-        // leaking data. Skipping cleanup lets us return a bit (~5%) faster.
-        mem::forget(p);
+        let _ = io::stdin().lock().read_to_string(&mut input);
+        if matches.opt_present("events") {
+            print_events(&input, opts);
+        } else if matches.opt_present("dry-run") {
+            dry_run(&input, opts);
+        } else {
+            pulldown_cmark(&input, opts);
+        }
     }
     Ok(())
 }
+
+pub fn pulldown_cmark(input: &str, opts: Options) {
+    let mut p = Parser::new_ext(input, opts);
+    let stdio = io::stdout();
+    let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
+    let _ = html::write_html(buffer, &mut p);
+    // Since the program will now terminate and the memory will be returned
+    // to the operating system anyway, there is no point in tidely cleaning
+    // up all the datastructures we have used. We shouldn't do this if we'd
+    // do other things after this, because this is basically intentionally
+    // leaking data. Skipping cleanup lets us return a bit (~5%) faster.
+    mem::forget(p);
+}
+

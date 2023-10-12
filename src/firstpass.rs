@@ -28,7 +28,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
     let first_pass = FirstPass {
         text,
         tree: Tree::with_capacity(start_capacity),
-        begin_list_item: false,
+        begin_list_item: None,
         last_line_blank: false,
         allocs: Allocations::new(),
         options,
@@ -42,7 +42,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
 struct FirstPass<'a, 'b> {
     text: &'a str,
     tree: Tree<Item>,
-    begin_list_item: bool,
+    begin_list_item: Option<usize>,
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
@@ -121,7 +121,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 });
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
-                    self.begin_list_item = true;
+                    self.begin_list_item = Some(after_marker_index + n);
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
@@ -152,10 +152,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 match self.tree[node_ix].item.body {
                     ItemBody::BlockQuote => (),
                     _ => {
-                        if self.begin_list_item {
-                            // A list item can begin with at most one blank line.
-                            self.pop(start_ix);
-                        }
                         self.last_line_blank = true;
                     }
                 }
@@ -163,7 +159,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return ix + n;
         }
 
-        self.begin_list_item = false;
         self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
@@ -1122,7 +1117,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Close a list if it's open. Also set loose if last line was blank
+    /// and end current list if it's a lone, empty item
     fn finish_list(&mut self, ix: usize) {
+        self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
                 self.pop(ix);
@@ -1138,9 +1135,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
     }
 
+    fn finish_empty_list_item(&mut self) {
+        if let Some(begin_list_item) = self.begin_list_item {
+            if self.last_line_blank {
+                // A list item can begin with at most one blank line.
+                if let Some(node_ix) = self.tree.peek_up() {
+                    if let ItemBody::ListItem(_) = self.tree[node_ix].item.body {
+                        self.pop(begin_list_item);
+                    }
+                }
+            }
+        }
+        self.begin_list_item = None;
+    }
+
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
+        self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
                 if existing_ch == ch {

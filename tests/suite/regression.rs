@@ -1603,3 +1603,42 @@ Things
 
     test_markdown_html(original, expected, false, true, false);
 }
+
+#[test]
+fn regression_test_109() {
+    let original = r##"-
+
+-
+
+
+-
+
+
+
+-
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_110() {
+    let original = r##"-
+
+  -  .
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li><p>.</p></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

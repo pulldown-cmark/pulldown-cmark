@@ -72,6 +72,7 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
+    opts.optflag("m", "enable-math", "enable LaTeX-style math");
     opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
     opts.optflag("", "enable-old-footnotes", "enable Hoedown-style footnotes");
     opts.optflag(
@@ -107,6 +108,9 @@ pub fn main() -> std::io::Result<()> {
     let mut opts = Options::empty();
     if matches.opt_present("enable-tables") {
         opts.insert(Options::ENABLE_TABLES);
+    }
+    if matches.opt_present("enable-math") {
+        opts.insert(Options::ENABLE_MATH);
     }
     if matches.opt_present("enable-footnotes") {
         opts.insert(Options::ENABLE_FOOTNOTES);

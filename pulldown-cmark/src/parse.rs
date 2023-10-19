@@ -62,6 +62,8 @@ pub(crate) enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
+    // is_display, can_open, can_close, brace context
+    MaybeMath(bool, bool, bool, usize),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
@@ -75,6 +77,7 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Math(CowIndex, bool), // true for display math
     Code(CowIndex),
     Link(LinkIndex),
     Image(LinkIndex),
@@ -113,6 +116,7 @@ impl ItemBody {
         matches!(
             *self,
             ItemBody::MaybeEmphasis(..)
+                | ItemBody::MaybeMath(..)
                 | ItemBody::MaybeSmartQuote(..)
                 | ItemBody::MaybeHtml
                 | ItemBody::MaybeCode(..)
@@ -344,6 +348,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut code_delims = CodeDelims::new();
+        let mut math_delims = MathDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -410,6 +415,64 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                }
+                ItemBody::MaybeMath(is_display, can_open, _can_close, brace_context) => {
+                    let mut search_count = if is_display { 2 } else { 1 };
+                    if !can_open {
+                        search_count -= 1;
+                        if search_count == 0 {
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                            prev = cur;
+                            cur = self.tree[cur_ix].next;
+                            continue;
+                        }
+                    }
+                    let is_display = search_count > 1;
+
+                    if math_delims.is_populated() {
+                        // we have previously scanned all math environment delimiters,
+                        // so we can reuse that work
+                        if let Some((scan_ix, true)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
+                            self.make_math_span(cur_ix, scan_ix);
+                        } else {
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                        }
+                    } else {
+                        // we haven't previously scanned all codeblock delimiters,
+                        // so walk the AST
+                        let mut scan;
+                        'search_count: loop {
+                            if search_count > 0 {
+                                scan = self.tree[cur_ix].next;
+                            } else {
+                                scan = None;
+                                break;
+                            }
+                            'scan: while let Some(scan_ix) = scan {
+                                if let ItemBody::MaybeMath(delim_is_display, _can_open, can_close, delim_brace_context) =
+                                    self.tree[scan_ix].item.body
+                                {
+                                    let delim_count = if delim_is_display { 2 } else { 1 };
+                                    if search_count <= delim_count && delim_brace_context == brace_context {
+                                        if !can_close {
+                                            math_delims.clear();
+                                            break 'scan;
+                                        }
+                                        self.make_math_span(cur_ix, scan_ix);
+                                        math_delims.clear();
+                                        break 'search_count;
+                                    } else {
+                                        math_delims.insert(search_count, delim_brace_context, scan_ix, can_close, delim_is_display);
+                                    }
+                                }
+                                scan = self.tree[scan_ix].next;
+                            }
+                            search_count -= 1;
+                        }
+                        if scan == None {
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                        }
+                    }
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
@@ -955,6 +1018,85 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         None
     }
 
+    fn make_math_span(&mut self, mut open: TreeIndex, close: TreeIndex) {
+        let mut span_start = self.tree[open].item.end;
+        let mut span_end = self.tree[close].item.start;
+        let mut cow: CowStr = self.text[span_start..span_end].into();
+        let start_is_display = if let ItemBody::MaybeMath(is_display, ..) = self.tree[open].item.body {
+            is_display
+        } else {
+            unreachable!()
+        };
+        let (end_is_display, end_can_open, end_brace_context) = if let ItemBody::MaybeMath(is_display, can_open, _can_close, brace_context) = self.tree[close].item.body {
+            (is_display, can_open, brace_context)
+        } else {
+            unreachable!()
+        };
+        //
+        if start_is_display && end_is_display &&
+            matches!(self.tree[open].next.map(|next| &self.tree[next].item.body), Some(ItemBody::MaybeMath(false, true, _, _)))
+        {
+            // $$$x$$ should put the extra $ on the outside
+            // $$$$x$$ isn't a problem because four $ in a row is just an empty display math environment
+            let next = self.tree[open].next.expect("for the result of map to be Some(), its input must be Some");
+            span_start = self.tree[next].item.end;
+            span_end = self.tree[close].item.start;
+            cow = self.text[span_start..span_end].into();
+            self.tree[next].item.body = self.tree[open].item.body;
+            self.tree[next].item.start = self.tree[open].item.start + 1;
+            self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+            self.tree[open].item.end = self.tree[open].item.start + 1;
+            open = next;
+        }
+        if self.tree.is_in_table() && cow.contains(r#"\|"#) {
+            // When inside a table, `\|` is used to write a literal `|`.
+            // This is the same way it works for code spans.
+            cow = cow.replace(r#"\|"#, "|").into();
+        }
+        // Adjust delimiter span to match up start and end code
+        //
+        // $$this is inline code$
+        // -^^^^^^^^^^^^^^^^^^^^^
+        //
+        // $this is also inline code$$
+        // ^^^^^^^^^^^^^^^^^^^^^^^^^^-
+        match (start_is_display, end_is_display) {
+            _ if (!start_is_display || !end_is_display) && span_start == span_end => {
+                // inline code spans cannot be empty
+                self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+            }
+            (true, false) => {
+                self.tree[close].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), false);
+                self.tree[close].item.start = self.tree[open].item.start + 1;
+                self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+                self.tree[open].item.end = self.tree[open].item.start + 1;
+                self.tree[open].next = Some(close);
+            }
+            (false, true) => {
+                self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), false);
+                self.tree[open].item.end = self.tree[close].item.start + 1;
+                // is_display, can_open, can_close, brace context
+                self.tree[close].item.body = ItemBody::MaybeMath(false, end_can_open, false, end_brace_context);
+                self.tree[close].item.start = self.tree[close].item.start + 1;
+                self.tree[open].next = Some(close);
+            }
+            (false, false) | (true, true) => {
+                self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), start_is_display);
+                self.tree[open].item.end = self.tree[close].item.end;
+                self.tree[open].next = self.tree[close].next;
+            }
+        }
+        // merge back-to-back close spans
+        if let ItemBody::MaybeMath(false, _can_open, can_close, brace_context) = self.tree[close].item.body {
+            if let Some(next) = self.tree[close].next {
+                if let ItemBody::MaybeMath(false, next_can_open, _next_can_close, _next_brace_context) = self.tree[next].item.body {
+                    self.tree[close].item.body = ItemBody::MaybeMath(true, next_can_open, can_close, brace_context);
+                    self.tree[close].next = self.tree[next].next;
+                    self.tree[close].item.end = self.tree[next].item.end;
+                }
+            }
+        }
+    }
 
     /// Make a code span.
     ///
@@ -1486,6 +1628,56 @@ impl CodeDelims {
     }
 }
 
+/// Tracks brace contexts and delimiter length for math delimiters.
+/// Provides amortized constant-time lookups.
+struct MathDelims {
+    inner: HashMap<(usize, usize), VecDeque<(TreeIndex, bool, bool)>>,
+    seen_first: bool,
+}
+
+impl MathDelims {
+    fn new() -> Self {
+        Self {
+            inner: Default::default(),
+            seen_first: false,
+        }
+    }
+
+    fn insert(&mut self, delim_count: usize, brace_context: usize, ix: TreeIndex, can_close: bool, delim_is_display: bool) {
+        if self.seen_first {
+            self.inner
+                .entry((delim_count, brace_context))
+                .or_insert_with(Default::default)
+                .push_back((ix, can_close, delim_is_display));
+        } else {
+            // Skip the first insert, since that delimiter will always
+            // be an opener and not a closer.
+            self.seen_first = true;
+        }
+    }
+
+    fn is_populated(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
+    fn find(&mut self, open_ix: TreeIndex, mut delim_count: usize, brace_context: usize, is_display: bool) -> Option<(TreeIndex, bool)> {
+        while delim_count > 0 {
+            while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&(delim_count, brace_context))?.pop_front() {
+                if ix > open_ix {
+                    return Some((ix, can_close || (!is_display && delim_is_display)));
+                }
+            }
+            delim_count -= 1;
+        }
+        None
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+        self.seen_first = false;
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub(crate) struct LinkIndex(usize);
 
@@ -1853,6 +2045,11 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
+        ItemBody::Math(cow_ix, is_display, ) => return if is_display {
+            Event::DisplayMath(allocs.take_cow(cow_ix))
+        } else {
+            Event::InlineMath(allocs.take_cow(cow_ix))
+        },
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

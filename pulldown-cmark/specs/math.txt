@@ -1,0 +1,630 @@
+Run this with `cargo run -- -m -s specs/math.txt`.
+
+## Haskell-CommonMark-Extensions (Pandoc commonmark_x) parity tests
+
+Mathematical expressions extension. Syntax based on
+<https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md>.
+
+Inline mode mathematical expressions:
+
+```````````````````````````````` example
+This sentence uses `$` delimiters to show math inline: $\sqrt{3x-1}+(1+x)^2$
+$\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
+
+`\` may follow just after the first `$`: $\{1, 2, 3\}$
+.
+<p>This sentence uses <code>$</code> delimiters to show math inline: <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
+<span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+<p><code>\</code> may follow just after the first <code>$</code>: <span class="math inline">\{1, 2, 3\}</span>
+````````````````````````````````
+
+Display mode mathematical expressions:
+
+```````````````````````````````` example
+**The Cauchy-Schwarz Inequality**
+
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
+.
+<p><strong>The Cauchy-Schwarz Inequality</strong></p>
+<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
+````````````````````````````````
+
+Inline math expressions cannot be empty, but display mode expressions can.
+
+```````````````````````````````` example
+Oops empty $$ expression.
+
+$$$$
+.
+<p>Oops empty $$ expression.</p>
+<p><span class="math display"></span></p>
+````````````````````````````````
+
+Math expressions pass their content through as-is, ignoring any other inline
+Markdown constructs:
+
+```````````````````````````````` example
+$a<b>c</b>$
+
+$${a*b*c} _c_ d$$
+
+$not `code`$
+
+$![not an](/image)$
+
+$<https://not.a.link/>$
+
+$&alpha;$
+.
+<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
+<p><span class="math display">{a*b*c} _c_ d</span></p>
+<p><span class="math inline">not `code`</span></p>
+<p><span class="math inline">![not an](/image)</span></p>
+<p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
+<p><span class="math inline">&amp;alpha;</span></p>
+````````````````````````````````
+
+Sole `$` characters without a matching pair in the same block element
+are handled as normal text.
+
+```````````````````````````````` example
+Hello $world.
+
+Dollar at end of line$
+.
+<p>Hello $world.</p>
+<p>Dollar at end of line$</p>
+````````````````````````````````
+
+Mathematical expressions can continue across multiple lines:
+
+```````````````````````````````` example
+$5x + 2 =
+17$
+
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+\left( \sum_{k=1}^n b_k^2 \right)$$
+.
+<p><span class="math inline">5x + 2 =
+17</span></p>
+<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+\left( \sum_{k=1}^n b_k^2 \right)</span></p>
+````````````````````````````````
+
+Markdown hard breaks are also not recognized inside math expressions:
+
+```````````````````````````````` example
+$not a\
+hard break  
+either$
+.
+<p><span class="math inline">not a\
+hard break  
+either</span></p>
+````````````````````````````````
+
+
+`$` character can be escaped with backslash in mathematical expressions:
+
+```````````````````````````````` example
+$\$$
+
+$$y = \$ x$$
+.
+<p><span class="math inline">\$</span></p>
+<p><span class="math display">y = \$ x</span></p>
+````````````````````````````````
+
+Inline mode math expressions cannot contain unescaped `$` characters, but
+display mode expressions can, though not two in a row:
+
+```````````````````````````````` example
+$x $ x$
+
+$$ $ $$
+
+$$ $$ $$
+.
+<p>$x $ x$</p>
+<p><span class="math display"> $ </span></p>
+<p><span class="math display"> </span> $$</p>
+````````````````````````````````
+
+Inline math expressions cannot start or end with whitespace, including newlines:
+
+```````````````````````````````` example
+these are not math texts: $ y=x$, $y=x $, $
+y=x$ and $y=x
+$
+.
+<p>these are not math texts: $ y=x$, $y=x $, $
+y=x$ and $y=x
+$</p>
+````````````````````````````````
+
+Inline math expressions do not need to be surrounded with whitespace:
+
+```````````````````````````````` example
+these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
+.
+<p>these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
+````````````````````````````````
+
+Inline math expressions can be surrounded by punctuation:
+
+```````````````````````````````` example
+math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$. and $x=y$"
+
+also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
+
+braces: ($x=y$) [$x=y$] {$x=y$}
+.
+<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>&quot;</p>
+<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and &quot;<span class="math inline">x=y</span>&quot;</p>
+<p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
+````````````````````````````````
+
+Math expression as only item on a line:
+
+```````````````````````````````` example
+$x=y$
+.
+<p><span class="math inline">x=y</span></p>
+````````````````````````````````
+
+Math expressions can be immediately followed by other math expressions:
+
+```````````````````````````````` example
+$a$$b$
+
+$a$$$b$$
+
+$$a$$$b$
+
+$$a$$$$b$$
+.
+<p><span class="math inline">a</span><span class="math inline">b</span></p>
+<p><span class="math inline">a</span><span class="math display">b</span></p>
+<p><span class="math display">a</span><span class="math inline">b</span></p>
+<p><span class="math display">a</span><span class="math display">b</span></p>
+````````````````````````````````
+
+Both inline and display mode math expressions are inline elements with the same
+precedence as code spans. The leftmost valid element takes priority:
+
+```````````````````````````````` example
+$Inline `first$ then` code
+
+`Code $first` then$ inline
+
+$$ Display `first $$ then` code
+
+`Code $$ first` then $$ display
+.
+<p><span class="math inline">Inline `first</span> then` code</p>
+<p><code>Code $first</code> then$ inline</p>
+<p><span class="math display"> Display `first </span> then` code</p>
+<p><code>Code $$ first</code> then $$ display</p>
+````````````````````````````````
+
+Indicators of block structure take precedence over math expressions:
+
+```````````````````````````````` example
+$x + y - z$
+
+$x + y
+- z$
+
+$$ x + y
+> z $$
+.
+<p><span class="math inline">x + y - z</span></p>
+<p>$x + y</p>
+<ul>
+<li>z$</li>
+</ul>
+<p>$$ x + y</p>
+<blockquote>
+<p>z $$</p>
+</blockquote>
+````````````````````````````````
+
+This also means that math expressions cannot contain empty lines, since they
+start a new paragraph:
+
+```````````````````````````````` example
+$not
+
+math$
+
+$$
+not
+
+math
+$$
+.
+<p>$not</p>
+<p>math$</p>
+<p>$$
+not</p>
+<p>math
+$$</p>
+````````````````````````````````
+
+Note that math can contain embedded math.  In scanning
+for a closing delimiter, we skip material in balanced
+curly braces:
+
+```````````````````````````````` example
+This is display math:
+$$
+\text{Hello $x^2$}
+$$
+And this is inline math:
+$\text{Hello $x$ there!}$
+.
+<p>This is display math:
+<span class="math display">
+\text{Hello $x^2$}
+</span>
+And this is inline math:
+<span class="math inline">\text{Hello $x$ there!}</span></p>
+````````````````````````````````
+
+Math expressions must be nested within balanced curly braces.
+Backslash-escaped braces do not count.
+
+```````````````````````````````` example
+This is not valid math: $}{$
+
+Neither is this: { $}{$ }
+
+This is: $\}\{$
+
+This is: $\}$
+
+Math environment contains 2+2: $}$2+2$
+.
+<p>This is not valid math: $}{$</p>
+<p>Neither is this: { $}{$ }</p>
+<p>This is: <span class="math inline">\}\{</span></p>
+<p>This is: <span class="math inline">\}</span></p>
+<p>Math environment contains 2+2: $}<span class="math inline">2+2</span></p>
+````````````````````````````````
+
+Math expressions must contain properly nested braces.
+
+```````````````````````````````` example
+This is not display math. It is inline math:
+
+$$\text{first $$ second}$
+
+$$$\text{first $$ second}$
+
+This is display math:
+
+$$\text{first $$ second}$$
+
+$$$\text{first $$ second}$$
+
+This is also display math, but (counterintuitively) it's allowed to be empty
+and expected to be as short as possible:
+
+$$$$\text{first $$ second}$$
+.
+<p>This is not display math. It is inline math:</p>
+<p>$<span class="math inline">\text{first $$ second}</span></p>
+<p>$$<span class="math inline">\text{first $$ second}</span></p>
+<p>This is display math:</p>
+<p><span class="math display">\text{first $$ second}</span></p>
+<p>$<span class="math display">\text{first $$ second}</span></p>
+<p>This is also display math, but (counterintuitively) it's allowed to be empty
+and expected to be as short as possible:</p>
+<p><span class="math display"></span>\text{first $$ second}$$</p>
+````````````````````````````````
+
+## Edge case tests comparison with GitHub
+
+Test cases
+https://raw.githubusercontent.com/nschloe/github-math-bugs/db938ff690ab7c534d8195fe4a1a5163c20b1134/README.md
+
+Inline math wrapped in quotes
+
+```````````````````````````````` example
+$x$ $`y`$
+.
+<p><span class="math inline">x</span> <span class="math inline">`y`</span></p>
+````````````````````````````````
+
+Inline and display math in the same list
+
+```````````````````````````````` example
+- $a$
+
+  ```math
+  a
+  ```
+
+  $$
+  a
+  $$
+
+- ```math
+  b
+  ```
+
+  $$
+  b
+  $$
+.
+<ul>
+<li>
+<p><span class="math inline">a</span></p>
+<pre><code class="language-math">a
+</code></pre>
+<p><span class="math display">a
+</span></p>
+</li>
+<li>
+<pre><code class="language-math">b
+</code></pre>
+<p><span class="math display">b
+</span></p>
+</li>
+</ul>
+````````````````````````````````
+
+Images and math in the same list
+
+```````````````````````````````` example
+- ![node logo](https://nodejs.org/static/images/logo.svg)
+- $x$
+.
+<ul>
+<li><img alt="node logo" src="https://nodejs.org/static/images/logo.svg"></li>
+<li><span class="math inline">x</span></li>
+</ul>
+````````````````````````````````
+
+Inline and display math in `<details>`
+
+```````````````````````````````` example
+<details>
+
+$A = 5$
+
+$$
+A = 5
+$$
+
+</details>
+.
+<details>
+<p><span class="math inline">A = 5</span></p>
+<p><span class="math display">
+A = 5
+</span></p>
+</details>
+````````````````````````````````
+
+`<` without surrounding whitespace
+
+```````````````````````````````` example
+$a<b$
+
+$$a<b$$
+.
+<p><span class="math inline">a&lt;b</span></p>
+<p><span class="math display">a&lt;b</span></p>
+````````````````````````````````
+
+Math in footnotes
+
+```````````````````````````````` example
+[^a]
+
+[^a]: Lorem $a$
+.
+<p><sup class="footnote-reference"><a href="#a">1</a></sup></p>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+<p>Lorem <span class="math inline">a</span></p>
+</div>
+````````````````````````````````
+
+Math in links
+
+```````````````````````````````` example
+[$a$](x)
+.
+<p>
+<a href="x"><span class="math inline">a</span></a>
+</p>
+````````````````````````````````
+
+Math preceded by an alphabetical character
+
+```````````````````````````````` example
+a$x$
+
+-$x$
+
+1$x$
+.
+<p>a<span class="math inline">x</span></p>
+<p>-<span class="math inline">x</span></p>
+<p>1<span class="math inline">x</span></p>
+````````````````````````````````
+
+Inline math at the end of italic text
+
+```````````````````````````````` example
+_$a$ equals $b$_
+
+_$a$ equals $b$_
+
+**$a$ equals $b$**
+.
+<p><em><span class="math inline">a</span> equals <span class="math inline">b</span></em></p>
+<p><em><span class="math inline">a</span> equals <span class="math inline">b</span></em></p>
+<p><strong><span class="math inline">a</span> equals <span class="math inline">b</span></strong></p>
+````````````````````````````````
+
+Dollar in `\text`
+
+```````````````````````````````` example
+$$
+a
+$$
+
+- $$
+  \text{$b$}
+  $$
+.
+<p><span class="math display">a</span>
+</p><ul>
+<li><span class="math display">\text{$b$}</span></li>
+</ul>
+````````````````````````````````
+
+Backslashes in `$`-math
+
+```````````````````````````````` example
+$\{a\,b\}$
+.
+<p><span class="math inline">\{a\,b\}</span></p>
+````````````````````````````````
+
+Math vs. HTML mix-up
+
+```````````````````````````````` example
+$a <b > c$
+
+$[(a+b)c](d+e)$
+
+${a}_b c_{d}$
+.
+<p><span class="math inline">a &lt;b &gt; c</span></p>
+<p><span class="math inline">[(a+b)c](d+e)</span></p>
+<p><span class="math inline">{a}_b c_{d}</span></p>
+````````````````````````````````
+
+Dollar-math with spaces
+
+```````````````````````````````` example
+When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
+$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
+.
+<p>When <span class="math inline">a \ne 0</span>, there are two solutions to <span class="math inline">(ax^2 + bx + c = 0)</span> and they are
+<span class="math display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span>
+````````````````````````````````
+
+Spacing around dollar sign in math mode
+
+```````````````````````````````` example
+$x = \$$
+.
+<p><span class="math inline">x = \$</span></p>
+````````````````````````````````
+
+Math in italic text
+
+```````````````````````````````` example
+_Equation $\Omega(69)$ in italic text_
+.
+<p><em>Equation <span class="math inline">\Omega(69)</span> in italic text</em></p>
+````````````````````````````````
+
+Inline math can't be preceded by brackets, quotation marks etc.
+
+```````````````````````````````` example
+$\pi$
+'$\pi$
+"$\pi$
+($\pi$
+[$\pi$
+{$\pi$
+/$\pi$
+.
+<p>
+<span class="math inline">\pi</span>
+'<span class="math inline">\pi</span>
+"<span class="math inline">\pi</span>
+(<span class="math inline">\pi</span>
+[<span class="math inline">\pi</span>
+{<span class="math inline">\pi</span>
+/<span class="math inline">\pi</span>
+</p>
+````````````````````````````````
+
+## Relationship with tables
+
+As a block element, tables parsing is stronger than math.
+
+```````````````````````````````` example
+| first $|$ second |
+|--------|---------|
+| a ${   | }$ b    |
+.
+<table><thead>
+<tr><th>first $</th><th>$ second</th></tr>
+</thead><tbody>
+<tr><td>a ${</td><td>}$ b</td></tr>
+</tbody></table>
+````````````````````````````````
+
+As a special case, pipes in math environments in tables are escaped
+with backslashes. Though backslash-escaped characters in math
+environments are normally passed through verbatim to the LaTeX
+engine, escaped pipes in tables are an exception like they
+are in code spans.
+
+The behavior of the table parser should be as-if it found the bounds
+of the table cell in a separate pass that only looked for the
+strings `|` and `\|`, treating pipes as boundaries and removing the
+escaping backslash before passing the string to the inline parser.
+
+```````````````````````````````` example
+| first $\|$ second |
+|-------------------|
+| a ${   \| }$ b    |
+.
+<table><thead>
+<tr><th>first <span class="math inline">|</span> second</th></tr>
+</thead><tbody>
+<tr><td>a <span class="math inline">{   | }</span> b</td></tr>
+</tbody></table>
+````````````````````````````````
+
+```````````````````````````````` example
+| Description | Test case |
+|-------------|-----------|
+| Single      | $\$       |
+| Double      | $\\$      |
+| Basic test  | $\|$      |
+| Basic test 2| $\|\|\$   |
+| Basic test 3| $x\|y\|z\$|
+| Not pipe    | $\.$      |
+| Combo       | $\.\|$    |
+| Combo 2     | $\.\|\$   |
+| Extra       | $\\\.$    |
+| Wait, what? | $\\|$     |
+| Wait, what? | $\\\|$    |
+| Wait, what? | $\\\\|$   |
+| Wait, what? | $\\\\\|$  |
+.
+<table><thead><tr><th>Description</th><th>Test case</th></tr></thead><tbody>
+<tr><td>Single</td><td>$$</td></tr>
+<tr><td>Double</td><td><span class="math inline">\\</span></td></tr>
+<tr><td>Basic test</td><td><span class="math inline">|</span></td></tr>
+<tr><td>Basic test 2</td><td>$||$</td></tr>
+<tr><td>Basic test 3</td><td>$x|y|z$</td></tr>
+<tr><td>Not pipe</td><td><span class="math inline">\.</span></td></tr>
+<tr><td>Combo</td><td><span class="math inline">\.|</span></td></tr>
+<tr><td>Combo 2</td><td>$.|$</td></tr>
+<tr><td>Extra</td><td><span class="math inline">\\\.</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math inline">\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math inline">\\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math inline">\\\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math inline">\\\\|</span></td></tr>
+</tbody></table>
+````````````````````````````````

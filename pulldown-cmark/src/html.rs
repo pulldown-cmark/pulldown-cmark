@@ -109,6 +109,16 @@ where
                     escape_html_body_text(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
+                InlineMath(text) => {
+                    self.write(r#"<span class="math inline">"#)?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("</span>")?;
+                }
+                DisplayMath(text) => {
+                    self.write(r#"<span class="math display">"#)?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("</span>")?;
+                }
                 Html(html) | InlineHtml(html) => {
                     self.write(&html)?;
                 }
@@ -436,6 +446,16 @@ where
                     // The output of this function is used in the `alt` attribute.
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
+                }
+                InlineMath(text) => {
+                    self.write("$")?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("$")?;
+                }
+                DisplayMath(text) => {
+                    self.write("$$")?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("$$")?;
                 }
                 SoftBreak | HardBreak | Rule => {
                     self.write(" ")?;

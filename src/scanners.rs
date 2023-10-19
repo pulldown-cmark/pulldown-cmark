@@ -559,6 +559,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     let mut active_col = Alignment::None;
     let mut start_col = true;
     let mut found_pipe = false;
+    let mut found_hyphen = false;
+    let mut found_hyphen_in_col = false;
     if data[i] == b'|' {
         i += 1;
         found_pipe = true;
@@ -581,12 +583,19 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
             }
             b'-' => {
                 start_col = false;
+                found_hyphen = true;
+                found_hyphen_in_col = true;
             }
             b'|' => {
                 start_col = true;
                 found_pipe = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
+                if !found_hyphen_in_col {
+                    // It isn't a table head if it has back-to-back pipes.
+                    return (0, vec![]);
+                }
+                found_hyphen_in_col = false;
             }
             _ => {
                 cols = vec![];
@@ -600,8 +609,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     if !start_col {
         cols.push(active_col);
     }
-    if !found_pipe {
-        // It isn't a table head if it doesn't have a least one pipe.
+    if !found_pipe || !found_hyphen {
+        // It isn't a table head if it doesn't have a least one pipe or hyphen.
         // It's a list, a header, or a thematic break.
         return (0, vec![]);
     }

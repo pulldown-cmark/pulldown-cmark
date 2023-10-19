@@ -1642,3 +1642,69 @@ fn regression_test_110() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_111() {
+    let original = r##"Not enough table
+
+|
+|
+
+Not enough table
+
+|x
+|
+
+Not enough table
+
+|
+|-
+
+Table
+
+|x
+|-
+
+Not enough table
+| col1 | col2 |
+|      | ---- |
+
+Not enough table
+| col1 | col2 |
+| :    | ---- |
+
+Table
+| col1 | col2 |
+| ---- | ---- |
+"##;
+    let expected = r##"<p>Not enough table</p>
+<p>|
+|</p>
+<p>Not enough table</p>
+<p>|x
+|</p>
+<p>Not enough table</p>
+<p>|
+|-</p>
+<p>Table</p>
+<table>
+<thead><tr><th>x</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p>Not enough table
+| col1 | col2 |
+|      | ---- |</p>
+<p>Not enough table
+| col1 | col2 |
+| :    | ---- |</p>
+<p>Table</p>
+<table>
+<thead><tr><th>col1</th><th>col2</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

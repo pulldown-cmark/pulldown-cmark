@@ -578,11 +578,12 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         while let Some(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeEmphasis(mut count, can_open, can_close) => {
+                    let run_length = count;
                     let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                     let both = can_open && can_close;
                     if can_close {
                         while let Some(el) =
-                            self.inline_stack.find_match(&mut self.tree, c, count, both)
+                            self.inline_stack.find_match(&mut self.tree, c, count, run_length, both)
                         {
                             // have a match!
                             if let Some(prev_ix) = prev {
@@ -627,6 +628,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 self.inline_stack.push(InlineEl {
                                     start: el.start,
                                     count: el.count - match_count,
+                                    run_length: el.run_length,
                                     c: el.c,
                                     both: el.both,
                                 })
@@ -643,6 +645,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         if can_open {
                             self.inline_stack.push(InlineEl {
                                 start: cur_ix,
+                                run_length,
                                 count,
                                 c,
                                 both,
@@ -1020,10 +1023,16 @@ impl Tree<Item> {
 
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
-    start: TreeIndex, // offset of tree node
+    /// offset of tree node
+    start: TreeIndex,
+    /// number of delimiters available for matching
     count: usize,
-    c: u8,      // b'*' or b'_'
-    both: bool, // can both open and close
+    /// length of the run that these delimiters came from
+    run_length: usize,
+    /// b'*', b'_', or b'~'
+    c: u8,
+    /// can both open and close
+    both: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -1099,6 +1108,7 @@ impl InlineStack {
         tree: &mut Tree<Item>,
         c: u8,
         count: usize,
+        run_length: usize,
         both: bool,
     ) -> Option<InlineEl> {
         let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
@@ -1107,7 +1117,7 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
+                el.c == c && (!both && !el.both || (run_length + el.run_length) % 3 != 0 || run_length % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {

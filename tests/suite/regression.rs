@@ -1645,6 +1645,16 @@ fn regression_test_110() {
 
 #[test]
 fn regression_test_111() {
+    let original = r##"j***5*=*
+"##;
+    let expected = r##"<p>j*<em><em>5</em>=</em></p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_112() {
     let original = r##"Not enough table
 
 |

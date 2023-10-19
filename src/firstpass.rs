@@ -602,6 +602,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             begin_text = ix + 1 + count;
                             LoopInstruction::ContinueAndSkip(count)
                         } else if ix + 2 < bytes_len
+                            && bytes[ix + 1] == b'\\'
                             && bytes[ix + 2] == b'|'
                             && TableParseMode::Active == mode
                         {

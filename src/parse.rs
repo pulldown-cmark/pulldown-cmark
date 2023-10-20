@@ -1103,6 +1103,15 @@ impl InlineStack {
         }
     }
 
+    fn truncate(&mut self, new_bound: usize) {
+        self.stack.truncate(new_bound);
+        for lower_bound in &mut self.lower_bounds {
+            if *lower_bound > new_bound {
+                *lower_bound = new_bound;
+            }
+        }
+    }
+
     fn find_match(
         &mut self,
         tree: &mut Tree<Item>,
@@ -1127,7 +1136,7 @@ impl InlineStack {
                     tree[el.start + i].item.body = ItemBody::Text;
                 }
             }
-            self.stack.truncate(matching_ix);
+            self.truncate(matching_ix);
             Some(matching_el)
         } else {
             self.set_lowerbound(c, count, both, self.stack.len());

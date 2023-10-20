@@ -372,6 +372,7 @@ fn table_test_17() {
 | Wait, what?x|          \|x
 | Wait, what?x|         \\|x
 | Wait, what?x|        \\\|x
+| Direct trail|         \.|x
 "##;
     let expected = r##"<table><thead><tr><th>Description</th><th>Test case</th></tr></thead><tbody>
 <tr><td>Single</td><td><code>\</code></td></tr>
@@ -392,6 +393,7 @@ fn table_test_17() {
 <tr><td>Wait, what?x</td><td>|x</td></tr>
 <tr><td>Wait, what?x</td><td>|x</td></tr>
 <tr><td>Wait, what?x</td><td>\|x</td></tr>
+<tr><td>Direct trail</td><td>.</td></tr>
 </tbody></table>
 "##;
 

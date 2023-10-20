@@ -1649,7 +1649,7 @@ fn regression_test_111() {
 "##;
     let expected = r##"<p>j*<em><em>5</em>=</em></p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
 
@@ -1714,6 +1714,16 @@ Table
 <tbody>
 </tbody>
 </table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_113() {
+    let original = r##"**a.*.**a*.**.
+"##;
+    let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

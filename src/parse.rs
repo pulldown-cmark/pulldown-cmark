@@ -583,7 +583,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                     let both = can_open && can_close;
                     if can_close {
                         while let Some(el) =
-                            self.inline_stack.find_match(&mut self.tree, c, count, run_length, both)
+                            self.inline_stack.find_match(&mut self.tree, c, run_length, both)
                         {
                             // have a match!
                             if let Some(prev_ix) = prev {
@@ -1107,11 +1107,10 @@ impl InlineStack {
         &mut self,
         tree: &mut Tree<Item>,
         c: u8,
-        count: usize,
         run_length: usize,
         both: bool,
     ) -> Option<InlineEl> {
-        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
+        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, run_length, both));
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
@@ -1130,7 +1129,7 @@ impl InlineStack {
             self.stack.truncate(matching_ix);
             Some(matching_el)
         } else {
-            self.set_lowerbound(c, count, both, self.stack.len());
+            self.set_lowerbound(c, run_length, both, self.stack.len());
             None
         }
     }

@@ -429,49 +429,44 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     }
                     let is_display = search_count > 1;
 
-                    if math_delims.is_populated() {
-                        // we have previously scanned all math environment delimiters,
-                        // so we can reuse that work
-                        if let Some((scan_ix, true)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
-                            self.make_math_span(cur_ix, scan_ix);
-                        } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                    let result = 'result: loop {
+                        if search_count == 0 {
+                            break None;
                         }
-                    } else {
-                        // we haven't previously scanned all codeblock delimiters,
-                        // so walk the AST
-                        let mut scan;
-                        'search_count: loop {
-                            if search_count > 0 {
-                                scan = self.tree[cur_ix].next;
-                            } else {
-                                scan = None;
-                                break;
+                        if math_delims.is_populated() {
+                            // we have previously scanned all math environment delimiters,
+                            // so we can reuse that work
+                            if let Some((scan_ix, true)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
+                                break Some(scan_ix);
                             }
+                        } else {
+                            // we haven't previously scanned all codeblock delimiters,
+                            // so walk the AST
+                            let mut scan = self.tree[cur_ix].next;
                             'scan: while let Some(scan_ix) = scan {
                                 if let ItemBody::MaybeMath(delim_is_display, _can_open, can_close, delim_brace_context) =
                                     self.tree[scan_ix].item.body
                                 {
                                     let delim_count = if delim_is_display { 2 } else { 1 };
                                     if search_count <= delim_count && delim_brace_context == brace_context {
+                                        math_delims.clear();
                                         if !can_close {
-                                            math_delims.clear();
                                             break 'scan;
                                         }
-                                        self.make_math_span(cur_ix, scan_ix);
-                                        math_delims.clear();
-                                        break 'search_count;
+                                        break 'result scan;
                                     } else {
-                                        math_delims.insert(search_count, delim_brace_context, scan_ix, can_close, delim_is_display);
+                                        math_delims.insert(delim_count, delim_brace_context, scan_ix, can_close, delim_is_display);
                                     }
                                 }
                                 scan = self.tree[scan_ix].next;
                             }
-                            search_count -= 1;
                         }
-                        if scan == None {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
-                        }
+                        search_count -= 1;
+                    };
+                    if let Some(scan_ix) = result {
+                        self.make_math_span(cur_ix, scan_ix);
+                    } else {
+                        self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     }
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
@@ -1033,9 +1028,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             unreachable!()
         };
         //
-        if start_is_display && end_is_display &&
-            matches!(self.tree[open].next.map(|next| &self.tree[next].item.body), Some(ItemBody::MaybeMath(false, true, _, _)))
-        {
+        while matches!(self.tree[open].next.map(|next| &self.tree[next].item.body), Some(ItemBody::MaybeMath(false, true, _, _))) {
             // $$$x$$ should put the extra $ on the outside
             // $$$$x$$ isn't a problem because four $ in a row is just an empty display math environment
             let next = self.tree[open].next.expect("for the result of map to be Some(), its input must be Some");

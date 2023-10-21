@@ -921,6 +921,9 @@ pub(crate) fn scan_link_dest(
             }
             i += 1;
         }
+        if nest != 0 {
+            return None;
+        }
         Some((i, &data[start_ix..(start_ix + i)]))
     }
 }

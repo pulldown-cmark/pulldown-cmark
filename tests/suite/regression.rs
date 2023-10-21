@@ -1750,7 +1750,7 @@ an unmatched asterisk.</p>
 <p><em>x</em>
 <em>{</em>{</p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
 
@@ -1760,6 +1760,6 @@ fn regression_test_115() {
 "##;
     let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }

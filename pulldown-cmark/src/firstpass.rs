@@ -40,6 +40,17 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
     first_pass.run()
 }
 
+// Each level of brace nesting adds another entry to a hash table.
+// To limit the amount of memory consumed, do not create a new brace
+// context beyond some amount deep.
+//
+// There are actually two limits at play here: this one,
+// and the one where the maximum amount of distinct contexts passes
+// the 255 item limit imposed by using `u8`. When over 255 distinct
+// contexts are created, it wraps around, while this one instead makes it
+// saturate, which is a better behavior.
+const MATH_BRACE_CONTEXT_MAX_NESTING: usize = 25;
+
 /// State for the first parsing pass.
 struct FirstPass<'a, 'b> {
     text: &'a str,
@@ -53,7 +64,7 @@ struct FirstPass<'a, 'b> {
     /// starts with a task list marker.
     next_paragraph_task: Option<Item>,
     /// Math environment brace nesting.
-    brace_context_stack: Vec<usize>,
+    brace_context_stack: Vec<u8>,
     brace_context_next: usize,
 }
 
@@ -787,10 +798,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let can_close = !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
-                    // storing Option<usize>, which is bigger than usize.
+                    // storing Option<u8>, which is bigger than u8.
                     //
-                    // These can't conflict, because that would require storing usize::MAX
-                    // bytes in memory, which is impossible.
+                    // These shouldn't conflict unless you have 255 levels of nesting, which is
+                    // past the intended limit anyway.
                     //
                     // Unbalanced braces will cause the root to be changed, which is why it gets
                     // stored here.
@@ -813,9 +824,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'{' => {
-                    // Store nothing if no math environment has been reached yet.
-                    if !self.brace_context_stack.is_empty() {
-                        self.brace_context_stack.push(self.brace_context_next);
+                    if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
+                        // When we reach the limit of nesting, switch from actually matching
+                        // braces to just counting them.
+                        self.brace_context_next += 1;
+                    } else if !self.brace_context_stack.is_empty() {
+                        // Store nothing if no math environment has been reached yet.
+                        self.brace_context_stack.push(self.brace_context_next as u8);
                         self.brace_context_next += 1;
                     }
                     LoopInstruction::ContinueAndSkip(0)
@@ -837,7 +852,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         //
                         //     Math environment contains 2+2: $}$2+2$
                         //                                       ^^^ this is a math environment
-                        *top_level_context -= 1;
+                        *top_level_context = top_level_context.wrapping_sub(1);
+                    } else if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
+                        // When we exceed 25 levels of nesting, switch from accurately balancing braces
+                        // to just counting them. When we dip back below the limit, switch back.
+                        self.brace_context_next -= 1;
+                        if self.brace_context_next <= MATH_BRACE_CONTEXT_MAX_NESTING {
+                            self.brace_context_stack.pop();
+                        }
                     } else {
                         self.brace_context_stack.pop();
                     }

@@ -63,7 +63,7 @@ pub(crate) enum ItemBody {
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
     // is_display, can_open, can_close, brace context
-    MaybeMath(bool, bool, usize),
+    MaybeMath(bool, bool, u8),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
@@ -1626,7 +1626,7 @@ impl CodeDelims {
 /// Tracks brace contexts and delimiter length for math delimiters.
 /// Provides amortized constant-time lookups.
 struct MathDelims {
-    inner: HashMap<(usize, usize), VecDeque<(TreeIndex, bool, bool)>>,
+    inner: HashMap<(usize, u8), VecDeque<(TreeIndex, bool, bool)>>,
     seen_first: bool,
 }
 
@@ -1638,7 +1638,7 @@ impl MathDelims {
         }
     }
 
-    fn insert(&mut self, delim_count: usize, brace_context: usize, ix: TreeIndex, can_close: bool, delim_is_display: bool) {
+    fn insert(&mut self, delim_count: usize, brace_context: u8, ix: TreeIndex, can_close: bool, delim_is_display: bool) {
         if self.seen_first {
             self.inner
                 .entry((delim_count, brace_context))
@@ -1655,7 +1655,7 @@ impl MathDelims {
         !self.inner.is_empty()
     }
 
-    fn find(&mut self, open_ix: TreeIndex, mut delim_count: usize, brace_context: usize, is_display: bool) -> Option<(TreeIndex, bool)> {
+    fn find(&mut self, open_ix: TreeIndex, mut delim_count: usize, brace_context: u8, is_display: bool) -> Option<(TreeIndex, bool)> {
         while delim_count > 0 {
             while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&(delim_count, brace_context))?.pop_front() {
                 if ix > open_ix {

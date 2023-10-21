@@ -697,3 +697,119 @@ fn math_test_40() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn math_test_41() {
+    let original = r##"This is not an inline math environment: $}{$
+But, because it's nested too deeply, this is parsed as an inline math environment:
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly $}{$ nested
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+But this still isn't, because the braces are still counted: $}{$
+"##;
+    let expected = r##"<p>This is not an inline math environment: $}{$
+But, because it's nested too deeply, this is parsed as an inline math environment:
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly <span class="math inline">}{</span> nested
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+But this still isn't, because the braces are still counted: $}{$</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_42() {
+    let original = r##"${}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  80 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 100 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 120 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 140 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 160 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 180 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 200 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 220 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 240 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{$ 255 brace pairs and one unclosed brace
+"##;
+    let expected = r##"<p><span class="math inline">{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  80 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 100 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 120 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 140 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 160 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 180 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 200 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 220 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 240 brace pairs
+{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{</span> 255 brace pairs and one unclosed brace</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_43() {
+    let original = r##"${{{{{{{{{{{{{{{{{{{{ 20 open braces
+{{{{{{{{{{{{{{{{{{{{  40 open braces
+{{{{{{{{{{{{{{{{{{{{  60 open braces
+{{{{{{{{{{{{{{{{{{{{  80 open braces
+{{{{{{{{{{{{{{{{{{{{ 100 open braces
+{{{{{{{{{{{{{{{{{{{{ 110 open braces
+{{{{{{{{{{{{{{{{{{{{ 120 open braces
+{{{{{{{{{{{{{{{{{{{{ 140 open braces
+{{{{{{{{{{{{{{{{{{{{ 160 open braces
+{{{{{{{{{{{{{{{{{{{{ 180 open braces
+{{{{{{{{{{{{{{{{{{{{ 200 open braces
+{{{{{{{{{{{{{{{{{{{{ 220 open braces
+{{{{{{{{{{{{{{{{{{{{ 240 open braces
+{{{{{{{{{{{{{{{ 255 open braces
+}}}}}}}}}}}}}}}}}}}}  20 close braces
+}}}}}}}}}}}}}}}}}}}}  40 close braces
+}}}}}}}}}}}}}}}}}}}}  60 close braces
+}}}}}}}}}}}}}}}}}}}}  80 close braces
+}}}}}}}}}}}}}}}}}}}} 100 close braces
+}}}}}}}}}}}}}}}}}}}} 120 close braces
+}}}}}}}}}}}}}}}}}}}} 140 close braces
+}}}}}}}}}}}}}}}}}}}} 160 close braces
+}}}}}}}}}}}}}}}}}}}} 180 close braces
+}}}}}}}}}}}}}}}}}}}} 200 close braces
+}}}}}}}}}}}}}}}}}}}} 220 close braces
+}}}}}}}}}}}}}}}}}}}} 240 close braces
+}}}}}}}}}}}}}}}{$ 255 close braces and one open brace
+"##;
+    let expected = r##"<p>${{{{{{{{{{{{{{{{{{{{ 20 open braces
+{{{{{{{{{{{{{{{{{{{{  40 open braces
+{{{{{{{{{{{{{{{{{{{{  60 open braces
+{{{{{{{{{{{{{{{{{{{{  80 open braces
+{{{{{{{{{{{{{{{{{{{{ 100 open braces
+{{{{{{{{{{{{{{{{{{{{ 110 open braces
+{{{{{{{{{{{{{{{{{{{{ 120 open braces
+{{{{{{{{{{{{{{{{{{{{ 140 open braces
+{{{{{{{{{{{{{{{{{{{{ 160 open braces
+{{{{{{{{{{{{{{{{{{{{ 180 open braces
+{{{{{{{{{{{{{{{{{{{{ 200 open braces
+{{{{{{{{{{{{{{{{{{{{ 220 open braces
+{{{{{{{{{{{{{{{{{{{{ 240 open braces
+{{{{{{{{{{{{{{{ 255 open braces
+}}}}}}}}}}}}}}}}}}}}  20 close braces
+}}}}}}}}}}}}}}}}}}}}  40 close braces
+}}}}}}}}}}}}}}}}}}}}  60 close braces
+}}}}}}}}}}}}}}}}}}}}  80 close braces
+}}}}}}}}}}}}}}}}}}}} 100 close braces
+}}}}}}}}}}}}}}}}}}}} 120 close braces
+}}}}}}}}}}}}}}}}}}}} 140 close braces
+}}}}}}}}}}}}}}}}}}}} 160 close braces
+}}}}}}}}}}}}}}}}}}}} 180 close braces
+}}}}}}}}}}}}}}}}}}}} 200 close braces
+}}}}}}}}}}}}}}}}}}}} 220 close braces
+}}}}}}}}}}}}}}}}}}}} 240 close braces
+}}}}}}}}}}}}}}}{$ 255 close braces and one open brace</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

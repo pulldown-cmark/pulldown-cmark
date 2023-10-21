@@ -1455,6 +1455,17 @@ Table
 </table>
 ````````````````````````````````
 
+ISSUE 737
+
+```````````````````````````````` example
+[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+.
+<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+````````````````````````````````
+
 ISSUE 739
 
 ```````````````````````````````` example

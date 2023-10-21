@@ -1721,6 +1721,19 @@ Table
 
 #[test]
 fn regression_test_113() {
+    let original = r##"[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+"##;
+    let expected = r##"<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_114() {
     let original = r##"Both of these two paragraphs are structurally the same, but the first one has
 an unmatched asterisk.
 
@@ -1737,6 +1750,6 @@ an unmatched asterisk.</p>
 <p><em>x</em>
 <em>{</em>{</p>
 "##;
-
+  
     test_markdown_html(original, expected, false, false, false);
 }

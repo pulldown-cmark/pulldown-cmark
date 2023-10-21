@@ -1,18 +1,5 @@
 Run this with `cargo run -- -m -s specs/math.txt`.
 
-TODO: Fix this test case. Its result ought to be:
-
-    <p><span class="math inline">x</span><span class="math display"></span><span class="math display">y</span></p>
-
-```````````````````````````````` example
-Math should not start with `$`.
-
-$x$$$$$$$y$$
-.
-<p>Math should not start with <code>$</code>.</p>
-<p><span class="math inline">x</span>$<span class="math display"></span><span class="math inline">y</span>$</p>
-````````````````````````````````
-
 ## Haskell-CommonMark-Extensions (Pandoc commonmark_x) parity tests
 
 Mathematical expressions extension. Syntax based on
@@ -51,6 +38,20 @@ $$$$
 .
 <p>Oops empty $$ expression.</p>
 <p><span class="math display"></span></p>
+````````````````````````````````
+
+This is a greedy, left-to-right parser.
+
+```````````````````````````````` example
+$x$$$$$$$y$$
+
+$x$$$$$$y$$
+
+$$x$$$$$$y$$
+.
+<p><span class="math inline">x</span><span class="math display"></span><span class="math display">y</span></p>
+<p><span class="math inline">x</span><span class="math display"></span><span class="math inline">y</span>$</p>
+<p><span class="math display">x</span><span class="math display"></span>y$$</p>
 ````````````````````````````````
 
 Math expressions pass their content through as-is, ignoring any other inline

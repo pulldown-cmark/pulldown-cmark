@@ -5,19 +5,6 @@ use super::test_markdown_html;
 
 #[test]
 fn math_test_1() {
-    let original = r##"Math should not start with `$`.
-
-$x$$$$$$$y$$
-"##;
-    let expected = r##"<p>Math should not start with <code>$</code>.</p>
-<p><span class="math inline">x</span>$<span class="math display"></span><span class="math inline">y</span>$</p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn math_test_2() {
     let original = r##"This sentence uses `$` delimiters to show math inline: $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 
@@ -32,7 +19,7 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 }
 
 #[test]
-fn math_test_3() {
+fn math_test_2() {
     let original = r##"**The Cauchy-Schwarz Inequality**
 
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
@@ -45,13 +32,29 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 }
 
 #[test]
-fn math_test_4() {
+fn math_test_3() {
     let original = r##"Oops empty $$ expression.
 
 $$$$
 "##;
     let expected = r##"<p>Oops empty $$ expression.</p>
 <p><span class="math display"></span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_4() {
+    let original = r##"$x$$$$$$$y$$
+
+$x$$$$$$y$$
+
+$$x$$$$$$y$$
+"##;
+    let expected = r##"<p><span class="math inline">x</span><span class="math display"></span><span class="math display">y</span></p>
+<p><span class="math inline">x</span><span class="math display"></span><span class="math inline">y</span>$</p>
+<p><span class="math display">x</span><span class="math display"></span>y$$</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

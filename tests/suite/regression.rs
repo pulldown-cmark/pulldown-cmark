@@ -1731,3 +1731,25 @@ fn regression_test_113() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_114() {
+    let original = r##"Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+"##;
+    let expected = r##"<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false);
+}

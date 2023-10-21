@@ -1465,3 +1465,23 @@ ISSUE 737
 <p>[x] is not a valid link definition, because parens aren't balanced.</p>
 <p>[x]: (</p>
 ````````````````````````````````
+
+ISSUE 739
+
+```````````````````````````````` example
+Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+.
+<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+````````````````````````````````

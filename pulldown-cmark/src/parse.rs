@@ -63,7 +63,7 @@ pub(crate) enum ItemBody {
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
     // is_display, can_open, can_close, brace context
-    MaybeMath(bool, bool, bool, usize),
+    MaybeMath(bool, bool, usize),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
@@ -416,41 +416,49 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     }
                     self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                 }
-                ItemBody::MaybeMath(is_display, can_open, _can_close, brace_context) => {
+                ItemBody::MaybeMath(can_open, _can_close, brace_context) => {
+                    let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
+                        matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+                    });
                     let mut search_count = if is_display { 2 } else { 1 };
                     if !can_open {
-                        search_count -= 1;
-                        if search_count == 0 {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
-                            prev = cur;
-                            cur = self.tree[cur_ix].next;
-                            continue;
-                        }
+                        self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                        prev = cur;
+                        cur = self.tree[cur_ix].next;
+                        continue;
                     }
-                    let is_display = search_count > 1;
 
                     let result = 'result: loop {
+                        let is_display = search_count > 1;
                         if search_count == 0 {
-                            break None;
+                            break 'result None;
                         }
                         if math_delims.is_populated() {
                             // we have previously scanned all math environment delimiters,
                             // so we can reuse that work
-                            if let Some((scan_ix, true)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
-                                break Some(scan_ix);
+                            if let Some((scan_ix, can_close)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
+                                // can_close only applies to inline math
+                                // block math can always close
+                                if self.tree[cur_ix].next != Some(scan_ix) && (can_close || is_display) {
+                                    break 'result Some(scan_ix);
+                                }
                             }
                         } else {
                             // we haven't previously scanned all codeblock delimiters,
                             // so walk the AST
                             let mut scan = self.tree[cur_ix].next;
                             'scan: while let Some(scan_ix) = scan {
-                                if let ItemBody::MaybeMath(delim_is_display, _can_open, can_close, delim_brace_context) =
+                                if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
                                     self.tree[scan_ix].item.body
                                 {
+                                    let delim_is_display = self.tree[scan_ix].next.map_or(false, |next_ix| {
+                                        matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+                                    });
                                     let delim_count = if delim_is_display { 2 } else { 1 };
-                                    if search_count <= delim_count && delim_brace_context == brace_context {
-                                        math_delims.clear();
-                                        if !can_close {
+                                    if search_count <= delim_count && delim_brace_context == brace_context && self.tree[cur_ix].next != Some(scan_ix) {
+                                        if !can_close && !is_display {
+                                            // can_close only applies to inline math
+                                            // block math can always close
                                             break 'scan;
                                         }
                                         break 'result scan;
@@ -465,6 +473,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     };
                     if let Some(scan_ix) = result {
                         self.make_math_span(cur_ix, scan_ix);
+                        math_delims.clear();
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     }
@@ -1013,82 +1022,75 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         None
     }
 
-    fn make_math_span(&mut self, mut open: TreeIndex, close: TreeIndex) {
-        let mut span_start = self.tree[open].item.end;
-        let mut span_end = self.tree[close].item.start;
-        let mut cow: CowStr = self.text[span_start..span_end].into();
-        let start_is_display = if let ItemBody::MaybeMath(is_display, ..) = self.tree[open].item.body {
-            is_display
+    fn make_math_span(&mut self, mut open: TreeIndex, mut close: TreeIndex) {
+        let start_is_display = self.tree[open].next.map_or(false, |next_ix| {
+            next_ix != close && matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+        });
+        let end_is_display = self.tree[close].next.map_or(false, |next_ix| {
+            matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+        });
+        let is_display = start_is_display && end_is_display;
+        if is_display {
+            // These unwrap()s can't panic, because if the next variables were None, the _is_display values would be false
+            let (mut open_next, close_next) = (self.tree[open].next.unwrap(), self.tree[close].next.unwrap());
+            while matches!(self.tree[open_next].next.map(|next_next| &self.tree[next_next].item.body), Some(ItemBody::MaybeMath(_can_open, _can_close, _brace_context))) {
+                // march delimiters along to ensure that the dollar signs are outside the span
+                //
+                //     $$$x$$
+                //      ----- math span
+                //
+                // This means we look at open->next->next and move the delimiters
+                if let Some(next_ix) = self.tree[open_next].next {
+                    if next_ix == close {
+                        break;
+                    }
+                    self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+                    open = open_next;
+                    open_next = next_ix;
+                } else {
+                    break;
+                }
+            }
+            close = close_next;
+            self.tree[open].next = Some(close);
+            self.tree[open].item.end += 1;
+            self.tree[close].item.start -= 1;
         } else {
-            unreachable!()
-        };
-        let (end_is_display, end_can_open, end_brace_context) = if let ItemBody::MaybeMath(is_display, can_open, _can_close, brace_context) = self.tree[close].item.body {
-            (is_display, can_open, brace_context)
-        } else {
-            unreachable!()
-        };
-        //
-        while matches!(self.tree[open].next.map(|next| &self.tree[next].item.body), Some(ItemBody::MaybeMath(false, true, _, _))) {
-            // $$$x$$ should put the extra $ on the outside
-            // $$$$x$$ isn't a problem because four $ in a row is just an empty display math environment
-            let next = self.tree[open].next.expect("for the result of map to be Some(), its input must be Some");
-            span_start = self.tree[next].item.end;
-            span_end = self.tree[close].item.start;
-            cow = self.text[span_start..span_end].into();
-            self.tree[next].item.body = self.tree[open].item.body;
-            self.tree[next].item.start = self.tree[open].item.start + 1;
-            self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
-            self.tree[open].item.end = self.tree[open].item.start + 1;
-            open = next;
+            while matches!(self.tree[open].next.map(|next| &self.tree[next].item.body), Some(ItemBody::MaybeMath(_can_open, _can_close, _brace_context))) {
+                // march delimiters along to ensure that the dollar signs are outside the span
+                //
+                //     $$x$
+                //      --- math span
+                //
+                // This means we look at open->next and move the delimiters
+                if let Some(next_ix) = self.tree[open].next {
+                    if next_ix == close {
+                        break;
+                    }
+                    self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+                    open = next_ix;
+                } else {
+                    break;
+                }
+            }
+            if self.tree[open].item.end == self.tree[close].item.start {
+                // inline math spans cannot be empty
+                self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+                return;
+            }
+            self.tree[open].next = Some(close);
         }
+        let span_start = self.tree[open].item.end;
+        let span_end = self.tree[close].item.start;
+        let mut cow: CowStr = self.text[span_start..span_end].into();
         if self.tree.is_in_table() && cow.contains(r#"\|"#) {
             // When inside a table, `\|` is used to write a literal `|`.
             // This is the same way it works for code spans.
             cow = cow.replace(r#"\|"#, "|").into();
         }
-        // Adjust delimiter span to match up start and end code
-        //
-        // $$this is inline code$
-        // -^^^^^^^^^^^^^^^^^^^^^
-        //
-        // $this is also inline code$$
-        // ^^^^^^^^^^^^^^^^^^^^^^^^^^-
-        match (start_is_display, end_is_display) {
-            _ if (!start_is_display || !end_is_display) && span_start == span_end => {
-                // inline code spans cannot be empty
-                self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
-            }
-            (true, false) => {
-                self.tree[close].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), false);
-                self.tree[close].item.start = self.tree[open].item.start + 1;
-                self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
-                self.tree[open].item.end = self.tree[open].item.start + 1;
-                self.tree[open].next = Some(close);
-            }
-            (false, true) => {
-                self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), false);
-                self.tree[open].item.end = self.tree[close].item.start + 1;
-                // is_display, can_open, can_close, brace context
-                self.tree[close].item.body = ItemBody::MaybeMath(false, end_can_open, false, end_brace_context);
-                self.tree[close].item.start = self.tree[close].item.start + 1;
-                self.tree[open].next = Some(close);
-            }
-            (false, false) | (true, true) => {
-                self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), start_is_display);
-                self.tree[open].item.end = self.tree[close].item.end;
-                self.tree[open].next = self.tree[close].next;
-            }
-        }
-        // merge back-to-back close spans
-        if let ItemBody::MaybeMath(false, _can_open, can_close, brace_context) = self.tree[close].item.body {
-            if let Some(next) = self.tree[close].next {
-                if let ItemBody::MaybeMath(false, next_can_open, _next_can_close, _next_brace_context) = self.tree[next].item.body {
-                    self.tree[close].item.body = ItemBody::MaybeMath(true, next_can_open, can_close, brace_context);
-                    self.tree[close].next = self.tree[next].next;
-                    self.tree[close].item.end = self.tree[next].item.end;
-                }
-            }
-        }
+        self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), is_display);
+        self.tree[open].item.end = self.tree[close].item.end;
+        self.tree[open].next = self.tree[close].next;
     }
 
     /// Make a code span.

@@ -1753,3 +1753,13 @@ an unmatched asterisk.</p>
   
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_115() {
+    let original = r##"**a.*.**a*.**.
+"##;
+    let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false);
+}

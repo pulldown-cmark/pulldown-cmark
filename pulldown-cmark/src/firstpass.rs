@@ -783,9 +783,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'$' => {
                     let string_suffix = &self.text[ix..];
-                    let count = if string_suffix[1..].as_bytes().first().copied() == Some(b'$') { 2 } else { 1 };
-                    let can_open = count > 1 || !string_suffix[count..].as_bytes().first().copied().map_or(true, is_ascii_whitespace);
-                    let can_close = count > 1 || !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
+                    let can_open = !string_suffix[1..].as_bytes().first().copied().map_or(true, is_ascii_whitespace);
+                    let can_close = !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
                     // storing Option<usize>, which is bigger than usize.
@@ -803,16 +802,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     self.tree.append(Item {
                         start: ix,
-                        end: ix + count,
+                        end: ix + 1,
                         body: ItemBody::MaybeMath(
-                            count > 1,
                             can_open,
                             can_close,
                             brace_context,
                         ),
                     });
-                    begin_text = ix + count;
-                    LoopInstruction::ContinueAndSkip(count - 1)
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
                 b'{' => {
                     // Store nothing if no math environment has been reached yet.

@@ -144,6 +144,12 @@ $$ $$ $$
 <p><span class="math display"> </span> $$</p>
 ````````````````````````````````
 
+```````````````````````````````` example
+alpha$$beta$gamma$$delta
+.
+<p>alpha<span class="math display">beta$gamma</span>delta</p>
+````````````````````````````````
+
 Inline math expressions cannot start or end with whitespace, including newlines:
 
 ```````````````````````````````` example

@@ -420,57 +420,53 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
                         matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
                     });
-                    let mut search_count = if is_display { 2 } else { 1 };
                     if !can_open {
                         self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                         prev = cur;
                         cur = self.tree[cur_ix].next;
                         continue;
                     }
-
-                    let result = 'result: loop {
-                        let is_display = search_count > 1;
-                        if search_count == 0 {
-                            break 'result None;
-                        }
-                        if math_delims.is_populated() {
-                            // we have previously scanned all math environment delimiters,
-                            // so we can reuse that work
-                            if let Some((scan_ix, can_close)) = math_delims.find(cur_ix, search_count, brace_context, is_display) {
-                                // can_close only applies to inline math
-                                // block math can always close
-                                if self.tree[cur_ix].next != Some(scan_ix) && (can_close || is_display) {
-                                    break 'result Some(scan_ix);
-                                }
+                    let result = if math_delims.is_populated() {
+                        // we have previously scanned all math environment delimiters,
+                        // so we can reuse that work
+                        if let Some((scan_ix, can_close)) = math_delims.find(cur_ix, is_display, brace_context) {
+                            // can_close only applies to inline math
+                            // block math can always close
+                            if self.tree[cur_ix].next != Some(scan_ix) && (can_close || is_display) {
+                               Some(scan_ix)
+                            } else {
+                                None
                             }
                         } else {
-                            // we haven't previously scanned all codeblock delimiters,
-                            // so walk the AST
-                            let mut scan = self.tree[cur_ix].next;
-                            'scan: while let Some(scan_ix) = scan {
-                                if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
-                                    self.tree[scan_ix].item.body
-                                {
-                                    let delim_is_display = self.tree[scan_ix].next.map_or(false, |next_ix| {
-                                        matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
-                                    });
-                                    let delim_count = if delim_is_display { 2 } else { 1 };
-                                    if search_count <= delim_count && delim_brace_context == brace_context && self.tree[cur_ix].next != Some(scan_ix) {
-                                        if !can_close && !is_display {
-                                            // can_close only applies to inline math
-                                            // block math can always close
-                                            break 'scan;
-                                        }
-                                        break 'result scan;
-                                    } else {
-                                        math_delims.insert(delim_count, delim_brace_context, scan_ix, can_close, delim_is_display);
-                                    }
-                                }
-                                scan = self.tree[scan_ix].next;
-                            }
+                            None
                         }
-                        search_count -= 1;
+                    } else {
+                        // we haven't previously scanned all codeblock delimiters,
+                        // so walk the AST
+                        let mut scan = self.tree[cur_ix].next;
+                        while let Some(scan_ix) = scan {
+                            if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
+                                self.tree[scan_ix].item.body
+                            {
+                                let delim_is_display = self.tree[scan_ix].next.map_or(false, |next_ix| {
+                                    matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+                                });
+                                if is_display <= delim_is_display && delim_brace_context == brace_context && self.tree[cur_ix].next != Some(scan_ix) {
+                                    if !can_close && !is_display {
+                                        // can_close only applies to inline math
+                                        // block math can always close
+                                        scan = None;
+                                    }
+                                    break;
+                                } else {
+                                    math_delims.insert(delim_is_display, delim_brace_context, scan_ix, can_close);
+                                }
+                            }
+                            scan = self.tree[scan_ix].next;
+                        }
+                        scan
                     };
+
                     if let Some(scan_ix) = result {
                         self.make_math_span(cur_ix, scan_ix);
                         math_delims.clear();
@@ -1624,7 +1620,7 @@ impl CodeDelims {
 /// Tracks brace contexts and delimiter length for math delimiters.
 /// Provides amortized constant-time lookups.
 struct MathDelims {
-    inner: HashMap<(usize, u8), VecDeque<(TreeIndex, bool, bool)>>,
+    inner: HashMap<(bool, u8), VecDeque<(TreeIndex, bool)>>,
     seen_first: bool,
 }
 
@@ -1636,12 +1632,12 @@ impl MathDelims {
         }
     }
 
-    fn insert(&mut self, delim_count: usize, brace_context: u8, ix: TreeIndex, can_close: bool, delim_is_display: bool) {
+    fn insert(&mut self, delim_is_display: bool, brace_context: u8, ix: TreeIndex, can_close: bool) {
         if self.seen_first {
             self.inner
-                .entry((delim_count, brace_context))
+                .entry((delim_is_display, brace_context))
                 .or_insert_with(Default::default)
-                .push_back((ix, can_close, delim_is_display));
+                .push_back((ix, can_close));
         } else {
             // Skip the first insert, since that delimiter will always
             // be an opener and not a closer.
@@ -1653,14 +1649,13 @@ impl MathDelims {
         !self.inner.is_empty()
     }
 
-    fn find(&mut self, open_ix: TreeIndex, mut delim_count: usize, brace_context: u8, is_display: bool) -> Option<(TreeIndex, bool)> {
-        while delim_count > 0 {
-            while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&(delim_count, brace_context))?.pop_front() {
+    fn find(&mut self, open_ix: TreeIndex, is_display: bool, brace_context: u8) -> Option<(TreeIndex, bool)> {
+        for is_display in [is_display, false] {
+            while let Some((ix, can_close)) = self.inner.get_mut(&(is_display, brace_context))?.pop_front() {
                 if ix > open_ix {
-                    return Some((ix, can_close || (!is_display && delim_is_display)));
+                    return Some((ix, can_close || is_display));
                 }
             }
-            delim_count -= 1;
         }
         None
     }

@@ -456,6 +456,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         // can_close only applies to inline math
                                         // block math can always close
                                         scan = None;
+                                    } else {
+                                        // This will skip ahead past everything we
+                                        // just inserted. This clear isn't needed for
+                                        // correctness, but does save memory.
+                                        math_delims.clear();
                                     }
                                     break;
                                 } else {
@@ -469,7 +474,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 
                     if let Some(scan_ix) = result {
                         self.make_math_span(cur_ix, scan_ix);
-                        math_delims.clear();
                     } else {
                         self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     }

@@ -12,7 +12,7 @@ use crate::tree::{Tree, TreeIndex};
 use crate::Options;
 use crate::{
     linklabel::{scan_link_label_rest, LinkLabel},
-    HeadingLevel, MathDisplay,
+    HeadingLevel,
 };
 use crate::{scanners::*, MetadataBlockKind};
 
@@ -226,12 +226,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
-        }
-
-        if self.options.contains(Options::ENABLE_MATH) {
-            if let Some(len) = scan_math_block(&bytes[ix..]) {
-                return self.parse_math_block(ix, len);
-            }
         }
 
         self.parse_paragraph(ix)
@@ -653,10 +647,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'$' => {
                     self.tree.append_text(begin_text, ix);
+                    let next_char = self.text[ix + 1..].chars().next();
+                    let prev_char = self.text[..ix].chars().last();
+                    let followed_by_dollar = next_char == Some('$');
+                    let can_open = next_char.map_or(false, |nc| !nc.is_whitespace());
+                    let can_close = prev_char.map_or(false, |pc| !pc.is_whitespace());
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
-                        body: ItemBody::MaybeMath,
+                        body: ItemBody::MaybeMath(followed_by_dollar, can_open, can_close),
                     });
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
@@ -991,18 +990,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // try to read trailing whitespace or it will register as a completely blank line
         ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
-    }
-
-    fn parse_math_block(&mut self, start_ix: usize, length: usize) -> usize {
-        let end_ix = start_ix + length;
-        let text = &self.text[start_ix + 2..end_ix - 2];
-        let cow_ix = self.allocs.allocate_cow(text.into());
-        self.tree.append(Item {
-            start: start_ix,
-            end: end_ix,
-            body: ItemBody::Math(MathDisplay::Block, cow_ix),
-        });
-        end_ix
     }
 
     fn parse_metadata_block(

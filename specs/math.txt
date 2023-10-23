@@ -1,23 +1,23 @@
 Run this with `cargo run -- -M -s specs/math.txt`.
 
-Mathematical expressions extension.
-See the following link to know the syntax.
-https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions
+Mathematical expressions extension. Syntax based on
+<https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md>
+excluding the handling for balanced curly braces.
 
-Inline-level mathematical expressions:
+Inline mode mathematical expressions:
 
 ```````````````````````````````` example
-This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
+This sentence uses `$` delimiters to show math inline: $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 
 `\` may follow just after the first `$`: $\{1, 2, 3\}$
 .
-<p>This sentence uses <code>$</code> delimiters to show math inline:  <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
+<p>This sentence uses <code>$</code> delimiters to show math inline: <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
 <span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
-<p><code>\</code> may follow just after the first <code>$</code>:  <span class="math inline">\{1, 2, 3\}</span>
+<p><code>\</code> may follow just after the first <code>$</code>: <span class="math inline">\{1, 2, 3\}</span>
 ````````````````````````````````
 
-Block-level mathematical expressions:
+Display mode mathematical expressions:
 
 ```````````````````````````````` example
 **The Cauchy-Schwarz Inequality**
@@ -25,43 +25,83 @@ Block-level mathematical expressions:
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
 .
 <p><strong>The Cauchy-Schwarz Inequality</strong></p>
-<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</div>
+<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 ````````````````````````````````
 
-Empty expressions are edge cases that are not parsed as mathematical expressions:
+Inline math expressions cannot be empty, but display mode expressions can.
 
 ```````````````````````````````` example
 Oops empty $$ expression.
 
 $$$$
-
-This is also empty: $``$
 .
 <p>Oops empty $$ expression.</p>
-<p>$$$$</p>
-<p>This is also empty: $``$</p>
+<p><span class="math display"></span></p>
 ````````````````````````````````
 
-Sole `$` character is handled as normal text. And Inline-level mathematical expressions cannot continue across newlines:
+Math expressions pass their content through as-is, ignoring any other inline
+Markdown constructs:
 
 ```````````````````````````````` example
-Hello $ world.
+$a<b>c</b>$
 
-Dollar at end of line: $
+$${a*b*c} _c_ d$$
+
+$not `code`$
+
+$![not an](/image)$
+
+$<https://not.a.link/>$
+
+$&alpha;$
 .
-<p>Hello $ world.</p>
-<p>Dollar at end of line: $</p>
+<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
+<p><span class="math display">{a*b*c} _c_ d</span></p>
+<p><span class="math inline">not `code`</span></p>
+<p><span class="math inline">![not an](/image)</span></p>
+<p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
+<p><span class="math inline">&amp;alpha;</span></p>
 ````````````````````````````````
 
-Block-level mathematical expressions can continue across multiple lines:
+Sole `$` characters without a matching pair in the same block element
+are handled as normal text.
 
 ```````````````````````````````` example
+Hello $world.
+
+Dollar at end of line$
+.
+<p>Hello $world.</p>
+<p>Dollar at end of line$</p>
+````````````````````````````````
+
+Mathematical expressions can continue across multiple lines:
+
+```````````````````````````````` example
+$5x + 2 =
+17$
+
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)$$
 .
-<div class="math block">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
-\left( \sum_{k=1}^n b_k^2 \right)</div>
+<p><span class="math inline">5x + 2 =
+17</span></p>
+<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+\left( \sum_{k=1}^n b_k^2 \right)</span></p>
 ````````````````````````````````
+
+Markdown hard breaks are also not recognized inside math expressions:
+
+```````````````````````````````` example
+$not a\
+hard break  
+either$
+.
+<p><span class="math inline">not a\
+hard break  
+either</span></p>
+````````````````````````````````
+
 
 `$` character can be escaped with backslash in mathematical expressions:
 
@@ -71,57 +111,141 @@ $\$$
 $$y = \$ x$$
 .
 <p><span class="math inline">\$</span></p>
-<div class="math block">y = \$ x</div>
+<p><span class="math display">y = \$ x</span></p>
 ````````````````````````````````
 
-Inline math text with backticks ``$`...`$``:
+Inline mode math expressions cannot contain unescaped `$` characters, but
+display mode expressions can, though not two in a row:
 
 ```````````````````````````````` example
-this is math inline $`y=x`$ test.
-dollar can be contained: $`foo$bar`$
+$x $ x$
+
+$$ $ $$
+
+$$ $$ $$
 .
-<p>this is math inline <span class="math inline">y=x</span> test.
-dollar can be contained: <span class="math inline">foo$bar</span></p>
+<p>$x $ x$</p>
+<p><span class="math display"> $ </span></p>
+<p><span class="math display"> </span> $$</p>
 ````````````````````````````````
 
-Math expression without backtick cannot start/end with spaces but Math expression with backtick can:
+Inline math expressions cannot start or end with whitespace, including newlines:
 
 ```````````````````````````````` example
-these are not math texts: $ y=x$ and $y=x $ and $ y=x $
-but these are math texts: $` y=x`$ and $`y=x `$ and $` y=x `$
+these are not math texts: $ y=x$, $y=x $, $
+y=x$ and $y=x
+$
 .
-<p>these are not math texts: $ y=x$ and $y=x $ and $ y=x $
-but these are math texts: <span class="math inline"> y=x</span> and <span class="math inline">y=x </span> and <span class="math inline"> y=x </span></p>
+<p>these are not math texts: $ y=x$, $y=x $, $
+y=x$ and $y=x
+$</p>
 ````````````````````````````````
 
-Math expression without backtick surrounded with whitespaces:
+Inline math expressions do not need to be surrounded with whitespace:
 
 ```````````````````````````````` example
-these are not math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
-but these are math texts: foo$`y=x`$bar and $`y=x`$bar and foo$`y=x`$ bar
+these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
 .
-<p>these are not math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
-but these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
+<p>these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
 ````````````````````````````````
 
-Math expression without backtick can be end with punctuation but cannot start with:
+Inline math expressions can be surrounded by punctuation:
 
 ```````````````````````````````` example
-math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$.
-not math texts: !$x=y$! and ?x=y$? and :$x=y$: and .$x=y$.
-backticks doesn't have the edge case: !$`x=y`$! and ?`x=y`$? and :$`x=y`$: and .$`x=y`$.
+math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$. and $x=y$"
+
+also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
+
+braces: ($x=y$) [$x=y$] {$x=y$}
 .
-<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>.
-not math texts: !$x=y$! and ?x=y$? and :$x=y$: and .$x=y$.
-backticks doesn't have the edge case: !<span class="math inline">x=y</span>! and ?<code>x=y</code>$? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>.</p>
+<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>&quot;</p>
+<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and &quot;<span class="math inline">x=y</span>&quot;</p>
+<p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
 ````````````````````````````````
 
-Math expression at start and end of lines:
+Math expression as only item on a line:
 
 ```````````````````````````````` example
 $x=y$
-$`x=y`$
 .
-<p><span class="math inline">x=y</span>
-<span class="math inline">x=y</span></p>
+<p><span class="math inline">x=y</span></p>
+````````````````````````````````
+
+Math expressions can be immediately followed by other math expressions:
+
+```````````````````````````````` example
+$a$$b$
+
+$a$$$b$$
+
+$$a$$$b$
+
+$$a$$$$b$$
+.
+<p><span class="math inline">a</span><span class="math inline">b</span></p>
+<p><span class="math inline">a</span><span class="math display">b</span></p>
+<p><span class="math display">a</span><span class="math inline">b</span></p>
+<p><span class="math display">a</span><span class="math display">b</span></p>
+````````````````````````````````
+
+Both inline and display mode math expressions are inline elements with the same
+precedence as code spans. The leftmost valid element takes priority:
+
+```````````````````````````````` example
+$Inline `first$ then` code
+
+`Code $first` then$ inline
+
+$$ Display `first $$ then` code
+
+`Code $$ first` then $$ display
+.
+<p><span class="math inline">Inline `first</span> then` code</p>
+<p><code>Code $first</code> then$ inline</p>
+<p><span class="math display"> Display `first </span> then` code</p>
+<p><code>Code $$ first</code> then $$ display</p>
+````````````````````````````````
+
+Indicators of block structure take precedence over math expressions:
+
+```````````````````````````````` example
+$x + y - z$
+
+$x + y
+- z$
+
+$$ x + y
+> z $$
+.
+<p><span class="math inline">x + y - z</span></p>
+<p>$x + y</p>
+<ul>
+<li>z$</li>
+</ul>
+<p>$$ x + y</p>
+<blockquote>
+<p>z $$</p>
+</blockquote>
+````````````````````````````````
+
+This also means that math expressions cannot contain empty lines, since they
+start a new paragraph:
+
+```````````````````````````````` example
+$not
+
+math$
+
+$$
+not
+
+math
+$$
+.
+<p>$not</p>
+<p>math$</p>
+<p>$$
+not</p>
+<p>math
+$$</p>
 ````````````````````````````````

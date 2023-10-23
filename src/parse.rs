@@ -34,7 +34,7 @@ use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{scanners::*, MetadataBlockKind};
 use crate::{
-    Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, MathDisplay, Options, Tag, TagEnd,
+    Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, MathMode, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -70,7 +70,8 @@ pub(crate) enum ItemBody {
     // bool indicates whether or not the preceding section could be a reference
     MaybeLinkClose(bool),
     MaybeImage,
-    MaybeMath,
+    // followed by $, can_open, can_close
+    MaybeMath(bool, bool, bool),
 
     // These are inline items after resolution.
     Emphasis,
@@ -81,7 +82,7 @@ pub(crate) enum ItemBody {
     Image(LinkIndex),
     FootnoteReference(CowIndex),
     TaskListMarker(bool), // true for checked
-    Math(MathDisplay, CowIndex),
+    Math(MathMode, CowIndex),
 
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
@@ -118,7 +119,7 @@ impl<'a> ItemBody {
                 | ItemBody::MaybeLinkOpen
                 | ItemBody::MaybeLinkClose(..)
                 | ItemBody::MaybeImage
-                | ItemBody::MaybeMath
+                | ItemBody::MaybeMath(..)
         )
     }
 }
@@ -219,11 +220,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         self.handle_emphasis();
     }
 
-    /// Handle inline HTML, code spans, and links.
+    /// Handle inline HTML, code spans, links and math.
     ///
-    /// This function handles both inline HTML and code spans, because they have
-    /// the same precedence. It also handles links, even though they have lower
-    /// precedence, because the URL of links must not be processed.
+    /// This function handles both inline HTML and code spans as well as math,
+    /// because they have the same precedence. It also handles links, even though
+    /// they have lower precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut code_delims = CodeDelims::new();
         let mut cur = self.tree.cur();
@@ -562,56 +563,59 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         }
                     }
                 }
-                ItemBody::MaybeMath => {
-                    let next = self.tree[cur_ix].next;
-                    if next.is_none() {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
-                        prev = cur;
-                        cur = self.tree[cur_ix].next;
-                        continue;
+                ItemBody::MaybeMath(followed_by_dollar, can_open, _) => {
+                    let mut scan = self.tree[cur_ix].next;
+                    let display = followed_by_dollar;
+                    if display {
+                        scan = scan.and_then(|scan_ix| self.tree[scan_ix].next);
                     }
 
-                    // The next item's start index can not be used as the start index of this node because it skips
-                    // backslashes.
-                    // For example, when parsing $\{\}$, the next item's start index points { but this node's start
-                    // index should point the first \.
-                    let (start_ix, backtick) = if let Some((i, b)) =
-                        scan_math_inline_start(block_text.as_bytes(), self.tree[cur_ix].item.end)
-                    {
-                        (i, b)
-                    } else {
-                        self.tree[cur_ix].item.body = ItemBody::Text;
-                        prev = cur;
-                        cur = self.tree[cur_ix].next;
-                        continue;
-                    };
+                    let mut found = false;
+                    if display || can_open {
+                        // scan tree for next $ or $$
+                        while let Some(scan_ix) = scan {
+                            if let ItemBody::MaybeMath(followed_by_dollar, _, can_close) =
+                                self.tree[scan_ix].item.body
+                            {
+                                if !display && !can_close {
+                                    // inline math can't contain $, stop scanning
+                                    // also avoids quadratic behavior
+                                    break;
+                                }
+                                if !display || followed_by_dollar {
+                                    found = true;
+                                    if display {
+                                        // simplify by compressing both $$s into single items
+                                        for ix in [cur_ix, scan_ix] {
+                                            self.tree[ix].item.end += 1;
+                                            self.tree[ix].next = self.tree[ix]
+                                                .next
+                                                .and_then(|next_ix| self.tree[next_ix].next);
+                                        }
+                                    }
 
-                    let end_ix = if let Some(i) =
-                        scan_math_inline_end(&block_text.as_bytes()[start_ix..], backtick)
-                    {
-                        start_ix + i
-                    } else {
+                                    let style = if display {
+                                        MathMode::Display
+                                    } else {
+                                        MathMode::Inline
+                                    };
+                                    let span_start = self.tree[cur_ix].item.end;
+                                    let span_end = self.tree[scan_ix].item.start;
+                                    let cow_ix = self
+                                        .allocs
+                                        .allocate_cow(self.text[span_start..span_end].into());
+                                    self.tree[cur_ix].item.body = ItemBody::Math(style, cow_ix);
+                                    self.tree[cur_ix].item.end = self.tree[scan_ix].item.end;
+                                    self.tree[cur_ix].next = self.tree[scan_ix].next;
+                                    break;
+                                }
+                            }
+                            scan = self.tree[scan_ix].next;
+                        }
+                    }
+                    if !found {
                         self.tree[cur_ix].item.body = ItemBody::Text;
-                        prev = cur;
-                        cur = self.tree[cur_ix].next;
-                        continue;
-                    };
-
-                    let end_ix = if end_ix > start_ix {
-                        let cow_ix = self
-                            .allocs
-                            .allocate_cow(block_text[start_ix..end_ix].into());
-                        self.tree[cur_ix].item.body = ItemBody::Math(MathDisplay::Inline, cow_ix);
-                        self.tree[cur_ix].item.start = start_ix;
-                        self.tree[cur_ix].item.end = end_ix;
-                        end_ix + if backtick { 2 } else { 1 }
-                    } else {
-                        // When a content of inline mathematical expression is empty like `$$`, handle it as a normal text.
-                        self.tree[cur_ix].item.body = ItemBody::Text;
-                        self.tree[cur_ix].item.end = end_ix + 1;
-                        end_ix + 1
-                    };
-                    self.tree[cur_ix].next = scan_nodes_to_ix(&self.tree, next, end_ix);
+                    }
                 }
                 _ => (),
             }
@@ -1596,6 +1600,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
+        ItemBody::Math(style, cow_ix) => return Event::Math(style, allocs.take_cow(cow_ix)),
         ItemBody::Rule => return Event::Rule,
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -1653,7 +1658,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
-        ItemBody::Math(display, cow_ix) => return Event::Math(display, allocs[cow_ix].clone()),
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

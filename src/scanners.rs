@@ -29,7 +29,7 @@ use crate::strings::CowStr;
 use crate::{entities, HeadingLevel};
 use crate::{Alignment, LinkType};
 
-use memchr::{memchr, memchr2_iter, memchr_iter};
+use memchr::memchr;
 
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
@@ -1383,89 +1383,6 @@ pub(crate) fn scan_inline_html_processing(
         }
     }
     scan_guard.processing = ix;
-    None
-}
-
-pub(crate) fn scan_math_block(data: &[u8]) -> Option<usize> {
-    if !data.starts_with(b"$$") {
-        return None;
-    }
-
-    for mut i in memchr_iter(b'\n', data) {
-        if data[i - 1] == b'\r' {
-            i -= 1;
-        }
-        // `i <= 4` means the content is empty like `$$$$`.
-        if data[..i].ends_with(b"$$") && i > 4 {
-            return Some(i);
-        }
-    }
-    if data.ends_with(b"$$") && data.len() > 4 {
-        return Some(data.len());
-    }
-
-    None
-}
-
-pub(crate) fn scan_math_inline_start(text: &[u8], start_ix: usize) -> Option<(usize, bool)> {
-    let start_byte = text[start_ix];
-    // Math expression cannot start with spaces like $ ...$ but $` ...`$ is OK
-    if start_byte == b' ' {
-        return None;
-    }
-
-    let backtick = start_byte == b'`';
-    if backtick {
-        return Some((start_ix + 1, backtick)); // When $`...`$
-    }
-
-    // When $...$
-    if start_ix > 2 {
-        // $...$ must start with whitespaces
-        let c = text[start_ix - 2] as char;
-        if !c.is_ascii_whitespace() {
-            // $...$ must follow whitespaces
-            return None;
-        }
-    }
-    Some((start_ix, backtick))
-}
-
-pub(crate) fn scan_math_inline_end(data: &[u8], backtick: bool) -> Option<usize> {
-    // Inline-level math expressions cannot continue across a newline.
-    for i in memchr2_iter(b'$', b'\n', data) {
-        if data[i] != b'$' {
-            return None;
-        }
-
-        // When $`...`$
-        if backtick {
-            if i == 0 || data[i - 1] != b'`' {
-                continue;
-            }
-            return (i - 1 > 0).then_some(i - 1); // $``$ is not a math expression
-        }
-
-        // When $...$
-        if i > 0 {
-            match data[i - 1] {
-                b'\\' => continue,
-                b' ' => return None, // Expression within $...$ cannot end with spaces
-                _ => {
-                    if i + 1 < data.len() {
-                        // $...$ must be followed by punctuation or whitespaces
-                        let c = data[i + 1] as char;
-                        if !c.is_ascii_whitespace() && !c.is_ascii_punctuation() {
-                            return None;
-                        }
-                    }
-                    return Some(i);
-                }
-            }
-        }
-
-        return None;
-    }
     None
 }
 

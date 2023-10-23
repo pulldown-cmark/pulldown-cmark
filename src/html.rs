@@ -26,7 +26,7 @@ use std::io::{self, Write};
 use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, CodeBlockKind, Event, LinkType, MathDisplay, Tag, TagEnd};
+use crate::{Alignment, CodeBlockKind, Event, LinkType, MathMode, Tag, TagEnd};
 
 enum TableState {
     Head,
@@ -138,15 +138,15 @@ where
                 TaskListMarker(false) => {
                     self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
                 }
-                Math(MathDisplay::Inline, text) => {
+                Math(MathMode::Inline, text) => {
                     self.write("<span class=\"math inline\">")?;
                     escape_html(&mut self.writer, &text)?;
                     self.write("</span>")?;
                 }
-                Math(MathDisplay::Block, text) => {
-                    self.write("<div class=\"math block\">")?;
+                Math(MathMode::Display, text) => {
+                    self.write("<span class=\"math display\">")?;
                     escape_html(&mut self.writer, &text)?;
-                    self.write("</div>\n")?;
+                    self.write("</span>")?;
                 }
             }
         }

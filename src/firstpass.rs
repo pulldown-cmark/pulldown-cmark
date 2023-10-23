@@ -20,7 +20,7 @@ use unicase::UniCase;
 
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
-pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Allocations) {
+pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Allocations<'_>) {
     // This is a very naive heuristic for the number of nodes
     // we'll need.
     let start_capacity = max(128, text.len() / 32);
@@ -28,7 +28,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
     let first_pass = FirstPass {
         text,
         tree: Tree::with_capacity(start_capacity),
-        begin_list_item: false,
+        begin_list_item: None,
         last_line_blank: false,
         allocs: Allocations::new(),
         options,
@@ -42,7 +42,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
 struct FirstPass<'a, 'b> {
     text: &'a str,
     tree: Tree<Item>,
-    begin_list_item: bool,
+    begin_list_item: Option<usize>,
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
@@ -121,7 +121,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 });
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
-                    self.begin_list_item = true;
+                    self.begin_list_item = Some(after_marker_index + n);
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
@@ -152,10 +152,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 match self.tree[node_ix].item.body {
                     ItemBody::BlockQuote => (),
                     _ => {
-                        if self.begin_list_item {
-                            // A list item can begin with at most one blank line.
-                            self.pop(start_ix);
-                        }
                         self.last_line_blank = true;
                     }
                 }
@@ -163,7 +159,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return ix + n;
         }
 
-        self.begin_list_item = false;
         self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
@@ -606,6 +601,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                             begin_text = ix + 1 + count;
                             LoopInstruction::ContinueAndSkip(count)
+                        } else if ix + 2 < bytes_len
+                            && bytes[ix + 1] == b'\\'
+                            && bytes[ix + 2] == b'|'
+                            && TableParseMode::Active == mode
+                        {
+                            // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
+                            begin_text = ix + 2;
+                            LoopInstruction::ContinueAndSkip(2)
                         } else {
                             begin_text = ix + 1;
                             LoopInstruction::ContinueAndSkip(1)
@@ -720,7 +723,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     _ => LoopInstruction::ContinueAndSkip(0),
                 },
                 b'|' => {
-                    if let TableParseMode::Active = mode {
+                    if ix != 0 && bytes[ix - 1] == b'\\' {
+                        LoopInstruction::ContinueAndSkip(0)
+                    } else if let TableParseMode::Active = mode {
                         LoopInstruction::BreakAtWith(ix, None)
                     } else {
                         last_pipe_ix = ix;
@@ -816,8 +821,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         html_end_tag: &str,
         mut remaining_space: usize,
     ) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock,
+        });
+        self.tree.push();
+
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
+        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -830,20 +843,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options.has_gfm_footnotes(),
             );
             if n_containers < self.tree.spine_len() {
+                end_ix = ix;
                 break;
             }
 
             if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
+                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() {
+                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
+        self.pop(end_ix);
         ix
     }
 
@@ -855,8 +872,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         start_ix: usize,
         mut remaining_space: usize,
     ) -> usize {
+        self.tree.append(Item {
+            start: start_ix,
+            end: 0, // set later
+            body: ItemBody::HtmlBlock,
+        });
+        self.tree.push();
+
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
+        let end_ix;
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
@@ -869,17 +894,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options.has_gfm_footnotes(),
             );
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
+                end_ix = ix;
                 break;
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
             if next_line_ix == self.text.len() || scan_blank_line(&bytes[next_line_ix..]).is_some()
             {
+                end_ix = next_line_ix;
                 break;
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
         }
+        self.pop(end_ix);
         ix
     }
 
@@ -1105,7 +1133,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Close a list if it's open. Also set loose if last line was blank
+    /// and end current list if it's a lone, empty item
     fn finish_list(&mut self, ix: usize) {
+        self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
                 self.pop(ix);
@@ -1121,9 +1151,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
     }
 
+    fn finish_empty_list_item(&mut self) {
+        if let Some(begin_list_item) = self.begin_list_item {
+            if self.last_line_blank {
+                // A list item can begin with at most one blank line.
+                if let Some(node_ix) = self.tree.peek_up() {
+                    if let ItemBody::ListItem(_) = self.tree[node_ix].item.body {
+                        self.pop(begin_list_item);
+                    }
+                }
+            }
+        }
+        self.begin_list_item = None;
+    }
+
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
     fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
+        self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
             if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
                 if existing_ch == ch {
@@ -1927,7 +1972,7 @@ fn extract_attribute_block_content_from_header_text(
 /// See also: [`Options::ENABLE_HEADING_ATTRIBUTES`].
 ///
 /// [`Options::ENABLE_HEADING_ATTRIBUTES`]: `crate::Options::ENABLE_HEADING_ATTRIBUTES`
-fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes> {
+fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes<'_>> {
     let mut id = None;
     let mut classes = Vec::new();
     let mut attrs = Vec::new();

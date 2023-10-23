@@ -473,6 +473,8 @@ fn footnotes_test_18() {
 <tbody>
 <tr><td>row1a</td><td>row1b</td></tr>
 <tr><td>row2a</td><td>row2b</td></tr>
+</tbody>
+</table>
 </div>
 "##;
 

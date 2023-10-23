@@ -693,6 +693,7 @@ ISSUE 398
 .
 <blockquote>
 <p><code>cargo package</code></p>
+</blockquote>
 ````````````````````````````````
 
 ISSUE 399
@@ -1346,4 +1347,149 @@ lists:
 Things
 .
 <p>Things</p>
+````````````````````````````````
+
+ISSUE #727
+
+```````````````````````````````` example
+-
+
+-
+
+
+-
+
+
+
+-
+.
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+-
+
+  -  .
+.
+<ul>
+<li></li>
+<li><p>.</p></li>
+</ul>
+````````````````````````````````
+
+ISSUE #729
+
+```````````````````````````````` example
+j***5*=*
+.
+<p>j*<em><em>5</em>=</em></p>
+````````````````````````````````
+
+
+ISSUE 731
+
+```````````````````````````````` example
+Not enough table
+
+|
+|
+
+Not enough table
+
+|x
+|
+
+Not enough table
+
+|
+|-
+
+Table
+
+|x
+|-
+
+Not enough table
+| col1 | col2 |
+|      | ---- |
+
+Not enough table
+| col1 | col2 |
+| :    | ---- |
+
+Table
+| col1 | col2 |
+| ---- | ---- |
+.
+<p>Not enough table</p>
+<p>|
+|</p>
+<p>Not enough table</p>
+<p>|x
+|</p>
+<p>Not enough table</p>
+<p>|
+|-</p>
+<p>Table</p>
+<table>
+<thead><tr><th>x</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p>Not enough table
+| col1 | col2 |
+|      | ---- |</p>
+<p>Not enough table
+| col1 | col2 |
+| :    | ---- |</p>
+<p>Table</p>
+<table>
+<thead><tr><th>col1</th><th>col2</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+````````````````````````````````
+
+ISSUE 737
+
+```````````````````````````````` example
+[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+.
+<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+````````````````````````````````
+
+ISSUE 739
+
+```````````````````````````````` example
+Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+.
+<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+````````````````````````````````
+
+ISSUE 741
+
+```````````````````````````````` example
+**a.*.**a*.**.
+.
+<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
 ````````````````````````````````

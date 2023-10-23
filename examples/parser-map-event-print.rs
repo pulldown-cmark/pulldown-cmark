@@ -16,6 +16,7 @@ fn main() {
             Event::Start(tag) => println!("Start: {:?}", tag),
             Event::End(tag) => println!("End: {:?}", tag),
             Event::Html(s) => println!("Html: {:?}", s),
+            Event::InlineHtml(s) => println!("InlineHtml: {:?}", s),
             Event::Text(s) => println!("Text: {:?}", s),
             Event::Code(s) => println!("Code: {:?}", s),
             Event::FootnoteReference(s) => println!("FootnoteReference: {:?}", s),

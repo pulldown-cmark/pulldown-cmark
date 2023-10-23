@@ -815,6 +815,7 @@ fn regression_test_60() {
 "##;
     let expected = r##"<blockquote>
 <p><code>cargo package</code></p>
+</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -1601,4 +1602,164 @@ Things
 "##;
 
     test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn regression_test_109() {
+    let original = r##"-
+
+-
+
+
+-
+
+
+
+-
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_110() {
+    let original = r##"-
+
+  -  .
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li><p>.</p></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_111() {
+    let original = r##"j***5*=*
+"##;
+    let expected = r##"<p>j*<em><em>5</em>=</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_112() {
+    let original = r##"Not enough table
+
+|
+|
+
+Not enough table
+
+|x
+|
+
+Not enough table
+
+|
+|-
+
+Table
+
+|x
+|-
+
+Not enough table
+| col1 | col2 |
+|      | ---- |
+
+Not enough table
+| col1 | col2 |
+| :    | ---- |
+
+Table
+| col1 | col2 |
+| ---- | ---- |
+"##;
+    let expected = r##"<p>Not enough table</p>
+<p>|
+|</p>
+<p>Not enough table</p>
+<p>|x
+|</p>
+<p>Not enough table</p>
+<p>|
+|-</p>
+<p>Table</p>
+<table>
+<thead><tr><th>x</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p>Not enough table
+| col1 | col2 |
+|      | ---- |</p>
+<p>Not enough table
+| col1 | col2 |
+| :    | ---- |</p>
+<p>Table</p>
+<table>
+<thead><tr><th>col1</th><th>col2</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_113() {
+    let original = r##"[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+"##;
+    let expected = r##"<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_114() {
+    let original = r##"Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+"##;
+    let expected = r##"<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_115() {
+    let original = r##"**a.*.**a*.**.
+"##;
+    let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
 }

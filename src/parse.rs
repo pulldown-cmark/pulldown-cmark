@@ -88,6 +88,8 @@ pub(crate) enum ItemBody {
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
+    HtmlBlock,
+    InlineHtml,
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
@@ -108,7 +110,7 @@ pub(crate) enum ItemBody {
     Root,
 }
 
-impl<'a> ItemBody {
+impl ItemBody {
     fn is_inline(&self) -> bool {
         matches!(
             *self,
@@ -124,7 +126,7 @@ impl<'a> ItemBody {
     }
 }
 
-impl<'a> Default for ItemBody {
+impl Default for ItemBody {
     fn default() -> Self {
         ItemBody::Root
     }
@@ -205,7 +207,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
-    pub fn reference_definitions(&self) -> &RefDefs {
+    pub fn reference_definitions(&self) -> &RefDefs<'_> {
         &self.allocs.refdefs
     }
 
@@ -279,7 +281,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                     self.allocs.allocate_cow(converted_string.into()),
                                 )
                             } else {
-                                ItemBody::Html
+                                ItemBody::InlineHtml
                             };
                             self.tree[cur_ix].item.end = ix;
                             self.tree[cur_ix].next = node;
@@ -636,11 +638,13 @@ impl<'input, 'callback> Parser<'input, 'callback> {
         while let Some(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeEmphasis(mut count, can_open, can_close) => {
+                    let run_length = count;
                     let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                     let both = can_open && can_close;
                     if can_close {
                         while let Some(el) =
-                            self.inline_stack.find_match(&mut self.tree, c, count, both)
+                            self.inline_stack
+                                .find_match(&mut self.tree, c, run_length, both)
                         {
                             // have a match!
                             if let Some(prev_ix) = prev {
@@ -685,6 +689,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                                 self.inline_stack.push(InlineEl {
                                     start: el.start,
                                     count: el.count - match_count,
+                                    run_length: el.run_length,
                                     c: el.c,
                                     both: el.both,
                                 })
@@ -701,6 +706,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         if can_open {
                             self.inline_stack.push(InlineEl {
                                 start: cur_ix,
+                                run_length,
                                 count,
                                 c,
                                 both,
@@ -878,6 +884,11 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 
             while ix != close {
                 let next_ix = self.tree[ix].next.unwrap();
+                let end = if next_ix == close {
+                    span_end
+                } else {
+                    self.tree[next_ix].item.start
+                };
                 if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
@@ -904,12 +915,32 @@ impl<'input, 'callback> Parser<'input, 'callback> {
                         new_buf.push(' ');
                         buf = Some(new_buf);
                     }
+                } else if self.tree.is_in_table()
+                    && self.text[self.tree[ix].item.start..end].contains("|")
+                {
+                    for (i, c) in bytes[self.tree[ix].item.start..end]
+                        .into_iter()
+                        .copied()
+                        .enumerate()
+                    {
+                        if c != b'|' {
+                            continue;
+                        }
+                        let pipe_position = self.tree[ix].item.start + i;
+                        let buf = if let Some(ref mut buf) = buf {
+                            buf.push_str(&self.text[self.tree[ix].item.start..pipe_position]);
+                            buf
+                        } else {
+                            let mut new_buf = String::with_capacity(pipe_position - span_start);
+                            new_buf.push_str(&self.text[span_start..pipe_position]);
+                            buf.insert(new_buf)
+                        };
+                        let ends_in_backslash = buf.as_bytes().last() == Some(&b'\\');
+                        let trim = if ends_in_backslash { 1 } else { 0 };
+                        buf.truncate(buf.len() - trim);
+                        buf.push_str(&self.text[pipe_position..end]);
+                    }
                 } else if let Some(ref mut buf) = buf {
-                    let end = if next_ix == close {
-                        span_end
-                    } else {
-                        self.tree[ix].item.end
-                    };
                     buf.push_str(&self.text[self.tree[ix].item.start..end]);
                 }
                 ix = next_ix;
@@ -978,7 +1009,7 @@ impl<'input, 'callback> Parser<'input, 'callback> {
 /// Returns number of containers scanned.
 pub(crate) fn scan_containers(
     tree: &Tree<Item>,
-    line_start: &mut LineStart,
+    line_start: &mut LineStart<'_>,
     gfm_footnotes: bool,
 ) -> usize {
     let mut i = 0;
@@ -1011,7 +1042,7 @@ pub(crate) fn scan_containers(
     i
 }
 
-impl<'a> Tree<Item> {
+impl Tree<Item> {
     pub(crate) fn append_text(&mut self, start: usize, end: usize) {
         if end > start {
             if let Some(ix) = self.cur() {
@@ -1027,14 +1058,42 @@ impl<'a> Tree<Item> {
             });
         }
     }
+    /// Returns true if the current node is inside a table.
+    ///
+    /// If `cur` is an ItemBody::Table, it would return false,
+    /// but since the `TableRow` and `TableHead` and `TableCell`
+    /// are children of the table, anything doing inline parsing
+    /// doesn't need to care about that.
+    pub(crate) fn is_in_table(&self) -> bool {
+        fn might_be_in_table(item: &Item) -> bool {
+            item.body.is_inline()
+                || matches!(item.body, |ItemBody::TableHead| ItemBody::TableRow
+                    | ItemBody::TableCell)
+        }
+        for &ix in self.walk_spine().rev() {
+            if matches!(self[ix].item.body, ItemBody::Table(_)) {
+                return true;
+            }
+            if !might_be_in_table(&self[ix].item) {
+                return false;
+            }
+        }
+        false
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
 struct InlineEl {
-    start: TreeIndex, // offset of tree node
+    /// offset of tree node
+    start: TreeIndex,
+    /// number of delimiters available for matching
     count: usize,
-    c: u8,      // b'*' or b'_'
-    both: bool, // can both open and close
+    /// length of the run that these delimiters came from
+    run_length: usize,
+    /// b'*', b'_', or b'~'
+    c: u8,
+    /// can both open and close
+    both: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -1105,20 +1164,32 @@ impl InlineStack {
         }
     }
 
+    fn truncate(&mut self, new_bound: usize) {
+        self.stack.truncate(new_bound);
+        for lower_bound in &mut self.lower_bounds {
+            if *lower_bound > new_bound {
+                *lower_bound = new_bound;
+            }
+        }
+    }
+
     fn find_match(
         &mut self,
         tree: &mut Tree<Item>,
         c: u8,
-        count: usize,
+        run_length: usize,
         both: bool,
     ) -> Option<InlineEl> {
-        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, count, both));
+        let lowerbound = min(self.stack.len(), self.get_lowerbound(c, run_length, both));
         let res = self.stack[lowerbound..]
             .iter()
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                el.c == c && (!both && !el.both || (count + el.count) % 3 != 0 || count % 3 == 0)
+                el.c == c
+                    && (!both && !el.both
+                        || (run_length + el.run_length) % 3 != 0
+                        || run_length % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
@@ -1128,10 +1199,10 @@ impl InlineStack {
                     tree[el.start + i].item.body = ItemBody::Text;
                 }
             }
-            self.stack.truncate(matching_ix);
+            self.truncate(matching_ix);
             Some(matching_el)
         } else {
-            self.set_lowerbound(c, count, both, self.stack.len());
+            self.set_lowerbound(c, run_length, both, self.stack.len());
             None
         }
     }
@@ -1522,7 +1593,7 @@ pub struct OffsetIter<'a, 'b> {
 
 impl<'a, 'b> OffsetIter<'a, 'b> {
     /// Returns a reference to the internal reference definition tracker.
-    pub fn reference_definitions(&self) -> &RefDefs {
+    pub fn reference_definitions(&self) -> &RefDefs<'_> {
         self.inner.reference_definitions()
     }
 }
@@ -1571,6 +1642,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
         ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
@@ -1592,7 +1664,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
+        ItemBody::HtmlBlock => Tag::HtmlBlock,
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
+        ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak => return Event::HardBreak,

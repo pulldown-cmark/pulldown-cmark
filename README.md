@@ -24,7 +24,7 @@ Further, it optionally supports parsing footnotes,
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-) and
 [mathematical expressions](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions).
 
-Rustc 1.64 or newer is required to build the crate.
+Rustc 1.70 or newer is required to build the crate.
 
 ## Example
 

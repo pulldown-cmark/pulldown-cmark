@@ -9,7 +9,9 @@
 //! Its author proposed the solution in
 //! <https://github.com/raphlinus/pulldown-cmark/issues/708>.
 
-use crate::{CowStr, Event, OffsetIter, Options, Parser};
+use crate::{
+    BrokenLinkCallback, CowStr, DefaultBrokenLinkCallback, Event, OffsetIter, Options, Parser,
+};
 use std::{iter::Peekable, ops::Range};
 
 /// Merge consecutive `Event::Text` events into only one.
@@ -83,26 +85,47 @@ where
 
 /// Merge consecutive `Event::Text` events into only one with offsets.
 #[derive(Debug)]
-pub struct TextMergeWithOffset<'a, 'b> {
-    source: &'a str,
-    parser: Peekable<OffsetIter<'a, 'b>>,
+pub struct TextMergeWithOffset<'input, F = DefaultBrokenLinkCallback>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    source: &'input str,
+    parser: Peekable<OffsetIter<'input, F>>,
 }
 
-impl<'a, 'b> TextMergeWithOffset<'a, 'b> {
-    pub fn new_ext(source: &'a str, options: Options) -> Self {
+impl<'input, F> TextMergeWithOffset<'input, F>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    pub fn new_ext(source: &'input str, options: Options) -> Self {
         Self {
             source,
-            parser: Parser::new_ext(source, options)
+            parser: Parser::new_with_broken_link_callback(source, options, None)
+                .into_offset_iter()
+                .peekable(),
+        }
+    }
+    pub fn new_ext_with_broken_link_callback(
+        source: &'input str,
+        options: Options,
+        callback: Option<F>,
+    ) -> Self {
+        Self {
+            source,
+            parser: Parser::new_with_broken_link_callback(source, options, callback)
                 .into_offset_iter()
                 .peekable(),
         }
     }
 }
 
-impl<'a, 'b> Iterator for TextMergeWithOffset<'a, 'b> {
-    type Item = (Event<'a>, Range<usize>);
+impl<'input, F> Iterator for TextMergeWithOffset<'input, F>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    type Item = (Event<'input>, Range<usize>);
     fn next(&mut self) -> Option<Self::Item> {
-        let is_empty_text = |x: Option<&(Event<'a>, Range<usize>)>| match x {
+        let is_empty_text = |x: Option<&(Event<'input>, Range<usize>)>| match x {
             Some(e) => matches!(&e.0, Event::Text(t) if t.is_empty()),
             None => false,
         };

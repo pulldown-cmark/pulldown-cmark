@@ -1642,7 +1642,7 @@ impl MathDelims {
         if self.seen_first {
             self.inner
                 .entry((delim_is_display, brace_context))
-                .or_insert_with(Default::default)
+                .or_default()
                 .push_back((ix, can_close));
         } else {
             // Skip the first insert, since that delimiter will always

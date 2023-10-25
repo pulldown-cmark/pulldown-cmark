@@ -1763,3 +1763,22 @@ fn regression_test_115() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_116() {
+    let original = r##"_*__*_*
+
+_*xx*_*
+
+_*__-_-
+
+_*xx-_-
+"##;
+    let expected = r##"<p><em><em>__</em></em>*</p>
+<p><em><em>xx</em></em>*</p>
+<p><em>*__-</em>-</p>
+<p><em>*xx-</em>-</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

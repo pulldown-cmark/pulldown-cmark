@@ -1046,7 +1046,7 @@ struct InlineStack {
     // a strikethrough delimiter will never match with any element
     // in the stack with index smaller than
     // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 7],
+    lower_bounds: [usize; 9],
 }
 
 impl InlineStack {
@@ -1057,7 +1057,7 @@ impl InlineStack {
     const ASTERISK_NOT_BOTH: usize = 1;
     const ASTERISK_BASE: usize = 2;
     const TILDES: usize = 5;
-    const UNDERSCORE_BOTH: usize = 6;
+    const UNDERSCORE_BASE: usize = 6;
 
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
@@ -1065,15 +1065,19 @@ impl InlineStack {
                 tree[el.start + i].item.body = ItemBody::Text;
             }
         }
-        self.lower_bounds = [0; 7];
+        self.lower_bounds = [0; 9];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
         if c == b'_' {
+            let mod3_lower = self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3];
             if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BOTH]
+                mod3_lower
             } else {
-                self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH]
+                min(
+                    mod3_lower,
+                    self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH],
+                )
             }
         } else if c == b'*' {
             let mod3_lower = self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3];
@@ -1093,7 +1097,7 @@ impl InlineStack {
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
             if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BOTH] = new_bound;
+                self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
             } else {
                 self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
             }

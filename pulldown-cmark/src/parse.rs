@@ -433,7 +433,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             // can_close only applies to inline math
                             // block math can always close
                             if self.tree[cur_ix].next != Some(scan_ix) && (can_close || is_display) {
-                               Some(scan_ix)
+                                Some(scan_ix)
                             } else {
                                 None
                             }

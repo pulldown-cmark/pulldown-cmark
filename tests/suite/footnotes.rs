@@ -533,3 +533,15 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn footnotes_test_20() {
+    let original = r##"Test [^] link
+
+[^]: https://rust-lang.org
+"##;
+    let expected = r##"<p>Test <a href="https://rust-lang.org">^</a> link</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

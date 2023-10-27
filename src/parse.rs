@@ -1206,7 +1206,7 @@ fn scan_link_label<'text, 'tree>(
         let _ = scan_containers(tree, &mut line_start, gfm_footnotes);
         Some(line_start.bytes_scanned())
     };
-    let pair = if allow_footnote_refs && b'^' == bytes[1] {
+    let pair = if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
         let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
         (byte_index + 2, ReferenceLabel::Footnote(cow))
     } else {

@@ -542,3 +542,13 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 <tr><td>[^4]: test</td><td>test [^4]</td></tr>
 </tbody></table>
 ````````````````````````````````
+
+Footnote labels cannot be empty.
+
+```````````````````````````````` example
+Test [^] link
+
+[^]: https://rust-lang.org
+.
+<p>Test <a href="https://rust-lang.org">^</a> link</p>
+````````````````````````````````

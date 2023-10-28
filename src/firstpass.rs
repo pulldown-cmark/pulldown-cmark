@@ -149,8 +149,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
-                match self.tree[node_ix].item.body {
+                match &mut self.tree[node_ix].item.body {
                     ItemBody::BlockQuote => (),
+                    ItemBody::ListItem(indent) if self.begin_list_item.is_some() => {
+                        self.last_line_blank = true;
+                        // This is a blank list item.
+                        // While the list itself can be continued no matter how many blank lines
+                        // there are between this one and the next one, it cannot nest anything
+                        // else, so its indentation should not be subtracted from the line start.
+                        *indent = 0;
+                    },
                     _ => {
                         self.last_line_blank = true;
                     }

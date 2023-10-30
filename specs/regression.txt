@@ -1510,3 +1510,34 @@ _*xx-_-
 <p><em>*__-</em>-</p>
 <p><em>*xx-</em>-</p>
 ````````````````````````````````
+
+ISSUE 755
+
+```````````````````````````````` example
+>>**#*
+>
+>**#*
+
+**#*
+
+|**#*|
+|----|
+|**#*|
+|**#*
+**#*|
+**#*
+.
+<blockquote>
+<blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+<table><thead><tr><th>*<em>#</em></th></tr></thead><tbody>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+</tbody></table>
+````````````````````````````````

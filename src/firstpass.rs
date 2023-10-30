@@ -101,10 +101,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // Footnote definitions of the form
             // [^bar]:
             //     * anything really
-            let container_start = start_ix + line_start.bytes_scanned();
-            if let Some(bytecount) = self.parse_footnote(container_start) {
-                start_ix = container_start + bytecount;
-                line_start = LineStart::new(&bytes[start_ix..]);
+            let save = line_start.clone();
+            let indent = line_start.scan_space_upto(4);
+            if indent < 4 {
+                let container_start = start_ix + line_start.bytes_scanned();
+                if let Some(bytecount) = self.parse_footnote(container_start) {
+                    start_ix = container_start + bytecount;
+                    line_start = LineStart::new(&bytes[start_ix..]);
+                } else {
+                    line_start = save;
+                }
+            } else {
+                line_start = save;
             }
         }
 

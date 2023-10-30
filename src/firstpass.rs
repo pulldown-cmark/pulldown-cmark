@@ -1279,7 +1279,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if !bytes.starts_with(b"[^") {
             return None;
         }
-        let (mut i, label) = self.parse_refdef_label(start + 2)?;
+        let (mut i, label) = if self.options.has_gfm_footnotes() {
+            // GitHub doesn't allow footnote definition labels to contain line breaks.
+            // It actually does allow this for link definitions under certain circumstances,
+            // but for this it's simpler to avoid it.
+            scan_link_label_rest(&self.text[start + 2..], &|_| {
+                return None;
+            })?
+        } else {
+            self.parse_refdef_label(start + 2)?
+        };
+        if self.options.has_gfm_footnotes() && label.bytes().any(|b| b == b'\r' || b == b'\n') {
+            // GitHub doesn't allow footnote definition labels to contain line breaks,
+            // even if they're escaped.
+            return None;
+        }
         i += 2;
         if scan_ch(&bytes[i..], b':') == 0 {
             return None;

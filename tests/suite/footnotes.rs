@@ -503,6 +503,8 @@ first      | second
 |------------|-----------|
 | first      | second    |
 | [^4]: test | test [^4] |
+
+> [^5]: * test [^5]
 "##;
     let expected = r##"<ul>
 <li>First
@@ -529,6 +531,13 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 <tr><td>first</td><td>second</td></tr>
 <tr><td>[^4]: test</td><td>test [^4]</td></tr>
 </tbody></table>
+<blockquote>
+<div class="footnote-definition" id="5"><sup class="footnote-definition-label">4</sup>
+<ul>
+<li>test <sup class="footnote-reference"><a href="#5">4</a></sup></li>
+</ul>
+</div>
+</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

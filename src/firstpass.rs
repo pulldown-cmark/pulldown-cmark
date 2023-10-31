@@ -97,27 +97,28 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&bytes[start_ix..]);
             }
-        } else if self.options.contains(Options::ENABLE_FOOTNOTES) {
-            // Footnote definitions of the form
-            // [^bar]:
-            //     * anything really
-            let save = line_start.clone();
-            let indent = line_start.scan_space_upto(4);
-            if indent < 4 {
-                let container_start = start_ix + line_start.bytes_scanned();
-                if let Some(bytecount) = self.parse_footnote(container_start) {
-                    start_ix = container_start + bytecount;
-                    line_start = LineStart::new(&bytes[start_ix..]);
-                } else {
-                    line_start = save;
-                }
-            } else {
-                line_start = save;
-            }
         }
 
         // Process new containers
         loop {
+            if self.options.has_gfm_footnotes() {
+                // Footnote definitions of the form
+                // [^bar]:
+                //     * anything really
+                let save = line_start.clone();
+                let indent = line_start.scan_space_upto(4);
+                if indent < 4 {
+                    let container_start = start_ix + line_start.bytes_scanned();
+                    if let Some(bytecount) = self.parse_footnote(container_start) {
+                        start_ix = container_start + bytecount;
+                        line_start = LineStart::new(&bytes[start_ix..]);
+                    } else {
+                        line_start = save;
+                    }
+                } else {
+                    line_start = save;
+                }
+            }
             let container_start = start_ix + line_start.bytes_scanned();
             if let Some((ch, index, indent)) = line_start.scan_list_marker() {
                 let after_marker_index = start_ix + line_start.bytes_scanned();

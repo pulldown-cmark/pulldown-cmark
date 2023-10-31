@@ -22,7 +22,7 @@
 
 use unicase::UniCase;
 
-use crate::scanners::{is_ascii_whitespace, scan_eol};
+use crate::scanners::{is_ascii_whitespace, scan_eol, is_ascii_punctuation};
 use crate::strings::CowStr;
 
 #[derive(Debug)]
@@ -60,7 +60,7 @@ pub(crate) fn scan_link_label_rest<'t>(
         match *bytes.get(ix)? {
             b'[' => return None,
             b']' => break,
-            b'\\' => {
+            b'\\' if is_ascii_punctuation(*bytes.get(ix + 1)?) => {
                 ix += 2;
                 codepoints += 2;
                 only_white_space = false;

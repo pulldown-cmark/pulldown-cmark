@@ -1840,3 +1840,16 @@ fn regression_test_118() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_119() {
+    let original = r##"[x\
+
+]: https://rust-lang.org
+"##;
+    let expected = r##"<p>[x\</p>
+<p>]: https://rust-lang.org</p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false);
+}

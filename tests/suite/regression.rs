@@ -1782,3 +1782,61 @@ _*xx-_-
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_117() {
+    let original = r##"-
+
+	-
+
+
+- x
+
+	-
+"##;
+    let expected = r##"<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_118() {
+    let original = r##"-
+
+    -
+
+
+- x
+
+    -
+"##;
+    let expected = r##"<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

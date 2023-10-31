@@ -1605,3 +1605,17 @@ ISSUE 755
 <tr><td>*<em>#</em></td></tr>
 </tbody></table>
 ````````````````````````````````
+
+Laziness rules apply to link definition.
+ISSUE #764
+
+```````````````````````````````` example
+> Rewriting it in [Rust] is usually a bad idea.
+>
+> [Rust]:
+https://rust-lang.org
+.
+<blockquote>
+<p>Rewriting it in <a href="https://rust-lang.org">Rust</a> is usually a bad idea.</p>
+</blockquote>
+````````````````````````````````

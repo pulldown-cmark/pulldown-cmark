@@ -600,3 +600,24 @@ fn footnotes_test_22() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn footnotes_test_23() {
+    let original = r##"footnote [^baz]
+footnote [^quux]
+
+    [^quux]: x
+
+   [^baz]: x
+"##;
+    let expected = r##"<p>footnote <sup class="footnote-reference"><a href="#baz">1</a></sup>
+footnote [^quux]</sup></p>
+<pre><code>[^quux]: x
+</code></pre>
+<div class="footnote-definition" id="baz"><sup class="footnote-definition-label">1</sup>
+<p>x</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

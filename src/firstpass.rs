@@ -628,8 +628,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
-                    let can_open = delim_run_can_open(self.text, string_suffix, count, ix);
-                    let can_close = delim_run_can_close(self.text, string_suffix, count, ix);
+                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, count, ix - start, mode);
+                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, count, ix - start, mode);
                     let is_valid_seq = c != b'~' || count <= 2;
 
                     if (can_open || can_close) && is_valid_seq {
@@ -779,8 +779,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 c @ b'\'' | c @ b'"' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open = delim_run_can_open(self.text, string_suffix, 1, ix);
-                    let can_close = delim_run_can_close(self.text, string_suffix, 1, ix);
+                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, 1, ix - start, mode);
 
                     self.tree.append_text(begin_text, ix);
                     self.tree.append(Item {
@@ -1722,7 +1722,7 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
 /// for _ delims).
 /// suffix is &s[ix..], which is passed in as an optimization, since taking
 /// a string subslice is O(n).
-fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
+fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
     let next_char = if let Some(c) = suffix.chars().nth(run_len) {
         c
     } else {
@@ -1733,6 +1733,14 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
     }
     if ix == 0 {
         return true;
+    }
+    if mode == TableParseMode::Active {
+        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+            return true;
+        }
+        if next_char == '|' {
+            return false;
+        }
     }
     let delim = suffix.chars().next().unwrap();
     // `*` and `~~` can be intraword, `_` cannot
@@ -1749,7 +1757,7 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool 
 /// Determines whether the delimiter run starting at given index is
 /// right-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
-fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool {
+fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
     if ix == 0 {
         return false;
     }
@@ -1762,6 +1770,14 @@ fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize) -> bool
     } else {
         return true;
     };
+    if mode == TableParseMode::Active {
+        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+            return false;
+        }
+        if next_char == '|' {
+            return true;
+        }
+    }
     let delim = suffix.chars().next().unwrap();
     // `*` and `~~` can be intraword, `_` cannot
     if (delim == '*' || delim == '~') && !is_punctuation(prev_char) {

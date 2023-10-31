@@ -1130,6 +1130,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree[cur_ix].item.end = ix;
         if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
             surgerize_tight_list(&mut self.tree, cur_ix);
+            self.begin_list_item = None;
         }
     }
 

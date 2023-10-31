@@ -1850,7 +1850,7 @@ fn regression_test_119() {
     let expected = r##"<p>[x\</p>
 <p>]: https://rust-lang.org</p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
 
@@ -1883,6 +1883,6 @@ fn regression_test_120() {
 <tr><td>*<em>#</em></td></tr>
 </tbody></table>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }

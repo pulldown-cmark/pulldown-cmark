@@ -1605,3 +1605,14 @@ ISSUE 755
 <tr><td>*<em>#</em></td></tr>
 </tbody></table>
 ````````````````````````````````
+
+ISSUE 768
+
+```````````````````````````````` example
+[First try
+----------
+Second try]: https://rust-lang.org
+.
+<h2>[First try</h2>
+<p>Second try]: https://rust-lang.org</p>
+````````````````````````````````

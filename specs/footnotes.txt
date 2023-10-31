@@ -553,6 +553,58 @@ Test [^] link
 <p>Test <a href="https://rust-lang.org">^</a> link</p>
 ````````````````````````````````
 
+Footnote labels cannot contain line breaks, even where link labels can.
+
+```````````````````````````````` example
+[^foo\
+bar]: not a footnote definition
+
+[baz\
+quux]: https://rust-lang.org
+
+[first
+second]: https://rust-lang.org
+
+[^third
+fourth]: not a footnote definition
+
+[baz\
+quux]
+[^foo\
+bar]
+[first
+second]
+[^third
+fourth]
+.
+<p>[^foo<br>
+bar]: not a footnote definition</p>
+<p>[^third
+fourth]: not a footnote definition</p>
+<p><a href="https://rust-lang.org">baz<br>
+quux</a>
+[^foo<br>
+bar]
+<a href="https://rust-lang.org">first
+second</a>
+[^third
+fourth]</p>
+````````````````````````````````
+
+The above rules imply a few cases where something starts with `^`, but actually
+parses as a link definition.
+
+```````````````````````````````` example
+[^foo
+]: https://rust-lang.org
+
+[^foo
+]
+.
+<p><a href="https://rust-lang.org">^foo
+</a></p>
+````````````````````````````````
+
 Footnote definitions can be indented up to three spaces.
 At four spaces, it becomes a code block.
 

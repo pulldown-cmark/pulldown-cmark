@@ -548,6 +548,61 @@ fn footnotes_test_20() {
 
 #[test]
 fn footnotes_test_21() {
+    let original = r##"[^foo\
+bar]: not a footnote definition
+
+[baz\
+quux]: https://rust-lang.org
+
+[first
+second]: https://rust-lang.org
+
+[^third
+fourth]: not a footnote definition
+
+[baz\
+quux]
+[^foo\
+bar]
+[first
+second]
+[^third
+fourth]
+"##;
+    let expected = r##"<p>[^foo<br>
+bar]: not a footnote definition</p>
+<p>[^third
+fourth]: not a footnote definition</p>
+<p><a href="https://rust-lang.org">baz<br>
+quux</a>
+[^foo<br>
+bar]
+<a href="https://rust-lang.org">first
+second</a>
+[^third
+fourth]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn footnotes_test_22() {
+    let original = r##"[^foo
+]: https://rust-lang.org
+
+[^foo
+]
+"##;
+    let expected = r##"<p><a href="https://rust-lang.org">^foo
+</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn footnotes_test_23() {
     let original = r##"footnote [^baz]
 footnote [^quux]
 

@@ -1206,14 +1206,18 @@ fn scan_link_label<'text, 'tree>(
         let _ = scan_containers(tree, &mut line_start, gfm_footnotes);
         Some(line_start.bytes_scanned())
     };
-    let pair = if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
-        let (byte_index, cow) = scan_link_label_rest(&text[2..], &linebreak_handler)?;
-        (byte_index + 2, ReferenceLabel::Footnote(cow))
-    } else {
-        let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
-        (byte_index + 1, ReferenceLabel::Link(cow))
-    };
-    Some(pair)
+    if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
+        let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if gfm_footnotes {
+            &|_|  None
+        } else {
+            &linebreak_handler
+        };
+        if let Some((byte_index, cow)) = scan_link_label_rest(&text[2..], linebreak_handler) {
+            return Some((byte_index + 2, ReferenceLabel::Footnote(cow)));
+        }
+    }
+    let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
+    Some((byte_index + 1, ReferenceLabel::Link(cow)))
 }
 
 fn scan_reference<'a, 'b>(

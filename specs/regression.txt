@@ -1660,3 +1660,14 @@ https://rust-lang.org
 <p>Rewriting it in <a href="https://rust-lang.org">Rust</a> is usually a bad idea.</p>
 </blockquote>
 ````````````````````````````````
+
+ISSUE 768
+
+```````````````````````````````` example
+[First try
+----------
+Second try]: https://rust-lang.org
+.
+<h2>[First try</h2>
+<p>Second try]: https://rust-lang.org</p>
+````````````````````````````````

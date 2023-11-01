@@ -97,27 +97,28 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                 line_start = LineStart::new(&bytes[start_ix..]);
             }
-        } else if self.options.contains(Options::ENABLE_FOOTNOTES) {
-            // Footnote definitions of the form
-            // [^bar]:
-            //     * anything really
-            let save = line_start.clone();
-            let indent = line_start.scan_space_upto(4);
-            if indent < 4 {
-                let container_start = start_ix + line_start.bytes_scanned();
-                if let Some(bytecount) = self.parse_footnote(container_start) {
-                    start_ix = container_start + bytecount;
-                    line_start = LineStart::new(&bytes[start_ix..]);
-                } else {
-                    line_start = save;
-                }
-            } else {
-                line_start = save;
-            }
         }
 
         // Process new containers
         loop {
+            if self.options.has_gfm_footnotes() {
+                // Footnote definitions of the form
+                // [^bar]:
+                //     * anything really
+                let save = line_start.clone();
+                let indent = line_start.scan_space_upto(4);
+                if indent < 4 {
+                    let container_start = start_ix + line_start.bytes_scanned();
+                    if let Some(bytecount) = self.parse_footnote(container_start) {
+                        start_ix = container_start + bytecount;
+                        line_start = LineStart::new(&bytes[start_ix..]);
+                    } else {
+                        line_start = save;
+                    }
+                } else {
+                    line_start = save;
+                }
+            }
             let container_start = start_ix + line_start.bytes_scanned();
             if let Some((ch, index, indent)) = line_start.scan_list_marker() {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
@@ -1130,6 +1131,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree[cur_ix].item.end = ix;
         if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
             surgerize_tight_list(&mut self.tree, cur_ix);
+            self.begin_list_item = None;
         }
     }
 
@@ -1394,16 +1396,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            if self.tree.spine_len()
-                != scan_containers(
-                    &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
-                )
-            {
+            let current_container = scan_containers(
+                &self.tree,
+                &mut line_start,
+                self.options.has_gfm_footnotes(),
+            ) == self.tree.spine_len();
+            let bytes_scanned = line_start.bytes_scanned();
+            let suffix = &bytes[i + bytes_scanned..];
+            if self.scan_paragraph_interrupt(suffix, current_container) {
                 return None;
             }
-            i += line_start.bytes_scanned();
+            i += bytes_scanned;
         }
         Some((i, newlines))
     }

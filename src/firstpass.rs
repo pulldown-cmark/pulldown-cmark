@@ -1395,16 +1395,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            if self.tree.spine_len()
-                != scan_containers(
-                    &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
-                )
-            {
+            let current_container = scan_containers(
+                &self.tree,
+                &mut line_start,
+                self.options.has_gfm_footnotes(),
+            ) == self.tree.spine_len();
+            let bytes_scanned = line_start.bytes_scanned();
+            let suffix = &bytes[i + bytes_scanned..];
+            if self.scan_paragraph_interrupt(suffix, current_container) {
                 return None;
             }
-            i += line_start.bytes_scanned();
+            i += bytes_scanned;
         }
         Some((i, newlines))
     }

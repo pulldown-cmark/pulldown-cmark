@@ -237,6 +237,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
 
 As a special exception, footnotes cannot be nested directly inside each other.
+If they are, they act like they're declared beside each other.
 
 ```````````````````````````````` example
 Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
@@ -278,6 +279,17 @@ Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
 </div>
 ````````````````````````````````
 
+```````````````````````````````` example
+[^foo] [^bar]
+
+[^foo]: [^bar]: 1
+.
+<p><sup class="footnote-reference"><a href="#foo">1</a></sup> <sup class="footnote-reference"><a href="#bar">2</a></sup></p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<div class="footnote-definition" id="bar"><sup class="footnote-definition-label">2</sup>
+<p>1</p>
+</div>
+````````````````````````````````
 
 They do **not** need one line between each other.
 

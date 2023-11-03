@@ -52,7 +52,7 @@ pub(crate) struct Item {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum ItemBody {
     Paragraph,
-    Text,
+    Text { backslash_escaped: bool },
     SoftBreak,
     // true = is backlash
     HardBreak(bool),
@@ -274,7 +274,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
-                            body: ItemBody::Text,
+                            body: ItemBody::Text { backslash_escaped: false },
                         });
                         let link_ix =
                             self.allocs
@@ -318,13 +318,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             continue;
                         }
                     }
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
                         if search_count == 0 {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                             prev = cur;
                             cur = self.tree[cur_ix].next;
                             continue;
@@ -337,7 +337,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                         }
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
@@ -368,26 +368,26 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             scan = self.tree[scan_ix].next;
                         }
                         if scan == None {
-                            self.tree[cur_ix].item.body = ItemBody::Text;
+                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                         }
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Link,
                     });
                 }
                 ItemBody::MaybeImage => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
                     });
                 }
                 ItemBody::MaybeLinkClose(could_be_ref) => {
-                    self.tree[cur_ix].item.body = ItemBody::Text;
+                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
@@ -497,8 +497,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             };
 
                             let id = match &label {
-                                Some((ReferenceLabel::Link(l), _)) => l.clone(),
-                                Some((ReferenceLabel::Footnote(l), _)) => l.clone(),
+                                Some((ReferenceLabel::Link(l), _) | (ReferenceLabel::Footnote(l), _)) => l.clone(),
                                 None => "".into(),
                             };
 
@@ -703,7 +702,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             });
                         } else {
                             for i in 0..count {
-                                self.tree[cur_ix + i].item.body = ItemBody::Text;
+                                self.tree[cur_ix + i].item.body = ItemBody::Text { backslash_escaped: false };
                             }
                         }
                         prev_ix = cur_ix + count - 1;
@@ -790,7 +789,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         scan_separator(&mut ix);
 
         let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
-        let dest = unescape(dest);
+        let dest = unescape(dest, self.tree.is_in_table());
         ix += dest_length;
 
         scan_separator(&mut ix);
@@ -865,6 +864,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     continue;
                 }
             }
+            if self.tree.is_in_table() && c == b'\\' && i + 2 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 2] == b'|' {
+                // this runs if there are an even number of pipes in a table
+                // if it's odd, then it gets parsed as normal
+                title.push_str(&text[mark..i]);
+                i += 2;
+                mark = i;
+            }
             if c == b'\\' && i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) {
                 title.push_str(&text[mark..i]);
                 i += 1;
@@ -876,6 +882,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 
         None
     }
+
 
     /// Make a code span.
     ///
@@ -947,7 +954,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         };
 
         if preceding_backslash {
-            self.tree[open].item.body = ItemBody::Text;
+            self.tree[open].item.body = ItemBody::Text { backslash_escaped: true };
             self.tree[open].item.end = self.tree[open].item.start + 1;
             self.tree[open].next = Some(close);
             self.tree[close].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
@@ -1037,10 +1044,10 @@ pub(crate) fn scan_containers(
 }
 
 impl Tree<Item> {
-    pub(crate) fn append_text(&mut self, start: usize, end: usize) {
+    pub(crate) fn append_text(&mut self, start: usize, end: usize, backslash_escaped: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if ItemBody::Text == self[ix].item.body && self[ix].item.end == start {
+                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start {
                     self[ix].item.end = end;
                     return;
                 }
@@ -1048,7 +1055,7 @@ impl Tree<Item> {
             self.append(Item {
                 start,
                 end,
-                body: ItemBody::Text,
+                body: ItemBody::Text { backslash_escaped },
             });
         }
     }
@@ -1113,7 +1120,7 @@ impl InlineStack {
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text;
+                tree[el.start + i].item.body = ItemBody::Text { backslash_escaped: false};
             }
         }
         self.lower_bounds = [0; 9];
@@ -1191,7 +1198,7 @@ impl InlineStack {
             let matching_ix = matching_ix + lowerbound;
             for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
-                    tree[el.start + i].item.body = ItemBody::Text;
+                    tree[el.start + i].item.body = ItemBody::Text { backslash_escaped: false };
                 }
             }
             self.truncate(matching_ix);
@@ -1264,11 +1271,11 @@ fn scan_link_label<'text, 'tree>(
         } else {
             &linebreak_handler
         };
-        if let Some((byte_index, cow)) = scan_link_label_rest(&text[2..], linebreak_handler) {
+        if let Some((byte_index, cow)) = scan_link_label_rest(&text[2..], linebreak_handler, tree.is_in_table()) {
             return Some((byte_index + 2, ReferenceLabel::Footnote(cow)));
         }
     }
-    let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler)?;
+    let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler, tree.is_in_table())?;
     Some((byte_index + 1, ReferenceLabel::Link(cow)))
 }
 
@@ -1703,7 +1710,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
 
 fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
-        ItemBody::Text => return Event::Text(text[item.start..item.end].into()),
+        ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeText(cow_ix) => return Event::Text(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),

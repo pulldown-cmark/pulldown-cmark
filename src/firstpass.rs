@@ -394,6 +394,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             &bytes[ix..],
             current_container,
             self.options.has_gfm_footnotes(),
+            &self.tree,
         ) {
             return None;
         }
@@ -466,7 +467,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.parse_setext_heading(ix_new, node_ix, trailing_backslash_pos.is_some())
                     {
                         if let Some(pos) = trailing_backslash_pos {
-                            self.tree.append_text(pos, pos + 1);
+                            self.tree.append_text(pos, pos + 1, false);
                         }
                         ix = ix_setext;
                         break;
@@ -476,7 +477,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let suffix = &bytes[ix_new..];
                 if self.scan_paragraph_interrupt(suffix, current_container) {
                     if let Some(pos) = trailing_backslash_pos {
-                        self.tree.append_text(pos, pos + 1);
+                        self.tree.append_text(pos, pos + 1, false);
                     }
                     break;
                 }
@@ -484,7 +485,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             line_start.scan_all_space();
             if line_start.is_at_eol() {
                 if let Some(pos) = trailing_backslash_pos {
-                    self.tree.append_text(pos, pos + 1);
+                    self.tree.append_text(pos, pos + 1, false);
                 }
                 break;
             }
@@ -533,7 +534,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             if attrs.is_some() {
                 // remove trailing block attributes
-                self.tree.truncate_siblings(self.text.as_bytes(), new_end);
+                self.tree.truncate_siblings(new_end);
             }
 
             if let Some(cur_ix) = self.tree.cur() {
@@ -567,6 +568,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut pipes = 0;
         let mut last_pipe_ix = start;
         let mut begin_text = start;
+        let mut backslash_escaped = false;
 
         let (final_ix, brk) = iterate_special_bytes(self.lookup_table, bytes, start, |ix, byte| {
             match byte {
@@ -582,7 +584,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let trailing_backslashes = scan_rev_while(&bytes[..ix], |b| b == b'\\');
                     if trailing_backslashes % 2 == 1 && end_ix < bytes_len {
                         i -= 1;
-                        self.tree.append_text(begin_text, i);
+                        self.tree.append_text(begin_text, i, backslash_escaped);
+                        backslash_escaped = false;
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
@@ -633,7 +636,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
                     if trailing_whitespace >= 2 {
                         i -= trailing_whitespace;
-                        self.tree.append_text(begin_text, i);
+                        self.tree.append_text(begin_text, i, backslash_escaped);
+                        backslash_escaped = false;
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
@@ -644,7 +648,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         );
                     }
 
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     LoopInstruction::BreakAtWith(
                         end_ix,
                         Some(Item {
@@ -656,7 +661,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'\\' => {
                     if ix + 1 < bytes_len && is_ascii_punctuation(bytes[ix + 1]) {
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
                         if bytes[ix + 1] == b'`' {
                             let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
                             self.tree.append(Item {
@@ -665,7 +670,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                 body: ItemBody::MaybeCode(count, true),
                             });
                             begin_text = ix + 1 + count;
+                            backslash_escaped = false;
                             LoopInstruction::ContinueAndSkip(count)
+                        } else if bytes[ix + 1] == b'|'
+                            && TableParseMode::Active == mode
+                        {
+                            // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
+                            // backslash escapes.
+                            //
+                            // This tree structure is intended for the benefit of inline analysis, and it
+                            // is supposed to operate as-if backslash escaped pipes were stripped out in a
+                            // separate pass.
+                            begin_text = ix + 1;
+                            backslash_escaped = false;
+                            LoopInstruction::ContinueAndSkip(1)
                         } else if ix + 2 < bytes_len
                             && bytes[ix + 1] == b'\\'
                             && bytes[ix + 2] == b'|'
@@ -673,9 +691,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         {
                             // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
                             begin_text = ix + 2;
+                            backslash_escaped = true;
                             LoopInstruction::ContinueAndSkip(2)
                         } else {
                             begin_text = ix + 1;
+                            backslash_escaped = true;
                             LoopInstruction::ContinueAndSkip(1)
                         }
                     } else {
@@ -690,7 +710,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let is_valid_seq = c != b'~' || count <= 2;
 
                     if (can_open || can_close) && is_valid_seq {
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
+                        backslash_escaped = false;
                         for i in 0..count {
                             self.tree.append(Item {
                                 start: ix + i,
@@ -703,7 +724,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
                 b'`' => {
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
                     self.tree.append(Item {
                         start: ix,
@@ -716,7 +738,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 b'<' => {
                     // Note: could detect some non-HTML cases and early escape here, but not
                     // clear that's a win.
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
@@ -727,7 +750,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'!' => {
                     if ix + 1 < bytes_len && bytes[ix + 1] == b'[' {
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
+                        backslash_escaped = false;
                         self.tree.append(Item {
                             start: ix,
                             end: ix + 2,
@@ -740,7 +764,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
                 b'[' => {
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
@@ -750,7 +775,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b']' => {
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
@@ -761,7 +787,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'&' => match scan_entity(&bytes[ix..]) {
                     (n, Some(value)) => {
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
+                        backslash_escaped = false;
                         self.tree.append(Item {
                             start: ix,
                             end: ix + n,
@@ -785,7 +812,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'.' => {
                     if ix + 2 < bytes.len() && bytes[ix + 1] == b'.' && bytes[ix + 2] == b'.' {
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
+                        backslash_escaped = false;
                         self.tree.append(Item {
                             start: ix,
                             end: ix + 3,
@@ -824,7 +852,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             ItemBody::SynthesizeText(self.allocs.allocate_cow(buf.into()))
                         };
 
-                        self.tree.append_text(begin_text, ix);
+                        self.tree.append_text(begin_text, ix, backslash_escaped);
+                        backslash_escaped = false;
                         self.tree.append(Item {
                             start: ix,
                             end: ix + count,
@@ -839,7 +868,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let can_open = delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
                     let can_close = delim_run_can_close(&self.text[start..], string_suffix, 1, ix - start, mode);
 
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
@@ -855,7 +885,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if brk.is_none() {
             // need to close text at eof
-            self.tree.append_text(begin_text, final_ix);
+            self.tree.append_text(begin_text, final_ix, backslash_escaped);
         }
         (final_ix, brk)
     }
@@ -1030,7 +1060,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // to just do a forward scan here?
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
-        let info_string = unescape(&self.text[info_start..info_end]);
+        let info_string = unescape(&self.text[info_start..info_end], self.tree.is_in_table());
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
@@ -1134,10 +1164,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
-            self.tree.append_text(start, end - 2);
-            self.tree.append_text(end - 1, end);
+            self.tree.append_text(start, end - 2, false);
+            self.tree.append_text(end - 1, end, false);
         } else {
-            self.tree.append_text(start, end);
+            self.tree.append_text(start, end, false);
         }
     }
 
@@ -1351,7 +1381,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // but for this it's simpler to avoid it.
             scan_link_label_rest(&self.text[start + 2..], &|_| {
                 return None;
-            })?
+            }, self.tree.is_in_table())?
         } else {
             self.parse_refdef_label(start + 2)?
         };
@@ -1412,7 +1442,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             } else {
                 Some(bytes_scanned)
             }
-        })
+        }, self.tree.is_in_table())
     }
 
     /// Returns number of bytes scanned, label and definition on success.
@@ -1558,7 +1588,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if dest_length == 0 {
             return None;
         }
-        let dest = unescape(dest);
+        let dest = unescape(dest, self.tree.is_in_table());
         i += dest_length;
 
         // no title
@@ -1595,7 +1625,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if scan_blank_line(&bytes[i..]).is_some() {
                 backup.0 = i - start;
                 backup.1.span = span_start..i;
-                backup.1.title = Some(unescape(title));
+                backup.1.title = Some(unescape(title, self.tree.is_in_table()));
                 return Some(backup);
             }
         }
@@ -1609,7 +1639,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Checks whether we should break a paragraph on the given input.
     fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
         let gfm_footnote = self.options.has_gfm_footnotes();
-        if scan_paragraph_interrupt_no_table(bytes, current_container, gfm_footnote) {
+        if scan_paragraph_interrupt_no_table(bytes, current_container, gfm_footnote, &self.tree) {
             return true;
         }
         // pulldown-cmark allows heavy tables, that have a `|` on the header row,
@@ -1638,7 +1668,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut last_pipe_ix = 0;
         for (i, &byte) in bytes.iter().enumerate() {
             match byte {
-                b'\\' => bsesc = !bsesc,
+                b'\\' => {
+                    bsesc = true;
+                    continue;
+                },
                 b'|' if !bsesc => {
                     pipes += 1;
                     last_pipe_ix = i;
@@ -1649,6 +1682,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 _ => {}
             }
+            bsesc = false;
         }
 
         // scan_eol can't return 0, so this can't be zero
@@ -1757,10 +1791,11 @@ fn count_header_cols(
 ///
 /// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
 /// tables to interrupt the paragraph.
-fn scan_paragraph_interrupt_no_table(
+fn scan_paragraph_interrupt_no_table<'tree>(
     bytes: &[u8],
     current_container: bool,
     gfm_footnote: bool,
+    tree: &'tree Tree<Item>,
 ) -> bool {
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
@@ -1778,7 +1813,7 @@ fn scan_paragraph_interrupt_no_table(
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
         || (gfm_footnote
             && bytes.starts_with(b"[^")
-            && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None)
+            && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None, tree.is_in_table())
                 .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 

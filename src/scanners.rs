@@ -1003,7 +1003,7 @@ fn scan_attribute_value(
 }
 
 // Remove backslash escapes and resolve entities
-pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I) -> CowStr<'a> {
+pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> CowStr<'a> {
     let input = input.into();
     let mut result = String::new();
     let mut mark = 0;
@@ -1011,6 +1011,16 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I) -> CowStr<'a> {
     let bytes = input.as_bytes();
     while i < bytes.len() {
         match bytes[i] {
+            // Tables are special, because they're parsed as-if the tables
+            // were parsed in a discrete pass, changing `\|` to `|`, and then
+            // passing the changed string to the inline parser.
+            b'\\' if is_in_table && i + 2 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 2] == b'|' => {
+                // even number of `\`s before pipe
+                // odd number is handled in the normal way below
+                result.push_str(&input[mark..i]);
+                mark = i + 2;
+                i += 3;
+            }
             b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
                 result.push_str(&input[mark..i]);
                 mark = i + 1;

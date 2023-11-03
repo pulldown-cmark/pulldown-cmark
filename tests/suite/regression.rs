@@ -1889,12 +1889,82 @@ fn regression_test_120() {
 
 #[test]
 fn regression_test_121() {
+    let original = r##"The second hyphen should parse the same way in both samples.
+
+ - >*
+
+   -
+
+The second hyphen should parse the same way in both samples.
+
+ - >x
+
+   -
+"##;
+    let expected = r##"<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<p>x</p>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_122() {
+    let original = r##"> Rewriting it in [Rust] is usually a bad idea.
+>
+> [Rust]:
+https://rust-lang.org
+"##;
+    let expected = r##"<blockquote>
+<p>Rewriting it in <a href="https://rust-lang.org">Rust</a> is usually a bad idea.</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_123() {
     let original = r##"[First try
 ----------
 Second try]: https://rust-lang.org
 "##;
     let expected = r##"<h2>[First try</h2>
 <p>Second try]: https://rust-lang.org</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_124() {
+    let original = r##"# foo \
+bar \
+"##;
+    let expected = r##"<h1>foo \</h1>
+<p>bar \</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

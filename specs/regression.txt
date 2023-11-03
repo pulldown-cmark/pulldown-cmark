@@ -1671,3 +1671,13 @@ Second try]: https://rust-lang.org
 <h2>[First try</h2>
 <p>Second try]: https://rust-lang.org</p>
 ````````````````````````````````
+
+ISSUE 774
+
+```````````````````````````````` example
+# foo \
+bar \
+.
+<h1>foo \</h1>
+<p>bar \</p>
+````````````````````````````````

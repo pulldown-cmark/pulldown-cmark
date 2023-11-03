@@ -28,7 +28,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 ````````````````````````````````
 
-Inline math expressions cannot be empty, but display mode expressions can.
+Neither inline nor display mode math expressions can be empty.
 
 ```````````````````````````````` example
 Oops empty $$ expression.
@@ -36,7 +36,7 @@ Oops empty $$ expression.
 $$$$
 .
 <p>Oops empty $$ expression.</p>
-<p><span class="math display"></span></p>
+<p>$$$$</p>
 ````````````````````````````````
 
 Math expressions pass their content through as-is, ignoring any other inline
@@ -61,6 +61,33 @@ $&alpha;$
 <p><span class="math inline">![not an](/image)</span></p>
 <p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
 <p><span class="math inline">&amp;alpha;</span></p>
+````````````````````````````````
+
+The content of math expressions is handled similarly to code spans, except
+newlines are preserved and stripping of a leading and trailing space is not
+done. Indentation on subsequent lines of math items is trimmed out.
+
+(The generated tests cannot currently enforce that whitespace is emitted correctly, but
+the behavior is illustrated here.)
+
+```````````````````````````````` example
+$\TeX % comment
+no longer active on this line$
+
+$$ surrounding spaces $$
+
+- $indentation
+  inside list
+     and extra$
+.
+<p><span class="math inline">\TeX % comment
+no longer active on this line</span></p>
+<p><span class="math display"> surrounding spaces </span></p>
+<ul>
+<li><span class="math inline">indentation
+inside list
+and extra</span></li>
+</ul>
 ````````````````````````````````
 
 Sole `$` characters without a matching pair in the same block element
@@ -103,7 +130,7 @@ either</span></p>
 ````````````````````````````````
 
 
-`$` character can be escaped with backslash in mathematical expressions:
+`$` character can be escaped with a backslash in mathematical expressions:
 
 ```````````````````````````````` example
 $\$$
@@ -120,12 +147,15 @@ display mode expressions can, though not two in a row:
 ```````````````````````````````` example
 $x $ x$
 
-$$ $ $$
+$x x$x x$
+
+alpha$$beta$gamma$$delta
 
 $$ $$ $$
 .
 <p>$x $ x$</p>
-<p><span class="math display"> $ </span></p>
+<p><span class="math inline">x x</span>x x$</p>
+<p>alpha<span class="math display">beta$gamma</span>delta</p>
 <p><span class="math display"> </span> $$</p>
 ````````````````````````````````
 
@@ -189,7 +219,8 @@ $$a$$$$b$$
 ````````````````````````````````
 
 Both inline and display mode math expressions are inline elements with the same
-precedence as code spans. The leftmost valid element takes priority:
+precedence as code spans. The leftmost valid element takes priority, in a
+greedy fashion:
 
 ```````````````````````````````` example
 $Inline `first$ then` code
@@ -199,11 +230,14 @@ $Inline `first$ then` code
 $$ Display `first $$ then` code
 
 `Code $$ first` then $$ display
+
+$x$$$$$$$y$$
 .
 <p><span class="math inline">Inline `first</span> then` code</p>
 <p><code>Code $first</code> then$ inline</p>
 <p><span class="math display"> Display `first </span> then` code</p>
 <p><code>Code $$ first</code> then $$ display</p>
+<p><span class="math inline">x</span>$$$<span class="math display">$y</span></p>
 ````````````````````````````````
 
 Indicators of block structure take precedence over math expressions:
@@ -248,4 +282,27 @@ $$
 not</p>
 <p>math
 $$</p>
+````````````````````````````````
+
+As with code spans, pipes are special when inside a table. Escaped pipes `\|`
+inside tables discard one backslash. An unescaped pipe breaks the table cell
+instead.
+
+```````````````````````````````` example
+| Name | Description |
+| ---- | ----------- |
+| Trio | $\begin{array}{l \| c \| r} a & b & c \end{array}$ |
+| More | $\| \\| \\\|$ |
+
+| Name | Description |
+| ---- | ----------- |
+| $not | math$       |
+.
+<table><thead><tr><th>Name</th><th>Description</th></tr></thead><tbody>
+<tr><td>Trio</td><td><span class="math inline">\begin{array}{l | c | r} a &amp; b &amp; c \end{array}</span></td></tr>
+<tr><td>More</td><td><span class="math inline">| \| \\|</span></td></tr>
+</tbody></table>
+<table><thead><tr><th>Name</th><th>Description</th></tr></thead><tbody>
+<tr><td>$not</td><td>math$</td></tr>
+</tbody></table>
 ````````````````````````````````

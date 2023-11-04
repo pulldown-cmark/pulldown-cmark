@@ -237,6 +237,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
 
 As a special exception, footnotes cannot be nested directly inside each other.
+If they are, they act like they're declared beside each other.
 
 ```````````````````````````````` example
 Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
@@ -278,6 +279,17 @@ Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
 </div>
 ````````````````````````````````
 
+```````````````````````````````` example
+[^foo] [^bar]
+
+[^foo]: [^bar]: 1
+.
+<p><sup class="footnote-reference"><a href="#foo">1</a></sup> <sup class="footnote-reference"><a href="#bar">2</a></sup></p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<div class="footnote-definition" id="bar"><sup class="footnote-definition-label">2</sup>
+<p>1</p>
+</div>
+````````````````````````````````
 
 They do **not** need one line between each other.
 
@@ -382,12 +394,13 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 Test case for the relationship between link references and footnotes.
  <https://gist.github.com/notriddle/5625a3c1cb70b3067a01d7465f9d10f1>
 
-In this case, pulldown-cmark treats all four `[cmark-gfm]` uses as links.
-GitHub, however, writes
+GitHub writes
 `My [cmark-gfm]<sup class="footnote-reference"><a href="#examples">1</a></sup>.`
-in the first paragraph. This seems like a bug, and would require some gymnastics for
-pulldown-cmark to copy it, but this test case is kept here to keep track of the decision to
-diverge from GFM's behavior.
+in the first paragraph. This seems like a bug, but [markdown-it] and [commonmark-hs]
+both do it, too, so it's probably not worth it to be different here.
+
+[markdown-it]: https://markdown-it.github.io/#md3=%7B%22source%22%3A%22%5B%5Efoo%5D%5B%5D%5Cn%5Cn%5B%5Efoo%5D%5Bbaz%5D%5Cn%5Cn%5Bbaz%5D%5B%5Efoo%5D%5Cn%5Cn%5B%5Efoo%5D%3A%20bar%5Cn%5Cn%5Bbaz%5D%3A%20https%3A%2F%2Frust-lang.org%22%2C%22defaults%22%3A%7B%22html%22%3Afalse%2C%22xhtmlOut%22%3Afalse%2C%22breaks%22%3Afalse%2C%22langPrefix%22%3A%22language-%22%2C%22linkify%22%3Atrue%2C%22typographer%22%3Atrue%2C%22_highlight%22%3Atrue%2C%22_strict%22%3Afalse%2C%22_view%22%3A%22html%22%7D%7D
+[commonmark-hs]: https://pandoc.org/try/?params=%7B%22text%22%3A%22%5B%5Efoo%5D%5B%5D%5Cn%5Cn%5B%5Efoo%5D%5Bbaz%5D%5Cn%5Cn%5Bbaz%5D%5B%5Efoo%5D%5Cn%5Cn%5B%5Efoo%5D%3A+bar%5Cn%5Cn%5Bbaz%5D%3A+https%3A%2F%2Frust-lang.org%22%2C%22to%22%3A%22html5%22%2C%22from%22%3A%22commonmark_x%22%2C%22standalone%22%3Afalse%2C%22embed-resources%22%3Afalse%2C%22table-of-contents%22%3Afalse%2C%22number-sections%22%3Afalse%2C%22citeproc%22%3Afalse%2C%22html-math-method%22%3A%22plain%22%2C%22wrap%22%3A%22auto%22%2C%22highlight-style%22%3Anull%2C%22files%22%3A%7B%7D%2C%22template%22%3Anull%7D
 
 ```````````````````````````````` example
 My [cmark-gfm][^c].
@@ -410,7 +423,7 @@ My [otherlink[^c]].
 
 [otherlink[^c]]: https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702
 .
-<p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
+<p>My [cmark-gfm]<sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a> <sup class="footnote-reference"><a href="#c">1</a></sup>.</p>

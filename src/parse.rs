@@ -436,6 +436,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     }
                                     (next, LinkType::Shortcut)
                                 }
+                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             // FIXME: references and labels are mixed in the naming of variables
@@ -459,6 +460,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
                                 }
+                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             let id = match &label {
@@ -480,13 +482,16 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 if !self.options.has_gfm_footnotes()
                                     || self.allocs.footdefs.contains(&self.allocs.cows[footref.0])
                                 {
-                                    self.tree[tos.node].next = node_after_link;
+                                    // use `next` instead of `node_after_link` because
+                                    // node_after_link is calculated for a [collapsed][] link,
+                                    // which footnotes don't support.
+                                    self.tree[tos.node].next = next;
                                     self.tree[tos.node].child = None;
                                     self.tree[tos.node].item.body =
                                         ItemBody::FootnoteReference(footref);
                                     self.tree[tos.node].item.end = end;
                                     prev = Some(tos.node);
-                                    cur = node_after_link;
+                                    cur = next;
                                     self.link_stack.clear();
                                     continue;
                                 }
@@ -1177,6 +1182,7 @@ enum RefScan<'a> {
     LinkLabel(CowStr<'a>, usize),
     // contains next node index
     Collapsed(Option<TreeIndex>),
+    UnexpectedFootnote,
     Failed,
 }
 
@@ -1246,12 +1252,13 @@ fn scan_reference<'a, 'b>(
         // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
-    } else if let Some((ix, ReferenceLabel::Link(label))) =
-        scan_link_label(tree, &text[start..], allow_footnote_refs, gfm_footnotes)
-    {
-        RefScan::LinkLabel(label, start + ix)
     } else {
-        RefScan::Failed
+        let label = scan_link_label(tree, &text[start..], allow_footnote_refs, gfm_footnotes);
+        match label {
+            Some((ix, ReferenceLabel::Link(label))) => RefScan::LinkLabel(label, start + ix),
+            Some((_ix, ReferenceLabel::Footnote(_label))) => RefScan::UnexpectedFootnote,
+            None => RefScan::Failed,
+        }
     }
 }
 

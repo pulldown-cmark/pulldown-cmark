@@ -112,6 +112,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     if let Some(bytecount) = self.parse_footnote(container_start) {
                         start_ix = container_start + bytecount;
                         line_start = LineStart::new(&bytes[start_ix..]);
+                        continue;
                     } else {
                         line_start = save;
                     }

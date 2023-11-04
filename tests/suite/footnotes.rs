@@ -282,6 +282,22 @@ fn footnotes_test_11() {
 
 #[test]
 fn footnotes_test_12() {
+    let original = r##"[^foo] [^bar]
+
+[^foo]: [^bar]: 1
+"##;
+    let expected = r##"<p><sup class="footnote-reference"><a href="#foo">1</a></sup> <sup class="footnote-reference"><a href="#bar">2</a></sup></p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<div class="footnote-definition" id="bar"><sup class="footnote-definition-label">2</sup>
+<p>1</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn footnotes_test_13() {
     let original = r##"[^Doh] Ray Me Fa So La Te Do! [^1]
 
 [^Doh]: I know. Wrong Doe. And it won't render right.
@@ -300,7 +316,7 @@ fn footnotes_test_12() {
 }
 
 #[test]
-fn footnotes_test_13() {
+fn footnotes_test_14() {
     let original = r##"Lorem ipsum.[^a]
 
 An unordered list before the footnotes:
@@ -324,7 +340,7 @@ An unordered list before the footnotes:
 }
 
 #[test]
-fn footnotes_test_14() {
+fn footnotes_test_15() {
     let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]: * [The song that never ends](https://www.youtube.com/watch?v=0U2zJOryHKQ)
@@ -381,7 +397,7 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 }
 
 #[test]
-fn footnotes_test_15() {
+fn footnotes_test_16() {
     let original = r##"My [cmark-gfm][^c].
 
 My [cmark-gfm][cmark-gfm][^c].
@@ -402,7 +418,7 @@ My [otherlink[^c]].
 
 [otherlink[^c]]: https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702
 "##;
-    let expected = r##"<p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
+    let expected = r##"<p>My [cmark-gfm]<sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a><sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
 <p>My <a href="https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702">cmark-gfm</a> <sup class="footnote-reference"><a href="#c">1</a></sup>.</p>
@@ -419,7 +435,7 @@ test suite into pulldown-cmark should be fine.</p>
 }
 
 #[test]
-fn footnotes_test_16() {
+fn footnotes_test_17() {
     let original = r##"[^1]: footnote definition text
 
 <!-- -->
@@ -444,7 +460,7 @@ fn main() {
 }
 
 #[test]
-fn footnotes_test_17() {
+fn footnotes_test_18() {
     let original = r##"[^1]: footnote definition text
 [^1]\: this is a reference, rather than a definition
 "##;
@@ -458,7 +474,7 @@ fn footnotes_test_17() {
 }
 
 #[test]
-fn footnotes_test_18() {
+fn footnotes_test_19() {
     let original = r##"[^1]:
 
     | column1 | column2 |
@@ -482,7 +498,7 @@ fn footnotes_test_18() {
 }
 
 #[test]
-fn footnotes_test_19() {
+fn footnotes_test_20() {
     let original = r##"* First
   [^1]: test
 * Second [^1] test
@@ -544,7 +560,7 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 }
 
 #[test]
-fn footnotes_test_20() {
+fn footnotes_test_21() {
     let original = r##"Test [^] link
 
 [^]: https://rust-lang.org
@@ -556,7 +572,7 @@ fn footnotes_test_20() {
 }
 
 #[test]
-fn footnotes_test_21() {
+fn footnotes_test_22() {
     let original = r##"[^foo\
 bar]: not a footnote definition
 
@@ -596,7 +612,7 @@ fourth]</p>
 }
 
 #[test]
-fn footnotes_test_22() {
+fn footnotes_test_23() {
     let original = r##"[^foo
 ]: https://rust-lang.org
 
@@ -611,7 +627,7 @@ fn footnotes_test_22() {
 }
 
 #[test]
-fn footnotes_test_23() {
+fn footnotes_test_24() {
     let original = r##"footnote [^baz]
 footnote [^quux]
 

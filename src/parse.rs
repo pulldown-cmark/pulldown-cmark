@@ -54,7 +54,8 @@ pub(crate) enum ItemBody {
     Paragraph,
     Text,
     SoftBreak,
-    HardBreak,
+    // true = is backlash
+    HardBreak(bool),
 
     // These are possible inline items, need to be resolved in second pass.
 
@@ -215,7 +216,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// Note: there's some potential for optimization here, but that's future work.
     fn handle_inline(&mut self) {
         self.handle_inline_pass1();
-        self.handle_emphasis();
+        self.handle_emphasis_and_hard_break();
     }
 
     /// Handle inline HTML, code spans, and links.
@@ -576,7 +577,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         self.link_stack.clear();
     }
 
-    fn handle_emphasis(&mut self) {
+    fn handle_emphasis_and_hard_break(&mut self) {
         let mut prev = None;
         let mut prev_ix: TreeIndex;
         let mut cur = self.tree.cur();
@@ -692,6 +693,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             }
                         }
                     };
+                    prev = cur;
+                    cur = self.tree[cur_ix].next;
+                }
+                ItemBody::HardBreak(true) => {
+                    if self.tree[cur_ix].next.is_none() {
+                        self.tree[cur_ix].item.body = ItemBody::SynthesizeChar('\\');
+                    }
                     prev = cur;
                     cur = self.tree[cur_ix].next;
                 }
@@ -837,7 +845,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 } else {
                     self.tree[next_ix].item.start
                 };
-                if let ItemBody::HardBreak | ItemBody::SoftBreak = self.tree[ix].item.body {
+                if let ItemBody::HardBreak(_) | ItemBody::SoftBreak = self.tree[ix].item.body {
                     if drop_enclosing_whitespace {
                         // check whether break should be ignored
                         if ix == first_ix {
@@ -1666,7 +1674,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
-        ItemBody::HardBreak => return Event::HardBreak,
+        ItemBody::HardBreak(_) => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
             return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }

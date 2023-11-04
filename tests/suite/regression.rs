@@ -1980,3 +1980,15 @@ fn regression_test_124() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+  
+#[test]
+fn regression_test_125() {
+      let original = r##"# foo \
+bar \
+"##;
+    let expected = r##"<h1>foo \</h1>
+<p>bar \</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

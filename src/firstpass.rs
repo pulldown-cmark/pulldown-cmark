@@ -407,7 +407,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let trailing_backslash_pos = match brk {
                 Some(Item {
                     start,
-                    body: ItemBody::HardBreak,
+                    body: ItemBody::HardBreak(true),
                     ..
                 }) if bytes[start] == b'\\' => Some(start),
                 _ => None,
@@ -541,7 +541,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             Some(Item {
                                 start: i,
                                 end: end_ix,
-                                body: ItemBody::HardBreak,
+                                body: ItemBody::HardBreak(true),
                             }),
                         );
                     }
@@ -592,7 +592,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             Some(Item {
                                 start: i,
                                 end: end_ix,
-                                body: ItemBody::HardBreak,
+                                body: ItemBody::HardBreak(false),
                             }),
                         );
                     }

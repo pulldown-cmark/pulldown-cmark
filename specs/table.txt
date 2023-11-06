@@ -1,4 +1,4 @@
-Run this with `cargo run -- -T -s specs/table.txt`.
+Run this with `cargo test --features gen-tests suite::table`.
 
 Adapted from original by replacing `td` elements by `th` elements inside `thead`
 and disabling the third test.

@@ -1,4 +1,4 @@
-Run this with `cargo run -- -M -s specs/math.txt`.
+Run this with `cargo test --features gen-tests suite::math`.
 
 Mathematical expressions extension. Syntax based on
 <https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md>

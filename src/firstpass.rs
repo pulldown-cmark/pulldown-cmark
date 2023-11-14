@@ -1404,7 +1404,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ) == self.tree.spine_len();
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[i + bytes_scanned..];
-            if self.scan_paragraph_interrupt(suffix, current_container) {
+            if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
                 return None;
             }
             i += bytes_scanned;

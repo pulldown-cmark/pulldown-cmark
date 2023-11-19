@@ -1702,3 +1702,46 @@ bar \
 <h1>foo \</h1>
 <p>bar \</p>
 ````````````````````````````````
+
+ISSUE 781
+
+```````````````````````````````` example
+- [foo]: test
+bar
+
+> [bar]: test
+[baz]: rstr
+[bar]
+.
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> - [foo]: test
+> bar
+> 
+> > [bar]: test
+> [baz]: rstr
+> [bar]
+.
+<blockquote>
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[bar]: test
+-
+.
+<p>-</p>
+````````````````````````````````

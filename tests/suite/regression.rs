@@ -1980,14 +1980,67 @@ fn regression_test_124() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_125() {
-      let original = r##"# foo \
+    let original = r##"# foo \
 bar \
 "##;
     let expected = r##"<h1>foo \</h1>
 <p>bar \</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_126() {
+    let original = r##"- [foo]: test
+bar
+
+> [bar]: test
+[baz]: rstr
+[bar]
+"##;
+    let expected = r##"<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_127() {
+    let original = r##"> - [foo]: test
+> bar
+> 
+> > [bar]: test
+> [baz]: rstr
+> [bar]
+"##;
+    let expected = r##"<blockquote>
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_128() {
+    let original = r##"[bar]: test
+-
+"##;
+    let expected = r##"<p>-</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

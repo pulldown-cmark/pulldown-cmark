@@ -1714,3 +1714,47 @@ ISSUE 779
 <h2>[third try]:</h2>
 <p>[third try]</p>
 ````````````````````````````````
+
+
+ISSUE 781
+
+```````````````````````````````` example
+- [foo]: test
+bar
+
+> [bar]: test
+[baz]: rstr
+[bar]
+.
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> - [foo]: test
+> bar
+> 
+> > [bar]: test
+> [baz]: rstr
+> [bar]
+.
+<blockquote>
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[bar]: test
+-
+.
+<p>-</p>
+````````````````````````````````

@@ -228,18 +228,55 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return self.parse_atx_heading(ix, atx_size);
         }
 
-        // parse refdef
-        if let Some((bytecount, label, link_def)) = self.parse_refdef_total(ix) {
-            self.allocs.refdefs.0.entry(label).or_insert(link_def);
-            let ix = ix + bytecount;
-            // try to read trailing whitespace or it will register as a completely blank line
-            // TODO: shouldn't we do this for all block level items?
-            return ix + scan_blank_line(&bytes[ix..]).unwrap_or(0);
-        }
-
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
+
+        // parse refdef
+        while let Some((bytecount, label, link_def)) = self.parse_refdef_total(start_ix + line_start.bytes_scanned()) {
+            self.allocs.refdefs.0.entry(label).or_insert(link_def);
+            let container_start = start_ix + line_start.bytes_scanned();
+            let mut ix = container_start + bytecount;
+            // Refdefs act as if they were contained within a paragraph, for purposes of lazy
+            // continuations. For example:
+            //
+            // ```
+            // > [foo]: http://example.com
+            // bar
+            // ```
+            //
+            // is equivalent to
+            //
+            // ```
+            // > bar
+            //
+            // [foo]: http://example.com
+            // ```
+            if let Some(nl) = scan_blank_line(&bytes[ix..]) {
+                ix += nl;
+                let mut lazy_line_start = LineStart::new(&bytes[ix..]);
+                let current_container = scan_containers(
+                    &self.tree,
+                    &mut lazy_line_start,
+                    self.options.has_gfm_footnotes(),
+                ) == self.tree.spine_len();
+                if line_start.scan_space_upto(4) >= 4 {
+                    break;
+                }
+                let new_ix = ix + lazy_line_start.bytes_scanned();
+                let suffix = &bytes[new_ix..];
+                if self.scan_paragraph_interrupt(suffix, current_container) {
+                    return ix;
+                } else {
+                    line_start = lazy_line_start;
+                    start_ix = ix;
+                }
+            } else {
+                return ix;
+            }
+        }
+
+        let ix = start_ix + line_start.bytes_scanned();
 
         self.parse_paragraph(ix)
     }

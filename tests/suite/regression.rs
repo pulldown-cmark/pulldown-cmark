@@ -1995,6 +1995,20 @@ bar \
 
 #[test]
 fn regression_test_126() {
+    let original = r##"[third try]:
+-
+
+[third try]
+"##;
+    let expected = r##"<h2>[third try]:</h2>
+<p>[third try]</p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false);
+}
+  
+#[test]
+fn regression_test_127() {
     let original = r##"- [foo]: test
 bar
 
@@ -2014,7 +2028,7 @@ bar
 }
 
 #[test]
-fn regression_test_127() {
+fn regression_test_128() {
     let original = r##"> - [foo]: test
 > bar
 > 
@@ -2036,7 +2050,7 @@ fn regression_test_127() {
 }
 
 #[test]
-fn regression_test_128() {
+fn regression_test_129() {
     let original = r##"[bar]: test
 -
 "##;

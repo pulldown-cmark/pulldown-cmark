@@ -260,15 +260,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     &mut lazy_line_start,
                     self.options.has_gfm_footnotes(),
                 ) == self.tree.spine_len();
-                if line_start.scan_space_upto(4) >= 4 {
-                    break;
-                }
-                let new_ix = ix + lazy_line_start.bytes_scanned();
-                let suffix = &bytes[new_ix..];
-                if self.scan_paragraph_interrupt(suffix, current_container) {
+                if !lazy_line_start.scan_space(4) &&
+                    self.scan_paragraph_interrupt(
+                        &bytes[ix + lazy_line_start.bytes_scanned()..],
+                        current_container,
+                    )
+                {
                     return ix;
                 } else {
                     line_start = lazy_line_start;
+                    line_start.scan_all_space();
                     start_ix = ix;
                 }
             } else {
@@ -1439,12 +1440,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 &mut line_start,
                 self.options.has_gfm_footnotes(),
             ) == self.tree.spine_len();
-            let bytes_scanned = line_start.bytes_scanned();
-            let suffix = &bytes[i + bytes_scanned..];
-            if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
-                return None;
+            if !line_start.scan_space(4) {
+                let suffix = &bytes[i + line_start.bytes_scanned()..];
+                if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
+                    return None;
+                }
             }
-            i += bytes_scanned;
+            i += line_start.bytes_scanned();
         }
         Some((i, newlines))
     }

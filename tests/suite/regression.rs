@@ -2003,10 +2003,10 @@ fn regression_test_126() {
     let expected = r##"<h2>[third try]:</h2>
 <p>[third try]</p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_127() {
     let original = r##"- [foo]: test
@@ -2055,6 +2055,72 @@ fn regression_test_129() {
 -
 "##;
     let expected = r##"<p>-</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_130() {
+    let original = r##"[linkme]: foo
+    - baz
+"##;
+    let expected = r##"<p>- baz</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_131() {
+    let original = r##"[linkme-3]:
+   [^foo]:
+
+[linkme-4]:
+    [^bar]:
+
+GFM footnotes can interrupt link defs if they have three spaces, but not four.
+"##;
+    let expected = r##"<p>[linkme-3]:</p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_132() {
+    let original = r##"[linkme-3]:
+   ===
+
+[linkme-4]:
+    ===
+
+Setext heading can interrupt link def if it has three spaces, but not four.
+"##;
+    let expected = r##"<h1>[linkme-3]:</h1>
+<p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_133() {
+    let original = r##"[linkme-3]: a
+   - a
+
+[linkme-4]: a
+    - b
+
+List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.
+"##;
+    let expected = r##"<ul>
+<li>a</li>
+</ul>
+<p>- b</p>
+<p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

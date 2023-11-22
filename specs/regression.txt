@@ -1818,3 +1818,55 @@ foo)
 <p><a href="foo" title="bar">link</a></p>
 </blockquote>
 ````````````````````````````````
+
+```````````````````````````````` example
+[linkme]: foo
+    - baz
+.
+<p>- baz</p>
+````````````````````````````````
+
+https://gist.github.com/notriddle/0048782ad2e819a134c094a1cc52df84
+
+```````````````````````````````` example
+[linkme-3]:
+   [^foo]:
+
+[linkme-4]:
+    [^bar]:
+
+GFM footnotes can interrupt link defs if they have three spaces, but not four.
+.
+<p>[linkme-3]:</p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[linkme-3]:
+   ===
+
+[linkme-4]:
+    ===
+
+Setext heading can interrupt link def if it has three spaces, but not four.
+.
+<h1>[linkme-3]:</h1>
+<p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[linkme-3]: a
+   - a
+
+[linkme-4]: a
+    - b
+
+List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.
+.
+<ul>
+<li>a</li>
+</ul>
+<p>- b</p>
+<p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
+````````````````````````````````

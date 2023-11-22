@@ -723,17 +723,33 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             return None;
         }
         ix += 1;
-        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+
+        let scan_separator = |ix: &mut usize| {
+            *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
+            if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
+                *ix += bl;
+                let mut line_start = LineStart::new(&underlying.as_bytes()[*ix..]);
+                let _ = scan_containers(
+                    &self.tree,
+                    &mut line_start,
+                    self.options.has_gfm_footnotes(),
+                );
+                *ix += line_start.bytes_scanned();
+            }
+            *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
+        };
+
+        scan_separator(&mut ix);
 
         let (dest_length, dest) = scan_link_dest(underlying, ix, LINK_MAX_NESTED_PARENS)?;
         let dest = unescape(dest);
         ix += dest_length;
 
-        ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+        scan_separator(&mut ix);
 
         let title = if let Some((bytes_scanned, t)) = self.scan_link_title(underlying, ix, node) {
             ix += bytes_scanned;
-            ix += scan_while(&underlying.as_bytes()[ix..], is_ascii_whitespace);
+            scan_separator(&mut ix);
             t
         } else {
             "".into()

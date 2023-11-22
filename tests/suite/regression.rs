@@ -2003,10 +2003,10 @@ fn regression_test_126() {
     let expected = r##"<h2>[third try]:</h2>
 <p>[third try]</p>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_127() {
     let original = r##"- [foo]: test
@@ -2055,6 +2055,59 @@ fn regression_test_129() {
 -
 "##;
     let expected = r##"<p>-</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_130() {
+    let original = r##"[link](
+foo)
+
+> [link](
+> foo)
+"##;
+    let expected = r##"<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_131() {
+    let original = r##"[link](foo
+)
+
+> [link](foo
+> )
+"##;
+    let expected = r##"<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_132() {
+    let original = r##"[link](foo
+"bar"
+)
+
+> [link](foo
+> "bar"
+> )
+"##;
+    let expected = r##"<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

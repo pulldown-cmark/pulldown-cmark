@@ -1759,6 +1759,65 @@ bar
 <p>-</p>
 ````````````````````````````````
 
+Nested link destinations with line breaks
+
+```````````````````````````````` example
+[link](
+foo)
+
+> [link](
+> foo)
+.
+<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](foo
+)
+
+> [link](foo
+> )
+.
+<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](foo
+"bar"
+)
+
+> [link](foo
+> "bar"
+> )
+.
+<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](→
+→foo→
+→"bar"→
+→)
+
+> [link](→
+> →foo→
+> →"bar"→
+> →)
+.
+<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+````````````````````````````````
 
 ```````````````````````````````` example
 [linkme]: foo

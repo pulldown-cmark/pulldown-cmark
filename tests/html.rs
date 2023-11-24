@@ -272,6 +272,18 @@ fn newline_start_end_of_code() {
     assert_eq!(expected, s);
 }
 
+// https://github.com/raphlinus/pulldown-cmark/issues/715
+
+#[test]
+fn trim_space_and_tab_at_end_of_paragraph() {
+    let original = "one\ntwo \t";
+    let expected = "<p>one\ntwo</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
 #[test]
 fn newline_within_code() {
     let originals = ["`\nx \ny\n`x", "`x \ny`x", "`x\n y`x"];
@@ -282,4 +294,34 @@ fn newline_within_code() {
         html::push_html(&mut s, Parser::new(&original));
         assert_eq!(expected, s);
     }
+}
+
+#[test]
+fn trim_space_tab_nl_at_end_of_paragraph() {
+    let original = "one\ntwo \t\n";
+    let expected = "<p>one\ntwo</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn trim_space_nl_at_end_of_paragraph() {
+    let original = "one\ntwo \n";
+    let expected = "<p>one\ntwo</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn trim_space_before_soft_break() {
+    let original = "one \ntwo";
+    let expected = "<p>one\ntwo</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
 }

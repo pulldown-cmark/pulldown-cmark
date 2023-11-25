@@ -1393,9 +1393,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 &mut line_start,
                 self.options.has_gfm_footnotes(),
             ) == self.tree.spine_len();
+            if line_start.scan_space(4) {
+                return Some(line_start.bytes_scanned());
+            }
             let bytes_scanned = line_start.bytes_scanned();
             let suffix = &bytes[bytes_scanned..];
-            if self.scan_paragraph_interrupt(suffix, current_container) {
+            if self.scan_paragraph_interrupt(suffix, current_container) || (current_container && scan_setext_heading(suffix).is_some()) {
                 None
             } else {
                 Some(bytes_scanned)

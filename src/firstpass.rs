@@ -1497,20 +1497,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // scan title
         // if this fails but newline == 1, return also a refdef without title
         if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
+            // scan EOL
             i += title_length;
-            backup.1.span = span_start..i;
-            backup.1.title = Some(unescape(title));
-        } else if newlines > 0 {
-            return Some(backup);
-        } else {
-            return None;
-        };
-
-        // scan EOL
-        if let Some(bytes) = scan_blank_line(&bytes[i..]) {
-            backup.0 = i + bytes - start;
-            Some(backup)
-        } else if newlines > 0 {
+            if let Some(bytes) = scan_blank_line(&bytes[i..]) {
+                backup.0 = i + bytes - start;
+                backup.1.span = span_start..i;
+                backup.1.title = Some(unescape(title));
+                return Some(backup);
+            }
+        }
+        if newlines > 0 {
             Some(backup)
         } else {
             None

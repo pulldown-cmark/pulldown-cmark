@@ -833,97 +833,71 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     ///
     /// Both `open` and `close` are matching MaybeCode items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
-        let first_ix = self.tree[open].next.unwrap();
         let bytes = self.text.as_bytes();
-        let mut span_start = self.tree[open].item.end;
-        let mut span_end = self.tree[close].item.start;
+        let span_start = self.tree[open].item.end;
+        let span_end = self.tree[close].item.start;
         let mut buf: Option<String> = None;
 
-        // detect all-space sequences, since they are kept as-is as of commonmark 0.29
-        if !bytes[span_start..span_end].iter().all(|&b| b == b' ') {
-            let opening = matches!(bytes[span_start], b' ' | b'\r' | b'\n');
-            let closing = matches!(bytes[span_end - 1], b' ' | b'\r' | b'\n');
-            let drop_enclosing_whitespace = opening && closing;
-
-            if drop_enclosing_whitespace {
-                span_start += 1;
-                if span_start < span_end {
-                    span_end -= 1;
-                }
-            }
-
-            let mut ix = first_ix;
-
-            while ix != close {
-                let next_ix = self.tree[ix].next.unwrap();
-                let end = if next_ix == close {
-                    span_end
-                } else {
-                    self.tree[next_ix].item.start
-                };
-                if let ItemBody::HardBreak(_) | ItemBody::SoftBreak = self.tree[ix].item.body {
-                    if drop_enclosing_whitespace {
-                        // check whether break should be ignored
-                        if ix == first_ix {
-                            ix = next_ix;
-                            span_start = min(span_end, self.tree[ix].item.start);
-                            continue;
-                        } else if next_ix == close && ix > first_ix {
-                            break;
-                        }
-                    }
-
-                    let end = bytes[self.tree[ix].item.start..]
-                        .iter()
-                        .position(|&b| b == b'\r' || b == b'\n')
-                        .unwrap()
-                        + self.tree[ix].item.start;
-                    if let Some(ref mut buf) = buf {
-                        buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                        buf.push(' ');
-                    } else {
-                        let mut new_buf = String::with_capacity(span_end - span_start);
-                        new_buf.push_str(&self.text[span_start..end]);
-                        new_buf.push(' ');
-                        buf = Some(new_buf);
-                    }
-                } else if self.tree.is_in_table()
-                    && self.text[self.tree[ix].item.start..end].contains("|")
-                {
-                    for (i, c) in bytes[self.tree[ix].item.start..end]
-                        .into_iter()
-                        .copied()
-                        .enumerate()
-                    {
-                        if c != b'|' {
-                            continue;
-                        }
-                        let pipe_position = self.tree[ix].item.start + i;
-                        let buf = if let Some(ref mut buf) = buf {
-                            buf.push_str(&self.text[self.tree[ix].item.start..pipe_position]);
-                            buf
-                        } else {
-                            let mut new_buf = String::with_capacity(pipe_position - span_start);
-                            new_buf.push_str(&self.text[span_start..pipe_position]);
-                            buf.insert(new_buf)
-                        };
-                        let ends_in_backslash = buf.as_bytes().last() == Some(&b'\\');
-                        let trim = if ends_in_backslash { 1 } else { 0 };
-                        buf.truncate(buf.len() - trim);
-                        buf.push_str(&self.text[pipe_position..end]);
-                    }
-                } else if let Some(ref mut buf) = buf {
-                    buf.push_str(&self.text[self.tree[ix].item.start..end]);
-                }
-                ix = next_ix;
+        let mut start_ix = span_start;
+        let mut ix = span_start;
+        while ix < span_end {
+            let c = bytes[ix];
+            if c == b'\r' || c == b'\n' {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
+                buf.extend(self.text[start_ix..ix].chars());
+                buf.push(' ');
+                ix += 1;
+                let mut line_start = LineStart::new(&bytes[ix..]);
+                let _ = scan_containers(
+                    &self.tree,
+                    &mut line_start,
+                    self.options.has_gfm_footnotes(),
+                );
+                ix += line_start.bytes_scanned();
+                start_ix = ix;
+            } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
+                buf.extend(self.text[start_ix..ix].chars());
+                buf.push('|');
+                ix += 2;
+                start_ix = ix;
+            } else {
+                ix += 1;
             }
         }
-
-        let cow = if let Some(buf) = buf {
-            buf.into()
-        } else {
-            self.text[span_start..span_end].into()
+        
+        let (opening, closing, all_spaces) = {
+            let s = if let Some(buf) = &mut buf {
+                buf.extend(self.text[start_ix..span_end].chars());
+                &buf[..]
+            } else {
+                &self.text[span_start..span_end]
+            };
+            (
+                s.as_bytes().first() == Some(&b' '),
+                s.as_bytes().last() == Some(&b' '),
+                s.bytes().all(|b| b == b' ')
+            )
         };
+
+        let cow: CowStr<'input> = if !all_spaces && opening && closing {
+            if let Some(mut buf) = buf {
+                buf.remove(0);
+                buf.pop();
+                buf.into()
+            } else {
+                let lo = span_start + 1;
+                let hi = (span_end - 1).max(lo);
+                self.text[lo..hi].into()
+            }
+        } else {
+            if let Some(buf) = buf {
+                buf.into()
+            } else {
+                self.text[span_start..span_end].into()
+            }
+        };
+
         if preceding_backslash {
             self.tree[open].item.body = ItemBody::Text;
             self.tree[open].item.end = self.tree[open].item.start + 1;

@@ -1499,8 +1499,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
             // scan EOL
             i += title_length;
-            if let Some(bytes) = scan_blank_line(&bytes[i..]) {
-                backup.0 = i + bytes - start;
+            if scan_blank_line(&bytes[i..]).is_some() {
+                backup.0 = i - start;
                 backup.1.span = span_start..i;
                 backup.1.title = Some(unescape(title));
                 return Some(backup);

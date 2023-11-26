@@ -1879,3 +1879,15 @@ ISSUE 791
 .
 <p>'<a href="https://example.com">foo</a>'bar</p>
 ````````````````````````````````
+
+```````````````````````````````` example
+- [foo]: https://example.com
+'[foo]'
+[foo]
+.
+<ul>
+<li>
+<a href="https://example.com" title="[foo]">foo</a>
+</li>
+</ul>
+````````````````````````````````

@@ -1454,6 +1454,83 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         Some((i, newlines))
     }
 
+    // returns (bytelength, title_str)
+    fn scan_refdef_title<'t>(&self, text: &'t str) -> Option<(usize, CowStr<'t>)> {
+        let bytes = text.as_bytes();
+        let closing_delim = match bytes.get(0)? {
+            b'\'' => b'\'',
+            b'"' => b'"',
+            b'(' => b')',
+            _ => return None,
+        };
+        let mut bytecount = 1;
+        let mut linestart = 1;
+    
+        let mut linebuf = None;
+    
+        while let Some(&c) = bytes.get(bytecount) {
+            match c {
+                b'\n' | b'\r' => {
+                    // push text to line buffer
+                    // this is used to strip the block formatting:
+                    //
+                    // > [first]: http://example.com "
+                    // > second"
+                    //
+                    // should get turned into `<a href="example.com" title=" second">first</a>`
+                    let linebuf = if let Some(linebuf) = &mut linebuf {
+                        linebuf
+                    } else {
+                        linebuf = Some(String::new());
+                        linebuf.as_mut().unwrap()
+                    };
+                    linebuf.push_str(&text[linestart..bytecount]);
+                    linebuf.push('\n'); // normalize line breaks
+                    // skip line break
+                    bytecount += 1;
+                    if c == b'\r' && bytes.get(bytecount) == Some(&b'\n') {
+                        bytecount += 1;
+                    }
+                    let mut line_start = LineStart::new(&bytes[bytecount..]);
+                    let current_container = scan_containers(
+                        &self.tree,
+                        &mut line_start,
+                        self.options.has_gfm_footnotes(),
+                    ) == self.tree.spine_len();
+                    if !line_start.scan_space(4) {
+                        let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
+                        if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
+                            return None;
+                        }
+                    }
+                    bytecount += line_start.bytes_scanned();
+                    linestart = bytecount;
+                    if scan_blank_line(&bytes[bytecount..]).is_some() {
+                        // blank line - not allowed
+                        return None;
+                    }
+
+                }
+                b'\\' => {
+                    bytecount += 1;
+                    if let Some(c) = bytes.get(bytecount) {
+                        if c != &b'\r' && c != &b'\n' {
+                            bytecount += 1;
+                        }
+                    }
+                }
+                c if c == closing_delim => {
+                    let cow = linebuf.map(CowStr::from).unwrap_or(CowStr::from(&text[linestart..bytecount]));
+                    return Some((bytecount + 1, cow));
+                }
+                _ => {
+                    bytecount += 1;
+                }
+            }
+        }
+        None
+    }
+
     /// Returns # of bytes and definition.
     /// Assumes the label of the reference including colon has already been scanned.
     fn scan_refdef(&self, span_start: usize, start: usize) -> Option<(usize, LinkDef<'a>)> {
@@ -1499,7 +1576,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // scan title
         // if this fails but newline == 1, return also a refdef without title
-        if let Some((title_length, title)) = scan_refdef_title(&self.text[i..]) {
+        if let Some((title_length, title)) = self.scan_refdef_title(&self.text[i..]) {
             i += title_length;
             backup.1.span = span_start..i;
             backup.1.title = Some(unescape(title));

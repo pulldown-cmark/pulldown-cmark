@@ -1901,3 +1901,87 @@ second]
 -
 second</a></p>
 ````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+-
+"
+
+[first]
+.
+<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+    -
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+> -
+> "
+>
+> [first]
+.
+<blockquote>
+<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+>     -
+> "
+>
+> [first]
+.
+<blockquote>
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+\
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+
+"
+
+[first]
+.
+<p>"
+\</p>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````

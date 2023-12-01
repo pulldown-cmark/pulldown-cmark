@@ -1871,6 +1871,7 @@ List can interrupt the paragraph at the start of a link definition if it starts 
 <p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
 ````````````````````````````````
 
+
 ISSUE 789
 
 ```````````````````````````````` example
@@ -1940,6 +1941,22 @@ second</a></p>
 <h2>"</h2>
 <p>"</p>
 <p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+ISSUE 795
+
+```````````````````````````````` example
+> ```
+> code
+
+> text
+.
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
 </blockquote>
 ````````````````````````````````
 
@@ -2006,4 +2023,21 @@ ISSUE 791
 <a href="https://example.com" title="[foo]">foo</a>
 </li>
 </ul>
+````````````````````````````````
+
+```````````````````````````````` example
+> > ```
+> > code
+>
+> > text
+.
+<blockquote>
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+</blockquote>
 ````````````````````````````````

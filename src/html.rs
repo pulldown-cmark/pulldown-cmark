@@ -332,7 +332,7 @@ where
                 } else {
                     self.write("\n<div class=\"footnote-definition\" id=\"")?;
                 }
-                escape_html(&mut self.writer, &*name)?;
+                escape_html(&mut self.writer, &name)?;
                 self.write("\"><sup class=\"footnote-definition-label\">")?;
                 let len = self.numbers.len() + 1;
                 let number = *self.numbers.entry(name).or_insert(len);
@@ -507,7 +507,7 @@ where
 /// let mut bytes = Vec::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html(Cursor::new(&mut bytes), parser);
+/// let _ = html::write_html(Cursor::new(&mut bytes), parser);
 ///
 /// assert_eq!(&String::from_utf8_lossy(&bytes)[..], r#"<h1>hello</h1>
 /// <ul>

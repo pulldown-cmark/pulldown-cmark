@@ -593,7 +593,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let both = can_open && can_close;
                     if can_close {
                         while let Some(el) =
-                            self.inline_stack.find_match(&mut self.tree, c, run_length, both)
+                            self.inline_stack
+                                .find_match(&mut self.tree, c, run_length, both)
                         {
                             // have a match!
                             if let Some(prev_ix) = prev {
@@ -1162,7 +1163,10 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                el.c == c && (!both && !el.both || (run_length + el.run_length) % 3 != 0 || run_length % 3 == 0)
+                el.c == c
+                    && (!both && !el.both
+                        || (run_length + el.run_length) % 3 != 0
+                        || run_length % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
@@ -1238,7 +1242,7 @@ fn scan_link_label<'text, 'tree>(
     };
     if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
         let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if gfm_footnotes {
-            &|_|  None
+            &|_| None
         } else {
             &linebreak_handler
         };
@@ -1794,6 +1798,7 @@ impl<'a, F: BrokenLinkCallback<'a>> FusedIterator for Parser<'a, F> {}
 mod test {
     use super::*;
     use crate::tree::Node;
+    use rstest::rstest;
 
     // TODO: move these tests to tests/html.rs?
 
@@ -2196,5 +2201,35 @@ text
             Options::empty(),
             Some(&mut function),
         ) {}
+    }
+
+    #[rstest]
+    #[case("[^\r\ra]", "<p>[^</p>\n<p>a]</p>\n")] //issue 303
+    #[case("\r\r]Z[^\x00\r\r]Z[^\x00", "<p>]Z[^\0</p>\n<p>]Z[^\0</p>\n")] // issue 303
+    #[case("*]0[^\r\r*]0[^", "<p>*]0[^</p>\n<p>*]0[^</p>\n")] // issue 313
+    #[case(
+        "[^\r> `][^\r> `][^\r> `][",
+        "<p>[^</p>\n<blockquote>\n<p><code>][^ </code>][^\n`][</p>\n</blockquote>\n"
+    )] // issue 313
+    #[case(
+        "\\\u{0d}-\u{09}\\\u{0d}-\u{09}",
+        "<p>\\</p>\n<ul>\n<li>\\</li>\n<li></li>\n</ul>\n"
+    )] // issue 311
+    #[case(std::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap(), "<p>𛲟&lt;td:^𛲟</p>\n")] // issue 283
+    #[case(
+        "> - \\\n> - ",
+        "<blockquote>\n<ul>\n<li>\\</li>\n<li></li>\n</ul>\n</blockquote>\n"
+    )] // issue 289
+    #[case("- \n\n", "<ul>\n<li></li>\n</ul>\n")] // issue 289
+    #[case("*\r_<__*\r_<__*\r_<__*\r_<__", "<ul>\n<li></li>\n</ul>\n<p>_&lt;<strong>*\n_&lt;</strong>*\n_&lt;_<em>*\n<em>&lt;</em></em></p>\n")] // issue 306
+    fn test_degenerate_inputs(#[case] in_md: &str, #[case] exp_html: &str) {
+        let parse_events = parser_with_extensions(in_md); // don't crash
+        #[cfg(feature = "html")]
+        if true {
+            //exp_html != "" {
+            let mut buf = String::new();
+            crate::html::push_html(&mut buf, parse_events);
+            assert_eq!(exp_html, buf, "HTML not matched by MD input {:?}", in_md);
+        }
     }
 }

@@ -2077,17 +2077,6 @@ foo)
 
 #[test]
 fn regression_test_131() {
-    let original = r##"[linkme]: foo
-    - baz
-"##;
-    let expected = r##"<p>- baz</p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn regression_test_132() {
     let original = r##"[link](foo
 )
 
@@ -2099,28 +2088,12 @@ fn regression_test_132() {
 <p><a href="foo">link</a></p>
 </blockquote>
 "##;
-    test_markdown_html(original, expected, false, false, false);
-}
-#[test]
-fn regression_test_133() {
-    let original = r##"[linkme-3]:
-   [^foo]:
-
-[linkme-4]:
-    [^bar]:
-
-GFM footnotes can interrupt link defs if they have three spaces, but not four.
-"##;
-    let expected = r##"<p>[linkme-3]:</p>
-<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
-<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
-"##;
 
     test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
-fn regression_test_134() {
+fn regression_test_132() {
     let original = r##"[link](foo
 "bar"
 )
@@ -2139,7 +2112,57 @@ fn regression_test_134() {
 }
 
 #[test]
+fn regression_test_133() {
+    let original = r##"[link](	
+	foo	
+	"bar"	
+	)
+
+> [link](	
+> 	foo	
+> 	"bar"	
+> 	)
+"##;
+    let expected = r##"<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_134() {
+    let original = r##"[linkme]: foo
+    - baz
+"##;
+    let expected = r##"<p>- baz</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
 fn regression_test_135() {
+    let original = r##"[linkme-3]:
+   [^foo]:
+
+[linkme-4]:
+    [^bar]:
+
+GFM footnotes can interrupt link defs if they have three spaces, but not four.
+"##;
+    let expected = r##"<p>[linkme-3]:</p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_136() {
     let original = r##"[linkme-3]:
    ===
 
@@ -2156,7 +2179,7 @@ Setext heading can interrupt link def if it has three spaces, but not four.
 }
 
 #[test]
-fn regression_test_136() {
+fn regression_test_137() {
     let original = r##"[linkme-3]: a
    - a
 

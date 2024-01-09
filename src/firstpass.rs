@@ -127,7 +127,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.tree.append(Item {
                     start: container_start,
                     end: after_marker_index, // will get updated later if item not empty
-                    body: ItemBody::ListItem(indent),
+                    body: ItemBody::ListItem(indent, None),
                 });
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
@@ -135,12 +135,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    self.next_paragraph_task =
-                        line_start.scan_task_list_marker().map(|is_checked| Item {
-                            start: after_marker_index,
-                            end: start_ix + line_start.bytes_scanned(),
-                            body: ItemBody::TaskListMarker(is_checked),
-                        });
+                    if let Some(node_ix) = self.tree.peek_up() {
+                        match &mut self.tree[node_ix].item.body {
+                            ItemBody::ListItem(_, marker) => {
+                                *marker = line_start.scan_task_list_marker()
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             } else if line_start.scan_blockquote_marker() {
                 self.finish_list(start_ix);
@@ -161,14 +163,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
                     ItemBody::BlockQuote => (),
-                    ItemBody::ListItem(indent) if self.begin_list_item.is_some() => {
+                    ItemBody::ListItem(indent, _) if self.begin_list_item.is_some() => {
                         self.last_line_blank = true;
                         // This is a blank list item.
                         // While the list itself can be continued no matter how many blank lines
                         // there are between this one and the next one, it cannot nest anything
                         // else, so its indentation should not be subtracted from the line start.
                         *indent = 0;
-                    },
+                    }
                     _ => {
                         self.last_line_blank = true;
                     }
@@ -233,7 +235,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         // parse refdef
-        while let Some((bytecount, label, link_def)) = self.parse_refdef_total(start_ix + line_start.bytes_scanned()) {
+        while let Some((bytecount, label, link_def)) =
+            self.parse_refdef_total(start_ix + line_start.bytes_scanned())
+        {
             self.allocs.refdefs.0.entry(label).or_insert(link_def);
             let container_start = start_ix + line_start.bytes_scanned();
             let mut ix = container_start + bytecount;
@@ -260,8 +264,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     &mut lazy_line_start,
                     self.options.has_gfm_footnotes(),
                 ) == self.tree.spine_len();
-                if !lazy_line_start.scan_space(4) &&
-                    self.scan_paragraph_interrupt(
+                if !lazy_line_start.scan_space(4)
+                    && self.scan_paragraph_interrupt(
                         &bytes[ix + lazy_line_start.bytes_scanned()..],
                         current_container,
                     )
@@ -676,8 +680,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
-                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, count, ix - start, mode);
-                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, count, ix - start, mode);
+                    let can_open = delim_run_can_open(
+                        &self.text[start..],
+                        string_suffix,
+                        count,
+                        ix - start,
+                        mode,
+                    );
+                    let can_close = delim_run_can_close(
+                        &self.text[start..],
+                        string_suffix,
+                        count,
+                        ix - start,
+                        mode,
+                    );
                     let is_valid_seq = c != b'~' || count <= 2;
 
                     if (can_open || can_close) && is_valid_seq {
@@ -827,8 +843,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 c @ b'\'' | c @ b'"' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
-                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_open =
+                        delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_close = delim_run_can_close(
+                        &self.text[start..],
+                        string_suffix,
+                        1,
+                        ix - start,
+                        mode,
+                    );
 
                     self.tree.append_text(begin_text, ix);
                     self.tree.append(Item {
@@ -1198,7 +1221,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if self.last_line_blank {
                 // A list item can begin with at most one blank line.
                 if let Some(node_ix) = self.tree.peek_up() {
-                    if let ItemBody::ListItem(_) = self.tree[node_ix].item.body {
+                    if let ItemBody::ListItem(..) = self.tree[node_ix].item.body {
                         self.pop(begin_list_item);
                     }
                 }
@@ -1442,7 +1465,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ) == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let suffix = &bytes[i + line_start.bytes_scanned()..];
-                if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
+                if self.scan_paragraph_interrupt(suffix, current_container)
+                    || scan_setext_heading(suffix).is_some()
+                {
                     return None;
                 }
             }
@@ -1787,7 +1812,13 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
 /// for _ delims).
 /// suffix is &s[ix..], which is passed in as an optimization, since taking
 /// a string subslice is O(n).
-fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
+fn delim_run_can_open(
+    s: &str,
+    suffix: &str,
+    run_len: usize,
+    ix: usize,
+    mode: TableParseMode,
+) -> bool {
     let next_char = if let Some(c) = suffix.chars().nth(run_len) {
         c
     } else {
@@ -1822,7 +1853,13 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize, mode: Ta
 /// Determines whether the delimiter run starting at given index is
 /// right-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
-fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
+fn delim_run_can_close(
+    s: &str,
+    suffix: &str,
+    run_len: usize,
+    ix: usize,
+    mode: TableParseMode,
+) -> bool {
     if ix == 0 {
         return false;
     }

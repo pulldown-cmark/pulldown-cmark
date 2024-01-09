@@ -20,7 +20,6 @@ fn main() {
             Event::Text(s) => println!("Text: {:?}", s),
             Event::Code(s) => println!("Code: {:?}", s),
             Event::FootnoteReference(s) => println!("FootnoteReference: {:?}", s),
-            Event::TaskListMarker(b) => println!("TaskListMarker: {:?}", b),
             Event::SoftBreak => println!("SoftBreak"),
             Event::HardBreak => println!("HardBreak"),
             Event::Rule => println!("Rule"),

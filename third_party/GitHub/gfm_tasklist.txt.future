@@ -1,0 +1,55 @@
+// This is a proposed change to HTML rendering for task list items,
+// Propsed spec changes have not been reviewed, or even submitted (where?) yet!
+
+## Task list items (extension)
+
+GFM enables the `tasklist` extension, where an additional processing step is
+performed on [list items].
+
+A [task list item](@) is a [list item][list items] where the first block in it
+is a paragraph which begins with a [task list item marker] and at least one
+whitespace character before any other content.
+
+A [task list item marker](@) consists of an optional number of spaces, a left
+bracket (`[`), either a whitespace character or the letter `x` in either
+lowercase or uppercase, and then a right bracket (`]`).
+
+When rendered, the [task list item marker] changes the list item marker, 
+replacing the standard disc, circle or 
+other marker with unicode characters that represent
+an open box or a box with a checkmark.  
+It relies on relatively new 
+[CSS capability](https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-type)
+which allows `list-style-type` to be a `<string>` (and thus, to contain arbitrary unicode symbols)
+
+If the character between the brackets is a whitespace character, the list marker
+renders as an empty checkbox: if it is an 'x', the marker renders as a checked checkbox.
+
+```````````````````````````````` example
+- [ ] foo
+- [x] bar
+.
+<ul>
+<li style="list-style-type: '\2610   ';">foo</li>
+<li style="list-style-type: '\2612   ';">bar</li>
+</ul>
+````````````````````````````````
+
+Task lists can be arbitrarily nested:
+
+```````````````````````````````` example
+- [x] foo
+  - [ ] bar
+  - [x] baz
+- [ ] bim
+.
+<ul>
+<li style="list-style-type: '\2612   ';">foo
+<ul>
+<li style="list-style-type: '\2610   ';">bar</li>
+<li style="list-style-type: '\2612   ';">baz</li>
+</ul>
+</li>
+<li style="list-style-type: '\2610   ';">bim</li>
+</ul>
+````````````````````````````````

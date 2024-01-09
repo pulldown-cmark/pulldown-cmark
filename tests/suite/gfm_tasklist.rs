@@ -9,8 +9,8 @@ fn gfm_tasklist_test_1() {
 - [x] bar
 "##;
     let expected = r##"<ul>
-<li><input disabled="" type="checkbox"> foo</li>
-<li><input checked="" disabled="" type="checkbox"> bar</li>
+<li style="list-style-type: '\2610   ';">foo</li>
+<li style="list-style-type: '\2612   ';">bar</li>
 </ul>
 "##;
 
@@ -25,13 +25,13 @@ fn gfm_tasklist_test_2() {
 - [ ] bim
 "##;
     let expected = r##"<ul>
-<li><input checked="" disabled="" type="checkbox"> foo
+<li style="list-style-type: '\2612   ';">foo
 <ul>
-<li><input disabled="" type="checkbox"> bar</li>
-<li><input checked="" disabled="" type="checkbox"> baz</li>
+<li style="list-style-type: '\2610   ';">bar</li>
+<li style="list-style-type: '\2612   ';">baz</li>
 </ul>
 </li>
-<li><input disabled="" type="checkbox"> bim</li>
+<li style="list-style-type: '\2610   ';">bim</li>
 </ul>
 "##;
 

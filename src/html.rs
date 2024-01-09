@@ -28,6 +28,17 @@ use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 
+// To make it easy to try different renderings for GFM task lists,
+// herewith constants to hack.
+// Each string must provide a complete `<li>` tag
+// and can also include a leading portion of the list element itself.
+const GFM_TASKLIST_LEADIN_UNCHECKED: &str = r#"<li style="list-style-type: '\2610   ';">"#;
+const GFM_TASKLIST_LEADIN_CHECKED: &str = r#"<li style="list-style-type: '\2612   ';">"#;
+
+// oldstyle
+// const GFM_TASKLIST_LEADIN_UNCHECKED: &str = r#"<li><input disabled="" type="checkbox"/>"#;
+// const GFM_TASKLIST_LEADIN_CHECKED: &str = r#"<li><input disabled="" type="checkbox" checked=""/>"#;
+
 enum TableState {
     Head,
     Body,
@@ -131,12 +142,6 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "{}", number)?;
                     self.write("</a></sup>")?;
-                }
-                TaskListMarker(true) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
-                }
-                TaskListMarker(false) => {
-                    self.write("<input disabled=\"\" type=\"checkbox\"/>\n")?;
                 }
             }
         }
@@ -272,11 +277,19 @@ where
                     self.write("\n<ul>\n")
                 }
             }
-            Tag::Item => {
-                if self.end_newline {
-                    self.write("<li>")
+            Tag::Item(marker) => {
+                if !self.end_newline {
+                    self.write("\n")?;
+                }
+                if let Some(is_checked) = marker {
+                    // item is a task list item
+                    self.write(if is_checked {
+                        GFM_TASKLIST_LEADIN_CHECKED // I wonder if Safari has this yet?
+                    } else {
+                        GFM_TASKLIST_LEADIN_UNCHECKED
+                    })
                 } else {
-                    self.write("\n<li>")
+                    self.write("<li>")
                 }
             }
             Tag::Emphasis => self.write("<em>"),
@@ -441,8 +454,6 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "[{}]", number)?;
                 }
-                TaskListMarker(true) => self.write("[x]")?,
-                TaskListMarker(false) => self.write("[ ]")?,
             }
         }
         Ok(())

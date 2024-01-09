@@ -1011,9 +1011,7 @@ fn regression_test_70() {
 baz
 "##;
     let expected = r##"<ul>
-<li><p><input disabled="" type="checkbox"> foo</p></li><li><p><input disabled="" type="checkbox"> bar</p></li>
-</ul>
-<p>baz</p>
+<li style="list-style-type: '\2610   ';"><p>foo</p></li><li style="list-style-type: '\2610   ';"><p>bar</p></li></ul><p>baz</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2073,10 +2071,10 @@ foo)
 <p><a href="foo">link</a></p>
 </blockquote>
 "##;
-  
+
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_131() {
     let original = r##"[linkme]: foo
@@ -2101,11 +2099,9 @@ fn regression_test_132() {
 <p><a href="foo">link</a></p>
 </blockquote>
 "##;
- 
-  test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
-  
-  #[test]
+#[test]
 fn regression_test_133() {
     let original = r##"[linkme-3]:
    [^foo]:
@@ -2142,7 +2138,7 @@ fn regression_test_134() {
     test_markdown_html(original, expected, false, false, false);
 }
 
-  #[test]
+#[test]
 fn regression_test_135() {
     let original = r##"[linkme-3]:
    ===

@@ -160,8 +160,8 @@ pub enum Tag<'a> {
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
     List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
-    /// A list item.
-    Item,
+    /// A list item.  If Some(bool), it's a task list item and the value is whether it's unchecked or checked.
+    Item(Option<bool>),
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
     #[cfg_attr(feature = "serde", serde(borrow))]
@@ -352,8 +352,6 @@ pub enum Event<'a> {
     HardBreak,
     /// A horizontal ruler.
     Rule,
-    /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
-    TaskListMarker(bool),
 }
 
 /// Table column text alignment.

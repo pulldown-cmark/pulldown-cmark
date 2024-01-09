@@ -78,8 +78,6 @@ pub(crate) enum ItemBody {
     Link(LinkIndex),
     Image(LinkIndex),
     FootnoteReference(CowIndex),
-    TaskListMarker(bool), // true for checked
-
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
@@ -89,8 +87,8 @@ pub(crate) enum ItemBody {
     Html,
     OwnedHtml(CowIndex),
     BlockQuote,
-    List(bool, u8, u64), // is_tight, list character, list start index
-    ListItem(usize),     // indent level
+    List(bool, u8, u64),           // is_tight, list character, list start index
+    ListItem(usize, Option<bool>), // indent level, marker type: Some(true) checked task list item; Some(false) unchecked task list item; None regular (ordered or unordered) list item
     SynthesizeText(CowIndex),
     SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
@@ -994,7 +992,7 @@ pub(crate) fn scan_containers(
                     break;
                 }
             }
-            ItemBody::ListItem(indent) => {
+            ItemBody::ListItem(indent, _) => {
                 let save = line_start.clone();
                 if !line_start.scan_space(indent) && !line_start.is_at_eol() {
                     *line_start = save;
@@ -1672,7 +1670,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
             let is_ordered = c == b'.' || c == b')';
             TagEnd::List(is_ordered)
         }
-        ItemBody::ListItem(_) => TagEnd::Item,
+        ItemBody::ListItem(..) => TagEnd::Item,
         ItemBody::TableHead => TagEnd::TableHead,
         ItemBody::TableCell => TagEnd::TableCell,
         ItemBody::TableRow => TagEnd::TableRow,
@@ -1698,7 +1696,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::FootnoteReference(cow_ix) => {
             return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }
-        ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
         ItemBody::Rule => return Event::Rule,
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -1749,7 +1746,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
                 Tag::List(None)
             }
         }
-        ItemBody::ListItem(_) => Tag::Item,
+        ItemBody::ListItem(_, marker) => Tag::Item(marker),
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,
@@ -2222,7 +2219,8 @@ text
     )] // issue 289
     #[case("- \n\n", "<ul>\n<li></li>\n</ul>\n")] // issue 289
     #[case("*\r_<__*\r_<__*\r_<__*\r_<__", "<ul>\n<li></li>\n</ul>\n<p>_&lt;<strong>*\n_&lt;</strong>*\n_&lt;_<em>*\n<em>&lt;</em></em></p>\n")] // issue 306
-    fn test_degenerate_inputs(#[case] in_md: &str, #[case] exp_html: &str) {
+    #[case("- [ ] to do\n- [x] done\n", "<ul>\n<li style=\"list-style-type: '\\2610   ';\">to do</li>\n<li style=\"list-style-type: '\\2612   ';\">done</li>\n</ul>\n")]
+    fn test_in_out_match(#[case] in_md: &str, #[case] exp_html: &str) {
         let parse_events = parser_with_extensions(in_md); // don't crash
         #[cfg(feature = "html")]
         if true {

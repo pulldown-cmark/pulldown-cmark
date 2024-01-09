@@ -2219,7 +2219,7 @@ text
     )] // issue 289
     #[case("- \n\n", "<ul>\n<li></li>\n</ul>\n")] // issue 289
     #[case("*\r_<__*\r_<__*\r_<__*\r_<__", "<ul>\n<li></li>\n</ul>\n<p>_&lt;<strong>*\n_&lt;</strong>*\n_&lt;_<em>*\n<em>&lt;</em></em></p>\n")] // issue 306
-    #[case("- [ ] to do\n- [x] done\n", "<ul>\n<li style=\"list-style-type: '\\2610   ';\">to do</li>\n<li style=\"list-style-type: '\\2612   ';\">done</li>\n</ul>\n")]
+    #[case("- [ ] to do\n- [x] done\n", "<ul>\n<li style=\"list-style-type: '\\2610   ';\">to do</li>\n<li style=\"list-style-type: '\\2611   ';\">done</li>\n</ul>\n")]
     fn test_in_out_match(#[case] in_md: &str, #[case] exp_html: &str) {
         let parse_events = parser_with_extensions(in_md); // don't crash
         #[cfg(feature = "html")]

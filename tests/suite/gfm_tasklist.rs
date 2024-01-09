@@ -10,7 +10,7 @@ fn gfm_tasklist_test_1() {
 "##;
     let expected = r##"<ul>
 <li style="list-style-type: '\2610   ';">foo</li>
-<li style="list-style-type: '\2612   ';">bar</li>
+<li style="list-style-type: '\2611   ';">bar</li>
 </ul>
 "##;
 
@@ -25,10 +25,10 @@ fn gfm_tasklist_test_2() {
 - [ ] bim
 "##;
     let expected = r##"<ul>
-<li style="list-style-type: '\2612   ';">foo
+<li style="list-style-type: '\2611   ';">foo
 <ul>
 <li style="list-style-type: '\2610   ';">bar</li>
-<li style="list-style-type: '\2612   ';">baz</li>
+<li style="list-style-type: '\2611   ';">baz</li>
 </ul>
 </li>
 <li style="list-style-type: '\2610   ';">bim</li>

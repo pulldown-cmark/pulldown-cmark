@@ -33,7 +33,7 @@ use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 // Each string must provide a complete `<li>` tag
 // and can also include a leading portion of the list element itself.
 const GFM_TASKLIST_LEADIN_UNCHECKED: &str = r#"<li style="list-style-type: '\2610   ';">"#;
-const GFM_TASKLIST_LEADIN_CHECKED: &str = r#"<li style="list-style-type: '\2612   ';">"#;
+const GFM_TASKLIST_LEADIN_CHECKED: &str = r#"<li style="list-style-type: '\2611   ';">"#;
 
 // oldstyle
 // const GFM_TASKLIST_LEADIN_UNCHECKED: &str = r#"<li><input disabled="" type="checkbox"/>"#;

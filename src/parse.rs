@@ -119,6 +119,20 @@ impl ItemBody {
                 | ItemBody::MaybeImage
         )
     }
+    fn is_block(&self) -> bool {
+        matches!(
+            *self,
+            ItemBody::Paragraph
+                | ItemBody::BlockQuote
+                | ItemBody::List(..)
+                | ItemBody::ListItem(..)
+                | ItemBody::HtmlBlock
+                | ItemBody::Table(..)
+                | ItemBody::TableHead
+                | ItemBody::TableRow
+                | ItemBody::TableCell
+        )
+    }
 }
 
 impl Default for ItemBody {
@@ -331,6 +345,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 } else {
                                     code_delims.insert(delim_count, scan_ix);
                                 }
+                            }
+                            if self.tree[scan_ix].item.body.is_block() {
+                                // If this is a tight list, blocks and inlines might be
+                                // siblings. Inlines can't cross the boundary like that.
+                                scan = None;
+                                break;
                             }
                             scan = self.tree[scan_ix].next;
                         }
@@ -569,7 +589,15 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
                 }
-                _ => (),
+                _ => {
+                    // If this is a tight list, blocks and inlines might be
+                    // siblings. Inlines can't cross the boundary like that.
+                    if let Some(cur_ix) = cur {
+                        if self.tree[cur_ix].item.body.is_block() {
+                            self.link_stack.clear();
+                        }
+                    }
+                }
             }
             prev = cur;
             cur = self.tree[cur_ix].next;
@@ -706,6 +734,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 _ => {
                     prev = cur;
                     cur = self.tree[cur_ix].next;
+                    // If this is a tight list, blocks and inlines might be
+                    // siblings. Inlines can't cross the boundary like that.
+                    if let Some(cur_ix) = cur {
+                        if self.tree[cur_ix].item.body.is_block() {
+                            self.inline_stack.pop_all(&mut self.tree);
+                        }
+                    }
                 }
             }
         }

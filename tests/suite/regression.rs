@@ -2390,6 +2390,7 @@ fn regression_test_148() {
     test_markdown_html(original, expected, false, false, false);
 }
 
+
 #[test]
 fn regression_test_149() {
     let original = r##"> > ```
@@ -2411,7 +2412,6 @@ fn regression_test_149() {
     test_markdown_html(original, expected, false, false, false);
 }
 
-
 #[test]
 fn regression_test_150() {
       let original = r##"[
@@ -2423,6 +2423,73 @@ a]: https://example.com
 [a] [b]
 "##;
     let expected = r##"<p><a href="https://example.com">a</a> <a href="https://example.com">b</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+
+#[test]
+fn regression_test_151() {
+    let original = r##"- *foo
+  - - 
+  baz*
+"##;
+    let expected = r##"<ul>
+<li>*foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz*</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_152() {
+    let original = r##"- `foo
+  - - 
+  baz`
+"##;
+    let expected = r##"<ul>
+<li>`foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz`</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_153() {
+    let original = r##"- [foo
+  - - 
+  baz](https://example.com)
+"##;
+    let expected = r##"<ul>
+<li>[foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz](https://example.com)</li>
+</ul>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

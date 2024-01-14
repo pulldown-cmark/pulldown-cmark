@@ -828,47 +828,6 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     (0, None)
 }
 
-// FIXME: we can most likely re-use other scanners
-// returns (bytelength, title_str)
-pub(crate) fn scan_refdef_title(text: &str) -> Option<(usize, &str)> {
-    let mut chars = text.chars().peekable();
-    let closing_delim = match chars.next()? {
-        '\'' => '\'',
-        '"' => '"',
-        '(' => ')',
-        _ => return None,
-    };
-    let mut bytecount = 1;
-
-    while let Some(c) = chars.next() {
-        match c {
-            '\n' => {
-                bytecount += 1;
-                let mut next = *chars.peek()?;
-                while is_ascii_whitespace_no_nl(next as u8) {
-                    bytecount += chars.next()?.len_utf8();
-                    next = *chars.peek()?;
-                }
-                if *chars.peek()? == '\n' {
-                    // blank line - not allowed
-                    return None;
-                }
-            }
-            '\\' => {
-                let next_char = chars.next()?;
-                bytecount += 1 + next_char.len_utf8();
-            }
-            c if c == closing_delim => {
-                return Some((bytecount + 1, &text[1..bytecount]));
-            }
-            c => {
-                bytecount += c.len_utf8();
-            }
-        }
-    }
-    None
-}
-
 // note: dest returned is raw, still needs to be unescaped
 // TODO: check that nested parens are really not allowed for refdefs
 // TODO(performance): this func should probably its own unescaping
@@ -1044,7 +1003,8 @@ fn scan_attribute_value(
 }
 
 // Remove backslash escapes and resolve entities
-pub(crate) fn unescape(input: &str) -> CowStr<'_> {
+pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I) -> CowStr<'a> {
+    let input = input.into();
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;

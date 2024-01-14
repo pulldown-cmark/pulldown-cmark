@@ -2202,17 +2202,163 @@ List can interrupt the paragraph at the start of a link definition if it starts 
 
 #[test]
 fn regression_test_138() {
-    let original = r##"[foo]: https://example.com
-'[foo]'bar
+    let original = r##"[first
+-
+second]: https://example.com
+
+[first
+-
+second]
 "##;
-    let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
+    let expected = r##"<h2>[first</h2>
+<p>second]: https://example.com</p>
+<h2>[first</h2>
+<p>second]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+  
+#[test]
+fn regression_test_139() {
+    let original = r##"[first
+    -
+second]: https://example.com
+
+[first
+    -
+second]
+"##;
+    let expected = r##"<p><a href="https://example.com">first
+-
+second</a></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
-fn regression_test_139() {
+fn regression_test_140() {
+    let original = r##"[first]: https://example.com
+"
+-
+"
+
+[first]
+"##;
+    let expected = r##"<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_141() {
+    let original = r##"[first]: https://example.com
+"
+    -
+"
+
+[first]
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+-
+">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_142() {
+    let original = r##"> [first]: https://example.com
+> "
+> -
+> "
+>
+> [first]
+"##;
+    let expected = r##"<blockquote>
+<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_143() {
+    let original = r##"> [first]: https://example.com
+> "
+>     -
+> "
+>
+> [first]
+"##;
+    let expected = r##"<blockquote>
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_144() {
+    let original = r##"[first]: https://example.com
+"
+\
+"
+
+[first]
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+\
+">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_145() {
+    let original = r##"[first]: https://example.com
+"
+\
+
+"
+
+[first]
+"##;
+    let expected = r##"<p>"
+\</p>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_146() {
+    let original = r##"[foo]: https://example.com
+'[foo]'bar
+"##;
+    let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
+"##;
+
+  test_markdown_html(original, expected, false, false, false);
+}
+  
+#[test]
+fn regression_test_147() {
     let original = r##"- [foo]: https://example.com
 '[foo]'
 [foo]
@@ -2223,6 +2369,5 @@ fn regression_test_139() {
 </li>
 </ul>
 "##;
-
     test_markdown_html(original, expected, false, false, false);
 }

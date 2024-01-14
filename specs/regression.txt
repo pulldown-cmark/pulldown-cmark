@@ -1871,6 +1871,122 @@ List can interrupt the paragraph at the start of a link definition if it starts 
 <p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
 ````````````````````````````````
 
+ISSUE 789
+
+```````````````````````````````` example
+[first
+-
+second]: https://example.com
+
+[first
+-
+second]
+.
+<h2>[first</h2>
+<p>second]: https://example.com</p>
+<h2>[first</h2>
+<p>second]</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first
+    -
+second]: https://example.com
+
+[first
+    -
+second]
+.
+<p><a href="https://example.com">first
+-
+second</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+-
+"
+
+[first]
+.
+<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+    -
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+> -
+> "
+>
+> [first]
+.
+<blockquote>
+<h2>"</h2>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+>     -
+> "
+>
+> [first]
+.
+<blockquote>
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+\
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+
+"
+
+[first]
+.
+<p>"
+\</p>
+<p>"</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+
 ISSUE 791
 
 ```````````````````````````````` example

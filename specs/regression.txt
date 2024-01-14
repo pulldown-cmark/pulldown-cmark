@@ -1985,3 +1985,25 @@ second</a></p>
 <p>"</p>
 <p><a href="https://example.com">first</a></p>
 ````````````````````````````````
+
+
+ISSUE 791
+
+```````````````````````````````` example
+[foo]: https://example.com
+'[foo]'bar
+.
+<p>'<a href="https://example.com">foo</a>'bar</p>
+````````````````````````````````
+
+```````````````````````````````` example
+- [foo]: https://example.com
+'[foo]'
+[foo]
+.
+<ul>
+<li>
+<a href="https://example.com" title="[foo]">foo</a>
+</li>
+</ul>
+````````````````````````````````

@@ -2219,7 +2219,6 @@ second]
     test_markdown_html(original, expected, false, false, false);
 }
 
-  
 #[test]
 fn regression_test_139() {
     let original = r##"[first
@@ -2285,7 +2284,6 @@ fn regression_test_142() {
 <h2>"</h2>
 <p>"</p>
 <p><a href="https://example.com">first</a></p>
-</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2293,6 +2291,25 @@ fn regression_test_142() {
 
 #[test]
 fn regression_test_143() {
+    let original = r##"> ```
+> code
+
+> text
+"##;
+    let expected = r##"<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_144() {
     let original = r##"> [first]: https://example.com
 > "
 >     -
@@ -2311,7 +2328,7 @@ fn regression_test_143() {
 }
 
 #[test]
-fn regression_test_144() {
+fn regression_test_145() {
     let original = r##"[first]: https://example.com
 "
 \
@@ -2328,7 +2345,7 @@ fn regression_test_144() {
 }
 
 #[test]
-fn regression_test_145() {
+fn regression_test_146() {
     let original = r##"[first]: https://example.com
 "
 \
@@ -2347,18 +2364,18 @@ fn regression_test_145() {
 }
 
 #[test]
-fn regression_test_146() {
+fn regression_test_147() {
     let original = r##"[foo]: https://example.com
 '[foo]'bar
 "##;
     let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
 "##;
 
-  test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
-fn regression_test_147() {
+fn regression_test_148() {
     let original = r##"- [foo]: https://example.com
 '[foo]'
 [foo]
@@ -2369,11 +2386,34 @@ fn regression_test_147() {
 </li>
 </ul>
 "##;
+
     test_markdown_html(original, expected, false, false, false);
 }
 
 #[test]
-fn regression_test_148() {
+fn regression_test_149() {
+    let original = r##"> > ```
+> > code
+>
+> > text
+"##;
+    let expected = r##"<blockquote>
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+
+#[test]
+fn regression_test_150() {
       let original = r##"[
 a]: https://example.com
 

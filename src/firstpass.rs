@@ -1036,7 +1036,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options.has_gfm_footnotes(),
             );
             if n_containers < self.tree.spine_len() {
-                break;
+                // this line will get parsed again as not being part of the code
+                // if it's blank, it should be parsed as a blank line
+                self.pop(ix);
+                return ix;
             }
             line_start.scan_space(indent);
             let mut close_line_start = line_start.clone();
@@ -1045,7 +1048,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if let Some(n) = scan_closing_code_fence(&bytes[close_ix..], fence_ch, n_fence_char)
                 {
                     ix = close_ix + n;
-                    break;
+                    self.pop(ix);
+                    // try to read trailing whitespace or it will register as a completely blank line
+                    return ix + scan_blank_line(&bytes[ix..]).unwrap_or(0);
                 }
             }
             let remaining_space = line_start.remaining_space();
@@ -1054,11 +1059,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
-
-        self.pop(ix);
-
-        // try to read trailing whitespace or it will register as a completely blank line
-        ix + scan_blank_line(&bytes[ix..]).unwrap_or(0)
     }
 
     fn parse_metadata_block(

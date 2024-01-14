@@ -34,11 +34,7 @@ fn dry_run(text: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>
         text,
         opts,
         Some(|link: BrokenLink<'_>| {
-            broken_links.push(BrokenLink {
-                span: link.span,
-                link_type: link.link_type,
-                reference: link.reference.into_string().into(),
-            });
+            broken_links.push(link.into_static());
             None
         }),
     );
@@ -51,11 +47,7 @@ fn print_events(text: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'st
         text,
         opts,
         Some(|link: BrokenLink<'_>| {
-            broken_links.push(BrokenLink {
-                span: link.span,
-                link_type: link.link_type,
-                reference: link.reference.into_string().into(),
-            });
+            broken_links.push(link.into_static());
             None
         }),
     )
@@ -185,11 +177,7 @@ pub fn pulldown_cmark<'i>(input: &str, opts: Options, broken_links: &mut Vec<Bro
         input,
         opts,
         Some(|link: BrokenLink<'_>| {
-            broken_links.push(BrokenLink {
-                span: link.span,
-                link_type: link.link_type,
-                reference: link.reference.into_string().into(),
-            });
+            broken_links.push(link.into_static());
             None
         }),
     );

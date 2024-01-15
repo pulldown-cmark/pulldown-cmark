@@ -22,22 +22,36 @@
 
 #![forbid(unsafe_code)]
 
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{html, BrokenLink, Options, Parser};
 
 use std::env;
-use std::io::{self, Read};
-use std::mem;
 use std::fs::File;
+use std::io::{self, Read};
 use std::path::PathBuf;
 
-fn dry_run(text: &str, opts: Options) {
-    let p = Parser::new_ext(text, opts);
+fn dry_run(text: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
+    let p = Parser::new_with_broken_link_callback(
+        text,
+        opts,
+        Some(|link: BrokenLink<'_>| {
+            broken_links.push(link.into_static());
+            None
+        }),
+    );
     let count = p.count();
     println!("{} events", count);
 }
 
-fn print_events(text: &str, opts: Options) {
-    let parser = Parser::new_ext(text, opts).into_offset_iter();
+fn print_events(text: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
+    let parser = Parser::new_with_broken_link_callback(
+        text,
+        opts,
+        Some(|link: BrokenLink<'_>| {
+            broken_links.push(link.into_static());
+            None
+        }),
+    )
+    .into_offset_iter();
     for (event, range) in parser {
         println!("{:?}: {:?}", range, event);
     }
@@ -73,6 +87,11 @@ pub fn main() -> std::io::Result<()> {
         "enable heading attributes",
     );
     opts.optflag("M", "enable-metadata-blocks", "enable metadata blocks");
+    opts.optflag(
+        "R",
+        "reject-broken-links",
+        "fail if input file has broken links",
+    );
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -113,6 +132,7 @@ pub fn main() -> std::io::Result<()> {
     }
 
     let mut input = String::new();
+    let mut broken_links = vec![];
     if !&matches.free.is_empty() {
         for filename in &matches.free {
             let real_path = PathBuf::from(filename);
@@ -120,36 +140,48 @@ pub fn main() -> std::io::Result<()> {
             f.read_to_string(&mut input)
                 .expect("something went wrong reading the file");
             if matches.opt_present("events") {
-                print_events(&input, opts);
+                print_events(&input, opts, &mut broken_links);
             } else if matches.opt_present("dry-run") {
-                dry_run(&input, opts);
+                dry_run(&input, opts, &mut broken_links);
             } else {
-                pulldown_cmark(&input, opts);
+                pulldown_cmark(&input, opts, &mut broken_links);
             }
         }
     } else {
         let _ = io::stdin().lock().read_to_string(&mut input);
         if matches.opt_present("events") {
-            print_events(&input, opts);
+            print_events(&input, opts, &mut broken_links);
         } else if matches.opt_present("dry-run") {
-            dry_run(&input, opts);
+            dry_run(&input, opts, &mut broken_links);
         } else {
-            pulldown_cmark(&input, opts);
+            pulldown_cmark(&input, opts, &mut broken_links);
         }
     }
+
+    if matches.opt_present("reject-broken-links") && !broken_links.is_empty() {
+        eprintln!("Error: {} broken links:", broken_links.len());
+        for link in broken_links {
+            let start = link.span.start;
+            let end = link.span.end;
+            let reference = link.reference;
+            eprintln!("[{start}-{end}]: {reference}");
+        }
+        std::process::exit(1);
+    }
+
     Ok(())
 }
 
-pub fn pulldown_cmark(input: &str, opts: Options) {
-    let mut p = Parser::new_ext(input, opts);
+pub fn pulldown_cmark<'i>(input: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
+    let mut p = Parser::new_with_broken_link_callback(
+        input,
+        opts,
+        Some(|link: BrokenLink<'_>| {
+            broken_links.push(link.into_static());
+            None
+        }),
+    );
     let stdio = io::stdout();
     let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
     let _ = html::write_html(buffer, &mut p);
-    // Since the program will now terminate and the memory will be returned
-    // to the operating system anyway, there is no point in tidely cleaning
-    // up all the datastructures we have used. We shouldn't do this if we'd
-    // do other things after this, because this is basically intentionally
-    // leaking data. Skipping cleanup lets us return a bit (~5%) faster.
-    mem::forget(p);
 }
-

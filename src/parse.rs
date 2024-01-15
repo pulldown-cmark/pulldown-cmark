@@ -176,6 +176,19 @@ impl<'input, F> std::fmt::Debug for Parser<'input, F> {
     }
 }
 
+impl<'a> BrokenLink<'a> {
+    /// Moves the link into version with a static lifetime.
+    ///
+    /// The `reference` member is cloned to a Boxed or Inline version.
+    pub fn into_static(self) -> BrokenLink<'static> {
+        BrokenLink {
+            span: self.span.clone(),
+            link_type: self.link_type,
+            reference: self.reference.into_string().into(),
+        }
+    }
+}
+
 impl<'input> Parser<'input, DefaultBrokenLinkCallback> {
     /// Creates a new event iterator for a markdown string without any options enabled.
     pub fn new(text: &'input str) -> Self {

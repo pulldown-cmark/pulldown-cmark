@@ -2492,3 +2492,34 @@ baz](https://example.com)</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_154() {
+    let original = r##"1.
+      pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+      The dot in the list marker is at column two, so the child paragraph actually
+      starts in column *three*.
+"##;
+    let expected = r##"<ol>
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+The dot in the list marker is at column two, so the child paragraph actually
+starts in column <em>three</em>.</li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_155() {
+    let original = r##"1.
+  This is not in the list at all. It's a paragraph after it.
+"##;
+    let expected = r##"<ol>
+<li></li>
+</ol>
+<p>This is not in the list at all. It's a paragraph after it.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

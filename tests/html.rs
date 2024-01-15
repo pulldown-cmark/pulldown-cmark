@@ -249,3 +249,37 @@ fn html_test_broken_callback() {
 
     assert_eq!(expected, s);
 }
+
+#[test]
+fn newline_in_code() {
+    let originals = ["`\n `x", "` \n`x"];
+    let expected = "<p><code>  </code>x</p>\n";
+
+    for original in originals {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(&original));
+        assert_eq!(expected, s);
+    }
+}
+
+#[test]
+fn newline_start_end_of_code() {
+    let original = "`\nx\n`x";
+    let expected = "<p><code>x</code>x</p>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(&original));
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn newline_within_code() {
+    let originals = ["`\nx \ny\n`x", "`x \ny`x", "`x\n y`x"];
+    let expected = "<p><code>x  y</code>x</p>\n";
+
+    for original in originals {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(&original));
+        assert_eq!(expected, s);
+    }
+}

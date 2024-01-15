@@ -450,7 +450,7 @@ EMPTY CODE IN BLOCKQUOTE
 > `
 .
 <blockquote>
-<p><code></code></p>
+<p><code> </code></p>
 </blockquote>
 ````````````````````````````````
 

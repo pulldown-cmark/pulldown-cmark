@@ -530,7 +530,7 @@ fn regression_test_39() {
 > `
 "##;
     let expected = r##"<blockquote>
-<p><code></code></p>
+<p><code> </code></p>
 </blockquote>
 "##;
 

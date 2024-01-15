@@ -2116,3 +2116,16 @@ baz`</li>
 baz](https://example.com)</li>
 </ul>
 ````````````````````````````````
+
+ISSUE 808
+
+```````````````````````````````` example
+[mylink]
+
+[mylink]: https://example.com
+'
+part of the title'
+.
+<p><a href="https://example.com" title="
+part of the title">mylink</a></p>
+````````````````````````````````

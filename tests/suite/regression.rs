@@ -2492,3 +2492,18 @@ baz](https://example.com)</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_154() {
+    let original = r##"[mylink]
+
+[mylink]: https://example.com
+'
+part of the title'
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+part of the title">mylink</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -1520,7 +1520,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
                 c if c == closing_delim => {
-                    let cow = linebuf.map(CowStr::from).unwrap_or(CowStr::from(&text[linestart..bytecount]));
+                    let cow = if let Some(mut linebuf) = linebuf {
+                        linebuf.push_str(&text[linestart..bytecount]);
+                        CowStr::from(linebuf)
+                    } else {
+                        CowStr::from(&text[linestart..bytecount])
+                    };
                     return Some((bytecount + 1, cow));
                 }
                 _ => {

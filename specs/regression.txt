@@ -2129,3 +2129,28 @@ part of the title'
 <p><a href="https://example.com" title="
 part of the title">mylink</a></p>
 ````````````````````````````````
+
+ISSUE 810
+
+```````````````````````````````` example
+1.
+      pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+      The dot in the list marker is at column two, so the child paragraph actually
+      starts in column *three*.
+.
+<ol>
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+The dot in the list marker is at column two, so the child paragraph actually
+starts in column <em>three</em>.</li>
+</ol>
+````````````````````````````````
+
+```````````````````````````````` example
+1.
+  This is not in the list at all. It's a paragraph after it.
+.
+<ol>
+<li></li>
+</ol>
+<p>This is not in the list at all. It's a paragraph after it.</p>
+````````````````````````````````

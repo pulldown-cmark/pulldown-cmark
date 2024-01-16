@@ -236,7 +236,7 @@ impl<'a> LineStart<'a> {
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
                         if self.scan_space(1) || self.is_at_eol() {
-                            return self.finish_list_marker(c, val, indent + self.ix - start_ix);
+                            return self.finish_list_marker(c, val, indent + 1 + ix - start_ix);
                         } else {
                             break;
                         }

@@ -548,3 +548,94 @@ Example with code blocks in the table's header.
 <tr><td>Triple</td><td><code>\\|</code></td></tr>
 </tbody></table>
 ````````````````````````````````
+
+
+Table rows must have at least one cell.
+A single pipe, on its own, doesn't count.
+
+The behavior on babelmark is pretty diverse,
+but this behavior is chosen to align with GFM.
+
+✓ means it treats the zero cell lines with only a pipe as not being valid
+rows, but otherwise parses as a table.
+
+x means it treats the zero cell lines with only a pipe as a valid row.
+
+? means it does something else.
+
+| Implementation     -> | first | second | third |
+| --------------------- | ----- | ------ | ----- |
+| **pulldown-cmark**    |   ✓   |   ✓    |   ✓   |
+| github/cmark-gfm      |   ✓   |   ✓    |   ✓   |
+| pycmarkgfm            |   ✓   |   ✓    |   ✓   |
+| pandoc gfm[^4]        |   ✓   |   ✓    |   ✓   |
+| parsedown             |   x   |   x    |   ✓   |
+| php-markdown-extra    |   x   |   x    |   ✓   |
+| markdown-it           |   x   |   x    | ✓[^3] |
+| DFM                   |   x   |   x    |   x   |
+| league/commonmark GFM |   x   |   x    |   x   |
+| s9e/TextFormatter     |   x   |   x    |   x   |
+| MD4C                  |   x   |   x    |   x   |
+| cebe                  |   x   |   x    |   x   |
+| pandoc                |   x   |   x    |   x   |
+| multimarkdown         | ?[^1] |  ?[^1] | ?[^1] |
+| markdig               | ?[^1] |  ?[^1] | ?[^1] |
+| maruku                | ?[^2] |  ?[^2] | ?[^2] |
+
+[babelmark test cases](https://babelmark.github.io/?text=No+single-pipe+lines.+This+test+case+is+a+%22null+hypothesis%22+used+to+recognize+table+support.%0A%0A%7C+Table+%7C+Header+%7C%0A%7C-------%7C--------%7C%0A%7C+Table+%7C+Body+++%7C%0A%0AThis+the+first+test+case.%0A%0A%7C+Table+%7C+Header+%7C%0A%7C-------%7C--------%7C%0A%7C+Table+%7C+Body+++%7C%0A%7C%0A%7C+Not+++%7C+Enough+%7C%0A%0AThis+the+second+test+case.%0A%0A%7C+Table+%7C+Header+%7C%0A%7C-------%7C--------%7C%0A%7C%0A%0AThis+the+third+test+case.%0A%0A%7C%0A%7C-------%7C--------%7C%0A%7C+Table+%7C+Body+++%7C%0A)
+
+[^1]: Multimarkdown and Markdig don't recognize these at tables at all,
+even though I know they support pipe tables.
+
+[^2]: Maruku swallows much of the text entirely in these test cases.
+
+[^3]: Markdown-it changed some time between the version on their playground
+<https://markdown-it.github.io/#md3=%7B%22source%22%3A%22%7C%20Table%20%7C%20Header%20%7C%5Cn%7C-------%7C--------%7C%5Cn%7C%20Table%20%7C%20Body%20%20%20%7C%5Cn%7C%5Cn%7C%20Not%20%20%20%7C%20Enough%20%7C%5Cn%5Cn%7C%20Table%20%7C%20Header%20%7C%5Cn%7C-------%7C--------%7C%5Cn%7C%5Cn%5Cn%7C%5Cn%7C-------%7C--------%7C%5Cn%7C%20Table%20%7C%20Body%20%20%20%7C%5Cn%22%2C%22defaults%22%3A%7B%22html%22%3Afalse%2C%22xhtmlOut%22%3Afalse%2C%22breaks%22%3Afalse%2C%22langPrefix%22%3A%22language-%22%2C%22linkify%22%3Atrue%2C%22typographer%22%3Atrue%2C%22_highlight%22%3Atrue%2C%22_strict%22%3Afalse%2C%22_view%22%3A%22html%22%7D%7D> and the version Babelmark 3 uses.
+
+[^4]: Not on babelmark 3. I ran it on <https://pandoc.org/try/?params=%7B%22text%22%3A%22%7C+Table+%7C+Header+%7C%5Cn%7C-------%7C--------%7C%5Cn%7C+Table+%7C+Body+++%7C%5Cn%7C%5Cn%7C+Not+++%7C+Enough+%7C%5Cn%5Cn%7C+Table+%7C+Header+%7C%5Cn%7C-------%7C--------%7C%5Cn%7C%5Cn%5Cn%7C%5Cn%7C-------%7C--------%7C%5Cn%7C+Table+%7C+Body+++%7C%5Cn%22%2C%22to%22%3A%22html5%22%2C%22from%22%3A%22gfm%22%2C%22standalone%22%3Afalse%2C%22embed-resources%22%3Afalse%2C%22table-of-contents%22%3Afalse%2C%22number-sections%22%3Afalse%2C%22citeproc%22%3Afalse%2C%22html-math-method%22%3A%22plain%22%2C%22wrap%22%3A%22auto%22%2C%22highlight-style%22%3Anull%2C%22files%22%3A%7B%7D%2C%22template%22%3Anull%7D>
+
+```````````````````````````````` example
+| Table | Header |
+|-------|--------|
+| Table | Body   |
+|
+| Not   | Enough |
+
+
+| Table | Header |
+|-------|--------|
+| Table | Body   |
+|→
+| Not   | Enough |
+.
+<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+<tr><td>Table</td><td>Body</td></tr>
+</tbody></table>
+<p>|
+| Not   | Enough |</p>
+<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+<tr><td>Table</td><td>Body</td></tr>
+</tbody></table>
+<p>|→
+| Not   | Enough |</p>
+````````````````````````````````
+
+```````````````````````````````` example
+| Table | Header |
+|-------|--------|
+|
+.
+<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+</tbody></table>
+<p>|</p>
+````````````````````````````````
+
+```````````````````````````````` example
+|
+|-------|--------|
+| Table | Body   |
+.
+<p>|
+|-------|--------|
+| Table | Body   |</p>
+````````````````````````````````

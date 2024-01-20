@@ -437,3 +437,61 @@ fn table_test_18() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_19() {
+    let original = r##"| Table | Header |
+|-------|--------|
+| Table | Body   |
+|
+| Not   | Enough |
+
+
+| Table | Header |
+|-------|--------|
+| Table | Body   |
+|	
+| Not   | Enough |
+"##;
+    let expected = r##"<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+<tr><td>Table</td><td>Body</td></tr>
+</tbody></table>
+<p>|
+| Not   | Enough |</p>
+<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+<tr><td>Table</td><td>Body</td></tr>
+</tbody></table>
+<p>|	
+| Not   | Enough |</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_20() {
+    let original = r##"| Table | Header |
+|-------|--------|
+|
+"##;
+    let expected = r##"<table><thead><tr><th>Table</th><th>Header</th></thead><tbody>
+</tbody></table>
+<p>|</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_21() {
+    let original = r##"|
+|-------|--------|
+| Table | Body   |
+"##;
+    let expected = r##"<p>|
+|-------|--------|
+| Table | Body   |</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -285,9 +285,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns the offset of the first line after the table.
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
-    fn parse_table(&mut self, table_cols: usize, head_start: usize, body_start: usize) -> usize {
+    fn parse_table(&mut self, table_cols: usize, head_start: usize, body_start: usize) -> Option<usize> {
         // parse header. this shouldn't fail because we made sure the table header is ok
-        let (_sep_start, thead_ix) = self.parse_table_row_inner(head_start, table_cols);
+        let (_sep_start, thead_ix) = self.parse_table_row_inner(head_start, table_cols)?;
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
@@ -297,16 +297,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         self.pop(ix);
-        ix
+        Some(ix)
     }
 
     /// Call this when containers are taken care of.
     /// Returns bytes scanned, row_ix
-    fn parse_table_row_inner(&mut self, mut ix: usize, row_cells: usize) -> (usize, TreeIndex) {
+    fn parse_table_row_inner(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut cells = 0;
         let mut final_cell_ix = None;
 
+        let old_cur = self.tree.cur();
         let row_ix = self.tree.append(Item {
             start: ix,
             end: 0, // set at end of this function
@@ -348,6 +349,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
         }
 
+        if let (Some(cur), 0) = (old_cur, cells) {
+            self.pop(ix);
+            self.tree[cur].next = None;
+            return None;
+        }
+
         // fill empty cells if needed
         // note: this is where GFM and commonmark-extra diverge. we follow
         // GFM here
@@ -366,7 +373,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         self.pop(ix);
 
-        (ix, row_ix)
+        Some((ix, row_ix))
     }
 
     /// Returns first offset after the row and the tree index of the row.
@@ -391,7 +398,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
 
-        let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells);
+        let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells)?;
         Some((ix, row_ix))
     }
 
@@ -432,7 +439,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.tree[node_ix].child = None;
                 self.tree.pop();
                 self.tree.push();
-                return self.parse_table(table_cols, ix, next_ix);
+                if let Some(ix) = self.parse_table(table_cols, ix, next_ix) {
+                    return ix;
+                }
             }
 
             ix = next_ix;

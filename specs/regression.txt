@@ -2154,3 +2154,14 @@ starts in column <em>three</em>.</li>
 </ol>
 <p>This is not in the list at all. It's a paragraph after it.</p>
 ````````````````````````````````
+
+ISSUE 813
+
+```````````````````````````````` example
+|
+-|- *
+.
+<p>|
+-|- *</p>
+````````````````````````````````
+

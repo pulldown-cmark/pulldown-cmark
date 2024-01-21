@@ -310,11 +310,11 @@ An unordered list before the footnotes:
 <p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <p>An unordered list before the footnotes:</p>
 <ul>
-    <li>Ipsum</li>
-    <li>Lorem</li>
+<li>Ipsum</li>
+<li>Lorem</li>
 </ul>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-    <p>Cool.</p>
+<p>Cool.</p>
 </div>
 ````````````````````````````````
 

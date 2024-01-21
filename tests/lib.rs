@@ -55,11 +55,6 @@ fn html_standardize(s: &str) -> String {
         .replace("<br/>", "<br />")
         .replace("<hr>", "<hr />")
         .replace("<hr/>", "<hr />")
-        .replace("\n    ", "\n")
-        .replace("  \n", "\n")
-        .replace(" \n", "\n")
-        .replace("\n  ", "\n")
-        .replace("\n ", "\n")
         // permit extra or missing line breaks only between tags
         .replace(">\n<", "><")
 }

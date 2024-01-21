@@ -844,11 +844,11 @@ An unordered list before the footnotes:
     let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <p>An unordered list before the footnotes:</p>
 <ul>
-    <li>Ipsum</li>
-    <li>Lorem</li>
+<li>Ipsum</li>
+<li>Lorem</li>
 </ul>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-    <p>Cool.</p>
+<p>Cool.</p>
 </div>
 "##;
 
@@ -1597,4 +1597,17 @@ Things
 "##;
 
     test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn regression_test_109() {
+    let original = r##" A paragraph is a paragraph and spaces must be removed. 
+
+   Another paragraph whose spaces must be removed.  
+"##;
+    let expected = r##"<p>A paragraph is a paragraph and spaces must be removed.</p>
+<p>Another paragraph whose spaces must be removed.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
 }

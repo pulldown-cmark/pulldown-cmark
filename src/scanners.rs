@@ -598,9 +598,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
                 found_hyphen_in_col = false;
             }
             _ => {
-                cols = vec![];
-                start_col = true;
-                break;
+                // It isn't a table head if it has characters outside the allowed set.
+                return (0, vec![]);
             }
         }
         i += 1;

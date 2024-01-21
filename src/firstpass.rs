@@ -333,11 +333,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.tree.push();
             let (next_ix, _brk) = self.parse_line(ix, None, TableParseMode::Active);
 
-            if let Some(cur_ix) = self.tree.cur() {
-                let trailing_whitespace = scan_rev_while(&bytes[..next_ix], is_ascii_whitespace);
-                self.tree[cur_ix].item.end -= trailing_whitespace;
-            }
-
             self.tree[cell_ix].item.end = next_ix;
             self.tree.pop();
 
@@ -644,7 +639,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         );
                     }
 
-                    self.tree.append_text(begin_text, ix);
+                    self.tree.append_text(begin_text, ix - trailing_whitespace);
                     LoopInstruction::BreakAtWith(
                         end_ix,
                         Some(Item {
@@ -854,8 +849,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         });
 
         if brk.is_none() {
+            let trailing_whitespace =
+                scan_rev_while(&bytes[begin_text..final_ix], is_ascii_whitespace_no_nl);
             // need to close text at eof
-            self.tree.append_text(begin_text, final_ix);
+            self.tree.append_text(begin_text, final_ix - trailing_whitespace);
         }
         (final_ix, brk)
     }

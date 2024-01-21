@@ -495,3 +495,101 @@ fn table_test_21() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_22() {
+    let original = r##"| Single | [test](first\|second) |
+|--|--|
+
+| Double | [test](first\\|second) |
+|--|--|
+
+| Triple | [test](first\\\|second) |
+|--|--|
+"##;
+    let expected = r##"<table><thead><tr><th>Single</th><th><a href="first%7Csecond">test</a></th></tr></thead><tbody>
+</tbody></table>
+<table><thead><tr><th>Double</th><th><a href="first%7Csecond">test</a></th></tr></thead><tbody>
+</tbody></table>
+<table><thead><tr><th>Triple</th><th><a href="first%5C%7Csecond">test</a></th></tr></thead><tbody>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_23() {
+    let original = r##"| Single | [first\|second] |
+|--|--|
+
+| Double | [first\\|second] |
+|--|--|
+
+| Triple | [first\\\|second] |
+|--|--|
+
+[first\|second]: https://rust-lang.org
+
+[first\\|second]: https://docs.rs
+"##;
+    let expected = r##"<table><thead><tr><th>Single</th><th>[first|second]</th></tr></thead><tbody>
+</tbody></table>
+<table><thead><tr><th>Double</th><th><a href="https://rust-lang.org">first|second</a></th></tr></thead><tbody>
+</tbody></table>
+<table><thead><tr><th>Triple</th><th><a href="https://docs.rs">first\|second</a></th></tr></thead><tbody>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_24() {
+    let original = r##"Q: Knock knock.
+A: Who's there.
+Q: Interrupting cow.
+A: Interrupting —?
+| `Moo\\|ooo` |
+|-------------|
+| `ooo\\|ooo` |
+"##;
+    let expected = r##"<p>Q: Knock knock.
+A: Who's there.
+Q: Interrupting cow.
+A: Interrupting —?</p>
+<table><thead><tr><th><code>Moo\|ooo</code></th></tr></thead><tbody>
+<tr><td><code>ooo\|ooo</code></td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_25() {
+    let original = r##"| ![Moo\\|Moo](image.png) |
+|-------------|
+| ![Moo\\\|Moo](image.png) |
+"##;
+    let expected = r##"<table><thead><tr><th><img alt="Moo|Moo" src="image.png"></th></tr></thead><tbody>
+<tr><td><img alt="Moo\|Moo" src="image.png"></td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_26() {
+    let original = r##"| [Moo](https://example.org "Example\\|Link") |
+|---------------------------------------------|
+| [Moo](https://example.org "Example\\\|Link") |
+"##;
+    let expected = r##"<table><thead><tr><th><a title="Example|Link" href="https://example.org">Moo</a></th></tr></thead><tbody>
+<tr><td><a title="Example\|Link" href="https://example.org">Moo</a></td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

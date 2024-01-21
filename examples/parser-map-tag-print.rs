@@ -1,47 +1,45 @@
 use pulldown_cmark::{Event, Options, Parser, Tag};
 
 fn main() {
-    let markdown_input = concat!(
-        "# My Heading\n",
-        "\n",
-        "My paragraph.\n",
-        "\n",
-        "* a\n",
-        "* b\n",
-        "* c\n",
-        "\n",
-        "1. d\n",
-        "2. e\n",
-        "3. f\n",
-        "\n",
-        "Task lists\n",
-        "- [ ] to do\n",
-        "- [x] done\n",
-        "\n",
-        "A block quote\n",
-        "> my block quote\n",
-        "\n",
-        "```\n",
-        "my code block\n",
-        "```\n",
-        "\n",
-        "*emphasis*\n",
-        "**strong**\n",
-        "~~strikethrough~~\n",
-        "[My Link](http://example.com)\n",
-        "![My Image](http://example.com/image.jpg)\n",
-        "\n",
-        "| a | b |\n",
-        "| - | - |\n",
-        "| c | d |\n",
-        "\n",
-        "hello[^1]\n",
-        "[^1]: my footnote\n",
-    );
-    println!(
-        "\nParsing the following markdown string:\n{}\n",
-        markdown_input
-    );
+    let markdown_input = r##"
+# My Heading
+
+My paragraph.
+[reference to my heading](#my-heading)
+
+* a
+* b
+* c
+
+1. d
+2. e
+3. f
+
+Task lists
+- [ ] to do
+- [x] done
+
+A block quote
+> my block quote
+
+```
+my code block
+```
+
+*emphasis*
+**strong**
+~~strikethrough~~
+[My Link](http://example.com)
+![My Image](http://example.com/image.jpg)
+
+| a | b |
+| - | - |
+| c | d |
+
+hello[^1]
+[^1]: my footnote
+"##;
+    println!("Parsing the following markdown string:\n{}", markdown_input);
 
     // Set up the parser. We can treat is as any other iterator.
     // For each event, we print its details, such as the tag or string.

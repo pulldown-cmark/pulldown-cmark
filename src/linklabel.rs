@@ -44,6 +44,7 @@ pub(crate) type FootnoteLabel<'a> = UniCase<CowStr<'a>>;
 pub(crate) fn scan_link_label_rest<'t>(
     text: &'t str,
     linebreak_handler: &dyn Fn(&[u8]) -> Option<usize>,
+    is_in_table: bool,
 ) -> Option<(usize, CowStr<'t>)> {
     let bytes = text.as_bytes();
     let mut ix = 0;
@@ -60,6 +61,27 @@ pub(crate) fn scan_link_label_rest<'t>(
         match *bytes.get(ix)? {
             b'[' => return None,
             b']' => break,
+            // Backslash escapes in link references are normally untouched, but
+            // tables are an exception, because they're parsed as-if the tables
+            // were parsed in a discrete pass, changing `\|` to `|`, and then
+            // passing the changed string to the inline parser.
+            b'|' if is_in_table && ix != 0 && bytes.get(ix - 1) == Some(&b'\\') => {
+                // only way to reach this spot is to have `\\|` (even number of `\` before `|`)
+                label.push_str(&text[mark..ix - 1]);
+                label.push('|');
+                ix += 1;
+                only_white_space = false;
+                mark = ix;
+            }
+            b'\\' if is_in_table && bytes.get(ix + 1) == Some(&b'|') => {
+                // only way to reach this spot is to have `\|` (odd number of `\` before `|`)
+                label.push_str(&text[mark..ix]);
+                label.push('|');
+                ix += 2;
+                codepoints += 1;
+                only_white_space = false;
+                mark = ix;
+            }
             b'\\' if is_ascii_punctuation(*bytes.get(ix + 1)?) => {
                 ix += 2;
                 codepoints += 2;
@@ -133,13 +155,13 @@ mod test {
         let input = "«\t\tBlurry Eyes\t\t»][blurry_eyes]";
         let expected_output = "« Blurry Eyes »"; // regular spaces!
 
-        let (_bytes, normalized_label) = scan_link_label_rest(input, &|_| None).unwrap();
+        let (_bytes, normalized_label) = scan_link_label_rest(input, &|_| None, false).unwrap();
         assert_eq!(expected_output, normalized_label.as_ref());
     }
 
     #[test]
     fn return_carriage_linefeed_ok() {
         let input = "hello\r\nworld\r\n]";
-        assert!(scan_link_label_rest(input, &|_| Some(0)).is_some());
+        assert!(scan_link_label_rest(input, &|_| Some(0), false).is_some());
     }
 }

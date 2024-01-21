@@ -180,7 +180,7 @@ impl<T: Default> Tree<T> {
 impl Tree<Item> {
     /// Truncates the preceding siblings to the given end position,
     /// and returns the new current node.
-    pub(crate) fn truncate_siblings(&mut self, bytes: &[u8], end_byte_ix: usize) {
+    pub(crate) fn truncate_siblings(&mut self, end_byte_ix: usize) {
         let parent_ix = self.peek_up().unwrap();
         let mut next_child_ix = self[parent_ix].child;
         let mut prev_child_ix = None;
@@ -200,10 +200,10 @@ impl Tree<Item> {
                 self.cur = Some(child_ix);
             } else if self[child_ix].item.start == end_byte_ix {
                 // check whether the previous character is a backslash
-                let is_previous_char_backslash_escape =
-                    end_byte_ix.checked_sub(1).map_or(false, |prev| {
-                        (bytes[prev] == b'\\') && (self[child_ix].item.body == ItemBody::Text)
-                    });
+                let is_previous_char_backslash_escape = match self[child_ix].item.body {
+                    ItemBody::Text { backslash_escaped } => backslash_escaped,
+                    _ => false,
+                };
                 if is_previous_char_backslash_escape {
                     // rescue the backslash as a plain text content
                     let last_byte_ix = end_byte_ix - 1;

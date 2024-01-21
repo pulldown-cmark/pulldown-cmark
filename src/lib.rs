@@ -80,10 +80,14 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "html")]
+#[cfg(any(feature = "html", feature = "text"))]
 pub mod escape;
+
 #[cfg(feature = "html")]
 pub mod html;
+
+#[cfg(feature = "text")]
+pub mod text;
 
 pub mod utils;
 

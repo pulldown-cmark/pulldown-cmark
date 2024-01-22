@@ -26,12 +26,7 @@ see the [many] [articles] [on] [QuickCheck].
 [on]: https://wiki.haskell.org/Introduction_to_QuickCheck1
 [QuickCheck]: https://hackage.haskell.org/package/QuickCheck
 .
-<p>see the 
-  <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> 
-  <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> 
-  <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> 
-  <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.
-</p>
+<p>see the <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.</p>
 ````````````````````````````````
 
 ISSUE #135
@@ -60,11 +55,11 @@ ISSUE #145
 | --------- | --------- | --------- | ---------:|
 | Content   | Content   | Conent    | Content   |
 .
-<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td></tr>
+<table><thead><tr><th>Title A</th><th>Title B</th></tr></thead><tbody>
+<tr><td>Content</td><td>Content</td></tr>
 </tbody></table>
-<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th style="text-align: right">Title D  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td style="text-align: right">Content   </td></tr>
+<table><thead><tr><th>Title A</th><th>Title B</th><th>Title C</th><th style="text-align: right">Title D</th></tr></thead><tbody>
+<tr><td>Content</td><td>Content</td><td>Conent</td><td style="text-align: right">Content</td></tr>
 </tbody></table>
 ````````````````````````````````
 
@@ -82,7 +77,6 @@ ISSUE #213
 <https://example.com> hello
 .
 <p><a href="https://example.com">https://example.com</a> hello</p>
-
 ````````````````````````````````
 
 ISSUE #43 (1)
@@ -324,7 +318,7 @@ ISSUE #328
 ```````````````````````````````` example
 ![<http://example.com>](http://example.com/logo.png)
 .
-<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
+<p><img src="http://example.com/logo.png" alt="http://example.com" /></p>
 ````````````````````````````````
 
 ISSUE #328
@@ -332,7 +326,7 @@ ISSUE #328
 ```````````````````````````````` example
 [<http://one> <http://two>](url)
 .
-<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
+<p><a href="url"><a href="http://one">http://one</a> <a href="http://two">http://two</a></a></p>
 ````````````````````````````````
 
 ISSUE #330 (NOTE THERE IS A SPACE ON THE LINE BETWEEN THE TABLE AND THE PARAGRAPH!)
@@ -343,7 +337,7 @@ Markdown | Less | Pretty
  
 some text
 .
-<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+<table><thead><tr><th>Markdown</th><th>Less</th><th>Pretty</th></tr></thead><tbody>
 </tbody></table>
 <p>some text</p>
 ````````````````````````````````
@@ -409,7 +403,7 @@ TABLES IN BROKEN CONTAINERS
 yolo | swag
 .
 <blockquote>
-<table><thead><tr><th>foo</th><th>bar</th></tr></thead></table>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody></tbody></table>
 </blockquote>
 <p>yolo | swag</p>
 ````````````````````````````````
@@ -429,7 +423,7 @@ ISSUE #336
  "hi"> 
 .
 <p><foo bar =
- "hi"> </p>
+ "hi"></p>
 ````````````````````````````````
 
 EMPHASIS ACROSS PARAGRAPHS
@@ -498,9 +492,9 @@ ISSUE 351
 - - -
 ")
 .
-<p>[a](url "</p>
+<p>[a](url &quot;</p>
 <hr>
-<p>")</p>
+<p>&quot;)</p>
 ````````````````````````````````
 
 ISSUE 351
@@ -658,7 +652,7 @@ ISSUE 298
 <blockquote>
 <p>b]: /foo</p>
 </blockquote>
-<p>[a b] [a > b]</p>
+<p>[a b] [a &gt; b]</p>
 ````````````````````````````````
 
 ISSUE 398
@@ -704,8 +698,8 @@ ISSUE 399
 > the size of `usize` and have the same alignment.
 .
 <blockquote>
-<p>Note: Though you should not rely on this, all pointers to
-<abbr title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+<p>Note: Though you should not rely on this, all pointers to <abbr
+title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
 the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 ````````````````````````````````
@@ -724,11 +718,11 @@ An unordered list before the footnotes:
 <p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <p>An unordered list before the footnotes:</p>
 <ul>
-    <li>Ipsum</li>
-    <li>Lorem</li>
+<li>Ipsum</li>
+<li>Lorem</li>
 </ul>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-    <p>Cool.</p>
+<p>Cool.</p>
 </div>
 ````````````````````````````````
 
@@ -745,8 +739,7 @@ ISSUE 421
 [crates-badge]: http://meritbadge.herokuapp.com/assimp
 .
 <p><a href="b"></a></p>
-
-<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
+<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img src="http://meritbadge.herokuapp.com/assimp" alt="" /></a></h1>
 ````````````````````````````````
 
 ISSUE 443 (note the spaces on the blank lines)
@@ -869,7 +862,9 @@ ISSUE 557
 baz
 .
 <ul>
-<li><p><input disabled="" type="checkbox"> foo</p></li><li><p><input disabled="" type="checkbox"> bar</p></li>
+<li><p><input disabled="" type="checkbox"/>
+foo</p></li><li><p><input disabled="" type="checkbox"/>
+bar</p></li>
 </ul>
 <p>baz</p>
 ````````````````````````````````
@@ -1016,43 +1011,43 @@ ISSUE 656
 →|-----|------|
 | baz | alef |
 .
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
 <pre><code>| foo | bar  |
 |-----|------|
 | baz | alef |
 </code></pre>
 <p>| foo | bar  |
-    |-----|------|
+|-----|------|
 | baz | alef |</p>
 <pre><code>| foo | bar  |
 |-----|------|
 | baz | alef |
 </code></pre>
 <p>| foo | bar  |
-→|-----|------|
+|-----|------|
 | baz | alef |</p>
 ````````````````````````````````
 
@@ -1302,7 +1297,7 @@ The below example adds a trailing space.
 %
 .
 <p>;
-* 
+*
 %</p>
 ````````````````````````````````
 
@@ -1911,8 +1906,8 @@ second</a></p>
 
 [first]
 .
-<h2>"</h2>
-<p>"</p>
+<h2>&quot;</h2>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
 ````````````````````````````````
 
@@ -1938,9 +1933,10 @@ second</a></p>
 > [first]
 .
 <blockquote>
-<h2>"</h2>
-<p>"</p>
+<h2>&quot;</h2>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
+</blockquote>
 ````````````````````````````````
 
 ISSUE 795
@@ -1997,9 +1993,9 @@ ISSUE 795
 
 [first]
 .
-<p>"
+<p>&quot;
 \</p>
-<p>"</p>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
 ````````````````````````````````
 
@@ -2157,11 +2153,11 @@ starts in column <em>three</em>.</li>
 ISSUE 716
 
 ```````````````````````````````` example
-`\!\"\#\$\%\&
-\!\"\#\$\%\&
-\!\"\#\$\%\&`
+`\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&`
 .
-<p><code>\!\"\#\$\%\& \!\"\#\$\%\& \!\"\#\$\%\&</code></pre>
+<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
 ````````````````````````````````
 
 ISSUE 813
@@ -2172,4 +2168,14 @@ ISSUE 813
 .
 <p>|
 -|- *</p>
+````````````````````````````````
+
+ISSUE 715
+```````````````````````````````` example
+ A paragraph is a paragraph and spaces must be removed. 
+
+   Another paragraph whose spaces must be removed.  
+.
+<p>A paragraph is a paragraph and spaces must be removed.</p>
+<p>Another paragraph whose spaces must be removed.</p>
 ````````````````````````````````

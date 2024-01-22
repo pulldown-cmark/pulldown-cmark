@@ -205,6 +205,7 @@ If there are no rows in the body, no `<tbody>` is generated in HTML output:
 <th>def</th>
 </tr>
 </thead>
+<tbody></tbody>
 </table>
 ````````````````````````````````
 

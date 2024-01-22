@@ -198,6 +198,7 @@ fn gfm_table_test_8() {
 <th>def</th>
 </tr>
 </thead>
+<tbody></tbody>
 </table>
 "##;
 

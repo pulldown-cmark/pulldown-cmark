@@ -2538,7 +2538,7 @@ fn regression_test_156() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_157() {
     let original = r##"`\!\"\#\$\%\&
@@ -2550,7 +2550,7 @@ fn regression_test_157() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-    
+
 #[test]
 fn regression_test_158() {
     let original = r##"|

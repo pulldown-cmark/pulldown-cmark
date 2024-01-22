@@ -499,7 +499,7 @@ fn regression_test_37() {
  "hi"> 
 "##;
     let expected = r##"<p><foo bar =
- "hi"> </p>
+ "hi"></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -524,7 +524,7 @@ fn regression_test_39() {
 > `
 "##;
     let expected = r##"<blockquote>
-<p><code></code></p>
+<p><code> </code></p>
 </blockquote>
 "##;
 
@@ -1539,7 +1539,7 @@ fn regression_test_104() {
 %
 "##;
     let expected = r##"<p>;
-* 
+*
 %</p>
 "##;
 
@@ -1601,6 +1601,966 @@ Things
 
 #[test]
 fn regression_test_109() {
+    let original = r##"-
+
+-
+
+
+-
+
+
+
+-
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_110() {
+    let original = r##"-
+
+  -  .
+"##;
+    let expected = r##"<ul>
+<li></li>
+<li><p>.</p></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_111() {
+    let original = r##"j***5*=*
+"##;
+    let expected = r##"<p>j*<em><em>5</em>=</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_112() {
+    let original = r##"Not enough table
+
+|
+|
+
+Not enough table
+
+|x
+|
+
+Not enough table
+
+|
+|-
+
+Table
+
+|x
+|-
+
+Not enough table
+| col1 | col2 |
+|      | ---- |
+
+Not enough table
+| col1 | col2 |
+| :    | ---- |
+
+Table
+| col1 | col2 |
+| ---- | ---- |
+"##;
+    let expected = r##"<p>Not enough table</p>
+<p>|
+|</p>
+<p>Not enough table</p>
+<p>|x
+|</p>
+<p>Not enough table</p>
+<p>|
+|-</p>
+<p>Table</p>
+<table>
+<thead><tr><th>x</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p>Not enough table
+| col1 | col2 |
+|      | ---- |</p>
+<p>Not enough table
+| col1 | col2 |
+| :    | ---- |</p>
+<p>Table</p>
+<table>
+<thead><tr><th>col1</th><th>col2</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_113() {
+    let original = r##"[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+"##;
+    let expected = r##"<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_114() {
+    let original = r##"Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+"##;
+    let expected = r##"<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_115() {
+    let original = r##"**a.*.**a*.**.
+"##;
+    let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_116() {
+    let original = r##"_*__*_*
+
+_*xx*_*
+
+_*__-_-
+
+_*xx-_-
+"##;
+    let expected = r##"<p><em><em>__</em></em>*</p>
+<p><em><em>xx</em></em>*</p>
+<p><em>*__-</em>-</p>
+<p><em>*xx-</em>-</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_117() {
+    let original = r##"-
+
+	-
+
+
+- x
+
+	-
+"##;
+    let expected = r##"<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_118() {
+    let original = r##"-
+
+    -
+
+
+- x
+
+    -
+"##;
+    let expected = r##"<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_119() {
+    let original = r##"[x\
+
+]: https://rust-lang.org
+"##;
+    let expected = r##"<p>[x\</p>
+<p>]: https://rust-lang.org</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_120() {
+    let original = r##">>**#*
+>
+>**#*
+
+**#*
+
+|**#*|
+|----|
+|**#*|
+|**#*
+**#*|
+**#*
+"##;
+    let expected = r##"<blockquote>
+<blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+<table><thead><tr><th>*<em>#</em></th></tr></thead><tbody>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_121() {
+    let original = r##"The second hyphen should parse the same way in both samples.
+
+ - >*
+
+   -
+
+The second hyphen should parse the same way in both samples.
+
+ - >x
+
+   -
+"##;
+    let expected = r##"<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<p>x</p>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_122() {
+    let original = r##"> Rewriting it in [Rust] is usually a bad idea.
+>
+> [Rust]:
+https://rust-lang.org
+"##;
+    let expected = r##"<blockquote>
+<p>Rewriting it in <a href="https://rust-lang.org">Rust</a> is usually a bad idea.</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_123() {
+    let original = r##"[First try
+----------
+Second try]: https://rust-lang.org
+"##;
+    let expected = r##"<h2>[First try</h2>
+<p>Second try]: https://rust-lang.org</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_124() {
+    let original = r##"[^foo][]
+
+[^foo][baz]
+
+[baz][^foo]
+
+[^foo]: bar
+
+[baz]: https://rust-lang.org
+"##;
+    let expected = r##"<p><sup class="footnote-reference"><a href="#foo">1</a></sup>[]</p>
+<p><a href="https://rust-lang.org">^foo</a></p>
+<p>[baz]<sup class="footnote-reference"><a href="#foo">1</a></sup></p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup>
+<p>bar</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_125() {
+    let original = r##"# foo \
+bar \
+"##;
+    let expected = r##"<h1>foo \</h1>
+<p>bar \</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_126() {
+    let original = r##"[third try]:
+-
+
+[third try]
+"##;
+    let expected = r##"<h2>[third try]:</h2>
+<p>[third try]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_127() {
+    let original = r##"- [foo]: test
+bar
+
+> [bar]: test
+[baz]: rstr
+[bar]
+"##;
+    let expected = r##"<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_128() {
+    let original = r##"> - [foo]: test
+> bar
+> 
+> > [bar]: test
+> [baz]: rstr
+> [bar]
+"##;
+    let expected = r##"<blockquote>
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_129() {
+    let original = r##"[bar]: test
+-
+"##;
+    let expected = r##"<p>-</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_130() {
+    let original = r##"[link](
+foo)
+
+> [link](
+> foo)
+"##;
+    let expected = r##"<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_131() {
+    let original = r##"[link](foo
+)
+
+> [link](foo
+> )
+"##;
+    let expected = r##"<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_132() {
+    let original = r##"[link](foo
+"bar"
+)
+
+> [link](foo
+> "bar"
+> )
+"##;
+    let expected = r##"<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_133() {
+    let original = r##"[link](	
+	foo	
+	"bar"	
+	)
+
+> [link](	
+> 	foo	
+> 	"bar"	
+> 	)
+"##;
+    let expected = r##"<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_134() {
+    let original = r##"[linkme]: foo
+    - baz
+"##;
+    let expected = r##"<p>- baz</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_135() {
+    let original = r##"[linkme-3]:
+   [^foo]:
+
+[linkme-4]:
+    [^bar]:
+
+GFM footnotes can interrupt link defs if they have three spaces, but not four.
+"##;
+    let expected = r##"<p>[linkme-3]:</p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_136() {
+    let original = r##"[linkme-3]:
+   ===
+
+[linkme-4]:
+    ===
+
+Setext heading can interrupt link def if it has three spaces, but not four.
+"##;
+    let expected = r##"<h1>[linkme-3]:</h1>
+<p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_137() {
+    let original = r##"[linkme-3]: a
+   - a
+
+[linkme-4]: a
+    - b
+
+List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.
+"##;
+    let expected = r##"<ul>
+<li>a</li>
+</ul>
+<p>- b</p>
+<p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_138() {
+    let original = r##"[first
+-
+second]: https://example.com
+
+[first
+-
+second]
+"##;
+    let expected = r##"<h2>[first</h2>
+<p>second]: https://example.com</p>
+<h2>[first</h2>
+<p>second]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_139() {
+    let original = r##"[first
+    -
+second]: https://example.com
+
+[first
+    -
+second]
+"##;
+    let expected = r##"<p><a href="https://example.com">first
+-
+second</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_140() {
+    let original = r##"[first]: https://example.com
+"
+-
+"
+
+[first]
+"##;
+    let expected = r##"<h2>&quot;</h2>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_141() {
+    let original = r##"[first]: https://example.com
+"
+    -
+"
+
+[first]
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+-
+">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_142() {
+    let original = r##"> [first]: https://example.com
+> "
+> -
+> "
+>
+> [first]
+"##;
+    let expected = r##"<blockquote>
+<h2>&quot;</h2>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_143() {
+    let original = r##"> ```
+> code
+
+> text
+"##;
+    let expected = r##"<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_144() {
+    let original = r##"> [first]: https://example.com
+> "
+>     -
+> "
+>
+> [first]
+"##;
+    let expected = r##"<blockquote>
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_145() {
+    let original = r##"[first]: https://example.com
+"
+\
+"
+
+[first]
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+\
+">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_146() {
+    let original = r##"[first]: https://example.com
+"
+\
+
+"
+
+[first]
+"##;
+    let expected = r##"<p>&quot;
+\</p>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_147() {
+    let original = r##"[foo]: https://example.com
+'[foo]'bar
+"##;
+    let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_148() {
+    let original = r##"- [foo]: https://example.com
+'[foo]'
+[foo]
+"##;
+    let expected = r##"<ul>
+<li>
+<a href="https://example.com" title="[foo]">foo</a>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_149() {
+    let original = r##"[
+a]: https://example.com
+
+[b
+]: https://example.com
+
+[a] [b]
+"##;
+    let expected = r##"<p><a href="https://example.com">a</a> <a href="https://example.com">b</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_150() {
+    let original = r##"> > ```
+> > code
+>
+> > text
+"##;
+    let expected = r##"<blockquote>
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_151() {
+    let original = r##"- *foo
+  - - 
+  baz*
+"##;
+    let expected = r##"<ul>
+<li>*foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz*</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_152() {
+    let original = r##"- `foo
+  - - 
+  baz`
+"##;
+    let expected = r##"<ul>
+<li>`foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz`</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_153() {
+    let original = r##"- [foo
+  - - 
+  baz](https://example.com)
+"##;
+    let expected = r##"<ul>
+<li>[foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz](https://example.com)</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_154() {
+    let original = r##"[mylink]
+
+[mylink]: https://example.com
+'
+part of the title'
+"##;
+    let expected = r##"<p><a href="https://example.com" title="
+part of the title">mylink</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_155() {
+    let original = r##"1.
+      pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+      The dot in the list marker is at column two, so the child paragraph actually
+      starts in column *three*.
+"##;
+    let expected = r##"<ol>
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+The dot in the list marker is at column two, so the child paragraph actually
+starts in column <em>three</em>.</li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_156() {
+    let original = r##"1.
+  This is not in the list at all. It's a paragraph after it.
+"##;
+    let expected = r##"<ol>
+<li></li>
+</ol>
+<p>This is not in the list at all. It's a paragraph after it.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_157() {
+    let original = r##"`\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&`
+"##;
+    let expected = r##"<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_158() {
+    let original = r##"|
+-|- *
+"##;
+    let expected = r##"<p>|
+-|- *</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_159() {
     let original = r##" A paragraph is a paragraph and spaces must be removed. 
 
    Another paragraph whose spaces must be removed.  

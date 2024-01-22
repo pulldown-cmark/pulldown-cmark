@@ -1,10 +1,18 @@
 //! Miscellaneous utilities to incraese comfort.
-//! Special thanks to
-//! https://github.com/BenjaminRi/Redwood-Wiki/blob/master/src/markdown_utils.rs.
+//! Special thanks to:
+//!
+//! - <https://github.com/BenjaminRi/Redwood-Wiki/blob/master/src/markdown_utils.rs>.
 //! Its author authorized the use of this GPL code in this project in
-//! https://github.com/raphlinus/pulldown-cmark/issues/507.
+//! <https://github.com/raphlinus/pulldown-cmark/issues/507>.
+//!
+//! - <https://gist.github.com/rambip/a507c312ed61c99c24b2a54f98325721>.
+//! Its author proposed the solution in
+//! <https://github.com/raphlinus/pulldown-cmark/issues/708>.
 
-use crate::{CowStr, Event};
+use crate::{
+    BrokenLinkCallback, CowStr, DefaultBrokenLinkCallback, Event, OffsetIter, Options, Parser,
+};
+use std::{iter::Peekable, ops::Range};
 
 /// Merge consecutive `Event::Text` events into only one.
 #[derive(Debug)]
@@ -71,6 +79,72 @@ where
                 self.last_event = next_event;
                 last_event
             }
+        }
+    }
+}
+
+/// Merge consecutive `Event::Text` events into only one with offsets.
+#[derive(Debug)]
+pub struct TextMergeWithOffset<'input, F = DefaultBrokenLinkCallback>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    source: &'input str,
+    parser: Peekable<OffsetIter<'input, F>>,
+}
+
+impl<'input, F> TextMergeWithOffset<'input, F>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    pub fn new_ext(source: &'input str, options: Options) -> Self {
+        Self {
+            source,
+            parser: Parser::new_with_broken_link_callback(source, options, None)
+                .into_offset_iter()
+                .peekable(),
+        }
+    }
+    pub fn new_ext_with_broken_link_callback(
+        source: &'input str,
+        options: Options,
+        callback: Option<F>,
+    ) -> Self {
+        Self {
+            source,
+            parser: Parser::new_with_broken_link_callback(source, options, callback)
+                .into_offset_iter()
+                .peekable(),
+        }
+    }
+}
+
+impl<'input, F> Iterator for TextMergeWithOffset<'input, F>
+where
+    F: BrokenLinkCallback<'input>,
+{
+    type Item = (Event<'input>, Range<usize>);
+    fn next(&mut self) -> Option<Self::Item> {
+        let is_empty_text = |x: Option<&(Event<'input>, Range<usize>)>| match x {
+            Some(e) => matches!(&e.0, Event::Text(t) if t.is_empty()),
+            None => false,
+        };
+
+        while is_empty_text(self.parser.peek()) {
+            self.parser.next();
+        }
+
+        match self.parser.peek()? {
+            (Event::Text(_), range) => {
+                let start = range.start;
+                let mut end = range.end;
+                while let Some((Event::Text(_), _)) = self.parser.peek() {
+                    end = self.parser.next().unwrap().1.end;
+                }
+
+                Some((Event::Text(self.source[start..end].into()), start..end))
+            }
+            _ => self.parser.next(),
         }
     }
 }

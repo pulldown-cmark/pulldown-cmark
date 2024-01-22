@@ -1,4 +1,4 @@
-Run this with `cargo run -- -T -F -s specs/regression.txt`.
+Run this with `cargo test --features gen-tests suite::regression`.
 
 Regression tests for issues on the github issue tracker.
 
@@ -423,7 +423,7 @@ ISSUE #336
  "hi"> 
 .
 <p><foo bar =
- "hi"> </p>
+ "hi"></p>
 ````````````````````````````````
 
 EMPHASIS ACROSS PARAGRAPHS
@@ -444,7 +444,7 @@ EMPTY CODE IN BLOCKQUOTE
 > `
 .
 <blockquote>
-<p><code></code></p>
+<p><code> </code></p>
 </blockquote>
 ````````````````````````````````
 
@@ -1297,7 +1297,7 @@ The below example adds a trailing space.
 %
 .
 <p>;
-* 
+*
 %</p>
 ````````````````````````````````
 
@@ -1342,6 +1342,832 @@ lists:
 Things
 .
 <p>Things</p>
+````````````````````````````````
+
+ISSUE #727
+
+```````````````````````````````` example
+-
+
+-
+
+
+-
+
+
+
+-
+.
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+-
+
+  -  .
+.
+<ul>
+<li></li>
+<li><p>.</p></li>
+</ul>
+````````````````````````````````
+
+ISSUE #729
+
+```````````````````````````````` example
+j***5*=*
+.
+<p>j*<em><em>5</em>=</em></p>
+````````````````````````````````
+
+
+ISSUE 731
+
+```````````````````````````````` example
+Not enough table
+
+|
+|
+
+Not enough table
+
+|x
+|
+
+Not enough table
+
+|
+|-
+
+Table
+
+|x
+|-
+
+Not enough table
+| col1 | col2 |
+|      | ---- |
+
+Not enough table
+| col1 | col2 |
+| :    | ---- |
+
+Table
+| col1 | col2 |
+| ---- | ---- |
+.
+<p>Not enough table</p>
+<p>|
+|</p>
+<p>Not enough table</p>
+<p>|x
+|</p>
+<p>Not enough table</p>
+<p>|
+|-</p>
+<p>Table</p>
+<table>
+<thead><tr><th>x</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p>Not enough table
+| col1 | col2 |
+|      | ---- |</p>
+<p>Not enough table
+| col1 | col2 |
+| :    | ---- |</p>
+<p>Table</p>
+<table>
+<thead><tr><th>col1</th><th>col2</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+````````````````````````````````
+
+ISSUE 737
+
+```````````````````````````````` example
+[x] is not a valid link definition, because parens aren't balanced.
+
+[x]: (
+.
+<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x]: (</p>
+````````````````````````````````
+
+ISSUE 739
+
+```````````````````````````````` example
+Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.
+
+_*_
+*{*{
+
+_x_
+*{*{
+.
+<p>Both of these two paragraphs are structurally the same, but the first one has
+an unmatched asterisk.</p>
+<p><em>*</em>
+<em>{</em>{</p>
+<p><em>x</em>
+<em>{</em>{</p>
+````````````````````````````````
+
+ISSUE 741
+
+```````````````````````````````` example
+**a.*.**a*.**.
+.
+<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
+````````````````````````````````
+
+ISSUE 747
+
+```````````````````````````````` example
+_*__*_*
+
+_*xx*_*
+
+_*__-_-
+
+_*xx-_-
+.
+<p><em><em>__</em></em>*</p>
+<p><em><em>xx</em></em>*</p>
+<p><em>*__-</em>-</p>
+<p><em>*xx-</em>-</p>
+````````````````````````````````
+
+
+ISSUE 751
+
+```````````````````````````````` example
+-
+
+→-
+
+
+- x
+
+→-
+.
+<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+-
+
+    -
+
+
+- x
+
+    -
+.
+<ul>
+<li></li>
+</ul>
+<pre><code>-
+</code></pre>
+<ul>
+<li>
+<p>x</p>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+````````````````````````````````
+
+ISSUE 753
+
+```````````````````````````````` example
+[x\
+
+]: https://rust-lang.org
+.
+<p>[x\</p>
+<p>]: https://rust-lang.org</p>
+````````````````````````````````
+
+ISSUE 755
+
+```````````````````````````````` example
+>>**#*
+>
+>**#*
+
+**#*
+
+|**#*|
+|----|
+|**#*|
+|**#*
+**#*|
+**#*
+.
+<blockquote>
+<blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+</blockquote>
+<p>*<em>#</em></p>
+<table><thead><tr><th>*<em>#</em></th></tr></thead><tbody>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+<tr><td>*<em>#</em></td></tr>
+</tbody></table>
+````````````````````````````````
+
+ISSUE #762
+
+```````````````````````````````` example
+The second hyphen should parse the same way in both samples.
+
+ - >*
+
+   -
+
+The second hyphen should parse the same way in both samples.
+
+ - >x
+
+   -
+.
+<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+<p>The second hyphen should parse the same way in both samples.</p>
+<ul>
+<li>
+<blockquote>
+<p>x</p>
+</blockquote>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+````````````````````````````````
+
+Laziness rules apply to link definition.
+ISSUE #764
+
+```````````````````````````````` example
+> Rewriting it in [Rust] is usually a bad idea.
+>
+> [Rust]:
+https://rust-lang.org
+.
+<blockquote>
+<p>Rewriting it in <a href="https://rust-lang.org">Rust</a> is usually a bad idea.</p>
+</blockquote>
+````````````````````````````````
+
+ISSUE 768
+
+```````````````````````````````` example
+[First try
+----------
+Second try]: https://rust-lang.org
+.
+<h2>[First try</h2>
+<p>Second try]: https://rust-lang.org</p>
+````````````````````````````````
+
+ISSUE 772
+
+```````````````````````````````` example
+[^foo][]
+
+[^foo][baz]
+
+[baz][^foo]
+
+[^foo]: bar
+
+[baz]: https://rust-lang.org
+.
+<p><sup class="footnote-reference"><a href="#foo">1</a></sup>[]</p>
+<p><a href="https://rust-lang.org">^foo</a></p>
+<p>[baz]<sup class="footnote-reference"><a href="#foo">1</a></sup></p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup>
+<p>bar</p>
+</div>
+````````````````````````````````
+
+ISSUE 774
+
+```````````````````````````````` example
+# foo \
+bar \
+.
+<h1>foo \</h1>
+<p>bar \</p>
+````````````````````````````````
+
+ISSUE 779
+
+```````````````````````````````` example
+[third try]:
+-
+
+[third try]
+.
+<h2>[third try]:</h2>
+<p>[third try]</p>
+````````````````````````````````
+
+
+ISSUE 781
+
+```````````````````````````````` example
+- [foo]: test
+bar
+
+> [bar]: test
+[baz]: rstr
+[bar]
+.
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> - [foo]: test
+> bar
+> 
+> > [bar]: test
+> [baz]: rstr
+> [bar]
+.
+<blockquote>
+<ul>
+<li>bar</li>
+</ul>
+<blockquote>
+<p><a href="test">bar</a></p>
+</blockquote>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[bar]: test
+-
+.
+<p>-</p>
+````````````````````````````````
+
+Nested link destinations with line breaks
+
+```````````````````````````````` example
+[link](
+foo)
+
+> [link](
+> foo)
+.
+<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](foo
+)
+
+> [link](foo
+> )
+.
+<p><a href="foo">link</a></p>
+<blockquote>
+<p><a href="foo">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](foo
+"bar"
+)
+
+> [link](foo
+> "bar"
+> )
+.
+<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[link](→
+→foo→
+→"bar"→
+→)
+
+> [link](→
+> →foo→
+> →"bar"→
+> →)
+.
+<p><a href="foo" title="bar">link</a></p>
+<blockquote>
+<p><a href="foo" title="bar">link</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[linkme]: foo
+    - baz
+.
+<p>- baz</p>
+````````````````````````````````
+
+https://gist.github.com/notriddle/0048782ad2e819a134c094a1cc52df84
+
+```````````````````````````````` example
+[linkme-3]:
+   [^foo]:
+
+[linkme-4]:
+    [^bar]:
+
+GFM footnotes can interrupt link defs if they have three spaces, but not four.
+.
+<p>[linkme-3]:</p>
+<div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup></div>
+<p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[linkme-3]:
+   ===
+
+[linkme-4]:
+    ===
+
+Setext heading can interrupt link def if it has three spaces, but not four.
+.
+<h1>[linkme-3]:</h1>
+<p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[linkme-3]: a
+   - a
+
+[linkme-4]: a
+    - b
+
+List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.
+.
+<ul>
+<li>a</li>
+</ul>
+<p>- b</p>
+<p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
+````````````````````````````````
+
+
+ISSUE 789
+
+```````````````````````````````` example
+[first
+-
+second]: https://example.com
+
+[first
+-
+second]
+.
+<h2>[first</h2>
+<p>second]: https://example.com</p>
+<h2>[first</h2>
+<p>second]</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first
+    -
+second]: https://example.com
+
+[first
+    -
+second]
+.
+<p><a href="https://example.com">first
+-
+second</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+-
+"
+
+[first]
+.
+<h2>&quot;</h2>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+    -
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+> -
+> "
+>
+> [first]
+.
+<blockquote>
+<h2>&quot;</h2>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+</blockquote>
+````````````````````````````````
+
+ISSUE 795
+
+```````````````````````````````` example
+> ```
+> code
+
+> text
+.
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [first]: https://example.com
+> "
+>     -
+> "
+>
+> [first]
+.
+<blockquote>
+<p><a href="https://example.com" title="
+-
+">first</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+"
+
+[first]
+.
+<p><a href="https://example.com" title="
+\
+">first</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first]: https://example.com
+"
+\
+
+"
+
+[first]
+.
+<p>&quot;
+\</p>
+<p>&quot;</p>
+<p><a href="https://example.com">first</a></p>
+````````````````````````````````
+
+
+ISSUE 791
+
+```````````````````````````````` example
+[foo]: https://example.com
+'[foo]'bar
+.
+<p>'<a href="https://example.com">foo</a>'bar</p>
+````````````````````````````````
+
+```````````````````````````````` example
+- [foo]: https://example.com
+'[foo]'
+[foo]
+.
+<ul>
+<li>
+<a href="https://example.com" title="[foo]">foo</a>
+</li>
+</ul>
+````````````````````````````````
+
+
+ISSUE 793
+
+```````````````````````````````` example
+[
+a]: https://example.com
+
+[b
+]: https://example.com
+
+[a] [b]
+.
+<p><a href="https://example.com">a</a> <a href="https://example.com">b</a></p>
+````````````````````````````````
+
+ISSUE 795
+
+```````````````````````````````` example
+> > ```
+> > code
+>
+> > text
+.
+<blockquote>
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<blockquote>
+<p>text</p>
+</blockquote>
+</blockquote>
+````````````````````````````````
+
+
+ISSUE 797
+
+```````````````````````````````` example
+- *foo
+  - - 
+  baz*
+.
+<ul>
+<li>*foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz*</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+- `foo
+  - - 
+  baz`
+.
+<ul>
+<li>`foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz`</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+- [foo
+  - - 
+  baz](https://example.com)
+.
+<ul>
+<li>[foo
+<ul>
+<li>
+<ul>
+<li></li>
+</ul>
+</li>
+</ul>
+baz](https://example.com)</li>
+</ul>
+````````````````````````````````
+
+ISSUE 808
+
+```````````````````````````````` example
+[mylink]
+
+[mylink]: https://example.com
+'
+part of the title'
+.
+<p><a href="https://example.com" title="
+part of the title">mylink</a></p>
+````````````````````````````````
+
+ISSUE 810
+
+```````````````````````````````` example
+1.
+      pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+      The dot in the list marker is at column two, so the child paragraph actually
+      starts in column *three*.
+.
+<ol>
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+The dot in the list marker is at column two, so the child paragraph actually
+starts in column <em>three</em>.</li>
+</ol>
+````````````````````````````````
+
+```````````````````````````````` example
+1.
+  This is not in the list at all. It's a paragraph after it.
+.
+<ol>
+<li></li>
+</ol>
+<p>This is not in the list at all. It's a paragraph after it.</p>
+````````````````````````````````
+
+ISSUE 716
+
+```````````````````````````````` example
+`\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&`
+.
+<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
+````````````````````````````````
+
+ISSUE 813
+
+```````````````````````````````` example
+|
+-|- *
+.
+<p>|
+-|- *</p>
 ````````````````````````````````
 
 ISSUE 715

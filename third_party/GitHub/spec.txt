@@ -2776,14 +2776,10 @@ an indented code block:
 
 </table>
 .
-<table>
-  <tr>
-<pre><code>&lt;td&gt;
+<table><tr><pre><code>&lt;td&gt;
   Hi
 &lt;/td&gt;
-</code></pre>
-  </tr>
-</table>
+</code></pre></tr></table>
 ````````````````````````````````
 
 

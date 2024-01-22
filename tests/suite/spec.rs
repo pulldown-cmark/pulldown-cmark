@@ -2682,14 +2682,10 @@ fn spec_test_191() {
 
 </table>
 "##;
-    let expected = r##"<table>
-  <tr>
-<pre><code>&lt;td&gt;
+    let expected = r##"<table><tr><pre><code>&lt;td&gt;
   Hi
 &lt;/td&gt;
-</code></pre>
-  </tr>
-</table>
+</code></pre></tr></table>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

@@ -111,7 +111,7 @@ pub(crate) struct LineStart<'a> {
 }
 
 impl<'a> LineStart<'a> {
-    pub(crate) fn new(bytes: &[u8]) -> LineStart {
+    pub(crate) fn new(bytes: &[u8]) -> LineStart<'_> {
         LineStart {
             bytes,
             tab_start: 0,
@@ -236,7 +236,7 @@ impl<'a> LineStart<'a> {
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
                         if self.scan_space(1) || self.is_at_eol() {
-                            return self.finish_list_marker(c, val, indent + self.ix - start_ix);
+                            return self.finish_list_marker(c, val, indent + 1 + ix - start_ix);
                         } else {
                             break;
                         }
@@ -559,6 +559,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     let mut active_col = Alignment::None;
     let mut start_col = true;
     let mut found_pipe = false;
+    let mut found_hyphen = false;
+    let mut found_hyphen_in_col = false;
     if data[i] == b'|' {
         i += 1;
         found_pipe = true;
@@ -581,17 +583,23 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
             }
             b'-' => {
                 start_col = false;
+                found_hyphen = true;
+                found_hyphen_in_col = true;
             }
             b'|' => {
                 start_col = true;
                 found_pipe = true;
                 cols.push(active_col);
                 active_col = Alignment::None;
+                if !found_hyphen_in_col {
+                    // It isn't a table head if it has back-to-back pipes.
+                    return (0, vec![]);
+                }
+                found_hyphen_in_col = false;
             }
             _ => {
-                cols = vec![];
-                start_col = true;
-                break;
+                // It isn't a table head if it has characters outside the allowed set.
+                return (0, vec![]);
             }
         }
         i += 1;
@@ -600,8 +608,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     if !start_col {
         cols.push(active_col);
     }
-    if !found_pipe {
-        // It isn't a table head if it doesn't have a least one pipe.
+    if !found_pipe || !found_hyphen {
+        // It isn't a table head if it doesn't have a least one pipe or hyphen.
         // It's a list, a header, or a thematic break.
         return (0, vec![]);
     }
@@ -819,47 +827,6 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     (0, None)
 }
 
-// FIXME: we can most likely re-use other scanners
-// returns (bytelength, title_str)
-pub(crate) fn scan_refdef_title(text: &str) -> Option<(usize, &str)> {
-    let mut chars = text.chars().peekable();
-    let closing_delim = match chars.next()? {
-        '\'' => '\'',
-        '"' => '"',
-        '(' => ')',
-        _ => return None,
-    };
-    let mut bytecount = 1;
-
-    while let Some(c) = chars.next() {
-        match c {
-            '\n' => {
-                bytecount += 1;
-                let mut next = *chars.peek()?;
-                while is_ascii_whitespace_no_nl(next as u8) {
-                    bytecount += chars.next()?.len_utf8();
-                    next = *chars.peek()?;
-                }
-                if *chars.peek()? == '\n' {
-                    // blank line - not allowed
-                    return None;
-                }
-            }
-            '\\' => {
-                let next_char = chars.next()?;
-                bytecount += 1 + next_char.len_utf8();
-            }
-            c if c == closing_delim => {
-                return Some((bytecount + 1, &text[1..bytecount]));
-            }
-            c => {
-                bytecount += c.len_utf8();
-            }
-        }
-    }
-    None
-}
-
 // note: dest returned is raw, still needs to be unescaped
 // TODO: check that nested parens are really not allowed for refdefs
 // TODO(performance): this func should probably its own unescaping
@@ -911,6 +878,9 @@ pub(crate) fn scan_link_dest(
                 _ => {}
             }
             i += 1;
+        }
+        if nest != 0 {
+            return None;
         }
         Some((i, &data[start_ix..(start_ix + i)]))
     }
@@ -1032,13 +1002,24 @@ fn scan_attribute_value(
 }
 
 // Remove backslash escapes and resolve entities
-pub(crate) fn unescape(input: &str) -> CowStr<'_> {
+pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> CowStr<'a> {
+    let input = input.into();
     let mut result = String::new();
     let mut mark = 0;
     let mut i = 0;
     let bytes = input.as_bytes();
     while i < bytes.len() {
         match bytes[i] {
+            // Tables are special, because they're parsed as-if the tables
+            // were parsed in a discrete pass, changing `\|` to `|`, and then
+            // passing the changed string to the inline parser.
+            b'\\' if is_in_table && i + 2 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 2] == b'|' => {
+                // even number of `\`s before pipe
+                // odd number is handled in the normal way below
+                result.push_str(&input[mark..i]);
+                mark = i + 2;
+                i += 3;
+            }
             b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
                 result.push_str(&input[mark..i]);
                 mark = i + 1;

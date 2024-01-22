@@ -98,7 +98,9 @@ mod tree;
 
 use std::{convert::TryFrom, fmt::Display};
 
-pub use crate::parse::{BrokenLink, BrokenLinkCallback, LinkDef, OffsetIter, Parser, RefDefs};
+pub use crate::parse::{
+    BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+};
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;
 
@@ -130,8 +132,6 @@ pub enum MetadataBlockKind {
 }
 
 /// Tags for elements that can contain other elements.
-/// Note that variants are in the same order than in `TagEnd`, so the
-/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Tag<'a> {
@@ -153,6 +153,9 @@ pub enum Tag<'a> {
     BlockQuote,
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
+
+    /// A HTML block.
+    HtmlBlock,
 
     /// A list. If the list is ordered the field indicates the number of the first item.
     /// Contains only list items.
@@ -183,6 +186,7 @@ pub enum Tag<'a> {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
+        /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
     },
 
@@ -192,6 +196,7 @@ pub enum Tag<'a> {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
+        /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
     },
 
@@ -200,8 +205,6 @@ pub enum Tag<'a> {
 }
 
 /// The end of a `Tag`.
-/// Note that variants are in the same order than in `Tag`, so the
-/// matching variant can be compared using `start_tag as u32 == end_tag as u32`.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TagEnd {
@@ -211,7 +214,10 @@ pub enum TagEnd {
     BlockQuote,
     CodeBlock,
 
-    List(bool), // true for ordered lists
+    HtmlBlock,
+
+    /// A list, `true` for ordered lists.
+    List(bool),
     Item,
     FootnoteDefinition,
 
@@ -227,7 +233,6 @@ pub enum TagEnd {
     Link,
     Image,
 
-    /// A metadata block.
     MetadataBlock(MetadataBlockKind),
 }
 
@@ -333,6 +338,9 @@ pub enum Event<'a> {
     /// An HTML node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Html(CowStr<'a>),
+    /// An inline HTML node.
+    #[cfg_attr(feature = "serde", serde(borrow))]
+    InlineHtml(CowStr<'a>),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
     /// occur in any order.

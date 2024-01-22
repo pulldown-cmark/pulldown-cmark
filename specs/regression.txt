@@ -2173,3 +2173,27 @@ ISSUE 813
 <p>|
 -|- *</p>
 ````````````````````````````````
+
+ISSUE 817
+
+```````````````````````````````` example
+![^1]
+
+[^1]: foo
+.
+<p>!<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example
+First ![^1][] Second
+
+[^1]: foo
+.
+<p>First !<sup class="footnote-reference"><a href="#1">1</a></sup>[] Second</p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
+````````````````````````````````

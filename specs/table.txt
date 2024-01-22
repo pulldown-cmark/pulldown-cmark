@@ -736,3 +736,33 @@ Double escaping in link title
 <tr><td><a href="https://example.org" title="Example\|Link">Moo</a></td></tr>
 </tbody></table>
 ````````````````````````````````
+
+Blank list items and lists that don't start at one can interrupt tables.
+
+```````````````````````````````` example
+moo | moo
+----|----
+moo | moo
+*
+.
+<table><thead><tr><th>moo</th><th>moo</th></tr></thead><tbody>
+<tr><td>moo</td><td>moo</td></tr>
+</tbody></table>
+<ul>
+<li></li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+moo | moo
+----|----
+moo | moo
+2.
+.
+<table><thead><tr><th>moo</th><th>moo</th></tr></thead><tbody>
+<tr><td>moo</td><td>moo</td></tr>
+</tbody></table>
+<ol start="2">
+<li></li>
+</ol>
+````````````````````````````````

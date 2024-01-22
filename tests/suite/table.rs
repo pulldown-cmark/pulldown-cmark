@@ -594,3 +594,39 @@ fn table_test_26() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn table_test_27() {
+    let original = r##"moo | moo
+----|----
+moo | moo
+*
+"##;
+    let expected = r##"<table><thead><tr><th>moo</th><th>moo</th></tr></thead><tbody>
+<tr><td>moo</td><td>moo</td></tr>
+</tbody></table>
+<ul>
+<li></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn table_test_28() {
+    let original = r##"moo | moo
+----|----
+moo | moo
+2.
+"##;
+    let expected = r##"<table><thead><tr><th>moo</th><th>moo</th></tr></thead><tbody>
+<tr><td>moo</td><td>moo</td></tr>
+</tbody></table>
+<ol start="2">
+<li></li>
+</ol>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -2170,6 +2170,7 @@ ISSUE 813
 -|- *</p>
 ````````````````````````````````
 
+
 ISSUE 715
 ```````````````````````````````` example
  A paragraph is a paragraph and spaces must be removed. 
@@ -2178,4 +2179,28 @@ ISSUE 715
 .
 <p>A paragraph is a paragraph and spaces must be removed.</p>
 <p>Another paragraph whose spaces must be removed.</p>
+````````````````````````````````
+
+ISSUE 817
+
+```````````````````````````````` example
+![^1]
+
+[^1]: foo
+.
+<p>!<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example
+First ![^1][] Second
+
+[^1]: foo
+.
+<p>First !<sup class="footnote-reference"><a href="#1">1</a></sup>[] Second</p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
 ````````````````````````````````

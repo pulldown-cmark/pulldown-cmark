@@ -514,15 +514,26 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 if !self.options.has_gfm_footnotes()
                                     || self.allocs.footdefs.contains(&self.allocs.cows[footref.0])
                                 {
+                                    // If this came from a MaybeImage, then the `!` prefix
+                                    // isn't part of the footnote reference.
+                                    let footnote_ix = if tos.ty == LinkStackTy::Image {
+                                        self.tree[tos.node].next = Some(cur_ix);
+                                        self.tree[tos.node].child = None;
+                                        self.tree[tos.node].item.body =
+                                            ItemBody::SynthesizeChar('!');
+                                        cur_ix
+                                    } else {
+                                        tos.node
+                                    };
                                     // use `next` instead of `node_after_link` because
                                     // node_after_link is calculated for a [collapsed][] link,
                                     // which footnotes don't support.
-                                    self.tree[tos.node].next = next;
-                                    self.tree[tos.node].child = None;
-                                    self.tree[tos.node].item.body =
+                                    self.tree[footnote_ix].next = next;
+                                    self.tree[footnote_ix].child = None;
+                                    self.tree[footnote_ix].item.body =
                                         ItemBody::FootnoteReference(footref);
-                                    self.tree[tos.node].item.end = end;
-                                    prev = Some(tos.node);
+                                    self.tree[footnote_ix].item.end = end;
+                                    prev = Some(footnote_ix);
                                     cur = next;
                                     self.link_stack.clear();
                                     continue;

@@ -2571,3 +2571,33 @@ fn regression_test_159() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+  
+#[test]
+fn regression_test_160() {
+    let original = r##"![^1]
+
+[^1]: foo
+"##;
+    let expected = r##"<p>!<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_161() {
+    let original = r##"First ![^1][] Second
+
+[^1]: foo
+"##;
+    let expected = r##"<p>First !<sup class="footnote-reference"><a href="#1">1</a></sup>[] Second</p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>foo</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

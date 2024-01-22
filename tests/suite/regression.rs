@@ -28,12 +28,7 @@ fn regression_test_2() {
 [on]: https://wiki.haskell.org/Introduction_to_QuickCheck1
 [QuickCheck]: https://hackage.haskell.org/package/QuickCheck
 "##;
-    let expected = r##"<p>see the 
-  <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> 
-  <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> 
-  <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> 
-  <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.
-</p>
+    let expected = r##"<p>see the <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -66,11 +61,11 @@ fn regression_test_4() {
 | --------- | --------- | --------- | ---------:|
 | Content   | Content   | Conent    | Content   |
 "##;
-    let expected = r##"<table><thead><tr><th>Title A  </th><th>Title B  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td></tr>
+    let expected = r##"<table><thead><tr><th>Title A</th><th>Title B</th></tr></thead><tbody>
+<tr><td>Content</td><td>Content</td></tr>
 </tbody></table>
-<table><thead><tr><th>Title A  </th><th>Title B  </th><th>Title C  </th><th style="text-align: right">Title D  </th></tr></thead><tbody>
-<tr><td>Content   </td><td>Content   </td><td>Conent    </td><td style="text-align: right">Content   </td></tr>
+<table><thead><tr><th>Title A</th><th>Title B</th><th>Title C</th><th style="text-align: right">Title D</th></tr></thead><tbody>
+<tr><td>Content</td><td>Content</td><td>Conent</td><td style="text-align: right">Content</td></tr>
 </tbody></table>
 "##;
 
@@ -92,7 +87,6 @@ fn regression_test_6() {
     let original = r##"<https://example.com> hello
 "##;
     let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
-
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -382,7 +376,7 @@ fn regression_test_27() {
 fn regression_test_28() {
     let original = r##"![<http://example.com>](http://example.com/logo.png)
 "##;
-    let expected = r##"<p><img alt="http://example.com" src="http://example.com/logo.png"></p>
+    let expected = r##"<p><img src="http://example.com/logo.png" alt="http://example.com" /></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -392,7 +386,7 @@ fn regression_test_28() {
 fn regression_test_29() {
     let original = r##"[<http://one> <http://two>](url)
 "##;
-    let expected = r##"<p><a href="url"></a><a href="http://one">http://one</a> <a href="http://two">http://two</a></p>
+    let expected = r##"<p><a href="url"><a href="http://one">http://one</a> <a href="http://two">http://two</a></a></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -405,7 +399,7 @@ fn regression_test_30() {
  
 some text
 "##;
-    let expected = r##"<table><thead><tr><th>Markdown </th><th> Less </th><th> Pretty</th></tr></thead><tbody>
+    let expected = r##"<table><thead><tr><th>Markdown</th><th>Less</th><th>Pretty</th></tr></thead><tbody>
 </tbody></table>
 <p>some text</p>
 "##;
@@ -481,7 +475,7 @@ fn regression_test_35() {
 yolo | swag
 "##;
     let expected = r##"<blockquote>
-<table><thead><tr><th>foo</th><th>bar</th></tr></thead></table>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody></tbody></table>
 </blockquote>
 <p>yolo | swag</p>
 "##;
@@ -505,7 +499,7 @@ fn regression_test_37() {
  "hi"> 
 "##;
     let expected = r##"<p><foo bar =
- "hi"> </p>
+ "hi"></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -588,9 +582,9 @@ fn regression_test_44() {
 - - -
 ")
 "##;
-    let expected = r##"<p>[a](url "</p>
+    let expected = r##"<p>[a](url &quot;</p>
 <hr>
-<p>")</p>
+<p>&quot;)</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -774,7 +768,7 @@ fn regression_test_57() {
 <blockquote>
 <p>b]: /foo</p>
 </blockquote>
-<p>[a b] [a > b]</p>
+<p>[a b] [a &gt; b]</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -828,8 +822,8 @@ fn regression_test_61() {
 > the size of `usize` and have the same alignment.
 "##;
     let expected = r##"<blockquote>
-<p>Note: Though you should not rely on this, all pointers to
-<abbr title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
+<p>Note: Though you should not rely on this, all pointers to <abbr
+title="Dynamically Sized Types">DSTs</abbr> are currently twice the size of
 the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 "##;
@@ -850,11 +844,11 @@ An unordered list before the footnotes:
     let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <p>An unordered list before the footnotes:</p>
 <ul>
-    <li>Ipsum</li>
-    <li>Lorem</li>
+<li>Ipsum</li>
+<li>Lorem</li>
 </ul>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-    <p>Cool.</p>
+<p>Cool.</p>
 </div>
 "##;
 
@@ -873,8 +867,7 @@ fn regression_test_63() {
 [crates-badge]: http://meritbadge.herokuapp.com/assimp
 "##;
     let expected = r##"<p><a href="b"></a></p>
-
-<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img alt="" src="http://meritbadge.herokuapp.com/assimp"></a></h1>
+<h1>assimp-rs <a href="https://crates.io/crates/assimp"><img src="http://meritbadge.herokuapp.com/assimp" alt="" /></a></h1>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -1011,7 +1004,9 @@ fn regression_test_70() {
 baz
 "##;
     let expected = r##"<ul>
-<li><p><input disabled="" type="checkbox"> foo</p></li><li><p><input disabled="" type="checkbox"> bar</p></li>
+<li><p><input disabled="" type="checkbox"/>
+foo</p></li><li><p><input disabled="" type="checkbox"/>
+bar</p></li>
 </ul>
 <p>baz</p>
 "##;
@@ -1200,43 +1195,43 @@ fn regression_test_83() {
 	|-----|------|
 | baz | alef |
 "##;
-    let expected = r##"<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+    let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
-<table><thead><tr><th> foo </th><th> bar  </th></tr></thead>
-<tr><td> baz </td><td> alef </td></tr>
+<table><thead><tr><th>foo</th><th>bar</th></tr></thead>
+<tbody><tr><td>baz</td><td>alef</td></tr></tbody>
 </table>
 <pre><code>| foo | bar  |
 |-----|------|
 | baz | alef |
 </code></pre>
 <p>| foo | bar  |
-    |-----|------|
+|-----|------|
 | baz | alef |</p>
 <pre><code>| foo | bar  |
 |-----|------|
 | baz | alef |
 </code></pre>
 <p>| foo | bar  |
-	|-----|------|
+|-----|------|
 | baz | alef |</p>
 "##;
 
@@ -1544,7 +1539,7 @@ fn regression_test_104() {
 %
 "##;
     let expected = r##"<p>;
-* 
+*
 %</p>
 "##;
 
@@ -2246,8 +2241,8 @@ fn regression_test_140() {
 
 [first]
 "##;
-    let expected = r##"<h2>"</h2>
-<p>"</p>
+    let expected = r##"<h2>&quot;</h2>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
 "##;
 
@@ -2281,9 +2276,10 @@ fn regression_test_142() {
 > [first]
 "##;
     let expected = r##"<blockquote>
-<h2>"</h2>
-<p>"</p>
+<h2>&quot;</h2>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
+</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2354,9 +2350,9 @@ fn regression_test_146() {
 
 [first]
 "##;
-    let expected = r##"<p>"
+    let expected = r##"<p>&quot;
 \</p>
-<p>"</p>
+<p>&quot;</p>
 <p><a href="https://example.com">first</a></p>
 "##;
 
@@ -2541,11 +2537,11 @@ fn regression_test_156() {
 
 #[test]
 fn regression_test_157() {
-    let original = r##"`\!\"\#\$\%\&
-\!\"\#\$\%\&
-\!\"\#\$\%\&`
+    let original = r##"`\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&
+\!\&quot;\#\$\%\&`
 "##;
-    let expected = r##"<p><code>\!\"\#\$\%\& \!\"\#\$\%\& \!\"\#\$\%\&</code></pre>
+    let expected = r##"<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2565,6 +2561,19 @@ fn regression_test_158() {
 
 #[test]
 fn regression_test_159() {
+    let original = r##" A paragraph is a paragraph and spaces must be removed. 
+
+   Another paragraph whose spaces must be removed.  
+"##;
+    let expected = r##"<p>A paragraph is a paragraph and spaces must be removed.</p>
+<p>Another paragraph whose spaces must be removed.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+  
+#[test]
+fn regression_test_160() {
     let original = r##"![^1]
 
 [^1]: foo
@@ -2579,7 +2588,7 @@ fn regression_test_159() {
 }
 
 #[test]
-fn regression_test_160() {
+fn regression_test_161() {
     let original = r##"First ![^1][] Second
 
 [^1]: foo

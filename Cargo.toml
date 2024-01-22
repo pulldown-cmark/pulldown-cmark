@@ -72,10 +72,7 @@ getopts = { version = "0.2", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [dev-dependencies]
-html5ever = "0.26"
-markup5ever_rcdom = "0.2"
 lazy_static = "1.4"
-tendril = "0.4"
 criterion = "0.5"
 regex = "1.6"
 serde_json = "1.0.61"

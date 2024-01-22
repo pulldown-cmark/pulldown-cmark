@@ -328,11 +328,11 @@ An unordered list before the footnotes:
     let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <p>An unordered list before the footnotes:</p>
 <ul>
-    <li>Ipsum</li>
-    <li>Lorem</li>
+<li>Ipsum</li>
+<li>Lorem</li>
 </ul>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-    <p>Cool.</p>
+<p>Cool.</p>
 </div>
 "##;
 
@@ -451,7 +451,7 @@ fn footnotes_test_17() {
 <!-- -->
 <pre><code>// indented code block
 fn main() {
-    println!("hello world!");
+    println!(&quot;hello world!&quot;);
 }
 </code></pre>
 "##;
@@ -636,7 +636,7 @@ footnote [^quux]
    [^baz]: x
 "##;
     let expected = r##"<p>footnote <sup class="footnote-reference"><a href="#baz">1</a></sup>
-footnote [^quux]</sup></p>
+footnote [^quux]</p>
 <pre><code>[^quux]: x
 </code></pre>
 <div class="footnote-definition" id="baz"><sup class="footnote-definition-label">1</sup>

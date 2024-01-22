@@ -17,7 +17,7 @@ multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
     let expected = r##"<h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
 <h1 myattr="myvalue">with a custom attribute</h1>
-<h2 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h2>
+<h2 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h2>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -33,7 +33,7 @@ fn heading_attrs_test_2() {
     let expected = r##"<h1 id="myh1">with the ID</h1>
 <h2 class="myclass">with a class</h2>
 <h4 myattr="myvalue">with a custom attribute</h4>
-<h3 id="myh3" class="myclass1 myclass2" myattr otherattr="value">multiple!</h3>
+<h3 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h3>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -276,7 +276,7 @@ fn heading_attrs_test_20() {
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 "##;
     let expected = r##"<h1 foo="">H1</h1>
-<h2 id="myid" unknown="" this#is.ignored="" attr="value" class="myclass">H2</h2>
+<h2 id="myid" class="myclass" unknown="" this#is.ignored="" attr="value">H2</h2>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -296,7 +296,7 @@ fn heading_attrs_test_21() {
 fn heading_attrs_test_22() {
     let original = r##"#### Header {#id myattr= .class1 other_attr=false}
 "##;
-    let expected = r##"<h4 id="id" myattr="" class="class1" other_attr="false">Header</h4>
+    let expected = r##"<h4 id="id" class="class1" myattr="" other_attr="false">Header</h4>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

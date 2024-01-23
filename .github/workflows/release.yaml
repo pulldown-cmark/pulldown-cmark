@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 1G
+      SCCACHE_DIR: /home/runner/.cache/sccache
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: 'recursive'
+      - name: install zig and tools (Linux)
+        run: |
+          #pacman -Sy sudo rustup clang llvm lld make git --noconfirm
+          sudo apt-get install build-essential make git clang
+          rm -f ~/.cargo/config*
+          mkdir -p zig
+          curl -LZ https://ziglang.org/builds/zig-linux-x86_64-0.12.0-dev.2302+b729a3f00.tar.xz|tar xJ --strip-component=1 -C zig
+          sudo mv zig /usr/local/
+          echo "/usr/local/zig" >> $GITHUB_PATH
+      - name: Install sccache
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.7.5
+        run: |
+          SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/v$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          chmod +x $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install mold linker
+        uses: rui314/setup-mold@staging
+        with:
+          mold-version: 2.4.0
+          make-default: true
+      - name: Cache toolchain
+        uses: Swatinem/rust-cache@v2
+      - name: Update toolchain
+        run: |
+          rustup update nightly
+          rustup default nightly
+          rustup component add rust-src
+          rustup target add $(cat target.txt)
+          rustup +stable target add $(cat target.txt)
+      - name: Install cargo-zigbuild
+        run: |
+          cargo install cargo-zigbuild --target x86_64-unknown-linux-gnu
+      - name: config.toml
+        run: |
+          mkdir -p ~/.cargo/
+          rm -f ~/.cargo/config*
+          cp config.toml ~/.cargo/config.toml
+      - name: fix duplicate symbol
+        run: |
+          sudo sed -e "s|\(void __cdecl _tzset(void)\)|/*\n\1|" -e "s|\(void __cdecl tzset(void)\)|*/\n\1|" -i /usr/local/zig/lib/libc/mingw/crt/ucrtbase_compat.c
+      - name: Build and archive
+        shell: bash
+        run: |
+          cargo update
+          make target-archive
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          omitBody: true
+          artifacts: 'release/*'
+          token: ${{ secrets.GITHUB_TOKEN }}

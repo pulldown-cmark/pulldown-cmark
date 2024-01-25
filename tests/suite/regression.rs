@@ -128,7 +128,6 @@ fn regression_test_8() {
 <p>make something</p>
 </li>
 </ul>
-
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2571,7 +2570,7 @@ fn regression_test_159() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_160() {
     let original = r##"![^1]

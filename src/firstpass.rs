@@ -320,6 +320,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let mut ix = start_ix;
         loop {
+            if self.options.contains(Options::ENABLE_FOOTNOTES) && self.get_footnote(ix).is_some() {
+                self.tree.pop();
+                if let Some(node_ix) = self.tree.peek_up() {
+                    if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
+                        self.pop(ix);
+                    }
+                }
+                return ix;
+            }
+
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
                 TableParseMode::Scan
             } else {
@@ -1090,8 +1100,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         end
     }
 
-    /// Returns the number of bytes scanned on success.
-    fn parse_footnote(&mut self, start: usize) -> Option<usize> {
+    fn get_footnote(&mut self, start: usize) -> Option<(usize, CowStr<'a>)> {
         let bytes = &self.text.as_bytes()[start..];
         if !bytes.starts_with(b"[^") {
             return None;
@@ -1102,6 +1111,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
         i += 1;
+        Some((i, label))
+    }
+
+    /// Returns the number of bytes scanned on success.
+    fn parse_footnote(&mut self, start: usize) -> Option<usize> {
+        let (i, label) = self.get_footnote(start)?;
         self.finish_list(start);
         self.tree.append(Item {
             start,

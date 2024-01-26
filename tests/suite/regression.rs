@@ -2600,3 +2600,36 @@ fn regression_test_161() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_162() {
+    let original = r##"
+ <foo>
+"##;
+    let expected = r##" <foo>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_163() {
+    let original = r##"
+<foo>
+"##;
+    let expected = r##"<foo>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_164() {
+    let original = r##"
+   <foo>
+"##;
+    let expected = r##"   <foo>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -556,7 +556,7 @@ A: Interrupting —?
 | `ooo\\|ooo` |
 "##;
     let expected = r##"<p>Q: Knock knock.
-A: Who's there.
+A: Who&#39;s there.
 Q: Interrupting cow.
 A: Interrupting —?</p>
 <table><thead><tr><th><code>Moo\|ooo</code></th></tr></thead><tbody>

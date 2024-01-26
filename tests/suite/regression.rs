@@ -1720,7 +1720,7 @@ fn regression_test_113() {
 
 [x]: (
 "##;
-    let expected = r##"<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+    let expected = r##"<p>[x] is not a valid link definition, because parens aren&#39;t balanced.</p>
 <p>[x]: (</p>
 "##;
 
@@ -2364,7 +2364,7 @@ fn regression_test_147() {
     let original = r##"[foo]: https://example.com
 '[foo]'bar
 "##;
-    let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
+    let expected = r##"<p>&#39;<a href="https://example.com">foo</a>&#39;bar</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2512,7 +2512,7 @@ fn regression_test_155() {
       starts in column *three*.
 "##;
     let expected = r##"<ol>
-<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn&#39;t.
 The dot in the list marker is at column two, so the child paragraph actually
 starts in column <em>three</em>.</li>
 </ol>
@@ -2529,7 +2529,7 @@ fn regression_test_156() {
     let expected = r##"<ol>
 <li></li>
 </ol>
-<p>This is not in the list at all. It's a paragraph after it.</p>
+<p>This is not in the list at all. It&#39;s a paragraph after it.</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2571,7 +2571,7 @@ fn regression_test_159() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_160() {
     let original = r##"![^1]

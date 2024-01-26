@@ -55,7 +55,7 @@ Songs that simply loop are a popular way to annoy people. [^examples]
 <div class="footnote-definition" id="examples"><sup class="footnote-definition-label">1</sup></div>
 <ul>
 <li><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">The song that never ends</a></li>
-<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a></li>
+<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody&#39;s nerves</a></li>
 <li><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a></li>
 </ul>
 ````````````````````````````````
@@ -75,7 +75,7 @@ Songs that simply loop are a popular way to annoy people. [^examples]
 <div class="footnote-definition" id="examples"><sup class="footnote-definition-label">1</sup>
 <ul>
 <li><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">The song that never ends</a></li>
-<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a></li>
+<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody&#39;s nerves</a></li>
 <li><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a></li>
 </ul>
 </div>
@@ -149,16 +149,16 @@ Footnotes can even have multiple paragraphs. You need to indent, though.
 
 I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
 
-[^ipsum]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
+[^ipsum]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle&#39;s research.
 
     I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
 .
 <div class="footnote-definition" id="lorem"><sup class="footnote-definition-label">1</sup>
-<p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.</p>
+<p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle&#39;s research.</p>
 </div>
 <p>I had largely given over my inquiries into what Professor Angell called the &quot;Cthulhu Cult&quot;, and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 <div class="footnote-definition" id="ipsum"><sup class="footnote-definition-label">2</sup>
-<p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.</p>
+<p>If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle&#39;s research.</p>
 <p>I had largely given over my inquiries into what Professor Angell called the &quot;Cthulhu Cult&quot;, and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 </div>
 ````````````````````````````````
@@ -179,7 +179,7 @@ If a woodchuck could chuck wood.
 <p>How much wood would a woodchuck chuck.</p>
 </div>
 <p>If a woodchuck could chuck wood.</p>
-<h1>Forms of entertainment that aren't childish</h1>
+<h1>Forms of entertainment that aren&#39;t childish</h1>
 ````````````````````````````````
 
 
@@ -227,12 +227,12 @@ A footnote will also break if it's inside another container.
 As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.
 .
 <blockquote>
-<p>He's also really stupid. <sup class="footnote-reference"><a href="#why">1</a></sup></p>
+<p>He&#39;s also really stupid. <sup class="footnote-reference"><a href="#why">1</a></sup></p>
 <div class="footnote-definition" id="why"><sup class="footnote-definition-label">1</sup>
 <p>Because your mamma!</p>
 </div>
 </blockquote>
-<p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
+<p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven&#39;t gotten boring yet.</p>
 ````````````````````````````````
 
 
@@ -263,7 +263,7 @@ Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
 <p>This means that a footnote definition cannot be directly inside another footnote definition.</p>
 </div>
 <blockquote>
-<p>This means that a footnote cannot be directly inside another footnote's body. <sup class="footnote-reference"><a href="#e">6</a></sup></p>
+<p>This means that a footnote cannot be directly inside another footnote&#39;s body. <sup class="footnote-reference"><a href="#e">6</a></sup></p>
 <div class="footnote-definition" id="e"><sup class="footnote-definition-label">6</sup>
 <p>They can, however, be inside anything else.</p>
 </div>
@@ -301,7 +301,7 @@ They do **not** need one line between each other.
 .
 <p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p>
 <div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup>
-<p>I know. Wrong Doe. And it won't render right.</p>
+<p>I know. Wrong Doe. And it won&#39;t render right.</p>
 </div>
 <div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup>
 <p>Common for people practicing music.</p>
@@ -367,14 +367,14 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 </ul>
 </div>
 <ul>
-<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a></li>
+<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody&#39;s nerves</a></li>
 <li><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a></li>
 </ul>
 <p>Songs that simply loop are a popular way to annoy people. <sup class="footnote-reference"><a href="#examples2">2</a></sup></p>
 <div class="footnote-definition" id="examples2"><sup class="footnote-definition-label">2</sup>
 <ul>
 <li><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">The song that never ends</a> 2</li>
-<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a> 2</li>
+<li><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody&#39;s nerves</a> 2</li>
 </ul>
 <ul>
 <li><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a> 2</li>
@@ -384,7 +384,7 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 <div class="footnote-definition" id="examples3"><sup class="footnote-definition-label">3</sup>
 <ul>
 <li><p><a href="https://www.youtube.com/watch?v=0U2zJOryHKQ">The song that never ends</a> 3</p>
-</li><li><p><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody's nerves</a> 3</p>
+</li><li><p><a href="https://www.youtube.com/watch?v=TehWI09qxls">I know a song that gets on everybody&#39;s nerves</a> 3</p>
 </li><li><p><a href="https://www.youtube.com/watch?v=qVjCag8XoHQ">Ninety-nine bottles of beer on the wall</a> 3</p></li>
 </ul>
 </div>

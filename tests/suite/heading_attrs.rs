@@ -472,7 +472,7 @@ fn heading_attrs_test_35() {
 "##;
     let expected = r##"<h1 class="foo#bar">H1</h1>
 <h2 id="foo.bar">H2</h2>
-<h3 class="a&quot;b'c&amp;d">H3</h3>
+<h3 class="a&quot;b&#39;c&amp;d">H3</h3>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

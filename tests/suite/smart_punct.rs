@@ -117,8 +117,8 @@ This isn\'t either.
 5\'8\"
 "##;
     let expected = r##"<p>&quot;This is not smart.&quot;
-This isn't either.
-5'8&quot;</p>
+This isn&#39;t either.
+5&#39;8&quot;</p>
 "##;
 
     test_markdown_html(original, expected, true, false, false);

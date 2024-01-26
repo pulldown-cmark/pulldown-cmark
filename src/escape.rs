@@ -144,12 +144,13 @@ const fn create_html_escape_table() -> [u8; 256] {
     table[b'&' as usize] = 2;
     table[b'<' as usize] = 3;
     table[b'>' as usize] = 4;
+    table[b'\'' as usize] = 5;
     table
 }
 
 static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
 
-static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
+static HTML_ESCAPES: [&str; 6] = ["", "&quot;", "&amp;", "&lt;", "&gt;", "&#39;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ") by escape sequences.

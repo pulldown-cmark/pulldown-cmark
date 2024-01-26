@@ -1457,7 +1457,7 @@ ISSUE 737
 
 [x]: (
 .
-<p>[x] is not a valid link definition, because parens aren't balanced.</p>
+<p>[x] is not a valid link definition, because parens aren&#39;t balanced.</p>
 <p>[x]: (</p>
 ````````````````````````````````
 
@@ -2006,7 +2006,7 @@ ISSUE 791
 [foo]: https://example.com
 '[foo]'bar
 .
-<p>'<a href="https://example.com">foo</a>'bar</p>
+<p>&#39;<a href="https://example.com">foo</a>&#39;bar</p>
 ````````````````````````````````
 
 ```````````````````````````````` example
@@ -2134,7 +2134,7 @@ ISSUE 810
       starts in column *three*.
 .
 <ol>
-<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn't.
+<li>pulldown-cmark used to think this was code, but commonmark.js and commonmark-hs didn&#39;t.
 The dot in the list marker is at column two, so the child paragraph actually
 starts in column <em>three</em>.</li>
 </ol>
@@ -2147,7 +2147,7 @@ starts in column <em>three</em>.</li>
 <ol>
 <li></li>
 </ol>
-<p>This is not in the list at all. It's a paragraph after it.</p>
+<p>This is not in the list at all. It&#39;s a paragraph after it.</p>
 ````````````````````````````````
 
 ISSUE 716

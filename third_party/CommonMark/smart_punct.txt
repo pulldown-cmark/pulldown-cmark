@@ -96,8 +96,8 @@ This isn\'t either.
 5\'8\"
 .
 <p>&quot;This is not smart.&quot;
-This isn't either.
-5'8&quot;</p>
+This isn&#39;t either.
+5&#39;8&quot;</p>
 ````````````````````````````````
 
 Two hyphens form an en-dash, three an em-dash.

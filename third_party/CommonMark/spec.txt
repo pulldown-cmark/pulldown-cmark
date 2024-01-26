@@ -482,7 +482,7 @@ Any ASCII punctuation character may be backslash-escaped:
 ```````````````````````````````` example
 \!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
 .
-<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
+<p>!&quot;#$%&amp;&#39;()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
 ````````````````````````````````
 
 
@@ -3236,8 +3236,8 @@ with blank line'
 
 [foo]
 .
-<p>[foo]: /url 'title</p>
-<p>with blank line'</p>
+<p>[foo]: /url &#39;title</p>
+<p>with blank line&#39;</p>
 <p>[foo]</p>
 ````````````````````````````````
 
@@ -9061,7 +9061,7 @@ Illegal attribute values:
 ```````````````````````````````` example
 <a href="hi'> <a href=hi'>
 .
-<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
+<p>&lt;a href=&quot;hi&#39;&gt; &lt;a href=hi&#39;&gt;</p>
 ````````````````````````````````
 
 
@@ -9085,7 +9085,7 @@ Missing whitespace:
 ```````````````````````````````` example
 <a href='bar'title=title>
 .
-<p>&lt;a href='bar'title=title&gt;</p>
+<p>&lt;a href=&#39;bar&#39;title=title&gt;</p>
 ````````````````````````````````
 
 
@@ -9383,7 +9383,7 @@ be parsed as plain textual content.
 ```````````````````````````````` example
 hello $.;'there
 .
-<p>hello $.;'there</p>
+<p>hello $.;&#39;there</p>
 ````````````````````````````````
 
 

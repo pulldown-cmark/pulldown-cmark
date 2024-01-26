@@ -160,7 +160,7 @@ fn spec_test_11() {
 fn spec_test_12() {
     let original = r##"\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
 "##;
-    let expected = r##"<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
+    let expected = r##"<p>!&quot;#$%&amp;&#39;()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -2771,8 +2771,8 @@ with blank line'
 
 [foo]
 "##;
-    let expected = r##"<p>[foo]: /url 'title</p>
-<p>with blank line'</p>
+    let expected = r##"<p>[foo]: /url &#39;title</p>
+<p>with blank line&#39;</p>
 <p>[foo]</p>
 "##;
 
@@ -8114,7 +8114,7 @@ fn spec_test_618() {
 fn spec_test_619() {
     let original = r##"<a href="hi'> <a href=hi'>
 "##;
-    let expected = r##"<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
+    let expected = r##"<p>&lt;a href=&quot;hi&#39;&gt; &lt;a href=hi&#39;&gt;</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -8140,7 +8140,7 @@ bim!bop /&gt;</p>
 fn spec_test_621() {
     let original = r##"<a href='bar'title=title>
 "##;
-    let expected = r##"<p>&lt;a href='bar'title=title&gt;</p>
+    let expected = r##"<p>&lt;a href=&#39;bar&#39;title=title&gt;</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -8459,7 +8459,7 @@ baz</p>
 fn spec_test_650() {
     let original = r##"hello $.;'there
 "##;
-    let expected = r##"<p>hello $.;'there</p>
+    let expected = r##"<p>hello $.;&#39;there</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

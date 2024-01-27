@@ -1,7 +1,7 @@
 use html5ever::serialize::{serialize, SerializeOpts};
 use html5ever::{driver as html, local_name, namespace_url, ns, QualName};
 use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};
-use pulldown_cmark::{Options, Parser};
+use pulldown_cmark::{Event, Options, Parser};
 
 use regex::Regex;
 use std::collections::HashSet;
@@ -418,4 +418,38 @@ fn drops_empty_tbody() {
 fn leaves_nonempty_tbody() {
     let input = "<table><thead><tr><td>hi</td></tr></thead><tbody><tr></tr></tbody></table>";
     assert_eq!(input, normalize_html(input))
+}
+
+#[test]
+fn check_event_range() {
+    let input = r#"Reference to footnotes A[^1], B[^2] and C[^3].
+
+[^1]: Footnote A.
+[^2]: Footnote B.
+[^3]: Footnote C."#;
+
+    let options = Options::ENABLE_TABLES
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_SMART_PUNCTUATION;
+    let parser = Parser::new_with_broken_link_callback(input, options, None).into_offset_iter();
+
+    let mut element_stack: Vec<std::ops::Range<usize>> = Vec::new();
+    for (event, event_range) in parser {
+        match event {
+            Event::Start(_) => {
+                if let Some(prev_event) = element_stack.last() {
+                    assert!(
+                        event_range.start >= prev_event.start && event_range.end <= prev_event.end
+                    );
+                }
+                element_stack.push(event_range);
+            }
+            Event::End(_) => {
+                element_stack.pop().unwrap();
+            }
+            _ => {}
+        }
+    }
 }

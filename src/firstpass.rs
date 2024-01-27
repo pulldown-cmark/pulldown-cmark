@@ -321,6 +321,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut ix = start_ix;
         loop {
             if self.options.contains(Options::ENABLE_FOOTNOTES) && self.get_footnote(ix).is_some() {
+                self.tree[node_ix].item.end = if ix > start_ix { ix - 1 } else { start_ix };
                 self.tree.pop();
                 if let Some(node_ix) = self.tree.peek_up() {
                     if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {

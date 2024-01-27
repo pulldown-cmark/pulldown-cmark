@@ -2601,9 +2601,29 @@ fn regression_test_161() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-
+  
 #[test]
 fn regression_test_162() {
+    let original = r##"&#00000000; &#x0000000;
+"##;
+    let expected = r##"<p>&amp;#00000000; &amp;#x0000000;</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+  
+#[test]
+fn regression_test_163() {
+    let original = r##"&#5307530;
+"##;
+    let expected = r##"<p>�</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_164() {
     let original = r##"- _t
   # test
   t_
@@ -2619,7 +2639,7 @@ t_</li>
 }
 
 #[test]
-fn regression_test_163() {
+fn regression_test_165() {
     let original = r##"* *_
   #
   N*
@@ -2633,3 +2653,4 @@ N*</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+

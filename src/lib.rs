@@ -204,6 +204,31 @@ pub enum Tag<'a> {
     MetadataBlock(MetadataBlockKind),
 }
 
+impl<'a> Tag<'a> {
+    pub fn to_end(&self) -> TagEnd {
+        match self {
+            Tag::Paragraph => TagEnd::Paragraph,
+            Tag::Heading { level, .. } => TagEnd::Heading(*level),
+            Tag::BlockQuote => TagEnd::BlockQuote,
+            Tag::CodeBlock(_) => TagEnd::CodeBlock,
+            Tag::HtmlBlock => TagEnd::HtmlBlock,
+            Tag::List(number) => TagEnd::List(number.is_some()),
+            Tag::Item => TagEnd::Item,
+            Tag::FootnoteDefinition(_) => TagEnd::FootnoteDefinition,
+            Tag::Table(_) => TagEnd::Table,
+            Tag::TableHead => TagEnd::TableHead,
+            Tag::TableRow => TagEnd::TableRow,
+            Tag::TableCell => TagEnd::TableCell,
+            Tag::Emphasis => TagEnd::Emphasis,
+            Tag::Strong => TagEnd::Strong,
+            Tag::Strikethrough => TagEnd::Strikethrough,
+            Tag::Link { .. } => TagEnd::Link,
+            Tag::Image { .. } => TagEnd::Image,
+            Tag::MetadataBlock(kind) => TagEnd::MetadataBlock(*kind),
+        }
+    }
+}
+
 /// The end of a `Tag`.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -234,6 +259,12 @@ pub enum TagEnd {
     Image,
 
     MetadataBlock(MetadataBlockKind),
+}
+
+impl<'a> From<Tag<'a>> for TagEnd {
+    fn from(value: Tag) -> Self {
+        value.to_end()
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]

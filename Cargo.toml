@@ -1,7 +1,10 @@
 [package]
 name = "pulldown-cmark"
 version = "0.9.3"
-authors = [ "Raph Levien <raph.levien@gmail.com>", "Marcus Klaas de Vries <mail@marcusklaas.nl>" ]
+authors = [
+    "Raph Levien <raph.levien@gmail.com>",
+    "Marcus Klaas de Vries <mail@marcusklaas.nl>",
+]
 license = "MIT"
 description = "A pull parser for CommonMark"
 repository = "https://github.com/raphlinus/pulldown-cmark"
@@ -9,7 +12,13 @@ keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
 readme = "README.md"
-exclude = ["/third_party/**/*", "/tools/**/*", "/specs/**/*", "/fuzzer/**/*", "/azure-pipelines.yml"]
+exclude = [
+    "/third_party/**/*",
+    "/tools/**/*",
+    "/specs/**/*",
+    "/fuzzer/**/*",
+    "/azure-pipelines.yml",
+]
 
 build = "build.rs"
 
@@ -31,7 +40,7 @@ name = "markdown-it"
 harness = false
 
 [dependencies]
-bitflags = "1.3"
+bitflags = "2"
 unicase = "2.6"
 memchr = "2.5"
 getopts = { version = "0.2", optional = true }

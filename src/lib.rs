@@ -274,6 +274,7 @@ pub enum Alignment {
 bitflags::bitflags! {
     /// Option struct containing flags for enabling extra features
     /// that are not part of the CommonMark spec.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Options: u32 {
         const ENABLE_TABLES = 1 << 1;
         const ENABLE_FOOTNOTES = 1 << 2;

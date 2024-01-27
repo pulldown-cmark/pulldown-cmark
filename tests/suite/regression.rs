@@ -2617,3 +2617,19 @@ t_</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_163() {
+    let original = r##"* *_
+  #
+  N*
+"##;
+    let expected = r##"<ul>
+<li>*_
+<h1></h1>
+N*</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

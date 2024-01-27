@@ -757,7 +757,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 }
                 _ => {
                     prev = cur;
-                    cur = self.tree[cur_ix].next;
                     // If this is a tight list, blocks and inlines might be
                     // siblings. Inlines can't cross the boundary like that.
                     if let Some(cur_ix) = cur {
@@ -765,6 +764,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             self.inline_stack.pop_all(&mut self.tree);
                         }
                     }
+                    cur = self.tree[cur_ix].next;
                 }
             }
         }

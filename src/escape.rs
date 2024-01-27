@@ -138,40 +138,87 @@ where
     w.write_str(&s[mark..])
 }
 
-const fn create_html_escape_table() -> [u8; 256] {
+const fn create_html_escape_table(body: bool) -> [u8; 256] {
     let mut table = [0; 256];
-    table[b'"' as usize] = 1;
-    table[b'&' as usize] = 2;
-    table[b'<' as usize] = 3;
-    table[b'>' as usize] = 4;
+    table[b'&' as usize] = 1;
+    table[b'<' as usize] = 2;
+    table[b'>' as usize] = 3;
+    if !body {
+        table[b'"' as usize] = 4;
+        table[b'\'' as usize] = 5;
+    }
     table
 }
 
-static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
+static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table(false);
+static HTML_BODY_TEXT_ESCAPE_TABLE: [u8; 256] = create_html_escape_table(true);
 
-static HTML_ESCAPES: [&str; 5] = ["", "&quot;", "&amp;", "&lt;", "&gt;"];
+static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
-/// (<, >, &, ") by escape sequences.
+/// (<, >, &, ", ') by escape sequences.
+/// 
+/// Use this function to write output to quoted HTML attributes.
+/// Since this function doesn't escape spaces, unquoted attributes
+/// cannot be used. For example:
+/// 
+/// ```rust
+/// let mut value = String::new();
+/// pulldown_cmark::escape::escape_html(&mut value, "two words")
+///     .expect("writing to a string is infallible");
+/// // This is okay.
+/// let ok = format!("<a title='{value}'>test</a>");
+/// // This is not okay.
+/// //let not_ok = format!("<a title={value}>test</a>");
+/// ````
 pub fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
-        simd::escape_html(w, s)
+        simd::escape_html(w, s, &HTML_ESCAPE_TABLE)
     }
     #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
     {
-        escape_html_scalar(w, s)
+        escape_html_scalar(w, s, &HTML_ESCAPE_TABLE)
     }
 }
 
-fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
+/// For use in HTML body text, writes the given string to the Write sink,
+/// replacing special HTML bytes (<, >, &) by escape sequences.
+///
+/// <div class="warning">
+///
+/// This function should be used for escaping text nodes, not attributes.
+/// In the below example, the word "foo" is an attribute, and the word
+/// "bar" is an text node. The word "bar" could be escaped by this function,
+/// but the word "foo" must be escaped using [`escape_html`].
+///
+/// ```html
+/// <span class="foo">bar</span>
+/// ```
+///
+/// If you aren't sure what the difference is, use [`escape_html`].
+/// It should always be correct, but will produce larger output.
+///
+/// </div>
+pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        simd::escape_html(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
+    }
+    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    {
+        escape_html_scalar(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
+    }
+}
+
+fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> io::Result<()> {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
     while i < s.len() {
         match bytes[i..]
             .iter()
-            .position(|&c| HTML_ESCAPE_TABLE[c as usize] != 0)
+            .position(|&c| table[c as usize] != 0)
         {
             Some(pos) => {
                 i += pos;
@@ -179,7 +226,7 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
             None => break,
         }
         let c = bytes[i];
-        let escape = HTML_ESCAPE_TABLE[c as usize];
+        let escape = table[c as usize];
         let escape_seq = HTML_ESCAPES[escape as usize];
         w.write_str(&s[mark..i])?;
         w.write_str(escape_seq)?;
@@ -198,7 +245,7 @@ mod simd {
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str) -> io::Result<()> {
+    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -211,16 +258,20 @@ mod simd {
             unsafe {
                 foreach_special_simd(bytes, 0, |i| {
                     let escape_ix = *bytes.get_unchecked(i) as usize;
-                    let replacement =
-                        super::HTML_ESCAPES[super::HTML_ESCAPE_TABLE[escape_ix] as usize];
+                    let entry = table[escape_ix] as usize;
                     w.write_str(&s.get_unchecked(mark..i))?;
                     mark = i + 1; // all escaped characters are ASCII
-                    w.write_str(replacement)
+                    if entry == 0 {
+                        w.write_str(&s.get_unchecked(i..mark))
+                    } else {
+                        let replacement = super::HTML_ESCAPES[entry];
+                        w.write_str(replacement)
+                    }
                 })?;
                 w.write_str(&s.get_unchecked(mark..))
             }
         } else {
-            super::escape_html_scalar(w, s)
+            super::escape_html_scalar(w, s, table)
         }
     }
 
@@ -231,6 +282,7 @@ mod simd {
         table[(b'>' & 0x0f) as usize] = b'>';
         table[(b'&' & 0x0f) as usize] = b'&';
         table[(b'"' & 0x0f) as usize] = b'"';
+        table[(b'\'' & 0x0f) as usize] = b'\'';
         table[0] = 0b0111_1111;
         table
     }
@@ -326,14 +378,14 @@ mod simd {
                 })
                 .unwrap();
             }
-            assert_eq!(vec, vec![0, 14, 15, 19]);
+            assert_eq!(vec, vec![0, 9, 14, 15, 19]);
         }
 
         // only match these bytes, and when we match them, match them VECTOR_SIZE times
         #[test]
         fn only_right_bytes_matched() {
             for b in 0..255u8 {
-                let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
+                let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"' || b == b'\'';
                 let vek = vec![b; super::VECTOR_SIZE];
                 let mut match_count = 0;
                 unsafe {
@@ -358,12 +410,26 @@ mod simd {
 
 #[cfg(test)]
 mod test {
-    pub use super::escape_href;
+    pub use super::{escape_href, escape_html, escape_html_body_text};
 
     #[test]
     fn check_href_escape() {
         let mut s = String::new();
         escape_href(&mut s, "&^_").unwrap();
         assert_eq!(s.as_str(), "&amp;^_");
+    }
+
+    #[test]
+    fn check_attr_escape() {
+        let mut s = String::new();
+        escape_html(&mut s, r##"&^"'_"##).unwrap();
+        assert_eq!(s.as_str(), "&amp;^&quot;&#39;_");
+    }
+
+    #[test]
+    fn check_body_escape() {
+        let mut s = String::new();
+        escape_html_body_text(&mut s, r##"&^"'_"##).unwrap();
+        assert_eq!(s.as_str(), r##"&amp;^"'_"##);
     }
 }

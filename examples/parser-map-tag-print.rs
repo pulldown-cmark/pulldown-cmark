@@ -19,7 +19,7 @@ fn main() {
         "```\n",
         "my code block\n",
         "```\n",
-        "\n",       
+        "\n",
         "*emphasis*\n",
         "**strong**\n",
         "~~strikethrough~~\n",
@@ -33,40 +33,57 @@ fn main() {
         "hello[^1]\n",
         "[^1]: my footnote\n",
     );
-    println!("\nParsing the following markdown string:\n{}\n", markdown_input);
+    println!(
+        "\nParsing the following markdown string:\n{}\n",
+        markdown_input
+    );
 
-    // Set up the parser. We can treat is as any other iterator. 
+    // Set up the parser. We can treat is as any other iterator.
     // For each event, we print its details, such as the tag or string.
     // This filter simply returns the same event without any changes;
     // you can compare the `event-filter` example which alters the output.
-    let parser = Parser::new_ext(markdown_input, Options::all())
-    .map(|event| {
+    let parser = Parser::new_ext(markdown_input, Options::all()).map(|event| {
         match &event {
-            Event::Start(tag) => {
-                match tag {
-                    Tag::Heading(heading_level, fragment_identifier, class_list) => println!("Heading heading_level: {} fragment identifier: {:?} classes: {:?}", heading_level, fragment_identifier, class_list),
-                    Tag::Paragraph => println!("Paragraph"),                       
-                    Tag::List(ordered_list_first_item_number) => println!("List ordered_list_first_item_number: {:?}", ordered_list_first_item_number),
-                    Tag::Item => println!("Item (this is a list item)"),
-                    Tag::Emphasis => println!("Emphasis (this is a span tag)"),
-                    Tag::Strong => println!("Strong (this is a span tag)"),
-                    Tag::Strikethrough => println!("Strikethrough (this is a span tag)"),
-                    Tag::BlockQuote => println!("BlockQuote"),
-                    Tag::CodeBlock(code_block_kind) => println!("CodeBlock code_block_kind: {:?}", code_block_kind),
-                    Tag::Link(link_type, url, title) => println!("Link link_type: {:?} url: {} title: {}", link_type, url, title),
-                    Tag::Image(link_type, url, title) => println!("Image link_type: {:?} url: {} title: {}", link_type, url, title),
-                    Tag::Table(column_text_alignment_list) => println!("Table column_text_alignment_list: {:?}", column_text_alignment_list),
-                    Tag::TableHead => println!("TableHead (contains TableRow tags"),
-                    Tag::TableRow => println!("TableRow (contains TableCell tags)"),
-                    Tag::TableCell => println!("TableCell (contains inline tags)"),
-                    Tag::FootnoteDefinition(label) => println!("FootnoteDefinition label: {}", label),
+            Event::Start(tag) => match tag {
+                Tag::Heading(heading_level, fragment_identifier, class_list) => println!(
+                    "Heading heading_level: {} fragment identifier: {:?} classes: {:?}",
+                    heading_level, fragment_identifier, class_list
+                ),
+                Tag::Paragraph => println!("Paragraph"),
+                Tag::List(ordered_list_first_item_number) => println!(
+                    "List ordered_list_first_item_number: {:?}",
+                    ordered_list_first_item_number
+                ),
+                Tag::Item => println!("Item (this is a list item)"),
+                Tag::Emphasis => println!("Emphasis (this is a span tag)"),
+                Tag::Strong => println!("Strong (this is a span tag)"),
+                Tag::Strikethrough => println!("Strikethrough (this is a span tag)"),
+                Tag::BlockQuote => println!("BlockQuote"),
+                Tag::CodeBlock(code_block_kind) => {
+                    println!("CodeBlock code_block_kind: {:?}", code_block_kind)
                 }
+                Tag::Link(link_type, url, title) => println!(
+                    "Link link_type: {:?} url: {} title: {}",
+                    link_type, url, title
+                ),
+                Tag::Image(link_type, url, title) => println!(
+                    "Image link_type: {:?} url: {} title: {}",
+                    link_type, url, title
+                ),
+                Tag::Table(column_text_alignment_list) => println!(
+                    "Table column_text_alignment_list: {:?}",
+                    column_text_alignment_list
+                ),
+                Tag::TableHead => println!("TableHead (contains TableRow tags"),
+                Tag::TableRow => println!("TableRow (contains TableCell tags)"),
+                Tag::TableCell => println!("TableCell (contains inline tags)"),
+                Tag::FootnoteDefinition(label) => println!("FootnoteDefinition label: {}", label),
             },
-            _ => ()
+            _ => (),
         };
         event
     });
-   
+
     let mut html_output = String::new();
     pulldown_cmark::html::push_html(&mut html_output, parser);
     println!("\nHTML output:\n{}\n", &html_output);

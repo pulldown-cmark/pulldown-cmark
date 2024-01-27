@@ -2571,7 +2571,7 @@ fn regression_test_159() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_160() {
     let original = r##"![^1]
@@ -2597,6 +2597,22 @@ fn regression_test_161() {
 <div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
 <p>foo</p>
 </div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_162() {
+    let original = r##"- _t
+  # test
+  t_
+"##;
+    let expected = r##"<ul>
+<li>_t
+<h1>test</h1>
+t_</li>
+</ul>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

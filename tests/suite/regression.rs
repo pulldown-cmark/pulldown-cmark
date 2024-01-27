@@ -2611,3 +2611,13 @@ fn regression_test_162() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_163() {
+    let original = r##"&#5307530;
+"##;
+    let expected = r##"<p>�</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

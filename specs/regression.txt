@@ -2215,3 +2215,12 @@ or six hexits.
 .
 <p>&amp;#00000000; &amp;#x0000000;</p>
 ````````````````````````````````
+
+&#5307530; is invalid unicode. As described in the spec,
+invalid unicode is replaced with the unknown U+FFFD.
+
+```````````````````````````````` example
+&#5307530;
+.
+<p>�</p>
+````````````````````````````````

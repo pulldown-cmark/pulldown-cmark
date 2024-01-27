@@ -792,9 +792,9 @@ fn parse_hex(bytes: &[u8], limit: usize) -> (usize, usize) {
 }
 
 fn char_from_codepoint(input: usize) -> Option<char> {
-    let mut codepoint = input.try_into().ok()?;
+    let codepoint = input.try_into().ok()?;
     if codepoint == 0 {
-        codepoint = 0xFFFD;
+        return None;
     }
     char::from_u32(codepoint)
 }
@@ -813,10 +813,8 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         end += bytecount;
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
             (0, None)
-        } else if let Some(c) = char_from_codepoint(codepoint) {
-            (end + 1, Some(c.into()))
         } else {
-            (0, None)
+            (end + 1, Some(char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into()))
         };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);

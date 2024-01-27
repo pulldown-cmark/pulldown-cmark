@@ -2204,3 +2204,23 @@ First ![^1][] Second
 <p>foo</p>
 </div>
 ````````````````````````````````
+
+ISSUE 826
+
+HTML entities can only have up to seven digits,
+or six hexits.
+
+```````````````````````````````` example
+&#00000000; &#x0000000;
+.
+<p>&amp;#00000000; &amp;#x0000000;</p>
+````````````````````````````````
+
+&#5307530; is invalid unicode. As described in the spec,
+invalid unicode is replaced with the unknown U+FFFD.
+
+```````````````````````````````` example
+&#5307530;
+.
+<p>�</p>
+````````````````````````````````

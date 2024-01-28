@@ -153,7 +153,7 @@ static HTML_ESCAPE_TABLE: [u8; 256] = create_html_escape_table();
 static HTML_ESCAPES: [&str; 6] = ["", "&quot;", "&amp;", "&lt;", "&gt;", "&#39;"];
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
-/// (<, >, &, ") by escape sequences.
+/// (<, >, &, ", ') by escape sequences.
 pub fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {

@@ -116,9 +116,9 @@ fn smart_punct_test_11() {
 This isn\'t either.
 5\'8\"
 "##;
-    let expected = r##"<p>&quot;This is not smart.&quot;
+    let expected = r##"<p>"This is not smart."
 This isn't either.
-5'8&quot;</p>
+5'8"</p>
 "##;
 
     test_markdown_html(original, expected, true, false, false);

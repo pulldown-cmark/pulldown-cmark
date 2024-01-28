@@ -551,7 +551,7 @@ to wrap attributes and it is safe to put single quotes inside them.
 .
 <h1 class="foo#bar">H1</h1>
 <h2 id="foo.bar">H2</h2>
-<h3 class="a&quot;b'c&amp;d">H3</h3>
+<h3 class="a&quot;b&#39;c&amp;d">H3</h3>
 ````````````````````````````````
 
 # Edge cases

@@ -325,3 +325,27 @@ fn trim_space_before_soft_break() {
     html::push_html(&mut s, Parser::new(&original));
     assert_eq!(expected, s);
 }
+
+// Can't easily use regression.txt due to newline normalization.
+#[test]
+fn issue_819() {
+    let original = [
+        "# \\", "# \\\n", "# \\\n\n", "# \\\r\n", "# \\\r\n\r\n", "# \\\n\r\n", "# \\\r\n\n"
+    ];
+    let expected = "<h1>\\</h1>";
+
+    for orig in original {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(&orig));
+        // Trailing newline doesn't matter. Just the actual HTML.
+        assert_eq!(expected, s.trim_end_matches('\n'));
+    }
+    for orig in original {
+        let mut s = String::new();
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+        html::push_html(&mut s, Parser::new_ext(&orig, opts));
+        // Trailing newline doesn't matter. Just the actual HTML.
+        assert_eq!(expected, s.trim_end_matches('\n'));
+    }
+}

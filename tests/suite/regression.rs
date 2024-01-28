@@ -2649,3 +2649,22 @@ fn regression_test_165() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_166() {
+    let original = r##"* test
+
+	 <foo>
+	<bar>
+"##;
+    let expected = r##"<ul>
+<li>
+<p>test</p>
+   <foo>
+  <bar>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

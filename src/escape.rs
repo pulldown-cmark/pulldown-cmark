@@ -232,6 +232,7 @@ mod simd {
         table[(b'>' & 0x0f) as usize] = b'>';
         table[(b'&' & 0x0f) as usize] = b'&';
         table[(b'"' & 0x0f) as usize] = b'"';
+        table[(b'\'' & 0x0f) as usize] = b'\'';
         table[0] = 0b0111_1111;
         table
     }
@@ -327,14 +328,14 @@ mod simd {
                 })
                 .unwrap();
             }
-            assert_eq!(vec, vec![0, 14, 15, 19]);
+            assert_eq!(vec, vec![0, 9, 14, 15, 19]);
         }
 
         // only match these bytes, and when we match them, match them VECTOR_SIZE times
         #[test]
         fn only_right_bytes_matched() {
             for b in 0..255u8 {
-                let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"';
+                let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"' || b == b'\'';
                 let vek = vec![b; super::VECTOR_SIZE];
                 let mut match_count = 0;
                 unsafe {

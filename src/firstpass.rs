@@ -209,18 +209,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 return self.parse_html_block_type_1_to_5(
                     ix,
                     html_end_tag,
-                    remaining_space + indent,
+                    remaining_space,
+                    indent,
                 );
             }
 
             // Detect type 6
             if starts_html_block_type_6(&bytes[(ix + 1)..]) {
-                return self.parse_html_block_type_6_or_7(ix, remaining_space + indent);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
 
             // Detect type 7
             if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
-                return self.parse_html_block_type_6_or_7(ix, remaining_space + indent);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
         }
 
@@ -935,6 +936,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         start_ix: usize,
         html_end_tag: &str,
         mut remaining_space: usize,
+        mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -947,9 +949,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut ix = start_ix;
         let end_ix;
         loop {
+            let computed_space = if remaining_space > 0 {
+                remaining_space
+            } else {
+                indent
+            };
+
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space, line_start_ix, ix);
+            self.append_html_line(computed_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -974,6 +982,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
+            indent = 0;
         }
         self.pop(end_ix);
         ix
@@ -986,6 +995,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         start_ix: usize,
         mut remaining_space: usize,
+        mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -998,9 +1008,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut ix = start_ix;
         let end_ix;
         loop {
+            let computed_space = if remaining_space > 0 {
+                remaining_space
+            } else {
+                indent
+            };
+
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space, line_start_ix, ix);
+            self.append_html_line(computed_space, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -1021,6 +1037,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
+            indent = 0;
         }
         self.pop(end_ix);
         ix
@@ -1208,10 +1225,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Appends a line of HTML to the tree.
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
+        if remaining_space > 0 {
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
+            self.tree.append(Item {
+                start,
+                end: start,
+                body: ItemBody::SynthesizeText(cow_ix),
+            });
+        }
         if self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
-                start: start - remaining_space,
+                start,
                 end: end - 2,
                 body: ItemBody::Html,
             });
@@ -1222,7 +1247,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             });
         } else {
             self.tree.append(Item {
-                start: start - remaining_space,
+                start,
                 end,
                 body: ItemBody::Html,
             });

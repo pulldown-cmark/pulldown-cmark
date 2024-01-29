@@ -82,8 +82,8 @@ const HTML_TAGS: [&str; 62] = [
     "option",
     "p",
     "param",
+    "search",
     "section",
-    "source",
     "summary",
     "table",
     "tbody",
@@ -1290,28 +1290,26 @@ pub(crate) fn scan_inline_html_comment(
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
-        // An HTML comment consists of `<!--` + text + `-->`, where text does not start with `>`
-        // or `->`, does not end with -, and does not contain --.
+        // An HTML comment consists of `<!-->`, `<!--->`, or  `<!--`, a string of characters not
+        // including the string `-->`, and `-->`.
         b'-' => {
-            let dashes = scan_ch_repeat(&bytes[ix..], b'-');
-            if dashes < 1 {
+            // HTML comment needs two hyphens after the !.
+            if *bytes.get(ix)? != b'-' {
                 return None;
             }
-            // Saw "<!--", scan comment.
-            ix += dashes;
-            if scan_ch(&bytes[ix..], b'>') == 1 {
-                return None;
-            }
+            // Yes, we're intentionally going backwards.
+            // We want the cursor to point here:
+            //
+            //     <!--
+            //       ^
+            //
+            // This way, the `<!-->` case is covered by the loop below.
+            ix -= 1;
 
             while let Some(x) = memchr(b'-', &bytes[ix..]) {
                 ix += x + 1;
-                if scan_ch(&bytes[ix..], b'-') == 1 {
-                    ix += 1;
-                    return if scan_ch(&bytes[ix..], b'>') == 1 {
-                        Some(ix + 1)
-                    } else {
-                        None
-                    };
+                if scan_ch(&bytes[ix..], b'-') == 1 && scan_ch(&bytes[ix + 1..], b'>') == 1 {
+                    return Some(ix + 2);
                 }
             }
             None

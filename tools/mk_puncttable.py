@@ -37,7 +37,7 @@ def main(args):
     punct = set()
     for line in open(args[1]):
         spl = line.split(';')
-        if spl[2] in ('Pc', 'Pd', 'Pe', 'Pf', 'Pi', 'Po', 'Ps'):
+        if spl[2] in ('Pc', 'Pd', 'Pe', 'Pf', 'Pi', 'Po', 'Ps', 'Sm', 'Sc', 'Sk', 'So'):
             punct.add(int(spl[0], 16))
     pshift = list(set((cp // 16 for cp in punct if cp >= 128)))
     pshift.sort()

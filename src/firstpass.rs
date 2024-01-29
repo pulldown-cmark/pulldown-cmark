@@ -951,7 +951,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space + indent, line_start_ix, ix);
+            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -1004,7 +1004,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space + indent, line_start_ix, ix);
+            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -1214,9 +1214,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Appends a line of HTML to the tree.
     fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
         if remaining_space > 0 {
-            let cow_ix = self
-                .allocs
-                .allocate_cow("   "[..remaining_space.min(3)].into());
+            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
                 start,
                 end: start,

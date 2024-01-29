@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.9.5"
+version = "0.9.6"
 authors = [
     "Raph Levien <raph.levien@gmail.com>",
     "Marcus Klaas de Vries <mail@marcusklaas.nl>",

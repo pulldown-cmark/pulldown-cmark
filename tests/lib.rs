@@ -41,8 +41,7 @@ pub fn test_markdown_html(
 }
 
 fn html_standardize(s: &str) -> String {
-    s.trim()
-        .replace("<br>", "<br />")
+    s.replace("<br>", "<br />")
         .replace("<br/>", "<br />")
         .replace("<hr>", "<hr />")
         .replace("<hr/>", "<hr />")

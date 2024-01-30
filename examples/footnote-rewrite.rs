@@ -33,14 +33,14 @@ fn main() {
                     let (n, nr) = footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
                     *nr += 1;
                     let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
-                    if in_footnote.len() == 0 {
+                    if in_footnote.is_empty() {
                         Some(html)
                     } else {
                         in_footnote.last_mut().unwrap().push(html);
                         None
                     }
                 }
-                _ if in_footnote.len() != 0 => {
+                _ if !in_footnote.is_empty() => {
                     in_footnote.last_mut().unwrap().push(event);
                     None
                 }
@@ -72,7 +72,7 @@ fn main() {
     //     <li>test ↩</li>
     //     <li>second used, first defined ↩</li>
     //     </ol>
-    if footnotes.len() != 0 {
+    if !footnotes.is_empty() {
         footnotes.retain(|f| match f.first() {
             Some(Event::Start(Tag::FootnoteDefinition(name))) => {
                 footnote_numbers.get(name).unwrap_or(&(0, 0)).1 != 0

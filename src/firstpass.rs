@@ -1360,7 +1360,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.parse_line(ix, Some(content_end), TableParseMode::Disabled);
             (header_end, content_end, attrs)
         } else {
-            ix = self.parse_line(ix, None, TableParseMode::Disabled).0;
+            let (line_ix, line_brk) = self.parse_line(ix, None, TableParseMode::Disabled);
+            ix = line_ix;
+            // Backslash at end is actually hard line break
+            if let Some(Item { start, end, body: ItemBody::HardBreak(true) }) = line_brk {
+                self.tree.append_text(start, end, false);
+            }
             (ix, ix, None)
         };
         self.tree[header_node_idx].item.end = end;

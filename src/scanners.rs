@@ -715,7 +715,7 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
         b'0'..=b'9' => {
-            let (length, start) = parse_decimal(bytes);
+            let (length, start) = parse_decimal(bytes, 9);
             c = *bytes.get(length)?;
             if !(c == b'.' || c == b')') {
                 return None;
@@ -743,9 +743,10 @@ pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
 }
 
 // returns (number of bytes, parsed decimal)
-fn parse_decimal(bytes: &[u8]) -> (usize, usize) {
+fn parse_decimal(bytes: &[u8], limit: usize) -> (usize, usize) {
     match bytes
         .iter()
+        .take(limit)
         .take_while(|&&b| is_digit(b))
         .try_fold((0, 0usize), |(count, acc), c| {
             let digit = usize::from(c - b'0');
@@ -763,8 +764,8 @@ fn parse_decimal(bytes: &[u8]) -> (usize, usize) {
 }
 
 // returns (number of bytes, parsed hex)
-fn parse_hex(bytes: &[u8]) -> (usize, usize) {
-    match bytes.iter().try_fold((0, 0usize), |(count, acc), c| {
+fn parse_hex(bytes: &[u8], limit: usize) -> (usize, usize) {
+    match bytes.iter().take(limit).try_fold((0, 0usize), |(count, acc), c| {
         let mut c = *c;
         let digit = if c >= b'0' && c <= b'9' {
             usize::from(c - b'0')
@@ -791,9 +792,9 @@ fn parse_hex(bytes: &[u8]) -> (usize, usize) {
 }
 
 fn char_from_codepoint(input: usize) -> Option<char> {
-    let mut codepoint = input.try_into().ok()?;
+    let codepoint = input.try_into().ok()?;
     if codepoint == 0 {
-        codepoint = 0xFFFD;
+        return None;
     }
     char::from_u32(codepoint)
 }
@@ -805,17 +806,15 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         end += 1;
         let (bytecount, codepoint) = if end < bytes.len() && bytes[end] | 0x20 == b'x' {
             end += 1;
-            parse_hex(&bytes[end..])
+            parse_hex(&bytes[end..], 6)
         } else {
-            parse_decimal(&bytes[end..])
+            parse_decimal(&bytes[end..], 7)
         };
         end += bytecount;
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
             (0, None)
-        } else if let Some(c) = char_from_codepoint(codepoint) {
-            (end + 1, Some(c.into()))
         } else {
-            (0, None)
+            (end + 1, Some(char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into()))
         };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);

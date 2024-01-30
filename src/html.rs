@@ -23,7 +23,7 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use crate::escape::{escape_href, escape_html, StrWrite, WriteWrapper};
+use crate::escape::{escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
@@ -98,13 +98,13 @@ where
                 }
                 Text(text) => {
                     if !self.in_non_writing_block {
-                        escape_html(&mut self.writer, &text)?;
+                        escape_html_body_text(&mut self.writer, &text)?;
                         self.end_newline = text.ends_with('\n');
                     }
                 }
                 Code(text) => {
                     self.write("<code>")?;
-                    escape_html(&mut self.writer, &text)?;
+                    escape_html_body_text(&mut self.writer, &text)?;
                     self.write("</code>")?;
                 }
                 Html(html) | InlineHtml(html) => {
@@ -430,6 +430,8 @@ where
                 }
                 Html(_) => {}
                 InlineHtml(text) | Code(text) | Text(text) => {
+                    // Don't use escape_html_body_text here.
+                    // The output of this function is used in the `alt` attribute.
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
                 }

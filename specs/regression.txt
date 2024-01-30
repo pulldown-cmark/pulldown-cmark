@@ -491,9 +491,9 @@ ISSUE 351
 - - -
 ")
 .
-<p>[a](url &quot;</p>
+<p>[a](url "</p>
 <hr>
-<p>&quot;)</p>
+<p>")</p>
 ````````````````````````````````
 
 ISSUE 351
@@ -514,8 +514,8 @@ ISSUE 351
 
 ")
 .
-<p>[a](b &quot;</p>
-<p>&quot;)</p>
+<p>[a](b "</p>
+<p>")</p>
 ````````````````````````````````
 
 ISSUE 382
@@ -1905,8 +1905,8 @@ second</a></p>
 
 [first]
 .
-<h2>&quot;</h2>
-<p>&quot;</p>
+<h2>"</h2>
+<p>"</p>
 <p><a href="https://example.com">first</a></p>
 ````````````````````````````````
 
@@ -1932,8 +1932,8 @@ second</a></p>
 > [first]
 .
 <blockquote>
-<h2>&quot;</h2>
-<p>&quot;</p>
+<h2>"</h2>
+<p>"</p>
 <p><a href="https://example.com">first</a></p>
 </blockquote>
 ````````````````````````````````
@@ -1992,9 +1992,9 @@ ISSUE 795
 
 [first]
 .
-<p>&quot;
+<p>"
 \</p>
-<p>&quot;</p>
+<p>"</p>
 <p><a href="https://example.com">first</a></p>
 ````````````````````````````````
 
@@ -2204,6 +2204,51 @@ First ![^1][] Second
 </div>
 ````````````````````````````````
 
+ISSUE 826
+
+HTML entities can only have up to seven digits,
+or six hexits.
+
+```````````````````````````````` example
+&#00000000; &#x0000000;
+.
+<p>&amp;#00000000; &amp;#x0000000;</p>
+````````````````````````````````
+
+&#5307530; is invalid unicode. As described in the spec,
+invalid unicode is replaced with the unknown U+FFFD.
+
+```````````````````````````````` example
+&#5307530;
+.
+<p>�</p>
+````````````````````````````````
+
+ISSUE 828
+
+```````````````````````````````` example
+- _t
+  # test
+  t_
+.
+<ul>
+<li>_t
+<h1>test</h1>
+t_</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+* *_
+  #
+  N*
+.
+<ul>
+<li>*_
+<h1></h1>
+N*</li>
+</ul>
+````````````````````````````````
 
 ISSUE 662
 

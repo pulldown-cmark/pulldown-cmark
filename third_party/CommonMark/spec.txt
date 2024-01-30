@@ -482,7 +482,7 @@ Any ASCII punctuation character may be backslash-escaped:
 ```````````````````````````````` example
 \!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
 .
-<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
+<p>!"#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
 ````````````````````````````````
 
 
@@ -517,7 +517,7 @@ not have their usual Markdown meanings:
 1. not a list
 * not a list
 # not a heading
-[foo]: /url &quot;not a reference&quot;
+[foo]: /url "not a reference"
 &amp;ouml; not a character entity</p>
 ````````````````````````````````
 
@@ -674,7 +674,7 @@ time specified with a hexadecimal numeral instead of decimal).
 ```````````````````````````````` example
 &#X22; &#XD06; &#xcab;
 .
-<p>&quot; ആ ಫ</p>
+<p>" ആ ಫ</p>
 ````````````````````````````````
 
 
@@ -810,7 +810,7 @@ bar</p>
 ```````````````````````````````` example
 [a](url &quot;tit&quot;)
 .
-<p>[a](url &quot;tit&quot;)</p>
+<p>[a](url "tit")</p>
 ````````````````````````````````
 
 
@@ -1501,8 +1501,8 @@ of dashes"/>
 .
 <h2>`Foo</h2>
 <p>`</p>
-<h2>&lt;a title=&quot;a lot</h2>
-<p>of dashes&quot;/&gt;</p>
+<h2>&lt;a title="a lot</h2>
+<p>of dashes"/&gt;</p>
 ````````````````````````````````
 
 
@@ -3380,7 +3380,7 @@ characters other than spaces or tabs after the title:
 ```````````````````````````````` example
 [foo]: /url "title" ok
 .
-<p>[foo]: /url &quot;title&quot; ok</p>
+<p>[foo]: /url "title" ok</p>
 ````````````````````````````````
 
 
@@ -3390,7 +3390,7 @@ This is a link reference definition, but it has no title:
 [foo]: /url
 "title" ok
 .
-<p>&quot;title&quot; ok</p>
+<p>"title" ok</p>
 ````````````````````````````````
 
 
@@ -3402,7 +3402,7 @@ four spaces:
 
 [foo]
 .
-<pre><code>[foo]: /url &quot;title&quot;
+<pre><code>[foo]: /url "title"
 </code></pre>
 <p>[foo]</p>
 ````````````````````````````````
@@ -6034,7 +6034,7 @@ Thus, this is code:
 ```````````````````````````````` example
 `<a href="`">`
 .
-<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
+<p><code>&lt;a href="</code>"&gt;`</p>
 ````````````````````````````````
 
 
@@ -6325,7 +6325,7 @@ not part of a [left-flanking delimiter run]:
 ```````````````````````````````` example
 a*"foo"*
 .
-<p>a*&quot;foo&quot;*</p>
+<p>a*"foo"*</p>
 ````````````````````````````````
 
 
@@ -6379,7 +6379,7 @@ by an alphanumeric and followed by punctuation:
 ```````````````````````````````` example
 a_"foo"_
 .
-<p>a_&quot;foo&quot;_</p>
+<p>a_"foo"_</p>
 ````````````````````````````````
 
 
@@ -6412,7 +6412,7 @@ is right-flanking and the second left-flanking:
 ```````````````````````````````` example
 aa_"bb"_cc
 .
-<p>aa_&quot;bb&quot;_cc</p>
+<p>aa_"bb"_cc</p>
 ````````````````````````````````
 
 
@@ -6582,7 +6582,7 @@ not part of a [left-flanking delimiter run]:
 ```````````````````````````````` example
 a**"foo"**
 .
-<p>a**&quot;foo&quot;**</p>
+<p>a**"foo"**</p>
 ````````````````````````````````
 
 
@@ -6630,7 +6630,7 @@ by an alphanumeric and followed by punctuation:
 ```````````````````````````````` example
 a__"foo"__
 .
-<p>a__&quot;foo&quot;__</p>
+<p>a__"foo"__</p>
 ````````````````````````````````
 
 
@@ -6723,7 +6723,7 @@ with these examples:
 ```````````````````````````````` example
 **foo "*bar*" foo**
 .
-<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
+<p><strong>foo "<em>bar</em>" foo</strong></p>
 ````````````````````````````````
 
 
@@ -7766,7 +7766,7 @@ Nested balanced quotes are not allowed without escaping:
 ```````````````````````````````` example
 [link](/url "title "and" title")
 .
-<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
+<p>[link](/url "title "and" title")</p>
 ````````````````````````````````
 
 
@@ -8695,7 +8695,7 @@ Note that link labels cannot contain unescaped brackets:
 [[foo]]: /url "title"
 .
 <p>![[foo]]</p>
-<p>[[foo]]: /url &quot;title&quot;</p>
+<p>[[foo]]: /url "title"</p>
 ````````````````````````````````
 
 
@@ -9056,7 +9056,7 @@ Illegal attribute names:
 ```````````````````````````````` example
 <a h*#ref="hi">
 .
-<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
+<p>&lt;a h*#ref="hi"&gt;</p>
 ````````````````````````````````
 
 
@@ -9065,7 +9065,7 @@ Illegal attribute values:
 ```````````````````````````````` example
 <a href="hi'> <a href=hi'>
 .
-<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
+<p>&lt;a href="hi'&gt; &lt;a href=hi'&gt;</p>
 ````````````````````````````````
 
 
@@ -9107,7 +9107,7 @@ Illegal attributes in closing tag:
 ```````````````````````````````` example
 </a href="foo">
 .
-<p>&lt;/a href=&quot;foo&quot;&gt;</p>
+<p>&lt;/a href="foo"&gt;</p>
 ````````````````````````````````
 
 
@@ -9190,7 +9190,7 @@ foo <a href="\*">
 ```````````````````````````````` example
 <a href="\"">
 .
-<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
+<p>&lt;a href="""&gt;</p>
 ````````````````````````````````
 
 

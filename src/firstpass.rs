@@ -101,7 +101,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // Process new containers
         loop {
-            if self.options.has_gfm_footnotes() {
+            if self.options.has_gfm_footnotes()
+                || self.options.contains(Options::ENABLE_OLD_FOOTNOTES)
+            {
                 // Footnote definitions of the form
                 // [^bar]:
                 //     * anything really
@@ -1363,7 +1365,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let (line_ix, line_brk) = self.parse_line(ix, None, TableParseMode::Disabled);
             ix = line_ix;
             // Backslash at end is actually hard line break
-            if let Some(Item { start, end, body: ItemBody::HardBreak(true) }) = line_brk {
+            if let Some(Item {
+                start,
+                end,
+                body: ItemBody::HardBreak(true),
+            }) = line_brk
+            {
                 self.tree.append_text(start, end, false);
             }
             (ix, ix, None)

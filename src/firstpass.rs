@@ -168,7 +168,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         // there are between this one and the next one, it cannot nest anything
                         // else, so its indentation should not be subtracted from the line start.
                         *indent = 0;
-                    },
+                    }
                     _ => {
                         self.last_line_blank = true;
                     }
@@ -206,17 +206,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
             if let Some(html_end_tag) = get_html_end_tag(&bytes[(ix + 1)..]) {
-                return self.parse_html_block_type_1_to_5(ix, html_end_tag, remaining_space);
+                return self.parse_html_block_type_1_to_5(
+                    ix,
+                    html_end_tag,
+                    remaining_space,
+                    indent,
+                );
             }
 
             // Detect type 6
             if starts_html_block_type_6(&bytes[(ix + 1)..]) {
-                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
 
             // Detect type 7
             if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
-                return self.parse_html_block_type_6_or_7(ix, remaining_space);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
         }
 
@@ -233,7 +238,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         // parse refdef
-        while let Some((bytecount, label, link_def)) = self.parse_refdef_total(start_ix + line_start.bytes_scanned()) {
+        while let Some((bytecount, label, link_def)) =
+            self.parse_refdef_total(start_ix + line_start.bytes_scanned())
+        {
             self.allocs.refdefs.0.entry(label).or_insert(link_def);
             let container_start = start_ix + line_start.bytes_scanned();
             let mut ix = container_start + bytecount;
@@ -260,8 +267,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     &mut lazy_line_start,
                     self.options.has_gfm_footnotes(),
                 ) == self.tree.spine_len();
-                if !lazy_line_start.scan_space(4) &&
-                    self.scan_paragraph_interrupt(
+                if !lazy_line_start.scan_space(4)
+                    && self.scan_paragraph_interrupt(
                         &bytes[ix + lazy_line_start.bytes_scanned()..],
                         current_container,
                     )
@@ -285,7 +292,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns the offset of the first line after the table.
     /// Assumptions: current focus is a table element and the table header
     /// matches the separator line (same number of columns).
-    fn parse_table(&mut self, table_cols: usize, head_start: usize, body_start: usize) -> Option<usize> {
+    fn parse_table(
+        &mut self,
+        table_cols: usize,
+        head_start: usize,
+        body_start: usize,
+    ) -> Option<usize> {
         // parse header. this shouldn't fail because we made sure the table header is ok
         let (_sep_start, thead_ix) = self.parse_table_row_inner(head_start, table_cols)?;
         self.tree[thead_ix].item.body = ItemBody::TableHead;
@@ -302,7 +314,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Call this when containers are taken care of.
     /// Returns bytes scanned, row_ix
-    fn parse_table_row_inner(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
+    fn parse_table_row_inner(
+        &mut self,
+        mut ix: usize,
+        row_cells: usize,
+    ) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut cells = 0;
         let mut final_cell_ix = None;
@@ -643,7 +659,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         );
                     }
 
-                    self.tree.append_text(begin_text, ix - trailing_whitespace, backslash_escaped);
+                    self.tree
+                        .append_text(begin_text, ix - trailing_whitespace, backslash_escaped);
                     backslash_escaped = false;
 
                     LoopInstruction::BreakAtWith(
@@ -668,9 +685,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             begin_text = ix + 1 + count;
                             backslash_escaped = false;
                             LoopInstruction::ContinueAndSkip(count)
-                        } else if bytes[ix + 1] == b'|'
-                            && TableParseMode::Active == mode
-                        {
+                        } else if bytes[ix + 1] == b'|' && TableParseMode::Active == mode {
                             // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
                             // backslash escapes.
                             //
@@ -701,8 +716,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 c @ b'*' | c @ b'_' | c @ b'~' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
-                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, count, ix - start, mode);
-                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, count, ix - start, mode);
+                    let can_open = delim_run_can_open(
+                        &self.text[start..],
+                        string_suffix,
+                        count,
+                        ix - start,
+                        mode,
+                    );
+                    let can_close = delim_run_can_close(
+                        &self.text[start..],
+                        string_suffix,
+                        count,
+                        ix - start,
+                        mode,
+                    );
                     let is_valid_seq = c != b'~' || count <= 2;
 
                     if (can_open || can_close) && is_valid_seq {
@@ -861,8 +888,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 c @ b'\'' | c @ b'"' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open = delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
-                    let can_close = delim_run_can_close(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_open =
+                        delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_close = delim_run_can_close(
+                        &self.text[start..],
+                        string_suffix,
+                        1,
+                        ix - start,
+                        mode,
+                    );
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
@@ -883,7 +917,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let trailing_whitespace =
                 scan_rev_while(&bytes[begin_text..final_ix], is_ascii_whitespace_no_nl);
             // need to close text at eof
-            self.tree.append_text(begin_text, final_ix - trailing_whitespace, backslash_escaped);
+            self.tree.append_text(
+                begin_text,
+                final_ix - trailing_whitespace,
+                backslash_escaped,
+            );
         }
         (final_ix, brk)
     }
@@ -898,6 +936,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         start_ix: usize,
         html_end_tag: &str,
         mut remaining_space: usize,
+        mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -912,7 +951,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space, line_start_ix, ix);
+            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -937,6 +976,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
+            indent = 0;
         }
         self.pop(end_ix);
         ix
@@ -949,6 +989,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         start_ix: usize,
         mut remaining_space: usize,
+        mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -963,7 +1004,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space, line_start_ix, ix);
+            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(
@@ -984,6 +1025,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
+            indent = 0;
         }
         self.pop(end_ix);
         ix
@@ -1176,7 +1218,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.tree.append(Item {
                 start,
                 end: start,
-                // TODO: maybe this should synthesize to html rather than text?
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
@@ -1382,9 +1423,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // GitHub doesn't allow footnote definition labels to contain line breaks.
             // It actually does allow this for link definitions under certain circumstances,
             // but for this it's simpler to avoid it.
-            scan_link_label_rest(&self.text[start + 2..], &|_| {
-                return None;
-            }, self.tree.is_in_table())?
+            scan_link_label_rest(
+                &self.text[start + 2..],
+                &|_| {
+                    return None;
+                },
+                self.tree.is_in_table(),
+            )?
         } else {
             self.parse_refdef_label(start + 2)?
         };
@@ -1428,24 +1473,30 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Tries to parse a reference label, which can be interrupted by new blocks.
     /// On success, returns the number of bytes of the label and the label itself.
     fn parse_refdef_label(&self, start: usize) -> Option<(usize, CowStr<'a>)> {
-        scan_link_label_rest(&self.text[start..], &|bytes| {
-            let mut line_start = LineStart::new(bytes);
-            let current_container = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            ) == self.tree.spine_len();
-            if line_start.scan_space(4) {
-                return Some(line_start.bytes_scanned());
-            }
-            let bytes_scanned = line_start.bytes_scanned();
-            let suffix = &bytes[bytes_scanned..];
-            if self.scan_paragraph_interrupt(suffix, current_container) || (current_container && scan_setext_heading(suffix).is_some()) {
-                None
-            } else {
-                Some(bytes_scanned)
-            }
-        }, self.tree.is_in_table())
+        scan_link_label_rest(
+            &self.text[start..],
+            &|bytes| {
+                let mut line_start = LineStart::new(bytes);
+                let current_container = scan_containers(
+                    &self.tree,
+                    &mut line_start,
+                    self.options.has_gfm_footnotes(),
+                ) == self.tree.spine_len();
+                if line_start.scan_space(4) {
+                    return Some(line_start.bytes_scanned());
+                }
+                let bytes_scanned = line_start.bytes_scanned();
+                let suffix = &bytes[bytes_scanned..];
+                if self.scan_paragraph_interrupt(suffix, current_container)
+                    || (current_container && scan_setext_heading(suffix).is_some())
+                {
+                    None
+                } else {
+                    Some(bytes_scanned)
+                }
+            },
+            self.tree.is_in_table(),
+        )
     }
 
     /// Returns number of bytes scanned, label and definition on success.
@@ -1487,7 +1538,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ) == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let suffix = &bytes[i + line_start.bytes_scanned()..];
-                if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
+                if self.scan_paragraph_interrupt(suffix, current_container)
+                    || scan_setext_heading(suffix).is_some()
+                {
                     return None;
                 }
             }
@@ -1507,9 +1560,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         };
         let mut bytecount = 1;
         let mut linestart = 1;
-    
+
         let mut linebuf = None;
-    
+
         while let Some(&c) = bytes.get(bytecount) {
             match c {
                 b'\n' | b'\r' => {
@@ -1528,7 +1581,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     };
                     linebuf.push_str(&text[linestart..bytecount]);
                     linebuf.push('\n'); // normalize line breaks
-                    // skip line break
+                                        // skip line break
                     bytecount += 1;
                     if c == b'\r' && bytes.get(bytecount) == Some(&b'\n') {
                         bytecount += 1;
@@ -1541,7 +1594,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     ) == self.tree.spine_len();
                     if !line_start.scan_space(4) {
                         let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
-                        if self.scan_paragraph_interrupt(suffix, current_container) || scan_setext_heading(suffix).is_some() {
+                        if self.scan_paragraph_interrupt(suffix, current_container)
+                            || scan_setext_heading(suffix).is_some()
+                        {
                             return None;
                         }
                     }
@@ -1551,7 +1606,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         // blank line - not allowed
                         return None;
                     }
-
                 }
                 b'\\' => {
                     bytecount += 1;
@@ -1674,7 +1728,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 b'\\' => {
                     bsesc = true;
                     continue;
-                },
+                }
                 b'|' if !bsesc => {
                     pipes += 1;
                     last_pipe_ix = i;
@@ -1817,8 +1871,12 @@ fn scan_paragraph_interrupt_no_table<'tree>(
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
         || (gfm_footnote
             && bytes.starts_with(b"[^")
-            && scan_link_label_rest(std::str::from_utf8(&bytes[2..]).unwrap(), &|_| None, tree.is_in_table())
-                .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
+            && scan_link_label_rest(
+                std::str::from_utf8(&bytes[2..]).unwrap(),
+                &|_| None,
+                tree.is_in_table(),
+            )
+            .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.
@@ -1915,7 +1973,13 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
 /// for _ delims).
 /// suffix is &s[ix..], which is passed in as an optimization, since taking
 /// a string subslice is O(n).
-fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
+fn delim_run_can_open(
+    s: &str,
+    suffix: &str,
+    run_len: usize,
+    ix: usize,
+    mode: TableParseMode,
+) -> bool {
     let next_char = if let Some(c) = suffix.chars().nth(run_len) {
         c
     } else {
@@ -1950,7 +2014,13 @@ fn delim_run_can_open(s: &str, suffix: &str, run_len: usize, ix: usize, mode: Ta
 /// Determines whether the delimiter run starting at given index is
 /// right-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims)
-fn delim_run_can_close(s: &str, suffix: &str, run_len: usize, ix: usize, mode: TableParseMode) -> bool {
+fn delim_run_can_close(
+    s: &str,
+    suffix: &str,
+    run_len: usize,
+    ix: usize,
+    mode: TableParseMode,
+) -> bool {
     if ix == 0 {
         return false;
     }

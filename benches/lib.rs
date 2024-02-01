@@ -12,7 +12,7 @@ mod to_html {
             buf.push(' ');
             group.throughput(Throughput::Bytes(buf.len() as u64));
             group.bench_with_input(BenchmarkId::from_parameter(i), &buf, |b, buf| {
-                b.iter(|| render_html(&buf, Options::empty()));
+                b.iter(|| render_html(buf, Options::empty()));
             });
         }
         group.finish();
@@ -29,7 +29,7 @@ mod to_html {
             buf.push_str(&"*a* ".repeat(buf.len()));
             group.throughput(Throughput::Bytes(buf.len() as u64));
             group.bench_with_input(BenchmarkId::from_parameter(i), &buf, |b, buf| {
-                b.iter(|| render_html(&buf, Options::empty()));
+                b.iter(|| render_html(buf, Options::empty()));
             });
         }
         group.finish();

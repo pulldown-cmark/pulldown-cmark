@@ -964,7 +964,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
+            if self.text[line_start_ix..ix].contains(html_end_tag) {
                 end_ix = ix;
                 break;
             }
@@ -1426,7 +1426,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             scan_link_label_rest(
                 &self.text[start + 2..],
                 &|_| {
-                    return None;
+                    None
                 },
                 self.tree.is_in_table(),
             )?
@@ -1552,7 +1552,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     // returns (bytelength, title_str)
     fn scan_refdef_title<'t>(&self, text: &'t str) -> Option<(usize, CowStr<'t>)> {
         let bytes = text.as_bytes();
-        let closing_delim = match bytes.get(0)? {
+        let closing_delim = match bytes.first()? {
             b'\'' => b'\'',
             b'"' => b'"',
             b'(' => b')',
@@ -1848,11 +1848,11 @@ fn count_header_cols(
 ///
 /// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
 /// tables to interrupt the paragraph.
-fn scan_paragraph_interrupt_no_table<'tree>(
+fn scan_paragraph_interrupt_no_table(
     bytes: &[u8],
     current_container: bool,
     gfm_footnote: bool,
-    tree: &'tree Tree<Item>,
+    tree: &Tree<Item>,
 ) -> bool {
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
@@ -1992,7 +1992,7 @@ fn delim_run_can_open(
         return true;
     }
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
             return true;
         }
         if next_char == '|' {
@@ -2034,7 +2034,7 @@ fn delim_run_can_close(
         return true;
     };
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
             return false;
         }
         if next_char == '|' {

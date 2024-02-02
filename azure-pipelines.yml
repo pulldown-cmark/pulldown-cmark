@@ -3,17 +3,23 @@ pool:
 
 steps:
   - script: rustup default 1.70.0
+    workingDirectory: pulldown-cmark
     displayName: Install rust
   - script: cargo build --all
+    workingDirectory: pulldown-cmark
     displayName: Cargo build
   - script: cargo test --all
+    workingDirectory: pulldown-cmark
     displayName: Cargo test
   - script: cargo test --all --features=simd,gen-tests
+    workingDirectory: pulldown-cmark
     displayName: Cargo test with simd feature enabled
   - script: cargo test --all --features=serde
+    workingDirectory: pulldown-cmark
     displayName: Cargo test with serde feature enabled
   - script: cargo test --all --no-default-features
+    workingDirectory: pulldown-cmark
     displayName: Cargo test without default features    
   - script: cargo run --release -- --regressions
-    workingDirectory: fuzzer
+    workingDirectory: pulldown-cmark/fuzzer
     displayName: Test for superlinear time regressions

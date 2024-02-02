@@ -2663,7 +2663,7 @@ fn regression_test_166() {
 
     test_markdown_html(original, expected, false, false, false);
 }
-  
+
 #[test]
 fn regression_test_167() {
     let original = r##"

@@ -172,7 +172,7 @@ pub fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn pulldown_cmark<'i>(input: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
+pub fn pulldown_cmark(input: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
     let mut p = Parser::new_with_broken_link_callback(
         input,
         opts,

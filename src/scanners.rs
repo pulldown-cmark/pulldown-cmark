@@ -224,14 +224,14 @@ impl<'a> LineStart<'a> {
                 if self.scan_space(1) || self.is_at_eol() {
                     return self.finish_list_marker(c, 0, indent + 2);
                 }
-            } else if c >= b'0' && c <= b'9' {
+            } else if c.is_ascii_digit() {
                 let start_ix = self.ix;
                 let mut ix = self.ix + 1;
                 let mut val = u64::from(c - b'0');
                 while ix < self.bytes.len() && ix - start_ix < 10 {
                     let c = self.bytes[ix];
                     ix += 1;
-                    if c >= b'0' && c <= b'9' {
+                    if c.is_ascii_digit() {
                         val = val * 10 + u64::from(c - b'0');
                     } else if c == b')' || c == b'.' {
                         self.ix = ix;
@@ -322,7 +322,7 @@ impl<'a> LineStart<'a> {
 }
 
 pub(crate) fn is_ascii_whitespace(c: u8) -> bool {
-    (c >= 0x09 && c <= 0x0d) || c == b' '
+    (0x09..=0x0d).contains(&c) || c == b' '
 }
 
 pub(crate) fn is_ascii_whitespace_no_nl(c: u8) -> bool {
@@ -330,7 +330,7 @@ pub(crate) fn is_ascii_whitespace_no_nl(c: u8) -> bool {
 }
 
 fn is_ascii_alpha(c: u8) -> bool {
-    matches!(c, b'a'..=b'z' | b'A'..=b'Z')
+    c.is_ascii_alphabetic()
 }
 
 fn is_ascii_alphanumeric(c: u8) -> bool {
@@ -342,7 +342,7 @@ fn is_ascii_letterdigitdash(c: u8) -> bool {
 }
 
 fn is_digit(c: u8) -> bool {
-    b'0' <= c && c <= b'9'
+    c.is_ascii_digit()
 }
 
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
@@ -535,7 +535,7 @@ pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
 ///
 /// Returns number of bytes in line (including trailing newline) and level.
 pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> {
-    let c = *data.get(0)?;
+    let c = *data.first()?;
     let level = if c == b'=' {
         HeadingLevel::H1
     } else if c == b'-' {
@@ -621,7 +621,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
 ///
 /// Returns number of bytes scanned and the char that is repeated to make the code fence.
 pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
-    let c = *data.get(0)?;
+    let c = *data.first()?;
     if !(c == b'`' || c == b'~') {
         return None;
     }
@@ -656,7 +656,7 @@ pub(crate) fn scan_metadata_block(
 ) -> Option<(usize, u8)> {
     // Only if metadata blocks are enabled
     if yaml_style_enabled || pluses_style_enabled {
-        let c = *data.get(0)?;
+        let c = *data.first()?;
         if !((c == b'-' && yaml_style_enabled) || (c == b'+' && pluses_style_enabled)) {
             return None;
         }
@@ -697,7 +697,7 @@ pub(crate) fn scan_metadata_block(
 }
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
-    if data.get(0).copied() == Some(b'>') {
+    if data.first().copied() == Some(b'>') {
         let space = if data.get(1).copied() == Some(b' ') {
             1
         } else {
@@ -711,7 +711,7 @@ pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
 
 /// return number of bytes scanned, delimiter, start index, and indent
 pub(crate) fn scan_listitem(bytes: &[u8]) -> Option<(usize, u8, usize, usize)> {
-    let mut c = *bytes.get(0)?;
+    let mut c = *bytes.first()?;
     let (w, start) = match c {
         b'-' | b'+' | b'*' => (1, 0),
         b'0'..=b'9' => {
@@ -765,28 +765,31 @@ fn parse_decimal(bytes: &[u8], limit: usize) -> (usize, usize) {
 
 // returns (number of bytes, parsed hex)
 fn parse_hex(bytes: &[u8], limit: usize) -> (usize, usize) {
-    match bytes.iter().take(limit).try_fold((0, 0usize), |(count, acc), c| {
-        let mut c = *c;
-        let digit = if c >= b'0' && c <= b'9' {
-            usize::from(c - b'0')
-        } else {
-            // make lower case
-            c |= 0x20;
-            if c >= b'a' && c <= b'f' {
-                usize::from(c - b'a' + 10)
+    match bytes
+        .iter()
+        .take(limit)
+        .try_fold((0, 0usize), |(count, acc), c| {
+            let mut c = *c;
+            let digit = if c.is_ascii_digit() {
+                usize::from(c - b'0')
             } else {
-                return Err((count, acc));
+                // make lower case
+                c |= 0x20;
+                if (b'a'..=b'f').contains(&c) {
+                    usize::from(c - b'a' + 10)
+                } else {
+                    return Err((count, acc));
+                }
+            };
+            match acc
+                .checked_mul(16)
+                .and_then(|sixteen_acc| sixteen_acc.checked_add(digit))
+            {
+                Some(number) => Ok((count + 1, number)),
+                // stop early on overflow
+                None => Err((count, acc)),
             }
-        };
-        match acc
-            .checked_mul(16)
-            .and_then(|sixteen_acc| sixteen_acc.checked_add(digit))
-        {
-            Some(number) => Ok((count + 1, number)),
-            // stop early on overflow
-            None => Err((count, acc)),
-        }
-    }) {
+        }) {
         Ok(p) | Err(p) => p,
     }
 }
@@ -814,7 +817,10 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
             (0, None)
         } else {
-            (end + 1, Some(char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into()))
+            (
+                end + 1,
+                Some(char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into()),
+            )
         };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
@@ -1012,7 +1018,12 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
             // Tables are special, because they're parsed as-if the tables
             // were parsed in a discrete pass, changing `\|` to `|`, and then
             // passing the changed string to the inline parser.
-            b'\\' if is_in_table && i + 2 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 2] == b'|' => {
+            b'\\'
+                if is_in_table
+                    && i + 2 < bytes.len()
+                    && bytes[i + 1] == b'\\'
+                    && bytes[i + 2] == b'|' =>
+            {
                 // even number of `\`s before pipe
                 // odd number is handled in the normal way below
                 result.push_str(&input[mark..i]);
@@ -1042,7 +1053,7 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
         }
     }
     if mark == 0 {
-        input.into()
+        input
     } else {
         result.push_str(&input[mark..]);
         result.into()
@@ -1212,7 +1223,7 @@ fn scan_uri(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 
     // scheme length must be between 2 and 32 characters long. scheme
     // must be followed by colon
-    if i < 3 || i > 33 {
+    if !(3..=33).contains(&i) {
         return None;
     }
 

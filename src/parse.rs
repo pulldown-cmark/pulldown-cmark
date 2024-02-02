@@ -50,6 +50,7 @@ pub(crate) struct Item {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Default)]
 pub(crate) enum ItemBody {
     Paragraph,
     Text { backslash_escaped: bool },
@@ -103,6 +104,7 @@ pub(crate) enum ItemBody {
     TableCell,
 
     // Dummy node at the top of the tree - should not be used otherwise!
+    #[default]
     Root,
 }
 
@@ -136,11 +138,7 @@ impl ItemBody {
     }
 }
 
-impl Default for ItemBody {
-    fn default() -> Self {
-        ItemBody::Root
-    }
-}
+
 
 #[derive(Debug)]
 pub struct BrokenLink<'a> {
@@ -368,7 +366,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             }
                             scan = self.tree[scan_ix].next;
                         }
-                        if scan == None {
+                        if scan.is_none() {
                             self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                         }
                     }
@@ -508,7 +506,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 if let Some(def) = self
                                     .allocs
                                     .footdefs
-                                    .get_mut(self.allocs.cows[footref.0].to_owned().into())
+                                    .get_mut(self.allocs.cows[footref.0].to_owned())
                                 {
                                     def.use_count += 1;
                                 }
@@ -911,7 +909,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             let c = bytes[ix];
             if c == b'\r' || c == b'\n' {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
-                buf.extend(self.text[start_ix..ix].chars());
+                buf.push_str(&self.text[start_ix..ix]);
                 buf.push(' ');
                 ix += 1;
                 let mut line_start = LineStart::new(&bytes[ix..]);
@@ -924,7 +922,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 start_ix = ix;
             } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
-                buf.extend(self.text[start_ix..ix].chars());
+                buf.push_str(&self.text[start_ix..ix]);
                 buf.push('|');
                 ix += 2;
                 start_ix = ix;
@@ -935,7 +933,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         
         let (opening, closing, all_spaces) = {
             let s = if let Some(buf) = &mut buf {
-                buf.extend(self.text[start_ix..span_end].chars());
+                buf.push_str(&self.text[start_ix..span_end]);
                 &buf[..]
             } else {
                 &self.text[span_start..span_end]
@@ -957,12 +955,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 let hi = (span_end - 1).max(lo);
                 self.text[lo..hi].into()
             }
+        } else if let Some(buf) = buf {
+            buf.into()
         } else {
-            if let Some(buf) = buf {
-                buf.into()
-            } else {
-                self.text[span_start..span_end].into()
-            }
+            self.text[span_start..span_end].into()
         };
 
         if preceding_backslash {
@@ -1262,8 +1258,8 @@ fn scan_nodes_to_ix(
 
 /// Scans an inline link label, which cannot be interrupted.
 /// Returns number of bytes (including brackets) and label on success.
-fn scan_link_label<'text, 'tree>(
-    tree: &'tree Tree<Item>,
+fn scan_link_label<'text>(
+    tree: &Tree<Item>,
     text: &'text str,
     allow_footnote_refs: bool,
     gfm_footnotes: bool,
@@ -1291,8 +1287,8 @@ fn scan_link_label<'text, 'tree>(
     Some((byte_index + 1, ReferenceLabel::Link(cow)))
 }
 
-fn scan_reference<'a, 'b>(
-    tree: &'a Tree<Item>,
+fn scan_reference<'b>(
+    tree: &Tree<Item>,
     text: &'b str,
     cur: Option<TreeIndex>,
     allow_footnote_refs: bool,
@@ -1398,7 +1394,7 @@ impl CodeDelims {
         if self.seen_first {
             self.inner
                 .entry(count)
-                .or_insert_with(Default::default)
+                .or_default()
                 .push_back(ix);
         } else {
             // Skip the first insert, since that delimiter will always
@@ -1489,7 +1485,7 @@ where
     }
     /// Performs a lookup on reference label using unicode case folding.
     pub fn get_mut(&'s mut self, key: CowStr<'input>) -> Option<&'s mut FootnoteDef> {
-        self.0.get_mut(&UniCase::new(key.into()))
+        self.0.get_mut(&UniCase::new(key))
     }
 }
 
@@ -1548,7 +1544,7 @@ impl<'a> Allocations<'a> {
     }
 
     pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
-        std::mem::replace(&mut self.alignments[ix.0], Default::default())
+        std::mem::take(&mut self.alignments[ix.0])
     }
 }
 
@@ -2208,9 +2204,9 @@ text
         // NOTE: this is a limitation of Rust, it doesn't allow putting lifetime parameters on the closure itself.
         // Hack it by attaching the lifetime to the test function instead.
         // TODO: why is the `'b` lifetime required at all? Changing it to `'_` breaks things :(
-        let mut closure = |link: BrokenLink<'b>| Some(("#".into(), link.reference.into()));
+        let mut closure = |link: BrokenLink<'b>| Some(("#".into(), link.reference));
 
-        fn function<'a>(link: BrokenLink<'a>) -> Option<(CowStr<'a>, CowStr<'a>)> {
+        fn function(link: BrokenLink<'_>) -> Option<(CowStr<'_>, CowStr<'_>)> {
             Some(("#".into(), link.reference))
         }
 

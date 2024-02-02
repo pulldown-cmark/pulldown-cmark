@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<'w> StrWrite for String {
+impl StrWrite for String {
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.push_str(s);
@@ -157,11 +157,11 @@ static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"
 
 /// Writes the given string to the Write sink, replacing special HTML bytes
 /// (<, >, &, ", ') by escape sequences.
-/// 
+///
 /// Use this function to write output to quoted HTML attributes.
 /// Since this function doesn't escape spaces, unquoted attributes
 /// cannot be used. For example:
-/// 
+///
 /// ```rust
 /// let mut value = String::new();
 /// pulldown_cmark::escape::escape_html(&mut value, "two words")
@@ -216,10 +216,7 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256])
     let mut mark = 0;
     let mut i = 0;
     while i < s.len() {
-        match bytes[i..]
-            .iter()
-            .position(|&c| table[c as usize] != 0)
-        {
+        match bytes[i..].iter().position(|&c| table[c as usize] != 0) {
             Some(pos) => {
                 i += pos;
             }
@@ -245,7 +242,11 @@ mod simd {
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> io::Result<()> {
+    pub(super) fn escape_html<W: StrWrite>(
+        mut w: W,
+        s: &str,
+        table: &'static [u8; 256],
+    ) -> io::Result<()> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -259,16 +260,16 @@ mod simd {
                 foreach_special_simd(bytes, 0, |i| {
                     let escape_ix = *bytes.get_unchecked(i) as usize;
                     let entry = table[escape_ix] as usize;
-                    w.write_str(&s.get_unchecked(mark..i))?;
+                    w.write_str(s.get_unchecked(mark..i))?;
                     mark = i + 1; // all escaped characters are ASCII
                     if entry == 0 {
-                        w.write_str(&s.get_unchecked(i..mark))
+                        w.write_str(s.get_unchecked(i..mark))
                     } else {
                         let replacement = super::HTML_ESCAPES[entry];
                         w.write_str(replacement)
                     }
                 })?;
-                w.write_str(&s.get_unchecked(mark..))
+                w.write_str(s.get_unchecked(mark..))
             }
         } else {
             super::escape_html_scalar(w, s, table)
@@ -298,7 +299,7 @@ mod simd {
 
         let table = create_lookup();
         let lookup = _mm_loadu_si128(table.as_ptr() as *const __m128i);
-        let raw_ptr = bytes.as_ptr().offset(offset as isize) as *const __m128i;
+        let raw_ptr = bytes.as_ptr().add(offset) as *const __m128i;
 
         // Load the vector from memory.
         let vector = _mm_loadu_si128(raw_ptr);
@@ -374,6 +375,7 @@ mod simd {
             let mut vec = Vec::new();
             unsafe {
                 super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| {
+                    #[allow(clippy::unit_arg)]
                     Ok(vec.push(ix))
                 })
                 .unwrap();

@@ -101,7 +101,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // Process new containers
         loop {
-            if self.options.has_gfm_footnotes() {
+            if self.options.has_gfm_footnotes()
+                || self.options.contains(Options::ENABLE_OLD_FOOTNOTES)
+            {
                 // Footnote definitions of the form
                 // [^bar]:
                 //     * anything really
@@ -298,13 +300,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         head_start: usize,
         body_start: usize,
     ) -> Option<usize> {
+        // filled empty cells are limited to protect against quadratic growth
+        // https://github.com/raphlinus/pulldown-cmark/issues/832
+        let mut missing_empty_cells = 0;
         // parse header. this shouldn't fail because we made sure the table header is ok
-        let (_sep_start, thead_ix) = self.parse_table_row_inner(head_start, table_cols)?;
+        let (_sep_start, thead_ix) = self.parse_table_row_inner(
+            head_start,
+            table_cols,
+            &mut missing_empty_cells,
+        )?;
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
         let mut ix = body_start;
-        while let Some((next_ix, _row_ix)) = self.parse_table_row(ix, table_cols) {
+        while let Some((next_ix, _row_ix)) = self.parse_table_row(
+            ix,
+            table_cols,
+            &mut missing_empty_cells,
+        ) {
             ix = next_ix;
         }
 
@@ -318,7 +331,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         mut ix: usize,
         row_cells: usize,
+        missing_empty_cells: &mut usize,
     ) -> Option<(usize, TreeIndex)> {
+        // Limit to prevent a malicious input from causing a denial of service.
+        const MAX_AUTOCOMPLETED_CELLS: usize = 1 << 18; // = 0x40000
+
         let bytes = self.text.as_bytes();
         let mut cells = 0;
         let mut final_cell_ix = None;
@@ -370,6 +387,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // note: this is where GFM and commonmark-extra diverge. we follow
         // GFM here
         for _ in cells..row_cells {
+            if *missing_empty_cells >= MAX_AUTOCOMPLETED_CELLS {
+                return None;
+            }
+            *missing_empty_cells += 1;
             self.tree.append(Item {
                 start: ix,
                 end: ix,
@@ -388,7 +409,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Returns first offset after the row and the tree index of the row.
-    fn parse_table_row(&mut self, mut ix: usize, row_cells: usize) -> Option<(usize, TreeIndex)> {
+    fn parse_table_row(
+        &mut self,
+        mut ix: usize,
+        row_cells: usize,
+        missing_empty_cells: &mut usize,
+    ) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
         let current_container = scan_containers(
@@ -410,7 +436,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
 
-        let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells)?;
+        let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells, missing_empty_cells)?;
         Some((ix, row_ix))
     }
 
@@ -964,7 +990,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if (&self.text[line_start_ix..ix]).contains(html_end_tag) {
+            if self.text[line_start_ix..ix].contains(html_end_tag) {
                 end_ix = ix;
                 break;
             }
@@ -1363,7 +1389,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let (line_ix, line_brk) = self.parse_line(ix, None, TableParseMode::Disabled);
             ix = line_ix;
             // Backslash at end is actually hard line break
-            if let Some(Item { start, end, body: ItemBody::HardBreak(true) }) = line_brk {
+            if let Some(Item {
+                start,
+                end,
+                body: ItemBody::HardBreak(true),
+            }) = line_brk
+            {
                 self.tree.append_text(start, end, false);
             }
             (ix, ix, None)
@@ -1426,7 +1457,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             scan_link_label_rest(
                 &self.text[start + 2..],
                 &|_| {
-                    return None;
+                    None
                 },
                 self.tree.is_in_table(),
             )?
@@ -1552,7 +1583,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     // returns (bytelength, title_str)
     fn scan_refdef_title<'t>(&self, text: &'t str) -> Option<(usize, CowStr<'t>)> {
         let bytes = text.as_bytes();
-        let closing_delim = match bytes.get(0)? {
+        let closing_delim = match bytes.first()? {
             b'\'' => b'\'',
             b'"' => b'"',
             b'(' => b')',
@@ -1848,11 +1879,11 @@ fn count_header_cols(
 ///
 /// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
 /// tables to interrupt the paragraph.
-fn scan_paragraph_interrupt_no_table<'tree>(
+fn scan_paragraph_interrupt_no_table(
     bytes: &[u8],
     current_container: bool,
     gfm_footnote: bool,
-    tree: &'tree Tree<Item>,
+    tree: &Tree<Item>,
 ) -> bool {
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
@@ -1992,7 +2023,7 @@ fn delim_run_can_open(
         return true;
     }
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
             return true;
         }
         if next_char == '|' {
@@ -2034,7 +2065,7 @@ fn delim_run_can_close(
         return true;
     };
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with("|") && !s[..ix].ends_with(r"\|") {
+        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
             return false;
         }
         if next_char == '|' {

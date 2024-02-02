@@ -19,6 +19,22 @@ jobs:
         with:
           lfs: true
           submodules: 'recursive'
+          path: zig-release
+      - uses: actions/checkout@v4
+        with:
+          lft: true
+          submodule: 'recursive'
+          commit: 60f632ecf3cbbaf8b1e623f63e4ba7b60d50ea4e
+          path: pulldown-cmark
+      - name: copy Makefile for zig-release
+        run: |
+          mkdir -p source
+          cd zig-release
+          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g' > version.txt
+          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g'
+          cat version.txt
+          cp Makefile archive.sh target.txt version.txt ../pulldown-cmark/
+          cp config.toml target.txt ../
       - name: install zig and tools (Linux)
         run: |
           #pacman -Sy sudo rustup clang llvm lld make git --noconfirm
@@ -31,7 +47,7 @@ jobs:
       - name: Install sccache
         env:
           LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.7.5
+          SCCACHE_VERSION: 0.7.6
         run: |
           SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
@@ -67,11 +83,12 @@ jobs:
       - name: Build and archive
         shell: bash
         run: |
+          cd pulldown-cmark
           cargo update
           make target-archive
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           omitBody: true
-          artifacts: 'release/*'
+          artifacts: 'pulldown-cmark/release/*'
           token: ${{ secrets.GITHUB_TOKEN }}

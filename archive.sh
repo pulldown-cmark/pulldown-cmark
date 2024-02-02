@@ -1,5 +1,5 @@
 #!/bin/bash
-version=$(git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g')
+version=$(cat version.txt)
 if [[ "${version}" == "" ]]; then
   echo "cannot get version tag from HEAD commit"
   exit 1

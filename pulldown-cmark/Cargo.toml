@@ -17,7 +17,6 @@ exclude = [
     "/third_party/**/*",
     "/tools/**/*",
     "/specs/**/*",
-    "/fuzzer/**/*",
     "/azure-pipelines.yml",
 ]
 

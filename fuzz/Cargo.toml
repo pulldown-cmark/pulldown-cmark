@@ -18,7 +18,7 @@ rquickjs = { version = "0.3", features = ["parallel"] }
 urlencoding = "2.1.2"
 
 [dependencies.pulldown-cmark]
-path = ".."
+path = "../pulldown-cmark"
 
 # Prevent this from interfering with workspaces
 [workspace]

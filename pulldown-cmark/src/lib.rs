@@ -81,8 +81,6 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "html")]
-pub mod escape;
-#[cfg(feature = "html")]
 pub mod html;
 
 pub mod utils;

@@ -23,10 +23,12 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use crate::escape::{escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper};
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
+use pulldown_cmark_escape::{
+    escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper,
+};
 
 enum TableState {
     Head,

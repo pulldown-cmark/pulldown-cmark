@@ -20,7 +20,7 @@ pub fn pulldown_cmark(text: &str) -> Vec<Event<'_>> {
 /// Send Markdown `text` to `commonmark.js` and return XML.
 pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
     const COMMONMARK_MIN_JS: &str =
-        include_str!("../../third_party/commonmark.js/commonmark.min.js");
+        include_str!("../../pulldown-cmark/third_party/commonmark.js/commonmark.min.js");
     static RUNTIME: OnceCell<Runtime> = OnceCell::new();
     static CONTEXT: OnceCell<Context> = OnceCell::new();
 
@@ -51,7 +51,7 @@ pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
 
 /// Parse commonmark.js XML and return Markdown events.
 pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
-    let mut list_stack = Vec::new();
+    let mut block_container_stack = Vec::new();
     let mut heading_stack = Vec::new();
 
     let mut reader = Reader::from_str(xml);
@@ -62,6 +62,9 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             XmlEvent::Decl(..) | XmlEvent::DocType(..) => continue,
             XmlEvent::Start(tag) => match tag.name().as_ref() {
                 b"document" => continue,
+                b"paragraph" if block_container_stack.last().map(|(_start, tight)| *tight).unwrap_or(false) => {
+                    continue;
+                }
                 b"paragraph" => events.push(Event::Start(Tag::Paragraph)),
                 b"heading" => match tag.try_get_attribute("level")? {
                     Some(level) => {
@@ -109,7 +112,13 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         )))),
                         None => events.push(Event::Start(Tag::List(None))),
                     };
-                    list_stack.push(start.is_some());
+                    let tight = match tag.try_get_attribute("tight") {
+                        Ok(Some(value)) if value.unescape_value()? == "true" => {
+                            true
+                        }
+                        _ => false,
+                    };
+                    block_container_stack.push((start.is_some(), tight));
                 }
                 b"item" => events.push(Event::Start(Tag::Item)),
                 b"strong" => events.push(Event::Start(Tag::Strong)),
@@ -147,8 +156,20 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         }
                     }));
                 }
-                b"block_quote" => events.push(Event::Start(Tag::BlockQuote)),
-                b"html_block" | b"html_inline" => events.push(Event::Html(
+                b"block_quote" => {
+                    block_container_stack.push((true, false));
+                    events.push(Event::Start(Tag::BlockQuote))
+                },
+                b"html_block" => {
+                    events.push(Event::Start(Tag::HtmlBlock));
+                    events.push(Event::Html(
+                        unescape(&reader.read_text(tag.to_end().name())?)?
+                            .into_owned()
+                            .into(),
+                    ));
+                    events.push(Event::End(TagEnd::HtmlBlock));
+                },
+                b"html_inline" => events.push(Event::InlineHtml(
                     unescape(&reader.read_text(tag.to_end().name())?)?
                         .into_owned()
                         .into(),
@@ -157,19 +178,25 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             },
             XmlEvent::End(tag) => match tag.name().as_ref() {
                 b"document" => continue,
+                b"paragraph" if block_container_stack.last().map(|(_numbered, tight)| *tight).unwrap_or(false) => {
+                    continue;
+                }
                 b"paragraph" => events.push(Event::End(TagEnd::Paragraph)),
                 b"heading" => events.push(Event::End(TagEnd::Heading(
                     heading_stack.pop().ok_or(anyhow!("Heading stack empty"))?,
                 ))),
                 b"list" => events.push(Event::End(TagEnd::List(
-                    list_stack.pop().ok_or(anyhow!("List stack empty"))?,
+                    block_container_stack.pop().ok_or(anyhow!("List stack empty"))?.0,
                 ))),
                 b"item" => events.push(Event::End(TagEnd::Item)),
                 b"emph" => events.push(Event::End(TagEnd::Emphasis)),
                 b"strong" => events.push(Event::End(TagEnd::Strong)),
                 b"link" => events.push(Event::End(TagEnd::Link)),
                 b"image" => events.push(Event::End(TagEnd::Image)),
-                b"block_quote" => events.push(Event::End(TagEnd::BlockQuote)),
+                b"block_quote" => {
+                    block_container_stack.pop().ok_or(anyhow!("List stack empty"))?;
+                    events.push(Event::End(TagEnd::BlockQuote))
+                },
                 name => anyhow::bail!("end tag: {}", String::from_utf8_lossy(name)),
             },
             XmlEvent::Text(_) => continue,

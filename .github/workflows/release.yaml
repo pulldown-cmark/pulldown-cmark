@@ -22,9 +22,10 @@ jobs:
           path: zig-release
       - uses: actions/checkout@v4
         with:
+          ref: master
           lft: true
           submodule: 'recursive'
-          commit: 60f632ecf3cbbaf8b1e623f63e4ba7b60d50ea4e
+          commit: 42bff71ea497c493d740324ebe4b3799dc273b8a
           path: pulldown-cmark
       - name: copy Makefile for zig-release
         run: |

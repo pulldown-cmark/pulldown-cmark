@@ -1596,6 +1596,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         while let Some(&c) = bytes.get(bytecount) {
             match c {
+                b'(' if closing_delim == b')' => {
+                    // https://spec.commonmark.org/0.30/#link-title
+                    // a sequence of zero or more characters between matching parentheses ((...)),
+                    // including a ( or ) character only if it is backslash-escaped.
+                    return None;
+                }
                 b'\n' | b'\r' => {
                     // push text to line buffer
                     // this is used to strip the block formatting:

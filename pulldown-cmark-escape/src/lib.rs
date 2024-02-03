@@ -164,7 +164,7 @@ static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"
 ///
 /// ```rust
 /// let mut value = String::new();
-/// pulldown_cmark::escape::escape_html(&mut value, "two words")
+/// pulldown_cmark_escape::escape_html(&mut value, "two words")
 ///     .expect("writing to a string is infallible");
 /// // This is okay.
 /// let ok = format!("<a title='{value}'>test</a>");

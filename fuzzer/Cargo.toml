@@ -8,7 +8,7 @@ edition = "2018"
 syn = { version = "0.15", features = ["full"] }
 itertools = "0.8"
 walkdir = "2.2"
-pulldown-cmark = { path = ".." }
+pulldown-cmark = { path = "../pulldown-cmark" }
 ndarray = "0.12"
 ndarray-stats = "0.2"
 rand = "0.7"
@@ -22,3 +22,8 @@ clap = { version = "4.3", features = ["derive"] }
 
 [profile.release]
 lto = "fat"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+

@@ -2802,3 +2802,91 @@ fn regression_test_175() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_176() {
+    let original = r##"[link]: test (()
+
+[link]
+"##;
+    let expected = r##"<p>[link]: test (()</p>
+<p>[link]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_177() {
+    let original = r##"[link]: test (())
+
+[link]
+"##;
+    let expected = r##"<p>[link]: test (())</p>
+<p>[link]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_178() {
+    let original = r##"[link]: test (\(\))
+
+[link]
+"##;
+    let expected = r##"<p><a href="test" title="()">link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_179() {
+    let original = r##"[link]: test """
+
+[link]
+"##;
+    let expected = r##"<p>[link]: test """</p>
+<p>[link]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_180() {
+    let original = r##"[link]: test "\""
+
+[link]
+"##;
+    let expected = r##"<p><a href="test" title="&quot;">link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_181() {
+    let original = r##"[link]: test '''
+
+[link]
+"##;
+    let expected = r##"<p>[link]: test '''</p>
+<p>[link]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_182() {
+    let original = r##"[link]: test '\''
+
+[link]
+"##;
+    let expected = r##"<p><a href="test" title="&#39;">link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

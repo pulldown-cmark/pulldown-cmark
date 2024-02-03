@@ -20,20 +20,34 @@ jobs:
           lfs: true
           submodules: 'recursive'
           path: zig-release
+      - name: Setup variables
+        id: variables
+        run: |
+           VER=${GITHUB_REF##*/}
+           VER=${VER/-release}
+           echo "::set-output name=version::${VER}"
       - uses: actions/checkout@v4
         with:
-          ref: master
           lft: true
           submodule: 'recursive'
-          tag: v0.10.0
+          commit: ${{ steps.variables.outputs.version }}
           path: pulldown-cmark
+      - name: checkout tag
+        run: |
+          cd pulldown-cmark
+          git fetch --tags
+          git checkout ${{ steps.variables.outputs.version }}
       - name: copy Makefile for zig-release
         run: |
           mkdir -p source
-          (cd pulldown-cmark && git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g' > ./version.txt)
-          cd zig-release
+          cd pulldown-cmark
+          echo $VERSION > version.txt
+          echo "version: " $VERSION
+          cd ../zig-release
           cp Makefile archive.sh target.txt ../pulldown-cmark/
           cp config.toml target.txt ../
+        env:
+          VERSION: ${{ steps.variables.outputs.version }}
       - name: install zig and tools (Linux)
         run: |
           #pacman -Sy sudo rustup clang llvm lld make git --noconfirm

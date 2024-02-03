@@ -25,16 +25,14 @@ jobs:
           ref: master
           lft: true
           submodule: 'recursive'
-          commit: 42bff71ea497c493d740324ebe4b3799dc273b8a
+          tag: v0.10.0
           path: pulldown-cmark
       - name: copy Makefile for zig-release
         run: |
           mkdir -p source
+          (cd pulldown-cmark && git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g' > ./version.txt)
           cd zig-release
-          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g' > version.txt
-          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g'
-          cat version.txt
-          cp Makefile archive.sh target.txt version.txt ../pulldown-cmark/
+          cp Makefile archive.sh target.txt ../pulldown-cmark/
           cp config.toml target.txt ../
       - name: install zig and tools (Linux)
         run: |

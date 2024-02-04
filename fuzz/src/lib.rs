@@ -1,14 +1,20 @@
 //! Fuzzin helper functions.
 
 use std::convert::TryInto;
+use std::ptr;
 
 use anyhow::anyhow;
-use once_cell::sync::OnceCell;
+use mozjs::jsapi::{EnterRealm, HandleValueArray, LeaveRealm, JS_NewGlobalObject, OnNewGlobalHookOption};
+use mozjs::jsval::UndefinedValue;
+use mozjs::rooted;
+use mozjs::rust::SIMPLE_GLOBAL_CLASS;
+use mozjs::rust::{JSEngine, RealmOptions, Runtime};
+use mozjs::rust::wrappers::JS_CallFunctionName;
+use mozjs::conversions::ToJSValConvertible;
 use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
-use rquickjs::{Context, Function, Runtime};
 use urlencoding::decode as urldecode;
 
 /// Send Markdown `text` to `pulldown-cmark` and return Markdown
@@ -21,32 +27,68 @@ pub fn pulldown_cmark(text: &str) -> Vec<Event<'_>> {
 pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
     const COMMONMARK_MIN_JS: &str =
         include_str!("../../pulldown-cmark/third_party/commonmark.js/commonmark.min.js");
-    static RUNTIME: OnceCell<Runtime> = OnceCell::new();
-    static CONTEXT: OnceCell<Context> = OnceCell::new();
 
-    let runtime = RUNTIME.get_or_try_init(Runtime::new)?;
-    let context = CONTEXT.get_or_try_init(|| {
-        let context = Context::full(runtime)?;
-        context.with(|ctx| {
-            ctx.eval(COMMONMARK_MIN_JS)?;
-            ctx.eval(
-                r#"
-                  function render_to_xml(markdown) {
-                    var reader = new commonmark.Parser();
-                    var xmlwriter = new commonmark.XmlRenderer({ sourcepos: false });
-                    return xmlwriter.render(reader.parse(markdown));
-                  }
-                "#,
-            )?;
-            rquickjs::Result::Ok(())
-        })?;
-        rquickjs::Result::Ok(context)
-    })?;
+    thread_local! {
+        static ENGINE: JSEngine = {
+            JSEngine::init().expect("failed to initalize JS engine")
+        }
+    }
 
-    Ok(context.with(|ctx| {
-        let render_to_xml: Function = ctx.globals().get("render_to_xml")?;
-        render_to_xml.call((text,))
-    })?)
+    ENGINE.with(|engine| {
+        let rt = Runtime::new(engine.handle());
+
+        let options = RealmOptions::default();
+        rooted!(in(rt.cx()) let global = unsafe {
+            JS_NewGlobalObject(rt.cx(), &SIMPLE_GLOBAL_CLASS, ptr::null_mut(),
+                                OnNewGlobalHookOption::FireOnNewGlobalHook,
+                                &*options)
+        });
+        let realm = unsafe { EnterRealm(rt.cx(), global.get()) };
+
+        // The return value comes back here. If it could be a GC thing, you must add it to the
+        // GC's "root set" with the rooted! macro.
+        rooted!(in(rt.cx()) let mut rval = UndefinedValue());
+
+        // These should indicate source location for diagnostics.
+        let filename: &'static str = "commonmark.min.js";
+        let lineno: u32 = 1;
+        let res = rt.evaluate_script(global.handle(), COMMONMARK_MIN_JS, filename, lineno, rval.handle_mut());
+        assert!(res.is_ok());
+
+        let filename: &'static str = "{inline}";
+        let lineno: u32 = 1;
+        let script = r#"
+            function render_to_xml(markdown) {
+                var reader = new commonmark.Parser();
+                var xmlwriter = new commonmark.XmlRenderer({ sourcepos: false });
+                return xmlwriter.render(reader.parse(markdown));
+            }
+        "#;
+        rooted!(in(rt.cx()) let mut render_to_xml = UndefinedValue());
+        let res = rt.evaluate_script(global.handle(), script, filename, lineno, render_to_xml.handle_mut());
+        assert!(res.is_ok());
+
+        // rval now contains a reference to the render_to_xml function
+        let xml = unsafe {
+            rooted!(in(rt.cx()) let mut xml = UndefinedValue());
+            rooted!(in(rt.cx()) let mut text_val = UndefinedValue());
+            text.to_jsval(rt.cx(), text_val.handle_mut());
+            JS_CallFunctionName(
+                rt.cx(),
+                global.handle(),
+                b"render_to_xml\0".as_ptr() as *const i8,
+                &HandleValueArray::from_rooted_slice(&[text_val.handle().get()]),
+                xml.handle_mut(),
+            );
+            let xml_string = xml.handle().to_string();
+            let utf8 = mozjs::conversions::jsstr_to_string(rt.cx(), xml_string);
+            utf8
+        };
+
+        unsafe { LeaveRealm(rt.cx(), realm); }
+
+        Ok(xml)
+    })
 }
 
 /// Parse commonmark.js XML and return Markdown events.
@@ -267,13 +309,12 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
             Event::Start(Tag::Link {
                 dest_url,
                 title,
-                id,
                 ..
             }) => Some(Event::Start(Tag::Link {
                 link_type: LinkType::Inline,
                 dest_url: dest_url.clone(),
                 title: title.clone(),
-                id: id.clone(),
+                id: "".into(), // commonmark.js does not record this
             })),
             // commonmark.js does not record the link type.
             Event::Start(Tag::Image {

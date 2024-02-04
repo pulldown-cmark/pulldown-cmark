@@ -98,9 +98,18 @@ jobs:
           cd pulldown-cmark
           cargo update
           make target-archive
+      - name: Generate release tag
+        id: release_tag
+        run: |
+          echo "::set-output name=release_tag::${{ steps.variables.outputs.version }}"
+      - name: Generate release note
+        id: release_note
+        run: |
+          echo "::set-output name=release_note::$(cd pulldown-cmark && git log -1 ${{ steps.variables.outputs.version }})"
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
-          omitBody: true
           artifacts: 'pulldown-cmark/release/*'
           token: ${{ secrets.GITHUB_TOKEN }}
+          body: "${{ steps.release_note.outputs.release_note }}"
+

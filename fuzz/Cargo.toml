@@ -14,7 +14,7 @@ libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
 once_cell = "1.18.0"
 pretty_assertions = "1.3.0"
 quick-xml = "0.29"
-rquickjs = { version = "0.3", features = ["parallel"] }
+mozjs = { git = "https://github.com/notriddle/mozjs", features = ["streams"] }
 urlencoding = "2.1.2"
 
 [dependencies.pulldown-cmark]

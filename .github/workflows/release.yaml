@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'commit-*'
 
 jobs:
   release:
@@ -24,12 +25,13 @@ jobs:
         id: variables
         run: |
            VER=${GITHUB_REF##*/}
-           VER=${VER/-release}
+           VER=${VER#commit-}
+           VER=${VER%-release}
            echo "::set-output name=version::${VER}"
       - uses: actions/checkout@v4
         with:
           lft: true
-          submodule: 'recursive'
+          submodules: 'recursive'
           commit: ${{ steps.variables.outputs.version }}
           path: pulldown-cmark
       - name: checkout tag

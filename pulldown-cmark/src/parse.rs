@@ -156,6 +156,24 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     broken_link_callback: Option<F>,
     html_scan_guard: HtmlScanGuard,
 
+    // https://github.com/pulldown-cmark/pulldown-cmark/issues/844
+    // Consider this example:
+    //
+    //     [x]: xxx...
+    //     [x]
+    //     [x]
+    //     [x]
+    //
+    // Which expands to this HTML:
+    //
+    //     <a href="xxx...">x</a>
+    //     <a href="xxx...">x</a>
+    //     <a href="xxx...">x</a>
+    //
+    // This is quadratic growth, because it's filling in the area of a square.
+    // To prevent this, track how much it's expanded and limit it.
+    link_ref_expansion_limit: usize,
+
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
@@ -225,6 +243,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             inline_stack,
             link_stack,
             html_scan_guard,
+            // always allow 100KiB
+            link_ref_expansion_limit: text.len().max(100_000),
         }
     }
 
@@ -573,6 +593,15 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     });
 
                                 if let Some((def_link_type, url, title)) = type_url_title {
+                                    // Limit expansion from link references.
+                                    // This isn't a problem for footnotes, because multiple references to the same one
+                                    // reuse the same node, but links/images get their HREF/SRC copied.
+                                    if self.link_ref_expansion_limit <= 0 {
+                                        continue;
+                                    }
+                                    self.link_ref_expansion_limit = self.link_ref_expansion_limit
+                                        .saturating_sub(url.len() + title.len());
+
                                     let link_ix =
                                         self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image

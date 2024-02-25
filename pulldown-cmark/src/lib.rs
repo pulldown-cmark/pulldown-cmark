@@ -94,7 +94,7 @@ mod scanners;
 mod strings;
 mod tree;
 
-use std::{convert::TryFrom, fmt::Display};
+use std::fmt::Display;
 
 pub use crate::parse::{
     BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,

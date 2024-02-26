@@ -2423,3 +2423,70 @@ ISSUE 840
 .
 <p><a href="test" title="&#39;">link</a></p>
 ````````````````````````````````
+
+ISSUE 850
+
+```````````````````````````````` example
+-     test
+
+  test2
+.
+<ul>
+<li>
+<pre><code>test
+</code></pre>
+<p>test2</p>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+    test
+
+test2
+.
+<pre><code>test
+</code></pre>
+<p>test2</p>
+````````````````````````````````
+
+```````````````````````````````` example
+-     test
+  test2
+.
+<ul>
+<li>
+<pre><code>test
+</code></pre>
+test2</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+-     test
+- test2
+.
+<ul>
+<li>
+<pre><code>test
+</code></pre>
+</li>
+<li>test2</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+-     test
+
+- test2
+.
+<ul>
+<li>
+<pre><code>test
+</code></pre>
+</li>
+<li>
+<p>test2</p>
+</li>
+</ul>
+````````````````````````````````

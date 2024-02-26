@@ -784,7 +784,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
-                b'<' => {
+                b'<' if bytes.get(ix + 1) != Some(&b'\\') => {
                     // Note: could detect some non-HTML cases and early escape here, but not
                     // clear that's a win.
                     self.tree.append_text(begin_text, ix, backslash_escaped);

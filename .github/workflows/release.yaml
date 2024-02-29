@@ -55,7 +55,7 @@ jobs:
           sudo apt-get install build-essential make git clang
           rm -f ~/.cargo/config*
           mkdir -p zig
-          curl -LZ https://ziglang.org/builds/zig-linux-x86_64-0.12.0-dev.2302+b729a3f00.tar.xz|tar xJ --strip-component=1 -C zig
+          curl -LZ https://ziglang.org/builds/zig-linux-x86_64-0.12.0-dev.3076+6e078883e.tar.xz|tar xJ --strip-component=1 -C zig
           sudo mv zig /usr/local/
           echo "/usr/local/zig" >> $GITHUB_PATH
       - name: Install sccache
@@ -91,9 +91,6 @@ jobs:
           mkdir -p ~/.cargo/
           rm -f ~/.cargo/config*
           cp config.toml ~/.cargo/config.toml
-      - name: fix duplicate symbol
-        run: |
-          sudo sed -e "s|\(void __cdecl _tzset(void)\)|/*\n\1|" -e "s|\(void __cdecl tzset(void)\)|*/\n\1|" -i /usr/local/zig/lib/libc/mingw/crt/ucrtbase_compat.c
       - name: Build and archive
         shell: bash
         run: |

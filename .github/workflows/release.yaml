@@ -52,7 +52,7 @@ jobs:
       - name: install zig and tools (Linux)
         run: |
           #pacman -Sy sudo rustup clang llvm lld make git --noconfirm
-          sudo apt-get install build-essential make git clang
+          sudo apt-get install build-essential make git clang binutils-mingw-w64
           rm -f ~/.cargo/config*
           mkdir -p zig
           curl -LZ https://ziglang.org/builds/zig-linux-x86_64-0.12.0-dev.3076+6e078883e.tar.xz|tar xJ --strip-component=1 -C zig

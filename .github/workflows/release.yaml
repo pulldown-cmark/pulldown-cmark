@@ -95,7 +95,6 @@ jobs:
         shell: bash
         run: |
           cd pulldown-cmark
-          cargo update
           make target-archive
       - name: Generate release tag
         id: release_tag

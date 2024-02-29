@@ -43,7 +43,7 @@ jobs:
         run: |
           mkdir -p source
           cd pulldown-cmark
-          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/./g' > version.txt
+          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cd ../zig-release
           cp Makefile archive.sh target.txt ../pulldown-cmark/
           cp config.toml target.txt ../

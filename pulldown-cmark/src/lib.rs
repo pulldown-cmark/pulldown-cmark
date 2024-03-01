@@ -335,6 +335,7 @@ pub enum LinkType {
 }
 
 impl LinkType {
+    /// Map the link type to an equivalent _Unknown link type.
     fn to_unknown(self) -> Self {
         match self {
             LinkType::Reference => LinkType::ReferenceUnknown,

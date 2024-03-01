@@ -1068,7 +1068,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut last_nonblank_child = None;
         let mut last_nonblank_ix = 0;
         let mut end_ix = 0;
-        let mut last_line_blank = false;
+        self.last_line_blank = false;
 
         let mut ix = start_ix;
         loop {
@@ -1077,7 +1077,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_code_text(remaining_space, line_start_ix, ix);
             // TODO(spec clarification): should we synthesize newline at EOF?
 
-            if !last_line_blank {
+            if !self.last_line_blank {
                 last_nonblank_child = self.tree.cur();
                 last_nonblank_ix = ix;
                 end_ix = ix;
@@ -1100,7 +1100,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
-            last_line_blank = scan_blank_line(&bytes[ix..]).is_some();
+            self.last_line_blank = scan_blank_line(&bytes[ix..]).is_some();
         }
 
         // Trim trailing blank lines.

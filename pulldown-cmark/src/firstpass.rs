@@ -5,7 +5,7 @@ use std::cmp::max;
 use std::ops::Range;
 
 use crate::parse::{
-    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
+    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef, LINK_MAX_NESTED_PARENS,
 };
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
@@ -1678,7 +1678,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let (mut i, _newlines) = self.scan_refdef_space(bytes, start)?;
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(self.text, i, 1)?;
+        let (dest_length, dest) = scan_link_dest(self.text, i, LINK_MAX_NESTED_PARENS)?;
         if dest_length == 0 {
             return None;
         }

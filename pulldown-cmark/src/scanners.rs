@@ -20,8 +20,7 @@
 
 //! Scanners for fragments of CommonMark syntax
 
-use std::convert::TryInto;
-use std::{char, convert::TryFrom};
+use std::char;
 
 use crate::parse::HtmlScanGuard;
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};

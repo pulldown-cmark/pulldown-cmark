@@ -3000,3 +3000,19 @@ fn regression_test_189() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_190() {
+    let original = r##"><span
+title
+>junk
+"##;
+    let expected = r##"<blockquote>
+<p>&lt;span
+title
+junk</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

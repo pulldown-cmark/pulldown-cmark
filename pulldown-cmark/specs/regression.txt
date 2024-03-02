@@ -2511,3 +2511,17 @@ ISSUE 853
 .
 <p><a href="((()))">linky</a></p>
 ````````````````````````````````
+
+ISSUE 857
+
+```````````````````````````````` example
+><span
+title
+>junk
+.
+<blockquote>
+<p>&lt;span
+title
+junk</p>
+</blockquote>
+````````````````````````````````

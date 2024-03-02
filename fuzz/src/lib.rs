@@ -175,7 +175,9 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         .try_get_attribute("destination")?
                         .ok_or(anyhow!("Missing destination"))?
                         .unescape_value()?;
-                    let dest_url = urldecode(&url_encoded_dest_url)?.into_owned().into();
+                    let dest_url = urldecode(&url_encoded_dest_url)
+                        .unwrap_or_else(|_| url_encoded_dest_url.clone().into())
+                        .into_owned().into();
                     let title = match tag.try_get_attribute("title")? {
                         Some(title) => title.unescape_value()?.into_owned().into(),
                         None => "".into(),

@@ -307,6 +307,17 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
         .filter_map(|event| match event {
             // commonmark.js does not record the link type.
             Event::Start(Tag::Link {
+                link_type: LinkType::Email,
+                dest_url,
+                title,
+                ..
+            }) => Some(Event::Start(Tag::Link {
+                link_type: LinkType::Inline,
+                dest_url: format!("mailto:{dest_url}").into(),
+                title: title.clone(),
+                id: "".into(), // commonmark.js does not record this
+            })),
+            Event::Start(Tag::Link {
                 dest_url,
                 title,
                 ..

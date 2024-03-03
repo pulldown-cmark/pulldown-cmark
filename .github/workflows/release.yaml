@@ -27,7 +27,7 @@ jobs:
            VER=${GITHUB_REF##*/}
            VER=${VER#commit-}
            VER=${VER%-release}
-           echo "::set-output name=version::${VER}"
+           echo "version=${VER}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -38,8 +38,24 @@ jobs:
           cd pulldown-cmark
           git fetch --tags
           git checkout --detach ${{ steps.variables.outputs.version }}
-          git describe --tags --always HEAD| sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
+          git describe --tags --always HEAD| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cat version.txt
+      - name: Generate release tag
+        id: release_tag
+        run: |
+          echo "release_tag=$(cat pulldown-cmark/version.txt)" >> $GITHUB_OUTPUT
+      - name: Generate release note
+        id: release_note
+        run: |
+          {
+          echo "release_note<<EOF"
+          echo "$(cd pulldown-cmark && git log --pretty=format:"%C(yellow)commit %H%C(auto)%d%nAuthor: %an%nDate:   %ad%n%n%s%n%n%b" -1 ${{ steps.variables.outputs.version }})"
+          echo "EOF"
+          } >> $GITHUB_OUTPUT
+      - name: test
+        run: |
+          echo "1: ${{ steps.release_tag.outputs.release_tag }}"
+          echo "2: ${{ steps.release_note.outputs.release_note }}"
       - name: copy Makefile for zig-release
         run: |
           mkdir -p source
@@ -47,8 +63,6 @@ jobs:
           cd ../zig-release
           cp Makefile archive.sh target.txt ../pulldown-cmark/
           cp config.toml target.txt ../
-        env:
-          VERSION: ${{ steps.variables.outputs.version }}
       - name: install zig and tools (Linux)
         run: |
           #pacman -Sy sudo rustup clang llvm lld make git --noconfirm
@@ -96,17 +110,11 @@ jobs:
         run: |
           cd pulldown-cmark
           make target-archive
-      - name: Generate release tag
-        id: release_tag
-        run: |
-          echo "::set-output name=release_tag::${{ steps.variables.outputs.version }}"
-      - name: Generate release note
-        id: release_note
-        run: |
-          echo "::set-output name=release_note::$(cd pulldown-cmark && git log -1 ${{ steps.variables.outputs.version }})"
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
+          tag: "${{ steps.release_tag.outputs.release_tag }}"
+          name: "${{ steps.release_tag.outputs.release_tag }}"
           artifacts: 'pulldown-cmark/release/*'
           token: ${{ secrets.GITHUB_TOKEN }}
           body: "${{ steps.release_note.outputs.release_note }}"

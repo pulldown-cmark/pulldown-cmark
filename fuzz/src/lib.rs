@@ -175,7 +175,9 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         .try_get_attribute("destination")?
                         .ok_or(anyhow!("Missing destination"))?
                         .unescape_value()?;
-                    let dest_url = urldecode(&url_encoded_dest_url)?.into_owned().into();
+                    let dest_url = urldecode(&url_encoded_dest_url)
+                        .unwrap_or_else(|_| url_encoded_dest_url.clone().into())
+                        .into_owned().into();
                     let title = match tag.try_get_attribute("title")? {
                         Some(title) => title.unescape_value()?.into_owned().into(),
                         None => "".into(),
@@ -306,6 +308,17 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
         .into_iter()
         .filter_map(|event| match event {
             // commonmark.js does not record the link type.
+            Event::Start(Tag::Link {
+                link_type: LinkType::Email,
+                dest_url,
+                title,
+                ..
+            }) => Some(Event::Start(Tag::Link {
+                link_type: LinkType::Inline,
+                dest_url: format!("mailto:{dest_url}").into(),
+                title: title.clone(),
+                id: "".into(), // commonmark.js does not record this
+            })),
             Event::Start(Tag::Link {
                 dest_url,
                 title,

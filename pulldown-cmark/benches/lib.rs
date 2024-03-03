@@ -23,6 +23,23 @@ mod to_html {
         group.finish();
     }
 
+    pub fn pathological_link_def(c: &mut Criterion) {
+        let mut group = c.benchmark_group("    pub fn pathological_link_def(c: &mut Criterion) {
+            ");
+        let mut buf = String::new();
+        for i in 1..20 {
+            buf.clear();
+            buf.push_str(&"[x]: ");
+            buf.push_str(&"x".repeat(i * 100));
+            buf.push_str(&"\n[x]".repeat(i * 100));
+            group.throughput(Throughput::Bytes(buf.len() as u64));
+            group.bench_with_input(BenchmarkId::from_parameter(i), &buf, |b, buf| {
+                b.iter(|| render_html(buf, Options::empty()));
+            });
+        }
+        group.finish();
+    }
+
     pub fn pathological_codeblocks1(c: &mut Criterion) {
         let mut group = c.benchmark_group("pathological_codeblocks1");
         let mut buf = String::new();
@@ -65,6 +82,7 @@ mod to_html {
 criterion_group!(
     benches,
     to_html::pathological_missing_table_cells,
+    to_html::pathological_link_def,
     to_html::pathological_codeblocks1,
     to_html::advanced_pathological_codeblocks
 );

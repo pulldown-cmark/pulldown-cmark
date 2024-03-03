@@ -5,7 +5,7 @@ use std::cmp::max;
 use std::ops::Range;
 
 use crate::parse::{
-    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
+    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef, LINK_MAX_NESTED_PARENS,
 };
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
@@ -784,7 +784,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     begin_text = ix + count;
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
-                b'<' => {
+                b'<' if bytes.get(ix + 1) != Some(&b'\\') => {
                     // Note: could detect some non-HTML cases and early escape here, but not
                     // clear that's a win.
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -1068,7 +1068,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut last_nonblank_child = None;
         let mut last_nonblank_ix = 0;
         let mut end_ix = 0;
-        let mut last_line_blank = false;
+        self.last_line_blank = false;
 
         let mut ix = start_ix;
         loop {
@@ -1077,7 +1077,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_code_text(remaining_space, line_start_ix, ix);
             // TODO(spec clarification): should we synthesize newline at EOF?
 
-            if !last_line_blank {
+            if !self.last_line_blank {
                 last_nonblank_child = self.tree.cur();
                 last_nonblank_ix = ix;
                 end_ix = ix;
@@ -1100,7 +1100,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
-            last_line_blank = scan_blank_line(&bytes[ix..]).is_some();
+            self.last_line_blank = scan_blank_line(&bytes[ix..]).is_some();
         }
 
         // Trim trailing blank lines.
@@ -1678,7 +1678,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let (mut i, _newlines) = self.scan_refdef_space(bytes, start)?;
 
         // scan link dest
-        let (dest_length, dest) = scan_link_dest(self.text, i, 1)?;
+        let (dest_length, dest) = scan_link_dest(self.text, i, LINK_MAX_NESTED_PARENS)?;
         if dest_length == 0 {
             return None;
         }

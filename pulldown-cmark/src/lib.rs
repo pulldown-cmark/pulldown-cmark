@@ -94,7 +94,7 @@ mod scanners;
 mod strings;
 mod tree;
 
-use std::{convert::TryFrom, fmt::Display};
+use std::fmt::Display;
 
 pub use crate::parse::{
     BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
@@ -335,6 +335,7 @@ pub enum LinkType {
 }
 
 impl LinkType {
+    /// Map the link type to an equivalent _Unknown link type.
     fn to_unknown(self) -> Self {
         match self {
             LinkType::Reference => LinkType::ReferenceUnknown,

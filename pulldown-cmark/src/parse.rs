@@ -40,7 +40,7 @@ use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Ta
 // The simplest countermeasure is to limit their depth, which is
 // explicitly allowed by the spec as long as the limit is at least 3:
 // https://spec.commonmark.org/0.29/#link-destination
-const LINK_MAX_NESTED_PARENS: usize = 5;
+pub(crate) const LINK_MAX_NESTED_PARENS: usize = 5;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub(crate) struct Item {
@@ -156,6 +156,24 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     broken_link_callback: Option<F>,
     html_scan_guard: HtmlScanGuard,
 
+    // https://github.com/pulldown-cmark/pulldown-cmark/issues/844
+    // Consider this example:
+    //
+    //     [x]: xxx...
+    //     [x]
+    //     [x]
+    //     [x]
+    //
+    // Which expands to this HTML:
+    //
+    //     <a href="xxx...">x</a>
+    //     <a href="xxx...">x</a>
+    //     <a href="xxx...">x</a>
+    //
+    // This is quadratic growth, because it's filling in the area of a square.
+    // To prevent this, track how much it's expanded and limit it.
+    link_ref_expansion_limit: usize,
+
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
@@ -225,6 +243,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             inline_stack,
             link_stack,
             html_scan_guard,
+            // always allow 100KiB
+            link_ref_expansion_limit: text.len().max(100_000),
         }
     }
 
@@ -232,6 +252,78 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// to the internal map of reference definitions.
     pub fn reference_definitions(&self) -> &RefDefs<'_> {
         &self.allocs.refdefs
+    }
+
+    /// Use a link label to fetch a type, url, and title.
+    ///
+    /// This function enforces the [`link_ref_expansion_limit`].
+    /// If it returns Some, it also consumes some of the fuel.
+    /// If we're out of fuel, it immediately returns None.
+    ///
+    /// The URL and title are found in the [`RefDefs`] map.
+    /// If they're not there, and a callback was provided by the user,
+    /// the [`broken_link_callback`] will be invoked and given the opportunity
+    /// to provide a fallback.
+    ///
+    /// The link type (that's "link" or "image") depends on the usage site, and
+    /// is provided by the caller of this function.
+    /// This function returns a new one because, if it has to invoke a callback
+    /// to find the information, the link type is [mapped to an unknown type].
+    ///
+    /// [mapped to an unknown type]: crate::LinkType::to_unknown
+    /// [`link_ref_expansion_limit`]: Self::link_ref_expansion_limit
+    /// [`broken_link_callback`]: Self::broken_link_callback
+    fn fetch_link_type_url_title(
+        &mut self,
+        link_label: CowStr<'input>,
+        span: Range<usize>,
+        link_type: LinkType
+    ) -> Option<(LinkType, CowStr<'input>, CowStr<'input>)> {
+        if self.link_ref_expansion_limit <= 0 {
+            return None;
+        }
+
+        let (link_type, url, title) = self
+            .allocs
+            .refdefs
+            .get(link_label.as_ref())
+            .map(|matching_def| {
+                // found a matching definition!
+                let title = matching_def
+                    .title
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_else(|| "".into());
+                let url = matching_def.dest.clone();
+                (link_type, url, title)
+            })
+        .or_else(|| {
+            match self.broken_link_callback.as_mut() {
+                Some(callback) => {
+                    // Construct a BrokenLink struct, which will be passed to the callback
+                    let broken_link = BrokenLink {
+                        span,
+                        link_type,
+                        reference: link_label,
+                    };
+
+                    callback.handle_broken_link(broken_link).map(
+                        |(url, title)| {
+                            (link_type.to_unknown(), url, title)
+                        },
+                    )
+                }
+                None => None,
+            }
+        })?;
+
+        // Limit expansion from link references.
+        // This isn't a problem for footnotes, because multiple references to the same one
+        // reuse the same node, but links/images get their HREF/SRC copied.
+        self.link_ref_expansion_limit = self.link_ref_expansion_limit
+            .saturating_sub(url.len() + title.len());
+
+        Some((link_type, url, title))
     }
 
     /// Handle inline markup.
@@ -538,41 +630,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     continue;
                                 }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
-                                let type_url_title = self
-                                    .allocs
-                                    .refdefs
-                                    .get(link_label.as_ref())
-                                    .map(|matching_def| {
-                                        // found a matching definition!
-                                        let title = matching_def
-                                            .title
-                                            .as_ref()
-                                            .cloned()
-                                            .unwrap_or_else(|| "".into());
-                                        let url = matching_def.dest.clone();
-                                        (link_type, url, title)
-                                    })
-                                    .or_else(|| {
-                                        match self.broken_link_callback.as_mut() {
-                                            Some(callback) => {
-                                                // Construct a BrokenLink struct, which will be passed to the callback
-                                                let broken_link = BrokenLink {
-                                                    span: (self.tree[tos.node].item.start)..end,
-                                                    link_type,
-                                                    reference: link_label,
-                                                };
-
-                                                callback.handle_broken_link(broken_link).map(
-                                                    |(url, title)| {
-                                                        (link_type.to_unknown(), url, title)
-                                                    },
-                                                )
-                                            }
-                                            None => None,
-                                        }
-                                    });
-
-                                if let Some((def_link_type, url, title)) = type_url_title {
+                                if let Some((def_link_type, url, title)) = self.fetch_link_type_url_title(
+                                    link_label,
+                                    (self.tree[tos.node].item.start)..end,
+                                    link_type,
+                                ) {
                                     let link_ix =
                                         self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image

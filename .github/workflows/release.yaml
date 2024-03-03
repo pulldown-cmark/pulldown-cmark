@@ -30,20 +30,20 @@ jobs:
            echo "::set-output name=version::${VER}"
       - uses: actions/checkout@v4
         with:
-          lft: true
+          lfs: true
           submodules: 'recursive'
-          commit: ${{ steps.variables.outputs.version }}
           path: pulldown-cmark
       - name: checkout tag
         run: |
           cd pulldown-cmark
           git fetch --tags
-          git checkout ${{ steps.variables.outputs.version }}
+          git checkout --detach ${{ steps.variables.outputs.version }}
+          git describe --tags --always HEAD| sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
+          cat version.txt
       - name: copy Makefile for zig-release
         run: |
           mkdir -p source
           cd pulldown-cmark
-          git describe --tags | sed -e 's/^v//g' -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cd ../zig-release
           cp Makefile archive.sh target.txt ../pulldown-cmark/
           cp config.toml target.txt ../

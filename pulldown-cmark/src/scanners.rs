@@ -915,18 +915,18 @@ fn scan_attribute(
     buffer_ix: &mut usize,
 ) -> Option<usize> {
     ix += scan_attribute_name(&data[ix..])?;
-    let n_whitespace =
-        scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)? - ix;
-    ix += n_whitespace;
+    let ix_after_attribute = ix;
+    ix = scan_whitespace_with_newline_handler_without_buffer(data, ix, newline_handler)?;
     if scan_ch(&data[ix..], b'=') == 1 {
+        ix = scan_whitespace_with_newline_handler(data, ix_after_attribute, newline_handler, buffer, buffer_ix)?;
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
         ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;
-    } else if n_whitespace > 0 {
+        Some(ix)
+    } else {
         // Leave whitespace for next attribute.
-        ix -= 1;
+        Some(ix_after_attribute)
     }
-    Some(ix)
 }
 
 /// Scans whitespace and possibly newlines according to the
@@ -953,6 +953,35 @@ fn scan_whitespace_with_newline_handler(
                 *buffer_ix = i + skipped_bytes;
             }
 
+            i += skipped_bytes;
+        } else {
+            i += 1;
+        }
+    }
+
+    Some(i)
+}
+
+/// Scans whitespace and possible newlines according to the behavior defined
+/// by the newline handler.
+///
+/// Unlike [`scan_whitespace_with_newline_handler`], this function doesn't
+/// copy skipped data into a buffer. Typically, if this function
+/// returns `Some`, a call to `scan_whitespace_with_newline_handler` will
+/// soon follow.
+fn scan_whitespace_with_newline_handler_without_buffer(
+    data: &[u8],
+    mut i: usize,
+    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+) -> Option<usize> {
+    while i < data.len() {
+        if !is_ascii_whitespace(data[i]) {
+            return Some(i);
+        }
+        if let Some(eol_bytes) = scan_eol(&data[i..]) {
+            let handler = newline_handler?;
+            i += eol_bytes;
+            let skipped_bytes = handler(&data[i..]);
             i += skipped_bytes;
         } else {
             i += 1;

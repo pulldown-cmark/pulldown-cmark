@@ -386,6 +386,8 @@ This is also display math, but (counterintuitively) it's allowed to be empty
 and expected to be as short as possible:
 
 $$$$\text{first $$ second}$$
+
+${$^$$
 "##;
     let expected = r##"<p>This is not display math. It is inline math:</p>
 <p>$<span class="math inline">\text{first $$ second}</span></p>
@@ -396,6 +398,7 @@ $$$$\text{first $$ second}$$
 <p>This is also display math, but (counterintuitively) it's allowed to be empty
 and expected to be as short as possible:</p>
 <p><span class="math display"></span>\text{first $$ second}$$</p>
+<p>${<span class="math inline">^</span>$</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

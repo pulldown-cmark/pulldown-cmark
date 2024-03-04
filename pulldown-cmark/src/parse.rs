@@ -467,6 +467,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     math_delims.insert(delim_is_display, delim_brace_context, scan_ix, can_close);
                                 }
                             }
+                            if self.tree[scan_ix].item.body.is_block() {
+                                // If this is a tight list, blocks and inlines might be
+                                // siblings. Inlines can't cross the boundary like that.
+                                scan = None;
+                                break;
+                            }
                             scan = self.tree[scan_ix].next;
                         }
                         scan

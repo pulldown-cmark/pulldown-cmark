@@ -1650,6 +1650,12 @@ impl MathDelims {
                 .entry((delim_is_display, brace_context))
                 .or_default()
                 .push_back((ix, can_close));
+            if delim_is_display {
+                self.inner
+                    .entry((false, brace_context))
+                    .or_default()
+                    .push_back((ix, can_close));
+            }
         } else {
             // Skip the first insert, since that delimiter will always
             // be an opener and not a closer.

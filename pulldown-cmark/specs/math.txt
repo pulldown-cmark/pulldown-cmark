@@ -271,6 +271,28 @@ not</p>
 $$</p>
 ````````````````````````````````
 
+It also implies that math notation has lower
+parsing power than block elements.
+
+```````````````````````````````` example
+- $not
+    - *
+  math$
+.
+<ul>
+<li>$not
+<ul>
+<li>
+<ul>
+<li>
+</li>
+</ul>
+</li>
+</ul>
+math$</li>
+</ul>
+````````````````````````````````
+
 Note that math can contain embedded math.  In scanning
 for a closing delimiter, we skip material in balanced
 curly braces:

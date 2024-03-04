@@ -66,7 +66,7 @@ jobs:
       - name: install zig and tools (Linux)
         run: |
           #pacman -Sy sudo rustup clang llvm lld make git --noconfirm
-          sudo apt-get install build-essential make git clang binutils-mingw-w64
+          sudo apt-get install build-essential make git clang binutils-mingw-w64 wget
           rm -f ~/.cargo/config*
           mkdir -p zig
           curl -LZ https://ziglang.org/download/0.11.0/zig-linux-x86_64-0.11.0.tar.xz|tar xJ --strip-component=1 -C zig
@@ -75,7 +75,7 @@ jobs:
       - name: Install sccache
         env:
           LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.7.6
+          SCCACHE_VERSION: 0.7.7
         run: |
           SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
@@ -86,7 +86,7 @@ jobs:
       - name: Install mold linker
         uses: rui314/setup-mold@staging
         with:
-          mold-version: 2.4.0
+          mold-version: 2.4.1
           make-default: true
       - name: Cache toolchain
         uses: Swatinem/rust-cache@v2

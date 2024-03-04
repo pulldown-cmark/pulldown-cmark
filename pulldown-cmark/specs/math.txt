@@ -15,7 +15,7 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 .
 <p>This sentence uses <code>$</code> delimiters to show math inline: <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
 <span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
-<p><code>\</code> may follow just after the first <code>$</code>: <span class="math inline">\{1, 2, 3\}</span>
+<p><code>\</code> may follow just after the first <code>$</code>: <span class="math inline">\{1, 2, 3\}</span></p>
 ````````````````````````````````
 
 Display mode mathematical expressions:
@@ -179,8 +179,8 @@ also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
 
 braces: ($x=y$) [$x=y$] {$x=y$}
 .
-<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>&quot;</p>
-<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and &quot;<span class="math inline">x=y</span>&quot;</p>
+<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>"</p>
+<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and "<span class="math inline">x=y</span>"</p>
 <p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
 ````````````````````````````````
 
@@ -382,14 +382,16 @@ Inline and display math in the same list
 <p><span class="math inline">a</span></p>
 <pre><code class="language-math">a
 </code></pre>
-<p><span class="math display">a
-</span></p>
+<p><span class="math display">
+  a
+  </span></p>
 </li>
 <li>
 <pre><code class="language-math">b
 </code></pre>
-<p><span class="math display">b
-</span></p>
+<p><span class="math display">
+  b
+  </span></p>
 </li>
 </ul>
 ````````````````````````````````
@@ -401,7 +403,7 @@ Images and math in the same list
 - $x$
 .
 <ul>
-<li><img alt="node logo" src="https://nodejs.org/static/images/logo.svg"></li>
+<li><img src="https://nodejs.org/static/images/logo.svg" alt="node logo" /></li>
 <li><span class="math inline">x</span></li>
 </ul>
 ````````````````````````````````
@@ -500,9 +502,13 @@ $$
   \text{$b$}
   $$
 .
-<p><span class="math display">a</span>
+<p><span class="math display">
+a
+</span>
 </p><ul>
-<li><span class="math display">\text{$b$}</span></li>
+<li><span class="math display">
+  \text{$b$}
+  </span></li>
 </ul>
 ````````````````````````````````
 
@@ -535,7 +541,7 @@ When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
 $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 .
 <p>When <span class="math inline">a \ne 0</span>, there are two solutions to <span class="math inline">(ax^2 + bx + c = 0)</span> and they are
-<span class="math display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span>
+<span class="math display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span></p>
 ````````````````````````````````
 
 Spacing around dollar sign in math mode

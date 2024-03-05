@@ -722,6 +722,31 @@ improperly <span class="math inline">}{</span> nested
 But this still isn't, because the braces are still counted: $}{$</p>
 ````````````````````````````````
 
+```````````````````````````````` example
+This is also deeply nested, but, unlike the first example,
+they don't have an equal number of close braces and open braces,
+so aren't detected as math.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly $}$ nested ${$ example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+This, however, is detected ${}$
+
+${{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+another improperly nested example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}$
+.
+<p>This is also deeply nested, but, unlike the first example,
+they don't have an equal number of close braces and open braces,
+so aren't detected as math.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly $}$ nested ${$ example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+This, however, is detected <span class="math inline">{}</span></p>
+<p><span class="math inline">{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+another improperly nested example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}</span></p>
+````````````````````````````````
+
 2. At 255 distinct brace-delimited groups, the counter rolls over. This means
    the below example will spurriously recognize an incorrectly-nested
    inline math environment.

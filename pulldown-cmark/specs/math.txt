@@ -129,25 +129,22 @@ $$y = \$ x$$
 <p><span class="math display">y = \$ x</span></p>
 ````````````````````````````````
 
-Inline mode math expressions cannot contain unescaped `$` characters, but
-display mode expressions can, though not two in a row:
+Inline mode math expressions cannot contain unescaped `$` characters.
+Neither can display math.
 
 ```````````````````````````````` example
 $x $ x$
 
 $$ $ $$
-
-$$ $$ $$
 .
 <p>$x $ x$</p>
-<p><span class="math display"> $ </span></p>
-<p><span class="math display"> </span> $$</p>
+<p>$$ $ $$</p>
 ````````````````````````````````
 
 ```````````````````````````````` example
 alpha$$beta$gamma$$delta
 .
-<p>alpha<span class="math display">beta$gamma</span>delta</p>
+<p>alpha$<span class="math inline">beta</span>gamma$$delta</p>
 ````````````````````````````````
 
 Inline math expressions cannot start or end with whitespace, including newlines:
@@ -366,6 +363,17 @@ ${$^$$
 and expected to be as short as possible:</p>
 <p><span class="math display"></span>\text{first $$ second}$$</p>
 <p>${<span class="math inline">^</span>$</p>
+````````````````````````````````
+
+Dollar signs must also be backslash-escaped if they occur within math:
+
+```````````````````````````````` example
+$\text{\$}$
+
+$$x$x$$
+.
+<p><span class="math inline">\text{\$}</span></p>
+<p>$<span class="math inline">x</span>x$$</p>
 ````````````````````````````````
 
 ## Edge case tests comparison with GitHub

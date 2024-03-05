@@ -170,10 +170,24 @@ fn math_test_12() {
     let original = r##"these are not math texts: $ y=x$, $y=x $, $
 y=x$ and $y=x
 $
+
+>The start of a line counts as whitespace $2 +
+>$
+
+While displays can start with whitespace, {${
+they should not allow inlines to do that $$2 +
+$*$
 "##;
     let expected = r##"<p>these are not math texts: $ y=x$, $y=x $, $
 y=x$ and $y=x
 $</p>
+<blockquote>
+<p>The start of a line counts as whitespace $2 +
+$</p>
+</blockquote>
+<p>While displays can start with whitespace, {${
+they should not allow inlines to do that $$2 +
+<span class="math inline">*</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -456,15 +470,15 @@ fn math_test_26() {
 <pre><code class="language-math">a
 </code></pre>
 <p><span class="math display">
-  a
-  </span></p>
+a
+</span></p>
 </li>
 <li>
 <pre><code class="language-math">b
 </code></pre>
 <p><span class="math display">
-  b
-  </span></p>
+b
+</span></p>
 </li>
 </ul>
 "##;
@@ -596,8 +610,8 @@ a
 </span>
 </p><ul>
 <li><span class="math display">
-  \text{$b$}
-  </span></li>
+\text{$b$}
+</span></li>
 </ul>
 "##;
 

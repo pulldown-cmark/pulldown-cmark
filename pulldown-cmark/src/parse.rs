@@ -1084,12 +1084,44 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         }
         let span_start = self.tree[open].item.end;
         let span_end = self.tree[close].item.start;
-        let mut cow: CowStr = self.text[span_start..span_end].into();
-        if self.tree.is_in_table() && cow.contains(r#"\|"#) {
-            // When inside a table, `\|` is used to write a literal `|`.
-            // This is the same way it works for code spans.
-            cow = cow.replace(r#"\|"#, "|").into();
+
+        let bytes = self.text.as_bytes();
+        let mut buf: Option<String> = None;
+
+        let mut start_ix = span_start;
+        let mut ix = span_start;
+        while ix < span_end {
+            let c = bytes[ix];
+            if c == b'\r' || c == b'\n' {
+                ix += 1;
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix - span_start));
+                buf.push_str(&self.text[start_ix..ix]);
+                let mut line_start = LineStart::new(&bytes[ix..]);
+                let _ = scan_containers(
+                    &self.tree,
+                    &mut line_start,
+                    self.options.has_gfm_footnotes(),
+                );
+                ix += line_start.bytes_scanned();
+                start_ix = ix;
+            } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
+                buf.push_str(&self.text[start_ix..ix]);
+                buf.push('|');
+                ix += 2;
+                start_ix = ix;
+            } else {
+                ix += 1;
+            }
         }
+
+        let cow = if let Some(mut buf) = buf {
+            buf.push_str(&self.text[start_ix..span_end]);
+            buf.into()
+        } else {
+            self.text[span_start..span_end].into()
+        };
+
         self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), is_display);
         self.tree[open].item.end = self.tree[close].item.end;
         self.tree[open].next = self.tree[close].next;
@@ -1657,12 +1689,16 @@ impl MathDelims {
 
     fn find(&mut self, tree: &Tree<Item>, open_ix: TreeIndex, is_display: bool, brace_context: u8) -> Option<TreeIndex> {
         while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&brace_context)?.pop_front() {
-            if ix <= open_ix || tree[open_ix].item.end == tree[ix].item.start {
+            if ix <= open_ix || (is_display && tree[open_ix].next == Some(ix)) {
                 continue;
             }
+            let can_close = can_close && tree[open_ix].item.end != tree[ix].item.start;
             if can_close || (is_display && delim_is_display) {
                 return Some(ix);
             }
+            // if we can't use it, leave it in the queue as a tombstone for the next
+            // thing that tries to match it
+            self.inner.get_mut(&brace_context)?.push_front((ix, can_close, delim_is_display));
             break;
         }
         None

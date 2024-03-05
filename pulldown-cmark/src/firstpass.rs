@@ -795,7 +795,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 b'$' => {
                     let string_suffix = &self.text[ix..];
                     let can_open = !string_suffix[1..].as_bytes().first().copied().map_or(true, is_ascii_whitespace);
-                    let can_close = !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
+                    let can_close = ix > start && !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
                     // storing Option<u8>, which is bigger than u8.

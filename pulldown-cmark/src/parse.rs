@@ -417,19 +417,19 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                 }
                 ItemBody::MaybeMath(can_open, _can_close, brace_context) => {
-                    let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
-                        matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
-                    });
                     if !can_open {
                         self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
                         prev = cur;
                         cur = self.tree[cur_ix].next;
                         continue;
                     }
+                    let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
+                        matches!(self.tree[next_ix].item.body, ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
+                    });
                     let result = if math_delims.is_populated() {
                         // we have previously scanned all math environment delimiters,
                         // so we can reuse that work
-                        math_delims.find(cur_ix, is_display, brace_context)
+                        math_delims.find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
                         // so walk the AST
@@ -1062,8 +1062,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
                 return;
             }
-            if let Some(start_trail) = start_is_display {
+            if let Some(start_trail_ix) = start_is_display {
                 self.tree[open].item.body = ItemBody::Text { backslash_escaped: false };
+                let start_can_open = matches!(self.tree[start_trail_ix].item.body, ItemBody::MaybeMath(true, _can_close, _brace_context));
                 // Generate spans like this:
                 //
                 //     $$test$
@@ -1073,11 +1074,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 // scanner wants to treat a potentially-DisplayMode math delimiter as
                 // one thing, but needs to scan so the one marked `x` is what gets passed
                 // to this function.
-                if self.tree[start_trail].item.end == self.tree[close].item.start {
+                if self.tree[start_trail_ix].item.end == self.tree[close].item.start || !start_can_open {
                     // inline math spans cannot be empty
                     return;
                 }
-                open = start_trail;
+                open = start_trail_ix;
             }
             self.tree[open].next = Some(close);
         }
@@ -1656,11 +1657,15 @@ impl MathDelims {
         !self.inner.is_empty()
     }
 
-    fn find(&mut self, open_ix: TreeIndex, is_display: bool, brace_context: u8) -> Option<TreeIndex> {
+    fn find(&mut self, tree: &Tree<Item>, open_ix: TreeIndex, is_display: bool, brace_context: u8) -> Option<TreeIndex> {
         while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&brace_context)?.pop_front() {
-            if ix > open_ix && (can_close || (is_display && delim_is_display)) {
+            if ix <= open_ix || tree[open_ix].item.end == tree[ix].item.start {
+                continue;
+            }
+            if can_close || (is_display && delim_is_display) {
                 return Some(ix);
             }
+            break;
         }
         None
     }

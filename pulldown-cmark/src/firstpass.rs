@@ -1148,7 +1148,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             line_start.scan_space(indent);
             let mut close_line_start = line_start.clone();
-            if !close_line_start.scan_space(4) {
+            if !close_line_start.scan_space(4 - indent) {
                 let close_ix = ix + close_line_start.bytes_scanned();
                 if let Some(n) = scan_closing_code_fence(&bytes[close_ix..], fence_ch, n_fence_char)
                 {

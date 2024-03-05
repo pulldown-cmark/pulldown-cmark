@@ -805,10 +805,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     //
                     // Unbalanced braces will cause the root to be changed, which is why it gets
                     // stored here.
-                    let brace_context = self.brace_context_stack.last().copied().unwrap_or_else(|| {
-                        self.brace_context_stack.push(!0);
-                        !0
-                    });
+                    let brace_context = if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
+                        self.brace_context_next as u8
+                    } else {
+                        self.brace_context_stack.last().copied().unwrap_or_else(|| {
+                            self.brace_context_stack.push(!0);
+                            !0
+                        })
+                    };
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     self.tree.append(Item {
@@ -824,7 +828,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'{' => {
-                    if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
+                    if self.brace_context_stack.len() == MATH_BRACE_CONTEXT_MAX_NESTING {
+                        self.brace_context_stack.push(self.brace_context_next as u8);
+                        self.brace_context_next = MATH_BRACE_CONTEXT_MAX_NESTING;
+                    } else if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
                         // When we reach the limit of nesting, switch from actually matching
                         // braces to just counting them.
                         self.brace_context_next += 1;
@@ -856,9 +863,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     } else if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
                         // When we exceed 25 levels of nesting, switch from accurately balancing braces
                         // to just counting them. When we dip back below the limit, switch back.
-                        self.brace_context_next -= 1;
                         if self.brace_context_next <= MATH_BRACE_CONTEXT_MAX_NESTING {
                             self.brace_context_stack.pop();
+                        } else {
+                            self.brace_context_next -= 1;
                         }
                     } else {
                         self.brace_context_stack.pop();

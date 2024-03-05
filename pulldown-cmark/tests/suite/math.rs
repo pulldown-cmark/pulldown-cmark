@@ -778,6 +778,35 @@ But this still isn't, because the braces are still counted: $}{$</p>
 
 #[test]
 fn math_test_45() {
+    let original = r##"This is also deeply nested, but, unlike the first example,
+they don't have an equal number of close braces and open braces,
+so aren't detected as math.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly $}$ nested ${$ example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+This, however, is detected ${}$
+
+${{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+another improperly nested example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}$
+"##;
+    let expected = r##"<p>This is also deeply nested, but, unlike the first example,
+they don't have an equal number of close braces and open braces,
+so aren't detected as math.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+improperly $}$ nested ${$ example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+This, however, is detected <span class="math inline">{}</span></p>
+<p><span class="math inline">{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+another improperly nested example
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn math_test_46() {
     let original = r##"${}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
@@ -811,7 +840,7 @@ fn math_test_45() {
 }
 
 #[test]
-fn math_test_46() {
+fn math_test_47() {
     let original = r##"${{{{{{{{{{{{{{{{{{{{ 20 open braces
 {{{{{{{{{{{{{{{{{{{{  40 open braces
 {{{{{{{{{{{{{{{{{{{{  60 open braces

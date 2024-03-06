@@ -3016,3 +3016,26 @@ junk</p>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_191() {
+    let original = r##" ~~~
+    ~~~
+"##;
+    let expected = r##"<pre><code>   ~~~
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_192() {
+    let original = r##" ~~~
+   ~~~
+"##;
+    let expected = r##"<pre><code></code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

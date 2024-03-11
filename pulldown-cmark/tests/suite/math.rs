@@ -10,9 +10,9 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 
 `\` may follow just after the first `$`: $\{1, 2, 3\}$
 "##;
-    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline: <span class="math inline">\sqrt{3x-1}+(1+x)^2</span>
-<span class="math inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
-<p><code>\</code> may follow just after the first <code>$</code>: <span class="math inline">\{1, 2, 3\}</span></p>
+    let expected = r##"<p>This sentence uses <code>$</code> delimiters to show math inline: <span class="math math-inline">\sqrt{3x-1}+(1+x)^2</span>
+<span class="math math-inline">\sum_{k=1}^n a_k b_k</span>: Mathematical expression at head of line</p>
+<p><code>\</code> may follow just after the first <code>$</code>: <span class="math math-inline">\{1, 2, 3\}</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -25,7 +25,7 @@ fn math_test_2() {
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
 "##;
     let expected = r##"<p><strong>The Cauchy-Schwarz Inequality</strong></p>
-<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
+<p><span class="math math-display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -38,7 +38,7 @@ fn math_test_3() {
 $$$$
 "##;
     let expected = r##"<p>Oops empty $$ expression.</p>
-<p><span class="math display"></span></p>
+<p><span class="math math-display"></span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -52,9 +52,9 @@ $x$$$$$$y$$
 
 $$x$$$$$$y$$
 "##;
-    let expected = r##"<p><span class="math inline">x</span><span class="math display"></span><span class="math display">y</span></p>
-<p><span class="math inline">x</span><span class="math display"></span><span class="math inline">y</span>$</p>
-<p><span class="math display">x</span><span class="math display"></span>y$$</p>
+    let expected = r##"<p><span class="math math-inline">x</span><span class="math math-display"></span><span class="math math-display">y</span></p>
+<p><span class="math math-inline">x</span><span class="math math-display"></span><span class="math math-inline">y</span>$</p>
+<p><span class="math math-display">x</span><span class="math math-display"></span>y$$</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -74,12 +74,12 @@ $<https://not.a.link/>$
 
 $&alpha;$
 "##;
-    let expected = r##"<p><span class="math inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
-<p><span class="math display">{a*b*c} _c_ d</span></p>
-<p><span class="math inline">not `code`</span></p>
-<p><span class="math inline">![not an](/image)</span></p>
-<p><span class="math inline">&lt;https://not.a.link/&gt;</span></p>
-<p><span class="math inline">&amp;alpha;</span></p>
+    let expected = r##"<p><span class="math math-inline">a&lt;b&gt;c&lt;/b&gt;</span></p>
+<p><span class="math math-display">{a*b*c} _c_ d</span></p>
+<p><span class="math math-inline">not `code`</span></p>
+<p><span class="math math-inline">![not an](/image)</span></p>
+<p><span class="math math-inline">&lt;https://not.a.link/&gt;</span></p>
+<p><span class="math math-inline">&amp;alpha;</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -106,9 +106,9 @@ fn math_test_7() {
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)$$
 "##;
-    let expected = r##"<p><span class="math inline">5x + 2 =
+    let expected = r##"<p><span class="math math-inline">5x + 2 =
 17</span></p>
-<p><span class="math display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
+<p><span class="math math-display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
@@ -121,7 +121,7 @@ fn math_test_8() {
 hard break  
 either$
 "##;
-    let expected = r##"<p><span class="math inline">not a\
+    let expected = r##"<p><span class="math math-inline">not a\
 hard break  
 either</span></p>
 "##;
@@ -135,8 +135,8 @@ fn math_test_9() {
 
 $$y = \$ x$$
 "##;
-    let expected = r##"<p><span class="math inline">\$</span></p>
-<p><span class="math display">y = \$ x</span></p>
+    let expected = r##"<p><span class="math math-inline">\$</span></p>
+<p><span class="math math-display">y = \$ x</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -159,7 +159,7 @@ $$ $ $$
 fn math_test_11() {
     let original = r##"alpha$$beta$gamma$$delta
 "##;
-    let expected = r##"<p>alpha$<span class="math inline">beta</span>gamma$$delta</p>
+    let expected = r##"<p>alpha$<span class="math math-inline">beta</span>gamma$$delta</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -187,7 +187,7 @@ $</p>
 </blockquote>
 <p>While displays can start with whitespace, {${
 they should not allow inlines to do that $$2 +
-<span class="math inline">*</span></p>
+<span class="math math-inline">*</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -197,7 +197,7 @@ they should not allow inlines to do that $$2 +
 fn math_test_13() {
     let original = r##"these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
 "##;
-    let expected = r##"<p>these are math texts: foo<span class="math inline">y=x</span>bar and <span class="math inline">y=x</span>bar and foo<span class="math inline">y=x</span> bar</p>
+    let expected = r##"<p>these are math texts: foo<span class="math math-inline">y=x</span>bar and <span class="math math-inline">y=x</span>bar and foo<span class="math math-inline">y=x</span> bar</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -211,9 +211,9 @@ also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
 
 braces: ($x=y$) [$x=y$] {$x=y$}
 "##;
-    let expected = r##"<p>math texts: <span class="math inline">x=y</span>! and <span class="math inline">x=y</span>? and <span class="math inline">x=y</span>: and <span class="math inline">x=y</span>. and <span class="math inline">x=y</span>"</p>
-<p>also math texts: !<span class="math inline">x=y</span>! and ?<span class="math inline">x=y</span>? and :<span class="math inline">x=y</span>: and .<span class="math inline">x=y</span>. and "<span class="math inline">x=y</span>"</p>
-<p>braces: (<span class="math inline">x=y</span>) [<span class="math inline">x=y</span>] {<span class="math inline">x=y</span>}</p>
+    let expected = r##"<p>math texts: <span class="math math-inline">x=y</span>! and <span class="math math-inline">x=y</span>? and <span class="math math-inline">x=y</span>: and <span class="math math-inline">x=y</span>. and <span class="math math-inline">x=y</span>"</p>
+<p>also math texts: !<span class="math math-inline">x=y</span>! and ?<span class="math math-inline">x=y</span>? and :<span class="math math-inline">x=y</span>: and .<span class="math math-inline">x=y</span>. and "<span class="math math-inline">x=y</span>"</p>
+<p>braces: (<span class="math math-inline">x=y</span>) [<span class="math math-inline">x=y</span>] {<span class="math math-inline">x=y</span>}</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -223,7 +223,7 @@ braces: ($x=y$) [$x=y$] {$x=y$}
 fn math_test_15() {
     let original = r##"$x=y$
 "##;
-    let expected = r##"<p><span class="math inline">x=y</span></p>
+    let expected = r##"<p><span class="math math-inline">x=y</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -239,10 +239,10 @@ $$a$$$b$
 
 $$a$$$$b$$
 "##;
-    let expected = r##"<p><span class="math inline">a</span><span class="math inline">b</span></p>
-<p><span class="math inline">a</span><span class="math display">b</span></p>
-<p><span class="math display">a</span><span class="math inline">b</span></p>
-<p><span class="math display">a</span><span class="math display">b</span></p>
+    let expected = r##"<p><span class="math math-inline">a</span><span class="math math-inline">b</span></p>
+<p><span class="math math-inline">a</span><span class="math math-display">b</span></p>
+<p><span class="math math-display">a</span><span class="math math-inline">b</span></p>
+<p><span class="math math-display">a</span><span class="math math-display">b</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -258,9 +258,9 @@ $$ Display `first $$ then` code
 
 `Code $$ first` then $$ display
 "##;
-    let expected = r##"<p><span class="math inline">Inline `first</span> then` code</p>
+    let expected = r##"<p><span class="math math-inline">Inline `first</span> then` code</p>
 <p><code>Code $first</code> then$ inline</p>
-<p><span class="math display"> Display `first </span> then` code</p>
+<p><span class="math math-display"> Display `first </span> then` code</p>
 <p><code>Code $$ first</code> then $$ display</p>
 "##;
 
@@ -277,7 +277,7 @@ $x + y
 $$ x + y
 > z $$
 "##;
-    let expected = r##"<p><span class="math inline">x + y - z</span></p>
+    let expected = r##"<p><span class="math math-inline">x + y - z</span></p>
 <p>$x + y</p>
 <ul>
 <li>z$</li>
@@ -347,11 +347,11 @@ And this is inline math:
 $\text{Hello $x$ there!}$
 "##;
     let expected = r##"<p>This is display math:
-<span class="math display">
+<span class="math math-display">
 \text{Hello $x^2$}
 </span>
 And this is inline math:
-<span class="math inline">\text{Hello $x$ there!}</span></p>
+<span class="math math-inline">\text{Hello $x$ there!}</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -371,9 +371,9 @@ Math environment contains 2+2: $}$2+2$
 "##;
     let expected = r##"<p>This is not valid math: $}{$</p>
 <p>Neither is this: { $}{$ }</p>
-<p>This is: <span class="math inline">\}\{</span></p>
-<p>This is: <span class="math inline">\}</span></p>
-<p>Math environment contains 2+2: $}<span class="math inline">2+2</span></p>
+<p>This is: <span class="math math-inline">\}\{</span></p>
+<p>This is: <span class="math math-inline">\}</span></p>
+<p>Math environment contains 2+2: $}<span class="math math-inline">2+2</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -399,14 +399,14 @@ and expected to be as short as possible:
 $$$$\text{first $$ second}$$
 "##;
     let expected = r##"<p>This is not display math. It is inline math:</p>
-<p>$<span class="math inline">\text{first $$ second}</span></p>
-<p>$$<span class="math inline">\text{first $$ second}</span></p>
+<p>$<span class="math math-inline">\text{first $$ second}</span></p>
+<p>$$<span class="math math-inline">\text{first $$ second}</span></p>
 <p>This is display math:</p>
-<p><span class="math display">\text{first $$ second}</span></p>
-<p>$<span class="math display">\text{first $$ second}</span></p>
+<p><span class="math math-display">\text{first $$ second}</span></p>
+<p>$<span class="math math-display">\text{first $$ second}</span></p>
 <p>This is also display math, but (counterintuitively) it's allowed to be empty
 and expected to be as short as possible:</p>
-<p><span class="math display"></span>\text{first $$ second}$$</p>
+<p><span class="math math-display"></span>\text{first $$ second}$$</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -424,10 +424,10 @@ $}$$$$
 
 $}$] $$
 "##;
-    let expected = r##"<p><span class="math inline">\text{\$}</span></p>
-<p>$<span class="math inline">x</span>x$$</p>
-<p>${<span class="math inline">^</span>$</p>
-<p>$}<span class="math display"></span></p>
+    let expected = r##"<p><span class="math math-inline">\text{\$}</span></p>
+<p>$<span class="math math-inline">x</span>x$$</p>
+<p>${<span class="math math-inline">^</span>$</p>
+<p>$}<span class="math math-display"></span></p>
 <p>$}$] $$</p>
 "##;
 
@@ -438,7 +438,7 @@ $}$] $$
 fn math_test_25() {
     let original = r##"$x$ $`y`$
 "##;
-    let expected = r##"<p><span class="math inline">x</span> <span class="math inline">`y`</span></p>
+    let expected = r##"<p><span class="math math-inline">x</span> <span class="math math-inline">`y`</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -466,17 +466,17 @@ fn math_test_26() {
 "##;
     let expected = r##"<ul>
 <li>
-<p><span class="math inline">a</span></p>
+<p><span class="math math-inline">a</span></p>
 <pre><code class="language-math">a
 </code></pre>
-<p><span class="math display">
+<p><span class="math math-display">
 a
 </span></p>
 </li>
 <li>
 <pre><code class="language-math">b
 </code></pre>
-<p><span class="math display">
+<p><span class="math math-display">
 b
 </span></p>
 </li>
@@ -493,7 +493,7 @@ fn math_test_27() {
 "##;
     let expected = r##"<ul>
 <li><img src="https://nodejs.org/static/images/logo.svg" alt="node logo" /></li>
-<li><span class="math inline">x</span></li>
+<li><span class="math math-inline">x</span></li>
 </ul>
 "##;
 
@@ -513,8 +513,8 @@ $$
 </details>
 "##;
     let expected = r##"<details>
-<p><span class="math inline">A = 5</span></p>
-<p><span class="math display">
+<p><span class="math math-inline">A = 5</span></p>
+<p><span class="math math-display">
 A = 5
 </span></p>
 </details>
@@ -529,8 +529,8 @@ fn math_test_29() {
 
 $$a<b$$
 "##;
-    let expected = r##"<p><span class="math inline">a&lt;b</span></p>
-<p><span class="math display">a&lt;b</span></p>
+    let expected = r##"<p><span class="math math-inline">a&lt;b</span></p>
+<p><span class="math math-display">a&lt;b</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -544,7 +544,7 @@ fn math_test_30() {
 "##;
     let expected = r##"<p><sup class="footnote-reference"><a href="#a">1</a></sup></p>
 <div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
-<p>Lorem <span class="math inline">a</span></p>
+<p>Lorem <span class="math math-inline">a</span></p>
 </div>
 "##;
 
@@ -556,7 +556,7 @@ fn math_test_31() {
     let original = r##"[$a$](x)
 "##;
     let expected = r##"<p>
-<a href="x"><span class="math inline">a</span></a>
+<a href="x"><span class="math math-inline">a</span></a>
 </p>
 "##;
 
@@ -571,9 +571,9 @@ fn math_test_32() {
 
 1$x$
 "##;
-    let expected = r##"<p>a<span class="math inline">x</span></p>
-<p>-<span class="math inline">x</span></p>
-<p>1<span class="math inline">x</span></p>
+    let expected = r##"<p>a<span class="math math-inline">x</span></p>
+<p>-<span class="math math-inline">x</span></p>
+<p>1<span class="math math-inline">x</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -587,9 +587,9 @@ _$a$ equals $b$_
 
 **$a$ equals $b$**
 "##;
-    let expected = r##"<p><em><span class="math inline">a</span> equals <span class="math inline">b</span></em></p>
-<p><em><span class="math inline">a</span> equals <span class="math inline">b</span></em></p>
-<p><strong><span class="math inline">a</span> equals <span class="math inline">b</span></strong></p>
+    let expected = r##"<p><em><span class="math math-inline">a</span> equals <span class="math math-inline">b</span></em></p>
+<p><em><span class="math math-inline">a</span> equals <span class="math math-inline">b</span></em></p>
+<p><strong><span class="math math-inline">a</span> equals <span class="math math-inline">b</span></strong></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -605,11 +605,11 @@ $$
   \text{$b$}
   $$
 "##;
-    let expected = r##"<p><span class="math display">
+    let expected = r##"<p><span class="math math-display">
 a
 </span>
 </p><ul>
-<li><span class="math display">
+<li><span class="math math-display">
 \text{$b$}
 </span></li>
 </ul>
@@ -622,7 +622,7 @@ a
 fn math_test_35() {
     let original = r##"$\{a\,b\}$
 "##;
-    let expected = r##"<p><span class="math inline">\{a\,b\}</span></p>
+    let expected = r##"<p><span class="math math-inline">\{a\,b\}</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -636,9 +636,9 @@ $[(a+b)c](d+e)$
 
 ${a}_b c_{d}$
 "##;
-    let expected = r##"<p><span class="math inline">a &lt;b &gt; c</span></p>
-<p><span class="math inline">[(a+b)c](d+e)</span></p>
-<p><span class="math inline">{a}_b c_{d}</span></p>
+    let expected = r##"<p><span class="math math-inline">a &lt;b &gt; c</span></p>
+<p><span class="math math-inline">[(a+b)c](d+e)</span></p>
+<p><span class="math math-inline">{a}_b c_{d}</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -649,8 +649,8 @@ fn math_test_37() {
     let original = r##"When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
 $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 "##;
-    let expected = r##"<p>When <span class="math inline">a \ne 0</span>, there are two solutions to <span class="math inline">(ax^2 + bx + c = 0)</span> and they are
-<span class="math display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span></p>
+    let expected = r##"<p>When <span class="math math-inline">a \ne 0</span>, there are two solutions to <span class="math math-inline">(ax^2 + bx + c = 0)</span> and they are
+<span class="math math-display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -660,7 +660,7 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 fn math_test_38() {
     let original = r##"$x = \$$
 "##;
-    let expected = r##"<p><span class="math inline">x = \$</span></p>
+    let expected = r##"<p><span class="math math-inline">x = \$</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -670,7 +670,7 @@ fn math_test_38() {
 fn math_test_39() {
     let original = r##"_Equation $\Omega(69)$ in italic text_
 "##;
-    let expected = r##"<p><em>Equation <span class="math inline">\Omega(69)</span> in italic text</em></p>
+    let expected = r##"<p><em>Equation <span class="math math-inline">\Omega(69)</span> in italic text</em></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -687,13 +687,13 @@ fn math_test_40() {
 /$\pi$
 "##;
     let expected = r##"<p>
-<span class="math inline">\pi</span>
-'<span class="math inline">\pi</span>
-"<span class="math inline">\pi</span>
-(<span class="math inline">\pi</span>
-[<span class="math inline">\pi</span>
-{<span class="math inline">\pi</span>
-/<span class="math inline">\pi</span>
+<span class="math math-inline">\pi</span>
+'<span class="math math-inline">\pi</span>
+"<span class="math math-inline">\pi</span>
+(<span class="math math-inline">\pi</span>
+[<span class="math math-inline">\pi</span>
+{<span class="math math-inline">\pi</span>
+/<span class="math math-inline">\pi</span>
 </p>
 "##;
 
@@ -723,9 +723,9 @@ fn math_test_42() {
 | a ${   \| }$ b    |
 "##;
     let expected = r##"<table><thead>
-<tr><th>first <span class="math inline">|</span> second</th></tr>
+<tr><th>first <span class="math math-inline">|</span> second</th></tr>
 </thead><tbody>
-<tr><td>a <span class="math inline">{   | }</span> b</td></tr>
+<tr><td>a <span class="math math-inline">{   | }</span> b</td></tr>
 </tbody></table>
 "##;
 
@@ -752,18 +752,18 @@ fn math_test_43() {
 "##;
     let expected = r##"<table><thead><tr><th>Description</th><th>Test case</th></tr></thead><tbody>
 <tr><td>Single</td><td>$$</td></tr>
-<tr><td>Double</td><td><span class="math inline">\\</span></td></tr>
-<tr><td>Basic test</td><td><span class="math inline">|</span></td></tr>
+<tr><td>Double</td><td><span class="math math-inline">\\</span></td></tr>
+<tr><td>Basic test</td><td><span class="math math-inline">|</span></td></tr>
 <tr><td>Basic test 2</td><td>$||$</td></tr>
 <tr><td>Basic test 3</td><td>$x|y|z$</td></tr>
-<tr><td>Not pipe</td><td><span class="math inline">\.</span></td></tr>
-<tr><td>Combo</td><td><span class="math inline">\.|</span></td></tr>
+<tr><td>Not pipe</td><td><span class="math math-inline">\.</span></td></tr>
+<tr><td>Combo</td><td><span class="math math-inline">\.|</span></td></tr>
 <tr><td>Combo 2</td><td>$.|$</td></tr>
-<tr><td>Extra</td><td><span class="math inline">\\\.</span></td></tr>
-<tr><td>Wait, what?</td><td><span class="math inline">\|</span></td></tr>
-<tr><td>Wait, what?</td><td><span class="math inline">\\|</span></td></tr>
-<tr><td>Wait, what?</td><td><span class="math inline">\\\|</span></td></tr>
-<tr><td>Wait, what?</td><td><span class="math inline">\\\\|</span></td></tr>
+<tr><td>Extra</td><td><span class="math math-inline">\\\.</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math math-inline">\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math math-inline">\\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math math-inline">\\\|</span></td></tr>
+<tr><td>Wait, what?</td><td><span class="math math-inline">\\\\|</span></td></tr>
 </tbody></table>
 "##;
 
@@ -782,7 +782,7 @@ But this still isn't, because the braces are still counted: $}{$
     let expected = r##"<p>This is not an inline math environment: $}{$
 But, because it's nested too deeply, this is parsed as an inline math environment:
 {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
-improperly <span class="math inline">}{</span> nested
+improperly <span class="math math-inline">}{</span> nested
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 But this still isn't, because the braces are still counted: $}{$</p>
 "##;
@@ -810,8 +810,8 @@ so aren't detected as math.
 {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 improperly $}$ nested ${$ example
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
-This, however, is detected <span class="math inline">{}</span></p>
-<p><span class="math inline">{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+This, however, is detected <span class="math math-inline">{}</span></p>
+<p><span class="math math-inline">{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 another improperly nested example
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}</span></p>
 "##;
@@ -835,7 +835,7 @@ fn math_test_46() {
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{} 240 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{$ 255 brace pairs and one unclosed brace
 "##;
-    let expected = r##"<p><span class="math inline">{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
+    let expected = r##"<p><span class="math math-inline">{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  80 brace pairs

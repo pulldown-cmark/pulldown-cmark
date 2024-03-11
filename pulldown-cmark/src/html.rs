@@ -110,12 +110,12 @@ where
                     self.write("</code>")?;
                 }
                 InlineMath(text) => {
-                    self.write(r#"<span class="math inline">"#)?;
+                    self.write(r#"<span class="math math-inline">"#)?;
                     escape_html(&mut self.writer, &text)?;
                     self.write("</span>")?;
                 }
                 DisplayMath(text) => {
-                    self.write(r#"<span class="math display">"#)?;
+                    self.write(r#"<span class="math math-display">"#)?;
                     escape_html(&mut self.writer, &text)?;
                     self.write("</span>")?;
                 }

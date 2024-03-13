@@ -1455,6 +1455,9 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
+                if c == b'~' && run_length != el.run_length {
+                    return false;
+                }
                 el.c == c
                     && (!both && !el.both
                         || (run_length + el.run_length) % 3 != 0

@@ -1455,10 +1455,10 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                el.c == c
-                    && (!both && !el.both
-                        || (run_length + el.run_length) % 3 != 0
-                        || run_length % 3 == 0)
+                if c == b'~' && run_length != el.run_length {
+                    return false;
+                }
+                el.c == c && (!both && !el.both || (run_length + el.run_length) % 3 != 0 || run_length % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {

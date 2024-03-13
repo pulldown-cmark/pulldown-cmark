@@ -2037,12 +2037,17 @@ fn delim_run_can_open(
         }
     }
     let delim = suffix.chars().next().unwrap();
-    // `*` and `~~` can be intraword, `_` cannot
-    if (delim == '*' || delim == '~') && !is_punctuation(next_char) {
+    // `*` and `~~` can be intraword, `_` and `~` cannot
+    if delim == '*' && !is_punctuation(next_char) {
         return true;
     }
-
+    if delim == '~' && run_len > 1 {
+        return true;
+    }
     let prev_char = s[..ix].chars().last().unwrap();
+    if delim == '~' && prev_char == '~' && !is_punctuation(next_char) {
+        return true;
+    }
 
     prev_char.is_whitespace()
         || is_punctuation(prev_char) && (delim != '\'' || ![']', ')'].contains(&prev_char))
@@ -2079,8 +2084,11 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.chars().next().unwrap();
-    // `*` and `~~` can be intraword, `_` cannot
-    if (delim == '*' || delim == '~') && !is_punctuation(prev_char) {
+    // `*` and `~~` can be intraword, `_` and `~` cannot
+    if (delim == '*' || (delim == '~' && run_len > 1)) && !is_punctuation(prev_char) {
+        return true;
+    }
+    if delim == '~' && prev_char == '~' {
         return true;
     }
 

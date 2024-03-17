@@ -1,0 +1,125 @@
+This is an extension of gfm_strikethrough.txt. Some of these tests are also pulled from commonmark-hs.
+
+# Two tildes
+
+Basic strikethrough is between two tildes:
+
+```````````````````````````````` example
+~~This is *stricken out*~~
+.
+<p><del>This is <em>stricken out</em></del></p>
+````````````````````````````````
+
+Backslash escapes:
+
+```````````````````````````````` example
+~~This is \~\~stricken~~
+.
+<p><del>This is ~~stricken</del></p>
+````````````````````````````````
+
+Intraword strikeout:
+
+```````````````````````````````` example
+This~~is~~stricken
+.
+<p>This<del>is</del>stricken</p>
+````````````````````````````````
+
+```````````````````````````````` example
+~~This~~is~~stricken~~
+.
+<p><del>This</del>is<del>stricken</del></p>
+````````````````````````````````
+
+Punctuation is ignored for purposes of determining
+flankingness on two tildes:
+
+```````````````````````````````` example
+Here I strike out an exclamation point~~!~~.
+.
+<p>Here I strike out an exclamation point<del>!</del>.</p>
+````````````````````````````````
+
+# One tilde
+
+One tilde—and this is where we differ from commonmark-hs—is allowed in certain situations:
+
+```````````````````````````````` example
+~This is stricken out~
+.
+<p><del>This is stricken out</del></p>
+````````````````````````````````
+
+Backslash escapes:
+
+```````````````````````````````` example
+~This is \~stricken~
+.
+<p><del>This is ~stricken</del></p>
+````````````````````````````````
+
+Intraword strikeout requires two tildes:
+
+```````````````````````````````` example
+This~is~nothing
+.
+<p>This~is~nothing</p>
+````````````````````````````````
+
+```````````````````````````````` example
+~This~is~nothing~
+.
+<p><del>This~is~nothing</del></p>
+````````````````````````````````
+
+Punctuation is used for purposes of determining
+flankingness:
+
+```````````````````````````````` example
+Here I fail to strike out an exclamation point~!~.
+.
+<p>Here I fail to strike out an exclamation point~!~.</p>
+````````````````````````````````
+
+Tilde runs can't mix.
+
+```````````````````````````````` example
+Here I fail to strike out a tilde ~~~.
+.
+<p>Here I fail to strike out a tilde ~~~.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+Here I fail to match up ~~tildes~.
+.
+<p>Here I fail to match up ~~tildes~.</p>
+````````````````````````````````
+
+```````````````````````````````` example
+Here I fail to match up ~tildes~~.
+.
+<p>Here I fail to match up ~tildes~~.</p>
+````````````````````````````````
+
+Double tildes are allowed to contain single tildes, and the other way around:
+
+```````````````````````````````` example
+~~This ~is stricken.~~
+.
+<p><del>This ~is stricken.</del></p>
+````````````````````````````````
+
+```````````````````````````````` example
+~This ~~is stricken.~
+.
+<p><del>This ~~is stricken.</del></p>
+````````````````````````````````
+
+The first one wins.
+
+```````````````````````````````` example
+~This ~~is stricken~ but this is not~~
+.
+<p><del>This ~~is stricken</del> but this is not~~</p>
+````````````````````````````````

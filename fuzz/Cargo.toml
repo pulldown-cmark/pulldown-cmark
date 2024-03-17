@@ -16,6 +16,9 @@ pretty_assertions = "1.3.0"
 quick-xml = "0.29"
 mozjs = { git = "https://github.com/notriddle/mozjs", features = ["streams"] }
 urlencoding = "2.1.2"
+serde_json = "1.0.114"
+serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.11.24", features = ["blocking", "json"] }
 
 [dependencies.pulldown-cmark]
 path = "../pulldown-cmark"
@@ -33,5 +36,11 @@ doc = false
 [[bin]]
 name = "commonmark_js"
 path = "fuzz_targets/commonmark_js.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "pandoc"
+path = "fuzz_targets/pandoc.rs"
 test = false
 doc = false

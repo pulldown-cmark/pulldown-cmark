@@ -8,6 +8,7 @@ mod gfm_strikethrough;
 mod gfm_table;
 mod gfm_tasklist;
 mod heading_attrs;
+mod math;
 mod metadata_blocks;
 mod old_footnotes;
 mod regression;

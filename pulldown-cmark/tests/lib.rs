@@ -15,6 +15,7 @@ pub fn test_markdown_html(
     let mut s = String::new();
 
     let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_MATH);
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TASKLISTS);

@@ -282,7 +282,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         span: Range<usize>,
         link_type: LinkType,
     ) -> Option<(LinkType, CowStr<'input>, CowStr<'input>)> {
-        if self.link_ref_expansion_limit <= 0 {
+        if self.link_ref_expansion_limit == 0 {
             return None;
         }
 

@@ -368,7 +368,7 @@ pub enum Event<'a> {
     /// An inline math environment node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     InlineMath(CowStr<'a>),
-    /// An inline math environment node.
+    /// A display math environment node.
     #[cfg_attr(feature = "serde", serde(borrow))]
     DisplayMath(CowStr<'a>),
     /// An HTML node.

@@ -1,6 +1,4 @@
-Run this with `cargo run -- -m -s specs/math.txt`.
-
-## Haskell-CommonMark-Extensions (Pandoc commonmark_x) parity tests
+# `$`-delimited LaTeX Math in pulldown-cmark
 
 Mathematical expressions extension. Syntax based on
 <https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md>.

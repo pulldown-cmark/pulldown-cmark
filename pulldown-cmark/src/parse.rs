@@ -30,10 +30,13 @@ use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel};
+use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{scanners::*, MetadataBlockKind};
-use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag, TagEnd};
+use crate::{
+    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
+    Options, Tag, TagEnd,
+};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -93,7 +96,7 @@ pub(crate) enum ItemBody {
     InlineHtml,
     Html,
     OwnedHtml(CowIndex),
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
@@ -130,7 +133,7 @@ impl ItemBody {
         matches!(
             *self,
             ItemBody::Paragraph
-                | ItemBody::BlockQuote
+                | ItemBody::BlockQuote(..)
                 | ItemBody::List(..)
                 | ItemBody::ListItem(..)
                 | ItemBody::HtmlBlock
@@ -1331,9 +1334,9 @@ pub(crate) fn scan_containers(
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
-            ItemBody::BlockQuote => {
+            ItemBody::BlockQuote(..) => {
                 // `scan_blockquote_marker` saves & restores internally
-                if !line_start.scan_blockquote_marker() {
+                if !line_start.scan_blockquote_marker(false).is_some() {
                     break;
                 }
             }
@@ -2086,7 +2089,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::BlockQuote(..) => TagEnd::BlockQuote,
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
@@ -2161,7 +2164,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::BlockQuote => Tag::BlockQuote,
+        ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
                 Tag::List(Some(listitem_start))

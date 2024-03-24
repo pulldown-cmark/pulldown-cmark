@@ -25,7 +25,7 @@ use std::char;
 use crate::parse::HtmlScanGuard;
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::strings::CowStr;
-use crate::{entities, HeadingLevel};
+use crate::{entities, BlockQuoteKind, HeadingLevel};
 use crate::{Alignment, LinkType};
 
 use memchr::memchr;
@@ -187,15 +187,56 @@ impl<'a> LineStart<'a> {
         }
     }
 
-    pub(crate) fn scan_blockquote_marker(&mut self) -> bool {
+    pub(crate) fn scan_blockquote_marker(
+        &mut self,
+        scan_tag: bool,
+    ) -> Option<Option<BlockQuoteKind>> {
         let save = self.clone();
         let _ = self.scan_space(3);
         if self.scan_ch(b'>') {
             let _ = self.scan_space(1);
-            true
+            if scan_tag {
+                let saved_ix = self.ix;
+                if self.scan_ch(b'[') && self.scan_ch(b'!') {
+                    let tag = self.bytes[self.ix..]
+                        .iter()
+                        .take_while(|&&c| c != b'\n' && c != b'\r')
+                        .copied()
+                        .collect::<Vec<u8>>();
+                    if tag == b"NOTE]"
+                        || tag == b"TIP]"
+                        || tag == b"IMPORTANT]"
+                        || tag == b"WARNING]"
+                        || tag == b"CAUTION]"
+                    {
+                        self.ix += scan_nextline(&self.bytes[self.ix..]);
+                        // Go to the next line of the blockquote if any
+                        // omitting the '> ' to not create a nested blockquote
+                        if self.scan_ch(b'>') {
+                            let _ = self.scan_space(1);
+                        }
+                    }
+                    match tag.as_slice() {
+                        b"NOTE]" => Some(Some(BlockQuoteKind::Note)),
+                        b"TIP]" => Some(Some(BlockQuoteKind::Tip)),
+                        b"IMPORTANT]" => Some(Some(BlockQuoteKind::Important)),
+                        b"WARNING]" => Some(Some(BlockQuoteKind::Warning)),
+                        b"CAUTION]" => Some(Some(BlockQuoteKind::Caution)),
+                        _ => {
+                            self.ix = saved_ix;
+                            Some(None)
+                        }
+                    }
+                } else {
+                    self.ix = saved_ix;
+                    Some(None)
+                }
+            } else {
+                Some(None)
+            }
         } else {
             *self = save;
-            false
+            None
         }
     }
 

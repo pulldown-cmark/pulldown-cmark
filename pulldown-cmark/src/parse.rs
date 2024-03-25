@@ -438,7 +438,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         // so we can reuse that work
                         math_delims.find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
-                        // we haven't previously scanned all codeblock delimiters,
+                        // we haven't previously scanned all math delimiters,
                         // so walk the AST
                         let mut scan = self.tree[cur_ix].next;
                         if is_display {
@@ -446,6 +446,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             // skip the second one
                             scan = self.tree[scan.unwrap()].next;
                         }
+                        let mut invalid = false;
                         while let Some(scan_ix) = scan {
                             if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
                                 self.tree[scan_ix].item.body
@@ -461,26 +462,25 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                             )
                                         )
                                     });
-                                if delim_brace_context == brace_context {
+                                if !invalid && delim_brace_context == brace_context {
                                     if can_close || (is_display && delim_is_display) {
                                         // This will skip ahead past everything we
-                                        // just inserted. This clear isn't needed for
-                                        // correctness, but does save memory.
+                                        // just inserted. Needed for correctness to
+                                        // ensure that a new scan is done after this item.
                                         math_delims.clear();
+                                        break;
                                     } else {
-                                        // can_close only applies to inline math
-                                        // block math can always close
-                                        scan = None;
+                                        // Math cannot contain $, so the current item
+                                        // is invalid. Keep scanning to fill math_delims.
+                                        invalid = true;
                                     }
-                                    break;
-                                } else {
-                                    math_delims.insert(
-                                        delim_is_display,
-                                        delim_brace_context,
-                                        scan_ix,
-                                        can_close,
-                                    );
                                 }
+                                math_delims.insert(
+                                    delim_is_display,
+                                    delim_brace_context,
+                                    scan_ix,
+                                    can_close,
+                                );
                             }
                             if self.tree[scan_ix].item.body.is_block() {
                                 // If this is a tight list, blocks and inlines might be

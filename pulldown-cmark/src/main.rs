@@ -22,7 +22,7 @@
 
 #![forbid(unsafe_code)]
 
-use pulldown_cmark::{html, BrokenLink, Options, Parser};
+use pulldown_cmark::{html, BrokenLink, IoWriter, Options, Parser};
 
 use std::env;
 use std::fs::File;
@@ -94,13 +94,14 @@ pub fn main() -> std::io::Result<()> {
         "fail if input file has broken links",
     );
 
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => {
-            eprintln!("{}\n{}", f, opts.usage(&brief(&args[0])));
-            std::process::exit(1);
-        }
-    };
+    let matches =
+        match opts.parse(&args[1..]) {
+            Ok(m) => m,
+            Err(f) => {
+                eprintln!("{}\n{}", f, opts.usage(&brief(&args[0])));
+                std::process::exit(1);
+            }
+        };
     if matches.opt_present("help") {
         println!("{}", opts.usage(&brief(&args[0])));
         return Ok(());
@@ -187,5 +188,5 @@ pub fn pulldown_cmark(input: &str, opts: Options, broken_links: &mut Vec<BrokenL
     );
     let stdio = io::stdout();
     let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
-    let _ = html::write_html(buffer, &mut p);
+    let _ = html::write_html(IoWriter(buffer), &mut p);
 }

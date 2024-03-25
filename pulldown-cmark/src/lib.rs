@@ -101,6 +101,7 @@ pub use crate::parse::{
 };
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;
+pub use pulldown_cmark_escape::{FmtWriter, IoWriter, StrWrite};
 
 /// Codeblock kind.
 #[derive(Clone, Debug, PartialEq)]

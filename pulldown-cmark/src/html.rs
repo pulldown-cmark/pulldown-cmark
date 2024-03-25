@@ -21,14 +21,11 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
 
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
-use pulldown_cmark_escape::{
-    escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper,
-};
+use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, StrWrite};
 
 enum TableState {
     Head,
@@ -73,14 +70,15 @@ where
     }
 
     /// Writes a new line.
-    fn write_newline(&mut self) -> io::Result<()> {
+    #[inline]
+    fn write_newline(&mut self) -> Result<(), W::Error> {
         self.end_newline = true;
         self.writer.write_str("\n")
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
-    fn write(&mut self, s: &str) -> io::Result<()> {
+    fn write(&mut self, s: &str) -> Result<(), W::Error> {
         self.writer.write_str(s)?;
 
         if !s.is_empty() {
@@ -89,7 +87,7 @@ where
         Ok(())
     }
 
-    fn run(mut self) -> io::Result<()> {
+    fn run(mut self) -> Result<(), W::Error> {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
@@ -156,7 +154,7 @@ where
     }
 
     /// Writes the start of an HTML tag.
-    fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
+    fn start_tag(&mut self, tag: Tag<'a>) -> Result<(), W::Error> {
         match tag {
             Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
@@ -368,7 +366,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: TagEnd) -> io::Result<()> {
+    fn end_tag(&mut self, tag: TagEnd) -> Result<(), W::Error> {
         match tag {
             TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
@@ -439,7 +437,7 @@ where
     }
 
     // run raw text, consuming end tag
-    fn raw_text(&mut self) -> io::Result<()> {
+    fn raw_text(&mut self) -> Result<(), W::Error> {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
@@ -528,7 +526,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use pulldown_cmark::{html, Parser};
+/// use pulldown_cmark::{html, Parser, IoWriter};
 /// use std::io::Cursor;
 ///
 /// let markdown_str = r#"
@@ -541,7 +539,7 @@ where
 /// let mut bytes = Vec::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html(Cursor::new(&mut bytes), parser);
+/// html::write_html(IoWriter(Cursor::new(&mut bytes)), parser);
 ///
 /// assert_eq!(&String::from_utf8_lossy(&bytes)[..], r#"<h1>hello</h1>
 /// <ul>
@@ -550,10 +548,10 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<()>
+pub fn write_html<'a, I, W>(writer: W, iter: I) -> Result<(), W::Error>
 where
     I: Iterator<Item = Event<'a>>,
-    W: Write,
+    W: StrWrite,
 {
-    HtmlWriter::new(iter, WriteWrapper(writer)).run()
+    HtmlWriter::new(iter, writer).run()
 }

@@ -335,12 +335,15 @@ This is: $\}\{$
 This is: $\}$
 
 Math environment contains 2+2: $}$2+2$
+
+Math environment contains x: $x {$ $ } $x$
 .
 <p>This is not valid math: $}{$</p>
 <p>Neither is this: { $}{$ }</p>
 <p>This is: <span class="math math-inline">\}\{</span></p>
 <p>This is: <span class="math math-inline">\}</span></p>
 <p>Math environment contains 2+2: $}<span class="math math-inline">2+2</span></p>
+<p>Math environment contains x: $x {$ $ } <span class="math math-inline">x</span></p>
 ````````````````````````````````
 
 Math expressions must contain properly nested braces.

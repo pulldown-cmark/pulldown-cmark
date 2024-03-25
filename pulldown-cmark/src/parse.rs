@@ -438,7 +438,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         // so we can reuse that work
                         math_delims.find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
-                        // we haven't previously scanned all codeblock delimiters,
+                        // we haven't previously scanned all math delimiters,
                         // so walk the AST
                         let mut scan = self.tree[cur_ix].next;
                         if is_display {
@@ -446,6 +446,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             // skip the second one
                             scan = self.tree[scan.unwrap()].next;
                         }
+                        let mut invalid = false;
                         while let Some(scan_ix) = scan {
                             if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
                                 self.tree[scan_ix].item.body
@@ -461,26 +462,25 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                             )
                                         )
                                     });
-                                if delim_brace_context == brace_context {
-                                    if can_close || (is_display && delim_is_display) {
+                                if !invalid && delim_brace_context == brace_context {
+                                    if (!is_display && can_close) || (is_display && delim_is_display) {
                                         // This will skip ahead past everything we
-                                        // just inserted. This clear isn't needed for
-                                        // correctness, but does save memory.
+                                        // just inserted. Needed for correctness to
+                                        // ensure that a new scan is done after this item.
                                         math_delims.clear();
+                                        break;
                                     } else {
-                                        // can_close only applies to inline math
-                                        // block math can always close
-                                        scan = None;
+                                        // Math cannot contain $, so the current item
+                                        // is invalid. Keep scanning to fill math_delims.
+                                        invalid = true;
                                     }
-                                    break;
-                                } else {
-                                    math_delims.insert(
-                                        delim_is_display,
-                                        delim_brace_context,
-                                        scan_ix,
-                                        can_close,
-                                    );
                                 }
+                                math_delims.insert(
+                                    delim_is_display,
+                                    delim_brace_context,
+                                    scan_ix,
+                                    can_close,
+                                );
                             }
                             if self.tree[scan_ix].item.body.is_block() {
                                 // If this is a tight list, blocks and inlines might be
@@ -1069,7 +1069,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         None
     }
 
-    fn make_math_span(&mut self, mut open: TreeIndex, mut close: TreeIndex) {
+    fn make_math_span(&mut self, open: TreeIndex, mut close: TreeIndex) {
         let start_is_display = self.tree[open].next.filter(|&next_ix| {
             next_ix != close
                 && matches!(
@@ -1085,37 +1085,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         });
         let is_display = start_is_display.is_some() && end_is_display.is_some();
         if is_display {
-            // These unwrap()s can't panic, because if the next variables were None, the _is_display values would be false
-            let (mut open_next, close_next) = (
-                self.tree[open].next.unwrap(),
-                self.tree[close].next.unwrap(),
-            );
-            while matches!(
-                self.tree[open_next]
-                    .next
-                    .map(|next_next| &self.tree[next_next].item.body),
-                Some(ItemBody::MaybeMath(_can_open, _can_close, _brace_context))
-            ) {
-                // march delimiters along to ensure that the dollar signs are outside the span
-                //
-                //     $$$x$$
-                //      ----- math span
-                //
-                // This means we look at open->next->next and move the delimiters
-                if let Some(next_ix) = self.tree[open_next].next {
-                    if next_ix == close {
-                        break;
-                    }
-                    self.tree[open].item.body = ItemBody::Text {
-                        backslash_escaped: false,
-                    };
-                    open = open_next;
-                    open_next = next_ix;
-                } else {
-                    break;
-                }
-            }
-            close = close_next;
+            // This unwrap() can't panic, because if the next variable were None, end_is_display would be None
+            close = self.tree[close].next.unwrap();
             self.tree[open].next = Some(close);
             self.tree[open].item.end += 1;
             self.tree[close].item.start -= 1;
@@ -1126,31 +1097,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     backslash_escaped: false,
                 };
                 return;
-            }
-            if let Some(start_trail_ix) = start_is_display {
-                self.tree[open].item.body = ItemBody::Text {
-                    backslash_escaped: false,
-                };
-                let start_can_open = matches!(
-                    self.tree[start_trail_ix].item.body,
-                    ItemBody::MaybeMath(true, _can_close, _brace_context)
-                );
-                // Generate spans like this:
-                //
-                //     $$test$
-                //     x^----^
-                //
-                // The spare should go on the outside. This is complicated because the
-                // scanner wants to treat a potentially-DisplayMode math delimiter as
-                // one thing, but needs to scan so the one marked `x` is what gets passed
-                // to this function.
-                if self.tree[start_trail_ix].item.end == self.tree[close].item.start
-                    || !start_can_open
-                {
-                    // inline math spans cannot be empty
-                    return;
-                }
-                open = start_trail_ix;
             }
             self.tree[open].next = Some(close);
         }
@@ -1741,14 +1687,12 @@ impl CodeDelims {
 /// Provides amortized constant-time lookups.
 struct MathDelims {
     inner: HashMap<u8, VecDeque<(TreeIndex, bool, bool)>>,
-    seen_first: bool,
 }
 
 impl MathDelims {
     fn new() -> Self {
         Self {
             inner: Default::default(),
-            seen_first: false,
         }
     }
 
@@ -1759,17 +1703,11 @@ impl MathDelims {
         ix: TreeIndex,
         can_close: bool,
     ) {
-        if self.seen_first {
-            self.inner.entry(brace_context).or_default().push_back((
-                ix,
-                can_close,
-                delim_is_display,
-            ));
-        } else {
-            // Skip the first insert, since that delimiter will always
-            // be an opener and not a closer.
-            self.seen_first = true;
-        }
+        self.inner.entry(brace_context).or_default().push_back((
+            ix,
+            can_close,
+            delim_is_display,
+        ));
     }
 
     fn is_populated(&self) -> bool {
@@ -1790,7 +1728,7 @@ impl MathDelims {
                 continue;
             }
             let can_close = can_close && tree[open_ix].item.end != tree[ix].item.start;
-            if can_close || (is_display && delim_is_display) {
+            if (!is_display && can_close) || (is_display && delim_is_display) {
                 return Some(ix);
             }
             // if we can't use it, leave it in the queue as a tombstone for the next
@@ -1805,7 +1743,6 @@ impl MathDelims {
 
     fn clear(&mut self) {
         self.inner.clear();
-        self.seen_first = false;
     }
 }
 

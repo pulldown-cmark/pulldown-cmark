@@ -368,12 +368,15 @@ This is: $\}\{$
 This is: $\}$
 
 Math environment contains 2+2: $}$2+2$
+
+Math environment contains y: $x {$ $ } $y$
 "##;
     let expected = r##"<p>This is not valid math: $}{$</p>
 <p>Neither is this: { $}{$ }</p>
 <p>This is: <span class="math math-inline">\}\{</span></p>
 <p>This is: <span class="math math-inline">\}</span></p>
 <p>Math environment contains 2+2: $}<span class="math math-inline">2+2</span></p>
+<p>Math environment contains y: $x {$ $ } <span class="math math-inline">y</span></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

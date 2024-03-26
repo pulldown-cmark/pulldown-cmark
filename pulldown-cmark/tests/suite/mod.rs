@@ -14,4 +14,5 @@ mod old_footnotes;
 mod regression;
 mod smart_punct;
 mod spec;
+mod strikethrough;
 mod table;

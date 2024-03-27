@@ -467,8 +467,8 @@ bitflags::bitflags! {
         /// literal text [^4]. In old syntax, it creates a dangling link.
         /// ```
         const ENABLE_OLD_FOOTNOTES = (1 << 9) | (1 << 2);
-        /// With this feature enabled, `Tag::Math` events are emitted that
-        /// conventionally contain TeX formulas.
+        /// With this feature enabled, two events `Event::InlineMath` and `Event::DisplayMath`
+        /// are emitted that conventionally contain TeX formulas.
         const ENABLE_MATH = 1 << 10;
     }
 }

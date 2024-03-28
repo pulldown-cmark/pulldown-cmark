@@ -1,0 +1,105 @@
+Run this with `cargo test --features gen-tests suite::blockquotes_tags`.
+
+Blockquotes can optionally have one of the following tags:
+
+- [!NOTE]
+- [!TIP]
+- [!IMPORTANT]
+- [!WARNING]
+- [!CAUTION]
+
+Using one of these tags adds a class with the same name but in lowercase
+(note, tip, etc.).
+
+
+```````````````````````````````` example
+> This is a normal blockquote without tag.
+.
+<blockquote><p>This is a normal blockquote without tag.</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!NOTE]
+> Note blockquote
+.
+<blockquote class="note"><p>Note blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!TIP]
+> Tip blockquote
+.
+<blockquote class="tip"><p>Tip blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!IMPORTANT]
+> Important blockquote
+.
+<blockquote class="important"><p>Important blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!WARNING]
+> Warning blockquote
+.
+<blockquote class="warning"><p>Warning blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!CAUTION]
+> Caution blockquote
+.
+<blockquote class="caution"><p>Caution blockquote</p></blockquote>
+````````````````````````````````
+
+A blockquote with tag can be empty:
+```````````````````````````````` example
+> [!CAUTION]
+.
+<blockquote class="caution"></blockquote>
+````````````````````````````````
+
+An a blockquote can have several lines:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> Line 2.
+.
+<blockquote class="caution"><p>Line 1.
+Line 2.</p></blockquote>
+````````````````````````````````
+
+Tags are ignored in subsequent lines, literally written:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> [!CAUTION]
+> Line 2.
+.
+<blockquote class="caution"><p>Line 1.
+[!CAUTION]
+Line 2.</p></blockquote>
+````````````````````````````````
+
+But nested blockquotes can have their own tag:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> > [!TIP]
+> Line 2.
+.
+<blockquote class="caution"><p>Line 1.</p><blockquote class="tip"><p>Line 2.</p></blockquote></blockquote>
+````````````````````````````````
+
+And consecutive blockquotes too:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+
+
+> [!TIP]
+> Line 2.
+.
+<blockquote class="caution"><p>Line 1.</p></blockquote><blockquote class="tip"><p>Line 2.</p></blockquote>
+````````````````````````````````

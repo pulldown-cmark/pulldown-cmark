@@ -1,4 +1,4 @@
-Run this with `cargo test --features gen-tests suite::gfm_footnotes`.
+Run this with `cargo test --features gen-tests suite::footnotes`.
 
 Parts of this test case are based on
 <https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702>.

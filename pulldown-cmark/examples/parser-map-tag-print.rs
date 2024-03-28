@@ -64,7 +64,7 @@ fn main() {
                 Tag::Emphasis => println!("Emphasis (this is a span tag)"),
                 Tag::Strong => println!("Strong (this is a span tag)"),
                 Tag::Strikethrough => println!("Strikethrough (this is a span tag)"),
-                Tag::BlockQuote => println!("BlockQuote"),
+                Tag::BlockQuote(kind) => println!("BlockQuote ({:?})", kind),
                 Tag::CodeBlock(code_block_kind) => {
                     println!("CodeBlock code_block_kind: {:?}", code_block_kind)
                 }

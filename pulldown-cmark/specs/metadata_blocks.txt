@@ -1,3 +1,5 @@
+Run this with `cargo test --features gen-tests suite::metadata_blocks`.
+
 Examples and edge cases for metadata blocks.
 
 YAML-style and pluses-style metadata blocks are supported.

@@ -3,6 +3,7 @@
 
 pub use super::test_markdown_html;
 
+mod blockquotes_tags;
 mod footnotes;
 mod gfm_strikethrough;
 mod gfm_table;

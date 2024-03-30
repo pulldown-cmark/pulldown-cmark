@@ -165,22 +165,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             body: ItemBody::TaskListMarker(is_checked),
                         });
                 }
-            } else if let Some(kind) = line_start.scan_blockquote_marker(
-                // only search tags in the first line of a blockquote
-                self.tree.cur().is_none()
-                    || !matches!(
-                        self.tree[self.tree.cur().unwrap()],
-                        crate::tree::Node {
-                            child: _,
-                            next: _,
-                            item: Item {
-                                start: _,
-                                end: _,
-                                body: ItemBody::BlockQuote(_)
-                            }
-                        }
-                    ),
-            ) {
+            } else if let Some(kind) = line_start.scan_blockquote_marker(true) {
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,

@@ -198,11 +198,8 @@ impl<'a> LineStart<'a> {
             if scan_tag {
                 let saved_ix = self.ix;
                 if self.scan_ch(b'[') && self.scan_ch(b'!') {
-                    let tag = self.bytes[self.ix..]
-                        .iter()
-                        .take_while(|&&c| c != b'\n' && c != b'\r')
-                        .copied()
-                        .collect::<Vec<u8>>();
+                    let tag_len = scan_while(&self.bytes[self.ix..], |c| c != b'\n' && c != b'\r');
+                    let tag = &self.bytes[self.ix..self.ix + tag_len];
                     if tag == b"NOTE]"
                         || tag == b"TIP]"
                         || tag == b"IMPORTANT]"
@@ -216,7 +213,7 @@ impl<'a> LineStart<'a> {
                             let _ = self.scan_space(1);
                         }
                     }
-                    match tag.as_slice() {
+                    match tag {
                         b"NOTE]" => Some(Some(BlockQuoteKind::Note)),
                         b"TIP]" => Some(Some(BlockQuoteKind::Tip)),
                         b"IMPORTANT]" => Some(Some(BlockQuoteKind::Important)),

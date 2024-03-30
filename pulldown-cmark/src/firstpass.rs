@@ -165,9 +165,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             body: ItemBody::TaskListMarker(is_checked),
                         });
                 }
-            } else if let Some(kind) =
-                line_start.scan_blockquote_marker(self.options.contains(Options::ENABLE_GFM))
-            {
+            } else if line_start.scan_blockquote_marker() {
+                let kind = if self.options.contains(Options::ENABLE_GFM) {
+                    line_start.scan_blockquote_tag()
+                } else {
+                    None
+                };
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
@@ -175,6 +178,33 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     body: ItemBody::BlockQuote(kind),
                 });
                 self.tree.push();
+                if kind.is_some() {
+                    // blockquote tag leaves us at the end of the line
+                    // we need to scan through all the container syntax for the next line
+                    // and break out if we can't re-scan all of them
+                    let ix = start_ix + line_start.bytes_scanned();
+                    let mut lazy_line_start = LineStart::new(&bytes[ix..]);
+                    let current_container = scan_containers(
+                        &self.tree,
+                        &mut lazy_line_start,
+                        self.options.has_gfm_footnotes(),
+                    ) == self.tree.spine_len();
+                    if !lazy_line_start.scan_space(4)
+                        && self.scan_paragraph_interrupt(
+                            &bytes[ix + lazy_line_start.bytes_scanned()..],
+                            current_container,
+                        )
+                    {
+                        return ix;
+                    } else {
+                        // blockquote tags act as if they were nested in a paragraph
+                        // so you can lazily continue the imaginary paragraph off of them
+                        line_start = lazy_line_start;
+                        line_start.scan_all_space();
+                        start_ix = ix;
+                        break;
+                    }
+                }
             } else {
                 break;
             }

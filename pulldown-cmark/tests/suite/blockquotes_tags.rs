@@ -146,3 +146,96 @@ Line 2.</p></blockquote></blockquote>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn blockquotes_tags_test_13() {
+    let original = r##"> [!CAUTION]	
+> Line 1.
+> > [!NOTE]      
+> > Line 2.
+"##;
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_14() {
+    let original = r##"> [!caution]	
+> Line 1.
+> > [!note]      
+> > Line 2.
+"##;
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_15() {
+    let original = r##"  * loose lists
+
+    > [!NOTE]
+    > sink ships
+"##;
+    let expected = r##"<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_16() {
+    let original = r##"> [!NOTE]
+sink ships
+
+> [!NOTE]
+> sink ships
+
+  * loose lists
+
+    > [!NOTE]
+    sink ships
+
+    > [!NOTE]
+    > sink ships
+"##;
+    let expected = r##"<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_17() {
+    let original = r##"  * loose lists
+
+    > [!NOTE]
+    - sink ships
+
+    > [!NOTE]
+    > - sink ships
+"##;
+    let expected = r##"<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"></blockquote>
+<ul><li>sink ships</li></ul>
+<blockquote class="markdown-alert-note">
+<ul><li>sink ships</li></ul></blockquote>
+</li></ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

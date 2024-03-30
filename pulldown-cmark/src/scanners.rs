@@ -187,53 +187,66 @@ impl<'a> LineStart<'a> {
         }
     }
 
-    pub(crate) fn scan_blockquote_marker(
-        &mut self,
-        scan_tag: bool,
-    ) -> Option<Option<BlockQuoteKind>> {
+    fn scan_case_insensitive(&mut self, tag: &[u8]) -> bool {
+        if self.bytes.len() - self.ix < tag.len() {
+            return false;
+        }
+        let prefix = &self.bytes[self.ix..self.ix + tag.len()];
+        let ok = prefix.eq_ignore_ascii_case(tag);
+        if ok {
+            self.ix += tag.len();
+        }
+        ok
+    }
+
+    pub(crate) fn scan_blockquote_tag(&mut self) -> Option<BlockQuoteKind> {
+        let saved_ix = self.ix;
+        let tag = if self.scan_ch(b'[') && self.scan_ch(b'!') {
+            let tag = if self.scan_case_insensitive(b"note") {
+                Some(BlockQuoteKind::Note)
+            } else if self.scan_case_insensitive(b"tip") {
+                Some(BlockQuoteKind::Tip)
+            } else if self.scan_case_insensitive(b"important") {
+                Some(BlockQuoteKind::Important)
+            } else if self.scan_case_insensitive(b"warning") {
+                Some(BlockQuoteKind::Warning)
+            } else if self.scan_case_insensitive(b"caution") {
+                Some(BlockQuoteKind::Caution)
+            } else {
+                None
+            };
+            if tag.is_some() && self.scan_ch(b']') {
+                if let Some(nl) = scan_blank_line(&self.bytes[self.ix..]) {
+                    self.ix += nl;
+                    // This is wrong. It doesn't work right in nested lists.
+                    while self.scan_ch(b'>') {
+                        self.scan_space(1);
+                    }
+                    tag
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        if tag.is_none() {
+            self.ix = saved_ix;
+        }
+        tag
+    }
+
+    pub(crate) fn scan_blockquote_marker(&mut self) -> bool {
         let save = self.clone();
         let _ = self.scan_space(3);
         if self.scan_ch(b'>') {
             let _ = self.scan_space(1);
-            if scan_tag {
-                let saved_ix = self.ix;
-                if self.scan_ch(b'[') && self.scan_ch(b'!') {
-                    let tag_len = scan_while(&self.bytes[self.ix..], |c| c != b'\n' && c != b'\r');
-                    let tag = &self.bytes[self.ix..self.ix + tag_len];
-                    if tag == b"NOTE]"
-                        || tag == b"TIP]"
-                        || tag == b"IMPORTANT]"
-                        || tag == b"WARNING]"
-                        || tag == b"CAUTION]"
-                    {
-                        self.ix += scan_nextline(&self.bytes[self.ix..]);
-                        // Go to the next line of the blockquote if any
-                        // omitting the '> ' to not create a nested blockquote
-                        while self.scan_ch(b'>') {
-                            self.scan_space(1);
-                        }
-                    }
-                    match tag {
-                        b"NOTE]" => Some(Some(BlockQuoteKind::Note)),
-                        b"TIP]" => Some(Some(BlockQuoteKind::Tip)),
-                        b"IMPORTANT]" => Some(Some(BlockQuoteKind::Important)),
-                        b"WARNING]" => Some(Some(BlockQuoteKind::Warning)),
-                        b"CAUTION]" => Some(Some(BlockQuoteKind::Caution)),
-                        _ => {
-                            self.ix = saved_ix;
-                            Some(None)
-                        }
-                    }
-                } else {
-                    self.ix = saved_ix;
-                    Some(None)
-                }
-            } else {
-                Some(None)
-            }
+            true
         } else {
             *self = save;
-            None
+            false
         }
     }
 

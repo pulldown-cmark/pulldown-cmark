@@ -1336,7 +1336,7 @@ pub(crate) fn scan_containers(
         match tree[node_ix].item.body {
             ItemBody::BlockQuote(..) => {
                 // `scan_blockquote_marker` saves & restores internally
-                if !line_start.scan_blockquote_marker(false).is_some() {
+                if !line_start.scan_blockquote_marker() {
                     break;
                 }
             }

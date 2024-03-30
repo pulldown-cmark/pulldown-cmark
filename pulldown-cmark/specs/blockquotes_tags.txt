@@ -113,3 +113,81 @@ Tags also work in inner blockquotes:
 <blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
 Line 2.</p></blockquote></blockquote>
 ````````````````````````````````
+
+Tags can be followed by spaces (works in most implementations):
+```````````````````````````````` example
+> [!CAUTION]→
+> Line 1.
+> > [!NOTE]      
+> > Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+````````````````````````````````
+
+Tags are case-insensitive (works in most implementations):
+```````````````````````````````` example
+> [!caution]→
+> Line 1.
+> > [!note]      
+> > Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+````````````````````````````````
+
+Tags work inside lists (doesn't work in GitHub, but works elsewhere):
+```````````````````````````````` example
+  * loose lists
+
+    > [!NOTE]
+    > sink ships
+.
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+````````````````````````````````
+
+Tags can act as lazy paragraph continuations (works in GitHub, not commonmark-hs):
+```````````````````````````````` example
+> [!NOTE]
+sink ships
+
+> [!NOTE]
+> sink ships
+
+  * loose lists
+
+    > [!NOTE]
+    sink ships
+
+    > [!NOTE]
+    > sink ships
+.
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+````````````````````````````````
+
+Like lazy continuations, the blockquote marker is still needed to make nested blocks:
+```````````````````````````````` example
+  * loose lists
+
+    > [!NOTE]
+    - sink ships
+
+    > [!NOTE]
+    > - sink ships
+.
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"></blockquote>
+<ul><li>sink ships</li></ul>
+<blockquote class="markdown-alert-note">
+<ul><li>sink ships</li></ul></blockquote>
+</li></ul>
+````````````````````````````````

@@ -482,6 +482,10 @@ bitflags::bitflags! {
         /// With this feature enabled, `Tag::Math` events are emitted that
         /// conventionally contain TeX formulas.
         const ENABLE_MATH = 1 << 10;
+        /// Misc GitHub Flavored Markdown features not supported in CommonMark.
+        /// The following features are currently behind this tag:
+        /// - Blockquote tags ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]).
+        const ENABLE_GFM = 1 << 11;
     }
 }
 

@@ -165,7 +165,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             body: ItemBody::TaskListMarker(is_checked),
                         });
                 }
-            } else if let Some(kind) = line_start.scan_blockquote_marker(true) {
+            } else if let Some(kind) =
+                line_start.scan_blockquote_marker(self.options.contains(Options::ENABLE_GFM))
+            {
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,

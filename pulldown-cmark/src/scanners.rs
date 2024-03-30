@@ -209,8 +209,8 @@ impl<'a> LineStart<'a> {
                         self.ix += scan_nextline(&self.bytes[self.ix..]);
                         // Go to the next line of the blockquote if any
                         // omitting the '> ' to not create a nested blockquote
-                        if self.scan_ch(b'>') {
-                            let _ = self.scan_space(1);
+                        while self.scan_ch(b'>') {
+                            self.scan_space(1);
                         }
                     }
                     match tag {

@@ -103,3 +103,13 @@ And consecutive blockquotes too:
 .
 <blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
 ````````````````````````````````
+
+Tags also work in inner blockquotes:
+```````````````````````````````` example
+> > [!CAUTION]
+> > Line 1.
+> Line 2.
+.
+<blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></blockquote></blockquote>
+````````````````````````````````

@@ -133,3 +133,16 @@ fn blockquotes_tags_test_11() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn blockquotes_tags_test_12() {
+    let original = r##"> > [!CAUTION]
+> > Line 1.
+> Line 2.
+"##;
+    let expected = r##"<blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></blockquote></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

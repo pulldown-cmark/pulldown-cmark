@@ -240,11 +240,11 @@ where
                 let class_str = match kind {
                     None => "",
                     Some(kind) => match kind {
-                        BlockQuoteKind::Note => " class=\"note\"",
-                        BlockQuoteKind::Tip => " class=\"tip\"",
-                        BlockQuoteKind::Important => " class=\"important\"",
-                        BlockQuoteKind::Warning => " class=\"warning\"",
-                        BlockQuoteKind::Caution => " class=\"caution\"",
+                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
+                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
+                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
+                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
+                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
                     },
                 };
                 if self.end_newline {

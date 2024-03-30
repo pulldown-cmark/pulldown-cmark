@@ -22,42 +22,42 @@ Using one of these tags adds a class with the same name but in lowercase
 > [!NOTE]
 > Note blockquote
 .
-<blockquote class="note"><p>Note blockquote</p></blockquote>
+<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!TIP]
 > Tip blockquote
 .
-<blockquote class="tip"><p>Tip blockquote</p></blockquote>
+<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!IMPORTANT]
 > Important blockquote
 .
-<blockquote class="important"><p>Important blockquote</p></blockquote>
+<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!WARNING]
 > Warning blockquote
 .
-<blockquote class="warning"><p>Warning blockquote</p></blockquote>
+<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!CAUTION]
 > Caution blockquote
 .
-<blockquote class="caution"><p>Caution blockquote</p></blockquote>
+<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
 ````````````````````````````````
 
 A blockquote with tag can be empty:
 ```````````````````````````````` example
 > [!CAUTION]
 .
-<blockquote class="caution"></blockquote>
+<blockquote class="markdown-alert-caution"></blockquote>
 ````````````````````````````````
 
 An a blockquote can have several lines:
@@ -66,7 +66,7 @@ An a blockquote can have several lines:
 > Line 1.
 > Line 2.
 .
-<blockquote class="caution"><p>Line 1.
+<blockquote class="markdown-alert-caution"><p>Line 1.
 Line 2.</p></blockquote>
 ````````````````````````````````
 
@@ -77,7 +77,7 @@ Tags are ignored in subsequent lines, literally written:
 > [!CAUTION]
 > Line 2.
 .
-<blockquote class="caution"><p>Line 1.
+<blockquote class="markdown-alert-caution"><p>Line 1.
 [!CAUTION]
 Line 2.</p></blockquote>
 ````````````````````````````````
@@ -89,7 +89,7 @@ But nested blockquotes can have their own tag:
 > > [!TIP]
 > Line 2.
 .
-<blockquote class="caution"><p>Line 1.</p><blockquote class="tip"><p>Line 2.</p></blockquote></blockquote>
+<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
 ````````````````````````````````
 
 And consecutive blockquotes too:
@@ -101,5 +101,5 @@ And consecutive blockquotes too:
 > [!TIP]
 > Line 2.
 .
-<blockquote class="caution"><p>Line 1.</p></blockquote><blockquote class="tip"><p>Line 2.</p></blockquote>
+<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
 ````````````````````````````````

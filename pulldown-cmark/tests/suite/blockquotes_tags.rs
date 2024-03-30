@@ -18,7 +18,7 @@ fn blockquotes_tags_test_2() {
     let original = r##"> [!NOTE]
 > Note blockquote
 "##;
-    let expected = r##"<blockquote class="note"><p>Note blockquote</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -29,7 +29,7 @@ fn blockquotes_tags_test_3() {
     let original = r##"> [!TIP]
 > Tip blockquote
 "##;
-    let expected = r##"<blockquote class="tip"><p>Tip blockquote</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -40,7 +40,7 @@ fn blockquotes_tags_test_4() {
     let original = r##"> [!IMPORTANT]
 > Important blockquote
 "##;
-    let expected = r##"<blockquote class="important"><p>Important blockquote</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -51,7 +51,7 @@ fn blockquotes_tags_test_5() {
     let original = r##"> [!WARNING]
 > Warning blockquote
 "##;
-    let expected = r##"<blockquote class="warning"><p>Warning blockquote</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -62,7 +62,7 @@ fn blockquotes_tags_test_6() {
     let original = r##"> [!CAUTION]
 > Caution blockquote
 "##;
-    let expected = r##"<blockquote class="caution"><p>Caution blockquote</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -72,7 +72,7 @@ fn blockquotes_tags_test_6() {
 fn blockquotes_tags_test_7() {
     let original = r##"> [!CAUTION]
 "##;
-    let expected = r##"<blockquote class="caution"></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-caution"></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -84,7 +84,7 @@ fn blockquotes_tags_test_8() {
 > Line 1.
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="caution"><p>Line 1.
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.
 Line 2.</p></blockquote>
 "##;
 
@@ -98,7 +98,7 @@ fn blockquotes_tags_test_9() {
 > [!CAUTION]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="caution"><p>Line 1.
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.
 [!CAUTION]
 Line 2.</p></blockquote>
 "##;
@@ -113,7 +113,7 @@ fn blockquotes_tags_test_10() {
 > > [!TIP]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="caution"><p>Line 1.</p><blockquote class="tip"><p>Line 2.</p></blockquote></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -128,7 +128,7 @@ fn blockquotes_tags_test_11() {
 > [!TIP]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="caution"><p>Line 1.</p></blockquote><blockquote class="tip"><p>Line 2.</p></blockquote>
+    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

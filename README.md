@@ -176,9 +176,23 @@ Or add the feature to your project's `Cargo.toml`:
 pulldown-cmark = { version = "0.9.2", default-features = false, features = ["simd"] }
 ```
 
+For a higher release performance you may want this configuration in your profile release:
+
+```
+lto = true
+codegen-units = 1
+panic = "abort"
+```
+
 ## Authors
 
-The main author is Raph Levien. The implementation of the new design (v0.3+) was completed by Marcus Klaas de Vries.
+The main author is Raph Levien. The implementation of the new design (v0.3+) was
+completed by Marcus Klaas de Vries. Since 2023, the development has been driven
+by Martín Pozo, Michael Howell, Roope Salmi and Martin Geisler.
+
+## License
+
+This software is under the MIT license. See details in [license file](./LICENSE).
 
 ## Contributions
 

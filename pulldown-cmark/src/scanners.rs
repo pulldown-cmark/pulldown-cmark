@@ -218,7 +218,6 @@ impl<'a> LineStart<'a> {
             if tag.is_some() && self.scan_ch(b']') {
                 if let Some(nl) = scan_blank_line(&self.bytes[self.ix..]) {
                     self.ix += nl;
-                    // This is wrong. It doesn't work right in nested lists.
                     while self.scan_ch(b'>') {
                         self.scan_space(1);
                     }

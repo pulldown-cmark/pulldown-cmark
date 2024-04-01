@@ -5,7 +5,8 @@ use std::cmp::max;
 use std::ops::Range;
 
 use crate::parse::{
-    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef, LINK_MAX_NESTED_PARENS,
+    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
+    LINK_MAX_NESTED_PARENS,
 };
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
@@ -165,13 +166,45 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         });
                 }
             } else if line_start.scan_blockquote_marker() {
+                let kind = if self.options.contains(Options::ENABLE_GFM) {
+                    line_start.scan_blockquote_tag()
+                } else {
+                    None
+                };
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
                     end: 0, // will get set later
-                    body: ItemBody::BlockQuote,
+                    body: ItemBody::BlockQuote(kind),
                 });
                 self.tree.push();
+                if kind.is_some() {
+                    // blockquote tag leaves us at the end of the line
+                    // we need to scan through all the container syntax for the next line
+                    // and break out if we can't re-scan all of them
+                    let ix = start_ix + line_start.bytes_scanned();
+                    let mut lazy_line_start = LineStart::new(&bytes[ix..]);
+                    let current_container = scan_containers(
+                        &self.tree,
+                        &mut lazy_line_start,
+                        self.options.has_gfm_footnotes(),
+                    ) == self.tree.spine_len();
+                    if !lazy_line_start.scan_space(4)
+                        && self.scan_paragraph_interrupt(
+                            &bytes[ix + lazy_line_start.bytes_scanned()..],
+                            current_container,
+                        )
+                    {
+                        return ix;
+                    } else {
+                        // blockquote tags act as if they were nested in a paragraph
+                        // so you can lazily continue the imaginary paragraph off of them
+                        line_start = lazy_line_start;
+                        line_start.scan_all_space();
+                        start_ix = ix;
+                        break;
+                    }
+                }
             } else {
                 break;
             }
@@ -182,7 +215,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
-                    ItemBody::BlockQuote => (),
+                    ItemBody::BlockQuote(..) => (),
                     ItemBody::ListItem(indent) if self.begin_list_item.is_some() => {
                         self.last_line_blank = true;
                         // This is a blank list item.
@@ -324,20 +357,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // https://github.com/raphlinus/pulldown-cmark/issues/832
         let mut missing_empty_cells = 0;
         // parse header. this shouldn't fail because we made sure the table header is ok
-        let (_sep_start, thead_ix) = self.parse_table_row_inner(
-            head_start,
-            table_cols,
-            &mut missing_empty_cells,
-        )?;
+        let (_sep_start, thead_ix) =
+            self.parse_table_row_inner(head_start, table_cols, &mut missing_empty_cells)?;
         self.tree[thead_ix].item.body = ItemBody::TableHead;
 
         // parse body
         let mut ix = body_start;
-        while let Some((next_ix, _row_ix)) = self.parse_table_row(
-            ix,
-            table_cols,
-            &mut missing_empty_cells,
-        ) {
+        while let Some((next_ix, _row_ix)) =
+            self.parse_table_row(ix, table_cols, &mut missing_empty_cells)
+        {
             ix = next_ix;
         }
 
@@ -794,8 +822,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 b'$' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open = !string_suffix[1..].as_bytes().first().copied().map_or(true, is_ascii_whitespace);
-                    let can_close = ix > start && !self.text[..ix].as_bytes().last().copied().map_or(true, is_ascii_whitespace);
+                    let can_open = !string_suffix[1..]
+                        .as_bytes()
+                        .first()
+                        .copied()
+                        .map_or(true, is_ascii_whitespace);
+                    let can_close = ix > start
+                        && !self.text[..ix]
+                            .as_bytes()
+                            .last()
+                            .copied()
+                            .map_or(true, is_ascii_whitespace);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
                     // storing Option<u8>, which is bigger than u8.
@@ -805,24 +842,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     //
                     // Unbalanced braces will cause the root to be changed, which is why it gets
                     // stored here.
-                    let brace_context = if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
-                        self.brace_context_next as u8
-                    } else {
-                        self.brace_context_stack.last().copied().unwrap_or_else(|| {
-                            self.brace_context_stack.push(!0);
-                            !0
-                        })
-                    };
+                    let brace_context =
+                        if self.brace_context_stack.len() > MATH_BRACE_CONTEXT_MAX_NESTING {
+                            self.brace_context_next as u8
+                        } else {
+                            self.brace_context_stack.last().copied().unwrap_or_else(|| {
+                                self.brace_context_stack.push(!0);
+                                !0
+                            })
+                        };
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
-                        body: ItemBody::MaybeMath(
-                            can_open,
-                            can_close,
-                            brace_context,
-                        ),
+                        body: ItemBody::MaybeMath(can_open, can_close, brace_context),
                     });
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
@@ -1555,13 +1589,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // GitHub doesn't allow footnote definition labels to contain line breaks.
             // It actually does allow this for link definitions under certain circumstances,
             // but for this it's simpler to avoid it.
-            scan_link_label_rest(
-                &self.text[start + 2..],
-                &|_| {
-                    None
-                },
-                self.tree.is_in_table(),
-            )?
+            scan_link_label_rest(&self.text[start + 2..], &|_| None, self.tree.is_in_table())?
         } else {
             self.parse_refdef_label(start + 2)?
         };
@@ -2661,7 +2689,8 @@ mod simd {
         #[test]
         fn exhaustive_search() {
             let chars = [
-                b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'$', b'{', b'}'
+                b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+                b'$', b'{', b'}',
             ];
 
             for &c in &chars {

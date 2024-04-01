@@ -25,7 +25,7 @@ use std::io::{self, Write};
 
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
+use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 use pulldown_cmark_escape::{
     escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper,
 };
@@ -236,11 +236,21 @@ where
                     _ => self.write(">"),
                 }
             }
-            Tag::BlockQuote => {
+            Tag::BlockQuote(kind) => {
+                let class_str = match kind {
+                    None => "",
+                    Some(kind) => match kind {
+                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
+                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
+                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
+                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
+                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
+                    },
+                };
                 if self.end_newline {
-                    self.write("<blockquote>\n")
+                    self.write(&format!("<blockquote{}>\n", class_str))
                 } else {
-                    self.write("\n<blockquote>\n")
+                    self.write(&format!("\n<blockquote{}>\n", class_str))
                 }
             }
             Tag::CodeBlock(info) => {

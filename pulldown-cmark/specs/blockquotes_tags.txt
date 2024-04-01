@@ -1,0 +1,193 @@
+Run this with `cargo test --features gen-tests suite::blockquotes_tags`.
+
+Blockquotes can optionally have one of the following tags:
+
+- [!NOTE]
+- [!TIP]
+- [!IMPORTANT]
+- [!WARNING]
+- [!CAUTION]
+
+Using one of these tags adds a class with the same name but in lowercase
+(note, tip, etc.).
+
+
+```````````````````````````````` example
+> This is a normal blockquote without tag.
+.
+<blockquote><p>This is a normal blockquote without tag.</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!NOTE]
+> Note blockquote
+.
+<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!TIP]
+> Tip blockquote
+.
+<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!IMPORTANT]
+> Important blockquote
+.
+<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!WARNING]
+> Warning blockquote
+.
+<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!CAUTION]
+> Caution blockquote
+.
+<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
+````````````````````````````````
+
+A blockquote with tag can be empty:
+```````````````````````````````` example
+> [!CAUTION]
+.
+<blockquote class="markdown-alert-caution"></blockquote>
+````````````````````````````````
+
+An a blockquote can have several lines:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></blockquote>
+````````````````````````````````
+
+Tags are ignored in subsequent lines, literally written:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> [!CAUTION]
+> Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.
+[!CAUTION]
+Line 2.</p></blockquote>
+````````````````````````````````
+
+But nested blockquotes can have their own tag:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+> > [!TIP]
+> Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
+````````````````````````````````
+
+And consecutive blockquotes too:
+```````````````````````````````` example
+> [!CAUTION]
+> Line 1.
+
+
+> [!TIP]
+> Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
+````````````````````````````````
+
+Tags also work in inner blockquotes:
+```````````````````````````````` example
+> > [!CAUTION]
+> > Line 1.
+> Line 2.
+.
+<blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></blockquote></blockquote>
+````````````````````````````````
+
+Tags can be followed by spaces (works in most implementations):
+```````````````````````````````` example
+> [!CAUTION]→
+> Line 1.
+> > [!NOTE]      
+> > Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+````````````````````````````````
+
+Tags are case-insensitive (works in most implementations):
+```````````````````````````````` example
+> [!caution]→
+> Line 1.
+> > [!note]      
+> > Line 2.
+.
+<blockquote class="markdown-alert-caution"><p>Line 1.</p>
+<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
+</blockquote>
+````````````````````````````````
+
+Tags work inside lists (doesn't work in GitHub, but works elsewhere):
+```````````````````````````````` example
+  * loose lists
+
+    > [!NOTE]
+    > sink ships
+.
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+````````````````````````````````
+
+Tags can act as lazy paragraph continuations (works in GitHub, not commonmark-hs):
+```````````````````````````````` example
+> [!NOTE]
+sink ships
+
+> [!NOTE]
+> sink ships
+
+  * loose lists
+
+    > [!NOTE]
+    sink ships
+
+    > [!NOTE]
+    > sink ships
+.
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+</li></ul>
+````````````````````````````````
+
+Like lazy continuations, the blockquote marker is still needed to make nested blocks:
+```````````````````````````````` example
+  * loose lists
+
+    > [!NOTE]
+    - sink ships
+
+    > [!NOTE]
+    > - sink ships
+.
+<ul><li><p>loose lists</p>
+<blockquote class="markdown-alert-note"></blockquote>
+<ul><li>sink ships</li></ul>
+<blockquote class="markdown-alert-note">
+<ul><li>sink ships</li></ul></blockquote>
+</li></ul>
+````````````````````````````````

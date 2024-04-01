@@ -122,6 +122,18 @@ impl<'a> CodeBlockKind<'a> {
     }
 }
 
+/// BlockQuote kind (Note, Tip, Important, Warning, Caution).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum BlockQuoteKind {
+    Note,
+    Tip,
+    Important,
+    Warning,
+    Caution,
+}
+
+/// Metadata block kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MetadataBlockKind {
@@ -148,7 +160,7 @@ pub enum Tag<'a> {
         attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
@@ -207,7 +219,7 @@ impl<'a> Tag<'a> {
         match self {
             Tag::Paragraph => TagEnd::Paragraph,
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
-            Tag::BlockQuote => TagEnd::BlockQuote,
+            Tag::BlockQuote(_) => TagEnd::BlockQuote,
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
@@ -470,6 +482,10 @@ bitflags::bitflags! {
         /// With this feature enabled, two events `Event::InlineMath` and `Event::DisplayMath`
         /// are emitted that conventionally contain TeX formulas.
         const ENABLE_MATH = 1 << 10;
+        /// Misc GitHub Flavored Markdown features not supported in CommonMark.
+        /// The following features are currently behind this tag:
+        /// - Blockquote tags ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]).
+        const ENABLE_GFM = 1 << 11;
     }
 }
 

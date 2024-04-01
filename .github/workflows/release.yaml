@@ -86,7 +86,7 @@ jobs:
       - name: Install mold linker
         uses: rui314/setup-mold@staging
         with:
-          mold-version: 2.4.1
+          mold-version: 2.30.0
           make-default: true
       - name: Cache toolchain
         uses: Swatinem/rust-cache@v2

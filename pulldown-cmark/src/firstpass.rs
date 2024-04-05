@@ -1486,10 +1486,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         self.allocs.footdefs.0.insert(
             UniCase::new(label.clone()),
-            FootnoteDef {
-                span: start..i,
-                use_count: 0,
-            },
+            FootnoteDef { use_count: 0 },
         );
         self.tree.append(Item {
             start,

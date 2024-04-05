@@ -1436,7 +1436,6 @@ pub struct LinkDef<'a> {
 /// Contains the destination URL, title and source span of a reference definition.
 #[derive(Clone, Debug)]
 pub struct FootnoteDef {
-    pub span: Range<usize>,
     pub use_count: usize,
 }
 

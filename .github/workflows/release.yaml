@@ -36,7 +36,7 @@ jobs:
       - name: checkout tag
         run: |
           cd pulldown-cmark
-          git fetch --tags
+          git fetch origin master --tags
           git checkout --detach ${{ steps.variables.outputs.version }}
           git describe --tags --always HEAD| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cat version.txt

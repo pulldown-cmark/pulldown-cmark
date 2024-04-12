@@ -37,8 +37,7 @@ jobs:
         run: |
           cd pulldown-cmark
           git fetch origin master --tags
-          git checkout --detach ${{ steps.variables.outputs.version }}
-          git describe --tags --always HEAD| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
+          git describe --tags --always ${{ steps.variables.outputs.version }}| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cat version.txt
       - name: Generate release tag
         id: release_tag

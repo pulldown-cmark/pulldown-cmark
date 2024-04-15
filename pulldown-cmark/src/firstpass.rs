@@ -1634,6 +1634,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             return None;
                         }
                     }
+                    line_start.scan_all_space();
                     bytecount += line_start.bytes_scanned();
                     linestart = bytecount;
                     if scan_blank_line(&bytes[bytecount..]).is_some() {

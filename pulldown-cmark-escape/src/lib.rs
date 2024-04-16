@@ -75,7 +75,7 @@ where
 }
 
 /// This wrapper exists because we can't have both a blanket implementation
-/// for all types implementing `Write` and types of the for `&mut W` where
+/// for all types implementing `io::Write` and types of the form `&mut W` where
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
 #[derive(Debug)]

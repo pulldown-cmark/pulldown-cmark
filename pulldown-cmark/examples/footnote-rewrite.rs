@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::io::Write as _;
 
-use pulldown_cmark::{html, CowStr, Event, IoWriter, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{html, CowStr, Event, Options, Parser, Tag, TagEnd};
 
 /// This example shows how to do footnotes as bottom-notes, in the style of GitHub.
 fn main() {
@@ -53,7 +53,7 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     handle.write_all(b"\nHTML output:\n").unwrap();
-    html::write_html(IoWriter(&mut handle), parser).unwrap();
+    html::write_html_io(&mut handle, parser).unwrap();
 
     // To make the footnotes look right, we need to sort them by their appearance order, not by
     // the in-tree order of their actual definitions. Unused items are omitted entirely.
@@ -88,8 +88,8 @@ fn main() {
         handle
             .write_all(b"<hr><ol class=\"footnotes-list\">\n")
             .unwrap();
-        html::write_html(
-            IoWriter(&mut handle),
+        html::write_html_io(
+            &mut handle,
             footnotes.into_iter().flat_map(|fl| {
                 // To write backrefs, the name needs kept until the end of the footnote definition.
                 let mut name = CowStr::from("");

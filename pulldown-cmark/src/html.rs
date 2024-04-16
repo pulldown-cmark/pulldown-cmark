@@ -25,7 +25,9 @@ use std::collections::HashMap;
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
-use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, StrWrite};
+use pulldown_cmark_escape::{
+    escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
+};
 
 enum TableState {
     Head,
@@ -512,11 +514,11 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    HtmlWriter::new(iter, s).run().unwrap();
+    write_html_fmt(s, iter).unwrap()
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
-/// write it out to a writable stream.
+/// write it out to an I/O stream.
 ///
 /// **Note**: using this function with an unbuffered writer like a file or socket
 /// will result in poor performance. Wrap these in a
@@ -526,7 +528,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use pulldown_cmark::{html, Parser, IoWriter};
+/// use pulldown_cmark::{html, Parser};
 /// use std::io::Cursor;
 ///
 /// let markdown_str = r#"
@@ -539,7 +541,7 @@ where
 /// let mut bytes = Vec::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html(IoWriter(Cursor::new(&mut bytes)), parser);
+/// html::write_html_io(Cursor::new(&mut bytes), parser);
 ///
 /// assert_eq!(&String::from_utf8_lossy(&bytes)[..], r#"<h1>hello</h1>
 /// <ul>
@@ -548,10 +550,45 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html<'a, I, W>(writer: W, iter: I) -> Result<(), W::Error>
+pub fn write_html_io<'a, I, W>(writer: W, iter: I) -> std::io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
-    W: StrWrite,
+    W: std::io::Write,
 {
-    HtmlWriter::new(iter, writer).run()
+    HtmlWriter::new(iter, IoWriter(writer)).run()
+}
+
+/// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
+/// write it into Unicode-accepting buffer or stream.
+///
+/// # Examples
+///
+/// ```
+/// use pulldown_cmark::{html, Parser};
+///
+/// let markdown_str = r#"
+/// hello
+/// =====
+///
+/// * alpha
+/// * beta
+/// "#;
+/// let mut buf = String::new();
+/// let parser = Parser::new(markdown_str);
+///
+/// html::write_html_fmt(&mut buf, parser);
+///
+/// assert_eq!(buf, r#"<h1>hello</h1>
+/// <ul>
+/// <li>alpha</li>
+/// <li>beta</li>
+/// </ul>
+/// "#);
+/// ```
+pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+where
+    I: Iterator<Item = Event<'a>>,
+    W: std::fmt::Write,
+{
+    HtmlWriter::new(iter, FmtWriter(writer)).run()
 }

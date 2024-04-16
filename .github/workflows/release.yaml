@@ -34,9 +34,35 @@ jobs:
           path: pulldown-cmark
       - name: checkout tag
         run: |
-          cd pulldown-cmark
-          git fetch origin master --prune --unshallow --tags --no-recurse-submodules --filter=tree:0
-          git describe --tags --always ${{ steps.variables.outputs.version }}| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
+          cd zig-release
+          TAG=${GITHUB_REF##*/}
+          git fetch --prune --unshallow --tags --no-recurse-submodules --filter=tree:0
+          if [[ "$TAG" =~ ^commit- ]]; then
+            COMMIT=$(git log -1 ${TAG#commit-} --pretty=%h)
+            echo $TAG
+            git tag $TAG -d
+            git push origin $TAG -d
+            base_tag=$(git describe --tags --abbrev=0 --always ${COMMIT})
+            echo $base_tag
+            base_tag=${base_tag/+*/}
+            echo $base_tag
+            COUNT=$(($(git rev-list --count $COMMIT)-$(git rev-list --count $base_tag)))
+            if [[ $COUNT != 0 ]];then
+              TAG=$base_tag-$COUNT-g$COMMIT
+            else
+              TAG=$base_tag
+            fi
+            echo "tag_name=" $TAG
+            git tag $TAG
+            git push origin $TAG
+            echo $TAG
+            echo "tag_name=${TAG}" >> $GITHUB_OUTPUT
+            echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=$(git describe --tags --always $TAG)" >> $GITHUB_OUTPUT
+            echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
+          fi
+          git describe --tags --always ${{ steps.variables.outputs.tag_name }}| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cat version.txt
       - name: Generate release tag
         id: release_tag

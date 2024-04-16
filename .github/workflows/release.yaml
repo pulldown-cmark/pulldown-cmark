@@ -53,8 +53,6 @@ jobs:
               TAG=$base_tag
             fi
             echo "tag_name=" $TAG
-            git tag $TAG
-            git push origin $TAG
             echo $TAG
             echo "tag_name=${TAG}" >> $GITHUB_OUTPUT
             echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
@@ -62,7 +60,8 @@ jobs:
             echo "tag_name=$(git describe --tags --always $TAG)" >> $GITHUB_OUTPUT
             echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
           fi
-          git describe --tags --always ${{ steps.variables.outputs.tag_name }}| sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
+          cd ../pulldown-cmark
+          echo $TAG | sed -e 's/-g.*$//g' -e 's/-/+/g' > version.txt
           cat version.txt
       - name: Generate release tag
         id: release_tag

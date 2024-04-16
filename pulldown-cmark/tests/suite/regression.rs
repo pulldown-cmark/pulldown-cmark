@@ -3039,3 +3039,17 @@ fn regression_test_192() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_193() {
+    let original = r##"[link]: destination "
+          text          "
+
+[link]
+"##;
+    let expected = r##"<p><a href="destination" title="
+text          ">link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -2542,3 +2542,15 @@ ISSUE 861
 .
 <pre><code></code></pre>
 ````````````````````````````````
+
+ISSUE 867
+
+```````````````````````````````` example
+[link]: destination "
+          text          "
+
+[link]
+.
+<p><a href="destination" title="
+text          ">link</a></p>
+````````````````````````````````

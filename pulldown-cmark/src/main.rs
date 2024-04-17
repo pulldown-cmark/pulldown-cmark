@@ -187,5 +187,5 @@ pub fn pulldown_cmark(input: &str, opts: Options, broken_links: &mut Vec<BrokenL
     );
     let stdio = io::stdout();
     let buffer = std::io::BufWriter::with_capacity(1024 * 1024, stdio.lock());
-    let _ = html::write_html(buffer, &mut p);
+    let _ = html::write_html_io(buffer, &mut p);
 }

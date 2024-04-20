@@ -134,6 +134,7 @@ impl ItemBody {
                 | ItemBody::TableRow
                 | ItemBody::TableCell
                 | ItemBody::Heading(..)
+                | ItemBody::Rule
         )
     }
 }

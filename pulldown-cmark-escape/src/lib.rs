@@ -21,8 +21,7 @@
 //! Utility functions for HTML escaping. Only useful when building your own
 //! HTML renderer.
 
-use std::fmt::{self, Arguments};
-use std::io::{self, Write};
+use std::fmt;
 use std::str::from_utf8;
 
 #[rustfmt::skip]
@@ -41,100 +40,67 @@ static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 static AMP_ESCAPE: &str = "&amp;";
 static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 
-/// This wrapper exists because we can't have both a blanket implementation
-/// for all types implementing `Write` and types of the for `&mut W` where
-/// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
-/// `Write` types.
-#[derive(Debug)]
-pub struct IoWriter<W>(pub W);
+/// Display wrapper that formats the given string, replacing special
+/// HTML bytes (<, >, &, ", ') by escape sequences.
+///
+/// Use this function to format output in quoted HTML attributes.
+/// Since this function doesn't escape spaces, unquoted attributes
+/// cannot be used. For example:
+///
+/// ```rust
+/// let string = "two words";
+/// // This is okay.
+/// let ok = format!("<a title='{}'>test</a>", pulldown_cmark_escape::EscapedHtml(string));
+/// // This is not okay.
+/// //let not_ok = format!("<a title={}>test</a>", pulldown_cmark_escape::EscapedHtml(string));
+/// ```
+pub struct EscapedHtml<'a>(pub &'a str);
 
-/// Trait that allows writing string slices. This is basically an extension
-/// of `std::io::Write` in order to include `String`.
-pub trait StrWrite {
-    type Error;
-
-    fn write_str(&mut self, s: &str) -> Result<(), Self::Error>;
-    fn write_fmt(&mut self, args: Arguments) -> Result<(), Self::Error>;
-}
-
-impl<W> StrWrite for IoWriter<W>
-where
-    W: Write,
-{
-    type Error = io::Error;
-
+impl<'a> fmt::Display for EscapedHtml<'a> {
     #[inline]
-    fn write_str(&mut self, s: &str) -> io::Result<()> {
-        self.0.write_all(s.as_bytes())
-    }
-
-    #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
-        self.0.write_fmt(args)
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        escape_html(f, self.0)
     }
 }
 
-/// This wrapper exists because we can't have both a blanket implementation
-/// for all types implementing `io::Write` and types of the form `&mut W` where
-/// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
-/// `Write` types.
-#[derive(Debug)]
-pub struct FmtWriter<W>(pub W);
+/// Formats an href, escaping href unsafe bytes.
+pub struct EscapedHref<'a>(pub &'a str);
 
-impl<W> StrWrite for FmtWriter<W>
-where
-    W: fmt::Write,
-{
-    type Error = fmt::Error;
-
+impl<'a> fmt::Display for EscapedHref<'a> {
     #[inline]
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.0.write_str(s)
-    }
-
-    #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> fmt::Result {
-        self.0.write_fmt(args)
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        escape_href(f, self.0)
     }
 }
 
-impl StrWrite for String {
-    type Error = fmt::Error;
+/// For use in HTML body text, formats the given string, replacing special
+/// HTML bytes (<, >, &) by escape sequences.
+///
+/// <div class="warning">
+///
+/// This function should be used for escaping text nodes, not attributes.
+/// In the below example, the word "foo" is an attribute, and the word
+/// "bar" is an text node. The word "bar" could be escaped by this function,
+/// but the word "foo" must be escaped using [`EscapedHtml`].
+///
+/// ```html
+/// <span class="foo">bar</span>
+/// ```
+///
+/// If you aren't sure what the difference is, use [`EscapedHtml`].
+/// It should always be correct, but may produce larger output.
+///
+/// </div>
+pub struct EscapedHtmlBodyText<'a>(pub &'a str);
 
+impl<'a> fmt::Display for EscapedHtmlBodyText<'a> {
     #[inline]
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.push_str(s);
-        Ok(())
-    }
-
-    #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> fmt::Result {
-        fmt::Write::write_fmt(self, args)
-    }
-}
-
-impl<W> StrWrite for &'_ mut W
-where
-    W: StrWrite,
-{
-    type Error = W::Error;
-
-    #[inline]
-    fn write_str(&mut self, s: &str) -> Result<(), Self::Error> {
-        (**self).write_str(s)
-    }
-
-    #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> Result<(), Self::Error> {
-        (**self).write_fmt(args)
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        escape_html_body_text(f, self.0)
     }
 }
 
-/// Writes an href to the buffer, escaping href unsafe bytes.
-pub fn escape_href<W>(mut w: W, s: &str) -> Result<(), W::Error>
-where
-    W: StrWrite,
-{
+fn escape_href(w: &mut fmt::Formatter, s: &str) -> fmt::Result {
     let bytes = s.as_bytes();
     let mut mark = 0;
     for i in 0..bytes.len() {
@@ -185,23 +151,7 @@ static HTML_BODY_TEXT_ESCAPE_TABLE: [u8; 256] = create_html_escape_table(true);
 
 static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"];
 
-/// Writes the given string to the Write sink, replacing special HTML bytes
-/// (<, >, &, ", ') by escape sequences.
-///
-/// Use this function to write output to quoted HTML attributes.
-/// Since this function doesn't escape spaces, unquoted attributes
-/// cannot be used. For example:
-///
-/// ```rust
-/// let mut value = String::new();
-/// pulldown_cmark_escape::escape_html(&mut value, "two words")
-///     .expect("writing to a string is infallible");
-/// // This is okay.
-/// let ok = format!("<a title='{value}'>test</a>");
-/// // This is not okay.
-/// //let not_ok = format!("<a title={value}>test</a>");
-/// ````
-pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
+fn escape_html(w: &mut fmt::Formatter, s: &str) -> fmt::Result {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
         simd::escape_html(w, s, &HTML_ESCAPE_TABLE)
@@ -212,25 +162,7 @@ pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
     }
 }
 
-/// For use in HTML body text, writes the given string to the Write sink,
-/// replacing special HTML bytes (<, >, &) by escape sequences.
-///
-/// <div class="warning">
-///
-/// This function should be used for escaping text nodes, not attributes.
-/// In the below example, the word "foo" is an attribute, and the word
-/// "bar" is an text node. The word "bar" could be escaped by this function,
-/// but the word "foo" must be escaped using [`escape_html`].
-///
-/// ```html
-/// <span class="foo">bar</span>
-/// ```
-///
-/// If you aren't sure what the difference is, use [`escape_html`].
-/// It should always be correct, but will produce larger output.
-///
-/// </div>
-pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
+fn escape_html_body_text(w: &mut fmt::Formatter, s: &str) -> fmt::Result {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
         simd::escape_html(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
@@ -241,11 +173,7 @@ pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error>
     }
 }
 
-fn escape_html_scalar<W: StrWrite>(
-    mut w: W,
-    s: &str,
-    table: &'static [u8; 256],
-) -> Result<(), W::Error> {
+fn escape_html_scalar(w: &mut fmt::Formatter, s: &str, table: &'static [u8; 256]) -> fmt::Result {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
@@ -269,17 +197,17 @@ fn escape_html_scalar<W: StrWrite>(
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]
 mod simd {
-    use super::StrWrite;
     use std::arch::x86_64::*;
+    use std::fmt;
     use std::mem::size_of;
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(super) fn escape_html<W: StrWrite>(
-        mut w: W,
+    pub(super) fn escape_html(
+        w: &mut fmt::Formatter,
         s: &str,
         table: &'static [u8; 256],
-    ) -> Result<(), W::Error> {
+    ) -> fmt::Result {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -360,13 +288,13 @@ mod simd {
     /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
     /// occur otherwise.
     #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<E, F>(
+    unsafe fn foreach_special_simd<F>(
         bytes: &[u8],
         mut offset: usize,
         mut callback: F,
-    ) -> Result<(), E>
+    ) -> fmt::Result
     where
-        F: FnMut(usize) -> Result<(), E>,
+        F: FnMut(usize) -> fmt::Result,
     {
         // The strategy here is to walk the byte buffer in chunks of VECTOR_SIZE (16)
         // bytes at a time starting at the given offset. For each chunk, we compute a
@@ -445,26 +373,23 @@ mod simd {
 
 #[cfg(test)]
 mod test {
-    pub use super::{escape_href, escape_html, escape_html_body_text};
+    use super::{EscapedHref, EscapedHtml, EscapedHtmlBodyText};
 
     #[test]
     fn check_href_escape() {
-        let mut s = String::new();
-        escape_href(&mut s, "&^_").unwrap();
-        assert_eq!(s.as_str(), "&amp;^_");
+        let s = format!("{}", EscapedHref("&^_"));
+        assert_eq!(s, "&amp;^_");
     }
 
     #[test]
     fn check_attr_escape() {
-        let mut s = String::new();
-        escape_html(&mut s, r##"&^"'_"##).unwrap();
-        assert_eq!(s.as_str(), "&amp;^&quot;&#39;_");
+        let s = format!("{}", EscapedHtml(r##"&^"'_"##));
+        assert_eq!(s, "&amp;^&quot;&#39;_");
     }
 
     #[test]
     fn check_body_escape() {
-        let mut s = String::new();
-        escape_html_body_text(&mut s, r##"&^"'_"##).unwrap();
-        assert_eq!(s.as_str(), r##"&amp;^"'_"##);
+        let s = format!("{}", EscapedHtmlBodyText(r##"&^"'_"##));
+        assert_eq!(s, r##"&amp;^"'_"##);
     }
 }

@@ -13,3 +13,6 @@ categories = ["text-processing"]
 edition = "2021"
 rust-version = "1.70" # Update README.md and azure-pipelines.yml if this changes.
 readme = "../README.md"
+
+[features]
+simd = []

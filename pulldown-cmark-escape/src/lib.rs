@@ -271,7 +271,6 @@ fn escape_html_scalar<W: StrWrite>(
 mod simd {
     use super::StrWrite;
     use std::arch::x86_64::*;
-    use std::io;
     use std::mem::size_of;
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
@@ -280,7 +279,7 @@ mod simd {
         mut w: W,
         s: &str,
         table: &'static [u8; 256],
-    ) -> io::Result<()> {
+    ) -> Result<(), W::Error> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -361,13 +360,13 @@ mod simd {
     /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
     /// occur otherwise.
     #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<F>(
+    unsafe fn foreach_special_simd<E, F>(
         bytes: &[u8],
         mut offset: usize,
         mut callback: F,
-    ) -> io::Result<()>
+    ) -> Result<(), E>
     where
-        F: FnMut(usize) -> io::Result<()>,
+        F: FnMut(usize) -> Result<(), E>,
     {
         // The strategy here is to walk the byte buffer in chunks of VECTOR_SIZE (16)
         // bytes at a time starting at the given offset. For each chunk, we compute a
@@ -410,7 +409,7 @@ mod simd {
             unsafe {
                 super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| {
                     #[allow(clippy::unit_arg)]
-                    Ok(vec.push(ix))
+                    Ok::<_, std::fmt::Error>(vec.push(ix))
                 })
                 .unwrap();
             }
@@ -427,7 +426,7 @@ mod simd {
                 unsafe {
                     super::foreach_special_simd(&vek, 0, |_| {
                         match_count += 1;
-                        Ok(())
+                        Ok::<_, std::fmt::Error>(())
                     })
                     .unwrap();
                 }

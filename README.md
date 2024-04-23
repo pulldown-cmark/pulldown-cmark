@@ -160,7 +160,7 @@ By default, the binary is built as well. If you don't want/need it, then build l
 Or put in your `Cargo.toml` file:
 
 ```toml
-pulldown-cmark = { version = "0.9.2", default-features = false }
+pulldown-cmark = { version = "0.10.3", default-features = false }
 ```
 
 SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
@@ -173,7 +173,7 @@ enable them, build with simd feature:
 Or add the feature to your project's `Cargo.toml`:
 
 ```toml
-pulldown-cmark = { version = "0.9.2", default-features = false, features = ["simd"] }
+pulldown-cmark = { version = "0.10.3", default-features = false, features = ["simd"] }
 ```
 
 For a higher release performance you may want this configuration in your profile release:

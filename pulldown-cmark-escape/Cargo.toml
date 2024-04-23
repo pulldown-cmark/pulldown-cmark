@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark-escape"
-version = "0.10.0"
+version = "0.10.1"
 authors = [
     "Raph Levien <raph.levien@gmail.com>",
     "Marcus Klaas de Vries <mail@marcusklaas.nl>",
@@ -11,5 +11,8 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["escape", "html", "markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
-rust-version = "1.70" # Update README.md and azure-pipelines.yml if this changes.
-readme = "../README.md"
+rust-version = "1.70" # Update README.md and GitHub action when changing this
+readme = "./README.md"
+
+[features]
+simd = []

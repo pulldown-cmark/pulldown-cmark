@@ -57,6 +57,7 @@ jobs:
             echo "tag_name=${TAG}" >> $GITHUB_OUTPUT
             echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
           else
+            TAG=${{ steps.variables.outputs.version }}
             echo "tag_name=$(git describe --tags --always $TAG)" >> $GITHUB_OUTPUT
             echo "tag_commit=$(git log -1 --pretty=%H $TAG)" >> $GITHUB_OUTPUT
           fi
@@ -72,7 +73,7 @@ jobs:
         run: |
           {
           echo "release_note<<EOF"
-          echo "$(cd pulldown-cmark && git log --pretty=format:"%C(yellow)commit %H%C(auto)%d%nAuthor: %an%nDate:   %ad%n%n%s%n%n%b" -1 ${{ steps.variables.outputs.version }})"
+          echo "$(cd zig-release && git log --pretty=format:"%C(yellow)commit %H%C(auto)%d%nAuthor: %an%nDate:   %ad%n%n%s%n%n%b" -1 ${{ steps.variables.outputs.version }})"
           echo "EOF"
           } >> $GITHUB_OUTPUT
       - name: test

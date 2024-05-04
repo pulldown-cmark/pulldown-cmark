@@ -27,12 +27,23 @@ jobs:
         rustc prepare-specs.rs
         ./prepare-specs
         mdbook build
-    - name: Deploy to GitHub
-      working-directory: guide
-      env:
-        GITHUB_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-      run: |
-        touch book/.nojekyll
-        rustc deploy.rs
-        cd book
-        ../deploy
+    - name: Upload Artifact
+      uses: actions/upload-pages-artifact@v1.0.8
+      with:
+        path: ./guide/book
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v2.0.0

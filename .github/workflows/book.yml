@@ -1,0 +1,38 @@
+name: Deploy Book
+on:
+  release:
+    types: [created]
+  push:
+    branches: [test-deploy]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      working-directory: guide
+      run: rustup default stable
+    - name: Install mdBook
+      working-directory: guide
+      run: cargo install mdbook@0.4.37
+    - name: Prepare book
+      working-directory: guide
+      run: |
+        rustc prepare-specs.rs
+        ./prepare-specs
+        mdbook build
+    - name: Deploy to GitHub
+      working-directory: guide
+      env:
+        GITHUB_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      run: |
+        touch book/.nojekyll
+        rustc deploy.rs
+        cd book
+        ../deploy

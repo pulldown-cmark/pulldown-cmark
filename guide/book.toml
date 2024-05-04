@@ -1,0 +1,6 @@
+[book]
+authors = ["Michael Howell"]
+language = "en"
+multilingual = false
+src = "src"
+title = "pulldown-cmark guide"

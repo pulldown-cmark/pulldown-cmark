@@ -163,7 +163,6 @@ where
                 attrs,
             } => {
                 if self.end_newline {
-                    self.end_newline = false;
                     self.write("<")?;
                 } else {
                     self.write("\n<")?;

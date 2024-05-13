@@ -30,10 +30,13 @@ use unicase::UniCase;
 
 use crate::firstpass::run_first_pass;
 use crate::linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel};
+use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
-use crate::{scanners::*, MetadataBlockKind};
-use crate::{Alignment, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Tag, TagEnd};
+use crate::{
+    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
+    Options, Tag, TagEnd,
+};
 
 // Allowing arbitrary depth nested parentheses inside link destinations
 // can create denial of service vulnerabilities if we're not careful.
@@ -49,11 +52,12 @@ pub(crate) struct Item {
     pub body: ItemBody,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-#[derive(Default)]
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
 pub(crate) enum ItemBody {
     Paragraph,
-    Text { backslash_escaped: bool },
+    Text {
+        backslash_escaped: bool,
+    },
     SoftBreak,
     // true = is backlash
     HardBreak(bool),
@@ -62,6 +66,8 @@ pub(crate) enum ItemBody {
 
     // repeats, can_open, can_close
     MaybeEmphasis(usize, bool, bool),
+    // can_open, can_close, brace context
+    MaybeMath(bool, bool, u8),
     // quote byte, can_open, can_close
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
@@ -75,6 +81,7 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Math(CowIndex, bool), // true for display math
     Code(CowIndex),
     Link(LinkIndex),
     Image(LinkIndex),
@@ -89,7 +96,7 @@ pub(crate) enum ItemBody {
     InlineHtml,
     Html,
     OwnedHtml(CowIndex),
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     SynthesizeText(CowIndex),
@@ -113,6 +120,7 @@ impl ItemBody {
         matches!(
             *self,
             ItemBody::MaybeEmphasis(..)
+                | ItemBody::MaybeMath(..)
                 | ItemBody::MaybeSmartQuote(..)
                 | ItemBody::MaybeHtml
                 | ItemBody::MaybeCode(..)
@@ -125,7 +133,7 @@ impl ItemBody {
         matches!(
             *self,
             ItemBody::Paragraph
-                | ItemBody::BlockQuote
+                | ItemBody::BlockQuote(..)
                 | ItemBody::List(..)
                 | ItemBody::ListItem(..)
                 | ItemBody::HtmlBlock
@@ -138,8 +146,6 @@ impl ItemBody {
         )
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct BrokenLink<'a> {
@@ -278,9 +284,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         &mut self,
         link_label: CowStr<'input>,
         span: Range<usize>,
-        link_type: LinkType
+        link_type: LinkType,
     ) -> Option<(LinkType, CowStr<'input>, CowStr<'input>)> {
-        if self.link_ref_expansion_limit <= 0 {
+        if self.link_ref_expansion_limit == 0 {
             return None;
         }
 
@@ -298,30 +304,29 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 let url = matching_def.dest.clone();
                 (link_type, url, title)
             })
-        .or_else(|| {
-            match self.broken_link_callback.as_mut() {
-                Some(callback) => {
-                    // Construct a BrokenLink struct, which will be passed to the callback
-                    let broken_link = BrokenLink {
-                        span,
-                        link_type,
-                        reference: link_label,
-                    };
+            .or_else(|| {
+                match self.broken_link_callback.as_mut() {
+                    Some(callback) => {
+                        // Construct a BrokenLink struct, which will be passed to the callback
+                        let broken_link = BrokenLink {
+                            span,
+                            link_type,
+                            reference: link_label,
+                        };
 
-                    callback.handle_broken_link(broken_link).map(
-                        |(url, title)| {
-                            (link_type.to_unknown(), url, title)
-                        },
-                    )
+                        callback
+                            .handle_broken_link(broken_link)
+                            .map(|(url, title)| (link_type.to_unknown(), url, title))
+                    }
+                    None => None,
                 }
-                None => None,
-            }
-        })?;
+            })?;
 
         // Limit expansion from link references.
         // This isn't a problem for footnotes, because multiple references to the same one
         // reuse the same node, but links/images get their HREF/SRC copied.
-        self.link_ref_expansion_limit = self.link_ref_expansion_limit
+        self.link_ref_expansion_limit = self
+            .link_ref_expansion_limit
             .saturating_sub(url.len() + title.len());
 
         Some((link_type, url, title))
@@ -345,6 +350,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
         let mut code_delims = CodeDelims::new();
+        let mut math_delims = MathDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -366,7 +372,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
-                            body: ItemBody::Text { backslash_escaped: false },
+                            body: ItemBody::Text {
+                                backslash_escaped: false,
+                            },
                         });
                         let link_ix =
                             self.allocs
@@ -410,13 +418,100 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             continue;
                         }
                     }
-                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                    self.tree[cur_ix].item.body = ItemBody::Text {
+                        backslash_escaped: false,
+                    };
+                }
+                ItemBody::MaybeMath(can_open, _can_close, brace_context) => {
+                    if !can_open {
+                        self.tree[cur_ix].item.body = ItemBody::Text {
+                            backslash_escaped: false,
+                        };
+                        prev = cur;
+                        cur = self.tree[cur_ix].next;
+                        continue;
+                    }
+                    let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
+                        matches!(
+                            self.tree[next_ix].item.body,
+                            ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
+                        )
+                    });
+                    let result = if math_delims.is_populated() {
+                        // we have previously scanned all math environment delimiters,
+                        // so we can reuse that work
+                        math_delims.find(&self.tree, cur_ix, is_display, brace_context)
+                    } else {
+                        // we haven't previously scanned all math delimiters,
+                        // so walk the AST
+                        let mut scan = self.tree[cur_ix].next;
+                        if is_display {
+                            // a display delimiter, `$$`, is actually two delimiters
+                            // skip the second one
+                            scan = self.tree[scan.unwrap()].next;
+                        }
+                        let mut invalid = false;
+                        while let Some(scan_ix) = scan {
+                            if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
+                                self.tree[scan_ix].item.body
+                            {
+                                let delim_is_display =
+                                    self.tree[scan_ix].next.map_or(false, |next_ix| {
+                                        matches!(
+                                            self.tree[next_ix].item.body,
+                                            ItemBody::MaybeMath(
+                                                _can_open,
+                                                _can_close,
+                                                _brace_context
+                                            )
+                                        )
+                                    });
+                                if !invalid && delim_brace_context == brace_context {
+                                    if (!is_display && can_close) || (is_display && delim_is_display) {
+                                        // This will skip ahead past everything we
+                                        // just inserted. Needed for correctness to
+                                        // ensure that a new scan is done after this item.
+                                        math_delims.clear();
+                                        break;
+                                    } else {
+                                        // Math cannot contain $, so the current item
+                                        // is invalid. Keep scanning to fill math_delims.
+                                        invalid = true;
+                                    }
+                                }
+                                math_delims.insert(
+                                    delim_is_display,
+                                    delim_brace_context,
+                                    scan_ix,
+                                    can_close,
+                                );
+                            }
+                            if self.tree[scan_ix].item.body.is_block() {
+                                // If this is a tight list, blocks and inlines might be
+                                // siblings. Inlines can't cross the boundary like that.
+                                scan = None;
+                                break;
+                            }
+                            scan = self.tree[scan_ix].next;
+                        }
+                        scan
+                    };
+
+                    if let Some(scan_ix) = result {
+                        self.make_math_span(cur_ix, scan_ix);
+                    } else {
+                        self.tree[cur_ix].item.body = ItemBody::Text {
+                            backslash_escaped: false,
+                        };
+                    }
                 }
                 ItemBody::MaybeCode(mut search_count, preceded_by_backslash) => {
                     if preceded_by_backslash {
                         search_count -= 1;
                         if search_count == 0 {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                            self.tree[cur_ix].item.body = ItemBody::Text {
+                                backslash_escaped: false,
+                            };
                             prev = cur;
                             cur = self.tree[cur_ix].next;
                             continue;
@@ -429,7 +524,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
                             self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                            self.tree[cur_ix].item.body = ItemBody::Text {
+                                backslash_escaped: false,
+                            };
                         }
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
@@ -460,26 +557,34 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             scan = self.tree[scan_ix].next;
                         }
                         if scan.is_none() {
-                            self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                            self.tree[cur_ix].item.body = ItemBody::Text {
+                                backslash_escaped: false,
+                            };
                         }
                     }
                 }
                 ItemBody::MaybeLinkOpen => {
-                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                    self.tree[cur_ix].item.body = ItemBody::Text {
+                        backslash_escaped: false,
+                    };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Link,
                     });
                 }
                 ItemBody::MaybeImage => {
-                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                    self.tree[cur_ix].item.body = ItemBody::Text {
+                        backslash_escaped: false,
+                    };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
                     });
                 }
                 ItemBody::MaybeLinkClose(could_be_ref) => {
-                    self.tree[cur_ix].item.body = ItemBody::Text { backslash_escaped: false };
+                    self.tree[cur_ix].item.body = ItemBody::Text {
+                        backslash_escaped: false,
+                    };
                     if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
@@ -589,7 +694,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             };
 
                             let id = match &label {
-                                Some((ReferenceLabel::Link(l), _) | (ReferenceLabel::Footnote(l), _)) => l.clone(),
+                                Some(
+                                    (ReferenceLabel::Link(l), _) | (ReferenceLabel::Footnote(l), _),
+                                ) => l.clone(),
                                 None => "".into(),
                             };
 
@@ -631,11 +738,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     continue;
                                 }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
-                                if let Some((def_link_type, url, title)) = self.fetch_link_type_url_title(
-                                    link_label,
-                                    (self.tree[tos.node].item.start)..end,
-                                    link_type,
-                                ) {
+                                if let Some((def_link_type, url, title)) = self
+                                    .fetch_link_type_url_title(
+                                        link_label,
+                                        (self.tree[tos.node].item.start)..end,
+                                        link_type,
+                                    )
+                                {
                                     let link_ix =
                                         self.allocs.allocate_link(def_link_type, url, title, id);
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
@@ -706,7 +815,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let both = can_open && can_close;
                     if can_close {
                         while let Some(el) =
-                            self.inline_stack.find_match(&mut self.tree, c, run_length, both)
+                            self.inline_stack
+                                .find_match(&mut self.tree, c, run_length, both)
                         {
                             // have a match!
                             if let Some(prev_ix) = prev {
@@ -775,7 +885,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             });
                         } else {
                             for i in 0..count {
-                                self.tree[cur_ix + i].item.body = ItemBody::Text { backslash_escaped: false };
+                                self.tree[cur_ix + i].item.body = ItemBody::Text {
+                                    backslash_escaped: false,
+                                };
                             }
                         }
                         prev_ix = cur_ix + count - 1;
@@ -937,7 +1049,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     continue;
                 }
             }
-            if self.tree.is_in_table() && c == b'\\' && i + 2 < bytes.len() && bytes[i + 1] == b'\\' && bytes[i + 2] == b'|' {
+            if self.tree.is_in_table()
+                && c == b'\\'
+                && i + 2 < bytes.len()
+                && bytes[i + 1] == b'\\'
+                && bytes[i + 2] == b'|'
+            {
                 // this runs if there are an even number of pipes in a table
                 // if it's odd, then it gets parsed as normal
                 title.push_str(&text[mark..i]);
@@ -956,6 +1073,81 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         None
     }
 
+    fn make_math_span(&mut self, open: TreeIndex, mut close: TreeIndex) {
+        let start_is_display = self.tree[open].next.filter(|&next_ix| {
+            next_ix != close
+                && matches!(
+                    self.tree[next_ix].item.body,
+                    ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
+                )
+        });
+        let end_is_display = self.tree[close].next.filter(|&next_ix| {
+            matches!(
+                self.tree[next_ix].item.body,
+                ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
+            )
+        });
+        let is_display = start_is_display.is_some() && end_is_display.is_some();
+        if is_display {
+            // This unwrap() can't panic, because if the next variable were None, end_is_display would be None
+            close = self.tree[close].next.unwrap();
+            self.tree[open].next = Some(close);
+            self.tree[open].item.end += 1;
+            self.tree[close].item.start -= 1;
+        } else {
+            if self.tree[open].item.end == self.tree[close].item.start {
+                // inline math spans cannot be empty
+                self.tree[open].item.body = ItemBody::Text {
+                    backslash_escaped: false,
+                };
+                return;
+            }
+            self.tree[open].next = Some(close);
+        }
+        let span_start = self.tree[open].item.end;
+        let span_end = self.tree[close].item.start;
+
+        let bytes = self.text.as_bytes();
+        let mut buf: Option<String> = None;
+
+        let mut start_ix = span_start;
+        let mut ix = span_start;
+        while ix < span_end {
+            let c = bytes[ix];
+            if c == b'\r' || c == b'\n' {
+                ix += 1;
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix - span_start));
+                buf.push_str(&self.text[start_ix..ix]);
+                let mut line_start = LineStart::new(&bytes[ix..]);
+                let _ = scan_containers(
+                    &self.tree,
+                    &mut line_start,
+                    self.options.has_gfm_footnotes(),
+                );
+                ix += line_start.bytes_scanned();
+                start_ix = ix;
+            } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
+                buf.push_str(&self.text[start_ix..ix]);
+                buf.push('|');
+                ix += 2;
+                start_ix = ix;
+            } else {
+                ix += 1;
+            }
+        }
+
+        let cow = if let Some(mut buf) = buf {
+            buf.push_str(&self.text[start_ix..span_end]);
+            buf.into()
+        } else {
+            self.text[span_start..span_end].into()
+        };
+
+        self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), is_display);
+        self.tree[open].item.end = self.tree[close].item.end;
+        self.tree[open].next = self.tree[close].next;
+    }
 
     /// Make a code span.
     ///
@@ -993,7 +1185,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 ix += 1;
             }
         }
-        
+
         let (opening, closing, all_spaces) = {
             let s = if let Some(buf) = &mut buf {
                 buf.push_str(&self.text[start_ix..span_end]);
@@ -1004,7 +1196,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             (
                 s.as_bytes().first() == Some(&b' '),
                 s.as_bytes().last() == Some(&b' '),
-                s.bytes().all(|b| b == b' ')
+                s.bytes().all(|b| b == b' '),
             )
         };
 
@@ -1025,7 +1217,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         };
 
         if preceding_backslash {
-            self.tree[open].item.body = ItemBody::Text { backslash_escaped: true };
+            self.tree[open].item.body = ItemBody::Text {
+                backslash_escaped: true,
+            };
             self.tree[open].item.end = self.tree[open].item.start + 1;
             self.tree[open].next = Some(close);
             self.tree[close].item.body = ItemBody::Code(self.allocs.allocate_cow(cow));
@@ -1087,7 +1281,7 @@ pub(crate) fn scan_containers(
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
-            ItemBody::BlockQuote => {
+            ItemBody::BlockQuote(..) => {
                 // `scan_blockquote_marker` saves & restores internally
                 if !line_start.scan_blockquote_marker() {
                     break;
@@ -1118,7 +1312,8 @@ impl Tree<Item> {
     pub(crate) fn append_text(&mut self, start: usize, end: usize, backslash_escaped: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start {
+                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start
+                {
                     self[ix].item.end = end;
                     return;
                 }
@@ -1191,7 +1386,9 @@ impl InlineStack {
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
             for i in 0..el.count {
-                tree[el.start + i].item.body = ItemBody::Text { backslash_escaped: false};
+                tree[el.start + i].item.body = ItemBody::Text {
+                    backslash_escaped: false,
+                };
             }
         }
         self.lower_bounds = [0; 9];
@@ -1265,14 +1462,19 @@ impl InlineStack {
                 if c == b'~' && run_length != el.run_length {
                     return false;
                 }
-                el.c == c && (!both && !el.both || (run_length + el.run_length) % 3 != 0 || run_length % 3 == 0)
+                el.c == c
+                    && (!both && !el.both
+                        || (run_length + el.run_length) % 3 != 0
+                        || run_length % 3 == 0)
             });
 
         if let Some((matching_ix, matching_el)) = res {
             let matching_ix = matching_ix + lowerbound;
             for el in &self.stack[(matching_ix + 1)..] {
                 for i in 0..el.count {
-                    tree[el.start + i].item.body = ItemBody::Text { backslash_escaped: false };
+                    tree[el.start + i].item.body = ItemBody::Text {
+                        backslash_escaped: false,
+                    };
                 }
             }
             self.truncate(matching_ix);
@@ -1341,15 +1543,18 @@ fn scan_link_label<'text>(
     };
     if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
         let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if gfm_footnotes {
-            &|_|  None
+            &|_| None
         } else {
             &linebreak_handler
         };
-        if let Some((byte_index, cow)) = scan_link_label_rest(&text[2..], linebreak_handler, tree.is_in_table()) {
+        if let Some((byte_index, cow)) =
+            scan_link_label_rest(&text[2..], linebreak_handler, tree.is_in_table())
+        {
             return Some((byte_index + 2, ReferenceLabel::Footnote(cow)));
         }
     }
-    let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler, tree.is_in_table())?;
+    let (byte_index, cow) =
+        scan_link_label_rest(&text[1..], &linebreak_handler, tree.is_in_table())?;
     Some((byte_index + 1, ReferenceLabel::Link(cow)))
 }
 
@@ -1457,10 +1662,7 @@ impl CodeDelims {
 
     fn insert(&mut self, count: usize, ix: TreeIndex) {
         if self.seen_first {
-            self.inner
-                .entry(count)
-                .or_default()
-                .push_back(ix);
+            self.inner.entry(count).or_default().push_back(ix);
         } else {
             // Skip the first insert, since that delimiter will always
             // be an opener and not a closer.
@@ -1484,6 +1686,69 @@ impl CodeDelims {
     fn clear(&mut self) {
         self.inner.clear();
         self.seen_first = false;
+    }
+}
+
+/// Tracks brace contexts and delimiter length for math delimiters.
+/// Provides amortized constant-time lookups.
+struct MathDelims {
+    inner: HashMap<u8, VecDeque<(TreeIndex, bool, bool)>>,
+}
+
+impl MathDelims {
+    fn new() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
+
+    fn insert(
+        &mut self,
+        delim_is_display: bool,
+        brace_context: u8,
+        ix: TreeIndex,
+        can_close: bool,
+    ) {
+        self.inner.entry(brace_context).or_default().push_back((
+            ix,
+            can_close,
+            delim_is_display,
+        ));
+    }
+
+    fn is_populated(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
+    fn find(
+        &mut self,
+        tree: &Tree<Item>,
+        open_ix: TreeIndex,
+        is_display: bool,
+        brace_context: u8,
+    ) -> Option<TreeIndex> {
+        while let Some((ix, can_close, delim_is_display)) =
+            self.inner.get_mut(&brace_context)?.pop_front()
+        {
+            if ix <= open_ix || (is_display && tree[open_ix].next == Some(ix)) {
+                continue;
+            }
+            let can_close = can_close && tree[open_ix].item.end != tree[ix].item.start;
+            if (!is_display && can_close) || (is_display && delim_is_display) {
+                return Some(ix);
+            }
+            // if we can't use it, leave it in the queue as a tombstone for the next
+            // thing that tries to match it
+            self.inner
+                .get_mut(&brace_context)?
+                .push_front((ix, can_close, delim_is_display));
+            break;
+        }
+        None
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
     }
 }
 
@@ -1764,7 +2029,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote => TagEnd::BlockQuote,
+        ItemBody::BlockQuote(..) => TagEnd::BlockQuote,
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
@@ -1839,7 +2104,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::BlockQuote => Tag::BlockQuote,
+        ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
                 Tag::List(Some(listitem_start))
@@ -1854,6 +2119,13 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Table(alignment_ix) => Tag::Table(allocs.take_alignment(alignment_ix)),
         ItemBody::FootnoteDefinition(cow_ix) => Tag::FootnoteDefinition(allocs.take_cow(cow_ix)),
         ItemBody::MetadataBlock(kind) => Tag::MetadataBlock(kind),
+        ItemBody::Math(cow_ix, is_display) => {
+            return if is_display {
+                Event::DisplayMath(allocs.take_cow(cow_ix))
+            } else {
+                Event::InlineMath(allocs.take_cow(cow_ix))
+            }
+        }
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

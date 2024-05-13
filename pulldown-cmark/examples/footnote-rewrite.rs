@@ -53,7 +53,7 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     handle.write_all(b"\nHTML output:\n").unwrap();
-    html::write_html(&mut handle, parser).unwrap();
+    html::write_html_io(&mut handle, parser).unwrap();
 
     // To make the footnotes look right, we need to sort them by their appearance order, not by
     // the in-tree order of their actual definitions. Unused items are omitted entirely.
@@ -88,7 +88,7 @@ fn main() {
         handle
             .write_all(b"<hr><ol class=\"footnotes-list\">\n")
             .unwrap();
-        html::write_html(
+        html::write_html_io(
             &mut handle,
             footnotes.into_iter().flat_map(|fl| {
                 // To write backrefs, the name needs kept until the end of the footnote definition.

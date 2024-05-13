@@ -19,6 +19,8 @@ fn main() {
             Event::InlineHtml(s) => println!("InlineHtml: {:?}", s),
             Event::Text(s) => println!("Text: {:?}", s),
             Event::Code(s) => println!("Code: {:?}", s),
+            Event::DisplayMath(s) => println!("DisplayMath: {:?}", s),
+            Event::InlineMath(s) => println!("Math: {:?}", s),
             Event::FootnoteReference(s) => println!("FootnoteReference: {:?}", s),
             Event::TaskListMarker(b) => println!("TaskListMarker: {:?}", b),
             Event::SoftBreak => println!("SoftBreak"),

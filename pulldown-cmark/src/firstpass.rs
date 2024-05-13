@@ -1283,7 +1283,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             line_start.scan_space(indent);
             let mut close_line_start = line_start.clone();
-            if !close_line_start.scan_space(4) {
+            if !close_line_start.scan_space(4 - indent) {
                 let close_ix = ix + close_line_start.bytes_scanned();
                 if let Some(n) = scan_closing_code_fence(&bytes[close_ix..], fence_ch, n_fence_char)
                 {
@@ -1615,10 +1615,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         self.allocs.footdefs.0.insert(
             UniCase::new(label.clone()),
-            FootnoteDef {
-                span: start..i,
-                use_count: 0,
-            },
+            FootnoteDef { use_count: 0 },
         );
         self.tree.append(Item {
             start,
@@ -1766,6 +1763,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             return None;
                         }
                     }
+                    line_start.scan_all_space();
                     bytecount += line_start.bytes_scanned();
                     linestart = bytecount;
                     if scan_blank_line(&bytes[bytecount..]).is_some() {

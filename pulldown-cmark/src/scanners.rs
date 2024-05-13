@@ -101,9 +101,29 @@ const HTML_TAGS: [&str; 62] = [
 #[derive(Clone)]
 pub(crate) struct LineStart<'a> {
     bytes: &'a [u8],
-    tab_start: usize,
     ix: usize,
+
+    // The index in `bytes` after the last tab we scanned; initially
+    // zero.
+    //
+    // Thus, there are no tab characters between `ix` and here, and for
+    // the purpose of defining block structure, this position can be
+    // considered to fall on a tab stop.
+    //
+    // This is only valid while scanning the initial portion of the
+    // line; methods that work with interior structure don't bother to
+    // update it.
+    tab_start: usize,
+
+    // In contexts where spaces help to define block structure, tabs
+    // behave as if they were replaced by spaces with a tab stop of 4
+    // characters.
+    //
+    // If we have scanned past a tab character but not consumed all
+    // the horizontal width it contributed, this is the number of
+    // spaces logically remaining, before the character at `ix`.
     spaces_remaining: usize,
+
     // no thematic breaks can occur before this offset.
     // this prevents scanning over and over up to a certain point
     min_hrule_offset: usize,
@@ -138,9 +158,12 @@ impl<'a> LineStart<'a> {
 
     /// Returns unused remainder of spaces.
     fn scan_space_inner(&mut self, mut n_space: usize) -> usize {
+        // Consume any common prefix between the number of spaces we
+        // want and the number of unscanned tab-introduced spaces.
         let n_from_remaining = self.spaces_remaining.min(n_space);
         self.spaces_remaining -= n_from_remaining;
         n_space -= n_from_remaining;
+
         while n_space > 0 && self.ix < self.bytes.len() {
             match self.bytes[self.ix] {
                 b' ' => {
@@ -153,6 +176,8 @@ impl<'a> LineStart<'a> {
                     self.tab_start = self.ix;
                     let n = spaces.min(n_space);
                     n_space -= n;
+
+                    // Record the unscanned portion of the tab.
                     self.spaces_remaining = spaces - n;
                 }
                 _ => break,

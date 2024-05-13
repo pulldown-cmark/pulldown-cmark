@@ -3016,3 +3016,58 @@ junk</p>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_191() {
+    let original = r##" ~~~
+    ~~~
+"##;
+    let expected = r##"<pre><code>   ~~~
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_192() {
+    let original = r##" ~~~
+   ~~~
+"##;
+    let expected = r##"<pre><code></code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_193() {
+    let original = r##"[link]: destination "
+          text          "
+
+[link]
+"##;
+    let expected = r##"<p><a href="destination" title="
+text          ">link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_194() {
+    let original = r##"* _
+_**
+  ___
+  ^_
+"##;
+    let expected = r##"<ul>
+<li>_
+_**
+<hr />
+^_</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

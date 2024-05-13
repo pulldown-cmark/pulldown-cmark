@@ -15,7 +15,11 @@ use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
-use urlencoding::decode as urldecode;
+
+fn urldecode(data: &str) -> String {
+    let decoded = urlencoding::decode_binary(data.as_bytes());
+    urlencoding::encode_binary(&decoded[..]).to_string()
+}
 
 /// Send Markdown `text` to `pulldown-cmark` and return Markdown
 /// events.
@@ -171,11 +175,12 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         .into(),
                 )),
                 name @ (b"link" | b"image") => {
-                    let url_encoded_dest_url = tag
+                    let dest_url = tag
                         .try_get_attribute("destination")?
                         .ok_or(anyhow!("Missing destination"))?
-                        .unescape_value()?;
-                    let dest_url = urldecode(&url_encoded_dest_url)?.into_owned().into();
+                        .unescape_value()?
+                        .into_owned()
+                        .into();
                     let title = match tag.try_get_attribute("title")? {
                         Some(title) => title.unescape_value()?.into_owned().into(),
                         None => "".into(),
@@ -313,7 +318,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 ..
             }) => Some(Event::Start(Tag::Link {
                 link_type: LinkType::Inline,
-                dest_url: format!("mailto:{dest_url}").into(),
+                dest_url: urldecode(&format!("mailto:{dest_url}")).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
             })),
@@ -323,7 +328,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 ..
             }) => Some(Event::Start(Tag::Link {
                 link_type: LinkType::Inline,
-                dest_url: dest_url.clone(),
+                dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
             })),
@@ -335,7 +340,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 ..
             }) => Some(Event::Start(Tag::Image {
                 link_type: LinkType::Inline,
-                dest_url: dest_url.clone(),
+                dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: id.clone(),
             })),

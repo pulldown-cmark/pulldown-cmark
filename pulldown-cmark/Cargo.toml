@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.10.3"
+version = "0.11.0"
 authors = [
     "Raph Levien <raph.levien@gmail.com>",
     "Marcus Klaas de Vries <mail@marcusklaas.nl>",
@@ -69,7 +69,7 @@ unicase = "2.6"
 memchr = "2.5"
 getopts = { version = "0.2", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"] }
-pulldown-cmark-escape = { path = "../pulldown-cmark-escape", version = "0.10.0", optional = true }
+pulldown-cmark-escape = { path = "../pulldown-cmark-escape", version = "0.11", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4"

@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark-escape"
-version = "0.10.1"
+version = "0.11.0"
 authors = [
     "Raph Levien <raph.levien@gmail.com>",
     "Marcus Klaas de Vries <mail@marcusklaas.nl>",

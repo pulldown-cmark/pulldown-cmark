@@ -21,8 +21,8 @@
 //! Utility functions for HTML escaping. Only useful when building your own
 //! HTML renderer.
 
-use std::fmt::{Arguments, Write as FmtWrite};
-use std::io::{self, ErrorKind, Write};
+use std::fmt::{self, Arguments};
+use std::io::{self, Write};
 use std::str::from_utf8;
 
 #[rustfmt::skip]
@@ -46,20 +46,23 @@ static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
 #[derive(Debug)]
-pub struct WriteWrapper<W>(pub W);
+pub struct IoWriter<W>(pub W);
 
 /// Trait that allows writing string slices. This is basically an extension
 /// of `std::io::Write` in order to include `String`.
 pub trait StrWrite {
-    fn write_str(&mut self, s: &str) -> io::Result<()>;
+    type Error;
 
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()>;
+    fn write_str(&mut self, s: &str) -> Result<(), Self::Error>;
+    fn write_fmt(&mut self, args: Arguments) -> Result<(), Self::Error>;
 }
 
-impl<W> StrWrite for WriteWrapper<W>
+impl<W> StrWrite for IoWriter<W>
 where
     W: Write,
 {
+    type Error = io::Error;
+
     #[inline]
     fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.0.write_all(s.as_bytes())
@@ -71,17 +74,42 @@ where
     }
 }
 
-impl StrWrite for String {
+/// This wrapper exists because we can't have both a blanket implementation
+/// for all types implementing `io::Write` and types of the form `&mut W` where
+/// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
+/// `Write` types.
+#[derive(Debug)]
+pub struct FmtWriter<W>(pub W);
+
+impl<W> StrWrite for FmtWriter<W>
+where
+    W: fmt::Write,
+{
+    type Error = fmt::Error;
+
     #[inline]
-    fn write_str(&mut self, s: &str) -> io::Result<()> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.write_str(s)
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: Arguments) -> fmt::Result {
+        self.0.write_fmt(args)
+    }
+}
+
+impl StrWrite for String {
+    type Error = fmt::Error;
+
+    #[inline]
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s);
         Ok(())
     }
 
     #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
-        // FIXME: translate fmt error to io error?
-        FmtWrite::write_fmt(self, args).map_err(|_| ErrorKind::Other.into())
+    fn write_fmt(&mut self, args: Arguments) -> fmt::Result {
+        fmt::Write::write_fmt(self, args)
     }
 }
 
@@ -89,19 +117,21 @@ impl<W> StrWrite for &'_ mut W
 where
     W: StrWrite,
 {
+    type Error = W::Error;
+
     #[inline]
-    fn write_str(&mut self, s: &str) -> io::Result<()> {
+    fn write_str(&mut self, s: &str) -> Result<(), Self::Error> {
         (**self).write_str(s)
     }
 
     #[inline]
-    fn write_fmt(&mut self, args: Arguments) -> io::Result<()> {
+    fn write_fmt(&mut self, args: Arguments) -> Result<(), Self::Error> {
         (**self).write_fmt(args)
     }
 }
 
 /// Writes an href to the buffer, escaping href unsafe bytes.
-pub fn escape_href<W>(mut w: W, s: &str) -> io::Result<()>
+pub fn escape_href<W>(mut w: W, s: &str) -> Result<(), W::Error>
 where
     W: StrWrite,
 {
@@ -171,7 +201,7 @@ static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"
 /// // This is not okay.
 /// //let not_ok = format!("<a title={value}>test</a>");
 /// ````
-pub fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
+pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
         simd::escape_html(w, s, &HTML_ESCAPE_TABLE)
@@ -200,7 +230,7 @@ pub fn escape_html<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
 /// It should always be correct, but will produce larger output.
 ///
 /// </div>
-pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
+pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
     #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
         simd::escape_html(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
@@ -211,7 +241,11 @@ pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> io::Result<()> {
     }
 }
 
-fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> io::Result<()> {
+fn escape_html_scalar<W: StrWrite>(
+    mut w: W,
+    s: &str,
+    table: &'static [u8; 256],
+) -> Result<(), W::Error> {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
@@ -237,7 +271,6 @@ fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256])
 mod simd {
     use super::StrWrite;
     use std::arch::x86_64::*;
-    use std::io;
     use std::mem::size_of;
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
@@ -246,7 +279,7 @@ mod simd {
         mut w: W,
         s: &str,
         table: &'static [u8; 256],
-    ) -> io::Result<()> {
+    ) -> Result<(), W::Error> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -327,13 +360,13 @@ mod simd {
     /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
     /// occur otherwise.
     #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<F>(
+    unsafe fn foreach_special_simd<E, F>(
         bytes: &[u8],
         mut offset: usize,
         mut callback: F,
-    ) -> io::Result<()>
+    ) -> Result<(), E>
     where
-        F: FnMut(usize) -> io::Result<()>,
+        F: FnMut(usize) -> Result<(), E>,
     {
         // The strategy here is to walk the byte buffer in chunks of VECTOR_SIZE (16)
         // bytes at a time starting at the given offset. For each chunk, we compute a
@@ -376,7 +409,7 @@ mod simd {
             unsafe {
                 super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| {
                     #[allow(clippy::unit_arg)]
-                    Ok(vec.push(ix))
+                    Ok::<_, std::fmt::Error>(vec.push(ix))
                 })
                 .unwrap();
             }
@@ -393,7 +426,7 @@ mod simd {
                 unsafe {
                     super::foreach_special_simd(&vek, 0, |_| {
                         match_count += 1;
-                        Ok(())
+                        Ok::<_, std::fmt::Error>(())
                     })
                     .unwrap();
                 }

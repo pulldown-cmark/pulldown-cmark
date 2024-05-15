@@ -21,13 +21,12 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
 
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
+use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 use pulldown_cmark_escape::{
-    escape_href, escape_html, escape_html_body_text, StrWrite, WriteWrapper,
+    escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
 };
 
 enum TableState {
@@ -73,14 +72,15 @@ where
     }
 
     /// Writes a new line.
-    fn write_newline(&mut self) -> io::Result<()> {
+    #[inline]
+    fn write_newline(&mut self) -> Result<(), W::Error> {
         self.end_newline = true;
         self.writer.write_str("\n")
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     #[inline]
-    fn write(&mut self, s: &str) -> io::Result<()> {
+    fn write(&mut self, s: &str) -> Result<(), W::Error> {
         self.writer.write_str(s)?;
 
         if !s.is_empty() {
@@ -89,7 +89,7 @@ where
         Ok(())
     }
 
-    fn run(mut self) -> io::Result<()> {
+    fn run(mut self) -> Result<(), W::Error> {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
@@ -108,6 +108,16 @@ where
                     self.write("<code>")?;
                     escape_html_body_text(&mut self.writer, &text)?;
                     self.write("</code>")?;
+                }
+                InlineMath(text) => {
+                    self.write(r#"<span class="math math-inline">"#)?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("</span>")?;
+                }
+                DisplayMath(text) => {
+                    self.write(r#"<span class="math math-display">"#)?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("</span>")?;
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(&html)?;
@@ -146,7 +156,7 @@ where
     }
 
     /// Writes the start of an HTML tag.
-    fn start_tag(&mut self, tag: Tag<'a>) -> io::Result<()> {
+    fn start_tag(&mut self, tag: Tag<'a>) -> Result<(), W::Error> {
         match tag {
             Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
@@ -225,11 +235,21 @@ where
                     _ => self.write(">"),
                 }
             }
-            Tag::BlockQuote => {
+            Tag::BlockQuote(kind) => {
+                let class_str = match kind {
+                    None => "",
+                    Some(kind) => match kind {
+                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
+                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
+                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
+                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
+                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
+                    },
+                };
                 if self.end_newline {
-                    self.write("<blockquote>\n")
+                    self.write(&format!("<blockquote{}>\n", class_str))
                 } else {
-                    self.write("\n<blockquote>\n")
+                    self.write(&format!("\n<blockquote{}>\n", class_str))
                 }
             }
             Tag::CodeBlock(info) => {
@@ -347,7 +367,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: TagEnd) -> io::Result<()> {
+    fn end_tag(&mut self, tag: TagEnd) -> Result<(), W::Error> {
         match tag {
             TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
@@ -418,7 +438,7 @@ where
     }
 
     // run raw text, consuming end tag
-    fn raw_text(&mut self) -> io::Result<()> {
+    fn raw_text(&mut self) -> Result<(), W::Error> {
         let mut nest = 0;
         while let Some(event) = self.iter.next() {
             match event {
@@ -435,6 +455,16 @@ where
                     // The output of this function is used in the `alt` attribute.
                     escape_html(&mut self.writer, &text)?;
                     self.end_newline = text.ends_with('\n');
+                }
+                InlineMath(text) => {
+                    self.write("$")?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("$")?;
+                }
+                DisplayMath(text) => {
+                    self.write("$$")?;
+                    escape_html(&mut self.writer, &text)?;
+                    self.write("$$")?;
                 }
                 SoftBreak | HardBreak | Rule => {
                     self.write(" ")?;
@@ -483,11 +513,11 @@ pub fn push_html<'a, I>(s: &mut String, iter: I)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    HtmlWriter::new(iter, s).run().unwrap();
+    write_html_fmt(s, iter).unwrap()
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
-/// write it out to a writable stream.
+/// write it out to an I/O stream.
 ///
 /// **Note**: using this function with an unbuffered writer like a file or socket
 /// will result in poor performance. Wrap these in a
@@ -510,7 +540,7 @@ where
 /// let mut bytes = Vec::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html(Cursor::new(&mut bytes), parser);
+/// html::write_html_io(Cursor::new(&mut bytes), parser);
 ///
 /// assert_eq!(&String::from_utf8_lossy(&bytes)[..], r#"<h1>hello</h1>
 /// <ul>
@@ -519,10 +549,45 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html<'a, I, W>(writer: W, iter: I) -> io::Result<()>
+pub fn write_html_io<'a, I, W>(writer: W, iter: I) -> std::io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
-    W: Write,
+    W: std::io::Write,
 {
-    HtmlWriter::new(iter, WriteWrapper(writer)).run()
+    HtmlWriter::new(iter, IoWriter(writer)).run()
+}
+
+/// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
+/// write it into Unicode-accepting buffer or stream.
+///
+/// # Examples
+///
+/// ```
+/// use pulldown_cmark::{html, Parser};
+///
+/// let markdown_str = r#"
+/// hello
+/// =====
+///
+/// * alpha
+/// * beta
+/// "#;
+/// let mut buf = String::new();
+/// let parser = Parser::new(markdown_str);
+///
+/// html::write_html_fmt(&mut buf, parser);
+///
+/// assert_eq!(buf, r#"<h1>hello</h1>
+/// <ul>
+/// <li>alpha</li>
+/// <li>beta</li>
+/// </ul>
+/// "#);
+/// ```
+pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+where
+    I: Iterator<Item = Event<'a>>,
+    W: std::fmt::Write,
+{
+    HtmlWriter::new(iter, FmtWriter(writer)).run()
 }

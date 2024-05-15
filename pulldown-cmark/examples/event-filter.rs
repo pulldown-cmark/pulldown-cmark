@@ -23,5 +23,5 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     handle.write_all(b"\nHTML output:\n").unwrap();
-    html::write_html(&mut handle, parser).unwrap();
+    html::write_html_io(&mut handle, parser).unwrap();
 }

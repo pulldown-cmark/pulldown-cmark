@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install Rust
       working-directory: pulldown-cmark
-      run: rustup default 1.74.0
+      run: rustup default 1.71.1
     - name: Cargo build
       working-directory: pulldown-cmark
       run: cargo build --verbose --all

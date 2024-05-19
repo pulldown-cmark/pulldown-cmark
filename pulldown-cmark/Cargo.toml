@@ -11,7 +11,7 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
-rust-version = "1.74" # Update README.md and GitHub action when changing this
+rust-version = "1.71.1" # Update README.md and GitHub action when changing this
 readme = "../README.md"
 exclude = [
     "/third_party/**/*",

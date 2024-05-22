@@ -22,7 +22,7 @@
 
 #![forbid(unsafe_code)]
 
-use pulldown_cmark::{html, BrokenLink, Options, Parser};
+use pulldown_cmark_lib::{html, BrokenLink, Options, Parser};
 
 use std::env;
 use std::fs::File;

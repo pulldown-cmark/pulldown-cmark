@@ -333,13 +333,8 @@ dependencies = [
 name = "pulldown-cmark"
 version = "0.11.0"
 dependencies = [
- "bincode",
- "criterion",
  "getopts",
- "lazy_static",
  "pulldown-cmark-lib",
- "regex",
- "serde_json",
 ]
 
 [[package]]

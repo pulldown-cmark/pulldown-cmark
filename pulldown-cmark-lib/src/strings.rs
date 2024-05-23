@@ -121,6 +121,23 @@ mod serde_impl {
         {
             Ok(CowStr::Borrowed(v))
         }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            match v.try_into() {
+                Ok(it) => Ok(CowStr::Inlined(it)),
+                Err(_) => Ok(CowStr::Boxed(String::from(v).into_boxed_str())),
+            }
+        }
+
+        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(CowStr::Boxed(v.into_boxed_str()))
+        }
     }
 
     impl<'a, 'de: 'a> Deserialize<'de> for CowStr<'a> {

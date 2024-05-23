@@ -78,15 +78,15 @@
 #![warn(missing_debug_implementations)]
 
 #[cfg(feature = "html")]
-pub mod html;
+pub use pulldown_cmark_lib::html;
 
-pub mod utils;
+pub use pulldown_cmark_lib::utils;
 
 pub use pulldown_cmark_lib::{
     BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
 };
 pub use pulldown_cmark_lib::{CowStr, InlineStr};
-pub use crate::utils::*;
+pub use pulldown_cmark_lib::utils::{TextMergeStream, TextMergeWithOffset};
 
 pub use pulldown_cmark_lib::CodeBlockKind;
 pub use pulldown_cmark_lib::BlockQuoteKind;

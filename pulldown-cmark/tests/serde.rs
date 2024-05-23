@@ -5,6 +5,14 @@ mod tests {
     use pulldown_cmark::CowStr;
 
     #[test]
+    fn escaped() {
+        let must_be_escaped = "\"";
+        let wire = serde_json::to_string(must_be_escaped).unwrap();
+        let de = serde_json::from_str::<CowStr>(&wire).unwrap();
+        assert_eq!(&*de, must_be_escaped);
+    }
+
+    #[test]
     fn cow_str_to_str_round_trip_bincode() {
         for i in &[
             CowStr::Borrowed("dssa"),

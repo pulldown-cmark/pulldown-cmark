@@ -23,7 +23,8 @@ Further, it optionally supports parsing footnotes,
 [Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
 [strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
 
-Rustc 1.71.1 or newer is required to build the crate.
+Rustc 1.74.0 or newer is required to build pulldown-cmark, although pulldown-cmark-lib
+can be built on 1.71.1 and pulldown-cmark-escape can be built on 1.70.0.
 
 ## Example
 

@@ -2,6 +2,7 @@
 
 [Guide](./index.md)
 - [Cheat sheet](./cheat-sheet.md)
+- [Rust API](./doc/pulldown_cmark/index.html)
 
 ---
 - [Detailed Specifications](specs.md)

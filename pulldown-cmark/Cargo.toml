@@ -42,26 +42,32 @@ harness = false
 [[example]]
 name = "event-filter"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [[example]]
 name = "footnote-rewrite"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [[example]]
 name = "parser-map-event-print"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [[example]]
 name = "parser-map-tag-print"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [[example]]
 name = "string-to-string"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [[example]]
 name = "broken-link-callbacks"
 required-features = ["html"]
+doc-scrape-examples = true
 
 [dependencies]
 bitflags = "2"

@@ -1,6 +1,7 @@
 book
 src/third_party
 src/specs
+src/doc
 prepare-specs
 prepare-specs.exe
 deploy

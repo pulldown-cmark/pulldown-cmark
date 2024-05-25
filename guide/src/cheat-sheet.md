@@ -340,6 +340,24 @@ c
 
 <tr><th>
 
+[Blockquote tags](specs/blockquotes_tags.md)
+
+<td>
+
+    > [!WARNING]
+    >
+    > Huh?
+
+<td>
+
+<div class="warning">
+
+Huh?
+
+</div>
+
+<tr><th>
+
 [Footnote](specs/footnotes.md)
 
 <td>
@@ -424,10 +442,10 @@ footnote <sup>[<a href="#preview-footnote-reference">1</a>]</sup>
 
 <td>
 
-    # Custom heading {.red}
+    # Custom heading {.red #custom-heading}
 
 <td>
 
-<h1 style="color:red">Custom heading</h1>
+<h1 style="color:red" id="custom-heading">Custom heading</h1>
 
 </table>

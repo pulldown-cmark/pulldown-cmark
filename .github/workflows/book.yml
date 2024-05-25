@@ -1,9 +1,8 @@
 name: Deploy Book
 on:
-  release:
-    types: [created]
-  push:
-    branches: [test-deploy]
+  - push
+  - pull_request
+  - release
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,7 +16,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install Rust
       working-directory: guide
-      run: rustup default stable
+      run: |
+        rustup default stable
+        rustup toolchain install nightly
     - name: Install mdBook
       working-directory: guide
       run: cargo install mdbook@0.4.37
@@ -27,6 +28,15 @@ jobs:
         rustc prepare-specs.rs
         ./prepare-specs
         mdbook build
+        mkdir rust
+    - name: Prepare api docs
+      run: |
+        cargo +nightly doc -Zrustdoc-scrape-examples
+        cp -r target/doc guide/src/doc
+        cargo +nightly doc --examples -Zrustdoc-scrape-examples
+        rm -rf guide/src/doc/src
+        cp -r target/doc/src guide/src/doc/src
+        cp target/doc/src-files.js guide/src/doc/src-files.js
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v1.0.8
       with:
@@ -34,6 +44,8 @@ jobs:
 
   deploy:
     needs: build
+
+    if: "github.event_name == 'release' || github.event.ref == 'refs/heads/test-deploy'"
 
     permissions:
       pages: write

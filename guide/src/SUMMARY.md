@@ -3,6 +3,16 @@
 [Guide](./index.md)
 - [Cheat sheet](./cheat-sheet.md)
 - [Rust API](./doc/pulldown_cmark/index.html)
+  - [broken-link-callbacks.rs](doc/src/broken_link_callbacks/broken-link-callbacks.rs.html)
+  - [event-filter.rs](doc/src/event_filter/event-filter.rs.html)
+  - [event-filter.rs](doc/src/event_filter/event-filter.rs.html)
+  - [events.rs](doc/src/events/events.rs.html)
+  - [footnote-rewrite.rs](doc/src/footnote_rewrite/footnote-rewrite.rs.html)
+  - [footnote-rewrite.rs](doc/src/footnote_rewrite/footnote-rewrite.rs.html)
+  - [parser-map-event-print.rs](doc/src/parser_map_event_print/parser-map-event-print.rs.html)
+  - [parser-map-event-print.rs](doc/src/parser_map_event_print/parser-map-event-print.rs.html)
+  - [parser-map-tag-print.rs](doc/src/parser_map_tag_print/parser-map-tag-print.rs.html)
+  - [string-to-string.rs](doc/src/string_to_string/string-to-string.rs.html)
 
 ---
 - [Detailed Specifications](specs.md)

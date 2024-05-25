@@ -22,6 +22,10 @@ jobs:
     - name: Install mdBook
       working-directory: guide
       run: cargo install mdbook@0.4.37
+    - name: Prepare api docs
+      run: |
+        cargo +nightly doc -Zrustdoc-scrape-examples
+        cp -r target/doc guide/src/doc
     - name: Prepare book
       working-directory: guide
       run: |
@@ -29,14 +33,6 @@ jobs:
         ./prepare-specs
         mdbook build
         mkdir rust
-    - name: Prepare api docs
-      run: |
-        cargo +nightly doc -Zrustdoc-scrape-examples
-        cp -r target/doc guide/src/doc
-        cargo +nightly doc --examples -Zrustdoc-scrape-examples
-        rm -rf guide/src/doc/src
-        cp -r target/doc/src guide/src/doc/src
-        cp target/doc/src-files.js guide/src/doc/src-files.js
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v1.0.8
       with:

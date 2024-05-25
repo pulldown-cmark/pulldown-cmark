@@ -103,8 +103,7 @@ for event in iterator {
 }
 ```
 
-There are some basic but fully functional examples of the usage of the crate in the
-[`examples`](doc/src/string_to_string/string-to-string.rs.html) directory of this repository.
+More detailed examples can be found in the Rust API docs.
 
 ## Using Rust idiomatically
 

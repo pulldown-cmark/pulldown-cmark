@@ -14,5 +14,6 @@
   - [GitHub tasklist spec](./third_party/gfm_tasklist.md)
   - [footnotes extension](./specs/footnotes.md)
     - [old footnotes extension](./specs/old_footnotes.md)
+  - [math](./specs/math.md)
   - [heading attributes](./specs/heading_attrs.md)
   - [metadata blocks](./specs/metadata_blocks.md)

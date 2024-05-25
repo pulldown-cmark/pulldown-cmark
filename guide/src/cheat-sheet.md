@@ -309,6 +309,37 @@ c
 
 <tr><th>
 
+[Math](specs/math.md)
+
+<td>
+
+<dl><dt>Inline</dt><dd>
+
+    $2+2=4$
+
+</dd><dt>Display</dt><dd>
+
+    $$x=\frac{-b\pm\sqrt{b^2-4ac} }{2a}$$
+
+</dd></dl>
+
+<td>
+
+<dl><dt>Inline</dt><dd>
+
+<!-- we're running too old an mdbook version,
+     and are using the MathJax plugin right now -->
+
+\\(2+2=4\\)
+
+</dd><dt>Display</dt><dd>
+
+\\[x=\frac{ -b\pm\sqrt{b^2-4ac} }{2a}\\]
+
+</dd></dl>
+
+<tr><th>
+
 [Footnote](specs/footnotes.md)
 
 <td>

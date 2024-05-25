@@ -4,3 +4,6 @@ language = "en"
 multilingual = false
 src = "src"
 title = "pulldown-cmark guide"
+
+[output.html]
+mathjax-support = true

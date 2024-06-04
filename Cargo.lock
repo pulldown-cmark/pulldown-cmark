@@ -331,7 +331,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.10.3"
+version = "0.11.0"
 dependencies = [
  "bincode",
  "bitflags",
@@ -348,7 +348,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark-escape"
-version = "0.10.1"
+version = "0.11.0"
 
 [[package]]
 name = "quote"

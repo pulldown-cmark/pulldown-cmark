@@ -1,3 +1,2 @@
 /pulldown-cmark/third_party/** eol=lf
 /pulldown-cmark/specs/** eol=lf
-/pulldown-cmark/tests/suite/*.rs eol=lf

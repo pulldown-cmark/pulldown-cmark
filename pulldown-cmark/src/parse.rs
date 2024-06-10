@@ -1975,7 +1975,7 @@ impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 #[derive(Debug)]
-pub struct OffsetIter<'a, F> {
+pub struct OffsetIter<'a, F = DefaultBrokenLinkCallback> {
     inner: Parser<'a, F>,
 }
 

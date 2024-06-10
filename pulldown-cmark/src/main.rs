@@ -93,6 +93,7 @@ pub fn main() -> std::io::Result<()> {
         "reject-broken-links",
         "fail if input file has broken links",
     );
+    opts.optflag("G", "enable-gfm", "enable misc GFM features");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -133,6 +134,9 @@ pub fn main() -> std::io::Result<()> {
     if matches.opt_present("enable-metadata-blocks") {
         opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
         opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    }
+    if matches.opt_present("enable-gfm") {
+        opts.insert(Options::ENABLE_GFM);
     }
 
     let mut input = String::new();

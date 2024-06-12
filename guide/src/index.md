@@ -21,7 +21,7 @@ pulldown_cmark::html::push_html(&mut html_output, parser);
 assert_eq!(&html_output, "<p>hello world</p>\n");
 ```
 
-For more details on the API, see the [Rust API docs](./doc/pulldown_cmark/index.html).
+For more details on the API, see the [Rust API docs](https://docs.rs/pulldown-cmark/).
 
 ## Why a pull parser?
 

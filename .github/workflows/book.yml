@@ -15,24 +15,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
-      working-directory: guide
-      run: |
-        rustup default stable
-        rustup toolchain install nightly
+      run: rustup default stable
     - name: Install mdBook
-      working-directory: guide
       run: cargo install mdbook@0.4.37
-    - name: Prepare api docs
-      run: |
-        cargo +nightly doc -Zrustdoc-scrape-examples
-        cp -r target/doc guide/src/doc
     - name: Prepare book
       working-directory: guide
       run: |
         rustc prepare-specs.rs
         ./prepare-specs
         mdbook build
-        mkdir rust
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v1.0.8
       with:

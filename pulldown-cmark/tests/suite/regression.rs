@@ -3071,3 +3071,18 @@ _**
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_195() {
+    let original = r##"> [!Note]
+> - Foo
+"##;
+    let expected = r##"<blockquote class="markdown-alert-note">
+<ul>
+<li>Foo</li>
+</ul>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -2570,3 +2570,16 @@ _**
 ^_</li>
 </ul>
 ````````````````````````````````
+
+ISSUE #907
+
+```````````````````````````````` example
+> [!Note]
+> - Foo
+.
+<blockquote class="markdown-alert-note">
+<ul>
+<li>Foo</li>
+</ul>
+</blockquote>
+````````````````````````````````

@@ -239,3 +239,17 @@ fn blockquotes_tags_test_17() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn blockquotes_tags_test_18() {
+    let original = r##"> [!Hello]
+> This should be a normal block quote.
+"##;
+    let expected = r##"<blockquote>
+<p>[!Hello]
+This should be a normal block quote.</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -191,3 +191,14 @@ Like lazy continuations, the blockquote marker is still needed to make nested bl
 <ul><li>sink ships</li></ul></blockquote>
 </li></ul>
 ````````````````````````````````
+
+When an unknown tag is found, parser backtracks and the block is parsed as a normal blockquote:
+```````````````````````````````` example
+> [!Hello]
+> This should be a normal block quote.
+.
+<blockquote>
+<p>[!Hello]
+This should be a normal block quote.</p>
+</blockquote>
+````````````````````````````````

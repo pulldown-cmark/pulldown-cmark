@@ -243,9 +243,6 @@ impl<'a> LineStart<'a> {
             if tag.is_some() && self.scan_ch(b']') {
                 if let Some(nl) = scan_blank_line(&self.bytes[self.ix..]) {
                     self.ix += nl;
-                    while self.scan_ch(b'>') {
-                        self.scan_space(1);
-                    }
                     tag
                 } else {
                     None

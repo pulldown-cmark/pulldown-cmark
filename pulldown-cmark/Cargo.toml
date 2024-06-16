@@ -83,3 +83,6 @@ default = ["getopts", "html"]
 gen-tests = []
 simd = ["pulldown-cmark-escape?/simd"]
 html = ["pulldown-cmark-escape"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rustbuild)'] }

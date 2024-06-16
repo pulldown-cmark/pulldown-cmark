@@ -1,4 +1,4 @@
-//! Miscellaneous utilities to incraese comfort.
+//! Miscellaneous utilities to increase comfort.
 //! Special thanks to:
 //!
 //! - <https://github.com/BenjaminRi/Redwood-Wiki/blob/master/src/markdown_utils.rs>.

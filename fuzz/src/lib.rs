@@ -205,7 +205,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                 }
                 b"block_quote" => {
                     block_container_stack.push((true, false));
-                    events.push(Event::Start(Tag::BlockQuote))
+                    events.push(Event::Start(Tag::BlockQuote(None)))
                 },
                 b"html_block" => {
                     events.push(Event::Start(Tag::HtmlBlock));

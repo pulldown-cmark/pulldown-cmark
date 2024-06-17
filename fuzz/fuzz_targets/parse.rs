@@ -13,6 +13,9 @@ struct FuzzingInput<'a> {
     tasklists: bool,
     smart_punctuation: bool,
     heading_attributes: bool,
+    metadata_block: bool,
+    math: bool,
+    gfm: bool,
 }
 
 fuzz_target!(|data: FuzzingInput<'_>| {
@@ -42,5 +45,17 @@ fuzz_target!(|data: FuzzingInput<'_>| {
         opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
     }
 
-    for _ in pulldown_cmark::Parser::new_ext(data.markdown, opts) {};
+    if data.metadata_block {
+        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    }
+
+    if data.math {
+        opts.insert(Options::ENABLE_MATH);
+    }
+
+    if data.gfm {
+        opts.insert(Options::ENABLE_GFM);
+    }
+
+    for _ in pulldown_cmark::Parser::new_ext(data.markdown, opts) {}
 });

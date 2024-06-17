@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "getopts",
@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark-escape"
-version = "0.10.0"
+version = "0.11.0"
 
 [[package]]
 name = "pulldown-cmark-fuzz"

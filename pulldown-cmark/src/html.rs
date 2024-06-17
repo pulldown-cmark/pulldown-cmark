@@ -21,13 +21,61 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use std::collections::HashMap;
+use std::fmt;
+use std::io;
 
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
-use pulldown_cmark_escape::{
-    escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
-};
+use pulldown_cmark_escape::{EscapedHref, EscapedHtml, EscapedHtmlBodyText};
+
+/// Trait that enables [`HtmlWriter`] to be generic over fmt/io writers.
+trait StrWrite {
+    type Error;
+
+    fn write_str(&mut self, s: &str) -> Result<(), Self::Error>;
+    fn write_fmt(&mut self, args: fmt::Arguments) -> Result<(), Self::Error>;
+}
+
+#[derive(Debug)]
+struct IoWriter<W>(pub W);
+
+impl<W> StrWrite for IoWriter<W>
+where
+    W: io::Write,
+{
+    type Error = io::Error;
+
+    #[inline]
+    fn write_str(&mut self, s: &str) -> io::Result<()> {
+        self.0.write_all(s.as_bytes())
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: fmt::Arguments) -> io::Result<()> {
+        self.0.write_fmt(args)
+    }
+}
+
+#[derive(Debug)]
+struct FmtWriter<W>(pub W);
+
+impl<W> StrWrite for FmtWriter<W>
+where
+    W: fmt::Write,
+{
+    type Error = fmt::Error;
+
+    #[inline]
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.0.write_str(s)
+    }
+
+    #[inline]
+    fn write_fmt(&mut self, args: fmt::Arguments) -> fmt::Result {
+        self.0.write_fmt(args)
+    }
+}
 
 enum TableState {
     Head,
@@ -100,24 +148,26 @@ where
                 }
                 Text(text) => {
                     if !self.in_non_writing_block {
-                        escape_html_body_text(&mut self.writer, &text)?;
+                        write!(self.writer, "{}", EscapedHtmlBodyText(&text))?;
                         self.end_newline = text.ends_with('\n');
                     }
                 }
                 Code(text) => {
-                    self.write("<code>")?;
-                    escape_html_body_text(&mut self.writer, &text)?;
-                    self.write("</code>")?;
+                    write!(self.writer, "<code>{}</code>", EscapedHtmlBodyText(&text))?;
                 }
                 InlineMath(text) => {
-                    self.write(r#"<span class="math math-inline">"#)?;
-                    escape_html(&mut self.writer, &text)?;
-                    self.write("</span>")?;
+                    write!(
+                        self.writer,
+                        r#"<span class="math math-inline">{}</span>"#,
+                        EscapedHtmlBodyText(&text)
+                    )?;
                 }
                 DisplayMath(text) => {
-                    self.write(r#"<span class="math math-display">"#)?;
-                    escape_html(&mut self.writer, &text)?;
-                    self.write("</span>")?;
+                    write!(
+                        self.writer,
+                        r#"<span class="math math-display">{}</span>"#,
+                        EscapedHtmlBodyText(&text)
+                    )?;
                 }
                 Html(html) | InlineHtml(html) => {
                     self.write(&html)?;
@@ -137,11 +187,13 @@ where
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
-                    self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
-                    escape_html(&mut self.writer, &name)?;
-                    self.write("\">")?;
+                    write!(
+                        self.writer,
+                        "<sup class=\"footnote-reference\"><a href=\"#{}\">",
+                        EscapedHtml(&name)
+                    )?;
                     let number = *self.numbers.entry(name).or_insert(len);
-                    write!(&mut self.writer, "{}", number)?;
+                    write!(self.writer, "{}", number)?;
                     self.write("</a></sup>")?;
                 }
                 TaskListMarker(true) => {
@@ -177,29 +229,22 @@ where
                 } else {
                     self.write("\n<")?;
                 }
-                write!(&mut self.writer, "{}", level)?;
+                write!(self.writer, "{}", level)?;
                 if let Some(id) = id {
-                    self.write(" id=\"")?;
-                    escape_html(&mut self.writer, &id)?;
-                    self.write("\"")?;
+                    write!(self.writer, " id=\"{}\"", EscapedHtml(&id))?;
                 }
                 let mut classes = classes.iter();
                 if let Some(class) = classes.next() {
-                    self.write(" class=\"")?;
-                    escape_html(&mut self.writer, class)?;
+                    write!(self.writer, " class=\"{}", EscapedHtml(class))?;
                     for class in classes {
-                        self.write(" ")?;
-                        escape_html(&mut self.writer, class)?;
+                        write!(self.writer, " {}", EscapedHtml(class))?;
                     }
                     self.write("\"")?;
                 }
                 for (attr, value) in attrs {
-                    self.write(" ")?;
-                    escape_html(&mut self.writer, &attr)?;
+                    write!(self.writer, " {}", EscapedHtml(&attr))?;
                     if let Some(val) = value {
-                        self.write("=\"")?;
-                        escape_html(&mut self.writer, &val)?;
-                        self.write("\"")?;
+                        write!(self.writer, "=\"{}\"", EscapedHtml(&val))?;
                     } else {
                         self.write("=\"\"")?;
                     }
@@ -262,9 +307,11 @@ where
                         if lang.is_empty() {
                             self.write("<pre><code>")
                         } else {
-                            self.write("<pre><code class=\"language-")?;
-                            escape_html(&mut self.writer, lang)?;
-                            self.write("\">")
+                            write!(
+                                self.writer,
+                                "<pre><code class=\"language-{}\">",
+                                EscapedHtml(lang)
+                            )
                         }
                     }
                     CodeBlockKind::Indented => self.write("<pre><code>"),
@@ -283,7 +330,7 @@ where
                 } else {
                     self.write("\n<ol start=\"")?;
                 }
-                write!(&mut self.writer, "{}", start)?;
+                write!(self.writer, "{}", start)?;
                 self.write("\">\n")
             }
             Tag::List(None) => {
@@ -309,11 +356,9 @@ where
                 title,
                 id: _,
             } => {
-                self.write("<a href=\"mailto:")?;
-                escape_href(&mut self.writer, &dest_url)?;
+                write!(self.writer, "<a href=\"mailto:{}", EscapedHref(&dest_url))?;
                 if !title.is_empty() {
-                    self.write("\" title=\"")?;
-                    escape_html(&mut self.writer, &title)?;
+                    write!(self.writer, "\" title=\"{}", EscapedHtml(&title))?;
                 }
                 self.write("\">")
             }
@@ -323,11 +368,9 @@ where
                 title,
                 id: _,
             } => {
-                self.write("<a href=\"")?;
-                escape_href(&mut self.writer, &dest_url)?;
+                write!(self.writer, "<a href=\"{}", EscapedHref(&dest_url))?;
                 if !title.is_empty() {
-                    self.write("\" title=\"")?;
-                    escape_html(&mut self.writer, &title)?;
+                    write!(self.writer, "\" title=\"{}", EscapedHtml(&title))?;
                 }
                 self.write("\">")
             }
@@ -337,13 +380,14 @@ where
                 title,
                 id: _,
             } => {
-                self.write("<img src=\"")?;
-                escape_href(&mut self.writer, &dest_url)?;
-                self.write("\" alt=\"")?;
+                write!(
+                    self.writer,
+                    "<img src=\"{}\" alt=\"",
+                    EscapedHref(&dest_url)
+                )?;
                 self.raw_text()?;
                 if !title.is_empty() {
-                    self.write("\" title=\"")?;
-                    escape_html(&mut self.writer, &title)?;
+                    write!(self.writer, "\" title=\"{}", EscapedHtml(&title))?;
                 }
                 self.write("\" />")
             }
@@ -353,11 +397,14 @@ where
                 } else {
                     self.write("\n<div class=\"footnote-definition\" id=\"")?;
                 }
-                escape_html(&mut self.writer, &name)?;
-                self.write("\"><sup class=\"footnote-definition-label\">")?;
+                write!(
+                    self.writer,
+                    "{}\"><sup class=\"footnote-definition-label\">",
+                    EscapedHtml(&name)
+                )?;
                 let len = self.numbers.len() + 1;
                 let number = *self.numbers.entry(name).or_insert(len);
-                write!(&mut self.writer, "{}", number)?;
+                write!(self.writer, "{}", number)?;
                 self.write("</sup>")
             }
             Tag::MetadataBlock(_) => {
@@ -375,7 +422,7 @@ where
             }
             TagEnd::Heading(level) => {
                 self.write("</")?;
-                write!(&mut self.writer, "{}", level)?;
+                write!(self.writer, "{}", level)?;
                 self.write(">\n")?;
             }
             TagEnd::Table => {
@@ -451,19 +498,19 @@ where
                 }
                 Html(_) => {}
                 InlineHtml(text) | Code(text) | Text(text) => {
-                    // Don't use escape_html_body_text here.
+                    // Don't use EscapedHtmlBodyText here.
                     // The output of this function is used in the `alt` attribute.
-                    escape_html(&mut self.writer, &text)?;
+                    write!(self.writer, "{}", EscapedHtml(&text))?;
                     self.end_newline = text.ends_with('\n');
                 }
                 InlineMath(text) => {
                     self.write("$")?;
-                    escape_html(&mut self.writer, &text)?;
+                    write!(self.writer, "{}", EscapedHtml(&text))?;
                     self.write("$")?;
                 }
                 DisplayMath(text) => {
                     self.write("$$")?;
-                    escape_html(&mut self.writer, &text)?;
+                    write!(self.writer, "{}", EscapedHtml(&text))?;
                     self.write("$$")?;
                 }
                 SoftBreak | HardBreak | Rule => {
@@ -472,7 +519,7 @@ where
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     let number = *self.numbers.entry(name).or_insert(len);
-                    write!(&mut self.writer, "[{}]", number)?;
+                    write!(self.writer, "[{}]", number)?;
                 }
                 TaskListMarker(true) => self.write("[x]")?,
                 TaskListMarker(false) => self.write("[ ]")?,

@@ -23,15 +23,15 @@ jobs:
     - name: Install Rust
       run: rustup default ${{ matrix.rust-version }}
     - name: Cargo build
-      run: cargo build --verbose --all
+      run: cargo build --verbose
     - name: Cargo test
-      run: cargo test --verbose --all
+      run: cargo test --verbose
     - name: Cargo test with simd feature enabled
-      run: cargo test --all --features=simd,gen-tests
+      run: cargo test --features=simd,gen-tests
     - name: Cargo test with serde feature enabled
-      run: cargo test --all --features=serde
+      run: cargo test --features=serde
     - name: Cargo test without default features
-      run: cargo test --all --no-default-features
+      run: cargo test --no-default-features
   pulldown-cmark-escape:
     runs-on: ubuntu-latest
     steps:
@@ -51,3 +51,6 @@ jobs:
     - name: Test for superlinear time regressions
       working-directory: fuzzer
       run: cargo run --release -- --regressions
+    - name: Check benchmarks are not broken
+      working-directory: bench
+      run: cargo check --benches

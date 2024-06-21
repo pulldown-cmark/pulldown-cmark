@@ -104,6 +104,14 @@ pub(crate) enum ItemBody {
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
+    // Definition lists
+    DefinitionList(bool), // is_tight
+    // gets turned into either a paragraph or a definition list title,
+    // depending on whether there's a definition after it
+    MaybeDefinitionListTitle,
+    DefinitionListTitle,
+    DefinitionListDefinition(usize),
+
     // Tables
     Table(AlignmentIndex),
     TableHead,
@@ -1294,6 +1302,13 @@ pub(crate) fn scan_containers(
                     break;
                 }
             }
+            ItemBody::DefinitionListDefinition(indent) => {
+                let save = line_start.clone();
+                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                    *line_start = save;
+                    break;
+                }
+            }
             ItemBody::FootnoteDefinition(..) if gfm_footnotes => {
                 let save = line_start.clone();
                 if !line_start.scan_space(4) && !line_start.is_at_eol() {
@@ -2042,6 +2057,9 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Table(..) => TagEnd::Table,
         ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
         ItemBody::MetadataBlock(kind) => TagEnd::MetadataBlock(kind),
+        ItemBody::DefinitionList(_) => TagEnd::DefinitionList,
+        ItemBody::DefinitionListTitle => TagEnd::DefinitionListTitle,
+        ItemBody::DefinitionListDefinition(_) => TagEnd::DefinitionListDefinition,
         _ => panic!("unexpected item body {:?}", body),
     }
 }
@@ -2126,6 +2144,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
                 Event::InlineMath(allocs.take_cow(cow_ix))
             }
         }
+        ItemBody::DefinitionList(_) => Tag::DefinitionList,
+        ItemBody::DefinitionListTitle => Tag::DefinitionListTitle,
+        ItemBody::DefinitionListDefinition(_) => Tag::DefinitionListDefinition,
         _ => panic!("unexpected item body {:?}", item.body),
     };
 

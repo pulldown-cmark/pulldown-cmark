@@ -175,6 +175,21 @@ impl<T: Default> Tree<T> {
         self.cur = self[cur_ix].next;
         self.cur
     }
+
+    pub(crate) fn truncate_to_parent(&mut self, child_ix: TreeIndex) {
+        let next = self[child_ix].next;
+        self[child_ix].next = None;
+        if let Some(cur) = self.cur {
+            self[cur].next = next;
+        } else if let Some(&parent) = self.spine.last() {
+            self[parent].child = next;
+        }
+        if next.is_some() {
+            self.cur = next;
+        } else {
+            self.pop();
+        }
+    }
 }
 
 impl Tree<Item> {

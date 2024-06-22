@@ -271,6 +271,29 @@ impl<'a> LineStart<'a> {
         }
     }
 
+    /// Scan a definition marker.
+    ///
+    /// Definition markers are single colons, preceded by at most three spaces
+    /// and followed by at most three spaces. The indentation of following
+    /// lines is equal to the whole size of the marker, including the colon.
+    ///
+    /// If one is found, it will make the preceding paragraph into a definition
+    /// list title.
+    ///
+    /// Return value is the amount of indentation, or `None` if it's not a
+    /// definition list marker.
+    pub(crate) fn scan_definition_list_definition_marker(&mut self) -> Option<usize> {
+        let save = self.clone();
+        let indent = self.scan_space_upto(4);
+        if indent < 4 && self.scan_ch(b':') {
+            let remaining = 4 - (indent + 1);
+            Some(indent + 1 + self.scan_space_upto(remaining))
+        } else {
+            *self = save;
+            None
+        }
+    }
+
     /// Scan a list marker.
     ///
     /// Return value is the character, the start index, and the indent in spaces.

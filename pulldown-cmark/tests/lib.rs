@@ -33,6 +33,7 @@ pub fn test_markdown_html(
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
     opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
 
     let p = Parser::new_ext(input, opts);
     pulldown_cmark::html::push_html(&mut s, p);

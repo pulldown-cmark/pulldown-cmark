@@ -1,0 +1,23 @@
+[package]
+name = "pulldown-cmark-bench"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[[bench]]
+name = "html_rendering"
+harness = false
+
+[[bench]]
+name = "lib"
+harness = false
+
+[[bench]]
+name = "markdown-it"
+harness = false
+
+[dependencies]
+pulldown-cmark = { path = "../pulldown-cmark" }
+
+[dev-dependencies]
+criterion = "0.5.1"

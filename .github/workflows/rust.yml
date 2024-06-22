@@ -6,32 +6,51 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  RUST_BACKTRACE: 1
 
 jobs:
-  build:
-
+  pulldown-cmark:
+    strategy:
+      matrix:
+        rust-version: ['1.71.1', 'stable', 'nightly']
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: pulldown-cmark
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: rustup default ${{ matrix.rust-version }}
+    - name: Cargo build
+      run: cargo build --verbose
+    - name: Cargo test
+      run: cargo test --verbose
+    - name: Cargo test with simd feature enabled
+      run: cargo test --features=simd,gen-tests
+    - name: Cargo test with serde feature enabled
+      run: cargo test --features=serde
+    - name: Cargo test without default features
+      run: cargo test --no-default-features
+  pulldown-cmark-escape:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: rustup default stable
+    - name: Cargo test
+      working-directory: pulldown-cmark-escape
+      run: cargo test --verbose --all
+  regression:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
       working-directory: pulldown-cmark
-      run: rustup default 1.74.0
-    - name: Cargo build
-      working-directory: pulldown-cmark
-      run: cargo build --verbose --all
-    - name: Cargo test
-      working-directory: pulldown-cmark
-      run: cargo test --verbose --all
-    - name: Cargo test with simd feature enabled
-      working-directory: pulldown-cmark
-      run: cargo test --all --features=simd,gen-tests
-    - name: Cargo test with serde feature enabled
-      working-directory: pulldown-cmark
-      run: cargo test --all --features=serde
-    - name: Cargo test without default features
-      working-directory: pulldown-cmark
-      run: cargo test --all --no-default-features
+      run: rustup default stable
     - name: Test for superlinear time regressions
       working-directory: fuzzer
       run: cargo run --release -- --regressions
+    - name: Check benchmarks are not broken
+      working-directory: bench
+      run: cargo check --benches

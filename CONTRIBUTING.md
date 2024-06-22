@@ -19,3 +19,7 @@ frustration later on.
 
 All submissions, including submissions by project members, require review. We
 use GitHub pull requests for this purpose.
+
+### Rust toolchain version
+
+Though MSRV of the crate is 1.71.1, the development in this repository requires Rust 1.74 or later because of clap crate (used by criterion and the fuzzer).

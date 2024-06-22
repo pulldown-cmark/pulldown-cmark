@@ -11,7 +11,7 @@ repository = "https://github.com/raphlinus/pulldown-cmark"
 keywords = ["markdown", "commonmark"]
 categories = ["text-processing"]
 edition = "2021"
-rust-version = "1.74" # Update README.md and GitHub action when changing this
+rust-version = "1.71.1" # Update README.md, CONTRIBUTING.md, and GitHub action when changing this
 readme = "../README.md"
 exclude = [
     "/third_party/**/*",
@@ -26,18 +26,6 @@ build = "build.rs"
 name = "pulldown-cmark"
 required-features = ["getopts"]
 doc = false
-
-[[bench]]
-name = "html_rendering"
-harness = false
-
-[[bench]]
-name = "lib"
-harness = false
-
-[[bench]]
-name = "markdown-it"
-harness = false
 
 [[example]]
 name = "event-filter"
@@ -73,7 +61,6 @@ pulldown-cmark-escape = { path = "../pulldown-cmark-escape", version = "0.11", o
 
 [dev-dependencies]
 lazy_static = "1.4"
-criterion = "0.5"
 regex = "1.6"
 serde_json = "1.0.61"
 bincode = "1.3.1"

@@ -335,7 +335,6 @@ version = "0.11.0"
 dependencies = [
  "bincode",
  "bitflags",
- "criterion",
  "getopts",
  "lazy_static",
  "memchr",
@@ -344,6 +343,14 @@ dependencies = [
  "serde",
  "serde_json",
  "unicase",
+]
+
+[[package]]
+name = "pulldown-cmark-bench"
+version = "0.0.0"
+dependencies = [
+ "criterion",
+ "pulldown-cmark",
 ]
 
 [[package]]

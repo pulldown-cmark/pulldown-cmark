@@ -43,7 +43,7 @@ use crate::{
 // The simplest countermeasure is to limit their depth, which is
 // explicitly allowed by the spec as long as the limit is at least 3:
 // https://spec.commonmark.org/0.29/#link-destination
-pub(crate) const LINK_MAX_NESTED_PARENS: usize = 5;
+pub(crate) const LINK_MAX_NESTED_PARENS: usize = 32;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub(crate) struct Item {

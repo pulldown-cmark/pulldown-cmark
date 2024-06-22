@@ -2594,3 +2594,17 @@ ISSUE #912
 <hr />
 <h2>--</h2>
 ````````````````````````````````
+
+ISSUE #917
+
+Technically, commonmark only requires our nesting cutoff to stop at 3.
+However, real user reports show that this limit is low enough to hit in reasonable circumstances.
+We instead set the limit at 32, which is the same limit used by cmark-gfm and markdown-it (making it a de facto standard).
+
+```````````````````````````````` example_metadata_blocks
+[30](https://rust.org/something%3A((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))
+[40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))
+.
+<p><a href="https://rust.org/something%3A((((((((((((((((((((((((((((((()))))))))))))))))))))))))))))))">30</a>
+[40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))</p>
+````````````````````````````````

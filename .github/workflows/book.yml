@@ -17,7 +17,7 @@ jobs:
     - name: Install Rust
       run: rustup default stable
     - name: Install mdBook
-      run: cargo install mdbook@0.4.37
+      run: cargo install mdbook@0.4.40
     - name: Prepare book
       working-directory: guide
       run: |
@@ -25,7 +25,7 @@ jobs:
         ./prepare-specs
         mdbook build
     - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v1.0.8
+      uses: actions/upload-pages-artifact@v3.0.1
       with:
         path: ./guide/book
 
@@ -45,4 +45,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v2.0.0
+        uses: actions/deploy-pages@v4.0.5

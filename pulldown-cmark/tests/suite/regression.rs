@@ -3111,3 +3111,34 @@ fn regression_test_197() {
 
     test_markdown_html(original, expected, false, true, false);
 }
+
+#[test]
+fn regression_test_198() {
+    let original = r##"- [x]		
+\
+-
+"##;
+    let expected = r##"<ul>
+<li><input disabled="" type="checkbox" checked=""/></li>
+</ul>
+<h2>\</h2>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}
+
+#[test]
+fn regression_test_199() {
+    let original = r##"* [ ] 
+---
+bar
+"##;
+    let expected = r##"<ul>
+<li><input disabled="" type="checkbox"/></li>
+</ul>
+<hr />
+<p>bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, true, false);
+}

@@ -158,12 +158,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    self.next_paragraph_task =
+                    let task_list_marker =
                         line_start.scan_task_list_marker().map(|is_checked| Item {
                             start: after_marker_index,
                             end: start_ix + line_start.bytes_scanned(),
                             body: ItemBody::TaskListMarker(is_checked),
                         });
+                    if let Some(task_list_marker) = task_list_marker {
+                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
+                            self.tree.append(task_list_marker);
+                            self.begin_list_item = Some(task_list_marker.end + n);
+                            return task_list_marker.end + n;
+                        } else {
+                            self.next_paragraph_task = Some(task_list_marker);
+                        }
+                    }
                 }
             } else if line_start.scan_blockquote_marker() {
                 let kind = if self.options.contains(Options::ENABLE_GFM) {

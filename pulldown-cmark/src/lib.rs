@@ -271,6 +271,9 @@ pub enum TagEnd {
     MetadataBlock(MetadataBlockKind),
 }
 
+#[cfg(target_pointer_width = "64")]
+const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); std::mem::size_of::<TagEnd>()];
+
 impl<'a> From<Tag<'a>> for TagEnd {
     fn from(value: Tag) -> Self {
         value.to_end()

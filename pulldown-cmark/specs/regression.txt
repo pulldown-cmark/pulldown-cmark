@@ -2608,3 +2608,30 @@ We instead set the limit at 32, which is the same limit used by cmark-gfm and ma
 <p><a href="https://rust.org/something%3A((((((((((((((((((((((((((((((()))))))))))))))))))))))))))))))">30</a>
 [40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))</p>
 ````````````````````````````````
+
+ISSUE #921
+
+```````````````````````````````` example_metadata_blocks
+- [x]		
+\
+-
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/></li>
+</ul>
+<h2>\</h2>
+````````````````````````````````
+
+ISSUE #882
+
+```````````````````````````````` example_metadata_blocks
+* [ ] 
+---
+bar
+.
+<ul>
+<li><input disabled="" type="checkbox"/></li>
+</ul>
+<hr />
+<p>bar</p>
+````````````````````````````````

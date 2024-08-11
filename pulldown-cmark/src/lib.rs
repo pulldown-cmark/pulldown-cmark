@@ -271,6 +271,8 @@ pub enum TagEnd {
     MetadataBlock(MetadataBlockKind),
 }
 
+/// Make sure `TagEnd` is no more than two bytes in size.
+/// This is why it's used instead of just using `Tag`.
 #[cfg(target_pointer_width = "64")]
 const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); std::mem::size_of::<TagEnd>()];
 

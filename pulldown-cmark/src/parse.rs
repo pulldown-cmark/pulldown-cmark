@@ -660,13 +660,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => {
+                                RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     if !could_be_ref {
                                         continue;
                                     }
                                     (next, LinkType::Shortcut)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             // FIXME: references and labels are mixed in the naming of variables
@@ -677,7 +676,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
-                                RefScan::Collapsed(..) | RefScan::Failed => {
+                                RefScan::Collapsed(..) | RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
                                     let label_end = self.tree[cur_ix].item.end;
@@ -690,7 +689,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             let id = match &label {

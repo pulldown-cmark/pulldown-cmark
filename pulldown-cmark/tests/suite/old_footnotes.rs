@@ -175,3 +175,41 @@ fn old_footnotes_test_9() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn old_footnotes_test_10() {
+    let original = r##"Lorem ipsum.[^a][^b]
+
+[^a]: Foo
+[^b]: Bar
+"##;
+    let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup><sup class="footnote-reference"><a href="#b">2</a></sup></p>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+<p>Foo</p>
+</div>
+<div class="footnote-definition" id="b"><sup class="footnote-definition-label">2</sup>
+<p>Bar</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn old_footnotes_test_11() {
+    let original = r##"Lorem ipsum.[^a] [^b]
+
+[^a]: Foo
+[^b]: Bar
+"##;
+    let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup> <sup class="footnote-reference"><a href="#b">2</a></sup></p>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+<p>Foo</p>
+</div>
+<div class="footnote-definition" id="b"><sup class="footnote-definition-label">2</sup>
+<p>Bar</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

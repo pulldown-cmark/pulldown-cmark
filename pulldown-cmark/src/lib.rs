@@ -219,7 +219,7 @@ impl<'a> Tag<'a> {
         match self {
             Tag::Paragraph => TagEnd::Paragraph,
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
-            Tag::BlockQuote(_) => TagEnd::BlockQuote,
+            Tag::BlockQuote(kind) => TagEnd::BlockQuote(*kind),
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
@@ -246,7 +246,7 @@ pub enum TagEnd {
     Paragraph,
     Heading(HeadingLevel),
 
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     CodeBlock,
 
     HtmlBlock,
@@ -270,6 +270,11 @@ pub enum TagEnd {
 
     MetadataBlock(MetadataBlockKind),
 }
+
+/// Make sure `TagEnd` is no more than two bytes in size.
+/// This is why it's used instead of just using `Tag`.
+#[cfg(target_pointer_width = "64")]
+const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); std::mem::size_of::<TagEnd>()];
 
 impl<'a> From<Tag<'a>> for TagEnd {
     fn from(value: Tag) -> Self {

@@ -154,8 +154,9 @@ fn old_footnotes_test_8() {
 [^Doh]: I know. Wrong Doe. And it will render right.
 [^1]: Common for people practicing music.
 "##;
-    let expected = r##"<p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p><div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup><p>I know. Wrong Doe. And it will render right.
-<sup class="footnote-reference"><a href="#1">2</a></sup>: Common for people practicing music.</p></div>
+    let expected = r##"<p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p>
+<div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup><p>I know. Wrong Doe. And it will render right.</p></div>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup><p>Common for people practicing music.</p></div>
 "##;
 
     test_markdown_html(original, expected, false, false, true);

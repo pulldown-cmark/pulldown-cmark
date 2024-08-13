@@ -1966,7 +1966,7 @@ fn regression_test_124() {
 "##;
     let expected = r##"<p><sup class="footnote-reference"><a href="#foo">1</a></sup>[]</p>
 <p><a href="https://rust-lang.org">^foo</a></p>
-<p>[baz]<sup class="footnote-reference"><a href="#foo">1</a></sup></p>
+<p><a href="https://rust-lang.org">baz</a><sup class="footnote-reference"><a href="#foo">1</a></sup></p>
 <div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup>
 <p>bar</p>
 </div>

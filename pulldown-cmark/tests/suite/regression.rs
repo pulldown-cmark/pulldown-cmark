@@ -3142,3 +3142,14 @@ bar
 
     test_markdown_html(original, expected, false, true, false);
 }
+
+#[test]
+fn regression_test_200() {
+    let original = r##"`
+`
+"##;
+    let expected = r##"<p><code> </code></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

@@ -2402,7 +2402,7 @@ mod test {
         let expected = "<p><a href=\"https://vincentprouillet.com\">My site</a></p>\n";
 
         let mut buf = String::new();
-        crate::html::push_html(&mut buf, Parser::new(test_str));
+        crate::html::push_html(&mut buf, Parser::new(test_str), false);
         assert_eq!(expected, buf);
     }
 
@@ -2413,7 +2413,7 @@ mod test {
         let expected = "<p>a <a href=\"yolo\">^a</a></p>\n";
 
         let mut buf = String::new();
-        crate::html::push_html(&mut buf, Parser::new(test_str));
+        crate::html::push_html(&mut buf, Parser::new(test_str), false);
         assert_eq!(expected, buf);
     }
 
@@ -2424,7 +2424,7 @@ mod test {
         let expected = "";
 
         let mut buf = String::new();
-        crate::html::push_html(&mut buf, Parser::new(test_str));
+        crate::html::push_html(&mut buf, Parser::new(test_str), false);
         assert_eq!(expected, buf);
     }
 
@@ -2435,7 +2435,7 @@ mod test {
         let expected = "<p><a href=\"/u\">a</a></p>\n";
 
         let mut buf = String::new();
-        crate::html::push_html(&mut buf, Parser::new(test_str));
+        crate::html::push_html(&mut buf, Parser::new(test_str), false);
         assert_eq!(expected, buf);
     }
 
@@ -2446,7 +2446,7 @@ mod test {
         let expected = "<p>[a]:</p>\n";
 
         let mut buf = String::new();
-        crate::html::push_html(&mut buf, Parser::new(test_str));
+        crate::html::push_html(&mut buf, Parser::new(test_str), false);
         assert_eq!(expected, buf);
     }
 

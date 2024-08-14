@@ -31,6 +31,6 @@ fn main() {
     });
 
     let mut html_output = String::new();
-    html::push_html(&mut html_output, parser);
+    html::push_html(&mut html_output, parser, false);
     println!("\nHTML output:\n{}\n", &html_output);
 }

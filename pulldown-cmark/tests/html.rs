@@ -30,7 +30,7 @@ console.log("fooooo");
 </script>"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -63,7 +63,7 @@ console.log("fooooo");
 </script>"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -82,7 +82,7 @@ fn html_test_3() {
 ?>"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -101,7 +101,7 @@ fn html_test_4() {
 -->"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -120,7 +120,7 @@ fn html_test_5() {
 ]]>"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -137,7 +137,7 @@ Some things are here...
 >"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -169,7 +169,7 @@ console.log("fooooo");
 </script>"##;
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -184,7 +184,7 @@ fn html_test_8() {
     let mut s = String::new();
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
-    html::push_html(&mut s, Parser::new_ext(original, opts));
+    html::push_html(&mut s, Parser::new_ext(original, opts), false);
     assert_eq!(expected, s);
 }
 
@@ -194,7 +194,7 @@ fn html_test_9() {
     let expected = "<hr />\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -204,7 +204,7 @@ fn html_test_10() {
     let expected = "<hr />\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
     assert_eq!(expected, s);
 }
 
@@ -214,7 +214,17 @@ fn html_test_11() {
     let expected = "<p>hi ~~no~~</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn html_test_11_inline() {
+    let original = "hi ~~no~~";
+    let expected = "<span>hi ~~no~~</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -245,7 +255,7 @@ fn html_test_broken_callback() {
     };
 
     let p = Parser::new_with_broken_link_callback(original, Options::empty(), Some(&mut callback));
-    html::push_html(&mut s, p);
+    html::push_html(&mut s, p, false);
 
     assert_eq!(expected, s);
 }
@@ -257,7 +267,19 @@ fn newline_in_code() {
 
     for original in originals {
         let mut s = String::new();
-        html::push_html(&mut s, Parser::new(original));
+        html::push_html(&mut s, Parser::new(original), false);
+        assert_eq!(expected, s);
+    }
+}
+
+#[test]
+fn newline_in_code_inline() {
+    let originals = ["`\n `x", "` \n`x"];
+    let expected = "<span><code>  </code>x</span>\n";
+
+    for original in originals {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original), true);
         assert_eq!(expected, s);
     }
 }
@@ -268,7 +290,17 @@ fn newline_start_end_of_code() {
     let expected = "<p><code>x</code>x</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn newline_start_end_of_code_inline() {
+    let original = "`\nx\n`x";
+    let expected = "<span><code>x</code>x</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -280,7 +312,18 @@ fn trim_space_and_tab_at_end_of_paragraph() {
     let expected = "<p>one\ntwo</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+
+#[test]
+fn trim_space_and_tab_at_end_of_paragraph_inline() {
+    let original = "one\ntwo \t";
+    let expected = "<span>one\ntwo</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -291,7 +334,20 @@ fn newline_within_code() {
 
     for original in originals {
         let mut s = String::new();
-        html::push_html(&mut s, Parser::new(original));
+        html::push_html(&mut s, Parser::new(original), false);
+        assert_eq!(expected, s);
+    }
+}
+
+
+#[test]
+fn newline_within_code_inline() {
+    let originals = ["`\nx \ny\n`x", "`x \ny`x", "`x\n y`x"];
+    let expected = "<span><code>x  y</code>x</span>\n";
+
+    for original in originals {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original), true);
         assert_eq!(expected, s);
     }
 }
@@ -302,7 +358,17 @@ fn trim_space_tab_nl_at_end_of_paragraph() {
     let expected = "<p>one\ntwo</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn trim_space_tab_nl_at_end_of_paragraph_inline() {
+    let original = "one\ntwo \t\n";
+    let expected = "<span>one\ntwo</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -312,7 +378,17 @@ fn trim_space_nl_at_end_of_paragraph() {
     let expected = "<p>one\ntwo</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn trim_space_nl_at_end_of_paragraph_inline() {
+    let original = "one\ntwo \n";
+    let expected = "<span>one\ntwo</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -322,7 +398,17 @@ fn trim_space_before_soft_break() {
     let expected = "<p>one\ntwo</p>\n";
 
     let mut s = String::new();
-    html::push_html(&mut s, Parser::new(original));
+    html::push_html(&mut s, Parser::new(original), false);
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn trim_space_before_soft_break_inline() {
+    let original = "one \ntwo";
+    let expected = "<span>one\ntwo</span>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original), true);
     assert_eq!(expected, s);
 }
 
@@ -336,7 +422,7 @@ fn issue_819() {
 
     for orig in original {
         let mut s = String::new();
-        html::push_html(&mut s, Parser::new(orig));
+        html::push_html(&mut s, Parser::new(orig), false);
         // Trailing newline doesn't matter. Just the actual HTML.
         assert_eq!(expected, s.trim_end_matches('\n'));
     }
@@ -344,7 +430,7 @@ fn issue_819() {
         let mut s = String::new();
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-        html::push_html(&mut s, Parser::new_ext(orig, opts));
+        html::push_html(&mut s, Parser::new_ext(orig, opts), false);
         // Trailing newline doesn't matter. Just the actual HTML.
         assert_eq!(expected, s.trim_end_matches('\n'));
     }

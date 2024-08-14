@@ -41,6 +41,10 @@ struct HtmlWriter<'a, I, W> {
     /// Writer to write to.
     writer: W,
 
+    /// Whether the the html should be wrapped in a< span>-tag instead of a <p>-tag
+    /// Only use this when the markdown consists of one Paragraph
+    inline: bool,
+
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
 
@@ -58,10 +62,11 @@ where
     I: Iterator<Item = Event<'a>>,
     W: StrWrite,
 {
-    fn new(iter: I, writer: W) -> Self {
+    fn new(iter: I, writer: W, inline: bool) -> Self {
         Self {
             iter,
             writer,
+            inline,
             end_newline: true,
             in_non_writing_block: false,
             table_state: TableState::Head,
@@ -160,11 +165,17 @@ where
         match tag {
             Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
-                if self.end_newline {
-                    self.write("<p>")
+                let html = if self.inline {
+                    "<span>"
                 } else {
-                    self.write("\n<p>")
+                    "<p>"
+                };
+
+                if !self.end_newline {
+                    self.write("\n")?;
                 }
+                self.write(html)
+
             }
             Tag::Heading {
                 level,
@@ -371,7 +382,13 @@ where
         match tag {
             TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
-                self.write("</p>\n")?;
+                let html = if self.inline {
+                    "</span>"
+                } else {
+                    "</p>"
+                };
+                self.write(html)?;
+                self.write("\n")?;
             }
             TagEnd::Heading(level) => {
                 self.write("</")?;
@@ -500,7 +517,7 @@ where
 /// let parser = Parser::new(markdown_str);
 ///
 /// let mut html_buf = String::new();
-/// html::push_html(&mut html_buf, parser);
+/// html::push_html(&mut html_buf, parser, false);
 ///
 /// assert_eq!(html_buf, r#"<h1>hello</h1>
 /// <ul>
@@ -509,11 +526,25 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I>(s: &mut String, iter: I)
+///
+/// Inline
+/// ```
+/// use pulldown_cmark::{html, Parser};
+///
+/// let markdown_str = r#"This is a short *markdown* string."#;
+/// let parser = Parser::new(markdown_str);
+///
+/// let mut html_buf = String::new();
+/// html::push_html(&mut html_buf, parser, true);
+///
+/// assert_eq!(html_buf, r#"<span>This is a short <em>markdown</em> string.</span>
+/// "#);
+/// ```
+pub fn push_html<'a, I>(s: &mut String, iter: I, inline: bool)
 where
     I: Iterator<Item = Event<'a>>,
 {
-    write_html_fmt(s, iter).unwrap()
+    write_html_fmt(s, iter, inline).unwrap()
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -540,7 +571,7 @@ where
 /// let mut bytes = Vec::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html_io(Cursor::new(&mut bytes), parser);
+/// html::write_html_io(Cursor::new(&mut bytes), parser, false);
 ///
 /// assert_eq!(&String::from_utf8_lossy(&bytes)[..], r#"<h1>hello</h1>
 /// <ul>
@@ -549,12 +580,12 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_io<'a, I, W>(writer: W, iter: I) -> std::io::Result<()>
+pub fn write_html_io<'a, I, W>(writer: W, iter: I, inline: bool) -> std::io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
     W: std::io::Write,
 {
-    HtmlWriter::new(iter, IoWriter(writer)).run()
+    HtmlWriter::new(iter, IoWriter(writer), inline).run()
 }
 
 /// Iterate over an `Iterator` of `Event`s, generate HTML for each `Event`, and
@@ -575,7 +606,7 @@ where
 /// let mut buf = String::new();
 /// let parser = Parser::new(markdown_str);
 ///
-/// html::write_html_fmt(&mut buf, parser);
+/// html::write_html_fmt(&mut buf, parser, false);
 ///
 /// assert_eq!(buf, r#"<h1>hello</h1>
 /// <ul>
@@ -584,10 +615,10 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+pub fn write_html_fmt<'a, I, W>(writer: W, iter: I, inline: bool) -> std::fmt::Result
 where
     I: Iterator<Item = Event<'a>>,
     W: std::fmt::Write,
 {
-    HtmlWriter::new(iter, FmtWriter(writer)).run()
+    HtmlWriter::new(iter, FmtWriter(writer), inline).run()
 }

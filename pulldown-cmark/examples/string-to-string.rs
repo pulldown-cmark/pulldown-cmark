@@ -12,7 +12,7 @@ fn main() {
 
     // Write to String buffer.
     let mut html_output: String = String::with_capacity(markdown_input.len() * 3 / 2);
-    html::push_html(&mut html_output, parser);
+    html::push_html(&mut html_output, parser, false);
 
     // Check that the output is what we expected.
     let expected_html: &str =

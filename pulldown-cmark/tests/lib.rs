@@ -35,7 +35,7 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
     let p = Parser::new_ext(input, opts);
-    pulldown_cmark::html::push_html(&mut s, p);
+    pulldown_cmark::html::push_html(&mut s, p, false);
 
     // normalizing the HTML using html5ever may hide actual errors
     // assert_eq!(html_standardize(output), html_standardize(&s));

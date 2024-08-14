@@ -53,7 +53,7 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     handle.write_all(b"\nHTML output:\n").unwrap();
-    html::write_html_io(&mut handle, parser).unwrap();
+    html::write_html_io(&mut handle, parser, false).unwrap();
 
     // To make the footnotes look right, we need to sort them by their appearance order, not by
     // the in-tree order of their actual definitions. Unused items are omitted entirely.
@@ -160,6 +160,7 @@ fn main() {
                     f => f,
                 })
             }),
+            false
         )
         .unwrap();
         handle.write_all(b"</ol>\n").unwrap();

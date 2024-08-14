@@ -41,7 +41,7 @@
 //! # #[cfg(feature = "html")] {
 //! // Write to String buffer.
 //! let mut html_output = String::new();
-//! pulldown_cmark::html::push_html(&mut html_output, parser);
+//! pulldown_cmark::html::push_html(&mut html_output, parser, false);
 //!
 //! // Check that the output is what we expected.
 //! let expected_html = "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";

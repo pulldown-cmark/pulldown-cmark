@@ -17,7 +17,7 @@ use walkdir::WalkDir;
 pub fn get() -> Vec<Vec<u8>> {
     // Get relevant literals from pulldown-cmark's source code.
     // See documentaiton of `literals`-module for more information.
-    let walkdir = WalkDir::new("../src")
+    let walkdir = WalkDir::new("../pulldown-cmark/src")
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
@@ -31,7 +31,10 @@ pub fn get() -> Vec<Vec<u8>> {
 
     let mut literal_parser = LiteralParser::new();
 
-    let skipped_files = &[Path::new("../src/entities.rs"), Path::new("../src/main.rs")];
+    let skipped_files = &[
+        Path::new("../pulldown-cmark/src/entities.rs"),
+        Path::new("../pulldown-cmark/src/main.rs"),
+    ];
     for file in walkdir {
         if skipped_files.contains(&file.path()) {
             continue;

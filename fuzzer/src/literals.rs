@@ -57,7 +57,7 @@ pub fn get() -> Vec<Vec<u8>> {
 
     literals
         .into_iter()
-        .filter(|lit| !lit.contains(&b'\n'))
+        .filter(|lit| !lit.contains(&b'\n') || lit.len() == 1)
         .filter(|lit| !lit.is_empty())
         .collect()
 }

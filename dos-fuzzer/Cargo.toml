@@ -1,5 +1,5 @@
 [package]
-name = "fuzzer"
+name = "dos-fuzzer"
 version = "0.1.0"
 authors = ["oberien <jaro.fietz@gmx.de>"]
 edition = "2018"

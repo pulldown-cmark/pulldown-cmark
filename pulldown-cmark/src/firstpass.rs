@@ -158,12 +158,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    self.next_paragraph_task =
+                    let task_list_marker =
                         line_start.scan_task_list_marker().map(|is_checked| Item {
                             start: after_marker_index,
                             end: start_ix + line_start.bytes_scanned(),
                             body: ItemBody::TaskListMarker(is_checked),
                         });
+                    if let Some(task_list_marker) = task_list_marker {
+                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
+                            self.tree.append(task_list_marker);
+                            self.begin_list_item = Some(task_list_marker.end + n);
+                            return task_list_marker.end + n;
+                        } else {
+                            self.next_paragraph_task = Some(task_list_marker);
+                        }
+                    }
                 }
             } else if let Some((
                 indent,
@@ -552,7 +561,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if scan_paragraph_interrupt_no_table(
             &bytes[ix..],
             current_container,
-            self.options.has_gfm_footnotes(),
+            self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
             &self.tree,
         ) {
@@ -1688,13 +1697,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         i += 1;
         self.finish_list(start);
-        if self.options.has_gfm_footnotes() {
-            if let Some(node_ix) = self.tree.peek_up() {
-                if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
-                    // finish previous footnote if it's still open
-                    self.pop(start);
-                }
+        if let Some(node_ix) = self.tree.peek_up() {
+            if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
+                // finish previous footnote if it's still open
+                self.pop(start);
             }
+        }
+        if self.options.has_gfm_footnotes() {
             i += scan_whitespace_no_nl(&bytes[i..]);
         }
         self.allocs.footdefs.0.insert(
@@ -1947,7 +1956,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if scan_paragraph_interrupt_no_table(
             bytes,
             current_container,
-            gfm_footnote,
+            self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
             &self.tree,
         ) {
@@ -2105,7 +2114,7 @@ fn count_header_cols(
 fn scan_paragraph_interrupt_no_table(
     bytes: &[u8],
     current_container: bool,
-    gfm_footnote: bool,
+    has_footnote: bool,
     definition_list: bool,
     tree: &Tree<Item>,
 ) -> bool {
@@ -2125,7 +2134,7 @@ fn scan_paragraph_interrupt_no_table(
         || bytes.starts_with(b"<")
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
         || definition_list && bytes.starts_with(b":")
-        || (gfm_footnote
+        || (has_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(
                 std::str::from_utf8(&bytes[2..]).unwrap(),

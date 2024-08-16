@@ -1,33 +1,14 @@
-# pulldown-cmark
+# Guide
 
-[![Tests](https://github.com/pulldown-cmark/pulldown-cmark/actions/workflows/rust.yml/badge.svg)](https://github.com/pulldown-cmark/pulldown-cmark/actions/workflows/rust.yml)
-[![Docs](https://docs.rs/pulldown-cmark/badge.svg)](https://docs.rs/pulldown-cmark)
-[![Crates.io](https://img.shields.io/crates/v/pulldown-cmark.svg?maxAge=2592000)](https://crates.io/crates/pulldown-cmark)
+Pulldown-cmark is a [CommonMark](http://commonmark.org/) Markdown parser based
+on [pull parsing](https://www.xmlpull.org/history/index.html),
+a high-performance, low-memory approach to parsing resursive grammars.
 
-[Documentation](https://docs.rs/pulldown-cmark/)
+In addition to the base CommonMark language,
+it supports tables, task lists, strikethrough, footnotes, admonitions, and LaTeX-style math from GFM.
+It also supports [tagging headers with explicit IDs and classes](cheat-sheet.md#other-extensions), 
 
-This library is a pull parser for [CommonMark](http://commonmark.org/), written
-in [Rust](http://www.rust-lang.org/). It comes with a simple command-line tool,
-useful for rendering to HTML, and is also designed to be easy to use from as
-a library.
-
-It is designed to be:
-
-* Fast; a bare minimum of allocation and copying
-* Safe; written in pure Rust with no unsafe blocks (except in the opt-in SIMD feature)
-* Versatile; in particular source-maps are supported
-* Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
-
-Further, it optionally supports parsing footnotes,
-[Github flavored tables](https://github.github.com/gfm/#tables-extension-),
-[Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
-[strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
-
-Rustc 1.71.1 or newer is required to build the crate.
-
-## Example
-
-Example usage:
+## Getting started
 
 ```rust
 // Create parser with example Markdown text.
@@ -39,6 +20,8 @@ let mut html_output = String::new();
 pulldown_cmark::html::push_html(&mut html_output, parser);
 assert_eq!(&html_output, "<p>hello world</p>\n");
 ```
+
+For more details on the API, see the [Rust API docs](https://docs.rs/pulldown-cmark/).
 
 ## Why a pull parser?
 
@@ -120,8 +103,7 @@ for event in iterator {
 }
 ```
 
-There are some basic but fully functional examples of the usage of the crate in the
-`examples` directory of this repository.
+More detailed examples can be found in the Rust API docs.
 
 ## Using Rust idiomatically
 
@@ -157,10 +139,10 @@ By default, the binary is built as well. If you don't want/need it, then build l
 > cargo build --no-default-features
 ```
 
-Or add this package as dependency of your project using `cargo add`:
+Or put in your `Cargo.toml` file:
 
-```bash
-> cargo add pulldown-cmark --no-default-features
+```toml
+pulldown-cmark = { version = "0.10.3", default-features = false }
 ```
 
 SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
@@ -170,10 +152,10 @@ enable them, build with simd feature:
 > cargo build --release --features simd
 ```
 
-Or add this package as dependency of your project with the feature using `cargo add`:
+Or add the feature to your project's `Cargo.toml`:
 
-```bash
-> cargo add pulldown-cmark --no-default-features --features=simd
+```toml
+pulldown-cmark = { version = "0.10.3", default-features = false, features = ["simd"] }
 ```
 
 For a higher release performance you may want this configuration in your profile release:
@@ -183,18 +165,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 ```
-
-## Authors
-
-The main author is Raph Levien. The implementation of the new design (v0.3+) was
-completed by Marcus Klaas de Vries. Since 2023, the development has been driven
-by Martín Pozo, Michael Howell, Roope Salmi and Martin Geisler.
-
-## License
-
-This software is under the MIT license. See details in [license file](./LICENSE).
-
-## Contributions
-
-We gladly accept contributions via GitHub pull requests. Please see
-[CONTRIBUTING.md](CONTRIBUTING.md) for more details.

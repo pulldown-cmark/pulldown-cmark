@@ -668,13 +668,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => {
+                                RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     if !could_be_ref {
                                         continue;
                                     }
                                     (next, LinkType::Shortcut)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             // FIXME: references and labels are mixed in the naming of variables
@@ -685,7 +684,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
-                                RefScan::Collapsed(..) | RefScan::Failed => {
+                                RefScan::Collapsed(..) | RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
                                     let label_end = self.tree[cur_ix].item.end;
@@ -698,7 +697,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             let id = match &label {
@@ -728,6 +726,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         self.tree[tos.node].child = None;
                                         self.tree[tos.node].item.body =
                                             ItemBody::SynthesizeChar('!');
+                                        self.tree[cur_ix].item.start = self.tree[tos.node].item.start + 1;
+                                        self.tree[tos.node].item.end = self.tree[tos.node].item.start + 1;
                                         cur_ix
                                     } else {
                                         tos.node
@@ -2044,7 +2044,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote(..) => TagEnd::BlockQuote,
+        ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
@@ -2340,6 +2340,29 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(12..16, range);
+    }
+
+    #[test]
+    fn footnote_offsets_exclamation() {
+        let mut immediately_before_footnote = None;
+        let range = parser_with_extensions("Testing this![^1] out.\n\n[^1]: Footnote.")
+            .into_offset_iter()
+            .filter_map(|(ev, range)| match ev {
+                Event::FootnoteReference(..) => Some(range),
+                _ => {
+                    immediately_before_footnote = Some((ev, range));
+                    None
+                },
+            })
+            .next()
+            .unwrap();
+        assert_eq!(13..17, range);
+        if let (Event::Text(exclamation), range_exclamation) = immediately_before_footnote.as_ref().unwrap() {
+            assert_eq!("!", &exclamation[..]);
+            assert_eq!(&(12..13), range_exclamation);
+        } else {
+            panic!("what came first, then? {immediately_before_footnote:?}");
+        }
     }
 
     #[test]

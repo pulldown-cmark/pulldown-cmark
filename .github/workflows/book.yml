@@ -1,0 +1,52 @@
+name: Deploy Book
+on:
+  - push
+  - pull_request
+  - release
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: rustup default stable
+    - name: Install mdBook
+      run: |
+        mkdir mdbook && cd mdbook
+        curl -LO 'https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz'
+        tar xf mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz
+        echo "$(pwd)" >> $GITHUB_PATH
+    - name: Prepare book
+      working-directory: guide
+      run: |
+        rustc prepare-specs.rs
+        ./prepare-specs
+        mdbook build
+    - name: Upload Artifact
+      uses: actions/upload-pages-artifact@v3.0.1
+      with:
+        path: ./guide/book
+
+  deploy:
+    needs: build
+
+    if: "github.event_name == 'release' || github.event.ref == 'refs/heads/test-deploy'"
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4.0.5

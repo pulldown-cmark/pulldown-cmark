@@ -154,8 +154,9 @@ fn old_footnotes_test_8() {
 [^Doh]: I know. Wrong Doe. And it will render right.
 [^1]: Common for people practicing music.
 "##;
-    let expected = r##"<p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p><div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup><p>I know. Wrong Doe. And it will render right.
-<sup class="footnote-reference"><a href="#1">2</a></sup>: Common for people practicing music.</p></div>
+    let expected = r##"<p><sup class="footnote-reference"><a href="#Doh">1</a></sup> Ray Me Fa So La Te Do! <sup class="footnote-reference"><a href="#1">2</a></sup></p>
+<div class="footnote-definition" id="Doh"><sup class="footnote-definition-label">1</sup><p>I know. Wrong Doe. And it will render right.</p></div>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup><p>Common for people practicing music.</p></div>
 "##;
 
     test_markdown_html(original, expected, false, false, true);
@@ -170,6 +171,44 @@ fn old_footnotes_test_9() {
 [^3]: Footnote C.
 "##;
     let expected = r##"<p>[Reference to footnotes A<sup class="footnote-reference"><a href="#1">1</a></sup>, B<sup class="footnote-reference"><a href="#2">2</a></sup> and C<sup class="footnote-reference"><a href="#3">3</a></sup>.</p><div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup><p>Footnote A.</p></div><div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup><p>Footnote B.</p></div><div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup><p>Footnote C.</p></div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn old_footnotes_test_10() {
+    let original = r##"Lorem ipsum.[^a][^b]
+
+[^a]: Foo
+[^b]: Bar
+"##;
+    let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup><sup class="footnote-reference"><a href="#b">2</a></sup></p>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+<p>Foo</p>
+</div>
+<div class="footnote-definition" id="b"><sup class="footnote-definition-label">2</sup>
+<p>Bar</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn old_footnotes_test_11() {
+    let original = r##"Lorem ipsum.[^a] [^b]
+
+[^a]: Foo
+[^b]: Bar
+"##;
+    let expected = r##"<p>Lorem ipsum.<sup class="footnote-reference"><a href="#a">1</a></sup> <sup class="footnote-reference"><a href="#b">2</a></sup></p>
+<div class="footnote-definition" id="a"><sup class="footnote-definition-label">1</sup>
+<p>Foo</p>
+</div>
+<div class="footnote-definition" id="b"><sup class="footnote-definition-label">2</sup>
+<p>Bar</p>
+</div>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

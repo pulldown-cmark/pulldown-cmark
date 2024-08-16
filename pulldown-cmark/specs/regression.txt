@@ -1681,7 +1681,7 @@ ISSUE 772
 .
 <p><sup class="footnote-reference"><a href="#foo">1</a></sup>[]</p>
 <p><a href="https://rust-lang.org">^foo</a></p>
-<p>[baz]<sup class="footnote-reference"><a href="#foo">1</a></sup></p>
+<p><a href="https://rust-lang.org">baz</a><sup class="footnote-reference"><a href="#foo">1</a></sup></p>
 <div class="footnote-definition" id="foo"><sup class="footnote-definition-label">1</sup>
 <p>bar</p>
 </div>
@@ -2607,4 +2607,40 @@ We instead set the limit at 32, which is the same limit used by cmark-gfm and ma
 .
 <p><a href="https://rust.org/something%3A((((((((((((((((((((((((((((((()))))))))))))))))))))))))))))))">30</a>
 [40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))</p>
+````````````````````````````````
+
+ISSUE #921
+
+```````````````````````````````` example_metadata_blocks
+- [x]		
+\
+-
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/></li>
+</ul>
+<h2>\</h2>
+````````````````````````````````
+
+ISSUE #882
+
+```````````````````````````````` example_metadata_blocks
+* [ ] 
+---
+bar
+.
+<ul>
+<li><input disabled="" type="checkbox"/></li>
+</ul>
+<hr />
+<p>bar</p>
+````````````````````````````````
+
+ISSUE #655
+
+```````````````````````````````` example
+`
+`
+.
+<p><code> </code></p>
 ````````````````````````````````

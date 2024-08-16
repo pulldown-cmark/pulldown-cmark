@@ -174,24 +174,33 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                     }
                 }
-            } else if let Some((
-                indent,
-                child,
-                item,
-            )) = self
+            } else if let Some((indent, child, item)) = self
                 .options
                 .contains(Options::ENABLE_DEFINITION_LIST)
-                .then(||
+                .then(|| {
                     self.tree
                         .cur()
                         .map(|cur| (self.tree[cur].child, &mut self.tree[cur].item))
-                )
+                })
                 .flatten()
-                .filter(|(_, item)| matches!(item, Item {
-                    body: ItemBody::Paragraph | ItemBody::MaybeDefinitionListTitle | ItemBody::DefinitionListDefinition(_),
-                    ..
-                }))
-                .and_then(|item| Some((line_start.scan_definition_list_definition_marker()?, item.0, item.1)))
+                .filter(|(_, item)| {
+                    matches!(
+                        item,
+                        Item {
+                            body: ItemBody::Paragraph
+                                | ItemBody::MaybeDefinitionListTitle
+                                | ItemBody::DefinitionListDefinition(_),
+                            ..
+                        }
+                    )
+                })
+                .and_then(|item| {
+                    Some((
+                        line_start.scan_definition_list_definition_marker()?,
+                        item.0,
+                        item.1,
+                    ))
+                })
             {
                 match item.body {
                     ItemBody::Paragraph => {
@@ -220,9 +229,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
                 if let Some(ItemBody::DefinitionList(ref mut is_tight)) =
-                    self.tree
-                        .peek_up()
-                        .map(|cur| &mut self.tree[cur].item.body)
+                    self.tree.peek_up().map(|cur| &mut self.tree[cur].item.body)
                 {
                     if self.last_line_blank {
                         *is_tight = false;
@@ -285,8 +292,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
                     ItemBody::BlockQuote(..) => (),
-                    ItemBody::ListItem(indent)
-                    | ItemBody::DefinitionListDefinition(indent) if self.begin_list_item.is_some() => {
+                    ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
+                        if self.begin_list_item.is_some() =>
+                    {
                         self.last_line_blank = true;
                         // This is a blank list item.
                         // While the list itself can be continued no matter how many blank lines
@@ -574,7 +582,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Returns offset of line start after paragraph.
     fn parse_paragraph(&mut self, start_ix: usize) -> usize {
-        let body = if let Some(ItemBody::DefinitionList(_)) = self.tree.peek_up().map(|idx| self.tree[idx].item.body) {
+        let body = if let Some(ItemBody::DefinitionList(_)) =
+            self.tree.peek_up().map(|idx| self.tree[idx].item.body)
+        {
             // blank lines between the previous definition and this one don't count
             self.last_line_blank = false;
             ItemBody::MaybeDefinitionListTitle
@@ -1500,7 +1510,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
         }
-        if let ItemBody::List(true, _, _) | ItemBody::DefinitionList(true) = self.tree[cur_ix].item.body {
+        if let ItemBody::List(true, _, _) | ItemBody::DefinitionList(true) =
+            self.tree[cur_ix].item.body
+        {
             surgerize_tight_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
         }
@@ -1511,13 +1523,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn finish_list(&mut self, ix: usize) {
         self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(_, _, _) | ItemBody::DefinitionList(_) = self.tree[node_ix].item.body {
+            if let ItemBody::List(_, _, _) | ItemBody::DefinitionList(_) =
+                self.tree[node_ix].item.body
+            {
                 self.pop(ix);
             }
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
-                if let ItemBody::List(ref mut is_tight, _, _) | ItemBody::DefinitionList(ref mut is_tight) = self.tree[node_ix].item.body {
+                if let ItemBody::List(ref mut is_tight, _, _)
+                | ItemBody::DefinitionList(ref mut is_tight) = self.tree[node_ix].item.body
+                {
                     *is_tight = false;
                 }
             }
@@ -1530,7 +1546,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if self.last_line_blank {
                 // A list item can begin with at most one blank line.
                 if let Some(node_ix) = self.tree.peek_up() {
-                    if let ItemBody::ListItem(_) | ItemBody::DefinitionListDefinition(_) = self.tree[node_ix].item.body {
+                    if let ItemBody::ListItem(_) | ItemBody::DefinitionListDefinition(_) =
+                        self.tree[node_ix].item.body
+                    {
                         self.pop(begin_list_item);
                     }
                 }
@@ -1706,10 +1724,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if self.options.has_gfm_footnotes() {
             i += scan_whitespace_no_nl(&bytes[i..]);
         }
-        self.allocs.footdefs.0.insert(
-            UniCase::new(label.clone()),
-            FootnoteDef { use_count: 0 },
-        );
+        self.allocs
+            .footdefs
+            .0
+            .insert(UniCase::new(label.clone()), FootnoteDef { use_count: 0 });
         self.tree.append(Item {
             start,
             end: 0, // will get set later
@@ -1952,7 +1970,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Checks whether we should break a paragraph on the given input.
     fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
-        let gfm_footnote = self.options.has_gfm_footnotes();
         if scan_paragraph_interrupt_no_table(
             bytes,
             current_container,

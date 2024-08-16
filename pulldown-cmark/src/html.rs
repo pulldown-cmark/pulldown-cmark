@@ -399,7 +399,7 @@ where
                 }
                 self.table_cell_index += 1;
             }
-            TagEnd::BlockQuote(_) => {
+            TagEnd::BlockQuote => {
                 self.write("</blockquote>\n")?;
             }
             TagEnd::CodeBlock => {

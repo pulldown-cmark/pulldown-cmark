@@ -9,16 +9,13 @@
 //! Its author proposed the solution in
 //! <https://github.com/raphlinus/pulldown-cmark/issues/708>.
 
-use crate::{
-    BrokenLinkCallback, CowStr, DefaultBrokenLinkCallback, Event, OffsetIter, Options, Parser,
-};
-use std::{iter::Peekable, ops::Range};
+use crate::{CowStr, Event};
+use std::ops::Range;
 
 /// Merge consecutive `Event::Text` events into only one.
 #[derive(Debug)]
 pub struct TextMergeStream<'a, I> {
-    iter: I,
-    last_event: Option<Event<'a>>,
+    inner: TextMergeWithOffset<'a, DummyOffsets<I>>,
 }
 
 impl<'a, I> TextMergeStream<'a, I>
@@ -27,8 +24,7 @@ where
 {
     pub fn new(iter: I) -> Self {
         Self {
-            iter,
-            last_event: None,
+            inner: TextMergeWithOffset::new(DummyOffsets(iter)),
         }
     }
 }
@@ -40,16 +36,68 @@ where
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(event, _)| event)
+    }
+}
+
+#[derive(Debug)]
+struct DummyOffsets<I>(I);
+
+impl<'a, I> Iterator for DummyOffsets<I>
+where
+    I: Iterator<Item = Event<'a>>,
+{
+    type Item = (Event<'a>, Range<usize>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|event| (event, 0..0))
+    }
+}
+
+/// Merge consecutive `Event::Text` events into only one, with offsets.
+///
+/// Compatible with with [`OffsetIter`](crate::OffsetIter).
+#[derive(Debug)]
+pub struct TextMergeWithOffset<'a, I> {
+    iter: I,
+    last_event: Option<(Event<'a>, Range<usize>)>,
+}
+
+impl<'a, I> TextMergeWithOffset<'a, I>
+where
+    I: Iterator<Item = (Event<'a>, Range<usize>)>,
+{
+    pub fn new(iter: I) -> Self {
+        Self {
+            iter,
+            last_event: None,
+        }
+    }
+}
+
+impl<'a, I> Iterator for TextMergeWithOffset<'a, I>
+where
+    I: Iterator<Item = (Event<'a>, Range<usize>)>,
+{
+    type Item = (Event<'a>, Range<usize>);
+
+    fn next(&mut self) -> Option<Self::Item> {
         match (self.last_event.take(), self.iter.next()) {
-            (Some(Event::Text(last_text)), Some(Event::Text(next_text))) => {
+            (
+                Some((Event::Text(last_text), last_offset)),
+                Some((Event::Text(next_text), next_offset)),
+            ) => {
                 // We need to start merging consecutive text events together into one
                 let mut string_buf: String = last_text.into_string();
                 string_buf.push_str(&next_text);
+                let mut offset = last_offset;
+                offset.end = next_offset.end;
                 loop {
                     // Avoid recursion to avoid stack overflow and to optimize concatenation
                     match self.iter.next() {
-                        Some(Event::Text(next_text)) => {
+                        Some((Event::Text(next_text), next_offset)) => {
                             string_buf.push_str(&next_text);
+                            offset.end = next_offset.end;
                         }
                         next_event => {
                             self.last_event = next_event;
@@ -57,9 +105,10 @@ where
                                 // Discard text event(s) altogether if there is no text
                                 break self.next();
                             } else {
-                                break Some(Event::Text(CowStr::Boxed(
-                                    string_buf.into_boxed_str(),
-                                )));
+                                break Some((
+                                    Event::Text(CowStr::Boxed(string_buf.into_boxed_str())),
+                                    offset,
+                                ));
                             }
                         }
                     }
@@ -83,68 +132,50 @@ where
     }
 }
 
-/// Merge consecutive `Event::Text` events into only one with offsets.
-#[derive(Debug)]
-pub struct TextMergeWithOffset<'input, F = DefaultBrokenLinkCallback>
-where
-    F: BrokenLinkCallback<'input>,
-{
-    source: &'input str,
-    parser: Peekable<OffsetIter<'input, F>>,
-}
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::Parser;
 
-impl<'input, F> TextMergeWithOffset<'input, F>
-where
-    F: BrokenLinkCallback<'input>,
-{
-    pub fn new_ext(source: &'input str, options: Options) -> Self {
-        Self {
-            source,
-            parser: Parser::new_with_broken_link_callback(source, options, None)
-                .into_offset_iter()
-                .peekable(),
-        }
+    #[test]
+    fn text_merge_stream_indent() {
+        let source = r#"
+    first line
+    second line
+"#;
+        let parser = TextMergeStream::new(Parser::new(source));
+        let text_events: Vec<_> = parser.filter(|e| matches!(e, Event::Text(_))).collect();
+        assert_eq!(
+            text_events,
+            [Event::Text("first line\nsecond line\n".into())]
+        );
     }
-    pub fn new_ext_with_broken_link_callback(
-        source: &'input str,
-        options: Options,
-        callback: Option<F>,
-    ) -> Self {
-        Self {
-            source,
-            parser: Parser::new_with_broken_link_callback(source, options, callback)
-                .into_offset_iter()
-                .peekable(),
-        }
+
+    #[test]
+    fn text_merge_with_offset_indent() {
+        let source = r#"
+    first line
+    second line
+"#;
+        let parser = TextMergeWithOffset::new(Parser::new(source).into_offset_iter());
+        let text_events: Vec<_> = parser
+            .filter(|e| matches!(e, (Event::Text(_), _)))
+            .collect();
+        assert_eq!(
+            text_events,
+            [(Event::Text("first line\nsecond line\n".into()), 5..32)]
+        );
     }
-}
 
-impl<'input, F> Iterator for TextMergeWithOffset<'input, F>
-where
-    F: BrokenLinkCallback<'input>,
-{
-    type Item = (Event<'input>, Range<usize>);
-    fn next(&mut self) -> Option<Self::Item> {
-        let is_empty_text = |x: Option<&(Event<'input>, Range<usize>)>| match x {
-            Some(e) => matches!(&e.0, Event::Text(t) if t.is_empty()),
-            None => false,
-        };
-
-        while is_empty_text(self.parser.peek()) {
-            self.parser.next();
-        }
-
-        match self.parser.peek()? {
-            (Event::Text(_), range) => {
-                let start = range.start;
-                let mut end = range.end;
-                while let Some((Event::Text(_), _)) = self.parser.peek() {
-                    end = self.parser.next().unwrap().1.end;
-                }
-
-                Some((Event::Text(self.source[start..end].into()), start..end))
-            }
-            _ => self.parser.next(),
-        }
+    #[test]
+    fn text_merge_empty_is_discarded() {
+        let events = [
+            Event::Rule,
+            Event::Text("".into()),
+            Event::Text("".into()),
+            Event::Rule,
+        ];
+        let result: Vec<_> = TextMergeStream::new(events.into_iter()).collect();
+        assert_eq!(result, [Event::Rule, Event::Rule]);
     }
 }

@@ -223,7 +223,7 @@ impl<'a> Tag<'a> {
         match self {
             Tag::Paragraph => TagEnd::Paragraph,
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
-            Tag::BlockQuote(_) => TagEnd::BlockQuote,
+            Tag::BlockQuote(kind) => TagEnd::BlockQuote(*kind),
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
@@ -253,7 +253,7 @@ pub enum TagEnd {
     Paragraph,
     Heading(HeadingLevel),
 
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     CodeBlock,
 
     HtmlBlock,

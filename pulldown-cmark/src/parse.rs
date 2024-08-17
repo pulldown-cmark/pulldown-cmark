@@ -2049,7 +2049,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote(..) => TagEnd::BlockQuote,
+        ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';

@@ -49,7 +49,7 @@ jobs:
       working-directory: pulldown-cmark
       run: rustup default stable
     - name: Test for superlinear time regressions
-      working-directory: fuzzer
+      working-directory: dos-fuzzer
       run: cargo run --release -- --regressions
     - name: Check benchmarks are not broken
       working-directory: bench

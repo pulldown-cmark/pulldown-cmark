@@ -1381,7 +1381,7 @@ pub(crate) fn scan_inline_html_comment(
     match c {
         // An HTML comment consists of `<!-->`, `<!--->`, or  `<!--`, a string of characters not
         // including the string `-->`, and `-->`.
-        b'-' => {
+        b'-' if ix > scan_guard.comment => {
             // HTML comment needs two hyphens after the !.
             if *bytes.get(ix)? != b'-' {
                 return None;
@@ -1397,6 +1397,7 @@ pub(crate) fn scan_inline_html_comment(
 
             while let Some(x) = memchr(b'-', &bytes[ix..]) {
                 ix += x + 1;
+                scan_guard.comment = ix;
                 if scan_ch(&bytes[ix..], b'-') == 1 && scan_ch(&bytes[ix + 1..], b'>') == 1 {
                     return Some(ix + 2);
                 }

@@ -1940,6 +1940,7 @@ pub(crate) struct HtmlScanGuard {
     pub cdata: usize,
     pub processing: usize,
     pub declaration: usize,
+    pub comment: usize,
 }
 
 /// Trait for broken link callbacks.

@@ -241,9 +241,11 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                 b"link" => events.push(Event::End(TagEnd::Link)),
                 b"image" => events.push(Event::End(TagEnd::Image)),
                 b"block_quote" => {
-                    block_container_stack.pop().ok_or(anyhow!("List stack empty"))?;
-                    events.push(Event::End(TagEnd::BlockQuote))
-                },
+                    block_container_stack
+                        .pop()
+                        .ok_or(anyhow!("List stack empty"))?;
+                    events.push(Event::End(TagEnd::BlockQuote(None)))
+                }
                 name => anyhow::bail!("end tag: {}", String::from_utf8_lossy(name)),
             },
             XmlEvent::Text(_) => continue,

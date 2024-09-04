@@ -4,13 +4,15 @@ use std::convert::TryInto;
 use std::ptr;
 
 use anyhow::anyhow;
-use mozjs::jsapi::{EnterRealm, HandleValueArray, LeaveRealm, JS_NewGlobalObject, OnNewGlobalHookOption};
+use mozjs::conversions::ToJSValConvertible;
+use mozjs::jsapi::{
+    EnterRealm, HandleValueArray, JS_NewGlobalObject, LeaveRealm, OnNewGlobalHookOption,
+};
 use mozjs::jsval::UndefinedValue;
 use mozjs::rooted;
+use mozjs::rust::wrappers::JS_CallFunctionName;
 use mozjs::rust::SIMPLE_GLOBAL_CLASS;
 use mozjs::rust::{JSEngine, RealmOptions, Runtime};
-use mozjs::rust::wrappers::JS_CallFunctionName;
-use mozjs::conversions::ToJSValConvertible;
 use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
@@ -56,7 +58,13 @@ pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
         // These should indicate source location for diagnostics.
         let filename: &'static str = "commonmark.min.js";
         let lineno: u32 = 1;
-        let res = rt.evaluate_script(global.handle(), COMMONMARK_MIN_JS, filename, lineno, rval.handle_mut());
+        let res = rt.evaluate_script(
+            global.handle(),
+            COMMONMARK_MIN_JS,
+            filename,
+            lineno,
+            rval.handle_mut(),
+        );
         assert!(res.is_ok());
 
         let filename: &'static str = "{inline}";
@@ -69,7 +77,13 @@ pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
             }
         "#;
         rooted!(in(rt.cx()) let mut render_to_xml = UndefinedValue());
-        let res = rt.evaluate_script(global.handle(), script, filename, lineno, render_to_xml.handle_mut());
+        let res = rt.evaluate_script(
+            global.handle(),
+            script,
+            filename,
+            lineno,
+            render_to_xml.handle_mut(),
+        );
         assert!(res.is_ok());
 
         // rval now contains a reference to the render_to_xml function
@@ -89,7 +103,9 @@ pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
             utf8
         };
 
-        unsafe { LeaveRealm(rt.cx(), realm); }
+        unsafe {
+            LeaveRealm(rt.cx(), realm);
+        }
 
         Ok(xml)
     })
@@ -108,7 +124,12 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             XmlEvent::Decl(..) | XmlEvent::DocType(..) => continue,
             XmlEvent::Start(tag) => match tag.name().as_ref() {
                 b"document" => continue,
-                b"paragraph" if block_container_stack.last().map(|(_start, tight)| *tight).unwrap_or(false) => {
+                b"paragraph"
+                    if block_container_stack
+                        .last()
+                        .map(|(_start, tight)| *tight)
+                        .unwrap_or(false) =>
+                {
                     continue;
                 }
                 b"paragraph" => events.push(Event::Start(Tag::Paragraph)),
@@ -159,9 +180,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                         None => events.push(Event::Start(Tag::List(None))),
                     };
                     let tight = match tag.try_get_attribute("tight") {
-                        Ok(Some(value)) if value.unescape_value()? == "true" => {
-                            true
-                        }
+                        Ok(Some(value)) if value.unescape_value()? == "true" => true,
                         _ => false,
                     };
                     block_container_stack.push((start.is_some(), tight));
@@ -206,7 +225,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                 b"block_quote" => {
                     block_container_stack.push((true, false));
                     events.push(Event::Start(Tag::BlockQuote(None)))
-                },
+                }
                 b"html_block" => {
                     events.push(Event::Start(Tag::HtmlBlock));
                     events.push(Event::Html(
@@ -215,7 +234,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                             .into(),
                     ));
                     events.push(Event::End(TagEnd::HtmlBlock));
-                },
+                }
                 b"html_inline" => events.push(Event::InlineHtml(
                     unescape(&reader.read_text(tag.to_end().name())?)?
                         .into_owned()
@@ -225,7 +244,12 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             },
             XmlEvent::End(tag) => match tag.name().as_ref() {
                 b"document" => continue,
-                b"paragraph" if block_container_stack.last().map(|(_numbered, tight)| *tight).unwrap_or(false) => {
+                b"paragraph"
+                    if block_container_stack
+                        .last()
+                        .map(|(_numbered, tight)| *tight)
+                        .unwrap_or(false) =>
+                {
                     continue;
                 }
                 b"paragraph" => events.push(Event::End(TagEnd::Paragraph)),
@@ -233,7 +257,10 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
                     heading_stack.pop().ok_or(anyhow!("Heading stack empty"))?,
                 ))),
                 b"list" => events.push(Event::End(TagEnd::List(
-                    block_container_stack.pop().ok_or(anyhow!("List stack empty"))?.0,
+                    block_container_stack
+                        .pop()
+                        .ok_or(anyhow!("List stack empty"))?
+                        .0,
                 ))),
                 b"item" => events.push(Event::End(TagEnd::Item)),
                 b"emph" => events.push(Event::End(TagEnd::Emphasis)),
@@ -325,9 +352,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 id: "".into(), // commonmark.js does not record this
             })),
             Event::Start(Tag::Link {
-                dest_url,
-                title,
-                ..
+                dest_url, title, ..
             }) => Some(Event::Start(Tag::Link {
                 link_type: LinkType::Inline,
                 dest_url: urldecode(&dest_url).into(),

@@ -22,10 +22,6 @@ urlencoding = "2.1.2"
 [dependencies.pulldown-cmark]
 path = "../pulldown-cmark"
 
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
-
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"

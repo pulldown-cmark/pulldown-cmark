@@ -91,6 +91,16 @@ This is a [link](example.com). **Cool!**
 
         b.iter(|| Parser::new_ext(input, Options::empty()).count());
     });
+
+    c.bench_function("inline_link_to_sample", |b| {
+        let input = r###"
+        [Playground](https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn+main()+%7B%0A++++let+mut+x+=+Some(42);%0A++++%0A++++let+prev+=+x.take_if(%7Cv%7C+if+*v+==+42+%7B%0A++++++++*v+%2B=+1;%0A++++++++false%0A++++%7D+else+%7B%0A++++++++false%0A++++%7D);%0A++++assert_eq!(x,+Some(43));%0A++++assert_eq!(prev,+None);%0A++++%0A++++let+prev+=+x.take_if(%7Cv%7C+*v+==+43);%0A++++assert_eq!(x,+None);%0A++++assert_eq!(prev,+Some(43));%0A%7D&edition=2021)
+        [Playground](https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn+main()+%7B%0A++++let+mut+vec+=+Vec::new();%0A++++vec.push(1);%0A++++vec.push(2);%0A++++%0A++++assert_eq!(vec.len(),+2);%0A++++assert_eq!(vec%5B0%5D,+1);%0A++++%0A++++assert_eq!(vec.pop(),+Some(2));%0A++++assert_eq!(vec.len(),+1);%0A++++%0A++++vec%5B0%5D+=+7;%0A++++assert_eq!(vec%5B0%5D,+7);%0A++++%0A++++vec.extend(%5B1,+2,+3%5D);%0A++++%0A++++for+x+in+%26vec+%7B%0A++++++++println!(%22%7Bx%7D%22);%0A++++%7D%0A++++assert_eq!(vec,+%5B7,+1,+2,+3%5D);%0A%7D&edition=2021)
+        [Playground](https://play.rust-lang.org/?code=%23!%5Ballow(unused)%5D%0Afn+main()+%7B%0A++++let+mut+vec+=+Vec::with_capacity(10);%0A++++%0A++++//+The+vector+contains+no+items,+even+though+it+has+capacity+for+more%0A++++assert_eq!(vec.len(),+0);%0A++++assert!(vec.capacity()+%3E=+10);%0A++++%0A++++//+These+are+all+done+without+reallocating...%0A++++for+i+in+0..10+%7B%0A++++++++vec.push(i);%0A++++%7D%0A++++assert_eq!(vec.len(),+10);%0A++++assert!(vec.capacity()+%3E=+10);%0A++++%0A++++//+...but+this+may+make+the+vector+reallocate%0A++++vec.push(11);%0A++++assert_eq!(vec.len(),+11);%0A++++assert!(vec.capacity()+%3E=+11);%0A++++%0A++++//+A+vector+of+a+zero-sized+type+will+always+over-allocate,+since+no%0A++++//+allocation+is+necessary%0A++++let+vec_units+=+Vec::%3C()%3E::with_capacity(10);%0A++++assert_eq!(vec_units.capacity(),+usize::MAX);%0A%7D&edition=2021)
+        "###;
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

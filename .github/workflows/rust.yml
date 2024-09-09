@@ -23,7 +23,11 @@ jobs:
     - name: Install Rust
       run: rustup default ${{ matrix.rust-version }}
     - name: Cargo build
+      if: ${{ matrix.rust-version != 'nightly' }}
       run: cargo build --verbose
+    - name: Cargo build whole workspace
+      if: ${{ matrix.rust-version == 'nightly' }}
+      run: cargo build --workspace --verbose
     - name: Cargo test
       run: cargo test --verbose
     - name: Cargo test with simd feature enabled

@@ -3153,3 +3153,64 @@ fn regression_test_200() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_201() {
+    let original = r##"* def this
+  : def text def text
+"##;
+    let expected = r##"<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd>def text def text</dd>
+</dl>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_202() {
+    let original = r##"* def this
+
+  : def text def text
+"##;
+    let expected = r##"<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd><p>def text def text</p></dd>
+</dl>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_203() {
+    let original = r##"**A:**
+
+> B C
+> I J :x: K
+> :x: L M
+> N O _P_ Q R. (S
+> T U, V W
+> :x:,:x:,:x:, and :x: but no :x: or
+> :x:.)
+"##;
+    let expected = r##"<p><strong>A:</strong></p><blockquote>
+<dl><dt>B C
+I J :x: K</dt><dd>x: L M
+N O <em>P</em> Q R. (S
+T U, V W</dd>
+<dd>x:,:x:,:x:, and :x: but no :x: or</dd>
+<dd>x:.)</dd></dl></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

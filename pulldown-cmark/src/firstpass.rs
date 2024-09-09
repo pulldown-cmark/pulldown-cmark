@@ -75,7 +75,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         while ix < self.text.len() {
             ix = self.parse_block(ix);
         }
-        for _ in 0..self.tree.spine_len() {
+        while self.tree.spine_len() > 0 {
             self.pop(ix);
         }
         (self.tree, self.allocs)

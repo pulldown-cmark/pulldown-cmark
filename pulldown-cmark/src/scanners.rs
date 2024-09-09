@@ -260,13 +260,10 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_blockquote_marker(&mut self) -> bool {
-        let save = self.clone();
-        let _ = self.scan_space(3);
         if self.scan_ch(b'>') {
             let _ = self.scan_space(1);
             true
         } else {
-            *self = save;
             false
         }
     }
@@ -282,10 +279,9 @@ impl<'a> LineStart<'a> {
     ///
     /// Return value is the amount of indentation, or `None` if it's not a
     /// definition list marker.
-    pub(crate) fn scan_definition_list_definition_marker(&mut self) -> Option<usize> {
+    pub(crate) fn scan_definition_list_definition_marker_with_indent(&mut self, indent: usize) -> Option<usize> {
         let save = self.clone();
-        let indent = self.scan_space_upto(4);
-        if indent < 4 && self.scan_ch(b':') {
+        if self.scan_ch(b':') {
             let remaining = 4 - (indent + 1);
             Some(indent + 1 + self.scan_space_upto(remaining))
         } else {
@@ -299,10 +295,9 @@ impl<'a> LineStart<'a> {
     /// Return value is the character, the start index, and the indent in spaces.
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
-    pub(crate) fn scan_list_marker(&mut self) -> Option<(u8, u64, usize)> {
+    pub(crate) fn scan_list_marker_with_indent(&mut self, indent: usize) -> Option<(u8, u64, usize)> {
         let save = self.clone();
-        let indent = self.scan_space_upto(4);
-        if indent < 4 && self.ix < self.bytes.len() {
+        if self.ix < self.bytes.len() {
             let c = self.bytes[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
                 if self.ix >= self.min_hrule_offset {

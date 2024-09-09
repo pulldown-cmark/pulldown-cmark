@@ -122,33 +122,31 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // Process new containers
         loop {
+            let save = line_start.clone();
+            let outer_indent = line_start.scan_space_upto(4);
+            if outer_indent >= 4 {
+                line_start = save;
+                break;
+            }
             if self.options.has_gfm_footnotes()
                 || self.options.contains(Options::ENABLE_OLD_FOOTNOTES)
             {
                 // Footnote definitions of the form
                 // [^bar]:
                 //     * anything really
-                let save = line_start.clone();
-                let indent = line_start.scan_space_upto(4);
-                if indent < 4 {
-                    let container_start = start_ix + line_start.bytes_scanned();
-                    if let Some(bytecount) = self.parse_footnote(container_start) {
-                        start_ix = container_start + bytecount;
-                        line_start = LineStart::new(&bytes[start_ix..]);
-                        continue;
-                    } else {
-                        line_start = save;
-                    }
-                } else {
-                    line_start = save;
+                let container_start = start_ix + line_start.bytes_scanned();
+                if let Some(bytecount) = self.parse_footnote(container_start) {
+                    start_ix = container_start + bytecount;
+                    line_start = LineStart::new(&bytes[start_ix..]);
+                    continue;
                 }
             }
             let container_start = start_ix + line_start.bytes_scanned();
-            if let Some((ch, index, indent)) = line_start.scan_list_marker() {
+            if let Some((ch, index, indent)) = line_start.scan_list_marker_with_indent(outer_indent) {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
-                self.continue_list(container_start, ch, index);
+                self.continue_list(container_start - outer_indent, ch, index);
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start - outer_indent,
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
@@ -196,7 +194,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 })
                 .and_then(|item| {
                     Some((
-                        line_start.scan_definition_list_definition_marker()?,
+                        line_start.scan_definition_list_definition_marker_with_indent(outer_indent)?,
                         item.0,
                         item.1,
                     ))
@@ -224,7 +222,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start - outer_indent,
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
@@ -282,6 +280,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
             } else {
+                line_start = save;
                 break;
             }
         }

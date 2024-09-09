@@ -192,6 +192,8 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+    code_delims: CodeDelims,
+    math_delims: MathDelims,
 }
 
 impl<'input, F> std::fmt::Debug for Parser<'input, F> {
@@ -260,6 +262,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             html_scan_guard,
             // always allow 100KiB
             link_ref_expansion_limit: text.len().max(100_000),
+            code_delims: CodeDelims::new(),
+            math_delims: MathDelims::new(),
         }
     }
 
@@ -357,8 +361,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
     fn handle_inline_pass1(&mut self) {
-        let mut code_delims = CodeDelims::new();
-        let mut math_delims = MathDelims::new();
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -445,10 +447,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
                         )
                     });
-                    let result = if math_delims.is_populated() {
+                    let result = if self.math_delims.is_populated() {
                         // we have previously scanned all math environment delimiters,
                         // so we can reuse that work
-                        math_delims.find(&self.tree, cur_ix, is_display, brace_context)
+                        self.math_delims.find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
                         // we haven't previously scanned all math delimiters,
                         // so walk the AST
@@ -481,7 +483,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         // This will skip ahead past everything we
                                         // just inserted. Needed for correctness to
                                         // ensure that a new scan is done after this item.
-                                        math_delims.clear();
+                                        self.math_delims.clear();
                                         break;
                                     } else {
                                         // Math cannot contain $, so the current item
@@ -489,7 +491,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         invalid = true;
                                     }
                                 }
-                                math_delims.insert(
+                                self.math_delims.insert(
                                     delim_is_display,
                                     delim_brace_context,
                                     scan_ix,
@@ -528,10 +530,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
 
-                    if code_delims.is_populated() {
+                    if self.code_delims.is_populated() {
                         // we have previously scanned all codeblock delimiters,
                         // so we can reuse that work
-                        if let Some(scan_ix) = code_delims.find(cur_ix, search_count) {
+                        if let Some(scan_ix) = self.code_delims.find(cur_ix, search_count) {
                             self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                         } else {
                             self.tree[cur_ix].item.body = ItemBody::Text {
@@ -552,10 +554,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             {
                                 if search_count == delim_count {
                                     self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
-                                    code_delims.clear();
+                                    self.code_delims.clear();
                                     break;
                                 } else {
-                                    code_delims.insert(delim_count, scan_ix);
+                                    self.code_delims.insert(delim_count, scan_ix);
                                 }
                             }
                             if self.tree[scan_ix].item.body.is_block() {
@@ -811,6 +813,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             cur = self.tree[cur_ix].next;
         }
         self.link_stack.clear();
+        self.code_delims.clear();
+        self.math_delims.clear();
     }
 
     fn handle_emphasis_and_hard_break(&mut self) {

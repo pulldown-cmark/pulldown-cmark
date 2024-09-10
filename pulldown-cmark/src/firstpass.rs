@@ -2282,7 +2282,7 @@ fn delim_run_can_open(
     ix: usize,
     mode: TableParseMode,
 ) -> bool {
-    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+    let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
     } else {
         return false;
@@ -2294,28 +2294,28 @@ fn delim_run_can_open(
         return true;
     }
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
+        if s.as_bytes()[..ix].ends_with(b"|") && !s.as_bytes()[..ix].ends_with(br"\|") {
             return true;
         }
         if next_char == '|' {
             return false;
         }
     }
-    let delim = suffix.chars().next().unwrap();
+    let delim = suffix.bytes().next().unwrap();
     // `*` and `~~` can be intraword, `_` and `~` cannot
-    if delim == '*' && !is_punctuation(next_char) {
+    if delim == b'*' && !is_punctuation(next_char) {
         return true;
     }
-    if delim == '~' && run_len > 1 {
+    if delim == b'~' && run_len > 1 {
         return true;
     }
     let prev_char = s[..ix].chars().last().unwrap();
-    if delim == '~' && prev_char == '~' && !is_punctuation(next_char) {
+    if delim == b'~' && prev_char == '~' && !is_punctuation(next_char) {
         return true;
     }
 
     prev_char.is_whitespace()
-        || is_punctuation(prev_char) && (delim != '\'' || ![']', ')'].contains(&prev_char))
+        || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2335,25 +2335,25 @@ fn delim_run_can_close(
     if prev_char.is_whitespace() {
         return false;
     }
-    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+    let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
     } else {
         return true;
     };
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
+        if s.as_bytes()[..ix].ends_with(b"|") && !s.as_bytes()[..ix].ends_with(br"\|") {
             return false;
         }
         if next_char == '|' {
             return true;
         }
     }
-    let delim = suffix.chars().next().unwrap();
+    let delim = suffix.bytes().next().unwrap();
     // `*` and `~~` can be intraword, `_` and `~` cannot
-    if (delim == '*' || (delim == '~' && run_len > 1)) && !is_punctuation(prev_char) {
+    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
         return true;
     }
-    if delim == '~' && prev_char == '~' {
+    if delim == b'~' && prev_char == '~' {
         return true;
     }
 

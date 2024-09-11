@@ -15,9 +15,6 @@ jobs:
       matrix:
         rust-version: ['1.71.1', 'stable', 'nightly']
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pulldown-cmark
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust

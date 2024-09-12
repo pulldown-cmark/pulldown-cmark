@@ -1,5 +1,5 @@
 [workspace]
-default-members = ["bench", "pulldown-cmark", "pulldown-cmark-escape"]
+default-members = ["pulldown-cmark", "pulldown-cmark-escape"]
 members = [
   "bench",
   "dos-fuzzer",

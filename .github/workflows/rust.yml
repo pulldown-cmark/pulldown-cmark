@@ -15,32 +15,29 @@ jobs:
       matrix:
         rust-version: ['1.71.1', 'stable', 'nightly']
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pulldown-cmark
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
       run: rustup default ${{ matrix.rust-version }}
     - name: Cargo build
+      if: ${{ matrix.rust-version == '1.71.1' }}
       run: cargo build --verbose
+    - name: Cargo build the workspace
+      if: ${{ matrix.rust-version != '1.71.1' }}
+      run: cargo build --workspace --verbose
     - name: Cargo test
+      # dos-fuzzer does not build with old rust version
+      if: ${{ matrix.rust-version == '1.71.1' }}
       run: cargo test --verbose
+    - name: Cargo test the workspace
+      if: ${{ matrix.rust-version != '1.71.1' }}
+      run: cargo test --verbose --workspace
     - name: Cargo test with simd feature enabled
       run: cargo test --features=simd,gen-tests
     - name: Cargo test with serde feature enabled
       run: cargo test --features=serde
     - name: Cargo test without default features
       run: cargo test --no-default-features
-  pulldown-cmark-escape:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      run: rustup default stable
-    - name: Cargo test
-      working-directory: pulldown-cmark-escape
-      run: cargo test --verbose --all
   regression:
     runs-on: ubuntu-latest
     steps:

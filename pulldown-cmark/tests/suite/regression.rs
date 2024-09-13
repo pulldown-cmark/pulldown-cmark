@@ -3214,3 +3214,25 @@ T U, V W</dd>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_204() {
+    let original = r##"[abc] check `foobar_raz`
+ Some preamble `foobar_raz`, not `barfoo_raz`
+ :D
+ 
+ This should fix:
+ 
+ &gt; Something is wrong!
+"##;
+    let expected = r##"<dl>
+<dt>[abc] check <code>foobar_raz</code>
+Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
+<dd>D</dd>
+</dl>
+<p>This should fix:</p>
+<p>&gt; Something is wrong!</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

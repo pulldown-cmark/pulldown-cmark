@@ -584,9 +584,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
-            // blank lines between the previous definition and this one don't count
-            self.last_line_blank = false;
-            ItemBody::MaybeDefinitionListTitle
+            if self.tree.cur().map_or(true, |idx| matches!(&self.tree[idx].item.body, ItemBody::DefinitionListDefinition(..))) {
+                // blank lines between the previous definition and this one don't count
+                self.last_line_blank = false;
+                ItemBody::MaybeDefinitionListTitle
+            } else {
+                self.finish_list(start_ix);
+                ItemBody::Paragraph
+            }
         } else {
             self.finish_list(start_ix);
             ItemBody::Paragraph

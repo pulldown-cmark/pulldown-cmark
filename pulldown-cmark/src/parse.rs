@@ -95,7 +95,7 @@ pub(crate) enum ItemBody {
     HtmlBlock,
     InlineHtml,
     Html,
-    OwnedHtml(CowIndex),
+    OwnedInlineHtml(CowIndex),
     BlockQuote(Option<BlockQuoteKind>),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
@@ -411,7 +411,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             self.tree[cur_ix].item.body = if !span.is_empty() {
                                 let converted_string =
                                     String::from_utf8(span).expect("invalid utf8");
-                                ItemBody::OwnedHtml(
+                                ItemBody::OwnedInlineHtml(
                                     self.allocs.allocate_cow(converted_string.into()),
                                 )
                             } else {
@@ -2085,7 +2085,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::HtmlBlock => Tag::HtmlBlock,
         ItemBody::Html => return Event::Html(text[item.start..item.end].into()),
         ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
-        ItemBody::OwnedHtml(cow_ix) => return Event::Html(allocs.take_cow(cow_ix)),
+        ItemBody::OwnedInlineHtml(cow_ix) => return Event::InlineHtml(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak(_) => return Event::HardBreak,
         ItemBody::FootnoteReference(cow_ix) => {
@@ -2628,5 +2628,20 @@ text
             Options::empty(),
             Some(&mut function),
         ) {}
+    }
+
+    #[test]
+    fn inline_html_inside_blockquote() {
+        // Regression for #960
+        let input = "> <foo\n> bar>";
+        let events: Vec<_> = Parser::new(input).collect();
+        let expected = [
+            Event::Start(Tag::BlockQuote(None)),
+            Event::Start(Tag::Paragraph),
+            Event::InlineHtml(CowStr::Boxed("<foo\nbar>".to_string().into())),
+            Event::End(TagEnd::Paragraph),
+            Event::End(TagEnd::BlockQuote(None)),
+        ];
+        assert_eq!(&events, &expected);
     }
 }

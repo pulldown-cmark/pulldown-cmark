@@ -2713,3 +2713,16 @@ Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
 <p>This should fix:</p>
 <p>&gt; Something is wrong!</p>
 ````````````````````````````````
+
+```````````````````````````````` example
+- Item definition [it
+  ```rust
+  ```
+  stuff](https://example.com)
+.
+<ul>
+<li>Item definition [it
+<pre><code class="language-rust"></code></pre>
+stuff](https://example.com)</li>
+</ul>
+````````````````````````````````

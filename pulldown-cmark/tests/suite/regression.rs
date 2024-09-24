@@ -3236,3 +3236,20 @@ Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_205() {
+    let original = r##"- Item definition [it
+  ```rust
+  ```
+  stuff](https://example.com)
+"##;
+    let expected = r##"<ul>
+<li>Item definition [it
+<pre><code class="language-rust"></code></pre>
+stuff](https://example.com)</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

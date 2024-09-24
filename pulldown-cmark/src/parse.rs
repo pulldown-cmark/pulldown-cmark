@@ -54,14 +54,6 @@ pub(crate) struct Item {
 
 #[derive(Debug, PartialEq, Clone, Copy, Default)]
 pub(crate) enum ItemBody {
-    Paragraph,
-    Text {
-        backslash_escaped: bool,
-    },
-    SoftBreak,
-    // true = is backlash
-    HardBreak(bool),
-
     // These are possible inline items, need to be resolved in second pass.
 
     // repeats, can_open, can_close
@@ -88,19 +80,33 @@ pub(crate) enum ItemBody {
     FootnoteReference(CowIndex),
     TaskListMarker(bool), // true for checked
 
+    // These are also inline items.
+    InlineHtml,
+    OwnedInlineHtml(CowIndex),
+    SynthesizeText(CowIndex),
+    SynthesizeChar(char),
+    Html,
+    Text {
+        backslash_escaped: bool,
+    },
+    SoftBreak,
+    // true = is backlash
+    HardBreak(bool),
+
+    // Dummy node at the top of the tree - should not be used otherwise!
+    #[default]
+    Root,
+
+    // These are block items.
+    Paragraph,
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     HtmlBlock,
-    InlineHtml,
-    Html,
-    OwnedInlineHtml(CowIndex),
     BlockQuote(Option<BlockQuoteKind>),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
-    SynthesizeText(CowIndex),
-    SynthesizeChar(char),
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
@@ -117,41 +123,56 @@ pub(crate) enum ItemBody {
     TableHead,
     TableRow,
     TableCell,
-
-    // Dummy node at the top of the tree - should not be used otherwise!
-    #[default]
-    Root,
 }
 
 impl ItemBody {
-    fn is_inline(&self) -> bool {
+    fn is_maybe_inline(&self) -> bool {
+        use ItemBody::*;
         matches!(
             *self,
-            ItemBody::MaybeEmphasis(..)
-                | ItemBody::MaybeMath(..)
-                | ItemBody::MaybeSmartQuote(..)
-                | ItemBody::MaybeHtml
-                | ItemBody::MaybeCode(..)
-                | ItemBody::MaybeLinkOpen
-                | ItemBody::MaybeLinkClose(..)
-                | ItemBody::MaybeImage
+            MaybeEmphasis(..)
+                | MaybeMath(..)
+                | MaybeSmartQuote(..)
+                | MaybeCode(..)
+                | MaybeHtml
+                | MaybeLinkOpen
+                | MaybeLinkClose(..)
+                | MaybeImage
+        )
+    }
+    fn is_inline(&self) -> bool {
+        use ItemBody::*;
+        matches!(
+            *self,
+            MaybeEmphasis(..)
+                | MaybeMath(..)
+                | MaybeSmartQuote(..)
+                | MaybeCode(..)
+                | MaybeHtml
+                | MaybeLinkOpen
+                | MaybeLinkClose(..)
+                | MaybeImage
+                | Emphasis
+                | Strong
+                | Strikethrough
+                | Math(..)
+                | Code(..)
+                | Link(..)
+                | Image(..)
+                | FootnoteReference(..)
+                | TaskListMarker(..)
+                | InlineHtml
+                | OwnedInlineHtml(..)
+                | SynthesizeText(..)
+                | SynthesizeChar(..)
+                | Html
+                | Text { .. }
+                | SoftBreak
+                | HardBreak(..)
         )
     }
     fn is_block(&self) -> bool {
-        matches!(
-            *self,
-            ItemBody::Paragraph
-                | ItemBody::BlockQuote(..)
-                | ItemBody::List(..)
-                | ItemBody::ListItem(..)
-                | ItemBody::HtmlBlock
-                | ItemBody::Table(..)
-                | ItemBody::TableHead
-                | ItemBody::TableRow
-                | ItemBody::TableCell
-                | ItemBody::Heading(..)
-                | ItemBody::Rule
-        )
+        !self.is_inline()
     }
 }
 
@@ -2027,7 +2048,7 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
-                if self.inner.tree[cur_ix].item.body.is_inline() {
+                if self.inner.tree[cur_ix].item.body.is_maybe_inline() {
                     self.inner.handle_inline();
                 }
 
@@ -2177,7 +2198,7 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
                 Some(Event::End(tag_end))
             }
             Some(cur_ix) => {
-                if self.tree[cur_ix].item.body.is_inline() {
+                if self.tree[cur_ix].item.body.is_maybe_inline() {
                     self.handle_inline();
                 }
 

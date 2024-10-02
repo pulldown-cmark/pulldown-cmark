@@ -81,6 +81,8 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
     Math(CowIndex, bool), // true for display math
     Code(CowIndex),
     Link(LinkIndex),
@@ -835,10 +837,16 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     1
                                 };
                                 let ty = if c == b'~' {
-                                    ItemBody::Strikethrough
+                                    if inc == 2 {
+                                        ItemBody::Strikethrough
+                                    } else {
+                                        ItemBody::Subscript
+                                    }
+                                } else if c == b'^' {
+                                    ItemBody::Superscript
                                 } else if inc == 2 {
                                     ItemBody::Strong
-                                } else {
+                                } else{
                                     ItemBody::Emphasis
                                 };
 
@@ -2023,6 +2031,8 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     match *body {
         ItemBody::Paragraph => TagEnd::Paragraph,
         ItemBody::Emphasis => TagEnd::Emphasis,
+        ItemBody::Superscript => TagEnd::Superscript,
+        ItemBody::Subscript => TagEnd::Subscript,
         ItemBody::Strong => TagEnd::Strong,
         ItemBody::Strikethrough => TagEnd::Strikethrough,
         ItemBody::Link(..) => TagEnd::Link,
@@ -2065,6 +2075,8 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Rule => return Event::Rule,
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
+        ItemBody::Superscript => Tag::Superscript,
+        ItemBody::Subscript => Tag::Subscript,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {

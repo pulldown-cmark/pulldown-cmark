@@ -190,6 +190,8 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
 
     /// A link.
     Link {
@@ -229,6 +231,8 @@ impl<'a> Tag<'a> {
             Tag::TableHead => TagEnd::TableHead,
             Tag::TableRow => TagEnd::TableRow,
             Tag::TableCell => TagEnd::TableCell,
+            Tag::Subscript => TagEnd::Subscript,
+            Tag::Superscript => TagEnd::Superscript,
             Tag::Emphasis => TagEnd::Emphasis,
             Tag::Strong => TagEnd::Strong,
             Tag::Strikethrough => TagEnd::Strikethrough,
@@ -264,6 +268,8 @@ pub enum TagEnd {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
 
     Link,
     Image,

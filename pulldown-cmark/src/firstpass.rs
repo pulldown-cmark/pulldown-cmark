@@ -790,7 +790,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(0)
                     }
                 }
-                c @ b'*' | c @ b'_' | c @ b'~' => {
+                c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(
@@ -807,7 +807,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                     );
-                    let is_valid_seq = c != b'~' || count <= 2;
+                    let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
                     if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2233,7 +2233,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'^',
     ];
 
     for &byte in &standard_bytes {
@@ -2473,7 +2473,7 @@ mod simd {
     pub(super) fn compute_lookup(options: &Options) -> [u8; 16] {
         let mut lookup = [0u8; 16];
         let standard_bytes = [
-            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'^',
         ];
 
         for &byte in &standard_bytes {

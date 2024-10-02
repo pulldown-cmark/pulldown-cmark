@@ -14,6 +14,16 @@ fn strikethrough_test_1() {
 }
 
 #[test]
+fn strikethrough_test_0() {
+    let original = r##"^This is super^ ~This is sub~
+"##;
+    let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
 fn strikethrough_test_2() {
     let original = r##"~~This is \~\~stricken~~
 "##;
@@ -57,7 +67,7 @@ fn strikethrough_test_5() {
 fn strikethrough_test_6() {
     let original = r##"~This is stricken out~
 "##;
-    let expected = r##"<p><del>This is stricken out</del></p>
+    let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -67,7 +77,7 @@ fn strikethrough_test_6() {
 fn strikethrough_test_7() {
     let original = r##"~This is \~stricken~
 "##;
-    let expected = r##"<p><del>This is ~stricken</del></p>
+    let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -87,7 +97,7 @@ fn strikethrough_test_8() {
 fn strikethrough_test_9() {
     let original = r##"~This~is~nothing~
 "##;
-    let expected = r##"<p><del>This~is~nothing</del></p>
+    let expected = r##"<p><sub>This~is~nothing</sub></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -147,7 +157,7 @@ fn strikethrough_test_14() {
 fn strikethrough_test_15() {
     let original = r##"~This ~~is stricken.~
 "##;
-    let expected = r##"<p><del>This ~~is stricken.</del></p>
+    let expected = r##"<p><sub>This ~~is stricken.</sub></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -157,7 +167,7 @@ fn strikethrough_test_15() {
 fn strikethrough_test_16() {
     let original = r##"~This ~~is stricken~ but this is not~~
 "##;
-    let expected = r##"<p><del>This ~~is stricken</del> but this is not~~</p>
+    let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

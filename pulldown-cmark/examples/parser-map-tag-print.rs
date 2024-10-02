@@ -60,6 +60,9 @@ fn main() {
                     "List ordered_list_first_item_number: {:?}",
                     ordered_list_first_item_number
                 ),
+                Tag::DefinitionList => println!("Definition list"),
+                Tag::DefinitionListTitle => println!("Definition title (definition list item)"),
+                Tag::DefinitionListDefinition => println!("Definition (definition list item)"),
                 Tag::Item => println!("Item (this is a list item)"),
                 Tag::Emphasis => println!("Emphasis (this is a span tag)"),
                 Tag::Superscript => println!("Superscript (this is a span tag)"),

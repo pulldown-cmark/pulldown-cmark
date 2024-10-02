@@ -177,6 +177,10 @@ pub enum Tag<'a> {
     #[cfg_attr(feature = "serde", serde(borrow))]
     FootnoteDefinition(CowStr<'a>),
 
+    DefinitionList,
+    DefinitionListTitle,
+    DefinitionListDefinition,
+
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     Table(Vec<Alignment>),
     /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
@@ -221,7 +225,7 @@ impl<'a> Tag<'a> {
         match self {
             Tag::Paragraph => TagEnd::Paragraph,
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
-            Tag::BlockQuote(_) => TagEnd::BlockQuote,
+            Tag::BlockQuote(kind) => TagEnd::BlockQuote(*kind),
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
@@ -239,6 +243,9 @@ impl<'a> Tag<'a> {
             Tag::Link { .. } => TagEnd::Link,
             Tag::Image { .. } => TagEnd::Image,
             Tag::MetadataBlock(kind) => TagEnd::MetadataBlock(*kind),
+            Tag::DefinitionList => TagEnd::DefinitionList,
+            Tag::DefinitionListTitle => TagEnd::DefinitionListTitle,
+            Tag::DefinitionListDefinition => TagEnd::DefinitionListDefinition,
         }
     }
 }
@@ -250,7 +257,7 @@ pub enum TagEnd {
     Paragraph,
     Heading(HeadingLevel),
 
-    BlockQuote,
+    BlockQuote(Option<BlockQuoteKind>),
     CodeBlock,
 
     HtmlBlock,
@@ -259,6 +266,10 @@ pub enum TagEnd {
     List(bool),
     Item,
     FootnoteDefinition,
+
+    DefinitionList,
+    DefinitionListTitle,
+    DefinitionListDefinition,
 
     Table,
     TableHead,
@@ -276,6 +287,11 @@ pub enum TagEnd {
 
     MetadataBlock(MetadataBlockKind),
 }
+
+/// Make sure `TagEnd` is no more than two bytes in size.
+/// This is why it's used instead of just using `Tag`.
+#[cfg(target_pointer_width = "64")]
+const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); std::mem::size_of::<TagEnd>()];
 
 impl<'a> From<Tag<'a>> for TagEnd {
     fn from(value: Tag) -> Self {
@@ -492,6 +508,15 @@ bitflags::bitflags! {
         /// The following features are currently behind this tag:
         /// - Blockquote tags ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]).
         const ENABLE_GFM = 1 << 11;
+        /// Commonmark-HS-Extensions compatible definition lists.
+        ///
+        /// ```markdown
+        /// title 1
+        ///   : definition 1
+        /// title 2
+        ///   : definition 2
+        /// ```
+        const ENABLE_DEFINITION_LIST = 1 << 12;
     }
 }
 

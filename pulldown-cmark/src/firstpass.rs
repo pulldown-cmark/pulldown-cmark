@@ -158,12 +158,88 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
-                    self.next_paragraph_task =
+                    let task_list_marker =
                         line_start.scan_task_list_marker().map(|is_checked| Item {
                             start: after_marker_index,
                             end: start_ix + line_start.bytes_scanned(),
                             body: ItemBody::TaskListMarker(is_checked),
                         });
+                    if let Some(task_list_marker) = task_list_marker {
+                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
+                            self.tree.append(task_list_marker);
+                            self.begin_list_item = Some(task_list_marker.end + n);
+                            return task_list_marker.end + n;
+                        } else {
+                            self.next_paragraph_task = Some(task_list_marker);
+                        }
+                    }
+                }
+            } else if let Some((indent, child, item)) = self
+                .options
+                .contains(Options::ENABLE_DEFINITION_LIST)
+                .then(|| {
+                    self.tree
+                        .cur()
+                        .map(|cur| (self.tree[cur].child, &mut self.tree[cur].item))
+                })
+                .flatten()
+                .filter(|(_, item)| {
+                    matches!(
+                        item,
+                        Item {
+                            body: ItemBody::Paragraph
+                                | ItemBody::MaybeDefinitionListTitle
+                                | ItemBody::DefinitionListDefinition(_),
+                            ..
+                        }
+                    )
+                })
+                .and_then(|item| {
+                    Some((
+                        line_start.scan_definition_list_definition_marker()?,
+                        item.0,
+                        item.1,
+                    ))
+                })
+            {
+                match item.body {
+                    ItemBody::Paragraph => {
+                        item.body = ItemBody::DefinitionList(true);
+                        let Item { start, end, .. } = *item;
+                        let list_idx = self.tree.cur().unwrap();
+                        let title_idx = self.tree.create_node(Item {
+                            start,
+                            end, // will get updated later if item not empty
+                            body: ItemBody::DefinitionListTitle,
+                        });
+                        self.tree[title_idx].child = child;
+                        self.tree[list_idx].child = Some(title_idx);
+                        self.tree.push();
+                    }
+                    ItemBody::MaybeDefinitionListTitle => {
+                        item.body = ItemBody::DefinitionListTitle;
+                    }
+                    ItemBody::DefinitionListDefinition(_) => {}
+                    _ => unreachable!(),
+                }
+                let after_marker_index = start_ix + line_start.bytes_scanned();
+                self.tree.append(Item {
+                    start: container_start,
+                    end: after_marker_index, // will get updated later if item not empty
+                    body: ItemBody::DefinitionListDefinition(indent),
+                });
+                if let Some(ItemBody::DefinitionList(ref mut is_tight)) =
+                    self.tree.peek_up().map(|cur| &mut self.tree[cur].item.body)
+                {
+                    if self.last_line_blank {
+                        *is_tight = false;
+                        self.last_line_blank = false;
+                    }
+                }
+                self.tree.push();
+                if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
+                    self.begin_list_item = Some(after_marker_index + n);
+                    return after_marker_index + n;
                 }
             } else if line_start.scan_blockquote_marker() {
                 let kind = if self.options.contains(Options::ENABLE_GFM) {
@@ -216,7 +292,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
                     ItemBody::BlockQuote(..) => (),
-                    ItemBody::ListItem(indent) if self.begin_list_item.is_some() => {
+                    ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
+                        if self.begin_list_item.is_some() =>
+                    {
                         self.last_line_blank = true;
                         // This is a blank list item.
                         // While the list itself can be continued no matter how many blank lines
@@ -228,17 +306,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.last_line_blank = true;
                     }
                 }
+            } else {
+                self.last_line_blank = true;
             }
             return ix + n;
         }
-
-        self.finish_list(start_ix);
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
 
         let indent = line_start.scan_space_upto(4);
         if indent == 4 {
+            self.finish_list(start_ix);
             let ix = start_ix + line_start.bytes_scanned();
             let remaining_space = line_start.remaining_space();
             return self.parse_indented_code_block(ix, remaining_space);
@@ -255,6 +334,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 self.options
                     .contains(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS),
             ) {
+                self.finish_list(start_ix);
                 return self.parse_metadata_block(ix, metadata_block_ch);
             }
         }
@@ -264,6 +344,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
             if let Some(html_end_tag) = get_html_end_tag(&bytes[(ix + 1)..]) {
+                self.finish_list(start_ix);
                 return self.parse_html_block_type_1_to_5(
                     ix,
                     html_end_tag,
@@ -274,24 +355,29 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             // Detect type 6
             if starts_html_block_type_6(&bytes[(ix + 1)..]) {
+                self.finish_list(start_ix);
                 return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
 
             // Detect type 7
             if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
+                self.finish_list(start_ix);
                 return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
             }
         }
 
         if let Ok(n) = scan_hrule(&bytes[ix..]) {
+            self.finish_list(start_ix);
             return self.parse_hrule(n, ix);
         }
 
         if let Some(atx_size) = scan_atx_heading(&bytes[ix..]) {
+            self.finish_list(start_ix);
             return self.parse_atx_heading(ix, atx_size);
         }
 
         if let Some((n, fence_ch)) = scan_code_fence(&bytes[ix..]) {
+            self.finish_list(start_ix);
             return self.parse_fenced_code_block(ix, indent, fence_ch, n);
         }
 
@@ -331,6 +417,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         current_container,
                     )
                 {
+                    self.finish_list(start_ix);
                     return ix;
                 } else {
                     line_start = lazy_line_start;
@@ -338,6 +425,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     start_ix = ix;
                 }
             } else {
+                self.finish_list(start_ix);
                 return ix;
             }
         }
@@ -481,7 +569,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if scan_paragraph_interrupt_no_table(
             &bytes[ix..],
             current_container,
-            self.options.has_gfm_footnotes(),
+            self.options.contains(Options::ENABLE_FOOTNOTES),
+            self.options.contains(Options::ENABLE_DEFINITION_LIST),
             &self.tree,
         ) {
             return None;
@@ -493,10 +582,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Returns offset of line start after paragraph.
     fn parse_paragraph(&mut self, start_ix: usize) -> usize {
+        let body = if let Some(ItemBody::DefinitionList(_)) =
+            self.tree.peek_up().map(|idx| self.tree[idx].item.body)
+        {
+            // blank lines between the previous definition and this one don't count
+            self.last_line_blank = false;
+            ItemBody::MaybeDefinitionListTitle
+        } else {
+            self.finish_list(start_ix);
+            ItemBody::Paragraph
+        };
         let node_ix = self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body: ItemBody::Paragraph,
+            body,
         });
         self.tree.push();
 
@@ -527,6 +626,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 // be a cleaner way
                 self.tree[node_ix].child = None;
                 self.tree.pop();
+                if body == ItemBody::MaybeDefinitionListTitle {
+                    self.finish_list(ix);
+                }
                 self.tree.push();
                 if let Some(ix) = self.parse_table(table_cols, ix, next_ix) {
                     return ix;
@@ -557,8 +659,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         if let Some(pos) = trailing_backslash_pos {
                             self.tree.append_text(pos, pos + 1, false);
                         }
-                        ix = ix_setext;
-                        break;
+                        self.pop(ix_setext);
+                        if body == ItemBody::MaybeDefinitionListTitle {
+                            self.finish_list(ix);
+                        }
+                        return ix_setext;
                     }
                 }
                 // first check for non-empty lists, then for other interrupts
@@ -1401,7 +1506,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn pop(&mut self, ix: usize) {
         let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
-        if let ItemBody::List(true, _, _) = self.tree[cur_ix].item.body {
+        if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {
+            fixup_end_of_definition_list(&mut self.tree, cur_ix);
+            self.begin_list_item = None;
+        }
+        if let ItemBody::List(true, _, _) | ItemBody::DefinitionList(true) =
+            self.tree[cur_ix].item.body
+        {
             surgerize_tight_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
         }
@@ -1412,13 +1523,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn finish_list(&mut self, ix: usize) {
         self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(_, _, _) = self.tree[node_ix].item.body {
+            if let ItemBody::List(_, _, _) | ItemBody::DefinitionList(_) =
+                self.tree[node_ix].item.body
+            {
                 self.pop(ix);
             }
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
-                if let ItemBody::List(ref mut is_tight, _, _) = self.tree[node_ix].item.body {
+                if let ItemBody::List(ref mut is_tight, _, _)
+                | ItemBody::DefinitionList(ref mut is_tight) = self.tree[node_ix].item.body
+                {
                     *is_tight = false;
                 }
             }
@@ -1431,7 +1546,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if self.last_line_blank {
                 // A list item can begin with at most one blank line.
                 if let Some(node_ix) = self.tree.peek_up() {
-                    if let ItemBody::ListItem(_) = self.tree[node_ix].item.body {
+                    if let ItemBody::ListItem(_) | ItemBody::DefinitionListDefinition(_) =
+                        self.tree[node_ix].item.body
+                    {
                         self.pop(begin_list_item);
                     }
                 }
@@ -1598,19 +1715,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         i += 1;
         self.finish_list(start);
-        if self.options.has_gfm_footnotes() {
-            if let Some(node_ix) = self.tree.peek_up() {
-                if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
-                    // finish previous footnote if it's still open
-                    self.pop(start);
-                }
+        if let Some(node_ix) = self.tree.peek_up() {
+            if let ItemBody::FootnoteDefinition(..) = self.tree[node_ix].item.body {
+                // finish previous footnote if it's still open
+                self.pop(start);
             }
+        }
+        if self.options.has_gfm_footnotes() {
             i += scan_whitespace_no_nl(&bytes[i..]);
         }
-        self.allocs.footdefs.0.insert(
-            UniCase::new(label.clone()),
-            FootnoteDef { use_count: 0 },
-        );
+        self.allocs
+            .footdefs
+            .0
+            .insert(UniCase::new(label.clone()), FootnoteDef { use_count: 0 });
         self.tree.append(Item {
             start,
             end: 0, // will get set later
@@ -1853,8 +1970,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Checks whether we should break a paragraph on the given input.
     fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
-        let gfm_footnote = self.options.has_gfm_footnotes();
-        if scan_paragraph_interrupt_no_table(bytes, current_container, gfm_footnote, &self.tree) {
+        if scan_paragraph_interrupt_no_table(
+            bytes,
+            current_container,
+            self.options.contains(Options::ENABLE_FOOTNOTES),
+            self.options.contains(Options::ENABLE_DEFINITION_LIST),
+            &self.tree,
+        ) {
             return true;
         }
         // pulldown-cmark allows heavy tables, that have a `|` on the header row,
@@ -2009,7 +2131,8 @@ fn count_header_cols(
 fn scan_paragraph_interrupt_no_table(
     bytes: &[u8],
     current_container: bool,
-    gfm_footnote: bool,
+    has_footnote: bool,
+    definition_list: bool,
     tree: &Tree<Item>,
 ) -> bool {
     scan_eol(bytes).is_some()
@@ -2027,7 +2150,8 @@ fn scan_paragraph_interrupt_no_table(
         })
         || bytes.starts_with(b"<")
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
-        || (gfm_footnote
+        || definition_list && bytes.starts_with(b":")
+        || (has_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(
                 std::str::from_utf8(&bytes[2..]).unwrap(),
@@ -2123,6 +2247,27 @@ fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
         }
 
         list_item = tree[listitem_ix].next;
+    }
+}
+
+fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
+    let mut list_item = tree[list_ix].child;
+    let mut previous_list_item = None;
+    while let Some(listitem_ix) = list_item {
+        match &mut tree[listitem_ix].item.body {
+            ItemBody::DefinitionListTitle | ItemBody::DefinitionListDefinition(_) => {
+                previous_list_item = list_item;
+                list_item = tree[listitem_ix].next;
+            }
+            body @ ItemBody::MaybeDefinitionListTitle => {
+                *body = ItemBody::Paragraph;
+                break;
+            }
+            _ => break,
+        }
+    }
+    if let Some(previous_list_item) = previous_list_item {
+        tree.truncate_to_parent(previous_list_item);
     }
 }
 

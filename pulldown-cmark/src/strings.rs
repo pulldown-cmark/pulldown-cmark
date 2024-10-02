@@ -224,6 +224,16 @@ impl<'a> From<Cow<'a, char>> for CowStr<'a> {
     }
 }
 
+impl<'a> From<CowStr<'a>> for String {
+    fn from(s: CowStr<'a>) -> Self {
+        match s {
+            CowStr::Boxed(s) => s.into(),
+            CowStr::Inlined(s) => s.as_ref().into(),
+            CowStr::Borrowed(s) => s.into(),
+        }
+    }
+}
+
 impl<'a> Deref for CowStr<'a> {
     type Target = str;
 
@@ -364,6 +374,28 @@ mod test_special_string {
         let expected: Cow<str> = Cow::Owned(s.to_string());
         assert_eq!(actual, expected);
         assert!(variant_eq(&actual, &expected));
+    }
+
+    #[test]
+    fn cow_str_to_string() {
+        let s = "some text";
+        let cow_str = CowStr::Borrowed(s);
+        let actual = String::from(cow_str);
+        let expected = String::from("some text");
+        assert_eq!(actual, expected);
+
+        let s = "s";
+        let inline_str: InlineStr = InlineStr::try_from(s).unwrap();
+        let cow_str = CowStr::Inlined(inline_str);
+        let actual = String::from(cow_str);
+        let expected = String::from("s");
+        assert_eq!(actual, expected);
+
+        let s = "s";
+        let cow_str = CowStr::Boxed(s.to_string().into_boxed_str());
+        let actual = String::from(cow_str);
+        let expected = String::from("s");
+        assert_eq!(actual, expected);
     }
 
     #[test]

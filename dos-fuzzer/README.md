@@ -1,6 +1,9 @@
 # Fuzzer for detecting superlinear growth in pulldown-cmark
 
 This fuzzer tries to find superlinear growth in pulldown-cmark wrt. input length.
+Patterns that exhibit superlinear (e.g. quadratic) growth can potentially be
+used for denial-of-service attacks, or cause slow parsing even in normal use.
+
 The general approach is to parse the source code of pulldown-cmark, extract
 literals which are used in branching code (if-conditions, match patterns,
 match guards, …) and add some manually.

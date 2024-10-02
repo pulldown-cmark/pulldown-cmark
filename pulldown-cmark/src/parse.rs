@@ -106,6 +106,14 @@ pub(crate) enum ItemBody {
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
+    // Definition lists
+    DefinitionList(bool), // is_tight
+    // gets turned into either a paragraph or a definition list title,
+    // depending on whether there's a definition after it
+    MaybeDefinitionListTitle,
+    DefinitionListTitle,
+    DefinitionListDefinition(usize),
+
     // Tables
     Table(AlignmentIndex),
     TableHead,
@@ -469,7 +477,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         )
                                     });
                                 if !invalid && delim_brace_context == brace_context {
-                                    if (!is_display && can_close) || (is_display && delim_is_display) {
+                                    if (!is_display && can_close)
+                                        || (is_display && delim_is_display)
+                                    {
                                         // This will skip ahead past everything we
                                         // just inserted. Needed for correctness to
                                         // ensure that a new scan is done after this item.
@@ -662,13 +672,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 // [shortcut]
                                 //
                                 // [shortcut]: /blah
-                                RefScan::Failed => {
+                                RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     if !could_be_ref {
                                         continue;
                                     }
                                     (next, LinkType::Shortcut)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             // FIXME: references and labels are mixed in the naming of variables
@@ -679,7 +688,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 RefScan::LinkLabel(l, end_ix) => {
                                     Some((ReferenceLabel::Link(l), end_ix))
                                 }
-                                RefScan::Collapsed(..) | RefScan::Failed => {
+                                RefScan::Collapsed(..)
+                                | RefScan::Failed
+                                | RefScan::UnexpectedFootnote => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
                                     let label_end = self.tree[cur_ix].item.end;
@@ -692,7 +703,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
                                 }
-                                RefScan::UnexpectedFootnote => continue,
                             };
 
                             let id = match &label {
@@ -722,6 +732,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         self.tree[tos.node].child = None;
                                         self.tree[tos.node].item.body =
                                             ItemBody::SynthesizeChar('!');
+                                        self.tree[cur_ix].item.start =
+                                            self.tree[tos.node].item.start + 1;
+                                        self.tree[tos.node].item.end =
+                                            self.tree[tos.node].item.start + 1;
                                         cur_ix
                                     } else {
                                         tos.node
@@ -1302,6 +1316,13 @@ pub(crate) fn scan_containers(
                     break;
                 }
             }
+            ItemBody::DefinitionListDefinition(indent) => {
+                let save = line_start.clone();
+                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                    *line_start = save;
+                    break;
+                }
+            }
             ItemBody::FootnoteDefinition(..) if gfm_footnotes => {
                 let save = line_start.clone();
                 if !line_start.scan_space(4) && !line_start.is_at_eol() {
@@ -1717,11 +1738,10 @@ impl MathDelims {
         ix: TreeIndex,
         can_close: bool,
     ) {
-        self.inner.entry(brace_context).or_default().push_back((
-            ix,
-            can_close,
-            delim_is_display,
-        ));
+        self.inner
+            .entry(brace_context)
+            .or_default()
+            .push_back((ix, can_close, delim_is_display));
     }
 
     fn is_populated(&self) -> bool {
@@ -1928,6 +1948,7 @@ pub(crate) struct HtmlScanGuard {
     pub cdata: usize,
     pub processing: usize,
     pub declaration: usize,
+    pub comment: usize,
 }
 
 /// Trait for broken link callbacks.
@@ -2039,7 +2060,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote(..) => TagEnd::BlockQuote,
+        ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
@@ -2052,6 +2073,9 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Table(..) => TagEnd::Table,
         ItemBody::FootnoteDefinition(..) => TagEnd::FootnoteDefinition,
         ItemBody::MetadataBlock(kind) => TagEnd::MetadataBlock(kind),
+        ItemBody::DefinitionList(_) => TagEnd::DefinitionList,
+        ItemBody::DefinitionListTitle => TagEnd::DefinitionListTitle,
+        ItemBody::DefinitionListDefinition(_) => TagEnd::DefinitionListDefinition,
         _ => panic!("unexpected item body {:?}", body),
     }
 }
@@ -2138,6 +2162,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
                 Event::InlineMath(allocs.take_cow(cow_ix))
             }
         }
+        ItemBody::DefinitionList(_) => Tag::DefinitionList,
+        ItemBody::DefinitionListTitle => Tag::DefinitionListTitle,
+        ItemBody::DefinitionListDefinition(_) => Tag::DefinitionListDefinition,
         _ => panic!("unexpected item body {:?}", item.body),
     };
 
@@ -2331,6 +2358,31 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(12..16, range);
+    }
+
+    #[test]
+    fn footnote_offsets_exclamation() {
+        let mut immediately_before_footnote = None;
+        let range = parser_with_extensions("Testing this![^1] out.\n\n[^1]: Footnote.")
+            .into_offset_iter()
+            .filter_map(|(ev, range)| match ev {
+                Event::FootnoteReference(..) => Some(range),
+                _ => {
+                    immediately_before_footnote = Some((ev, range));
+                    None
+                }
+            })
+            .next()
+            .unwrap();
+        assert_eq!(13..17, range);
+        if let (Event::Text(exclamation), range_exclamation) =
+            immediately_before_footnote.as_ref().unwrap()
+        {
+            assert_eq!("!", &exclamation[..]);
+            assert_eq!(&(12..13), range_exclamation);
+        } else {
+            panic!("what came first, then? {immediately_before_footnote:?}");
+        }
     }
 
     #[test]

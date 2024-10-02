@@ -1,5 +1,6 @@
 [workspace]
-members = ["bench", "pulldown-cmark", "pulldown-cmark-escape"]
+default-members = ["bench", "pulldown-cmark", "pulldown-cmark-escape"]
+members = ["bench", "dos-fuzzer", "pulldown-cmark", "pulldown-cmark-escape"]
 resolver = "2"
 
 [profile.release]

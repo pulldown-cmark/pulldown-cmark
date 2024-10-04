@@ -33,7 +33,7 @@ fuzz_target!(|data: FuzzingInput<'_>| {
         opts.insert(Options::ENABLE_STRIKETHROUGH);
     }
 
-    if data.super_sup {
+    if data.super_sub {
         opts.insert(Options::ENABLE_SUPER_SUB);
     }
 

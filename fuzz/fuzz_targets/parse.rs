@@ -33,6 +33,10 @@ fuzz_target!(|data: FuzzingInput<'_>| {
         opts.insert(Options::ENABLE_STRIKETHROUGH);
     }
 
+    if data.super_sup {
+        opts.insert(Options::ENABLE_SUPER_SUB);
+    }
+
     if data.tasklists {
         opts.insert(Options::ENABLE_TASKLISTS);
     }

@@ -2215,6 +2215,7 @@ mod test {
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_SUPER_SUB);
         opts.insert(Options::ENABLE_TASKLISTS);
 
         Parser::new_ext(text, opts)

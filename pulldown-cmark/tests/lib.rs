@@ -18,6 +18,7 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_MATH);
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
+    opts.insert(Options::ENABLE_SUPER_SUB);
     opts.insert(Options::ENABLE_TASKLISTS);
     opts.insert(Options::ENABLE_GFM);
     if old_footnotes {

@@ -18,3 +18,4 @@ mod smart_punct;
 mod spec;
 mod strikethrough;
 mod table;
+mod super_sub;

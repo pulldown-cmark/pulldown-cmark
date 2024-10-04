@@ -2378,7 +2378,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'^',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
     ];
 
     for &byte in &standard_bytes {
@@ -2387,8 +2387,11 @@ fn special_bytes(options: &Options) -> [bool; 256] {
     if options.contains(Options::ENABLE_TABLES) {
         bytes[b'|' as usize] = true;
     }
-    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+    if options.contains(Options::ENABLE_STRIKETHROUGH) || options.contains(Options::ENABLE_SUPER_SUB) {
         bytes[b'~' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_SUPER_SUB) {
+        bytes[b'^' as usize] = true;
     }
     if options.contains(Options::ENABLE_MATH) {
         bytes[b'$' as usize] = true;
@@ -2618,7 +2621,7 @@ mod simd {
     pub(super) fn compute_lookup(options: &Options) -> [u8; 16] {
         let mut lookup = [0u8; 16];
         let standard_bytes = [
-            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'^',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
         ];
 
         for &byte in &standard_bytes {
@@ -2627,8 +2630,11 @@ mod simd {
         if options.contains(Options::ENABLE_TABLES) {
             add_lookup_byte(&mut lookup, b'|');
         }
-        if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        if options.contains(Options::ENABLE_STRIKETHROUGH) || options.contains(Options::ENABLE_SUPER_SUB) {
             add_lookup_byte(&mut lookup, b'~');
+        }
+        if options.contains(Options::ENABLE_SUPER_SUB) {
+            add_lookup_byte(&mut lookup, b'^');
         }
         if options.contains(Options::ENABLE_MATH) {
             add_lookup_byte(&mut lookup, b'$');
@@ -2785,6 +2791,7 @@ mod simd {
             opts.insert(Options::ENABLE_TABLES);
             opts.insert(Options::ENABLE_FOOTNOTES);
             opts.insert(Options::ENABLE_STRIKETHROUGH);
+            opts.insert(Options::ENABLE_SUPER_SUB);
             opts.insert(Options::ENABLE_TASKLISTS);
 
             let lut = create_lut(&opts);

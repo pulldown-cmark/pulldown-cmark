@@ -260,6 +260,10 @@ impl<'a> CowStr<'a> {
             CowStr::Inlined(s) => s.deref().to_owned(),
         }
     }
+
+    pub fn into_static(self) -> CowStr<'static> {
+        self.into_string().into()
+    }
 }
 
 impl<'a> fmt::Display for CowStr<'a> {

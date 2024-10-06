@@ -142,7 +142,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
             }
             let container_start = start_ix + line_start.bytes_scanned();
-            if let Some((ch, index, indent)) = line_start.scan_list_marker_with_indent(outer_indent) {
+            if let Some((ch, index, indent)) = line_start.scan_list_marker_with_indent(outer_indent)
+            {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.continue_list(container_start - outer_indent, ch, index);
                 self.tree.append(Item {
@@ -194,7 +195,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 })
                 .and_then(|item| {
                     Some((
-                        line_start.scan_definition_list_definition_marker_with_indent(outer_indent)?,
+                        line_start
+                            .scan_definition_list_definition_marker_with_indent(outer_indent)?,
                         item.0,
                         item.1,
                     ))
@@ -584,7 +586,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
-            if self.tree.cur().map_or(true, |idx| matches!(&self.tree[idx].item.body, ItemBody::DefinitionListDefinition(..))) {
+            if self.tree.cur().map_or(true, |idx| {
+                matches!(
+                    &self.tree[idx].item.body,
+                    ItemBody::DefinitionListDefinition(..)
+                )
+            }) {
                 // blank lines between the previous definition and this one don't count
                 self.last_line_blank = false;
                 ItemBody::MaybeDefinitionListTitle

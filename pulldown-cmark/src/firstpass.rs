@@ -724,8 +724,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let new_end = if has_trailing_content {
                 content_end
             } else {
-                let trailing_ws =
+                let mut trailing_ws =
                     scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl);
+
+                // Space for blockquote marker should not be stripped. Only if the heading attributes
+                // extension is enabled, the setext header lines can be empty as the result of
+                // stripping attributes. (#963)
+                if trailing_ws > 0
+                    && attrs.is_some()
+                    && ends_with_blockquote_marker(&bytes[header_start..content_end - trailing_ws + 1])
+                {
+                    trailing_ws -= 1;
+                }
+
                 content_end - trailing_ws
             };
 
@@ -2540,6 +2551,21 @@ fn extract_attribute_block_content_from_header_text(
     }
 
     (attr_block_open, Some(ix..attr_block_close))
+}
+
+/// Returns whether `data` ends with blockquote marker '> '.
+fn ends_with_blockquote_marker(data: &[u8]) -> bool {
+    let Some(mut data) = data.strip_suffix(b"> ") else {
+        return false;
+    };
+    while let Some(stripped) = data.strip_suffix(b"> ") {
+        data = stripped;
+    }
+    let spaces = scan_rev_while(data, is_ascii_whitespace_no_nl);
+    if spaces > 0 {
+        data = &data[..data.len() - spaces];
+    }
+    data.last().copied() == Some(b'\n')
 }
 
 /// Parses an attribute block content, such as `.class1 #id .class2`.

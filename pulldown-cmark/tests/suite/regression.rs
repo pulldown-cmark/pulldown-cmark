@@ -3253,3 +3253,44 @@ stuff](https://example.com)</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_206() {
+    let original = r##"foo
+{.class}
+===
+
+> foo
+> {.class}
+> ===
+>
+> > foo
+> > {.class}
+> > ===
+
+* > foo
+  > {.class}
+  > ===
+"##;
+    let expected = r##"<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</blockquote>
+<ul>
+<li>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

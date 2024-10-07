@@ -262,7 +262,14 @@ impl<'a> CowStr<'a> {
     }
 
     pub fn into_static(self) -> CowStr<'static> {
-        self.into_string().into()
+        match self {
+            CowStr::Boxed(b) => CowStr::Boxed(b),
+            CowStr::Borrowed(b) => match InlineStr::try_from(b) {
+                Ok(inline) => CowStr::Inlined(inline),
+                Err(_) => CowStr::Boxed(b.into()),
+            },
+            CowStr::Inlined(s) => CowStr::Inlined(s),
+        }
     }
 }
 

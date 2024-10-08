@@ -724,8 +724,25 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let new_end = if has_trailing_content {
                 content_end
             } else {
+                let mut last_line_start = header_start;
+                loop {
+                    let next_line_start = last_line_start + scan_nextline(&bytes[last_line_start..content_end]);
+                    if next_line_start >= content_end {
+                        break;
+                    }
+                    let mut line_start = LineStart::new(&bytes[next_line_start..content_end]);
+                    if scan_containers(
+                        &self.tree,
+                        &mut line_start,
+                        self.options.has_gfm_footnotes(),
+                    ) != self.tree.spine_len()
+                    {
+                        break;
+                    }
+                    last_line_start = next_line_start + line_start.bytes_scanned();
+                }
                 let trailing_ws =
-                    scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl);
+                    scan_rev_while(&bytes[last_line_start..content_end], is_ascii_whitespace_no_nl);
                 content_end - trailing_ws
             };
 

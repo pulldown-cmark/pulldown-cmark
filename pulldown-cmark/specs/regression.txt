@@ -2726,3 +2726,59 @@ Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
 stuff](https://example.com)</li>
 </ul>
 ````````````````````````````````
+
+ISSUE #963
+
+```````````````````````````````` example
+foo
+{.class}
+===
+
+> foo
+> {.class}
+> ===
+>
+> > foo
+> > {.class}
+> > ===
+
+* > foo
+  > {.class}
+  > ===
+
+> foo
+>→{.class}
+>→===
+.
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</blockquote>
+<ul>
+<li>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</li>
+</ul>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+the trailing space after the &gt; should be stripped
+    > {.bar}
+===
+.
+<h1 class="bar">the trailing space after the &gt; should be stripped
+&gt;</h1>
+````````````````````````````````

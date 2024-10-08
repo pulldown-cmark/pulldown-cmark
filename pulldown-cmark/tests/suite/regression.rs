@@ -3253,3 +3253,65 @@ stuff](https://example.com)</li>
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_206() {
+    let original = r##"foo
+{.class}
+===
+
+> foo
+> {.class}
+> ===
+>
+> > foo
+> > {.class}
+> > ===
+
+* > foo
+  > {.class}
+  > ===
+
+> foo
+>	{.class}
+>	===
+"##;
+    let expected = r##"<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</blockquote>
+<ul>
+<li>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</li>
+</ul>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_207() {
+    let original = r##"the trailing space after the &gt; should be stripped
+    > {.bar}
+===
+"##;
+    let expected = r##"<h1 class="bar">the trailing space after the &gt; should be stripped
+&gt;</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

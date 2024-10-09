@@ -471,7 +471,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let result = if self.math_delims.is_populated() {
                         // we have previously scanned all math environment delimiters,
                         // so we can reuse that work
-                        self.math_delims.find(&self.tree, cur_ix, is_display, brace_context)
+                        self.math_delims
+                            .find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
                         // we haven't previously scanned all math delimiters,
                         // so walk the AST
@@ -1685,6 +1686,16 @@ pub struct LinkDef<'a> {
     pub dest: CowStr<'a>,
     pub title: Option<CowStr<'a>>,
     pub span: Range<usize>,
+}
+
+impl<'a> LinkDef<'a> {
+    pub fn into_static(self) -> LinkDef<'static> {
+        LinkDef {
+            dest: self.dest.into_static(),
+            title: self.title.map(|s| s.into_static()),
+            span: self.span,
+        }
+    }
 }
 
 /// Contains the destination URL, title and source span of a reference definition.

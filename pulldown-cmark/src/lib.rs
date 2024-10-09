@@ -120,6 +120,13 @@ impl<'a> CodeBlockKind<'a> {
     pub fn is_fenced(&self) -> bool {
         matches!(*self, CodeBlockKind::Fenced(_))
     }
+
+    pub fn into_static(self) -> CodeBlockKind<'static> {
+        match self {
+            CodeBlockKind::Indented => CodeBlockKind::Indented,
+            CodeBlockKind::Fenced(s) => CodeBlockKind::Fenced(s.into_static()),
+        }
+    }
 }
 
 /// BlockQuote kind (Note, Tip, Important, Warning, Caution).
@@ -242,6 +249,65 @@ impl<'a> Tag<'a> {
             Tag::DefinitionList => TagEnd::DefinitionList,
             Tag::DefinitionListTitle => TagEnd::DefinitionListTitle,
             Tag::DefinitionListDefinition => TagEnd::DefinitionListDefinition,
+        }
+    }
+
+    pub fn into_static(self) -> Tag<'static> {
+        match self {
+            Tag::Paragraph => Tag::Paragraph,
+            Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            } => Tag::Heading {
+                level,
+                id: id.map(|s| s.into_static()),
+                classes: classes.into_iter().map(|s| s.into_static()).collect(),
+                attrs: attrs
+                    .into_iter()
+                    .map(|(k, v)| (k.into_static(), v.map(|s| s.into_static())))
+                    .collect(),
+            },
+            Tag::BlockQuote(k) => Tag::BlockQuote(k),
+            Tag::CodeBlock(kb) => Tag::CodeBlock(kb.into_static()),
+            Tag::HtmlBlock => Tag::HtmlBlock,
+            Tag::List(v) => Tag::List(v),
+            Tag::Item => Tag::Item,
+            Tag::FootnoteDefinition(a) => Tag::FootnoteDefinition(a.into_static()),
+            Tag::Table(v) => Tag::Table(v),
+            Tag::TableHead => Tag::TableHead,
+            Tag::TableRow => Tag::TableRow,
+            Tag::TableCell => Tag::TableCell,
+            Tag::Emphasis => Tag::Emphasis,
+            Tag::Strong => Tag::Strong,
+            Tag::Strikethrough => Tag::Strikethrough,
+            Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            } => Tag::Link {
+                link_type,
+                dest_url: dest_url.into_static(),
+                title: title.into_static(),
+                id: id.into_static(),
+            },
+            Tag::Image {
+                link_type,
+                dest_url,
+                title,
+                id,
+            } => Tag::Image {
+                link_type,
+                dest_url: dest_url.into_static(),
+                title: title.into_static(),
+                id: id.into_static(),
+            },
+            Tag::MetadataBlock(v) => Tag::MetadataBlock(v),
+            Tag::DefinitionList => Tag::DefinitionList,
+            Tag::DefinitionListTitle => Tag::DefinitionListTitle,
+            Tag::DefinitionListDefinition => Tag::DefinitionListDefinition,
         }
     }
 }
@@ -418,6 +484,26 @@ pub enum Event<'a> {
     Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
     TaskListMarker(bool),
+}
+
+impl<'a> Event<'a> {
+    pub fn into_static(self) -> Event<'static> {
+        match self {
+            Event::Start(t) => Event::Start(t.into_static()),
+            Event::End(e) => Event::End(e),
+            Event::Text(s) => Event::Text(s.into_static()),
+            Event::Code(s) => Event::Code(s.into_static()),
+            Event::InlineMath(s) => Event::InlineMath(s.into_static()),
+            Event::DisplayMath(s) => Event::DisplayMath(s.into_static()),
+            Event::Html(s) => Event::Html(s.into_static()),
+            Event::InlineHtml(s) => Event::InlineHtml(s.into_static()),
+            Event::FootnoteReference(s) => Event::FootnoteReference(s.into_static()),
+            Event::SoftBreak => Event::SoftBreak,
+            Event::HardBreak => Event::HardBreak,
+            Event::Rule => Event::Rule,
+            Event::TaskListMarker(b) => Event::TaskListMarker(b),
+        }
+    }
 }
 
 /// Table column text alignment.

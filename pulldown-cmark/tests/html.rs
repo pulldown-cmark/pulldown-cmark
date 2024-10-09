@@ -330,7 +330,13 @@ fn trim_space_before_soft_break() {
 #[test]
 fn issue_819() {
     let original = [
-        "# \\", "# \\\n", "# \\\n\n", "# \\\r\n", "# \\\r\n\r\n", "# \\\n\r\n", "# \\\r\n\n"
+        "# \\",
+        "# \\\n",
+        "# \\\n\n",
+        "# \\\r\n",
+        "# \\\r\n\r\n",
+        "# \\\n\r\n",
+        "# \\\r\n\n",
     ];
     let expected = "<h1>\\</h1>";
 

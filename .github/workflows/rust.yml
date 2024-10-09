@@ -19,6 +19,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install Rust
       run: rustup default ${{ matrix.rust-version }}
+    - name: Cargo fmt
+      if: ${{ matrix.rust-version == 'stable' }}
+      run: cargo fmt --check
     - name: Cargo build
       if: ${{ matrix.rust-version == '1.71.1' }}
       run: cargo build --verbose

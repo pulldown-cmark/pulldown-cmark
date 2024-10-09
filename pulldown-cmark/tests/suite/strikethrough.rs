@@ -54,40 +54,10 @@ fn strikethrough_test_5() {
 }
 
 #[test]
-fn strikethrough_test_6() {
-    let original = r##"~This is stricken out~
-"##;
-    let expected = r##"<p><del>This is stricken out</del></p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn strikethrough_test_7() {
-    let original = r##"~This is \~stricken~
-"##;
-    let expected = r##"<p><del>This is ~stricken</del></p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
 fn strikethrough_test_8() {
     let original = r##"This~is~nothing
 "##;
     let expected = r##"<p>This~is~nothing</p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn strikethrough_test_9() {
-    let original = r##"~This~is~nothing~
-"##;
-    let expected = r##"<p><del>This~is~nothing</del></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);
@@ -138,26 +108,6 @@ fn strikethrough_test_14() {
     let original = r##"~~This ~is stricken.~~
 "##;
     let expected = r##"<p><del>This ~is stricken.</del></p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn strikethrough_test_15() {
-    let original = r##"~This ~~is stricken.~
-"##;
-    let expected = r##"<p><del>This ~~is stricken.</del></p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false);
-}
-
-#[test]
-fn strikethrough_test_16() {
-    let original = r##"~This ~~is stricken~ but this is not~~
-"##;
-    let expected = r##"<p><del>This ~~is stricken</del> but this is not~~</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false);

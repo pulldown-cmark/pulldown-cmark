@@ -122,6 +122,9 @@ pub fn main() -> std::io::Result<()> {
     if matches.opt_present("enable-strikethrough") {
         opts.insert(Options::ENABLE_STRIKETHROUGH);
     }
+    if matches.opt_present("enable-super-sub") {
+        opts.insert(Options::ENABLE_SUPER_SUB);
+    }
     if matches.opt_present("enable-tasklists") {
         opts.insert(Options::ENABLE_TASKLISTS);
     }

@@ -520,3 +520,37 @@ third
 <dd>sixth</dd>
 </dl>
 ````````````````````````````````
+
+Nested definition lists:
+(<https://github.com/pulldown-cmark/pulldown-cmark/issues/973>):
+
+```````````````````````````````` example
+level one
+: l1
+    level two
+    : l2
+        level three
+        : l3
+
+level one
+: l1
+.
+<dl>
+<dt>level one</dt>
+<dd>
+<dl>
+<dt>l1
+level two</dt>
+<dd>
+<dl>
+<dt>l2
+level three</dt>
+<dd>l3</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>level one</dt>
+<dd>l1</dd>
+</dl>
+````````````````````````````````

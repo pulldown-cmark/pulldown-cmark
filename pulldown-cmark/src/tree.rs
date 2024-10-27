@@ -186,8 +186,6 @@ impl<T: Default> Tree<T> {
         }
         if next.is_some() {
             self.cur = next;
-        } else {
-            self.pop();
         }
     }
 }

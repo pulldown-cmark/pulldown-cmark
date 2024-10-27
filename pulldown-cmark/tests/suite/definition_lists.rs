@@ -563,3 +563,38 @@ third
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn definition_lists_test_26() {
+    let original = r##"level one
+: l1
+    level two
+    : l2
+        level three
+        : l3
+
+level one
+: l1
+"##;
+    let expected = r##"<dl>
+<dt>level one</dt>
+<dd>
+<dl>
+<dt>l1
+level two</dt>
+<dd>
+<dl>
+<dt>l2
+level three</dt>
+<dd>l3</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>level one</dt>
+<dd>l1</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

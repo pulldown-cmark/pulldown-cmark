@@ -655,13 +655,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result = scan_reference(
-                                &self.tree,
-                                block_text,
-                                next,
-                                self.options.contains(Options::ENABLE_FOOTNOTES),
-                                self.options.has_gfm_footnotes(),
-                            );
+                            let scan_result =
+                                scan_reference(&self.tree, block_text, next, self.options);
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
@@ -719,8 +714,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..label_end],
-                                        self.options.contains(Options::ENABLE_FOOTNOTES),
-                                        self.options.has_gfm_footnotes(),
+                                        self.options,
                                     )
                                     .map(|(ix, label)| (label, label_start + ix))
                                     .filter(|(_, end)| *end == label_end)
@@ -1000,13 +994,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
             if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
                 *ix += bl;
-                let mut line_start = LineStart::new(&underlying.as_bytes()[*ix..]);
-                let _ = scan_containers(
+                *ix += skip_container_prefixes(
                     &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
+                    &underlying.as_bytes()[*ix..],
+                    self.options,
                 );
-                *ix += line_start.bytes_scanned();
             }
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
         };
@@ -1158,13 +1150,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 ix += 1;
                 let buf = buf.get_or_insert_with(|| String::with_capacity(ix - span_start));
                 buf.push_str(&self.text[start_ix..ix]);
-                let mut line_start = LineStart::new(&bytes[ix..]);
-                let _ = scan_containers(
-                    &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
-                );
-                ix += line_start.bytes_scanned();
+                ix += skip_container_prefixes(&self.tree, &bytes[ix..], self.options);
                 start_ix = ix;
             } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
@@ -1193,31 +1179,29 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     ///
     /// Both `open` and `close` are matching MaybeCode items.
     fn make_code_span(&mut self, open: TreeIndex, close: TreeIndex, preceding_backslash: bool) {
-        let bytes = self.text.as_bytes();
         let span_start = self.tree[open].item.end;
         let span_end = self.tree[close].item.start;
         let mut buf: Option<String> = None;
 
-        let mut start_ix = span_start;
-        let mut ix = span_start;
-        while ix < span_end {
-            let c = bytes[ix];
+        let spanned_text = &self.text[span_start..span_end];
+        let spanned_bytes = spanned_text.as_bytes();
+        let mut start_ix = 0;
+        let mut ix = 0;
+        while ix < spanned_bytes.len() {
+            let c = spanned_bytes[ix];
             if c == b'\r' || c == b'\n' {
-                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
-                buf.push_str(&self.text[start_ix..ix]);
+                let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
+                buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push(' ');
                 ix += 1;
-                let mut line_start = LineStart::new(&bytes[ix..]);
-                let _ = scan_containers(
-                    &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
-                );
-                ix += line_start.bytes_scanned();
+                ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
                 start_ix = ix;
-            } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
-                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
-                buf.push_str(&self.text[start_ix..ix]);
+            } else if c == b'\\'
+                && spanned_bytes.get(ix + 1) == Some(&b'|')
+                && self.tree.is_in_table()
+            {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
+                buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push('|');
                 ix += 2;
                 start_ix = ix;
@@ -1228,10 +1212,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 
         let (opening, closing, all_spaces) = {
             let s = if let Some(buf) = &mut buf {
-                buf.push_str(&self.text[start_ix..span_end]);
+                buf.push_str(&spanned_text[start_ix..]);
                 &buf[..]
             } else {
-                &self.text[span_start..span_end]
+                spanned_text
             };
             (
                 s.as_bytes().first() == Some(&b' '),
@@ -1246,14 +1230,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 buf.pop();
                 buf.into()
             } else {
-                let lo = span_start + 1;
-                let hi = (span_end - 1).max(lo);
-                self.text[lo..hi].into()
+                spanned_text[1..(spanned_text.len() - 1).max(1)].into()
             }
         } else if let Some(buf) = buf {
             buf.into()
         } else {
-            self.text[span_start..span_end].into()
+            spanned_text.into()
         };
 
         if preceding_backslash {
@@ -1290,15 +1272,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
                 &bytes[(ix - 1)..],
-                Some(&|bytes| {
-                    let mut line_start = LineStart::new(bytes);
-                    let _ = scan_containers(
-                        &self.tree,
-                        &mut line_start,
-                        self.options.has_gfm_footnotes(),
-                    );
-                    line_start.bytes_scanned()
-                }),
+                Some(&|bytes| skip_container_prefixes(&self.tree, bytes, self.options)),
             )?;
             Some((span, i + ix - 1))
         }
@@ -1316,7 +1290,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 pub(crate) fn scan_containers(
     tree: &Tree<Item>,
     line_start: &mut LineStart<'_>,
-    gfm_footnotes: bool,
+    options: Options,
 ) -> usize {
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
@@ -1343,7 +1317,7 @@ pub(crate) fn scan_containers(
                     break;
                 }
             }
-            ItemBody::FootnoteDefinition(..) if gfm_footnotes => {
+            ItemBody::FootnoteDefinition(..) if options.has_gfm_footnotes() => {
                 let save = line_start.clone();
                 if !line_start.scan_space(4) && !line_start.is_at_eol() {
                     *line_start = save;
@@ -1355,6 +1329,11 @@ pub(crate) fn scan_containers(
         i += 1;
     }
     i
+}
+pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
+    let mut line_start = LineStart::new(bytes);
+    let _ = scan_containers(tree, &mut line_start, options);
+    line_start.bytes_scanned()
 }
 
 impl Tree<Item> {
@@ -1578,20 +1557,18 @@ fn scan_nodes_to_ix(
 fn scan_link_label<'text>(
     tree: &Tree<Item>,
     text: &'text str,
-    allow_footnote_refs: bool,
-    gfm_footnotes: bool,
+    options: Options,
 ) -> Option<(usize, ReferenceLabel<'text>)> {
     let bytes = text.as_bytes();
     if bytes.len() < 2 || bytes[0] != b'[' {
         return None;
     }
-    let linebreak_handler = |bytes: &[u8]| {
-        let mut line_start = LineStart::new(bytes);
-        let _ = scan_containers(tree, &mut line_start, gfm_footnotes);
-        Some(line_start.bytes_scanned())
-    };
-    if allow_footnote_refs && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
-        let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if gfm_footnotes {
+    let linebreak_handler = |bytes: &[u8]| Some(skip_container_prefixes(tree, bytes, options));
+    if options.contains(Options::ENABLE_FOOTNOTES)
+        && b'^' == bytes[1]
+        && bytes.get(2) != Some(&b']')
+    {
+        let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if options.has_gfm_footnotes() {
             &|_| None
         } else {
             &linebreak_handler
@@ -1611,8 +1588,7 @@ fn scan_reference<'b>(
     tree: &Tree<Item>,
     text: &'b str,
     cur: Option<TreeIndex>,
-    allow_footnote_refs: bool,
-    gfm_footnotes: bool,
+    options: Options,
 ) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
@@ -1626,7 +1602,7 @@ fn scan_reference<'b>(
         let closing_node = tree[cur_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else {
-        let label = scan_link_label(tree, &text[start..], allow_footnote_refs, gfm_footnotes);
+        let label = scan_link_label(tree, &text[start..], options);
         match label {
             Some((ix, ReferenceLabel::Link(label))) => RefScan::LinkLabel(label, start + ix),
             Some((_ix, ReferenceLabel::Footnote(_label))) => RefScan::UnexpectedFootnote,

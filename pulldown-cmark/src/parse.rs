@@ -1139,22 +1139,26 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         let span_start = self.tree[open].item.end;
         let span_end = self.tree[close].item.start;
 
-        let bytes = self.text.as_bytes();
+        let spanned_text = &self.text[span_start..span_end];
+        let spanned_bytes = spanned_text.as_bytes();
         let mut buf: Option<String> = None;
 
-        let mut start_ix = span_start;
-        let mut ix = span_start;
-        while ix < span_end {
-            let c = bytes[ix];
+        let mut start_ix = 0;
+        let mut ix = 0;
+        while ix < spanned_bytes.len() {
+            let c = spanned_bytes[ix];
             if c == b'\r' || c == b'\n' {
                 ix += 1;
-                let buf = buf.get_or_insert_with(|| String::with_capacity(ix - span_start));
-                buf.push_str(&self.text[start_ix..ix]);
-                ix += skip_container_prefixes(&self.tree, &bytes[ix..], self.options);
+                let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
+                buf.push_str(&spanned_text[start_ix..ix]);
+                ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
                 start_ix = ix;
-            } else if c == b'\\' && bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
-                let buf = buf.get_or_insert_with(|| String::with_capacity(ix + 1 - span_start));
-                buf.push_str(&self.text[start_ix..ix]);
+            } else if c == b'\\'
+                && spanned_bytes.get(ix + 1) == Some(&b'|')
+                && self.tree.is_in_table()
+            {
+                let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
+                buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push('|');
                 ix += 2;
                 start_ix = ix;
@@ -1164,10 +1168,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         }
 
         let cow = if let Some(mut buf) = buf {
-            buf.push_str(&self.text[start_ix..span_end]);
+            buf.push_str(&spanned_text[start_ix..]);
             buf.into()
         } else {
-            self.text[span_start..span_end].into()
+            spanned_text.into()
         };
 
         self.tree[open].item.body = ItemBody::Math(self.allocs.allocate_cow(cow), is_display);
@@ -1226,8 +1230,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 
         let cow: CowStr<'input> = if !all_spaces && opening && closing {
             if let Some(mut buf) = buf {
-                buf.remove(0);
-                buf.pop();
+                if !buf.is_empty() {
+                    buf.remove(0);
+                    buf.pop();
+                }
                 buf.into()
             } else {
                 spanned_text[1..(spanned_text.len() - 1).max(1)].into()

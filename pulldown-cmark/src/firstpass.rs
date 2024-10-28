@@ -104,16 +104,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
             }
-
-            // Footnote definitions of the form
-            // [^bar]:
-            // * anything really
-            let container_start = start_ix + line_start.bytes_scanned();
-            if let Some(bytecount) = self.parse_footnote(container_start) {
-                start_ix = container_start + bytecount;
-                start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
-                line_start = LineStart::new(&bytes[start_ix..]);
-            }
         }
 
         // Process new containers
@@ -124,15 +114,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 line_start = save;
                 break;
             }
-            if self.options.has_gfm_footnotes()
-                || self.options.contains(Options::ENABLE_OLD_FOOTNOTES)
-            {
-                // Footnote definitions of the form
-                // [^bar]:
-                //     * anything really
+            if self.options.contains(Options::ENABLE_FOOTNOTES) {
+                // Footnote definitions
                 let container_start = start_ix + line_start.bytes_scanned();
                 if let Some(bytecount) = self.parse_footnote(container_start) {
                     start_ix = container_start + bytecount;
+                    if self.options.contains(Options::ENABLE_OLD_FOOTNOTES) {
+                        // gfm footnotes need indented, but old footnotes don't
+                        // handle this, old footnotes treat the next line as part of the current line
+                        start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
+                    }
                     line_start = LineStart::new(&bytes[start_ix..]);
                     continue;
                 }
@@ -400,23 +391,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // ```
             if let Some(nl) = scan_blank_line(&bytes[ix..]) {
                 ix += nl;
-                let mut lazy_line_start = LineStart::new(&bytes[ix..]);
-                let current_container =
-                    scan_containers(&self.tree, &mut lazy_line_start, self.options)
-                        == self.tree.spine_len();
-                if !lazy_line_start.scan_space(4)
-                    && self.scan_paragraph_interrupt(
-                        &bytes[ix + lazy_line_start.bytes_scanned()..],
-                        current_container,
-                    )
-                {
-                    self.finish_list(start_ix);
-                    return ix;
-                } else {
-                    line_start = lazy_line_start;
-                    line_start.scan_all_space();
-                    start_ix = ix;
-                }
+            } else {
+                self.finish_list(start_ix);
+                return ix;
+            }
+            if let Some(lazy_line_start) = self.scan_next_line_or_lazy_continuation(&bytes[ix..]) {
+                line_start = lazy_line_start;
+                start_ix = ix;
             } else {
                 self.finish_list(start_ix);
                 return ix;
@@ -426,6 +407,29 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let ix = start_ix + line_start.bytes_scanned();
 
         self.parse_paragraph(ix)
+    }
+
+    /// footnote definitions and GFM quote markers can be "interrupted"
+    /// like paragraphs, but otherwise can't have other blocks after them.
+    ///
+    /// Call this at the end of the line to parse that. If it succeeeds,
+    /// this returns the LineStart for the new line.
+    fn scan_next_line_or_lazy_continuation<'input>(
+        &mut self,
+        bytes: &'input [u8],
+    ) -> Option<LineStart<'input>> {
+        let mut line_start = LineStart::new(bytes);
+        let current_container =
+            scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
+        if !line_start.scan_space(4)
+            && self
+                .scan_paragraph_interrupt(&bytes[line_start.bytes_scanned()..], current_container)
+        {
+            None
+        } else {
+            line_start.scan_all_space();
+            Some(line_start)
+        }
     }
 
     /// Returns the offset of the first line after the table.

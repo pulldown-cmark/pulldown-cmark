@@ -342,9 +342,7 @@ Bloze
 ````````````````````````````````
 
 To use an indented code block inside of a definition,
-you need to have a total of eight spaces of indentation.
-This can be done by having a colon followed by seven spaces,
-or three spaces followed by four.
+you need to have five spaces of indentation after the colon.
 
 ```````````````````````````````` example
 bar
@@ -364,22 +362,73 @@ bar
 .
 <dl>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code>  baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code> baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code>baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>baz</dd>
 </dl>
 <p>bar
 :   baz</p>
 ````````````````````````````````
 
+
+Because of the way it eats indentation after the colon, the number of
+spaces you need for indented code blocks on subsequent lines depends on
+the indentation of the earlier block.
+
+```````````````````````````````` example
+*orange*
+
+:   orange fruit
+
+        { orange code block }
+
+  > orange block quote
+
+*orange*
+
+:     orange fruit
+
+        { orange code block }
+
+  > orange block quote
+.
+<dl>
+<dt><em>orange</em></dt>
+<dd>
+<p>orange fruit</p>
+<pre><code>{ orange code block }
+</code></pre>
+</dd>
+</dl>
+<blockquote>
+<p>orange block quote</p>
+</blockquote>
+<dl>
+<dt><em>orange</em></dt>
+<dd>
+<pre><code>orange fruit
+
+  { orange code block }
+</code></pre>
+<blockquote>
+<p>orange block quote</p>
+</blockquote>
+</dd>
+</dl>
+````````````````````````````````
 
 Definition titles can't be tables.
 

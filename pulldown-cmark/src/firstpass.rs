@@ -946,15 +946,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
                 b'$' => {
-                    let string_suffix = &self.text[ix..];
-                    let can_open = !string_suffix[1..]
-                        .as_bytes()
+                    let byte_suffix = &bytes[ix..];
+                    let can_open = !byte_suffix[1..]
                         .first()
                         .copied()
                         .map_or(true, is_ascii_whitespace);
                     let can_close = ix > start
-                        && !self.text[..ix]
-                            .as_bytes()
+                        && !bytes[..ix]
                             .last()
                             .copied()
                             .map_or(true, is_ascii_whitespace);

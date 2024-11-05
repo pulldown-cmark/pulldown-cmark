@@ -285,8 +285,14 @@ impl<'a> LineStart<'a> {
     ) -> Option<usize> {
         let save = self.clone();
         if self.scan_ch(b':') {
-            let remaining = 4 - (indent + 1);
-            Some(indent + 1 + self.scan_space_upto(remaining))
+            let save = self.clone();
+            if self.scan_space(5) {
+                *self = save;
+                Some(indent + 1 + self.scan_space_upto(1))
+            } else {
+                *self = save;
+                Some(indent + 1 + self.scan_space_upto(5))
+            }
         } else {
             *self = save;
             None

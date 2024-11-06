@@ -149,6 +149,9 @@ where
 /// and the character itself.
 /// Otherwise, `None` is returned.
 ///
+/// This function is useful for dealing with raw HTML output by the parser,
+/// in the case where one is not generating HTML.
+///
 /// # Examples
 ///
 /// ```
@@ -157,6 +160,7 @@ where
 /// assert_eq!(character_reference(b"&#38;"), Some((5, "&".into())));
 /// assert_eq!(character_reference(b"&#x26;"), Some((6, "&".into())));
 /// ```
+///
 /// [character reference]: https://html.spec.whatwg.org/multipage/syntax.html#character-references
 /// [list]: https://html.spec.whatwg.org/multipage/named-characters.html#named-character-references
 /// [JSON]: https://html.spec.whatwg.org/entities.json
@@ -213,5 +217,13 @@ mod test {
         ];
         let result: Vec<_> = TextMergeStream::new(events.into_iter()).collect();
         assert_eq!(result, [Event::Rule, Event::Rule]);
+    }
+
+    #[test]
+    fn character_references() {
+        assert_eq!(character_reference(b"&amp"), None);
+        assert_eq!(character_reference(b""), None);
+        assert_eq!(character_reference(b"^amp;"), None);
+        assert_eq!(character_reference(b"&#X26;"), Some((6, "&".into())));
     }
 }

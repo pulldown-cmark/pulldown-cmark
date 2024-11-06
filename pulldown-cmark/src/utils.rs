@@ -132,6 +132,42 @@ where
     }
 }
 
+/// Resolve a HTML [character reference], otherwise known as an entity.
+///
+/// There are three kinds of character reference:
+/// - Named, e.g. `&amp;`.
+///   The complete list of named references is given [in the HTML standard][list]
+///   and is also available [as a JSON file][JSON].
+/// - Decimal, e.g. `&#38;`,
+///   where the number is the Unicode codepoint of the character in base 10.
+/// - Hexadecimal, e.g. `&#x26;`,
+///   where the number is the Unicode codepoint of the character in base 16.
+///
+/// If the given slice starts with a character reference,
+/// this function returns `Some` with
+/// the length of the character reference in bytes
+/// and the character itself.
+/// Otherwise, `None` is returned.
+///
+/// # Examples
+///
+/// ```
+/// # use pulldown_cmark::utils::character_reference;
+/// assert_eq!(character_reference(b"&amp;"), Some((5, "&".into())));
+/// assert_eq!(character_reference(b"&#38;"), Some((5, "&".into())));
+/// assert_eq!(character_reference(b"&#x26;"), Some((6, "&".into())));
+/// ```
+/// [character reference]: https://html.spec.whatwg.org/multipage/syntax.html#character-references
+/// [list]: https://html.spec.whatwg.org/multipage/named-characters.html#named-character-references
+/// [JSON]: https://html.spec.whatwg.org/entities.json
+pub fn character_reference(bytes: &[u8]) -> Option<(usize, CowStr<'static>)> {
+    // `scan_entity` doesn't bother checking the first byte, so we do it ourselves.
+    if bytes.first() != Some(&b'&') {
+        return None;
+    }
+    crate::scanners::scan_entity(bytes)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

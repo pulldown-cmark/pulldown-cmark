@@ -57,7 +57,7 @@ make the assumption that the rendering process can be fully represented as a
 serialized string.
 
 Pull parsing is in some sense the most versatile architecture. It's possible to
-drive a push interface, also with minimal memory, and quite straightforward to
+derive a push interface, also with minimal memory, and quite straightforward to
 construct an AST. Another advantage is that source-map information (the mapping
 between parsed blocks and offsets within the source text) is readily available;
 you can call `into_offset_iter()` to create an iterator that yields `(Event, Range)`

@@ -4,61 +4,61 @@
 use super::test_markdown_html;
 
 #[test]
-fn super_sub_test_0() {
+fn super_sub_test_1() {
     let original = r##"^This is super^ ~This is sub~
 "##;
     let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }
 
 #[test]
-fn super_sub_test_6() {
+fn super_sub_test_2() {
     let original = r##"~This is stricken out~
 "##;
     let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }
 
 #[test]
-fn super_sub_test_7() {
+fn super_sub_test_3() {
     let original = r##"~This is \~stricken~
 "##;
     let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }
 
 #[test]
-fn super_sub_test_9() {
+fn super_sub_test_4() {
     let original = r##"~This~is~nothing~
 "##;
     let expected = r##"<p><sub>This~is~nothing</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }
 
 #[test]
-fn super_sub_test_15() {
+fn super_sub_test_5() {
     let original = r##"~This ~~is stricken.~
 "##;
     let expected = r##"<p><sub>This ~~is stricken.</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }
 
 #[test]
-fn super_sub_test_16() {
+fn super_sub_test_6() {
     let original = r##"~This ~~is stricken~ but this is not~~
 "##;
     let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true);
 }

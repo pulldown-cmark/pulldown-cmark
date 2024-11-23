@@ -286,6 +286,8 @@ impl<'a> Tag<'a> {
             Tag::Emphasis => Tag::Emphasis,
             Tag::Strong => Tag::Strong,
             Tag::Strikethrough => Tag::Strikethrough,
+            Tag::Superscript => Tag::Superscript,
+            Tag::Subscript => Tag::Subscript,
             Tag::Link {
                 link_type,
                 dest_url,

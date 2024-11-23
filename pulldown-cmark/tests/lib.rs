@@ -12,6 +12,7 @@ pub fn test_markdown_html(
     smart_punct: bool,
     metadata_blocks: bool,
     old_footnotes: bool,
+    subscript: bool,
 ) {
     let mut s = String::new();
 
@@ -20,7 +21,9 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_SUPERSCRIPT);
-    opts.insert(Options::ENABLE_SUBSCRIPT);
+    if subscript {
+        opts.insert(Options::ENABLE_SUBSCRIPT);
+    }
     opts.insert(Options::ENABLE_TASKLISTS);
     opts.insert(Options::ENABLE_GFM);
     if old_footnotes {

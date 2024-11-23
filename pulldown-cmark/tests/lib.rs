@@ -2,6 +2,7 @@
 
 use pulldown_cmark::{Options, Parser};
 
+#[rustfmt::skip]
 mod suite;
 
 #[inline(never)]

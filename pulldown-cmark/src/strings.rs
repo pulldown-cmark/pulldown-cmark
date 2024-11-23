@@ -260,6 +260,17 @@ impl<'a> CowStr<'a> {
             CowStr::Inlined(s) => s.deref().to_owned(),
         }
     }
+
+    pub fn into_static(self) -> CowStr<'static> {
+        match self {
+            CowStr::Boxed(b) => CowStr::Boxed(b),
+            CowStr::Borrowed(b) => match InlineStr::try_from(b) {
+                Ok(inline) => CowStr::Inlined(inline),
+                Err(_) => CowStr::Boxed(b.into()),
+            },
+            CowStr::Inlined(s) => CowStr::Inlined(s),
+        }
+    }
 }
 
 impl<'a> fmt::Display for CowStr<'a> {

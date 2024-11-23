@@ -3153,3 +3153,165 @@ fn regression_test_200() {
 
     test_markdown_html(original, expected, false, false, false);
 }
+
+#[test]
+fn regression_test_201() {
+    let original = r##"* def this
+  : def text def text
+"##;
+    let expected = r##"<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd>def text def text</dd>
+</dl>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_202() {
+    let original = r##"* def this
+
+  : def text def text
+"##;
+    let expected = r##"<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd><p>def text def text</p></dd>
+</dl>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_203() {
+    let original = r##"**A:**
+
+> B C
+> I J :x: K
+> :x: L M
+> N O _P_ Q R. (S
+> T U, V W
+> :x:,:x:,:x:, and :x: but no :x: or
+> :x:.)
+"##;
+    let expected = r##"<p><strong>A:</strong></p><blockquote>
+<dl><dt>B C
+I J :x: K</dt><dd>x: L M
+N O <em>P</em> Q R. (S
+T U, V W</dd>
+<dd>x:,:x:,:x:, and :x: but no :x: or</dd>
+<dd>x:.)</dd></dl></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_204() {
+    let original = r##"[abc] check `foobar_raz`
+ Some preamble `foobar_raz`, not `barfoo_raz`
+ :D
+ 
+ This should fix:
+ 
+ &gt; Something is wrong!
+"##;
+    let expected = r##"<dl>
+<dt>[abc] check <code>foobar_raz</code>
+Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
+<dd>D</dd>
+</dl>
+<p>This should fix:</p>
+<p>&gt; Something is wrong!</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_205() {
+    let original = r##"- Item definition [it
+  ```rust
+  ```
+  stuff](https://example.com)
+"##;
+    let expected = r##"<ul>
+<li>Item definition [it
+<pre><code class="language-rust"></code></pre>
+stuff](https://example.com)</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_206() {
+    let original = r##"foo
+{.class}
+===
+
+> foo
+> {.class}
+> ===
+>
+> > foo
+> > {.class}
+> > ===
+
+* > foo
+  > {.class}
+  > ===
+
+> foo
+>	{.class}
+>	===
+"##;
+    let expected = r##"<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</blockquote>
+<ul>
+<li>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</li>
+</ul>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn regression_test_207() {
+    let original = r##"the trailing space after the &gt; should be stripped
+    > {.bar}
+===
+"##;
+    let expected = r##"<h1 class="bar">the trailing space after the &gt; should be stripped
+&gt;</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}

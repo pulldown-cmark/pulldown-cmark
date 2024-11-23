@@ -5,8 +5,10 @@ mod to_html {
     use pulldown_cmark::{html, Options, Parser};
 
     pub fn pathological_missing_table_cells(c: &mut Criterion) {
-        let mut group = c.benchmark_group("    pub fn pathological_missing_table_cells(c: &mut Criterion) {
-            ");
+        let mut group = c.benchmark_group(
+            "    pub fn pathological_missing_table_cells(c: &mut Criterion) {
+            ",
+        );
         let mut buf = String::new();
         for i in 1..20 {
             buf.clear();
@@ -24,8 +26,10 @@ mod to_html {
     }
 
     pub fn pathological_link_def(c: &mut Criterion) {
-        let mut group = c.benchmark_group("    pub fn pathological_link_def(c: &mut Criterion) {
-            ");
+        let mut group = c.benchmark_group(
+            "    pub fn pathological_link_def(c: &mut Criterion) {
+            ",
+        );
         let mut buf = String::new();
         for i in 1..20 {
             buf.clear();

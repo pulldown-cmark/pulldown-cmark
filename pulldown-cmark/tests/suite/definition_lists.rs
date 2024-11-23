@@ -380,17 +380,22 @@ bar
 "##;
     let expected = r##"<dl>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code>  baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code> baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>
+<pre><code>baz
+</code></pre>
+</dd>
 <dt>bar</dt>
-<dd><pre><code>baz
-</code></pre></dd>
+<dd>baz</dd>
 </dl>
 <p>bar
 :   baz</p>
@@ -401,6 +406,52 @@ bar
 
 #[test]
 fn definition_lists_test_17() {
+    let original = r##"*orange*
+
+:   orange fruit
+
+        { orange code block }
+
+  > orange block quote
+
+*orange*
+
+:     orange fruit
+
+        { orange code block }
+
+  > orange block quote
+"##;
+    let expected = r##"<dl>
+<dt><em>orange</em></dt>
+<dd>
+<p>orange fruit</p>
+<pre><code>{ orange code block }
+</code></pre>
+</dd>
+</dl>
+<blockquote>
+<p>orange block quote</p>
+</blockquote>
+<dl>
+<dt><em>orange</em></dt>
+<dd>
+<pre><code>orange fruit
+
+  { orange code block }
+</code></pre>
+<blockquote>
+<p>orange block quote</p>
+</blockquote>
+</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn definition_lists_test_18() {
     let original = r##"Test|Table
 ----|-----
 : first
@@ -414,7 +465,7 @@ fn definition_lists_test_17() {
 }
 
 #[test]
-fn definition_lists_test_18() {
+fn definition_lists_test_19() {
     let original = r##"first
 : second
 
@@ -435,7 +486,7 @@ Test|Table
 }
 
 #[test]
-fn definition_lists_test_19() {
+fn definition_lists_test_20() {
     let original = r##"My section
 ==========
 : first
@@ -448,7 +499,7 @@ fn definition_lists_test_19() {
 }
 
 #[test]
-fn definition_lists_test_20() {
+fn definition_lists_test_21() {
     let original = r##"first
 : second
 
@@ -468,7 +519,7 @@ My section
 }
 
 #[test]
-fn definition_lists_test_21() {
+fn definition_lists_test_22() {
     let original = r##"## My subsection
 : first
 "##;
@@ -480,7 +531,7 @@ fn definition_lists_test_21() {
 }
 
 #[test]
-fn definition_lists_test_22() {
+fn definition_lists_test_23() {
     let original = r##"first
 : second
 
@@ -499,7 +550,7 @@ fn definition_lists_test_22() {
 }
 
 #[test]
-fn definition_lists_test_23() {
+fn definition_lists_test_24() {
     let original = r##"first\
 : second
 
@@ -518,7 +569,7 @@ third
 }
 
 #[test]
-fn definition_lists_test_24() {
+fn definition_lists_test_25() {
     let original = r##"<div>first</div>
 : second
 
@@ -541,7 +592,7 @@ first
 }
 
 #[test]
-fn definition_lists_test_25() {
+fn definition_lists_test_26() {
     let original = r##"<span>first</span>
 : second
 
@@ -558,6 +609,41 @@ third
 <dd>fourth</dd>
 <dt><span>fifth</span></dt>
 <dd>sixth</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false);
+}
+
+#[test]
+fn definition_lists_test_27() {
+    let original = r##"level one
+: l1
+    level two
+    : l2
+        level three
+        : l3
+
+level one
+: l1
+"##;
+    let expected = r##"<dl>
+<dt>level one</dt>
+<dd>
+<dl>
+<dt>l1
+level two</dt>
+<dd>
+<dl>
+<dt>l2
+level three</dt>
+<dd>l3</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>level one</dt>
+<dd>l1</dd>
 </dl>
 "##;
 

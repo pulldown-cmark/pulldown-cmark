@@ -260,13 +260,10 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_blockquote_marker(&mut self) -> bool {
-        let save = self.clone();
-        let _ = self.scan_space(3);
         if self.scan_ch(b'>') {
             let _ = self.scan_space(1);
             true
         } else {
-            *self = save;
             false
         }
     }
@@ -282,12 +279,20 @@ impl<'a> LineStart<'a> {
     ///
     /// Return value is the amount of indentation, or `None` if it's not a
     /// definition list marker.
-    pub(crate) fn scan_definition_list_definition_marker(&mut self) -> Option<usize> {
+    pub(crate) fn scan_definition_list_definition_marker_with_indent(
+        &mut self,
+        indent: usize,
+    ) -> Option<usize> {
         let save = self.clone();
-        let indent = self.scan_space_upto(4);
-        if indent < 4 && self.scan_ch(b':') {
-            let remaining = 4 - (indent + 1);
-            Some(indent + 1 + self.scan_space_upto(remaining))
+        if self.scan_ch(b':') {
+            let save = self.clone();
+            if self.scan_space(5) {
+                *self = save;
+                Some(indent + 1 + self.scan_space_upto(1))
+            } else {
+                *self = save;
+                Some(indent + 1 + self.scan_space_upto(5))
+            }
         } else {
             *self = save;
             None
@@ -299,10 +304,12 @@ impl<'a> LineStart<'a> {
     /// Return value is the character, the start index, and the indent in spaces.
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
-    pub(crate) fn scan_list_marker(&mut self) -> Option<(u8, u64, usize)> {
+    pub(crate) fn scan_list_marker_with_indent(
+        &mut self,
+        indent: usize,
+    ) -> Option<(u8, u64, usize)> {
         let save = self.clone();
-        let indent = self.scan_space_upto(4);
-        if indent < 4 && self.ix < self.bytes.len() {
+        if self.ix < self.bytes.len() {
             let c = self.bytes[self.ix];
             if c == b'-' || c == b'+' || c == b'*' {
                 if self.ix >= self.min_hrule_offset {
@@ -1013,7 +1020,13 @@ fn scan_attribute(
     let ix_after_attribute = ix;
     ix = scan_whitespace_with_newline_handler_without_buffer(data, ix, newline_handler)?;
     if scan_ch(&data[ix..], b'=') == 1 {
-        ix = scan_whitespace_with_newline_handler(data, ix_after_attribute, newline_handler, buffer, buffer_ix)?;
+        ix = scan_whitespace_with_newline_handler(
+            data,
+            ix_after_attribute,
+            newline_handler,
+            buffer,
+            buffer_ix,
+        )?;
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
         ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;

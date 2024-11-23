@@ -2644,3 +2644,141 @@ ISSUE #655
 .
 <p><code> </code></p>
 ````````````````````````````````
+
+ISSUE #949
+
+```````````````````````````````` example
+* def this
+  : def text def text
+.
+<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd>def text def text</dd>
+</dl>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+* def this
+
+  : def text def text
+.
+<ul>
+<li>
+<dl>
+<dt>def this</dt>
+<dd><p>def text def text</p></dd>
+</dl>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+**A:**
+
+> B C
+> I J :x: K
+> :x: L M
+> N O _P_ Q R. (S
+> T U, V W
+> :x:,:x:,:x:, and :x: but no :x: or
+> :x:.)
+.
+<p><strong>A:</strong></p><blockquote>
+<dl><dt>B C
+I J :x: K</dt><dd>x: L M
+N O <em>P</em> Q R. (S
+T U, V W</dd>
+<dd>x:,:x:,:x:, and :x: but no :x: or</dd>
+<dd>x:.)</dd></dl></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[abc] check `foobar_raz`
+ Some preamble `foobar_raz`, not `barfoo_raz`
+ :D
+ 
+ This should fix:
+ 
+ &gt; Something is wrong!
+.
+<dl>
+<dt>[abc] check <code>foobar_raz</code>
+Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
+<dd>D</dd>
+</dl>
+<p>This should fix:</p>
+<p>&gt; Something is wrong!</p>
+````````````````````````````````
+
+```````````````````````````````` example
+- Item definition [it
+  ```rust
+  ```
+  stuff](https://example.com)
+.
+<ul>
+<li>Item definition [it
+<pre><code class="language-rust"></code></pre>
+stuff](https://example.com)</li>
+</ul>
+````````````````````````````````
+
+ISSUE #963
+
+```````````````````````````````` example
+foo
+{.class}
+===
+
+> foo
+> {.class}
+> ===
+>
+> > foo
+> > {.class}
+> > ===
+
+* > foo
+  > {.class}
+  > ===
+
+> foo
+>→{.class}
+>→===
+.
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</blockquote>
+<ul>
+<li>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+</li>
+</ul>
+<blockquote>
+<h1 class="class">foo
+</h1>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+the trailing space after the &gt; should be stripped
+    > {.bar}
+===
+.
+<h1 class="bar">the trailing space after the &gt; should be stripped
+&gt;</h1>
+````````````````````````````````

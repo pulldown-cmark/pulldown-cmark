@@ -279,7 +279,7 @@ fn fuzz(num_cpus: usize) {
                             serde_json::to_string(&pattern).unwrap(),
                         );
                         let args: Vec<_> = env::args().collect();
-                        Command::new(&args[0]).args(&args[1..]).exec();
+                        let _ = Command::new(&args[0]).args(&args[1..]).exec();
                         unreachable!();
                     }
                 }

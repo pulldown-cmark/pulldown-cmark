@@ -75,7 +75,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         while ix < self.text.len() {
             ix = self.parse_block(ix);
         }
-        for _ in 0..self.tree.spine_len() {
+        while self.tree.spine_len() > 0 {
             self.pop(ix);
         }
         (self.tree, self.allocs)
@@ -90,11 +90,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.brace_context_stack.clear();
         self.brace_context_next = 0;
 
-        let i = scan_containers(
-            &self.tree,
-            &mut line_start,
-            self.options.has_gfm_footnotes(),
-        );
+        let i = scan_containers(&self.tree, &mut line_start, self.options);
         for _ in i..self.tree.spine_len() {
             self.pop(start_ix);
         }
@@ -108,47 +104,37 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
             }
-
-            // Footnote definitions of the form
-            // [^bar]:
-            // * anything really
-            let container_start = start_ix + line_start.bytes_scanned();
-            if let Some(bytecount) = self.parse_footnote(container_start) {
-                start_ix = container_start + bytecount;
-                start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
-                line_start = LineStart::new(&bytes[start_ix..]);
-            }
         }
 
         // Process new containers
         loop {
-            if self.options.has_gfm_footnotes()
-                || self.options.contains(Options::ENABLE_OLD_FOOTNOTES)
-            {
-                // Footnote definitions of the form
-                // [^bar]:
-                //     * anything really
-                let save = line_start.clone();
-                let indent = line_start.scan_space_upto(4);
-                if indent < 4 {
-                    let container_start = start_ix + line_start.bytes_scanned();
-                    if let Some(bytecount) = self.parse_footnote(container_start) {
-                        start_ix = container_start + bytecount;
-                        line_start = LineStart::new(&bytes[start_ix..]);
-                        continue;
-                    } else {
-                        line_start = save;
+            let save = line_start.clone();
+            let outer_indent = line_start.scan_space_upto(4);
+            if outer_indent >= 4 {
+                line_start = save;
+                break;
+            }
+            if self.options.contains(Options::ENABLE_FOOTNOTES) {
+                // Footnote definitions
+                let container_start = start_ix + line_start.bytes_scanned();
+                if let Some(bytecount) = self.parse_footnote(container_start) {
+                    start_ix = container_start + bytecount;
+                    if self.options.contains(Options::ENABLE_OLD_FOOTNOTES) {
+                        // gfm footnotes need indented, but old footnotes don't
+                        // handle this, old footnotes treat the next line as part of the current line
+                        start_ix += scan_blank_line(&bytes[start_ix..]).unwrap_or(0);
                     }
-                } else {
-                    line_start = save;
+                    line_start = LineStart::new(&bytes[start_ix..]);
+                    continue;
                 }
             }
             let container_start = start_ix + line_start.bytes_scanned();
-            if let Some((ch, index, indent)) = line_start.scan_list_marker() {
+            if let Some((ch, index, indent)) = line_start.scan_list_marker_with_indent(outer_indent)
+            {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
-                self.continue_list(container_start, ch, index);
+                self.continue_list(container_start - outer_indent, ch, index);
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start - outer_indent,
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
@@ -196,7 +182,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 })
                 .and_then(|item| {
                     Some((
-                        line_start.scan_definition_list_definition_marker()?,
+                        line_start
+                            .scan_definition_list_definition_marker_with_indent(outer_indent)?,
                         item.0,
                         item.1,
                     ))
@@ -224,7 +211,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 let after_marker_index = start_ix + line_start.bytes_scanned();
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start - outer_indent,
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
@@ -260,11 +247,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     // and break out if we can't re-scan all of them
                     let ix = start_ix + line_start.bytes_scanned();
                     let mut lazy_line_start = LineStart::new(&bytes[ix..]);
-                    let current_container = scan_containers(
-                        &self.tree,
-                        &mut lazy_line_start,
-                        self.options.has_gfm_footnotes(),
-                    ) == self.tree.spine_len();
+                    let current_container =
+                        scan_containers(&self.tree, &mut lazy_line_start, self.options)
+                            == self.tree.spine_len();
                     if !lazy_line_start.scan_space(4)
                         && self.scan_paragraph_interrupt(
                             &bytes[ix + lazy_line_start.bytes_scanned()..],
@@ -282,6 +267,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
             } else {
+                line_start = save;
                 break;
             }
         }
@@ -405,25 +391,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // ```
             if let Some(nl) = scan_blank_line(&bytes[ix..]) {
                 ix += nl;
-                let mut lazy_line_start = LineStart::new(&bytes[ix..]);
-                let current_container = scan_containers(
-                    &self.tree,
-                    &mut lazy_line_start,
-                    self.options.has_gfm_footnotes(),
-                ) == self.tree.spine_len();
-                if !lazy_line_start.scan_space(4)
-                    && self.scan_paragraph_interrupt(
-                        &bytes[ix + lazy_line_start.bytes_scanned()..],
-                        current_container,
-                    )
-                {
-                    self.finish_list(start_ix);
-                    return ix;
-                } else {
-                    line_start = lazy_line_start;
-                    line_start.scan_all_space();
-                    start_ix = ix;
-                }
+            } else {
+                self.finish_list(start_ix);
+                return ix;
+            }
+            if let Some(lazy_line_start) = self.scan_next_line_or_lazy_continuation(&bytes[ix..]) {
+                line_start = lazy_line_start;
+                start_ix = ix;
             } else {
                 self.finish_list(start_ix);
                 return ix;
@@ -433,6 +407,29 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let ix = start_ix + line_start.bytes_scanned();
 
         self.parse_paragraph(ix)
+    }
+
+    /// footnote definitions and GFM quote markers can be "interrupted"
+    /// like paragraphs, but otherwise can't have other blocks after them.
+    ///
+    /// Call this at the end of the line to parse that. If it succeeeds,
+    /// this returns the LineStart for the new line.
+    fn scan_next_line_or_lazy_continuation<'input>(
+        &mut self,
+        bytes: &'input [u8],
+    ) -> Option<LineStart<'input>> {
+        let mut line_start = LineStart::new(bytes);
+        let current_container =
+            scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
+        if !line_start.scan_space(4)
+            && self
+                .scan_paragraph_interrupt(&bytes[line_start.bytes_scanned()..], current_container)
+        {
+            None
+        } else {
+            line_start.scan_all_space();
+            Some(line_start)
+        }
     }
 
     /// Returns the offset of the first line after the table.
@@ -556,11 +553,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     ) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
-        let current_container = scan_containers(
-            &self.tree,
-            &mut line_start,
-            self.options.has_gfm_footnotes(),
-        ) == self.tree.spine_len();
+        let current_container =
+            scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
         if !current_container {
             return None;
         }
@@ -585,9 +579,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
-            // blank lines between the previous definition and this one don't count
-            self.last_line_blank = false;
-            ItemBody::MaybeDefinitionListTitle
+            if self.tree.cur().map_or(true, |idx| {
+                matches!(
+                    &self.tree[idx].item.body,
+                    ItemBody::DefinitionListDefinition(..)
+                )
+            }) {
+                // blank lines between the previous definition and this one don't count
+                self.last_line_blank = false;
+                ItemBody::MaybeDefinitionListTitle
+            } else {
+                self.finish_list(start_ix);
+                ItemBody::Paragraph
+            }
         } else {
             self.finish_list(start_ix);
             ItemBody::Paragraph
@@ -637,11 +641,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let current_container = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            ) == self.tree.spine_len();
+            let current_container =
+                scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
             let trailing_backslash_pos = match brk {
                 Some(Item {
                     start,
@@ -720,8 +721,27 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let new_end = if has_trailing_content {
                 content_end
             } else {
-                let trailing_ws =
-                    scan_rev_while(&bytes[header_start..content_end], is_ascii_whitespace_no_nl);
+                let mut last_line_start = header_start;
+                if attrs.is_some() {
+                    loop {
+                        let next_line_start =
+                            last_line_start + scan_nextline(&bytes[last_line_start..content_end]);
+                        if next_line_start >= content_end {
+                            break;
+                        }
+                        let mut line_start = LineStart::new(&bytes[next_line_start..content_end]);
+                        if scan_containers(&self.tree, &mut line_start, self.options)
+                            != self.tree.spine_len()
+                        {
+                            break;
+                        }
+                        last_line_start = next_line_start + line_start.bytes_scanned();
+                    }
+                }
+                let trailing_ws = scan_rev_while(
+                    &bytes[last_line_start..content_end],
+                    is_ascii_whitespace_no_nl,
+                );
                 content_end - trailing_ws
             };
 
@@ -793,11 +813,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        if scan_containers(
-                            &self.tree,
-                            &mut line_start,
-                            self.options.has_gfm_footnotes(),
-                        ) == self.tree.spine_len()
+                        if scan_containers(&self.tree, &mut line_start, self.options)
+                            == self.tree.spine_len()
                         {
                             let table_head_ix = next_line_ix + line_start.bytes_scanned();
                             let (table_head_bytes, alignment) =
@@ -929,15 +946,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(count - 1)
                 }
                 b'$' => {
-                    let string_suffix = &self.text[ix..];
-                    let can_open = !string_suffix[1..]
-                        .as_bytes()
+                    let byte_suffix = &bytes[ix..];
+                    let can_open = !byte_suffix[1..]
                         .first()
                         .copied()
                         .map_or(true, is_ascii_whitespace);
                     let can_close = ix > start
-                        && !self.text[..ix]
-                            .as_bytes()
+                        && !bytes[..ix]
                             .last()
                             .copied()
                             .map_or(true, is_ascii_whitespace);
@@ -1223,11 +1238,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            );
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
             if n_containers < self.tree.spine_len() {
                 end_ix = ix;
                 break;
@@ -1276,11 +1287,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            );
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
                 end_ix = ix;
                 break;
@@ -1327,11 +1334,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            );
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
             if n_containers < self.tree.spine_len()
                 || !(line_start.scan_space(4) || line_start.is_at_eol())
             {
@@ -1378,11 +1381,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            );
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
             if n_containers < self.tree.spine_len() {
                 // this line will get parsed again as not being part of the code
                 // if it's blank, it should be parsed as a blank line
@@ -1426,11 +1425,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            );
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
             if n_containers < self.tree.spine_len() {
                 break;
             }
@@ -1745,11 +1740,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             &self.text[start..],
             &|bytes| {
                 let mut line_start = LineStart::new(bytes);
-                let current_container = scan_containers(
-                    &self.tree,
-                    &mut line_start,
-                    self.options.has_gfm_footnotes(),
-                ) == self.tree.spine_len();
+                let current_container = scan_containers(&self.tree, &mut line_start, self.options)
+                    == self.tree.spine_len();
                 if line_start.scan_space(4) {
                     return Some(line_start.bytes_scanned());
                 }
@@ -1799,11 +1791,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            let current_container = scan_containers(
-                &self.tree,
-                &mut line_start,
-                self.options.has_gfm_footnotes(),
-            ) == self.tree.spine_len();
+            let current_container =
+                scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let suffix = &bytes[i + line_start.bytes_scanned()..];
                 if self.scan_paragraph_interrupt(suffix, current_container)
@@ -1861,11 +1850,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         bytecount += 1;
                     }
                     let mut line_start = LineStart::new(&bytes[bytecount..]);
-                    let current_container = scan_containers(
-                        &self.tree,
-                        &mut line_start,
-                        self.options.has_gfm_footnotes(),
-                    ) == self.tree.spine_len();
+                    let current_container =
+                        scan_containers(&self.tree, &mut line_start, self.options)
+                            == self.tree.spine_len();
                     if !line_start.scan_space(4) {
                         let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
                         if self.scan_paragraph_interrupt(suffix, current_container)
@@ -2040,12 +2027,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         //     ^
         //     | need to skip over the `>` when checking for the table
         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-        if scan_containers(
-            &self.tree,
-            &mut line_start,
-            self.options.has_gfm_footnotes(),
-        ) != self.tree.spine_len()
-        {
+        if scan_containers(&self.tree, &mut line_start, self.options) != self.tree.spine_len() {
             return false;
         }
         let table_head_ix = next_line_ix + line_start.bytes_scanned();
@@ -2283,7 +2265,7 @@ fn delim_run_can_open(
     ix: usize,
     mode: TableParseMode,
 ) -> bool {
-    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+    let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
     } else {
         return false;
@@ -2295,28 +2277,28 @@ fn delim_run_can_open(
         return true;
     }
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
+        if s.as_bytes()[..ix].ends_with(b"|") && !s.as_bytes()[..ix].ends_with(br"\|") {
             return true;
         }
         if next_char == '|' {
             return false;
         }
     }
-    let delim = suffix.chars().next().unwrap();
+    let delim = suffix.bytes().next().unwrap();
     // `*` and `~~` can be intraword, `_` and `~` cannot
-    if delim == '*' && !is_punctuation(next_char) {
+    if delim == b'*' && !is_punctuation(next_char) {
         return true;
     }
-    if delim == '~' && run_len > 1 {
+    if delim == b'~' && run_len > 1 {
         return true;
     }
     let prev_char = s[..ix].chars().last().unwrap();
-    if delim == '~' && prev_char == '~' && !is_punctuation(next_char) {
+    if delim == b'~' && prev_char == '~' && !is_punctuation(next_char) {
         return true;
     }
 
     prev_char.is_whitespace()
-        || is_punctuation(prev_char) && (delim != '\'' || ![']', ')'].contains(&prev_char))
+        || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2336,25 +2318,25 @@ fn delim_run_can_close(
     if prev_char.is_whitespace() {
         return false;
     }
-    let next_char = if let Some(c) = suffix.chars().nth(run_len) {
+    let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
     } else {
         return true;
     };
     if mode == TableParseMode::Active {
-        if s[..ix].ends_with('|') && !s[..ix].ends_with(r"\|") {
+        if s.as_bytes()[..ix].ends_with(b"|") && !s.as_bytes()[..ix].ends_with(br"\|") {
             return false;
         }
         if next_char == '|' {
             return true;
         }
     }
-    let delim = suffix.chars().next().unwrap();
+    let delim = suffix.bytes().next().unwrap();
     // `*` and `~~` can be intraword, `_` and `~` cannot
-    if (delim == '*' || (delim == '~' && run_len > 1)) && !is_punctuation(prev_char) {
+    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
         return true;
     }
-    if delim == '~' && prev_char == '~' {
+    if delim == b'~' && prev_char == '~' {
         return true;
     }
 

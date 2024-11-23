@@ -2387,10 +2387,12 @@ fn special_bytes(options: &Options) -> [bool; 256] {
     if options.contains(Options::ENABLE_TABLES) {
         bytes[b'|' as usize] = true;
     }
-    if options.contains(Options::ENABLE_STRIKETHROUGH) || options.contains(Options::ENABLE_SUPER_SUB) {
+    if options.contains(Options::ENABLE_STRIKETHROUGH)
+        || options.contains(Options::ENABLE_SUBSCRIPT)
+    {
         bytes[b'~' as usize] = true;
     }
-    if options.contains(Options::ENABLE_SUPER_SUB) {
+    if options.contains(Options::ENABLE_SUPERSCRIPT) {
         bytes[b'^' as usize] = true;
     }
     if options.contains(Options::ENABLE_MATH) {
@@ -2630,7 +2632,9 @@ mod simd {
         if options.contains(Options::ENABLE_TABLES) {
             add_lookup_byte(&mut lookup, b'|');
         }
-        if options.contains(Options::ENABLE_STRIKETHROUGH) || options.contains(Options::ENABLE_SUPER_SUB) {
+        if options.contains(Options::ENABLE_STRIKETHROUGH)
+            || options.contains(Options::ENABLE_SUPER_SUB)
+        {
             add_lookup_byte(&mut lookup, b'~');
         }
         if options.contains(Options::ENABLE_SUPER_SUB) {

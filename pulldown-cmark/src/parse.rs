@@ -841,8 +841,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             let match_count = min(count, el.count);
                             // start, end are tree node indices
                             let mut end = cur_ix - 1;
-                            let mut start = el.start + el.count;                           
-        
+                            let mut start = el.start + el.count;
+
                             // work from the inside out
                             while start > el.start + el.count - match_count {
                                 let inc = if start > el.start + el.count - match_count + 1 {
@@ -855,20 +855,31 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
                                             ItemBody::Strikethrough
                                         } else {
-                                            ItemBody::Text { backslash_escaped: false }
+                                            ItemBody::Text {
+                                                backslash_escaped: false,
+                                            }
                                         }
                                     } else {
-                                        if self.options.contains(Options::ENABLE_SUPER_SUB) {
+                                        if self.options.contains(Options::ENABLE_SUBSCRIPT) {
                                             ItemBody::Subscript
+                                        } else if self
+                                            .options
+                                            .contains(Options::ENABLE_STRIKETHROUGH)
+                                        {
+                                            ItemBody::Strikethrough
                                         } else {
-                                            ItemBody::Text { backslash_escaped: false }
+                                            ItemBody::Text {
+                                                backslash_escaped: false,
+                                            }
                                         }
                                     }
                                 } else if c == b'^' {
-                                    if self.options.contains(Options::ENABLE_SUPER_SUB) {
+                                    if self.options.contains(Options::ENABLE_SUPERSCRIPT) {
                                         ItemBody::Superscript
                                     } else {
-                                        ItemBody::Text { backslash_escaped: false }
+                                        ItemBody::Text {
+                                            backslash_escaped: false,
+                                        }
                                     }
                                 } else if inc == 2 {
                                     ItemBody::Strong
@@ -2227,7 +2238,8 @@ mod test {
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
-        opts.insert(Options::ENABLE_SUPER_SUB);
+        opts.insert(Options::ENABLE_SUPERSCRIPT);
+        opts.insert(Options::ENABLE_SUBSCRIPT);
         opts.insert(Options::ENABLE_TASKLISTS);
 
         Parser::new_ext(text, opts)

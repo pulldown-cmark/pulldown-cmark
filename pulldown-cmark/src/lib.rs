@@ -517,7 +517,8 @@ bitflags::bitflags! {
         ///   : definition 2
         /// ```
         const ENABLE_DEFINITION_LIST = 1 << 12;
-        const ENABLE_SUPER_SUB = 1 << 13;
+        const ENABLE_SUPERSCRIPT = 1 << 13;
+        const ENABLE_SUBSCRIPT = 1 << 14;
     }
 }
 

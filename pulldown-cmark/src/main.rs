@@ -74,12 +74,18 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("m", "enable-math", "enable LaTeX-style math");
     opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
-    opts.optflag("", "enable-old-footnotes", "enable Hoedown-style footnotes");
+    opts.optflag(
+        "f",
+        "enable-old-footnotes",
+        "enable Hoedown-style footnotes",
+    );
     opts.optflag(
         "S",
         "enable-strikethrough",
         "enable GitHub-style strikethrough",
     );
+    opts.optflag("U", "enable-superscript", "enable superscript");
+    opts.optflag("D", "enable-subscript", "enable subscript");
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
     opts.optflag(
@@ -126,6 +132,12 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-strikethrough") {
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+    }
+    if matches.opt_present("enable-superscript") {
+        opts.insert(Options::ENABLE_SUPERSCRIPT);
+    }
+    if matches.opt_present("enable-subscript") {
+        opts.insert(Options::ENABLE_SUBSCRIPT);
     }
     if matches.opt_present("enable-tasklists") {
         opts.insert(Options::ENABLE_TASKLISTS);

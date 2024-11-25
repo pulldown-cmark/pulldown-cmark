@@ -17,4 +17,5 @@ mod regression;
 mod smart_punct;
 mod spec;
 mod strikethrough;
+mod super_sub;
 mod table;

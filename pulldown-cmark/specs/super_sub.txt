@@ -1,0 +1,43 @@
+# Superscript and subscript
+
+Basic strikethrough is between two tildes:
+
+```````````````````````````````` example_super_sub
+^This is super^ ~This is sub~
+.
+<p><sup>This is super</sup> <sub>This is sub</sub></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+~This is stricken out~
+.
+<p><sub>This is stricken out</sub></p>
+````````````````````````````````
+
+Backslash escapes:
+
+```````````````````````````````` example_super_sub
+~This is \~stricken~
+.
+<p><sub>This is ~stricken</sub></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+~This~is~nothing~
+.
+<p><sub>This~is~nothing</sub></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+~This ~~is stricken.~
+.
+<p><sub>This ~~is stricken.</sub></p>
+````````````````````````````````
+
+The first one wins.
+
+```````````````````````````````` example_super_sub
+~This ~~is stricken~ but this is not~~
+.
+<p><sub>This ~~is stricken</sub> but this is not~~</p>
+````````````````````````````````

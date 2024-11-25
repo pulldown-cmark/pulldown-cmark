@@ -10,7 +10,7 @@ fn blockquotes_tags_test_1() {
     let expected = r##"<blockquote><p>This is a normal blockquote without tag.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -21,7 +21,7 @@ fn blockquotes_tags_test_2() {
     let expected = r##"<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn blockquotes_tags_test_3() {
     let expected = r##"<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn blockquotes_tags_test_4() {
     let expected = r##"<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn blockquotes_tags_test_5() {
     let expected = r##"<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn blockquotes_tags_test_6() {
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn blockquotes_tags_test_7() {
     let expected = r##"<blockquote class="markdown-alert-caution"></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn blockquotes_tags_test_8() {
 Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn blockquotes_tags_test_9() {
 Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -116,7 +116,7 @@ fn blockquotes_tags_test_10() {
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn blockquotes_tags_test_11() {
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn blockquotes_tags_test_12() {
 Line 2.</p></blockquote></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -159,7 +159,7 @@ fn blockquotes_tags_test_13() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn blockquotes_tags_test_14() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -189,7 +189,7 @@ fn blockquotes_tags_test_15() {
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -216,7 +216,7 @@ sink ships
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn blockquotes_tags_test_17() {
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }
 
 #[test]
@@ -251,5 +251,5 @@ This should be a normal block quote.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false);
 }

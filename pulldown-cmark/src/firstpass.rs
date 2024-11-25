@@ -912,7 +912,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(0)
                     }
                 }
-                c @ b'*' | c @ b'_' | c @ b'~' => {
+                c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(
@@ -929,7 +929,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                     );
-                    let is_valid_seq = c != b'~' || count <= 2;
+                    let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
                     if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2369,8 +2369,13 @@ fn special_bytes(options: &Options) -> [bool; 256] {
     if options.contains(Options::ENABLE_TABLES) {
         bytes[b'|' as usize] = true;
     }
-    if options.contains(Options::ENABLE_STRIKETHROUGH) {
+    if options.contains(Options::ENABLE_STRIKETHROUGH)
+        || options.contains(Options::ENABLE_SUBSCRIPT)
+    {
         bytes[b'~' as usize] = true;
+    }
+    if options.contains(Options::ENABLE_SUPERSCRIPT) {
+        bytes[b'^' as usize] = true;
     }
     if options.contains(Options::ENABLE_MATH) {
         bytes[b'$' as usize] = true;
@@ -2609,8 +2614,13 @@ mod simd {
         if options.contains(Options::ENABLE_TABLES) {
             add_lookup_byte(&mut lookup, b'|');
         }
-        if options.contains(Options::ENABLE_STRIKETHROUGH) {
+        if options.contains(Options::ENABLE_STRIKETHROUGH)
+            || options.contains(Options::ENABLE_SUBSCRIPT)
+        {
             add_lookup_byte(&mut lookup, b'~');
+        }
+        if options.contains(Options::ENABLE_SUPERSCRIPT) {
+            add_lookup_byte(&mut lookup, b'^');
         }
         if options.contains(Options::ENABLE_MATH) {
             add_lookup_byte(&mut lookup, b'$');
@@ -2767,6 +2777,7 @@ mod simd {
             opts.insert(Options::ENABLE_TABLES);
             opts.insert(Options::ENABLE_FOOTNOTES);
             opts.insert(Options::ENABLE_STRIKETHROUGH);
+            opts.insert(Options::ENABLE_SUPERSCRIPT);
             opts.insert(Options::ENABLE_TASKLISTS);
 
             let lut = create_lut(&opts);
@@ -2808,8 +2819,8 @@ mod simd {
         #[test]
         fn exhaustive_search() {
             let chars = [
-                b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
-                b'$', b'{', b'}',
+                b'\n', b'\r', b'*', b'_', b'~', b'^', b'|', b'&', b'\\', b'[', b']', b'<', b'!',
+                b'`', b'$', b'{', b'}',
             ];
 
             for &c in &chars {

@@ -201,6 +201,8 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
 
     /// A link.
     Link {
@@ -240,6 +242,8 @@ impl<'a> Tag<'a> {
             Tag::TableHead => TagEnd::TableHead,
             Tag::TableRow => TagEnd::TableRow,
             Tag::TableCell => TagEnd::TableCell,
+            Tag::Subscript => TagEnd::Subscript,
+            Tag::Superscript => TagEnd::Superscript,
             Tag::Emphasis => TagEnd::Emphasis,
             Tag::Strong => TagEnd::Strong,
             Tag::Strikethrough => TagEnd::Strikethrough,
@@ -282,6 +286,8 @@ impl<'a> Tag<'a> {
             Tag::Emphasis => Tag::Emphasis,
             Tag::Strong => Tag::Strong,
             Tag::Strikethrough => Tag::Strikethrough,
+            Tag::Superscript => Tag::Superscript,
+            Tag::Subscript => Tag::Subscript,
             Tag::Link {
                 link_type,
                 dest_url,
@@ -341,6 +347,8 @@ pub enum TagEnd {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
 
     Link,
     Image,
@@ -597,6 +605,8 @@ bitflags::bitflags! {
         ///   : definition 2
         /// ```
         const ENABLE_DEFINITION_LIST = 1 << 12;
+        const ENABLE_SUPERSCRIPT = 1 << 13;
+        const ENABLE_SUBSCRIPT = 1 << 14;
     }
 }
 

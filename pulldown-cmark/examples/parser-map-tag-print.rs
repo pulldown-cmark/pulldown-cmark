@@ -65,6 +65,8 @@ fn main() {
                 Tag::DefinitionListDefinition => println!("Definition (definition list item)"),
                 Tag::Item => println!("Item (this is a list item)"),
                 Tag::Emphasis => println!("Emphasis (this is a span tag)"),
+                Tag::Superscript => println!("Superscript (this is a span tag)"),
+                Tag::Subscript => println!("Subscript (this is a span tag)"),
                 Tag::Strong => println!("Strong (this is a span tag)"),
                 Tag::Strikethrough => println!("Strikethrough (this is a span tag)"),
                 Tag::BlockQuote(kind) => println!("BlockQuote ({:?})", kind),

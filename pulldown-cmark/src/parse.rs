@@ -73,6 +73,8 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Superscript,
+    Subscript,
     Math(CowIndex, bool), // true for display math
     Code(CowIndex),
     Link(LinkIndex),
@@ -869,7 +871,36 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     1
                                 };
                                 let ty = if c == b'~' {
-                                    ItemBody::Strikethrough
+                                    if inc == 2 {
+                                        if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
+                                            ItemBody::Strikethrough
+                                        } else {
+                                            ItemBody::Text {
+                                                backslash_escaped: false,
+                                            }
+                                        }
+                                    } else {
+                                        if self.options.contains(Options::ENABLE_SUBSCRIPT) {
+                                            ItemBody::Subscript
+                                        } else if self
+                                            .options
+                                            .contains(Options::ENABLE_STRIKETHROUGH)
+                                        {
+                                            ItemBody::Strikethrough
+                                        } else {
+                                            ItemBody::Text {
+                                                backslash_escaped: false,
+                                            }
+                                        }
+                                    }
+                                } else if c == b'^' {
+                                    if self.options.contains(Options::ENABLE_SUPERSCRIPT) {
+                                        ItemBody::Superscript
+                                    } else {
+                                        ItemBody::Text {
+                                            backslash_escaped: false,
+                                        }
+                                    }
                                 } else if inc == 2 {
                                     ItemBody::Strong
                                 } else {
@@ -2064,6 +2095,8 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     match *body {
         ItemBody::Paragraph => TagEnd::Paragraph,
         ItemBody::Emphasis => TagEnd::Emphasis,
+        ItemBody::Superscript => TagEnd::Superscript,
+        ItemBody::Subscript => TagEnd::Subscript,
         ItemBody::Strong => TagEnd::Strong,
         ItemBody::Strikethrough => TagEnd::Strikethrough,
         ItemBody::Link(..) => TagEnd::Link,
@@ -2109,6 +2142,8 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Rule => return Event::Rule,
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
+        ItemBody::Superscript => Tag::Superscript,
+        ItemBody::Subscript => Tag::Subscript,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
@@ -2223,6 +2258,8 @@ mod test {
         opts.insert(Options::ENABLE_TABLES);
         opts.insert(Options::ENABLE_FOOTNOTES);
         opts.insert(Options::ENABLE_STRIKETHROUGH);
+        opts.insert(Options::ENABLE_SUPERSCRIPT);
+        opts.insert(Options::ENABLE_SUBSCRIPT);
         opts.insert(Options::ENABLE_TASKLISTS);
 
         Parser::new_ext(text, opts)

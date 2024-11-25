@@ -2819,8 +2819,8 @@ mod simd {
         #[test]
         fn exhaustive_search() {
             let chars = [
-                b'\n', b'\r', b'*', b'_', b'~', b'^', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
-                b'$', b'{', b'}',
+                b'\n', b'\r', b'*', b'_', b'~', b'^', b'|', b'&', b'\\', b'[', b']', b'<', b'!',
+                b'`', b'$', b'{', b'}',
             ];
 
             for &c in &chars {

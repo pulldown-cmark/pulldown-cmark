@@ -2615,11 +2615,11 @@ mod simd {
             add_lookup_byte(&mut lookup, b'|');
         }
         if options.contains(Options::ENABLE_STRIKETHROUGH)
-            || options.contains(Options::ENABLE_SUPER_SUB)
+            || options.contains(Options::ENABLE_SUBSCRIPT)
         {
             add_lookup_byte(&mut lookup, b'~');
         }
-        if options.contains(Options::ENABLE_SUPER_SUB) {
+        if options.contains(Options::ENABLE_SUPERSCRIPT) {
             add_lookup_byte(&mut lookup, b'^');
         }
         if options.contains(Options::ENABLE_MATH) {
@@ -2777,7 +2777,7 @@ mod simd {
             opts.insert(Options::ENABLE_TABLES);
             opts.insert(Options::ENABLE_FOOTNOTES);
             opts.insert(Options::ENABLE_STRIKETHROUGH);
-            opts.insert(Options::ENABLE_SUPER_SUB);
+            opts.insert(Options::ENABLE_SUPERSCRIPT);
             opts.insert(Options::ENABLE_TASKLISTS);
 
             let lut = create_lut(&opts);
@@ -2819,7 +2819,7 @@ mod simd {
         #[test]
         fn exhaustive_search() {
             let chars = [
-                b'\n', b'\r', b'*', b'_', b'~', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+                b'\n', b'\r', b'*', b'_', b'~', b'^', b'|', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
                 b'$', b'{', b'}',
             ];
 

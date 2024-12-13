@@ -22,6 +22,9 @@ urlencoding = "2.1.2"
 [dependencies.pulldown-cmark]
 path = "../pulldown-cmark"
 
+[features]
+simd = [ "pulldown-cmark/simd" ]
+
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"

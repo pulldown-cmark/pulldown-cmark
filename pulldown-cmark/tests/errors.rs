@@ -138,3 +138,8 @@ fn test_bad_slice_b() {
 fn test_bad_slice_unicode() {
     parse("><a a=\n毿>")
 }
+
+#[test]
+fn test_simd_wrapping_shr_issue_651() {
+    parse("`````````````````````````````````x`");
+}

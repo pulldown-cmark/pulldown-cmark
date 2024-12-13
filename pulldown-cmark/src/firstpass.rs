@@ -2722,7 +2722,11 @@ mod simd {
             match callback(offset, *bytes.get_unchecked(offset)) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     offset += skip + 1;
-                    mask = mask.wrapping_shr((skip + 1 + mask_ix) as u32);
+                    let shift = skip + 1 + mask_ix;
+                    if shift >= 32 {
+                        break;
+                    }
+                    mask >>= shift;
                 }
                 LoopInstruction::BreakAtWith(ix, val) => return Err((ix, val)),
             }

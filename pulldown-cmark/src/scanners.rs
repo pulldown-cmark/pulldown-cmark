@@ -933,6 +933,25 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     (0, None)
 }
 
+pub(crate) fn scan_wikilink_pipe(
+    data: &str,
+    start_ix: usize,
+    max_ix: usize,
+) -> Option<(usize, &str)> {
+    let bytes = &data.as_bytes()[start_ix..];
+    // skip any possibly empty wikilinks
+    // [[|empty wikilink]]
+    let mut i = 1;
+
+    while i < bytes.len() && i < max_ix {
+        if bytes[i] == b'|' {
+            return Some((i + 1, &data[start_ix..start_ix + i]));
+        }
+        i += 1;
+    }
+    None
+}
+
 // note: dest returned is raw, still needs to be unescaped
 // TODO: check that nested parens are really not allowed for refdefs
 // TODO(performance): this func should probably its own unescaping

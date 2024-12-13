@@ -1,0 +1,69 @@
+Run this with `cargo test --features gen-tests suite::wikilinks`
+
+# Wikilinks
+Shorthand link definitions for use in Markdown-based wikis. Syntax and design
+choices inspired heavily by 
+[Python Markdown WikiLinks](https://python-markdown.github.io/extensions/wikilinks/).
+
+A wikilink works very similarly to a normal link. In fact, it might as well be
+syntatic sugar. Define wikilinks with double brackets:
+
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink]].
+.
+<p>This is a <a href="/WikiLink/">WikiLink</a>.</p>
+````````````````````````````````
+
+Wikilinks take precedence over reference links:
+
+```````````````````````````````` example_wikilinks
+This is [[Ambiguous]].
+
+[Ambiguous]: https://example.com/
+.
+<p>This is <a href="/Ambiguous/">Ambiguous</a>.</p>
+````````````````````````````````
+
+They also take precedence over inline links:
+
+```````````````````````````````` example_wikilinks
+This is [also [[Ambiguous]]](https://example.com/).
+.
+<p>This is [also <a href="/Ambiguous/">Ambiguous</a>](https://example.com/).</p>
+````````````````````````````````
+
+Wikilinks can have different display text, called piping:
+
+```````````````````````````````` example_wikilinks
+This is [[WikiLink|a pothole]].
+.
+<p>This is <a href="/WikiLink/">a pothole</a>.</p>
+````````````````````````````````
+
+Using this syntax, it is possible to show more Markdown in the text:
+
+```````````````````````````````` example_wikilinks
+This is [[WikiLink|a **strong** pothole]].
+.
+<p>This is <a href="/WikiLink/">a <strong>strong</strong> pothole</a>.</p>
+````````````````````````````````
+
+Or images:
+
+```````````````````````````````` example_wikilinks
+This is a cute dog, linked to the page "/WikiLink/"
+
+[[WikiLink|![dog](dog.png)]]
+.
+<p>This is a cute dog, linked to the page "/WikiLink/"</p><p><a href="/WikiLink/"><img src="dog.png" alt="dog" /></a></p>
+````````````````````````````````
+
+The content of a wikilink *becomes* the link, modified with some basic rules:
+* The `/`` character is appended to the front and back of the link.
+* Any whitespace characters are replaced with `_`.
+
+```````````````````````````````` example_wikilinks
+The url of [[This Link]] becomes "/This_Link/"
+.
+<p>The url of <a href="/This_Link/">This Link</a> becomes "/This_Link/"</p>
+````````````````````````````````

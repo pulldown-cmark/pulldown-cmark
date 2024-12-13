@@ -1071,23 +1071,29 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
                 b'[' => {
+                    let double = ix > 0
+                        && bytes[ix - 1] == b'['
+                        && self.options.contains(Options::ENABLE_WIKILINKS);
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
-                        body: ItemBody::MaybeLinkOpen,
+                        body: ItemBody::MaybeLinkOpen(double),
                     });
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b']' => {
+                    let double = ix + 1 < bytes_len
+                        && bytes[ix + 1] == b']'
+                        && self.options.contains(Options::ENABLE_WIKILINKS);
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
                         start: ix,
                         end: ix + 1,
-                        body: ItemBody::MaybeLinkClose(true),
+                        body: ItemBody::MaybeLinkClose(double, true),
                     });
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)

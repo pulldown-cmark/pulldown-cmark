@@ -22,7 +22,7 @@
 
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
-use std::iter::FusedIterator;
+use std::iter::{once, FusedIterator};
 use std::num::NonZeroUsize;
 use std::ops::{Index, Range};
 
@@ -64,9 +64,10 @@ pub(crate) enum ItemBody {
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
     MaybeHtml,
-    MaybeLinkOpen,
-    // bool indicates whether or not the preceding section could be a reference
-    MaybeLinkClose(bool),
+    // bool `double` indicating this could be a wikilink
+    MaybeLinkOpen(bool),
+    // double, bool indicates whether or not the preceding section could be a reference
+    MaybeLinkClose(bool, bool),
     MaybeImage,
 
     // These are inline items after resolution.
@@ -137,7 +138,7 @@ impl ItemBody {
                 | MaybeSmartQuote(..)
                 | MaybeCode(..)
                 | MaybeHtml
-                | MaybeLinkOpen
+                | MaybeLinkOpen(..)
                 | MaybeLinkClose(..)
                 | MaybeImage
         )
@@ -151,7 +152,7 @@ impl ItemBody {
                 | MaybeSmartQuote(..)
                 | MaybeCode(..)
                 | MaybeHtml
-                | MaybeLinkOpen
+                | MaybeLinkOpen(..)
                 | MaybeLinkClose(..)
                 | MaybeImage
                 | Emphasis
@@ -599,13 +600,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
                 }
-                ItemBody::MaybeLinkOpen => {
+                ItemBody::MaybeLinkOpen(double) => {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
-                        ty: LinkStackTy::Link,
+                        ty: LinkStackTy::Link(double),
                     });
                 }
                 ItemBody::MaybeImage => {
@@ -617,11 +618,82 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         ty: LinkStackTy::Image,
                     });
                 }
-                ItemBody::MaybeLinkClose(could_be_ref) => {
+                ItemBody::MaybeLinkClose(double, could_be_ref) => {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
-                    if let Some(tos) = self.link_stack.pop() {
+                    let wikilink = if double {
+                        // wikilinks take precedence over normal links
+                        // TODO: it may be better to peek for a doubled
+                        // linkopen instead of manipulating the stack like this
+                        self.link_stack.pop_doubled_link()
+                    } else {
+                        None
+                    };
+                    if let Some(el) = wikilink {
+                        // if this really is doubled, the item below the
+                        // doubled link should have the true start of the link
+                        // we are making lots of assumptions that the first
+                        // pass should protect
+                        let Some(outer_el) = self.link_stack.pop() else {
+                            continue;
+                        };
+                        let Some(body_node) = self.tree[el.node].next else {
+                            continue;
+                        };
+                        let Some(next_node) = self.tree[cur_ix].next.map(|n| self.tree[n].next)
+                        else {
+                            continue;
+                        };
+                        if let Some(prev_ix) = prev {
+                            self.tree[prev_ix].next = None;
+                        }
+                        let start_ix = self.tree[body_node].item.start;
+                        let end_ix = self.tree[cur_ix].item.start;
+                        let wikilink = match scan_wikilink_pipe(
+                            block_text, start_ix, // bounded by closing tag
+                            end_ix,
+                        ) {
+                            Some((rest, wikiname)) => {
+                                // [[WikiName|rest]]
+                                let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                                if let Some(body_node) = body_node {
+                                    // break node so passes can actually format
+                                    // the display text
+                                    self.tree[body_node].item.start = start_ix + rest;
+                                    Some((body_node, wikiname))
+                                } else {
+                                    None
+                                }
+                            }
+                            None => {
+                                // [[WikiName]]
+                                let wikiname = &block_text[start_ix..end_ix];
+                                Some((body_node, wikiname))
+                            }
+                        };
+                        // exists only to panic guard against edge cases, this
+                        // should run 99.9% of the time
+                        if let Some((body_node, wikiname)) = wikilink {
+                            let link_ix = self.allocs.allocate_link(
+                                LinkType::WikiLink,
+                                format_wikilink(wikiname),
+                                "".into(),
+                                "".into(),
+                            );
+                            self.tree[outer_el.node].item.body = ItemBody::Link(link_ix);
+                            self.tree[outer_el.node].child = Some(body_node);
+                            self.tree[outer_el.node].next = next_node;
+                            self.tree[outer_el.node].item.end = end_ix + 1;
+                            self.link_stack.disable_all_links();
+                        }
+                        // at this point, regardless of whether we were
+                        // successful the stack has been trashed, so use this
+                        // to bring the pass back in a valid state
+                        prev = Some(outer_el.node);
+                        cur = next_node;
+                        continue;
+                    } else if let Some(tos) = self.link_stack.pop() {
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
                         }
@@ -651,7 +723,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
-                            if tos.ty == LinkStackTy::Link {
+                            if matches!(tos.ty, LinkStackTy::Link(..)) {
                                 self.link_stack.disable_all_links();
                             }
                         } else {
@@ -674,7 +746,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         continue;
                                     };
                                     self.tree[reference_close_node].item.body =
-                                        ItemBody::MaybeLinkClose(false);
+                                        ItemBody::MaybeLinkClose(double, false);
                                     let next_node = self.tree[reference_close_node].next;
 
                                     (next_node, LinkType::Reference)
@@ -809,7 +881,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     cur = Some(tos.node);
                                     cur_ix = tos.node;
 
-                                    if tos.ty == LinkStackTy::Link {
+                                    if matches!(tos.ty, LinkStackTy::Link(..)) {
                                         self.link_stack.disable_all_links();
                                     }
                                 }
@@ -1665,6 +1737,22 @@ impl LinkStack {
         el
     }
 
+    /// Consumes the link stack until a doubled link is found. Should only be
+    /// called when a closing wikilink tag is ABSOLUTELY there, since this
+    /// messes with the link stack in a way that's only valid after completing
+    /// the closing tag of a wikilink.
+    fn pop_doubled_link(&mut self) -> Option<LinkStackEl> {
+        if let Some(ix) = self
+            .inner
+            .iter()
+            .rposition(|el| el.ty == LinkStackTy::Link(true))
+        {
+            self.inner.drain(ix..).next()
+        } else {
+            None
+        }
+    }
+
     fn clear(&mut self) {
         self.inner.clear();
         self.disabled_ix = 0;
@@ -1672,7 +1760,7 @@ impl LinkStack {
 
     fn disable_all_links(&mut self) {
         for el in &mut self.inner[self.disabled_ix..] {
-            if el.ty == LinkStackTy::Link {
+            if matches!(el.ty, LinkStackTy::Link(..)) {
                 el.ty = LinkStackTy::Disabled;
             }
         }
@@ -1688,7 +1776,8 @@ struct LinkStackEl {
 
 #[derive(PartialEq, Clone, Debug)]
 enum LinkStackTy {
-    Link,
+    // if this is doubled up, could be a wikilink
+    Link(bool),
     Image,
     Disabled,
 }
@@ -2089,6 +2178,22 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
             }
         }
     }
+}
+
+fn format_wikilink<'a>(text: &'a str) -> CowStr<'a> {
+    // this does not check if the link already has the special control
+    // characters, as in the "href" of [[/Wiki_Link/]] becomes "//Wiki_Link//"
+    // no support planned because it defeats a core design decision of
+    // wikilinks
+    once('/')
+        .chain(
+            text.chars()
+                .map(|b| if b.is_ascii_whitespace() { '_' } else { b }),
+        )
+        .chain(once('/'))
+        // written like this to enable iter optimization
+        .collect::<String>()
+        .into()
 }
 
 fn body_to_tag_end(body: &ItemBody) -> TagEnd {

@@ -10,7 +10,7 @@ fn super_sub_test_1() {
     let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn super_sub_test_2() {
     let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn super_sub_test_3() {
     let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn super_sub_test_4() {
     let expected = r##"<p><sub>This~is~nothing</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn super_sub_test_5() {
     let expected = r##"<p><sub>This ~~is stricken.</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }
 
 #[test]
@@ -60,5 +60,5 @@ fn super_sub_test_6() {
     let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, true, false);
 }

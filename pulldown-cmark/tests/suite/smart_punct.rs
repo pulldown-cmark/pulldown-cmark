@@ -12,7 +12,7 @@ fn smart_punct_test_1() {
 “‘Shelob’ is my name.”</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn smart_punct_test_2() {
     let expected = r##"<p>‘A’, ‘B’, and ‘C’ are letters.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -34,7 +34,7 @@ So is 'pine.'
 So is ‘pine.’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn smart_punct_test_4() {
     let expected = r##"<p>‘He said, “I want to go.”’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn smart_punct_test_5() {
     let expected = r##"<p>Were you alive in the 70’s?</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -64,7 +64,7 @@ fn smart_punct_test_6() {
     let expected = r##"<p>Here is some quoted ‘<code>code</code>’ and a “<a href="url">quoted link</a>”.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn smart_punct_test_7() {
     let expected = r##"<p>’tis the season to be ‘jolly’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn smart_punct_test_8() {
     let expected = r##"<p>‘We’ll use Jane’s boat and John’s truck,’ Jenna said.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn smart_punct_test_9() {
 <p>“Second paragraph by same speaker, in fiction.”</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn smart_punct_test_10() {
     let expected = r##"<p>[a]’s b’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -121,7 +121,7 @@ This isn't either.
 5'8"</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -139,7 +139,7 @@ en – en
 2–3</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -167,7 +167,7 @@ nine———
 thirteen———––.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -177,7 +177,7 @@ fn smart_punct_test_14() {
     let expected = r##"<p>Escaped hyphens: -- ---.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn smart_punct_test_15() {
     let expected = r##"<p>Ellipses…and…and….</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }
 
 #[test]
@@ -197,5 +197,5 @@ fn smart_punct_test_16() {
     let expected = r##"<p>No ellipses...</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false);
+    test_markdown_html(original, expected, true, false, false, false, false);
 }

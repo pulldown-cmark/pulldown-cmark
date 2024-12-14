@@ -10,6 +10,7 @@
   - [parser-map-event-print.rs](examples/parser-map-event-print.md)
   - [parser-map-tag-print.rs](examples/parser-map-tag-print.md)
   - [string-to-string.rs](examples/string-to-string.md)
+  - [wikilink-prefix.rs](examples/wikilink-prefix.md)
 
 ---
 - [Detailed Specifications](specs.md)
@@ -25,3 +26,4 @@
   - [math](./specs/math.md)
   - [heading attributes](./specs/heading_attrs.md)
   - [metadata blocks](./specs/metadata_blocks.md)
+  - [wikilinks](./specs/wikilinks.md)

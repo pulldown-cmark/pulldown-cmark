@@ -651,8 +651,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         let start_ix = self.tree[body_node].item.start;
                         let end_ix = self.tree[cur_ix].item.start;
                         let wikilink = match scan_wikilink_pipe(
-                            block_text, start_ix, // bounded by closing tag
-                            end_ix,
+                            block_text,
+                            start_ix, // bounded by closing tag
+                            end_ix - start_ix,
                         ) {
                             Some((rest, wikiname)) => {
                                 // [[WikiName|rest]]

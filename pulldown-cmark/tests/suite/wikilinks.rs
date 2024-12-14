@@ -76,3 +76,23 @@ fn wikilinks_test_7() {
 
     test_markdown_html(original, expected, false, false, false, false, true);
 }
+
+#[test]
+fn wikilinks_test_8() {
+    let original = r##"This is a [[WikiLink/In/A/Directory]].
+"##;
+    let expected = r##"<p>This is a <a href="/WikiLink/In/A/Directory/">Directory</a>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_9() {
+    let original = r##"This is a [[WikiLink/In/A/Directory|WikiLink]].
+"##;
+    let expected = r##"<p>This is a <a href="/WikiLink/In/A/Directory/">WikiLink</a>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}

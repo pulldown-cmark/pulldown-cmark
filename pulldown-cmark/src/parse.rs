@@ -670,6 +670,23 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             None => {
                                 // [[WikiName]]
                                 let wikiname = &block_text[start_ix..end_ix];
+                                // or [[Nested/WikiName]]
+                                let display_ix = wikiname
+                                    .as_bytes()
+                                    .iter()
+                                    .rposition(|b| *b == b'/')
+                                    .map(|ix| ix + 1)
+                                    .unwrap_or(0)
+                                    + start_ix;
+                                // TODO: wikitext should not be styled, might
+                                // need a more experienced contributor's help
+                                let body_node = self.tree.create_node(Item {
+                                    start: display_ix,
+                                    end: end_ix,
+                                    body: ItemBody::Text {
+                                        backslash_escaped: false,
+                                    },
+                                });
                                 Some((body_node, wikiname))
                             }
                         };

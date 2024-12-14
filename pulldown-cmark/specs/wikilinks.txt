@@ -67,3 +67,20 @@ The url of [[This Link]] becomes "/This_Link/"
 .
 <p>The url of <a href="/This_Link/">This Link</a> becomes "/This_Link/"</p>
 ````````````````````````````````
+
+Paths can be qualified in wikilinks while only showing the title of the page.
+This is useful for wikis that support a "directory-like" system.
+
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink/In/A/Directory]].
+.
+<p>This is a <a href="/WikiLink/In/A/Directory/">Directory</a>.</p>
+````````````````````````````````
+
+Of course, the pipe operator can still be used:
+
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink/In/A/Directory|WikiLink]].
+.
+<p>This is a <a href="/WikiLink/In/A/Directory/">WikiLink</a>.</p>
+````````````````````````````````

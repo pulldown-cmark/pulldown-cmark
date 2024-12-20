@@ -71,6 +71,7 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("h", "help", "this help message");
     opts.optflag("d", "dry-run", "dry run, produce no output");
     opts.optflag("e", "events", "print event sequence instead of rendering");
+    // Check for conflicting short flags when adding a new one!
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("m", "enable-math", "enable LaTeX-style math");
     opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
@@ -85,7 +86,7 @@ pub fn main() -> std::io::Result<()> {
         "enable GitHub-style strikethrough",
     );
     opts.optflag("U", "enable-superscript", "enable superscript");
-    opts.optflag("D", "enable-subscript", "enable subscript");
+    opts.optflag("B", "enable-subscript", "enable subscript");
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
     opts.optflag(

@@ -1104,7 +1104,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 }
             }
             if c == b'&' {
-                if let (n, Some(value)) = scan_entity(&bytes[i..]) {
+                if let Some((n, value)) = scan_entity(&bytes[i..]) {
                     title.push_str(&text[mark..i]);
                     title.push_str(&value);
                     i += n;

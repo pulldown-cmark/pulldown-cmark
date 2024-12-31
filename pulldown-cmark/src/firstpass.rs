@@ -1093,7 +1093,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'&' => match scan_entity(&bytes[ix..]) {
-                    (n, Some(value)) => {
+                    Some((n, value)) => {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
@@ -1104,7 +1104,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         begin_text = ix + n;
                         LoopInstruction::ContinueAndSkip(n - 1)
                     }
-                    _ => LoopInstruction::ContinueAndSkip(0),
+                    None => LoopInstruction::ContinueAndSkip(0),
                 },
                 b'|' => {
                     if ix != 0 && bytes[ix - 1] == b'\\' {

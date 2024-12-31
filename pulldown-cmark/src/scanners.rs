@@ -904,7 +904,7 @@ fn char_from_codepoint(input: usize) -> Option<char> {
 }
 
 // doesn't bother to check data[0] == '&'
-pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
+pub(crate) fn scan_entity(bytes: &[u8]) -> Option<(usize, CowStr<'static>)> {
     let mut end = 1;
     if scan_ch(&bytes[end..], b'#') == 1 {
         end += 1;
@@ -916,21 +916,21 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         };
         end += bytecount;
         return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
-            (0, None)
+            None
         } else {
-            (
+            Some((
                 end + 1,
-                Some(char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into()),
-            )
+                char_from_codepoint(codepoint).unwrap_or('\u{FFFD}').into(),
+            ))
         };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
     if scan_ch(&bytes[end..], b';') == 1 {
         if let Some(value) = entities::get_entity(&bytes[1..end]) {
-            return (end + 1, Some(value.into()));
+            return Some((end + 1, value.into()));
         }
     }
-    (0, None)
+    None
 }
 
 // note: dest returned is raw, still needs to be unescaped
@@ -1172,13 +1172,13 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
                 i += 2;
             }
             b'&' => match scan_entity(&bytes[i..]) {
-                (n, Some(value)) => {
+                Some((n, value)) => {
                     result.push_str(&input[mark..i]);
                     result.push_str(&value);
                     i += n;
                     mark = i;
                 }
-                _ => i += 1,
+                None => i += 1,
             },
             b'\r' => {
                 result.push_str(&input[mark..i]);

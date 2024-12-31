@@ -11,7 +11,7 @@ syntatic sugar. Define wikilinks with double brackets:
 ```````````````````````````````` example_wikilinks
 This is a [[WikiLink]].
 .
-<p>This is a <a href="/WikiLink/">WikiLink</a>.</p>
+<p>This is a <a href="WikiLink">WikiLink</a>.</p>
 ````````````````````````````````
 
 Wikilinks take precedence over reference links:
@@ -21,7 +21,22 @@ This is [[Ambiguous]].
 
 [Ambiguous]: https://example.com/
 .
-<p>This is <a href="/Ambiguous/">Ambiguous</a>.</p>
+<p>This is <a href="Ambiguous">Ambiguous</a>.</p>
+````````````````````````````````
+
+However, they should not otherwise interfere with normal Markdown links:
+
+```````````````````````````````` example_wikilinks
+[[squid] calamari is considered a delicacy](https://en.wikipedia.org/wiki/Squid)
+
+[calamari [squid]](https://en.wikipedia.org/wiki/Squid)
+.
+<p>
+<a href="https://en.wikipedia.org/wiki/Squid">[squid] calamari is considered a delicacy</a>
+</p>
+<p>
+<a href="https://en.wikipedia.org/wiki/Squid">calamari [squid]</a>
+</p>
 ````````````````````````````````
 
 They also take precedence over inline links:
@@ -29,7 +44,7 @@ They also take precedence over inline links:
 ```````````````````````````````` example_wikilinks
 This is [also [[Ambiguous]]](https://example.com/).
 .
-<p>This is [also <a href="/Ambiguous/">Ambiguous</a>](https://example.com/).</p>
+<p>This is [also <a href="Ambiguous">Ambiguous</a>](https://example.com/).</p>
 ````````````````````````````````
 
 Wikilinks can have different display text, called piping:
@@ -37,7 +52,7 @@ Wikilinks can have different display text, called piping:
 ```````````````````````````````` example_wikilinks
 This is [[WikiLink|a pothole]].
 .
-<p>This is <a href="/WikiLink/">a pothole</a>.</p>
+<p>This is <a href="WikiLink">a pothole</a>.</p>
 ````````````````````````````````
 
 Using this syntax, it is possible to show more Markdown in the text:
@@ -45,27 +60,33 @@ Using this syntax, it is possible to show more Markdown in the text:
 ```````````````````````````````` example_wikilinks
 This is [[WikiLink|a **strong** pothole]].
 .
-<p>This is <a href="/WikiLink/">a <strong>strong</strong> pothole</a>.</p>
+<p>This is <a href="WikiLink">a <strong>strong</strong> pothole</a>.</p>
 ````````````````````````````````
 
 Or images:
 
 ```````````````````````````````` example_wikilinks
-This is a cute dog, linked to the page "/WikiLink/"
+This is a cute dog, linked to the page "WikiLink"
 
 [[WikiLink|![dog](dog.png)]]
 .
-<p>This is a cute dog, linked to the page "/WikiLink/"</p><p><a href="/WikiLink/"><img src="dog.png" alt="dog" /></a></p>
+<p>This is a cute dog, linked to the page "WikiLink"</p><p><a href="WikiLink"><img src="dog.png" alt="dog" /></a></p>
 ````````````````````````````````
 
-The content of a wikilink *becomes* the link, modified with some basic rules:
-* The `/`` character is appended to the front and back of the link.
-* Any whitespace characters are replaced with `_`.
+With nested wikilinks, the deepest one takes precedence:
 
 ```````````````````````````````` example_wikilinks
-The url of [[This Link]] becomes "/This_Link/"
+[[WikiLink|[[Fish]]]]
 .
-<p>The url of <a href="/This_Link/">This Link</a> becomes "/This_Link/"</p>
+<p>[[WikiLink|<a href="Fish">Fish</a>]]</p>
+````````````````````````````````
+
+Links inside wikilinks will not render:
+
+```````````````````````````````` example_wikilinks
+[[WikiLink|[cat](cat.html)]]
+.
+<p><a href="WikiLink">[cat](cat.html)</a></p>
 ````````````````````````````````
 
 Paths can be qualified in wikilinks while only showing the title of the page.
@@ -74,7 +95,16 @@ This is useful for wikis that support a "directory-like" system.
 ```````````````````````````````` example_wikilinks
 This is a [[WikiLink/In/A/Directory]].
 .
-<p>This is a <a href="/WikiLink/In/A/Directory/">Directory</a>.</p>
+<p>This is a <a href="WikiLink/In/A/Directory">Directory</a>.</p>
+````````````````````````````````
+
+This functionality will also trim any URL fragments (#Heading) in the display
+text.
+
+```````````````````````````````` example_wikilinks
+This is a [[Wonderful/WikiLink#Secret]].
+.
+<p>This is a <a href="Wonderful/WikiLink#Secret">WikiLink</a>.</p>
 ````````````````````````````````
 
 Of course, the pipe operator can still be used:
@@ -82,5 +112,5 @@ Of course, the pipe operator can still be used:
 ```````````````````````````````` example_wikilinks
 This is a [[WikiLink/In/A/Directory|WikiLink]].
 .
-<p>This is a <a href="/WikiLink/In/A/Directory/">WikiLink</a>.</p>
+<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
 ````````````````````````````````

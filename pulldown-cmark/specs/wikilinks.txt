@@ -139,10 +139,10 @@ In this syntax, the pipe operator serves as a way to define alt text.
 <p><img src="dog.png" alt="a cute dog" /></p>
 ````````````````````````````````
 
-Wikilinks can be empty, though this syntax is not particularly useful.
+Wikilinks cannot be empty. They will render as-is.
 
 ```````````````````````````````` example_wikilinks
-]] [[]] [[|]] [[
+]] [[]] [[|]] [[|Symbol]] [[
 .
-<p>]] <a href=""></a> <a href=""></a> [[</p>
+<p>]] [[]] [[|]] [[|Symbol]] [[</p>
 ````````````````````````````````

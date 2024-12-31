@@ -460,6 +460,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 end_ix - start_ix,
                             ) {
                                 Some((rest, wikiname)) => {
+                                    // bail early if the wikiname would be empty
+                                    if wikiname.is_empty() {
+                                        memory.push(cur_ix);
+                                        cur = self.tree[cur_ix].next;
+                                        continue;
+                                    }
                                     // [[WikiName|rest]]
                                     let body_node =
                                         scan_nodes_to_ix(&self.tree, Some(body_node), rest);
@@ -489,6 +495,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         .position(|b| *b == b'#')
                                         .unwrap_or(wikiname.len())
                                         + start_ix;
+                                    // bail early if the wikiname would be empty
+                                    if display_ix >= display_end_ix {
+                                        memory.push(cur_ix);
+                                        cur = self.tree[cur_ix].next;
+                                        continue;
+                                    }
                                     // TODO: wikitext should not be styled, might
                                     // need a more experienced contributor's help
                                     let body_node = self.tree.create_node(Item {

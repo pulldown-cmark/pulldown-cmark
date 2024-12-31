@@ -164,9 +164,9 @@ fn wikilinks_test_14() {
 
 #[test]
 fn wikilinks_test_15() {
-    let original = r##"]] [[]] [[|]] [[
+    let original = r##"]] [[]] [[|]] [[|Symbol]] [[
 "##;
-    let expected = r##"<p>]] <a href=""></a> <a href=""></a> [[</p>
+    let expected = r##"<p>]] [[]] [[|]] [[|Symbol]] [[</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);

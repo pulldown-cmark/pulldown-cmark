@@ -10,7 +10,7 @@ fn gfm_strikethrough_test_1() {
     let expected = r##"<p><del>Hi</del> Hello, <del>there</del> world!</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -23,7 +23,7 @@ new paragraph~~.
 <p>new paragraph~~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -33,5 +33,5 @@ fn gfm_strikethrough_test_3() {
     let expected = r##"<p>This will ~~~not~~~ strike.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }

@@ -11,7 +11,7 @@ fn table_test_1() {
     let expected = r##"<h2>Test header</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn table_test_2() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn table_test_3() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn table_test_4() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn table_test_5() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn table_test_6() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn table_test_7() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn table_test_8() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn table_test_9() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn table_test_10() {
 |ぃ|い|</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn table_test_11() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn table_test_12() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -302,7 +302,7 @@ b</p>
 <p>b</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -316,7 +316,7 @@ fn table_test_14() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -332,7 +332,7 @@ fn table_test_15() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -348,7 +348,7 @@ fn table_test_16() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -398,7 +398,7 @@ fn table_test_17() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -436,7 +436,7 @@ fn table_test_18() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -466,7 +466,7 @@ fn table_test_19() {
 | Not   | Enough |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -480,7 +480,7 @@ fn table_test_20() {
 <p>|</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -494,7 +494,7 @@ fn table_test_21() {
 | Table | Body   |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -516,7 +516,7 @@ fn table_test_22() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -542,7 +542,7 @@ fn table_test_23() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -564,7 +564,7 @@ A: Interrupting —?</p>
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -578,7 +578,7 @@ fn table_test_25() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -592,7 +592,7 @@ fn table_test_26() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -610,7 +610,7 @@ moo | moo
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -628,5 +628,5 @@ moo | moo
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }

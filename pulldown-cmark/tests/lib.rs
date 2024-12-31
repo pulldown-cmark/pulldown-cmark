@@ -13,6 +13,7 @@ pub fn test_markdown_html(
     metadata_blocks: bool,
     old_footnotes: bool,
     subscript: bool,
+    wikilinks: bool,
 ) {
     let mut s = String::new();
 
@@ -21,6 +22,9 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_SUPERSCRIPT);
+    if wikilinks {
+        opts.insert(Options::ENABLE_WIKILINKS);
+    }
     if subscript {
         opts.insert(Options::ENABLE_SUBSCRIPT);
     }

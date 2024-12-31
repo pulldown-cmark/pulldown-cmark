@@ -19,3 +19,4 @@ mod spec;
 mod strikethrough;
 mod super_sub;
 mod table;
+mod wikilinks;

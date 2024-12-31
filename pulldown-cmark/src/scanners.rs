@@ -1150,28 +1150,23 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
     let mut i = 0;
     let bytes = input.as_bytes();
     while i < bytes.len() {
-        match bytes[i] {
+        match bytes[i..] {
             // Tables are special, because they're parsed as-if the tables
             // were parsed in a discrete pass, changing `\|` to `|`, and then
             // passing the changed string to the inline parser.
-            b'\\'
-                if is_in_table
-                    && i + 2 < bytes.len()
-                    && bytes[i + 1] == b'\\'
-                    && bytes[i + 2] == b'|' =>
-            {
+            [b'\\', b'\\', b'|', ..] if is_in_table => {
                 // even number of `\`s before pipe
                 // odd number is handled in the normal way below
                 result.push_str(&input[mark..i]);
                 mark = i + 2;
                 i += 3;
             }
-            b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
+            [b'\\', cx, ..] if is_ascii_punctuation(cx) => {
                 result.push_str(&input[mark..i]);
                 mark = i + 1;
                 i += 2;
             }
-            b'&' => match scan_entity(&bytes[i..]) {
+            [b'&', ..] => match scan_entity(&bytes[i..]) {
                 (n, Some(value)) => {
                     result.push_str(&input[mark..i]);
                     result.push_str(&value);
@@ -1180,7 +1175,7 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
                 }
                 _ => i += 1,
             },
-            b'\r' => {
+            [b'\r', ..] => {
                 result.push_str(&input[mark..i]);
                 i += 1;
                 mark = i;

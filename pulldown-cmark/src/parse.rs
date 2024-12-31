@@ -435,6 +435,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 ItemBody::MaybeWikiLinkClose => {
                     let next_ix = self.break_maybe_wikilink(cur_ix);
                     // find next wikilink
+                    // we still keep track of normal links so we can disable
+                    // parsing later
                     let mut tos = None;
                     while let Some(next_tos) = self.link_stack.pop() {
                         if next_tos.ty == LinkStackTy::Disabled {
@@ -514,7 +516,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             if let Some(prev_ix) = prev {
                                 self.tree[prev_ix].next = None;
                             }
-                            self.tree[tos.node].item.body = ItemBody::Link(link_ix);
+                            if tos.ty == LinkStackTy::Image {
+                                self.tree[tos.node].item.body = ItemBody::Image(link_ix);
+                            } else {
+                                self.tree[tos.node].item.body = ItemBody::Link(link_ix);
+                            }
                             self.tree[tos.node].child = Some(body_node);
                             self.tree[tos.node].next = self.tree[next_ix].next;
                             self.tree[tos.node].item.end = end_ix + 1;

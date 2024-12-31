@@ -78,7 +78,10 @@ fn wikilinks_test_7() {
 
 [[WikiLink|![dog](dog.png)]]
 "##;
-    let expected = r##"<p>This is a cute dog, linked to the page "WikiLink"</p><p><a href="WikiLink"><img src="dog.png" alt="dog" /></a></p>
+    let expected = r##"<p>This is a cute dog, linked to the page "WikiLink"</p>
+<p>
+<a href="WikiLink"><img src="dog.png" alt="dog" /></a>
+</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);
@@ -129,6 +132,31 @@ fn wikilinks_test_12() {
     let original = r##"This is a [[WikiLink/In/A/Directory|WikiLink]].
 "##;
     let expected = r##"<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_13() {
+    let original = r##"This is a cute dog.
+
+![[dog.png]]
+"##;
+    let expected = r##"<p>This is a cute dog.</p>
+<p>
+<img src="dog.png" alt="dog.png" />
+</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_14() {
+    let original = r##"![[dog.png|a cute dog]]
+"##;
+    let expected = r##"<p><img src="dog.png" alt="a cute dog" /></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);

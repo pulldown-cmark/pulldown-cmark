@@ -70,7 +70,10 @@ This is a cute dog, linked to the page "WikiLink"
 
 [[WikiLink|![dog](dog.png)]]
 .
-<p>This is a cute dog, linked to the page "WikiLink"</p><p><a href="WikiLink"><img src="dog.png" alt="dog" /></a></p>
+<p>This is a cute dog, linked to the page "WikiLink"</p>
+<p>
+<a href="WikiLink"><img src="dog.png" alt="dog" /></a>
+</p>
 ````````````````````````````````
 
 With nested wikilinks, the deepest one takes precedence:
@@ -113,4 +116,25 @@ Of course, the pipe operator can still be used:
 This is a [[WikiLink/In/A/Directory|WikiLink]].
 .
 <p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
+````````````````````````````````
+
+A similar looking syntax can be used to embed images:
+
+```````````````````````````````` example_wikilinks
+This is a cute dog.
+
+![[dog.png]]
+.
+<p>This is a cute dog.</p>
+<p>
+<img src="dog.png" alt="dog.png" />
+</p>
+````````````````````````````````
+
+In this syntax, the pipe operator serves as a way to define alt text.
+
+```````````````````````````````` example_wikilinks
+![[dog.png|a cute dog]]
+.
+<p><img src="dog.png" alt="a cute dog" /></p>
 ````````````````````````````````

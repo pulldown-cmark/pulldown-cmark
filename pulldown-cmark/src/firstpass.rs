@@ -1058,7 +1058,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 b'!' => {
                     if self.options.contains(Options::ENABLE_WIKILINKS)
                         && ix + 2 < bytes_len
-                        && &bytes[ix..ix + 2] == b"[["
+                        && &bytes[ix + 1..ix + 3] == b"[["
                     {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;

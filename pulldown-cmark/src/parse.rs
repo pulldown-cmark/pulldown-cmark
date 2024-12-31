@@ -22,7 +22,7 @@
 
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
-use std::iter::{once, FusedIterator};
+use std::iter::FusedIterator;
 use std::num::NonZeroUsize;
 use std::ops::{Index, Range};
 
@@ -64,11 +64,13 @@ pub(crate) enum ItemBody {
     MaybeSmartQuote(u8, bool, bool),
     MaybeCode(usize, bool), // number of backticks, preceded by backslash
     MaybeHtml,
-    // bool `double` indicating this could be a wikilink
-    MaybeLinkOpen(bool),
-    // double, bool indicates whether or not the preceding section could be a reference
-    MaybeLinkClose(bool, bool),
+    MaybeLinkOpen,
+    // bool indicates whether or not the preceding section could be a reference
+    MaybeLinkClose(bool),
     MaybeImage,
+    MaybeWikiLinkOpen,
+    MaybeWikiLinkClose,
+    MaybeWikiLinkImage,
 
     // These are inline items after resolution.
     Emphasis,
@@ -138,9 +140,12 @@ impl ItemBody {
                 | MaybeSmartQuote(..)
                 | MaybeCode(..)
                 | MaybeHtml
-                | MaybeLinkOpen(..)
+                | MaybeLinkOpen
                 | MaybeLinkClose(..)
                 | MaybeImage
+                | MaybeWikiLinkOpen
+                | MaybeWikiLinkClose
+                | MaybeWikiLinkImage
         )
     }
     fn is_inline(&self) -> bool {
@@ -152,9 +157,12 @@ impl ItemBody {
                 | MaybeSmartQuote(..)
                 | MaybeCode(..)
                 | MaybeHtml
-                | MaybeLinkOpen(..)
+                | MaybeLinkOpen
                 | MaybeLinkClose(..)
                 | MaybeImage
+                | MaybeWikiLinkOpen
+                | MaybeWikiLinkClose
+                | MaybeWikiLinkImage
                 | Emphasis
                 | Strong
                 | Strikethrough
@@ -375,8 +383,189 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     ///
     /// Note: there's some potential for optimization here, but that's future work.
     fn handle_inline(&mut self) {
+        // options that require an extra pass
+        if self.options.contains(Options::ENABLE_WIKILINKS) {
+            self.handle_inline_pass2();
+        }
         self.handle_inline_pass1();
         self.handle_emphasis_and_hard_break();
+    }
+
+    /// Handles wikilinks.
+    ///
+    /// Because wikilinks have syntax that interferes with normal Markdown
+    /// links, they must be processed before links are.
+    fn handle_inline_pass2(&mut self) {
+        let mut cur = self.tree.cur();
+        let mut prev = None;
+
+        let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
+        let block_text = &self.text[..block_end];
+
+        while let Some(cur_ix) = cur {
+            match self.tree[cur_ix].item.body {
+                ItemBody::MaybeLinkOpen => {
+                    self.link_stack.push(LinkStackEl {
+                        node: cur_ix,
+                        ty: LinkStackTy::Link,
+                        wikilink: false,
+                    });
+                }
+                ItemBody::MaybeImage => {
+                    self.link_stack.push(LinkStackEl {
+                        node: cur_ix,
+                        ty: LinkStackTy::Image,
+                        wikilink: false,
+                    });
+                }
+                ItemBody::MaybeWikiLinkOpen => {
+                    self.link_stack.push(LinkStackEl {
+                        node: cur_ix,
+                        ty: LinkStackTy::Link,
+                        wikilink: true,
+                    });
+                }
+                ItemBody::MaybeWikiLinkImage => {
+                    self.link_stack.push(LinkStackEl {
+                        node: cur_ix,
+                        ty: LinkStackTy::Image,
+                        wikilink: true,
+                    });
+                }
+                ItemBody::MaybeWikiLinkClose => {
+                    let next_ix = self.break_maybe_wikilink(cur_ix);
+                    // find next wikilink
+                    let mut tos = None;
+                    while let Some(next_tos) = self.link_stack.pop() {
+                        if next_tos.ty == LinkStackTy::Disabled {
+                            // Link is totally disabled, so untokenize it for next pass
+                            self.tree[next_tos.node].item.body = ItemBody::Text {
+                                backslash_escaped: false,
+                            };
+                        } else if next_tos.wikilink {
+                            tos = Some(next_tos);
+                            break;
+                        }
+                    }
+                    if let Some(tos) = tos {
+                        let inner_node = self.break_maybe_wikilink(tos.node);
+                        let Some(body_node) = self.tree[inner_node].next else {
+                            // skip if no next node exists, like at end of
+                            // input
+                            cur = self.tree[cur_ix].next;
+                            continue;
+                        };
+                        let start_ix = self.tree[body_node].item.start;
+                        let end_ix = self.tree[cur_ix].item.start;
+                        let wikilink = match scan_wikilink_pipe(
+                            block_text,
+                            start_ix, // bounded by closing tag
+                            end_ix - start_ix,
+                        ) {
+                            Some((rest, wikiname)) => {
+                                // [[WikiName|rest]]
+                                let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                                if let Some(body_node) = body_node {
+                                    // break node so passes can actually format
+                                    // the display text
+                                    self.tree[body_node].item.start = start_ix + rest;
+                                    Some((body_node, wikiname))
+                                } else {
+                                    None
+                                }
+                            }
+                            None => {
+                                // [[WikiName]]
+                                let wikiname = &block_text[start_ix..end_ix];
+                                // or [[Nested/WikiName]]
+                                let display_ix = wikiname
+                                    .as_bytes()
+                                    .iter()
+                                    .rposition(|b| *b == b'/')
+                                    .map(|ix| ix + 1)
+                                    .unwrap_or(0)
+                                    + start_ix;
+                                let display_end_ix = wikiname
+                                    .as_bytes()
+                                    .iter()
+                                    .position(|b| *b == b'#')
+                                    .unwrap_or(wikiname.len())
+                                    + start_ix;
+                                // TODO: wikitext should not be styled, might
+                                // need a more experienced contributor's help
+                                let body_node = self.tree.create_node(Item {
+                                    start: display_ix,
+                                    end: display_end_ix,
+                                    body: ItemBody::Text {
+                                        backslash_escaped: false,
+                                    },
+                                });
+                                Some((body_node, wikiname))
+                            }
+                        };
+
+                        if let Some((body_node, wikiname)) = wikilink {
+                            let link_ix = self.allocs.allocate_link(
+                                LinkType::WikiLink,
+                                wikiname.into(),
+                                "".into(),
+                                "".into(),
+                            );
+                            if let Some(prev_ix) = prev {
+                                self.tree[prev_ix].next = None;
+                            }
+                            self.tree[tos.node].item.body = ItemBody::Link(link_ix);
+                            self.tree[tos.node].child = Some(body_node);
+                            self.tree[tos.node].next = self.tree[next_ix].next;
+                            self.tree[tos.node].item.end = end_ix + 1;
+                            self.link_stack.disable_all_links();
+                        }
+                    }
+                }
+                _ => (),
+            }
+
+            prev = cur;
+            cur = self.tree[cur_ix].next;
+        }
+
+        while let Some(tos) = self.link_stack.pop() {
+            if tos.ty == LinkStackTy::Disabled {
+                // Link is totally disabled, so untokenize it for next pass
+                self.tree[tos.node].item.body = ItemBody::Text {
+                    backslash_escaped: false,
+                };
+            } else if tos.wikilink {
+                // break wikilink into tokens
+                self.break_maybe_wikilink(tos.node);
+            }
+        }
+    }
+
+    /// Breaks a wikilink token into parts so inline_pass1 can pick up on
+    /// unresolved tokens.
+    fn break_maybe_wikilink(&mut self, node: TreeIndex) -> TreeIndex {
+        self.tree[node].item.end -= 1;
+        let next_ix = self.tree.create_node(Item {
+            start: self.tree[node].item.end,
+            end: self.tree[node].item.end + 1,
+            body: match self.tree[node].item.body {
+                ItemBody::MaybeWikiLinkOpen | ItemBody::MaybeWikiLinkImage => {
+                    ItemBody::MaybeLinkOpen
+                }
+                ItemBody::MaybeWikiLinkClose => ItemBody::MaybeLinkClose(true),
+                _ => unreachable!(),
+            },
+        });
+        self.tree[node].item.body = match self.tree[node].item.body {
+            ItemBody::MaybeWikiLinkOpen => ItemBody::MaybeLinkOpen,
+            ItemBody::MaybeWikiLinkImage => ItemBody::MaybeImage,
+            ItemBody::MaybeWikiLinkClose => ItemBody::MaybeLinkClose(true),
+            _ => unreachable!(),
+        };
+        self.tree[next_ix].next = self.tree[node].next;
+        self.tree[node].next = Some(next_ix);
+        next_ix
     }
 
     /// Handle inline HTML, code spans, and links.
@@ -600,13 +789,14 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
                 }
-                ItemBody::MaybeLinkOpen(double) => {
+                ItemBody::MaybeLinkOpen => {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
-                        ty: LinkStackTy::Link(double),
+                        ty: LinkStackTy::Link,
+                        wikilink: false,
                     });
                 }
                 ItemBody::MaybeImage => {
@@ -616,97 +806,25 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
+                        wikilink: false,
                     });
                 }
-                ItemBody::MaybeLinkClose(double, could_be_ref) => {
+                ItemBody::MaybeLinkClose(could_be_ref) => {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
                     if let Some(tos) = self.link_stack.pop() {
-                        if tos.ty == LinkStackTy::Disabled {
+                        // skip rendering if already in a link, unless its an
+                        // image
+                        if tos.ty != LinkStackTy::Image
+                            && matches!(
+                                self.tree[self.tree.peek_up().unwrap()].item.body,
+                                ItemBody::Link(..)
+                            )
+                        {
                             continue;
                         }
-                        if tos.ty == LinkStackTy::Link(true) {
-                            // if this really is doubled, the item below the
-                            // doubled link should have the true start of the link
-                            // we are making lots of assumptions that the first
-                            // pass should protect
-                            let Some(outer_el) = self.link_stack.pop() else {
-                                continue;
-                            };
-                            let Some(body_node) = self.tree[tos.node].next else {
-                                continue;
-                            };
-                            let Some(next_node) = self.tree[cur_ix].next.map(|n| self.tree[n].next)
-                            else {
-                                continue;
-                            };
-                            if let Some(prev_ix) = prev {
-                                self.tree[prev_ix].next = None;
-                            }
-                            let start_ix = self.tree[body_node].item.start;
-                            let end_ix = self.tree[cur_ix].item.start;
-                            let wikilink = match scan_wikilink_pipe(
-                                block_text,
-                                start_ix, // bounded by closing tag
-                                end_ix - start_ix,
-                            ) {
-                                Some((rest, wikiname)) => {
-                                    // [[WikiName|rest]]
-                                    let body_node =
-                                        scan_nodes_to_ix(&self.tree, Some(body_node), rest);
-                                    if let Some(body_node) = body_node {
-                                        // break node so passes can actually format
-                                        // the display text
-                                        self.tree[body_node].item.start = start_ix + rest;
-                                        Some((body_node, wikiname))
-                                    } else {
-                                        None
-                                    }
-                                }
-                                None => {
-                                    // [[WikiName]]
-                                    let wikiname = &block_text[start_ix..end_ix];
-                                    // or [[Nested/WikiName]]
-                                    let display_ix = wikiname
-                                        .as_bytes()
-                                        .iter()
-                                        .rposition(|b| *b == b'/')
-                                        .map(|ix| ix + 1)
-                                        .unwrap_or(0)
-                                        + start_ix;
-                                    // TODO: wikitext should not be styled, might
-                                    // need a more experienced contributor's help
-                                    let body_node = self.tree.create_node(Item {
-                                        start: display_ix,
-                                        end: end_ix,
-                                        body: ItemBody::Text {
-                                            backslash_escaped: false,
-                                        },
-                                    });
-                                    Some((body_node, wikiname))
-                                }
-                            };
-                            // exists only to panic guard against edge cases, this
-                            // should run 99.9% of the time
-                            if let Some((body_node, wikiname)) = wikilink {
-                                let link_ix = self.allocs.allocate_link(
-                                    LinkType::WikiLink,
-                                    format_wikilink(wikiname),
-                                    "".into(),
-                                    "".into(),
-                                );
-                                self.tree[outer_el.node].item.body = ItemBody::Link(link_ix);
-                                self.tree[outer_el.node].child = Some(body_node);
-                                self.tree[outer_el.node].next = next_node;
-                                self.tree[outer_el.node].item.end = end_ix + 1;
-                                self.link_stack.disable_all_links();
-                            }
-                            // at this point, regardless of whether we were
-                            // successful the stack has been trashed, so use this
-                            // to bring the pass back in a valid state
-                            prev = Some(outer_el.node);
-                            cur = next_node;
+                        if tos.ty == LinkStackTy::Disabled {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
@@ -735,7 +853,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
-                            if matches!(tos.ty, LinkStackTy::Link(..)) {
+                            if tos.ty == LinkStackTy::Link {
                                 self.link_stack.disable_all_links();
                             }
                         } else {
@@ -758,7 +876,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         continue;
                                     };
                                     self.tree[reference_close_node].item.body =
-                                        ItemBody::MaybeLinkClose(double, false);
+                                        ItemBody::MaybeLinkClose(false);
                                     let next_node = self.tree[reference_close_node].next;
 
                                     (next_node, LinkType::Reference)
@@ -893,7 +1011,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     cur = Some(tos.node);
                                     cur_ix = tos.node;
 
-                                    if matches!(tos.ty, LinkStackTy::Link(..)) {
+                                    if tos.ty == LinkStackTy::Link {
                                         self.link_stack.disable_all_links();
                                     }
                                 }
@@ -1756,7 +1874,7 @@ impl LinkStack {
 
     fn disable_all_links(&mut self) {
         for el in &mut self.inner[self.disabled_ix..] {
-            if matches!(el.ty, LinkStackTy::Link(..)) {
+            if el.ty == LinkStackTy::Link {
                 el.ty = LinkStackTy::Disabled;
             }
         }
@@ -1768,12 +1886,12 @@ impl LinkStack {
 struct LinkStackEl {
     node: TreeIndex,
     ty: LinkStackTy,
+    wikilink: bool,
 }
 
 #[derive(PartialEq, Clone, Debug)]
 enum LinkStackTy {
-    // if this is doubled up, could be a wikilink
-    Link(bool),
+    Link,
     Image,
     Disabled,
 }
@@ -2174,22 +2292,6 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
             }
         }
     }
-}
-
-fn format_wikilink<'a>(text: &'a str) -> CowStr<'a> {
-    // this does not check if the link already has the special control
-    // characters, as in the "href" of [[/Wiki_Link/]] becomes "//Wiki_Link//"
-    // no support planned because it defeats a core design decision of
-    // wikilinks
-    once('/')
-        .chain(
-            text.chars()
-                .map(|b| if b.is_ascii_whitespace() { '_' } else { b }),
-        )
-        .chain(once('/'))
-        // written like this to enable iter optimization
-        .collect::<String>()
-        .into()
 }
 
 fn body_to_tag_end(body: &ItemBody) -> TagEnd {

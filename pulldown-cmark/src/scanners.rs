@@ -935,9 +935,7 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
 
 pub(crate) fn scan_wikilink_pipe(data: &str, start_ix: usize, len: usize) -> Option<(usize, &str)> {
     let bytes = &data.as_bytes()[start_ix..];
-    // skip any possibly empty wikilinks
-    // [[|empty wikilink]]
-    let mut i = 1;
+    let mut i = 0;
 
     while i < bytes.len() && i < len {
         if bytes[i] == b'|' {

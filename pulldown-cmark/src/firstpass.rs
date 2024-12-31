@@ -1056,20 +1056,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::ContinueAndSkip(0)
                 }
                 b'!' => {
-                    if self.options.contains(Options::ENABLE_WIKILINKS)
-                        && ix + 2 < bytes_len
-                        && &bytes[ix + 1..ix + 3] == b"[["
-                    {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        backslash_escaped = false;
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 3,
-                            body: ItemBody::MaybeWikiLinkImage,
-                        });
-                        begin_text = ix + 3;
-                        LoopInstruction::ContinueAndSkip(2)
-                    } else if ix + 1 < bytes_len && bytes[ix + 1] == b'[' {
+                    if ix + 1 < bytes_len && bytes[ix + 1] == b'[' {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
@@ -1086,50 +1073,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 b'[' => {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
-                    if self.options.contains(Options::ENABLE_WIKILINKS)
-                        && ix + 1 < bytes_len
-                        && bytes[ix + 1] == b'['
-                    {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 2,
-                            body: ItemBody::MaybeWikiLinkOpen,
-                        });
-                        begin_text = ix + 2;
-                        LoopInstruction::ContinueAndSkip(1)
-                    } else {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 1,
-                            body: ItemBody::MaybeLinkOpen,
-                        });
-                        begin_text = ix + 1;
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeLinkOpen,
+                    });
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
                 b']' => {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
-                    if self.options.contains(Options::ENABLE_WIKILINKS)
-                        && ix + 1 < bytes_len
-                        && bytes[ix + 1] == b']'
-                    {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 2,
-                            body: ItemBody::MaybeWikiLinkClose,
-                        });
-                        begin_text = ix + 2;
-                        LoopInstruction::ContinueAndSkip(1)
-                    } else {
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 1,
-                            body: ItemBody::MaybeLinkClose(true),
-                        });
-                        begin_text = ix + 1;
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::MaybeLinkClose(true),
+                    });
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
                 }
                 b'&' => match scan_entity(&bytes[ix..]) {
                     (n, Some(value)) => {

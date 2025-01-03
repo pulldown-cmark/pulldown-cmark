@@ -491,12 +491,11 @@ fn scan_attr_value_chars(data: &[u8]) -> usize {
 }
 
 pub(crate) fn scan_eol(bytes: &[u8]) -> Option<usize> {
-    if bytes.is_empty() {
-        return Some(0);
-    }
-    match bytes[0] {
-        b'\n' => Some(1),
-        b'\r' => Some(if bytes.get(1) == Some(&b'\n') { 2 } else { 1 }),
+    match bytes {
+        &[] => Some(0),
+        &[b'\n', ..] => Some(1),
+        &[b'\r', b'\n', ..] => Some(2),
+        &[b'\r', ..] => Some(1),
         _ => None,
     }
 }

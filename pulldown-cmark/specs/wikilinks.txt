@@ -146,3 +146,29 @@ Wikilinks cannot be empty. They will render as-is.
 .
 <p>]] [[]] [[|]] [[|Symbol]] [[</p>
 ````````````````````````````````
+
+Other interactions wikilinks have with other Markdown syntax:
+
+```````````````````````````````` example_wikilinks
+[inline link]([[url]])
+.
+<p><a href="[[url]]">inline link</a></p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+[inline link]([[url)]]
+.
+<p><a href="[[url">inline link</a>]]</p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+`[[code]]`
+.
+<p><code>[[code]]</code></p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+emphasis **cross [[over** here]]
+.
+<p>emphasis **cross <a href="over**%20here">over** here</a></p>
+````````````````````````````````

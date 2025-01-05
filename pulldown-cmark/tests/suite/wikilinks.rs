@@ -171,3 +171,43 @@ fn wikilinks_test_15() {
 
     test_markdown_html(original, expected, false, false, false, false, true);
 }
+
+#[test]
+fn wikilinks_test_16() {
+    let original = r##"[inline link]([[url]])
+"##;
+    let expected = r##"<p><a href="[[url]]">inline link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_17() {
+    let original = r##"[inline link]([[url)]]
+"##;
+    let expected = r##"<p><a href="[[url">inline link</a>]]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_18() {
+    let original = r##"`[[code]]`
+"##;
+    let expected = r##"<p><code>[[code]]</code></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_19() {
+    let original = r##"emphasis **cross [[over** here]]
+"##;
+    let expected = r##"<p>emphasis **cross <a href="over**%20here">over** here</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}

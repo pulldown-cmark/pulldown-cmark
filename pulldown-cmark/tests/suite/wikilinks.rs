@@ -101,7 +101,7 @@ fn wikilinks_test_8() {
 fn wikilinks_test_9() {
     let original = r##"[[WikiLink|[cat](cat.html)]]
 "##;
-    let expected = r##"<p><a href="WikiLink">[cat](cat.html)</a></p>
+    let expected = r##"<p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);
@@ -176,7 +176,7 @@ fn wikilinks_test_15() {
 fn wikilinks_test_16() {
     let original = r##"[inline link]([[url]])
 "##;
-    let expected = r##"<p><a href="[[url]]">inline link</a></p>
+    let expected = r##"<p><a href="%5B%5Burl%5D%5D">inline link</a></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);
@@ -186,7 +186,7 @@ fn wikilinks_test_16() {
 fn wikilinks_test_17() {
     let original = r##"[inline link]([[url)]]
 "##;
-    let expected = r##"<p><a href="[[url">inline link</a>]]</p>
+    let expected = r##"<p><a href="%5B%5Burl">inline link</a>]]</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, true);

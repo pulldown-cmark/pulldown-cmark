@@ -84,12 +84,12 @@ With nested wikilinks, the deepest one takes precedence:
 <p>[[WikiLink|<a href="Fish">Fish</a>]]</p>
 ````````````````````````````````
 
-Links inside wikilinks will not render:
+Links inside wikilinks will take precedence:
 
 ```````````````````````````````` example_wikilinks
 [[WikiLink|[cat](cat.html)]]
 .
-<p><a href="WikiLink">[cat](cat.html)</a></p>
+<p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
 ````````````````````````````````
 
 Paths can be qualified in wikilinks while only showing the title of the page.
@@ -152,13 +152,13 @@ Other interactions wikilinks have with other Markdown syntax:
 ```````````````````````````````` example_wikilinks
 [inline link]([[url]])
 .
-<p><a href="[[url]]">inline link</a></p>
+<p><a href="%5B%5Burl%5D%5D">inline link</a></p>
 ````````````````````````````````
 
 ```````````````````````````````` example_wikilinks
 [inline link]([[url)]]
 .
-<p><a href="[[url">inline link</a>]]</p>
+<p><a href="%5B%5Burl">inline link</a>]]</p>
 ````````````````````````````````
 
 ```````````````````````````````` example_wikilinks

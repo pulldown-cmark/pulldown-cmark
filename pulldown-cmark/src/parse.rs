@@ -930,34 +930,20 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     }
                 }
                 None => {
-                    // [[WikiName]]
-                    let wikiname = &block_text[start_ix..end_ix];
-                    // or [[Nested/WikiName]]
-                    let display_ix = wikiname
-                        .as_bytes()
-                        .iter()
-                        .rposition(|b| *b == b'/')
-                        .map(|ix| ix + 1)
-                        .unwrap_or(0)
-                        + start_ix;
-                    let display_end_ix = wikiname
-                        .as_bytes()
-                        .iter()
-                        .position(|b| *b == b'#')
-                        .unwrap_or(wikiname.len())
-                        + start_ix;
+                    let wikitext = &block_text[start_ix..end_ix];
+                    let (start_ix, end_ix) = trim_wikitext(block_text, start_ix, end_ix);
                     // bail early if the wikiname would be empty
-                    if display_ix >= display_end_ix {
+                    if start_ix >= end_ix {
                         return None;
                     }
                     let body_node = self.tree.create_node(Item {
-                        start: display_ix,
-                        end: display_end_ix,
+                        start: start_ix,
+                        end: end_ix,
                         body: ItemBody::Text {
                             backslash_escaped: false,
                         },
                     });
-                    Some((body_node, wikiname))
+                    Some((body_node, wikitext))
                 }
             };
 
@@ -1478,6 +1464,46 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
         OffsetIter { inner: self }
     }
+}
+
+fn trim_wikitext(block_text: &str, start: usize, end: usize) -> (usize, usize) {
+    let wikitext = &block_text[start..end];
+
+    // first, check if the link is absolute according to RFC 3986
+    if let Some(ix) = wikitext.find("//") {
+        let scheme = &wikitext[..ix];
+        let scheme = scheme.strip_suffix(':').unwrap_or(scheme);
+
+        let valid = scheme
+            .as_bytes()
+            .iter()
+            .enumerate()
+            .all(|(i, ch)| match ch {
+                ch if ch.is_ascii_alphabetic() => true,
+                b'+' if i > 0 => true,
+                b'-' if i > 0 => true,
+                b'.' if i > 0 => true,
+                _ => false,
+            });
+
+        if valid {
+            return (start, end);
+        }
+    }
+
+    let inner_start = wikitext
+        .as_bytes()
+        .iter()
+        .rposition(|b| *b == b'/')
+        .map(|ix| ix + 1)
+        .unwrap_or(0);
+    let inner_end = wikitext
+        .as_bytes()
+        .iter()
+        .position(|b| *b == b'#')
+        .unwrap_or(wikitext.len());
+
+    (start + inner_start, start + inner_end)
 }
 
 /// Returns number of containers scanned.

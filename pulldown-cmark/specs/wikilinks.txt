@@ -47,6 +47,18 @@ This is [also [[Ambiguous]]](https://example.com/).
 <p>This is [also <a href="Ambiguous">Ambiguous</a>](https://example.com/).</p>
 ````````````````````````````````
 
+Wikilinks, when enabled, may be used as an alternative to the autolink syntax;
+\<https://example.org/\>:
+
+```````````````````````````````` example_wikilinks
+<https://example.org/>
+
+[[https://example.org/]]
+.
+<p><a href="https://example.org/">https://example.org/</a></p>
+<p><a href="https://example.org/">https://example.org/</a></p>
+````````````````````````````````
+
 Wikilinks can have different display text, called piping:
 
 ```````````````````````````````` example_wikilinks

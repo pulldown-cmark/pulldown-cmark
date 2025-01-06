@@ -950,8 +950,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     if display_ix >= display_end_ix {
                         return None;
                     }
-                    // TODO: wikitext should not be styled, might
-                    // need a more experienced contributor's help
                     let body_node = self.tree.create_node(Item {
                         start: display_ix,
                         end: display_end_ix,

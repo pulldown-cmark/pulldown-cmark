@@ -49,7 +49,7 @@ fn normalize_wikilink(link: CowStr) -> CowStr {
 
     // check if the link is absolute, if it is, return as is
     // according to RFC 3986; https://www.rfc-editor.org/rfc/rfc3986
-    let is_absolute = RegexBuilder::new("^(?:[a-z][a-z0-9+-.]*:)?//")
+    let is_absolute = RegexBuilder::new("^(?:[a-z][a-z0-9+\\-.]*:)?//")
         .case_insensitive(true)
         .build()
         .expect("valid regex");

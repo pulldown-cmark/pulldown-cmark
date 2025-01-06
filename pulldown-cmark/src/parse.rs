@@ -1480,6 +1480,7 @@ fn trim_wikitext(block_text: &str, start: usize, end: usize) -> (usize, usize) {
             .enumerate()
             .all(|(i, ch)| match ch {
                 ch if ch.is_ascii_alphabetic() => true,
+                ch if ch.is_ascii_digit() && i > 0 => true,
                 b'+' if i > 0 => true,
                 b'-' if i > 0 => true,
                 b'.' if i > 0 => true,

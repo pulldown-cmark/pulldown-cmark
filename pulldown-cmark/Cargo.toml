@@ -58,7 +58,7 @@ required-features = ["html"]
 doc-scrape-examples = true
 
 [[example]]
-name = "wikilink-prefix"
+name = "normalize-wikilink"
 required-features = ["html"]
 doc-scrape-examples = true
 

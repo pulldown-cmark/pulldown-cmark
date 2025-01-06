@@ -10,7 +10,7 @@
   - [parser-map-event-print.rs](examples/parser-map-event-print.md)
   - [parser-map-tag-print.rs](examples/parser-map-tag-print.md)
   - [string-to-string.rs](examples/string-to-string.md)
-  - [wikilink-prefix.rs](examples/wikilink-prefix.md)
+  - [normalize-wikilink.rs](examples/normalize-wikilink.md)
 
 ---
 - [Detailed Specifications](specs.md)

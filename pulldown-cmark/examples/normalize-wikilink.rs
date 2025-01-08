@@ -73,8 +73,8 @@ fn normalize_wikilink(link: CowStr) -> CowStr {
         if !in_whitespace && link.as_bytes()[i].is_ascii_whitespace() {
             in_whitespace = true;
             result.push_str(&link[mark..i]);
-            result.push('_');
         } else if in_whitespace && !link.as_bytes()[i].is_ascii_whitespace() {
+            result.push('_');
             mark = i;
             in_whitespace = false;
         }
@@ -82,8 +82,10 @@ fn normalize_wikilink(link: CowStr) -> CowStr {
         i += 1;
     }
 
-    result.push_str(&link[mark..]);
-    if !link.ends_with('/') {
+    if !in_whitespace {
+        result.push_str(&link[mark..]);
+    }
+    if !result.ends_with('/') {
         result.push('/');
     }
     result.into()

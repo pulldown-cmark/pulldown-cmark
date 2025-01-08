@@ -913,9 +913,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 start_ix, // bounded by closing tag
                 end_ix - start_ix,
             ) {
-                Some((rest, wikiname)) => {
+                Some((rest, wikitext)) => {
                     // bail early if the wikiname would be empty
-                    if wikiname.is_empty() {
+                    if wikitext.is_empty() {
                         return None;
                     }
                     // [[WikiName|rest]]
@@ -924,16 +924,15 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         // break node so passes can actually format
                         // the display text
                         self.tree[body_node].item.start = start_ix + rest;
-                        Some((body_node, wikiname))
+                        Some((true, body_node, wikitext))
                     } else {
                         None
                     }
                 }
                 None => {
                     let wikitext = &block_text[start_ix..end_ix];
-                    let (start_ix, end_ix) = trim_wikitext(block_text, start_ix, end_ix);
                     // bail early if the wikiname would be empty
-                    if start_ix >= end_ix {
+                    if wikitext.is_empty() {
                         return None;
                     }
                     let body_node = self.tree.create_node(Item {
@@ -943,13 +942,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             backslash_escaped: false,
                         },
                     });
-                    Some((body_node, wikitext))
+                    Some((false, body_node, wikitext))
                 }
             };
 
-            if let Some((body_node, wikiname)) = wikilink {
+            if let Some((has_pothole, body_node, wikiname)) = wikilink {
                 let link_ix = self.allocs.allocate_link(
-                    LinkType::WikiLink,
+                    LinkType::WikiLink { has_pothole },
                     wikiname.into(),
                     "".into(),
                     "".into(),
@@ -1464,63 +1463,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
         OffsetIter { inner: self }
     }
-}
-
-fn trim_wikitext(block_text: &str, start: usize, end: usize) -> (usize, usize) {
-    let mut i = start;
-    let mut maybe_absolute = true;
-
-    let mut trimmed_start = start;
-
-    while i < end {
-        // NOTE: this should not panic as while i < end gaurantees some sort of
-        // data
-        let ch = block_text[i..end].chars().next().unwrap();
-
-        if maybe_absolute {
-            match block_text.as_bytes()[i..end] {
-                [b'/', b'/', ..] | [b':', b'/', b'/', ..] => {
-                    // [[https://example.org/]]
-                    // this is an absolute url, return as-is
-                    return (start, end);
-                }
-                _ => (),
-            }
-
-            // check if this is a valid URI char
-            maybe_absolute &= match ch {
-                ch if ch.is_ascii_alphabetic() => true,
-                ch if ch.is_ascii_digit() && i > start => true,
-                '+' if i > start => true,
-                '-' if i > start => true,
-                '.' if i > start => true,
-                _ => false,
-            };
-        }
-
-        match ch {
-            '#' => {
-                if i > start {
-                    // [[Wikilink/Start#Heading]]
-                    return (trimmed_start, i);
-                } else {
-                    // [[#Heading]]
-                    // this is a heading, trim it and return
-                    return (start + 1, end);
-                }
-            }
-            '/' => {
-                if i > start && i + 1 < end {
-                    trimmed_start = i + 1;
-                }
-            }
-            _ => (),
-        }
-
-        i += ch.len_utf8();
-    }
-
-    (trimmed_start, end)
 }
 
 /// Returns number of containers scanned.
@@ -2892,6 +2834,34 @@ text
             Event::InlineHtml(CowStr::Boxed("<foo\nbar>".to_string().into())),
             Event::End(TagEnd::Paragraph),
             Event::End(TagEnd::BlockQuote(None)),
+        ];
+        assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_has_pothole() {
+        let input = "[[foo]] [[bar|baz]]";
+        let events: Vec<_> = Parser::new_ext(input, Options::ENABLE_WIKILINKS).collect();
+        let expected = [
+            Event::Start(Tag::Paragraph),
+            Event::Start(Tag::Link {
+                link_type: LinkType::WikiLink { has_pothole: false },
+                dest_url: CowStr::Borrowed("foo"),
+                title: CowStr::Borrowed(""),
+                id: CowStr::Borrowed(""),
+            }),
+            Event::Text(CowStr::Borrowed("foo")),
+            Event::End(TagEnd::Link),
+            Event::Text(CowStr::Borrowed(" ")),
+            Event::Start(Tag::Link {
+                link_type: LinkType::WikiLink { has_pothole: true },
+                dest_url: CowStr::Borrowed("bar"),
+                title: CowStr::Borrowed(""),
+                id: CowStr::Borrowed(""),
+            }),
+            Event::Text(CowStr::Borrowed("baz")),
+            Event::End(TagEnd::Link),
+            Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
     }

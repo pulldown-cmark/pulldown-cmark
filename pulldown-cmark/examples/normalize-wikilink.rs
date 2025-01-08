@@ -13,7 +13,7 @@ Wanna go for a [[Wiki Walk]]?"#;
 
     let parser = Parser::new_ext(markdown_input, Options::ENABLE_WIKILINKS).map(|event| {
         if let Event::Start(Tag::Link {
-            link_type: LinkType::WikiLink,
+            link_type: LinkType::WikiLink { has_pothole },
             dest_url,
             title,
             id,
@@ -21,7 +21,7 @@ Wanna go for a [[Wiki Walk]]?"#;
         {
             let new_link = normalize_wikilink(dest_url);
             Event::Start(Tag::Link {
-                link_type: LinkType::WikiLink,
+                link_type: LinkType::WikiLink { has_pothole },
                 dest_url: new_link,
                 title,
                 id,

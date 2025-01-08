@@ -435,7 +435,13 @@ pub enum LinkType {
     /// Email address in autolink like `<john@example.org>`
     Email,
     /// Wikilink link like `[[foo]]` or `[[foo|bar]]`
-    WikiLink,
+    WikiLink {
+        /// `true` if the wikilink was piped.
+        ///
+        /// * `true` - `[[foo|bar]]`
+        /// * `false` - `[[foo]]`
+        has_pothole: bool,
+    },
 }
 
 impl LinkType {

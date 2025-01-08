@@ -14,6 +14,12 @@ This is a [[WikiLink]].
 <p>This is a <a href="WikiLink">WikiLink</a>.</p>
 ````````````````````````````````
 
+```````````````````````````````` example_wikilinks
+This is a [[Main/WikiLink]].
+.
+<p>This is a <a href="Main/WikiLink">Main/WikiLink</a>.</p>
+````````````````````````````````
+
 Wikilinks take precedence over reference links:
 
 ```````````````````````````````` example_wikilinks
@@ -67,6 +73,12 @@ This is [[WikiLink|a pothole]].
 <p>This is <a href="WikiLink">a pothole</a>.</p>
 ````````````````````````````````
 
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink/In/A/Directory|WikiLink]].
+.
+<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
+````````````````````````````````
+
 Using this syntax, it is possible to show more Markdown in the text:
 
 ```````````````````````````````` example_wikilinks
@@ -102,42 +114,6 @@ Links inside wikilinks will take precedence:
 [[WikiLink|[cat](cat.html)]]
 .
 <p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
-````````````````````````````````
-
-Paths can be qualified in wikilinks while only showing the title of the page.
-This is useful for wikis that support a "directory-like" system.
-
-```````````````````````````````` example_wikilinks
-This is a [[WikiLink/In/A/Directory]].
-.
-<p>This is a <a href="WikiLink/In/A/Directory">Directory</a>.</p>
-````````````````````````````````
-
-This functionality will also trim any URL fragments (#Heading) in the display
-text.
-
-```````````````````````````````` example_wikilinks
-This is a [[Wonderful/WikiLink#Secret]].
-.
-<p>This is a <a href="Wonderful/WikiLink#Secret">WikiLink</a>.</p>
-````````````````````````````````
-
-If the URL fragment makes up the entire link, that is to say if it is a link to
-a heading is in the same document, only the text after the pound symbol will
-display.
-
-```````````````````````````````` example_wikilinks
-This is a [[#Pepperoni Secret]].
-.
-<p>This is a <a href="#Pepperoni%20Secret">Pepperoni Secret</a>.</p>
-````````````````````````````````
-
-Of course, the pipe operator can still be used:
-
-```````````````````````````````` example_wikilinks
-This is a [[WikiLink/In/A/Directory|WikiLink]].
-.
-<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
 ````````````````````````````````
 
 A similar looking syntax can be used to embed images:

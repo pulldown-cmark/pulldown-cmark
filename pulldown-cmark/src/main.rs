@@ -105,6 +105,7 @@ pub fn main() -> std::io::Result<()> {
         "enable-definition-list",
         "enable Commonmark-HS-Extensions compatible definition lists",
     );
+    opts.optflag("W", "enable-wikilinks", "enable wikilinks");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -157,6 +158,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-definition-list") {
         opts.insert(Options::ENABLE_DEFINITION_LIST);
+    }
+    if matches.opt_present("enable-wikilinks") {
+        opts.insert(Options::ENABLE_WIKILINKS);
     }
 
     let mut input = String::new();

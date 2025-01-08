@@ -3,12 +3,7 @@ use pulldown_cmark::{html::{write_html_io}, CowStr, Event, Options, Parser, Tag,
 
 /// This example shows how to do footnotes as bottom-notes, in the style of GitHub.
 fn main() {
-    let markdown_input: &str =
-r#"
-    This is an [^a] footnote [^a].
-
-    [^a]: a footnote contents
-"#;
+    let markdown_input: &str = "This is an [^a] footnote [^a].\n\n[^a]: footnote contents";
     println!("Parsing the following markdown string:\n{}", markdown_input);
 
     // To generate this style, you have to collect the footnotes at the end, while parsing.
@@ -48,6 +43,7 @@ r#"
     if !footnote_filter.is_empty() {
         footnote_filter.retain();
         footnote_filter.sort_by_cached_key();
+        println!("After sort_by {:?}", &footnote_filter.footnotes);
         handle
             .write_all(b"<hr><ol class=\"footnotes-list\">\n")
             .unwrap();
@@ -77,7 +73,8 @@ impl<'a> FootnoteFilter<'a> {
     }
     pub fn apply(&mut self, event: Event<'a>) -> Option<Event<'a>> {
         match event {
-            Event::Start(Tag::FootnoteDefinition(_)) => {
+            Event::Start(Tag::FootnoteDefinition(ref text)) => {
+                println!("Start(Tag::FootnoteDefinition = {}", &text);
                 self.push_footnote_events(vec![event]);
                 None
             }
@@ -86,7 +83,8 @@ impl<'a> FootnoteFilter<'a> {
                 None
             }
             Event::FootnoteReference(name) => {
-                let n = self.get_footnote_numbers_len() + 1;
+                println!("FootnoteReference = {}", &name);
+                let n = self.footnote_numbers.len() + 1;
                 let (n, mut nr) = self.get_footnote_numbers_entry(n, name.clone());
                 nr += 1;
                 let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
@@ -119,6 +117,7 @@ impl<'a> FootnoteFilter<'a> {
         match popped_vector {
             None => {}
             Some(mut vector) => {
+                println!("End(TagEnd::FootnoteDefinition... = {:?}", &vector);
                 vector.push(event);
                 self.footnotes.push(vector);
             }
@@ -129,15 +128,15 @@ impl<'a> FootnoteFilter<'a> {
     }
     fn retain(&mut self) -> bool {
         let original_len = self.footnotes.len(); // number before retain
+        println!("Before retain = {:?}", &self.footnotes);
+        println!("Before retain numbers = {:?}", &self.footnote_numbers);
         self.footnotes.retain(|f| match f.first() {
             Some(Event::Start(Tag::FootnoteDefinition(name))) => {
-                self
-                    .footnote_numbers
-                    .get(name)
-                    .is_some_and(|&(_, count)| count != 0)
+                self.footnote_numbers.get(name).unwrap_or(&(0, 0)).1 != 0
             }
             _ => false,
         });
+        println!("After retain {:?}", &self.footnotes);
         self.footnotes.len() != original_len // true, if number has changed
     }
     fn sort_by_cached_key(&mut self) {
@@ -156,10 +155,10 @@ impl<'a> FootnoteFilter<'a> {
         self.footnote_numbers.len()
     }
     fn get_events(&self) -> impl Iterator<Item = Event> {
-        self.footnotes.clone().into_iter().flat_map(|fl| {
+        self.footnotes.clone().into_iter().flat_map(move |external_flat_event| {
             // To write backrefs, the name needs kept until the end of the footnote definition.
-            let footnote_numbers_ref = &self.footnote_numbers;
             let mut name = CowStr::from("");
+            println!("external_flat_event {:?}", &external_flat_event);
             // Backrefs are included in the final paragraph of the footnote, if it's normal text.
             // For example, this DOM can be produced:
             //
@@ -190,8 +189,10 @@ impl<'a> FootnoteFilter<'a> {
             // If there is no final paragraph, such as a tabular, list, or image footnote, it gets
             // pushed after the last tag instead.
             let mut has_written_backrefs = false;
-            let fl_len = fl.len();
-            fl.into_iter().enumerate().map(move |(i, f)| match f {
+            let fl_len = external_flat_event.len();
+            // let footnote_numbers_ref = &self.footnote_numbers;
+            println!("footnote_numbers = {:?}", &self.footnote_numbers);
+            external_flat_event.into_iter().enumerate().map(move |(i, internal_flat_event)| match internal_flat_event {
                 Event::Start(Tag::FootnoteDefinition(current_name)) => {
                     name = current_name;
                     has_written_backrefs = false;
@@ -200,7 +201,7 @@ impl<'a> FootnoteFilter<'a> {
                 Event::End(TagEnd::FootnoteDefinition) | Event::End(TagEnd::Paragraph)
                 if !has_written_backrefs && i >= fl_len - 2 =>
                     {
-                        let usage_count = footnote_numbers_ref.get(&name).unwrap().1;
+                        let usage_count = self.footnote_numbers.get(&name).unwrap().1;
                         let mut end = String::with_capacity(
                             name.len() + (r##" <a href="#fr--1">↩</a></li>"##.len() * usage_count),
                         );
@@ -214,7 +215,7 @@ impl<'a> FootnoteFilter<'a> {
                             }
                         }
                         has_written_backrefs = true;
-                        if f == Event::End(TagEnd::FootnoteDefinition) {
+                        if internal_flat_event == Event::End(TagEnd::FootnoteDefinition) {
                             end.push_str("</li>\n");
                         } else {
                             end.push_str("</p>\n");

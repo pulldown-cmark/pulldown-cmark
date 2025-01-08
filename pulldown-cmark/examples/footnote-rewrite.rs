@@ -228,7 +228,7 @@ mod tests {
     use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 
     fn parse_markdown_with_footnotes(input: &str) -> Vec<Event> {
-        let mut footnote_filter = FootnoteFilter::new(true);
+        let mut footnote_filter = FootnoteFilter::new();
         Parser::new_ext(input, Options::ENABLE_FOOTNOTES)
             .filter_map(|event| footnote_filter.apply(event))
             .collect()
@@ -240,9 +240,9 @@ mod tests {
         let events = parse_markdown_with_footnotes(input);
 
         // Check that the main text contains an HTML link to the footnote
-        let footnote_ref = events.iter().find(
-            |e| matches!(e, Event::Html(html) if html.contains("class=\"footnote-reference\"")),
-        );
+        let footnote_ref = events.iter().find(|e| {
+            matches!(e, Event::Html(html) if html.contains("class=\"footnote-reference\""))
+        });
         assert!(footnote_ref.is_some());
 
         if let Some(Event::Html(html)) = footnote_ref {
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_multiple_references_to_same_footnote() {
         let input = "First ref[^a] and second ref[^a].\n\n[^a]: Footnote content";
-        let mut filter = FootnoteFilter::new(true);
+        let mut filter = FootnoteFilter::new();
         let mut events = Vec::new();
 
         // We collect all events
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_footnote_definition() {
-        let mut filter = FootnoteFilter::new(true);
+        let mut filter = FootnoteFilter::new();
 
         // Simulating the definition of a footnote
         filter.apply(Event::Start(Tag::FootnoteDefinition("test".into())));
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_unused_footnote_removal() {
-        let mut filter = FootnoteFilter::new(true);
+        let mut filter = FootnoteFilter::new();
 
         // Adding a footnote definition without referencing it
         filter.apply(Event::Start(Tag::FootnoteDefinition("unused".into())));
@@ -320,7 +320,7 @@ mod tests {
 
 [^2]: Second footnote
 [^1]: First footnote"#;
-        let mut filter = FootnoteFilter::new(true);
+        let mut filter = FootnoteFilter::new();
 
         // Processing input data
         for event in Parser::new_ext(input, Options::ENABLE_FOOTNOTES) {
@@ -343,20 +343,17 @@ mod tests {
         }
 
         // We check the order by content
-        let first_content_pos = sorted_footnotes
-            .iter()
+        let first_content_pos = sorted_footnotes.iter()
             .position(|e| matches!(e, Event::Text(text) if text.contains("First footnote")))
             .expect("First footnote not found");
-        let second_content_pos = sorted_footnotes
-            .iter()
+        let second_content_pos = sorted_footnotes.iter()
             .position(|e| matches!(e, Event::Text(text) if text.contains("Second footnote")))
             .expect("Second footnote not found");
 
-        assert!(
-            first_content_pos < second_content_pos,
-            "First footnote (pos={}) should appear before second footnote (pos={})",
-            first_content_pos,
-            second_content_pos
+        assert!(first_content_pos < second_content_pos,
+                "First footnote (pos={}) should appear before second footnote (pos={})",
+                first_content_pos,
+                second_content_pos
         );
     }
 }

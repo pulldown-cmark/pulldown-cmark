@@ -45,7 +45,6 @@ fn main() {
     if !footnote_filter.is_empty() {
         footnote_filter.retain();
         footnote_filter.sort_by_cached_key();
-        println!("After sort_by {:?}", &footnote_filter.footnotes);
         handle
             .write_all(b"<hr><ol class=\"footnotes-list\">\n")
             .unwrap();
@@ -75,8 +74,7 @@ impl<'a> FootnoteFilter<'a> {
     }
     pub fn apply(&mut self, event: Event<'a>) -> Option<Event<'a>> {
         match event {
-            Event::Start(Tag::FootnoteDefinition(ref text)) => {
-                println!("Start(Tag::FootnoteDefinition = {}", &text);
+            Event::Start(Tag::FootnoteDefinition(_)) => {
                 self.push_footnote_events(vec![event]);
                 None
             }
@@ -86,11 +84,9 @@ impl<'a> FootnoteFilter<'a> {
             }
             Event::FootnoteReference(name) => {
                 let n = self.footnote_numbers.len() + 1;
-                println!("FootnoteReference = {} [{}]", &name, n);
-                let (n, mut nr) = self.footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
-                nr += 1;
+                let (n, nr) = self.footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
+                *nr += 1;
                 let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
-                println!("FootnoteReference: footnote_numbers = {:?}", &self.footnote_numbers);
                 if self.is_empty_in_footnote() {
                     Some(html)
                 } else {
@@ -120,7 +116,6 @@ impl<'a> FootnoteFilter<'a> {
         match popped_vector {
             None => {}
             Some(mut vector) => {
-                println!("End(TagEnd::FootnoteDefinition... = {:?}", &vector);
                 vector.push(event);
                 self.footnotes.push(vector);
             }
@@ -131,15 +126,12 @@ impl<'a> FootnoteFilter<'a> {
     }
     fn retain(&mut self) -> bool {
         let original_len = self.footnotes.len(); // number before retain
-        println!("Before retain = {:?}", &self.footnotes);
-        println!("Before retain numbers = {:?}", &self.footnote_numbers);
         self.footnotes.retain(|f| match f.first() {
             Some(Event::Start(Tag::FootnoteDefinition(name))) => {
                 self.footnote_numbers.get(name).unwrap_or(&(0, 0)).1 != 0
             }
             _ => false,
         });
-        println!("After retain {:?}", &self.footnotes);
         self.footnotes.len() != original_len // true, if number has changed
     }
     fn sort_by_cached_key(&mut self) {
@@ -150,18 +142,10 @@ impl<'a> FootnoteFilter<'a> {
             _ => unreachable!(),
         });
     }
-    fn _get_footnote_numbers_entry(&mut self, n: usize, name: CowStr<'a>) -> (usize, usize) {
-        let (n, nr) = self.footnote_numbers.entry(name).or_insert((n, 0usize));
-        (*n, *nr)
-    }
-    fn _get_footnote_numbers_len(&self) -> usize {
-        self.footnote_numbers.len()
-    }
     fn get_events(&self) -> impl Iterator<Item = Event> {
         self.footnotes.clone().into_iter().flat_map(move |external_flat_event| {
             // To write backrefs, the name needs kept until the end of the footnote definition.
             let mut name = CowStr::from("");
-            println!("external_flat_event {:?}", &external_flat_event);
             // Backrefs are included in the final paragraph of the footnote, if it's normal text.
             // For example, this DOM can be produced:
             //
@@ -194,7 +178,6 @@ impl<'a> FootnoteFilter<'a> {
             let mut has_written_backrefs = false;
             let fl_len = external_flat_event.len();
             // let footnote_numbers_ref = &self.footnote_numbers;
-            println!("footnote_numbers = {:?}", &self.footnote_numbers);
             external_flat_event.into_iter().enumerate().map(move |(i, internal_flat_event)| match internal_flat_event {
                 Event::Start(Tag::FootnoteDefinition(current_name)) => {
                     name = current_name;

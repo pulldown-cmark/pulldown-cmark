@@ -122,6 +122,16 @@ This is a [[Wonderful/WikiLink#Secret]].
 <p>This is a <a href="Wonderful/WikiLink#Secret">WikiLink</a>.</p>
 ````````````````````````````````
 
+If the URL fragment makes up the entire link, that is to say if it is a link to
+a heading is in the same document, only the text after the pound symbol will
+display.
+
+```````````````````````````````` example_wikilinks
+This is a [[#Pepperoni Secret]].
+.
+<p>This is a <a href="#Pepperoni%20Secret">Pepperoni Secret</a>.</p>
+````````````````````````````````
+
 Of course, the pipe operator can still be used:
 
 ```````````````````````````````` example_wikilinks

@@ -1467,44 +1467,60 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 }
 
 fn trim_wikitext(block_text: &str, start: usize, end: usize) -> (usize, usize) {
-    let wikitext = &block_text[start..end];
+    let mut i = start;
+    let mut maybe_absolute = true;
 
-    // first, check if the link is absolute according to RFC 3986
-    if let Some(ix) = wikitext.find("//") {
-        let scheme = &wikitext[..ix];
-        let scheme = scheme.strip_suffix(':').unwrap_or(scheme);
+    let mut trimmed_start = start;
 
-        let valid = scheme
-            .as_bytes()
-            .iter()
-            .enumerate()
-            .all(|(i, ch)| match ch {
+    while i < end {
+        // NOTE: this should not panic as while i < end gaurantees some sort of
+        // data
+        let ch = block_text[i..end].chars().next().unwrap();
+
+        if maybe_absolute {
+            match block_text.as_bytes()[i..end] {
+                [b'/', b'/', ..] | [b':', b'/', b'/', ..] => {
+                    // [[https://example.org/]]
+                    // this is an absolute url, return as-is
+                    return (start, end);
+                }
+                _ => (),
+            }
+
+            // check if this is a valid URI char
+            maybe_absolute &= match ch {
                 ch if ch.is_ascii_alphabetic() => true,
-                ch if ch.is_ascii_digit() && i > 0 => true,
-                b'+' if i > 0 => true,
-                b'-' if i > 0 => true,
-                b'.' if i > 0 => true,
+                ch if ch.is_ascii_digit() && i > start => true,
+                '+' if i > start => true,
+                '-' if i > start => true,
+                '.' if i > start => true,
                 _ => false,
-            });
-
-        if valid {
-            return (start, end);
+            };
         }
+
+        match ch {
+            '#' => {
+                if i > start {
+                    // [[Wikilink/Start#Heading]]
+                    return (trimmed_start, i);
+                } else {
+                    // [[#Heading]]
+                    // this is a heading, trim it and return
+                    return (start + 1, end);
+                }
+            }
+            '/' => {
+                if i > start && i + 1 < end {
+                    trimmed_start = i + 1;
+                }
+            }
+            _ => (),
+        }
+
+        i += ch.len_utf8();
     }
 
-    let inner_start = wikitext
-        .as_bytes()
-        .iter()
-        .rposition(|b| *b == b'/')
-        .map(|ix| ix + 1)
-        .unwrap_or(0);
-    let inner_end = wikitext
-        .as_bytes()
-        .iter()
-        .position(|b| *b == b'#')
-        .unwrap_or(wikitext.len());
-
-    (start + inner_start, start + inner_end)
+    (trimmed_start, end)
 }
 
 /// Returns number of containers scanned.

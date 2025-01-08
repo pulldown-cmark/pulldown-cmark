@@ -85,7 +85,7 @@ impl<'a> FootnoteFilter<'a> {
             Event::FootnoteReference(name) => {
                 println!("FootnoteReference = {}", &name);
                 let n = self.footnote_numbers.len() + 1;
-                let (n, mut nr) = self.get_footnote_numbers_entry(n, name.clone());
+                let (n, mut nr) = self.footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
                 nr += 1;
                 let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
                 if self.is_empty_in_footnote() {
@@ -147,11 +147,11 @@ impl<'a> FootnoteFilter<'a> {
             _ => unreachable!(),
         });
     }
-    fn get_footnote_numbers_entry(&mut self, n: usize, name: CowStr<'a>) -> (usize, usize) {
+    fn _get_footnote_numbers_entry(&mut self, n: usize, name: CowStr<'a>) -> (usize, usize) {
         let (n, nr) = self.footnote_numbers.entry(name).or_insert((n, 0usize));
         (*n, *nr)
     }
-    fn get_footnote_numbers_len(&self) -> usize {
+    fn _get_footnote_numbers_len(&self) -> usize {
         self.footnote_numbers.len()
     }
     fn get_events(&self) -> impl Iterator<Item = Event> {

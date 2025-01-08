@@ -83,8 +83,8 @@ impl<'a> FootnoteFilter<'a> {
                 None
             }
             Event::FootnoteReference(name) => {
-                println!("FootnoteReference = {}", &name);
                 let n = self.footnote_numbers.len() + 1;
+                println!("FootnoteReference = {} [{}]", &name, n);
                 let (n, mut nr) = self.footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
                 nr += 1;
                 let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());

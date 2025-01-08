@@ -219,9 +219,135 @@ impl<'a> FootnoteFilter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+
+    fn parse_markdown_with_footnotes(input: &str) -> Vec<Event> {
+        let mut footnote_filter = FootnoteFilter::new();
+        Parser::new_ext(input, Options::ENABLE_FOOTNOTES)
+            .filter_map(|event| footnote_filter.apply(event))
+            .collect()
+    }
 
     #[test]
-    fn create_holder() {
-        let _holder = FootnoteFilter::new();
+    fn test_simple_footnote() {
+        let input = "This is a[^1] footnote.\n\n[^1]: Simple footnote content";
+        let events = parse_markdown_with_footnotes(input);
+
+        // Check that the main text contains an HTML link to the footnote
+        let footnote_ref = events.iter().find(|e| {
+            matches!(e, Event::Html(html) if html.contains("class=\"footnote-reference\""))
+        });
+        assert!(footnote_ref.is_some());
+
+        if let Some(Event::Html(html)) = footnote_ref {
+            assert!(html.contains("href=\"#fn-1\""));
+            assert!(html.contains("[1]"));
+        }
+    }
+
+    #[test]
+    fn test_multiple_references_to_same_footnote() {
+        let input = "First ref[^a] and second ref[^a].\n\n[^a]: Footnote content";
+        let mut filter = FootnoteFilter::new();
+        let mut events = Vec::new();
+
+        // We collect all events
+        for event in Parser::new_ext(input, Options::ENABLE_FOOTNOTES) {
+            if let Some(e) = filter.apply(event) {
+                events.push(e);
+            }
+        }
+
+        // We check that both references exist and have different ids
+        let refs: Vec<_> = events
+            .iter()
+            .filter(|e| matches!(e, Event::Html(html) if html.contains("footnote-reference")))
+            .collect();
+
+        assert_eq!(refs.len(), 2);
+
+        if let (Event::Html(first), Event::Html(second)) = (&refs[0], &refs[1]) {
+            assert!(first.contains("id=\"fr-a-1\""));
+            assert!(second.contains("id=\"fr-a-2\""));
+        }
+    }
+
+    #[test]
+    fn test_footnote_definition() {
+        let mut filter = FootnoteFilter::new();
+
+        // Simulating the definition of a footnote
+        filter.apply(Event::Start(Tag::FootnoteDefinition("test".into())));
+        filter.apply(Event::Text("Footnote content".into()));
+        filter.apply(Event::End(TagEnd::FootnoteDefinition));
+
+        assert!(!filter.is_empty());
+
+        // Check that the definition is saved
+        let footnotes = filter.footnotes.clone();
+        assert_eq!(footnotes.len(), 1);
+
+        let definition = &footnotes[0];
+        assert!(matches!(
+            definition.first(),
+            Some(Event::Start(Tag::FootnoteDefinition(_)))
+        ));
+    }
+
+    #[test]
+    fn test_unused_footnote_removal() {
+        let mut filter = FootnoteFilter::new();
+
+        // Adding a footnote definition without referencing it
+        filter.apply(Event::Start(Tag::FootnoteDefinition("unused".into())));
+        filter.apply(Event::Text("Unused content".into()));
+        filter.apply(Event::End(TagEnd::FootnoteDefinition));
+
+        // Check that retain removes unused footnotes
+        filter.retain();
+        assert!(filter.footnotes.is_empty());
+    }
+
+    #[test]
+    fn test_footnote_sorting() {
+        let input = r#"First[^1] then[^2].
+
+[^2]: Second footnote
+[^1]: First footnote"#;
+        let mut filter = FootnoteFilter::new();
+
+        // Processing input data
+        for event in Parser::new_ext(input, Options::ENABLE_FOOTNOTES) {
+            filter.apply(event);
+        }
+
+        // Let's make sure we have footnote
+        assert!(!filter.is_empty());
+
+        // Sorting footnotes
+        filter.sort_by_cached_key();
+
+        // Get sorted events
+        let sorted_footnotes = filter.get_events().collect::<Vec<_>>();
+
+        // Output events for debugging
+        println!("Sorted events:");
+        for (i, event) in sorted_footnotes.iter().enumerate() {
+            println!("{}: {:?}", i, event);
+        }
+
+        // We check the order by content
+        let first_content_pos = sorted_footnotes.iter()
+            .position(|e| matches!(e, Event::Text(text) if text.contains("First footnote")))
+            .expect("First footnote not found");
+        let second_content_pos = sorted_footnotes.iter()
+            .position(|e| matches!(e, Event::Text(text) if text.contains("Second footnote")))
+            .expect("Second footnote not found");
+
+        assert!(first_content_pos < second_content_pos,
+                "First footnote (pos={}) should appear before second footnote (pos={})",
+                first_content_pos,
+                second_content_pos
+        );
     }
 }

@@ -88,6 +88,7 @@ impl<'a> FootnoteFilter<'a> {
                 let (n, mut nr) = self.footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
                 nr += 1;
                 let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
+                println!("FootnoteReference: footnote_numbers = {:?}", &self.footnote_numbers);
                 if self.is_empty_in_footnote() {
                     Some(html)
                 } else {

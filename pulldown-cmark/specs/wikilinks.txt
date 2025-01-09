@@ -221,8 +221,15 @@ at all in the above example:
 ```
 
 But the example `[[first\,third|second]]` renders to what
-`[second](first/,third)` would (At least on Obsidian Publish).
+`[second](first/,third)` would on Obsidian.
 
 ```html
 <p><a href="first/%2Cthird">second</a></p>
+```
+
+On Obisidan Publish, the `[[first\,third|second]]` snippet *renders*
+differently. With extra attributes and data omitted for clarity:
+
+```html
+<p><a href="first%5C%2Cthird"></a></p>
 ```

@@ -214,3 +214,23 @@ fn wikilinks_test_19() {
 
     test_markdown_html(original, expected, false, false, false, false, true);
 }
+
+#[test]
+fn wikilinks_test_20() {
+    let original = r##"[[first\|second]]
+"##;
+    let expected = r##"<p><a href="first%5C">second</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}
+
+#[test]
+fn wikilinks_test_21() {
+    let original = r##"[[first&#33;second]]
+"##;
+    let expected = r##"<p><a href="first&amp;#33;second">first&amp;#33;second</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}

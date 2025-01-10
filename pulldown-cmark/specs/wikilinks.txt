@@ -1,0 +1,235 @@
+Run this with `cargo test --features gen-tests suite::wikilinks`
+
+# Wikilinks
+Shorthand link definitions for use in Markdown-based wikis. Syntax and design
+choices inspired heavily by 
+[Obsidian](https://obsidian.md/) and
+[commonmark-hs](https://github.com/jgm/commonmark-hs).
+
+A wikilink is defined within double brackets. The destination url of the
+resulting anchor is the text in the link.
+
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink]].
+.
+<p>This is a <a href="WikiLink">WikiLink</a>.</p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+This is a [[Main/WikiLink]].
+.
+<p>This is a <a href="Main/WikiLink">Main/WikiLink</a>.</p>
+````````````````````````````````
+
+Wikilinks take precedence over reference links:
+
+```````````````````````````````` example_wikilinks
+This is [[Ambiguous]].
+
+[Ambiguous]: https://example.com/
+.
+<p>This is <a href="Ambiguous">Ambiguous</a>.</p>
+````````````````````````````````
+
+However, they should not otherwise interfere with normal Markdown links:
+
+```````````````````````````````` example_wikilinks
+[[squid] calamari is considered a delicacy](https://en.wikipedia.org/wiki/Squid)
+
+[calamari [squid]](https://en.wikipedia.org/wiki/Squid)
+.
+<p>
+<a href="https://en.wikipedia.org/wiki/Squid">[squid] calamari is considered a delicacy</a>
+</p>
+<p>
+<a href="https://en.wikipedia.org/wiki/Squid">calamari [squid]</a>
+</p>
+````````````````````````````````
+
+They also take precedence over inline links:
+
+```````````````````````````````` example_wikilinks
+This is [also [[Ambiguous]]](https://example.com/).
+.
+<p>This is [also <a href="Ambiguous">Ambiguous</a>](https://example.com/).</p>
+````````````````````````````````
+
+Wikilinks, when enabled, may be used as an alternative to the autolink syntax;
+\<https://example.org/\>:
+
+```````````````````````````````` example_wikilinks
+<https://example.org/>
+
+[[https://example.org/]]
+.
+<p><a href="https://example.org/">https://example.org/</a></p>
+<p><a href="https://example.org/">https://example.org/</a></p>
+````````````````````````````````
+
+Wikilinks can have different display text through a utility called piping:
+
+```````````````````````````````` example_wikilinks
+This is [[WikiLink|a pothole]].
+.
+<p>This is <a href="WikiLink">a pothole</a>.</p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+This is a [[WikiLink/In/A/Directory|WikiLink]].
+.
+<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
+````````````````````````````````
+
+Using this syntax, it is possible to show more Markdown in the text:
+
+```````````````````````````````` example_wikilinks
+This is [[WikiLink|a **strong** pothole]].
+.
+<p>This is <a href="WikiLink">a <strong>strong</strong> pothole</a>.</p>
+````````````````````````````````
+
+Or images:
+
+```````````````````````````````` example_wikilinks
+This is a cute dog, linked to the page "WikiLink"
+
+[[WikiLink|![dog](dog.png)]]
+.
+<p>This is a cute dog, linked to the page "WikiLink"</p>
+<p>
+<a href="WikiLink"><img src="dog.png" alt="dog" /></a>
+</p>
+````````````````````````````````
+
+With nested wikilinks, the deepest one takes precedence:
+
+```````````````````````````````` example_wikilinks
+[[WikiLink|[[Fish]]]]
+.
+<p>[[WikiLink|<a href="Fish">Fish</a>]]</p>
+````````````````````````````````
+
+Links inside wikilinks will take precedence:
+
+```````````````````````````````` example_wikilinks
+[[WikiLink|[cat](cat.html)]]
+.
+<p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
+````````````````````````````````
+
+A similar looking syntax can be used to embed images:
+
+```````````````````````````````` example_wikilinks
+This is a cute dog.
+
+![[dog.png]]
+.
+<p>This is a cute dog.</p>
+<p>
+<img src="dog.png" alt="dog.png" />
+</p>
+````````````````````````````````
+
+In this syntax, the pipe operator serves as a way to define alt text.
+
+```````````````````````````````` example_wikilinks
+![[dog.png|a cute dog]]
+.
+<p><img src="dog.png" alt="a cute dog" /></p>
+````````````````````````````````
+
+Wikilinks cannot be empty. They will render as-is.
+
+```````````````````````````````` example_wikilinks
+]] [[]] [[|]] [[|Symbol]] [[
+.
+<p>]] [[]] [[|]] [[|Symbol]] [[</p>
+````````````````````````````````
+
+Other interactions wikilinks have with other Markdown syntax:
+
+```````````````````````````````` example_wikilinks
+[inline link]([[url]])
+.
+<p><a href="%5B%5Burl%5D%5D">inline link</a></p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+[inline link]([[url)]]
+.
+<p><a href="%5B%5Burl">inline link</a>]]</p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+`[[code]]`
+.
+<p><code>[[code]]</code></p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+emphasis **cross [[over** here]]
+.
+<p>emphasis **cross <a href="over**%20here">over** here</a></p>
+````````````````````````````````
+
+## Pipe escaping behavior
+A pipe symbol can not be included in the href of a wikilink. That is to say the
+pipe symbol cannot be escaped, and backslashes will be treated as part of the
+URL.
+
+```````````````````````````````` example_wikilinks
+[[first\|second]]
+.
+<p><a href="first%5C">second</a></p>
+````````````````````````````````
+
+Also, because the content within is taken as-is, HTML entities cannot be used
+to get around this:
+
+```````````````````````````````` example_wikilinks
+[[first&#33;second]]
+.
+<p><a href="first&amp;#33;second">first&amp;#33;second</a></p>
+````````````````````````````````
+
+This is equivalent to the
+[commonmark-hs](https://pandoc.org/try/?params=%7b%22text%22%3a%22%5b%5bfirst%5c%5c%7csecond%5d%5d%22%2c%22to%22%3a%22html5%22%2c%22from%22%3a%22commonmark%2bwikilinks_title_after_pipe%22%2c%22standalone%22%3afalse%2c%22embed-resources%22%3afalse%2c%22table-of-contents%22%3afalse%2c%22number-sections%22%3afalse%2c%22citeproc%22%3afalse%2c%22html-math-method%22%3a%22plain%22%2c%22wrap%22%3a%22auto%22%2c%22highlight-style%22%3anull%2c%22files%22%3a%7b%7d%2c%22template%22%3anull%7d)
+behavior.
+
+This is also equivalent to [Gollum](https://github.com/gollum/gollum)'s
+support for markdown it ships by default, though the order of href and
+display text is switched. The above example roughly renders:
+
+```html
+<p><a href="second">first\</a></p>
+```
+
+Github Wiki, built on top of Gollum, similarly swaps the href and display text,
+but the backslash **does not render at all**. The above example roughly
+renders:
+
+```html
+<p><a href="second">first</a></p>
+```
+
+Obisidian, the original inspiration of this implementation, treats the
+backslash as a path seperator. That is to say the backslash does not render 
+at all in the above example:
+
+```html
+<p><a href="first">second</a></p>
+```
+
+But the example `[[first\,third|second]]` renders to what
+`[second](first/,third)` would on Obsidian.
+
+```html
+<p><a href="first/%2Cthird">second</a></p>
+```
+
+On Obisidan Publish, the `[[first\,third|second]]` snippet *renders*
+differently. With extra attributes and data omitted for clarity:
+
+```html
+<p><a href="first%5C%2Cthird"></a></p>
+```

@@ -448,4 +448,16 @@ footnote <sup>[<a href="#preview-footnote-reference">1</a>]</sup>
 
 <h1 style="color:red" id="custom-heading">Custom heading</h1>
 
+<tr><th>
+
+[WikiLinks](specs/wikilinks.md)
+
+<td>
+
+    [[https://example.com/destination|label]]
+
+<td>
+
+<a href="https://example.com/destination">label</a>
+
 </table>

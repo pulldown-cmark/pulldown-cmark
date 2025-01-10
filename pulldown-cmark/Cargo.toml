@@ -57,6 +57,11 @@ name = "broken-link-callbacks"
 required-features = ["html"]
 doc-scrape-examples = true
 
+[[example]]
+name = "normalize-wikilink"
+required-features = ["html"]
+doc-scrape-examples = true
+
 [dependencies]
 bitflags = "2"
 unicase = "2.6"

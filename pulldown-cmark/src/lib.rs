@@ -434,6 +434,14 @@ pub enum LinkType {
     Autolink,
     /// Email address in autolink like `<john@example.org>`
     Email,
+    /// Wikilink link like `[[foo]]` or `[[foo|bar]]`
+    WikiLink {
+        /// `true` if the wikilink was piped.
+        ///
+        /// * `true` - `[[foo|bar]]`
+        /// * `false` - `[[foo]]`
+        has_pothole: bool,
+    },
 }
 
 impl LinkType {
@@ -607,6 +615,8 @@ bitflags::bitflags! {
         const ENABLE_DEFINITION_LIST = 1 << 12;
         const ENABLE_SUPERSCRIPT = 1 << 13;
         const ENABLE_SUBSCRIPT = 1 << 14;
+        /// Obsidian-style Wikilinks.
+        const ENABLE_WIKILINKS = 1 << 15;
     }
 }
 

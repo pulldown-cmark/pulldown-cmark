@@ -15,7 +15,7 @@ fn footnotes_test_1() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -34,7 +34,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn footnotes_test_3() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn footnotes_test_4() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn footnotes_test_5() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -138,7 +138,7 @@ d</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -161,7 +161,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -180,7 +180,7 @@ If a woodchuck could chuck wood.
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn footnotes_test_9() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -233,7 +233,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 <p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -277,7 +277,7 @@ fn footnotes_test_11() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn footnotes_test_12() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -312,7 +312,7 @@ fn footnotes_test_13() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -336,7 +336,7 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -393,7 +393,7 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -431,7 +431,7 @@ test suite into pulldown-cmark should be fine.</p>
 <p>[otherlink<sup class="footnote-reference"><a href="#c">1</a></sup>]: https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -456,7 +456,7 @@ fn main() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -470,7 +470,7 @@ fn footnotes_test_18() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -494,7 +494,7 @@ fn footnotes_test_19() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -556,7 +556,7 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -568,7 +568,7 @@ fn footnotes_test_21() {
     let expected = r##"<p>Test <a href="https://rust-lang.org">^</a> link</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -608,7 +608,7 @@ second</a>
 fourth]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -623,7 +623,7 @@ fn footnotes_test_23() {
 </a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -644,7 +644,7 @@ footnote [^quux]</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -663,7 +663,7 @@ fn footnotes_test_25() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }
 
 #[test]
@@ -682,5 +682,5 @@ fn footnotes_test_26() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false);
 }

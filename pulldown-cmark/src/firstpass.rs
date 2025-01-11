@@ -1705,7 +1705,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
         i += 2;
-        if scan_ch(&bytes[i..], b':') == 0 {
+        if bytes.get(i) != Some(&b':') {
             return None;
         }
         i += 1;
@@ -1762,12 +1762,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
         let bytes = &self.text.as_bytes()[start..];
-        if scan_ch(bytes, b'[') == 0 {
+        if bytes.get(0) != Some(&b'[') {
             return None;
         }
         let (mut i, label) = self.parse_refdef_label(start + 1)?;
         i += 1;
-        if scan_ch(&bytes[i..], b':') == 0 {
+        if bytes.get(i) != Some(&b':') {
             return None;
         }
         i += 1;

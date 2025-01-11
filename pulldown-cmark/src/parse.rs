@@ -1158,7 +1158,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         mut ix: usize,
         node: Option<TreeIndex>,
     ) -> Option<(usize, CowStr<'input>, CowStr<'input>)> {
-        if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
+        if underlying.as_bytes().get(ix) != Some(&b'(') {
             return None;
         }
         ix += 1;
@@ -1191,7 +1191,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         } else {
             "".into()
         };
-        if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
+        if underlying.as_bytes().get(ix) != Some(&b')') {
             return None;
         }
         ix += 1;

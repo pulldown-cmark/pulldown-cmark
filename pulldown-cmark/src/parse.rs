@@ -923,7 +923,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     if let Some(body_node) = body_node {
                         // break node so passes can actually format
                         // the display text
-                        self.tree[body_node].item.start = start_ix + rest;
+                        self.tree[body_node].item.start = rest;
                         Some((true, body_node, wikitext))
                     } else {
                         None

@@ -2782,3 +2782,9 @@ the trailing space after the &gt; should be stripped
 <h1 class="bar">the trailing space after the &gt; should be stripped
 &gt;</h1>
 ````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+[[Wiki<|Link]]
+.
+<p><a href="Wiki%3C">Link</a></p>
+````````````````````````````````

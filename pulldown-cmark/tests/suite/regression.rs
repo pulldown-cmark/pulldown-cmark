@@ -3315,3 +3315,13 @@ fn regression_test_207() {
 
     test_markdown_html(original, expected, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_208() {
+    let original = r##"[[Wiki<|Link]]
+"##;
+    let expected = r##"<p><a href="Wiki%3C">Link</a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}

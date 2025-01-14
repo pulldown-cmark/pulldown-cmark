@@ -559,10 +559,12 @@ bitflags::bitflags! {
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
-        /// Enables replacement of ASCII punctuation characters with 
-        /// Unicode ligatures and smart quotes.  
+        /// Enables replacement of ASCII punctuation characters with
+        /// Unicode ligatures and smart quotes.
+        ///
         /// This includes replacing `--` with `—`, `---` with `—`, `...` with `…`,
-        /// `"quote"` with `“quote”`, and `'quote'` with `‘quote’`.  
+        /// `"quote"` with `“quote”`, and `'quote'` with `‘quote’`.
+        ///
         /// The replacement takes place during the parsing of the document.
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
         /// Extension to allow headings to have ID and classes.

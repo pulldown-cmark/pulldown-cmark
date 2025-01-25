@@ -244,6 +244,7 @@ where
                         BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
                         BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
                         BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
+                        BlockQuoteKind::Info => " class=\"markdown-alert-info\"",
                     },
                 };
                 if self.end_newline {

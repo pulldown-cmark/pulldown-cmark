@@ -237,6 +237,8 @@ impl<'a> LineStart<'a> {
                 Some(BlockQuoteKind::Warning)
             } else if self.scan_case_insensitive(b"caution") {
                 Some(BlockQuoteKind::Caution)
+            } else if self.scan_case_insensitive(b"info") {
+                Some(BlockQuoteKind::Info)
             } else {
                 None
             };

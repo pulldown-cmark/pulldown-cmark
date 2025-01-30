@@ -160,7 +160,7 @@ pub enum Tag<'a> {
     /// list is chosen, classes are prefixed with `.` and custom attributes
     /// have no prefix and can optionally have a value (`myattr` or `myattr=myvalue`).
     ///
-    /// `id`, `classes` and `attrs` requires [`Options::ENABLE_HEADING_ATTRIBUTES`].
+    /// `id`, `classes` and `attrs` are only parsed and populated with [`Options::ENABLE_HEADING_ATTRIBUTES`], `None` or empty otherwise.
     Heading {
         level: HeadingLevel,
         id: Option<CowStr<'a>>,
@@ -171,7 +171,7 @@ pub enum Tag<'a> {
 
     /// A block quote.
     ///
-    /// The `BlockQuoteKind` requires [`Options::ENABLE_GFM`].
+    /// The `BlockQuoteKind` is only parsed & populated with [`Options::ENABLE_GFM`], `None` otherwise.
     ///
     /// ```markdown
     /// > regular quote
@@ -208,28 +208,29 @@ pub enum Tag<'a> {
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
-    /// Requires [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
+    ///
+    /// Only parsed and emitted with [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
     #[cfg_attr(feature = "serde", serde(borrow))]
     FootnoteDefinition(CowStr<'a>),
 
-    /// Requires [`Options::ENABLE_DEFINITION_LIST`].
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionList,
-    /// Requires [`Options::ENABLE_DEFINITION_LIST`].
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionListTitle,
-    /// Requires [`Options::ENABLE_DEFINITION_LIST`].
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionListDefinition,
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
-    /// Requires [`Options::ENABLE_TABLES`].
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     Table(Vec<Alignment>),
     /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
-    /// Requires [`Options::ENABLE_TABLES`].
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableHead,
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
-    /// Requires [`Options::ENABLE_TABLES`].
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableRow,
-    /// Requires [`Options::ENABLE_TABLES`].
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableCell,
 
     // span-level tags
@@ -243,19 +244,19 @@ pub enum Tag<'a> {
     /// half**strong** __strong__ __multi __level____
     /// ```
     Strong,
-    /// Requires [`Options::ENABLE_STRIKETHROUGH`].
+    /// Only parsed and emitted with [`Options::ENABLE_STRIKETHROUGH`].
     ///
     /// ```markdown
     /// ~strike through~
     /// ```
     Strikethrough,
-    /// Requires [`Options::ENABLE_SUPERSCRIPT`].
+    /// Only parsed and emitted with [`Options::ENABLE_SUPERSCRIPT`].
     ///
     /// ```markdown
     /// ^superscript^
     /// ```
     Superscript,
-    /// Requires [`Options::ENABLE_SUBSCRIPT`].
+    /// Only parsed and emitted with [`Options::ENABLE_SUBSCRIPT`], if disabled `~something~` is parsed as [`Strikethrough`](Self::Strikethrough).
     /// ```markdown
     /// ~subscript~ ~~if also enabled this is strikethrough~~
     /// ```
@@ -281,7 +282,8 @@ pub enum Tag<'a> {
     },
 
     /// A metadata block.
-    /// Requires either [`Options::ENABLE_YAML_STYLE_METADATA_BLOCKS`] or [`Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS`].
+==== BASE ====
+==== BASE ====
     MetadataBlock(MetadataBlockKind),
 }
 
@@ -569,7 +571,7 @@ pub enum Event<'a> {
     InlineHtml(CowStr<'a>),
     /// A reference to a footnote with given label, which may or may not be defined
     /// by an event with a [`Tag::FootnoteDefinition`] tag. Definitions and references to them may
-    /// occur in any order. Requires [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
+    /// occur in any order. Only parsed and emitted with [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
     ///
     /// ```markdown
     /// [^1]
@@ -601,7 +603,7 @@ pub enum Event<'a> {
     /// *`·` is any whitespace*
     Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
-    /// Requires [`Options::ENABLE_TASKLISTS`].
+    /// Only parsed and emitted with [`Options::ENABLE_TASKLISTS`].
     /// ```markdown
     /// - [ ] unchecked
     /// - [x] checked

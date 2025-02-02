@@ -282,8 +282,8 @@ pub enum Tag<'a> {
     },
 
     /// A metadata block.
-==== BASE ====
-==== BASE ====
+    /// Only parsed and emitted with [`Options::ENABLE_YAML_STYLE_METADATA_BLOCKS`]
+    /// or [`Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS`].
     MetadataBlock(MetadataBlockKind),
 }
 

@@ -70,6 +70,94 @@ fn blockquotes_tags_test_6() {
 
 #[test]
 fn blockquotes_tags_test_7() {
+    let original = r##"> [!FAQ]
+> Frequently asked question blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-faq"><p>Frequently asked question blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_8() {
+    let original = r##"> [!INFO]
+> Info blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-info"><p>Info blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_9() {
+    let original = r##"> [!QUOTE]
+> Quote blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-quote"><p>Quote blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_10() {
+    let original = r##"> [!SUCCESS]
+> Success blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-success"><p>Success blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_11() {
+    let original = r##"> [!FAILURE]
+> Failure blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-failure"><p>Failure blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_12() {
+    let original = r##"> [!DANGER]
+> Danger blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-danger"><p>Danger blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_13() {
+    let original = r##"> [!BUG]
+> Bug blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-bug"><p>Bug blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_14() {
+    let original = r##"> [!EXAMPLE]
+> Example blockquote
+"##;
+    let expected = r##"<blockquote class="markdown-alert-example"><p>Example blockquote</p></blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false);
+}
+
+#[test]
+fn blockquotes_tags_test_15() {
     let original = r##"> [!CAUTION]
 "##;
     let expected = r##"<blockquote class="markdown-alert-caution"></blockquote>
@@ -79,7 +167,7 @@ fn blockquotes_tags_test_7() {
 }
 
 #[test]
-fn blockquotes_tags_test_8() {
+fn blockquotes_tags_test_16() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > Line 2.
@@ -92,7 +180,7 @@ Line 2.</p></blockquote>
 }
 
 #[test]
-fn blockquotes_tags_test_9() {
+fn blockquotes_tags_test_17() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > [!CAUTION]
@@ -107,7 +195,7 @@ Line 2.</p></blockquote>
 }
 
 #[test]
-fn blockquotes_tags_test_10() {
+fn blockquotes_tags_test_18() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > > [!TIP]
@@ -120,7 +208,7 @@ fn blockquotes_tags_test_10() {
 }
 
 #[test]
-fn blockquotes_tags_test_11() {
+fn blockquotes_tags_test_19() {
     let original = r##"> [!CAUTION]
 > Line 1.
 
@@ -135,7 +223,7 @@ fn blockquotes_tags_test_11() {
 }
 
 #[test]
-fn blockquotes_tags_test_12() {
+fn blockquotes_tags_test_20() {
     let original = r##"> > [!CAUTION]
 > > Line 1.
 > Line 2.
@@ -148,7 +236,7 @@ Line 2.</p></blockquote></blockquote>
 }
 
 #[test]
-fn blockquotes_tags_test_13() {
+fn blockquotes_tags_test_21() {
     let original = r##"> [!CAUTION]	
 > Line 1.
 > > [!NOTE]      
@@ -163,7 +251,7 @@ fn blockquotes_tags_test_13() {
 }
 
 #[test]
-fn blockquotes_tags_test_14() {
+fn blockquotes_tags_test_22() {
     let original = r##"> [!caution]	
 > Line 1.
 > > [!note]      
@@ -178,7 +266,7 @@ fn blockquotes_tags_test_14() {
 }
 
 #[test]
-fn blockquotes_tags_test_15() {
+fn blockquotes_tags_test_23() {
     let original = r##"  * loose lists
 
     > [!NOTE]
@@ -193,7 +281,7 @@ fn blockquotes_tags_test_15() {
 }
 
 #[test]
-fn blockquotes_tags_test_16() {
+fn blockquotes_tags_test_24() {
     let original = r##"> [!NOTE]
 sink ships
 
@@ -220,7 +308,7 @@ sink ships
 }
 
 #[test]
-fn blockquotes_tags_test_17() {
+fn blockquotes_tags_test_25() {
     let original = r##"  * loose lists
 
     > [!NOTE]
@@ -241,7 +329,7 @@ fn blockquotes_tags_test_17() {
 }
 
 #[test]
-fn blockquotes_tags_test_18() {
+fn blockquotes_tags_test_26() {
     let original = r##"> [!Hello]
 > This should be a normal block quote.
 "##;

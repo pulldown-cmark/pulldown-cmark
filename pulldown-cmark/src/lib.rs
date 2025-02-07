@@ -138,7 +138,14 @@ pub enum BlockQuoteKind {
     Important,
     Warning,
     Caution,
+    Faq,
     Info,
+    Quote,
+    Success,
+    Failure,
+    Danger,
+    Bug,
+    Example,
 }
 
 /// Metadata block kind.

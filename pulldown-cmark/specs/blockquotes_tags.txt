@@ -7,6 +7,14 @@ Blockquotes can optionally have one of the following tags:
 - [!IMPORTANT]
 - [!WARNING]
 - [!CAUTION]
+- [!FAQ]
+- [!INFO]
+- [!QUOTE]
+- [!SUCCESS]
+- [!FAILURE]
+- [!DANGER]
+- [!BUG]
+- [!EXAMPLE]
 
 Using one of these tags adds a class with the same name but in lowercase
 (note, tip, etc.).
@@ -51,6 +59,62 @@ Using one of these tags adds a class with the same name but in lowercase
 > Caution blockquote
 .
 <blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!FAQ]
+> Frequently asked question blockquote
+.
+<blockquote class="markdown-alert-faq"><p>Frequently asked question blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!INFO]
+> Info blockquote
+.
+<blockquote class="markdown-alert-info"><p>Info blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!QUOTE]
+> Quote blockquote
+.
+<blockquote class="markdown-alert-quote"><p>Quote blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!SUCCESS]
+> Success blockquote
+.
+<blockquote class="markdown-alert-success"><p>Success blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!FAILURE]
+> Failure blockquote
+.
+<blockquote class="markdown-alert-failure"><p>Failure blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!DANGER]
+> Danger blockquote
+.
+<blockquote class="markdown-alert-danger"><p>Danger blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!BUG]
+> Bug blockquote
+.
+<blockquote class="markdown-alert-bug"><p>Bug blockquote</p></blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> [!EXAMPLE]
+> Example blockquote
+.
+<blockquote class="markdown-alert-example"><p>Example blockquote</p></blockquote>
 ````````````````````````````````
 
 A blockquote with tag can be empty:

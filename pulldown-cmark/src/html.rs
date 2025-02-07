@@ -244,7 +244,14 @@ where
                         BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
                         BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
                         BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
+                        BlockQuoteKind::Faq => " class=\"markdown-alert-faq\"",
                         BlockQuoteKind::Info => " class=\"markdown-alert-info\"",
+                        BlockQuoteKind::Quote => " class=\"markdown-alert-quote\"",
+                        BlockQuoteKind::Success => " class=\"markdown-alert-success\"",
+                        BlockQuoteKind::Failure => " class=\"markdown-alert-failure\"",
+                        BlockQuoteKind::Danger => " class=\"markdown-alert-danger\"",
+                        BlockQuoteKind::Bug => " class=\"markdown-alert-bug\"",
+                        BlockQuoteKind::Example => " class=\"markdown-alert-example\"",
                     },
                 };
                 if self.end_newline {

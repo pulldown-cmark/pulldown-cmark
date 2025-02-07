@@ -237,8 +237,22 @@ impl<'a> LineStart<'a> {
                 Some(BlockQuoteKind::Warning)
             } else if self.scan_case_insensitive(b"caution") {
                 Some(BlockQuoteKind::Caution)
+            } else if self.scan_case_insensitive(b"faq") {
+                Some(BlockQuoteKind::Faq)
             } else if self.scan_case_insensitive(b"info") {
                 Some(BlockQuoteKind::Info)
+            } else if self.scan_case_insensitive(b"quote") {
+                Some(BlockQuoteKind::Quote)
+            } else if self.scan_case_insensitive(b"success") {
+                Some(BlockQuoteKind::Success)
+            } else if self.scan_case_insensitive(b"failure") {
+                Some(BlockQuoteKind::Failure)
+            } else if self.scan_case_insensitive(b"danger") {
+                Some(BlockQuoteKind::Danger)
+            } else if self.scan_case_insensitive(b"bug") {
+                Some(BlockQuoteKind::Bug)
+            } else if self.scan_case_insensitive(b"example") {
+                Some(BlockQuoteKind::Example)
             } else {
                 None
             };

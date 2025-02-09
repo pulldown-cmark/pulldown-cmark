@@ -100,7 +100,11 @@ pub fn main() -> std::io::Result<()> {
         "reject-broken-links",
         "fail if input file has broken links",
     );
-    opts.optflag("G", "enable-gfm", "enable misc GFM features");
+    opts.optflag(
+        "G",
+        "enable-block-quote-admonitions",
+        "enable > `[!NOTE]`-style syntax",
+    );
     opts.optflag(
         "D",
         "enable-definition-list",
@@ -154,8 +158,8 @@ pub fn main() -> std::io::Result<()> {
         opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
         opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
     }
-    if matches.opt_present("enable-gfm") {
-        opts.insert(Options::ENABLE_GFM);
+    if matches.opt_present("enable-block-quote-admonitions") {
+        opts.insert(Options::ENABLE_BLOCK_QUOTE_ADMONITIONS);
     }
     if matches.opt_present("enable-definition-list") {
         opts.insert(Options::ENABLE_DEFINITION_LIST);

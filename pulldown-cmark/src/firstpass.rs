@@ -230,43 +230,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return after_marker_index + n;
                 }
             } else if line_start.scan_blockquote_marker() {
-                let kind = if self.options.contains(Options::ENABLE_GFM) {
-                    line_start.scan_blockquote_tag()
-                } else {
-                    None
-                };
                 self.finish_list(start_ix);
                 self.tree.append(Item {
                     start: container_start,
                     end: 0, // will get set later
-                    body: ItemBody::BlockQuote(kind),
+                    body: ItemBody::BlockQuote,
                 });
                 self.tree.push();
-                if kind.is_some() {
-                    // blockquote tag leaves us at the end of the line
-                    // we need to scan through all the container syntax for the next line
-                    // and break out if we can't re-scan all of them
-                    let ix = start_ix + line_start.bytes_scanned();
-                    let mut lazy_line_start = LineStart::new(&bytes[ix..]);
-                    let current_container =
-                        scan_containers(&self.tree, &mut lazy_line_start, self.options)
-                            == self.tree.spine_len();
-                    if !lazy_line_start.scan_space(4)
-                        && self.scan_paragraph_interrupt(
-                            &bytes[ix + lazy_line_start.bytes_scanned()..],
-                            current_container,
-                        )
-                    {
-                        return ix;
-                    } else {
-                        // blockquote tags act as if they were nested in a paragraph
-                        // so you can lazily continue the imaginary paragraph off of them
-                        line_start = lazy_line_start;
-                        line_start.scan_all_space();
-                        start_ix = ix;
-                        break;
-                    }
-                }
             } else {
                 line_start = save;
                 break;
@@ -278,7 +248,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
-                    ItemBody::BlockQuote(..) => (),
+                    ItemBody::BlockQuote => (),
                     ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
                         if self.begin_list_item.is_some() =>
                     {

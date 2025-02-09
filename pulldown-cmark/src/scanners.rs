@@ -25,7 +25,7 @@ use std::char;
 use crate::parse::HtmlScanGuard;
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::strings::CowStr;
-use crate::{entities, BlockQuoteKind, HeadingLevel};
+use crate::{entities, HeadingLevel};
 use crate::{Alignment, LinkType};
 
 use memchr::memchr;
@@ -210,53 +210,6 @@ impl<'a> LineStart<'a> {
         } else {
             false
         }
-    }
-
-    fn scan_case_insensitive(&mut self, tag: &[u8]) -> bool {
-        if self.bytes.len() - self.ix < tag.len() {
-            return false;
-        }
-        let prefix = &self.bytes[self.ix..self.ix + tag.len()];
-        let ok = prefix.eq_ignore_ascii_case(tag);
-        if ok {
-            self.ix += tag.len();
-        }
-        ok
-    }
-
-    pub(crate) fn scan_blockquote_tag(&mut self) -> Option<BlockQuoteKind> {
-        let saved_ix = self.ix;
-        let tag = if self.scan_ch(b'[') && self.scan_ch(b'!') {
-            let tag = if self.scan_case_insensitive(b"note") {
-                Some(BlockQuoteKind::Note)
-            } else if self.scan_case_insensitive(b"tip") {
-                Some(BlockQuoteKind::Tip)
-            } else if self.scan_case_insensitive(b"important") {
-                Some(BlockQuoteKind::Important)
-            } else if self.scan_case_insensitive(b"warning") {
-                Some(BlockQuoteKind::Warning)
-            } else if self.scan_case_insensitive(b"caution") {
-                Some(BlockQuoteKind::Caution)
-            } else {
-                None
-            };
-            if tag.is_some() && self.scan_ch(b']') {
-                if let Some(nl) = scan_blank_line(&self.bytes[self.ix..]) {
-                    self.ix += nl;
-                    tag
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        if tag.is_none() {
-            self.ix = saved_ix;
-        }
-        tag
     }
 
     pub(crate) fn scan_blockquote_marker(&mut self) -> bool {

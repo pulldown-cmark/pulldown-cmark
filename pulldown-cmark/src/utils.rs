@@ -14,13 +14,13 @@ use std::ops::Range;
 
 /// Merge consecutive `Event::Text` events into only one.
 #[derive(Debug)]
-pub struct TextMergeStream<'a, I> {
-    inner: TextMergeWithOffset<'a, DummyOffsets<I>>,
+pub struct TextMergeStream<'a, I, AD> {
+    inner: TextMergeWithOffset<'a, DummyOffsets<I>, AD>,
 }
 
-impl<'a, I> TextMergeStream<'a, I>
+impl<'a, I, AD> TextMergeStream<'a, I, AD>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
 {
     pub fn new(iter: I) -> Self {
         Self {
@@ -29,11 +29,11 @@ where
     }
 }
 
-impl<'a, I> Iterator for TextMergeStream<'a, I>
+impl<'a, I, AD> Iterator for TextMergeStream<'a, I, AD>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
 {
-    type Item = Event<'a>;
+    type Item = Event<'a, AD>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(event, _)| event)
@@ -43,11 +43,11 @@ where
 #[derive(Debug)]
 struct DummyOffsets<I>(I);
 
-impl<'a, I> Iterator for DummyOffsets<I>
+impl<'a, I, AD> Iterator for DummyOffsets<I>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
 {
-    type Item = (Event<'a>, Range<usize>);
+    type Item = (Event<'a, AD>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|event| (event, 0..0))
@@ -58,14 +58,14 @@ where
 ///
 /// Compatible with with [`OffsetIter`](crate::OffsetIter).
 #[derive(Debug)]
-pub struct TextMergeWithOffset<'a, I> {
+pub struct TextMergeWithOffset<'a, I, AD> {
     iter: I,
-    last_event: Option<(Event<'a>, Range<usize>)>,
+    last_event: Option<(Event<'a, AD>, Range<usize>)>,
 }
 
-impl<'a, I> TextMergeWithOffset<'a, I>
+impl<'a, I, AD> TextMergeWithOffset<'a, I, AD>
 where
-    I: Iterator<Item = (Event<'a>, Range<usize>)>,
+    I: Iterator<Item = (Event<'a, AD>, Range<usize>)>,
 {
     pub fn new(iter: I) -> Self {
         Self {
@@ -75,11 +75,11 @@ where
     }
 }
 
-impl<'a, I> Iterator for TextMergeWithOffset<'a, I>
+impl<'a, I, AD> Iterator for TextMergeWithOffset<'a, I, AD>
 where
-    I: Iterator<Item = (Event<'a>, Range<usize>)>,
+    I: Iterator<Item = (Event<'a, AD>, Range<usize>)>,
 {
-    type Item = (Event<'a>, Range<usize>);
+    type Item = (Event<'a, AD>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match (self.last_event.take(), self.iter.next()) {
@@ -135,7 +135,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Parser;
+    use crate::{BlockQuoteKind, Parser};
 
     #[test]
     fn text_merge_stream_indent() {
@@ -170,7 +170,7 @@ mod test {
     #[test]
     fn text_merge_empty_is_discarded() {
         let events = [
-            Event::Rule,
+            Event::<BlockQuoteKind>::Rule,
             Event::Text("".into()),
             Event::Text("".into()),
             Event::Rule,

@@ -98,7 +98,7 @@ use std::fmt::Display;
 
 pub use crate::parse::{
     AdmonitionTagCallback, BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback,
-    DisableAdmonitionTagCallback, GfmAdmonitionTagCallback, OffsetIter, Parser, RefDefs,
+    DisableAdmonitionTagCallback, GfmAdmonitionTagCallback, LinkDef, OffsetIter, Parser, RefDefs,
 };
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;

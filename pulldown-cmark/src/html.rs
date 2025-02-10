@@ -53,10 +53,11 @@ struct HtmlWriter<'a, I, W> {
     numbers: HashMap<CowStr<'a>, usize>,
 }
 
-impl<'a, I, W> HtmlWriter<'a, I, W>
+impl<'a, I, W, BQK> HtmlWriter<'a, I, W>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, BQK>>,
     W: StrWrite,
+    BQK: ToClass,
 {
     fn new(iter: I, writer: W) -> Self {
         Self {
@@ -156,7 +157,7 @@ where
     }
 
     /// Writes the start of an HTML tag.
-    fn start_tag(&mut self, tag: Tag<'a>) -> Result<(), W::Error> {
+    fn start_tag(&mut self, tag: Tag<'a, BQK>) -> Result<(), W::Error> {
         match tag {
             Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
@@ -236,21 +237,28 @@ where
                 }
             }
             Tag::BlockQuote(kind) => {
-                let class_str = match kind {
-                    None => "",
-                    Some(kind) => match kind {
-                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
-                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
-                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
-                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
-                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
-                    },
-                };
-                if self.end_newline {
-                    self.write(&format!("<blockquote{}>\n", class_str))
+                let class_str;
+                let class_str = if let Some(kind) = kind.as_ref() {
+                    class_str = kind.to_class();
+                    Some(&class_str[..])
                 } else {
-                    self.write(&format!("\n<blockquote{}>\n", class_str))
-                }
+                    None
+                };
+                let tag;
+                self.write(match (class_str, self.end_newline) {
+                    (Some(""), false) => "\n<div class=\"markdown-admonition\">\n",
+                    (Some(""), true) => "<div class=\"markdown-admonition\">\n",
+                    (Some(class_str), false) => {
+                        tag = format!("\n<div class=\"markdown-admonition {class_str}\">\n");
+                        &tag
+                    }
+                    (Some(class_str), true) => {
+                        tag = format!("<div class=\"markdown-admonition {class_str}\">\n");
+                        &tag
+                    }
+                    (None, false) => "\n<blockquote>\n",
+                    (None, true) => "<blockquote>\n",
+                })
             }
             Tag::CodeBlock(info) => {
                 if !self.end_newline {
@@ -390,7 +398,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: TagEnd) -> Result<(), W::Error> {
+    fn end_tag(&mut self, tag: TagEnd<BQK>) -> Result<(), W::Error> {
         match tag {
             TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
@@ -422,8 +430,12 @@ where
                 }
                 self.table_cell_index += 1;
             }
-            TagEnd::BlockQuote(_) => {
-                self.write("</blockquote>\n")?;
+            TagEnd::BlockQuote(kind) => {
+                self.write(if kind.is_some() {
+                    "</div>\n"
+                } else {
+                    "</blockquote>\n"
+                })?;
             }
             TagEnd::CodeBlock => {
                 self.write("</code></pre>\n")?;
@@ -547,9 +559,9 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I>(s: &mut String, iter: I)
+pub fn push_html<'a, I, AD: ToClass>(s: &mut String, iter: I)
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
 {
     write_html_fmt(s, iter).unwrap()
 }
@@ -587,9 +599,9 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_io<'a, I, W>(writer: W, iter: I) -> std::io::Result<()>
+pub fn write_html_io<'a, I, W, AD: ToClass>(writer: W, iter: I) -> std::io::Result<()>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
     W: std::io::Write,
 {
     HtmlWriter::new(iter, IoWriter(writer)).run()
@@ -622,10 +634,216 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+pub fn write_html_fmt<'a, I, W, AD: ToClass>(writer: W, iter: I) -> std::fmt::Result
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
     W: std::fmt::Write,
 {
     HtmlWriter::new(iter, FmtWriter(writer)).run()
+}
+
+/// Return an HTML class, if any, for an admonition.
+///
+/// This is a convenience function that lets you use the built-in HTML renderer.
+/// If your needs are more complex, you'll have to process the event stream instead.
+///
+/// # Example
+///
+/// ```rust
+/// use pulldown_cmark::{html, Parser, Options, AdmonitionTagCallback, DefaultBrokenLinkCallback, Tag, TagEnd, TextMergeStream, Event, CowStr};
+/// use pulldown_cmark_escape::{escape_href, escape_html};
+/// #[derive(Clone, Debug, Copy, Eq, PartialEq)]
+/// enum Admonition<'input> {
+///     /// `"[!NOTE]"`
+///     Note,
+///     /// `"[!TIP]"`
+///     Tip,
+///     /// `"[!IMPORTANT]"`
+///     Important,
+///     /// `"[!WARNING]"`
+///     Warning,
+///     /// `"[!REVIEW]"`
+///     Review,
+///     /// `"[!CAUTION]"`
+///     Caution,
+///     /// `"[!VIDEO=url]"`
+///     Video(&'input str),
+///     /// `"[!DIV" (space ("CLASS=" attrvalue)|("ID=" attrvalue)|("." attrvalue)|("#" attrvalue))* "]"`
+///     /// space = `" "+`
+///     /// attrvalue = `("\"" anything_but_quote* "\"")|anything_but_space*`
+///     Div(&'input str, &'input str),
+/// }
+/// impl<'input> html::ToClass for Admonition<'input> {
+///     fn to_class<'a>(&'a self) -> CowStr<'static> {
+///         CowStr::Borrowed(match *self {
+///             Admonition::Note => "markdown-note",
+///             Admonition::Tip => "markdown-tip",
+///             Admonition::Important => "markdown-important",
+///             Admonition::Warning => "markdown-warning",
+///             Admonition::Review => "markdown-review",
+///             Admonition::Caution => "markdown-caution",
+///             Admonition::Video(_) => unreachable!("removed by event filter"),
+///             Admonition::Div(_, _) => unreachable!("removed by event filter"),
+///         })
+///     }
+/// }
+/// struct AdmonitionHandler;
+/// impl<'input> AdmonitionTagCallback<'input> for AdmonitionHandler {
+///     type DataKind = Admonition<'input>;
+///     fn handle_admonition_tag(&mut self, input: &'input str) -> Option<Self::DataKind> {
+///         Some(if input.len() >= 6 && input[..6].eq_ignore_ascii_case("video=") {
+///             Admonition::Video(&input[6..])
+///         } else if input.len() >= 3 && input[..3].eq_ignore_ascii_case("div") {
+///             let mut id = "";
+///             let mut class = "";
+///             let mut input = &input[3..];
+///             while input != "" {
+///                 fn attribute(mut input: &str) -> (&str, &str) {
+///                     let attr;
+///                     if input.starts_with('"') {
+///                         input = &input[1..];
+///                         let mut end = input.bytes().position(|c| c == b'"').unwrap_or(input.len());
+///                         attr = &input[..end];
+///                         if input.as_bytes().get(end) == Some(&b'"') {
+///                             end += 1;
+///                         }
+///                         input = &input[end..];
+///                     } else {
+///                         let end = input.bytes().position(|c| c == b' ').unwrap_or(input.len());
+///                         attr = &input[..end];
+///                         input = &input[end..];
+///                     }
+///                     (attr, input)
+///                 }
+///                 if input.as_bytes().get(0) == Some(&b' ') {
+///                     input = &input[1..];
+///                 } else {
+///                     return None;
+///                 }
+///                 match input.as_bytes() {
+///                     [b' ', ..] => {},
+///                     [b'i' | b'I', b'd' | b'D', b'=', ..] => {
+///                         (id, input) = attribute(&input[3..]);
+///                     },
+///                     [b'#', ..] => {
+///                         (id, input) = attribute(&input[1..]);
+///                     },
+///                     [b'c' | b'C', b'l' | b'L', b'a' | b'A', b's' | b'S', b's' | b'S', b'=', ..] => {
+///                         (class, input) = attribute(&input[6..]);
+///                     },
+///                     [b'.', ..] => {
+///                         (class, input) = attribute(&input[1..]);
+///                     },
+///                     _ => return None,
+///                 }
+///             }
+///             Admonition::Div(id, class)
+///         } else if input.eq_ignore_ascii_case("note") {
+///             Admonition::Note
+///         } else if input.eq_ignore_ascii_case("tip") {
+///             Admonition::Tip
+///         } else if input.eq_ignore_ascii_case("important") {
+///             Admonition::Important
+///         } else if input.eq_ignore_ascii_case("warning") {
+///             Admonition::Warning
+///         } else if input.eq_ignore_ascii_case("caution") {
+///             Admonition::Caution
+///         } else if input.eq_ignore_ascii_case("review") {
+///             Admonition::Review
+///         } else {
+///             return None;
+///         })
+///     }
+/// }
+/// let parser = Parser::new_with_callbacks(
+///     "> [!video=url]\n\n> [!note]\n>be aware\n\n> [!div id=nn class=xx]\n> internals\n\n> [!div unsupported=attr]\n> internals",
+///     Options::ENABLE_BLOCK_QUOTE_ADMONITIONS,
+///     None::<DefaultBrokenLinkCallback>,
+///     AdmonitionHandler,
+/// ).map(|event| match event {
+///     Event::Start(Tag::BlockQuote(Some(Admonition::Video(url)))) => {
+///         let mut tag = String::from("<video src=\"");
+///         escape_href(&mut tag, url);
+///         tag += "\">\n";
+///         Event::Html(CowStr::from(tag))
+///     }
+///     Event::End(TagEnd::BlockQuote(Some(Admonition::Video(_)))) => {
+///         Event::Html(CowStr::Borrowed("</video>\n"))
+///     }
+///     Event::Start(Tag::BlockQuote(Some(Admonition::Div(id, class)))) => {
+///         let mut tag = String::from("<div id=\"");
+///         escape_html(&mut tag, id);
+///         tag += "\" class=\"";
+///         escape_html(&mut tag, class);
+///         tag += "\">\n";
+///         Event::Html(CowStr::from(tag))
+///     }
+///     Event::End(TagEnd::BlockQuote(Some(Admonition::Div(_, _)))) => {
+///         Event::Html(CowStr::Borrowed("</div>\n"))
+///     }
+///     event => event,
+/// });
+/// let mut result = String::new();
+/// html::push_html(&mut result, parser);
+/// assert_eq!(result, r##"<video src="url">
+/// </video>
+/// <div class="markdown-admonition markdown-note">
+/// <p>be aware</p>
+/// </div>
+/// <div id="nn" class="xx">
+/// <p>internals</p>
+/// </div>
+/// <blockquote>
+/// <p>[!div unsupported=attr]
+/// internals</p>
+/// </blockquote>
+/// "##);
+/// ```
+pub trait ToClass {
+    /// <div class="warning">
+    ///
+    /// Invalid admonition tags should be rejected earlier, in the
+    /// [`AdmonitionTagCallback`], by returning None. Once this
+    /// function gets called, the admonition has already been parsed.
+    ///
+    /// </div>
+    ///
+    /// [`AdmonitionTagCallback`]: crate::AdmonitionTagCallback
+    fn to_class<'a>(&'a self) -> CowStr<'a>;
+}
+
+impl ToClass for str {
+    fn to_class<'a>(&'a self) -> CowStr<'a> {
+        CowStr::Borrowed(self)
+    }
+}
+
+impl ToClass for String {
+    fn to_class<'a>(&'a self) -> CowStr<'a> {
+        CowStr::Borrowed(&self[..])
+    }
+}
+
+impl ToClass for Box<str> {
+    fn to_class<'a>(&'a self) -> CowStr<'a> {
+        CowStr::Borrowed(&self[..])
+    }
+}
+
+impl<'input> ToClass for CowStr<'input> {
+    fn to_class<'a>(&'a self) -> CowStr<'a> {
+        CowStr::Borrowed(&self[..])
+    }
+}
+
+impl ToClass for crate::BlockQuoteKind {
+    fn to_class(&'_ self) -> CowStr<'static> {
+        CowStr::Borrowed(match *self {
+            BlockQuoteKind::Note => "markdown-alert-note",
+            BlockQuoteKind::Tip => "markdown-alert-tip",
+            BlockQuoteKind::Important => "markdown-alert-important",
+            BlockQuoteKind::Warning => "markdown-alert-warning",
+            BlockQuoteKind::Caution => "markdown-alert-caution",
+        })
+    }
 }

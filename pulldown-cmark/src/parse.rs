@@ -2314,6 +2314,11 @@ pub trait AdmonitionTagCallback<'input> {
     ///     ))),
     /// ], TextMergeStream::new(parser).collect::<Vec<_>>());
     /// ```
+    ///
+    /// To use this feature along with the default HTML serializer, this type will
+    /// also need to implement [`html::ToClass`].
+    ///
+    /// [`html::ToClass`]: crate::html::ToClass
     type DataKind: Clone + Copy + Eq + PartialEq + 'input;
 
     /// This function is called whenever a valid admonition tag is found.
@@ -2367,7 +2372,7 @@ pub trait AdmonitionTagCallback<'input> {
 
 /// Enables the same set of tags that GitHub uses, including case-insensitive matching.
 ///
-/// [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+/// `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`
 #[derive(Debug)]
 pub struct GfmAdmonitionTagCallback;
 impl<'input> AdmonitionTagCallback<'input> for GfmAdmonitionTagCallback {

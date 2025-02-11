@@ -1367,13 +1367,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         n_fence_char: usize,
     ) -> usize {
         let bytes = self.text.as_bytes();
-        let mut info_start = start_ix + n_fence_char;
-        info_start += scan_whitespace_no_nl(&bytes[info_start..]);
-        // TODO: info strings are typically very short. wouldn't it be faster
-        // to just do a forward scan here?
-        let mut ix = info_start + scan_nextline(&bytes[info_start..]);
-        let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
-        let info_string = unescape(&self.text[info_start..info_end], self.tree.is_in_table());
+        let info_start = start_ix + n_fence_char;
+        let info_end = scan_nextline(&bytes[info_start..]) + info_start;
+        let info_string = unescape(
+            self.text[info_start..info_end].trim_ascii(),
+            self.tree.is_in_table(),
+        );
+        let mut ix = info_end;
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later

@@ -3077,11 +3077,11 @@ fn regression_test_195() {
     let original = r##"> [!Note]
 > - Foo
 "##;
-    let expected = r##"<blockquote class="markdown-alert-note">
+    let expected = r##"<div class="markdown-admonition markdown-alert-note">
 <ul>
 <li>Foo</li>
 </ul>
-</blockquote>
+</div>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false);

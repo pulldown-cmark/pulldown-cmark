@@ -2577,11 +2577,11 @@ ISSUE #907
 > [!Note]
 > - Foo
 .
-<blockquote class="markdown-alert-note">
+<div class="markdown-admonition markdown-alert-note">
 <ul>
 <li>Foo</li>
 </ul>
-</blockquote>
+</div>
 ````````````````````````````````
 
 ISSUE #912

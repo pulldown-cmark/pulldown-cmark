@@ -97,7 +97,8 @@ mod tree;
 use std::fmt::Display;
 
 pub use crate::parse::{
-    BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+    AdmonitionTagCallback, BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback,
+    DisableAdmonitionTagCallback, GfmAdmonitionTagCallback, LinkDef, OffsetIter, Parser, RefDefs,
 };
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;
@@ -151,7 +152,7 @@ pub enum MetadataBlockKind {
 /// Tags for elements that can contain other elements.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Tag<'a> {
+pub enum Tag<'a, Admonition = BlockQuoteKind> {
     /// A paragraph of text and other inline elements.
     Paragraph,
 
@@ -171,7 +172,7 @@ pub enum Tag<'a> {
 
     /// A block quote.
     ///
-    /// The `BlockQuoteKind` is only parsed & populated with [`Options::ENABLE_GFM`], `None` otherwise.
+    /// The `BlockQuoteKind` is only parsed & populated with [`Options::ENABLE_BLOCK_QUOTE_ADMONITIONS`], `None` otherwise.
     ///
     /// ```markdown
     /// > regular quote
@@ -179,7 +180,7 @@ pub enum Tag<'a> {
     /// > [!NOTE]
     /// > note quote
     /// ```
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote(Option<Admonition>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
@@ -287,8 +288,8 @@ pub enum Tag<'a> {
     MetadataBlock(MetadataBlockKind),
 }
 
-impl<'a> Tag<'a> {
-    pub fn to_end(&self) -> TagEnd {
+impl<'a, Admonition: Clone + Copy + Eq + PartialEq> Tag<'a, Admonition> {
+    pub fn to_end(&self) -> TagEnd<Admonition> {
         match self {
             Tag::Paragraph => TagEnd::Paragraph,
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
@@ -316,7 +317,7 @@ impl<'a> Tag<'a> {
         }
     }
 
-    pub fn into_static(self) -> Tag<'static> {
+    pub fn into_static(self) -> Tag<'static, Admonition> {
         match self {
             Tag::Paragraph => Tag::Paragraph,
             Tag::Heading {
@@ -381,11 +382,11 @@ impl<'a> Tag<'a> {
 /// The end of a `Tag`.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum TagEnd {
+pub enum TagEnd<Admonition = BlockQuoteKind> {
     Paragraph,
     Heading(HeadingLevel),
 
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote(Option<Admonition>),
     CodeBlock,
 
     HtmlBlock,
@@ -521,14 +522,14 @@ impl LinkType {
 /// have been visited.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Event<'a> {
+pub enum Event<'a, Admonition = BlockQuoteKind> {
     /// Start of a tagged element. Events that are yielded after this event
     /// and before its corresponding `End` event are inside this element.
     /// Start and end events are guaranteed to be balanced.
     #[cfg_attr(feature = "serde", serde(borrow))]
-    Start(Tag<'a>),
+    Start(Tag<'a, Admonition>),
     /// End of a tagged element.
-    End(TagEnd),
+    End(TagEnd<Admonition>),
     /// A text node.
     ///
     /// All text, outside and inside [`Tag`]s.
@@ -611,8 +612,8 @@ pub enum Event<'a> {
     TaskListMarker(bool),
 }
 
-impl<'a> Event<'a> {
-    pub fn into_static(self) -> Event<'static> {
+impl<'a, Admonition: Clone + Copy + Eq + PartialEq> Event<'a, Admonition> {
+    pub fn into_static(self) -> Event<'static, Admonition> {
         match self {
             Event::Start(t) => Event::Start(t.into_static()),
             Event::End(e) => Event::End(e),
@@ -627,6 +628,120 @@ impl<'a> Event<'a> {
             Event::HardBreak => Event::HardBreak,
             Event::Rule => Event::Rule,
             Event::TaskListMarker(b) => Event::TaskListMarker(b),
+        }
+    }
+}
+
+impl<'a, Admonition> Event<'a, Admonition> {
+    pub fn map_admonition<A2, F: FnOnce(Admonition) -> A2>(self, f: F) -> Event<'a, A2> {
+        match self {
+            Event::Start(t) => Event::Start(t.map_admonition(f)),
+            Event::End(e) => Event::End(e.map_admonition(f)),
+            Event::Text(s) => Event::Text(s),
+            Event::Code(s) => Event::Code(s),
+            Event::InlineMath(s) => Event::InlineMath(s),
+            Event::DisplayMath(s) => Event::DisplayMath(s),
+            Event::Html(s) => Event::Html(s),
+            Event::InlineHtml(s) => Event::InlineHtml(s),
+            Event::FootnoteReference(s) => Event::FootnoteReference(s),
+            Event::SoftBreak => Event::SoftBreak,
+            Event::HardBreak => Event::HardBreak,
+            Event::Rule => Event::Rule,
+            Event::TaskListMarker(b) => Event::TaskListMarker(b),
+        }
+    }
+}
+
+impl<'a, Admonition> Tag<'a, Admonition> {
+    pub fn map_admonition<A2, F: FnOnce(Admonition) -> A2>(self, f: F) -> Tag<'a, A2> {
+        match self {
+            Tag::BlockQuote(Some(a)) => Tag::BlockQuote(Some(f(a))),
+            Tag::BlockQuote(None) => Tag::BlockQuote(None),
+            Tag::Paragraph => Tag::Paragraph,
+            Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            } => Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            },
+            Tag::CodeBlock(code_block_kind) => Tag::CodeBlock(code_block_kind),
+            Tag::HtmlBlock => Tag::HtmlBlock,
+            Tag::List(k) => Tag::List(k),
+            Tag::Item => Tag::Item,
+            Tag::FootnoteDefinition(cow_str) => Tag::FootnoteDefinition(cow_str),
+            Tag::DefinitionList => Tag::DefinitionList,
+            Tag::DefinitionListTitle => Tag::DefinitionListTitle,
+            Tag::DefinitionListDefinition => Tag::DefinitionListDefinition,
+            Tag::Table(alignments) => Tag::Table(alignments),
+            Tag::TableHead => Tag::TableHead,
+            Tag::TableRow => Tag::TableRow,
+            Tag::TableCell => Tag::TableCell,
+            Tag::Emphasis => Tag::Emphasis,
+            Tag::Strong => Tag::Strong,
+            Tag::Strikethrough => Tag::Strikethrough,
+            Tag::Superscript => Tag::Superscript,
+            Tag::Subscript => Tag::Subscript,
+            Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            } => Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            },
+            Tag::Image {
+                link_type,
+                dest_url,
+                title,
+                id,
+            } => Tag::Image {
+                link_type,
+                dest_url,
+                title,
+                id,
+            },
+            Tag::MetadataBlock(metadata_block_kind) => Tag::MetadataBlock(metadata_block_kind),
+        }
+    }
+}
+
+impl<Admonition> TagEnd<Admonition> {
+    pub fn map_admonition<A2, F: FnOnce(Admonition) -> A2>(self, f: F) -> TagEnd<A2> {
+        match self {
+            TagEnd::BlockQuote(Some(a)) => TagEnd::BlockQuote(Some(f(a))),
+            TagEnd::BlockQuote(None) => TagEnd::BlockQuote(None),
+            TagEnd::Paragraph => TagEnd::Paragraph,
+            TagEnd::Heading(heading_level) => TagEnd::Heading(heading_level),
+            TagEnd::CodeBlock => TagEnd::CodeBlock,
+            TagEnd::HtmlBlock => TagEnd::HtmlBlock,
+            TagEnd::List(k) => TagEnd::List(k),
+            TagEnd::Item => TagEnd::Item,
+            TagEnd::FootnoteDefinition => TagEnd::FootnoteDefinition,
+            TagEnd::DefinitionList => TagEnd::DefinitionList,
+            TagEnd::DefinitionListTitle => TagEnd::DefinitionListTitle,
+            TagEnd::DefinitionListDefinition => TagEnd::DefinitionListDefinition,
+            TagEnd::Table => TagEnd::Table,
+            TagEnd::TableHead => TagEnd::TableHead,
+            TagEnd::TableRow => TagEnd::TableRow,
+            TagEnd::TableCell => TagEnd::TableCell,
+            TagEnd::Emphasis => TagEnd::Emphasis,
+            TagEnd::Strong => TagEnd::Strong,
+            TagEnd::Strikethrough => TagEnd::Strikethrough,
+            TagEnd::Superscript => TagEnd::Superscript,
+            TagEnd::Subscript => TagEnd::Subscript,
+            TagEnd::Link => TagEnd::Link,
+            TagEnd::Image => TagEnd::Image,
+            TagEnd::MetadataBlock(metadata_block_kind) => {
+                TagEnd::MetadataBlock(metadata_block_kind)
+            }
         }
     }
 }
@@ -716,10 +831,8 @@ bitflags::bitflags! {
         /// With this feature enabled, two events `Event::InlineMath` and `Event::DisplayMath`
         /// are emitted that conventionally contain TeX formulas.
         const ENABLE_MATH = 1 << 10;
-        /// Misc GitHub Flavored Markdown features not supported in CommonMark.
-        /// The following features are currently behind this tag:
-        /// - Blockquote tags ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]).
-        const ENABLE_GFM = 1 << 11;
+        /// Block quote admonition syntax from GitHub Flavored Markdown.
+        const ENABLE_BLOCK_QUOTE_ADMONITIONS = 1 << 11;
         /// Commonmark-HS-Extensions compatible definition lists.
         ///
         /// ```markdown

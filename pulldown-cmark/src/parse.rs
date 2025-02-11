@@ -107,7 +107,7 @@ pub(crate) enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     HtmlBlock,
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote,
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     FootnoteDefinition(CowIndex),
@@ -184,12 +184,18 @@ pub struct BrokenLink<'a> {
 }
 
 /// Markdown event iterator.
-pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
+pub struct Parser<
+    'input,
+    LF = DefaultBrokenLinkCallback,
+    AF: AdmonitionTagCallback<'input> = GfmAdmonitionTagCallback,
+> {
     text: &'input str,
     options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'input>,
-    broken_link_callback: Option<F>,
+    broken_link_callback: Option<LF>,
+    admonition_tag_callback: AF,
+    block_quote_admonition_stack: Vec<Option<AF::DataKind>>,
     html_scan_guard: HtmlScanGuard,
 
     // https://github.com/pulldown-cmark/pulldown-cmark/issues/844
@@ -218,7 +224,7 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     math_delims: MathDelims,
 }
 
-impl<'input, F> std::fmt::Debug for Parser<'input, F> {
+impl<'input, LF, AF: AdmonitionTagCallback<'input>> std::fmt::Debug for Parser<'input, LF, AF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only print the fields that have public types.
         f.debug_struct("Parser")
@@ -257,7 +263,7 @@ impl<'input> Parser<'input, DefaultBrokenLinkCallback> {
     }
 }
 
-impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
+impl<'input, LF: BrokenLinkCallback<'input>> Parser<'input, LF, GfmAdmonitionTagCallback> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
@@ -266,7 +272,30 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     pub fn new_with_broken_link_callback(
         text: &'input str,
         options: Options,
-        broken_link_callback: Option<F>,
+        broken_link_callback: Option<LF>,
+    ) -> Self {
+        Self::new_with_callbacks(
+            text,
+            options,
+            broken_link_callback,
+            GfmAdmonitionTagCallback,
+        )
+    }
+}
+
+impl<'input, LF: BrokenLinkCallback<'input>, AF: AdmonitionTagCallback<'input>>
+    Parser<'input, LF, AF>
+{
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link URL and title if it is not
+    /// `None`.
+    pub fn new_with_callbacks(
+        text: &'input str,
+        options: Options,
+        broken_link_callback: Option<LF>,
+        admonition_tag_callback: AF,
     ) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
@@ -280,6 +309,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             tree,
             allocs,
             broken_link_callback,
+            admonition_tag_callback,
+            block_quote_admonition_stack: vec![],
             inline_stack,
             link_stack,
             wikilink_stack,
@@ -366,6 +397,85 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             .saturating_sub(url.len() + title.len());
 
         Some((link_type, url, title))
+    }
+
+    /// Handle block quote admonition syntax.
+    ///
+    /// To avoid having to store this in the tree, we parse it twice: once at the start,
+    /// and once at the end.
+    fn handle_block_quote_admonition(&mut self) -> Option<AF::DataKind> {
+        if self
+            .options
+            .contains(Options::ENABLE_BLOCK_QUOTE_ADMONITIONS)
+        {
+            let quote = self.tree.cur().unwrap();
+            debug_assert!(matches!(self.tree[quote].item.body, ItemBody::BlockQuote));
+            let para = self.tree[quote].child?;
+            let bytes = self.text.as_bytes();
+            self.block_quote_admonition_stack.push(None);
+            if matches!(self.tree[para].item.body, ItemBody::Paragraph) {
+                // Syntax of the block quote admonition is `> [!whatever]`,
+                // with matching square brackets.
+                let mut ix = self.tree[quote].item.start;
+                if bytes.get(ix)? == &b'>' {
+                    ix += 1;
+                } else {
+                    return None;
+                }
+                ix += scan_whitespace_no_nl(&bytes[ix..]);
+                if bytes.get(ix)? != &b'[' || bytes.get(ix + 1)? != &b'!' {
+                    return None;
+                }
+                let mut braces = 1;
+                let mut node = self.tree[para].child?;
+                if !matches!(self.tree[node].item.body, ItemBody::MaybeLinkOpen)
+                    || self.tree[node].item.start != ix
+                {
+                    return None;
+                }
+                ix += 2;
+                let start = ix;
+                while let Some(next_node) = self.tree[node].next {
+                    match self.tree[next_node].item.body {
+                        ItemBody::MaybeLinkOpen | ItemBody::MaybeImage => braces += 1,
+                        ItemBody::MaybeLinkClose(..) => braces -= 1,
+                        _ => {}
+                    }
+                    ix = self.tree[next_node].item.start;
+                    node = next_node;
+                    if braces == 0 {
+                        break;
+                    }
+                }
+                // We've scanned an apparently-valid admonition tag.
+                // Make sure the host application accepts it.
+                if braces == 0 {
+                    let tag = self
+                        .admonition_tag_callback
+                        .handle_admonition_tag(&self.text[start..ix])?;
+                    if let Some(after_tag) = self.tree[node].next {
+                        if matches!(
+                            self.tree[after_tag].item.body,
+                            ItemBody::SoftBreak | ItemBody::HardBreak(false)
+                        ) {
+                            self.tree[para].child = self.tree[after_tag].next;
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        self.tree[quote].child = self.tree[para].next;
+                    }
+                    *self.block_quote_admonition_stack.last_mut().unwrap() = Some(tag);
+                    return Some(tag);
+                }
+            }
+        }
+        None
+    }
+
+    /// Populate the TagEnd part of the admonition.
+    fn handle_block_quote_admonition_pop(&mut self) -> Option<AF::DataKind> {
+        self.block_quote_admonition_stack.pop().flatten()
     }
 
     /// Handle inline markup.
@@ -1431,7 +1541,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
+    pub fn into_offset_iter(self) -> OffsetIter<'input, LF, AF> {
         OffsetIter { inner: self }
     }
 }
@@ -1445,7 +1555,7 @@ pub(crate) fn scan_containers(
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
-            ItemBody::BlockQuote(..) => {
+            ItemBody::BlockQuote => {
                 let save = line_start.clone();
                 let _ = line_start.scan_space(3);
                 if !line_start.scan_blockquote_marker() {
@@ -2152,6 +2262,158 @@ impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
     }
 }
 
+/// Trait for parsing admonition tags in block quotes.
+///
+/// Use [`GfmAdmonitionTagCallback`] if you aren't sure what to use,
+/// or [`DisableAdmonitionTagCallback`] to disable this entirely.
+pub trait AdmonitionTagCallback<'input> {
+    /// The data to return from an admonition tag.
+    ///
+    /// This type needs to implement `Copy`. If you need to include a string,
+    /// borrow it directly from the provided `tag`. If you need to postprocess
+    /// the data stream, that can be done on the event stream.
+    ///
+    /// ```rust
+    /// use pulldown_cmark::{Parser, Options, AdmonitionTagCallback, DefaultBrokenLinkCallback, Tag, TagEnd, TextMergeStream, Event};
+    /// #[derive(Clone, Debug, Copy, Eq, PartialEq)]
+    /// enum RawAdmonition<'input> {
+    ///     Video(&'input str),
+    /// }
+    /// #[derive(Clone, Debug, Eq, PartialEq)]
+    /// enum Admonition {
+    ///     Video(String),
+    /// }
+    /// struct RawAdmonitionHandler;
+    /// impl<'input> AdmonitionTagCallback<'input> for RawAdmonitionHandler {
+    ///     type DataKind = RawAdmonition<'input>;
+    ///     fn handle_admonition_tag(&mut self, input: &'input str) -> Option<Self::DataKind> {
+    ///         if input.starts_with("video=") {
+    ///             Some(RawAdmonition::Video(&input[6..]))
+    ///         } else {
+    ///             None
+    ///         }
+    ///     }
+    /// }
+    /// let parser = Parser::new_with_callbacks(
+    ///     "> [!video=http://mydomain.example/[nested]]",
+    ///     Options::ENABLE_BLOCK_QUOTE_ADMONITIONS,
+    ///     None::<DefaultBrokenLinkCallback>,
+    ///     RawAdmonitionHandler,
+    /// ).map(|event| {
+    ///     event.map_admonition(|admonition| match admonition {
+    ///         // substitute this for whatever more complex work you wish to do
+    ///         RawAdmonition::Video(v) => Admonition::Video(v.to_string()),
+    ///     })
+    /// });
+    /// assert_eq!(vec![
+    ///     Event::Start(Tag::BlockQuote(Some(
+    ///         Admonition::Video(String::from("http://mydomain.example/[nested]"))
+    ///     ))),
+    ///     Event::End(TagEnd::BlockQuote(Some(
+    ///         Admonition::Video(String::from("http://mydomain.example/[nested]"))
+    ///     ))),
+    /// ], TextMergeStream::new(parser).collect::<Vec<_>>());
+    /// ```
+    ///
+    /// To use this feature along with the default HTML serializer, this type will
+    /// also need to implement [`html::ToClass`].
+    ///
+    /// [`html::ToClass`]: crate::html::ToClass
+    type DataKind: Clone + Copy + Eq + PartialEq + 'input;
+
+    /// This function is called whenever a valid admonition tag is found.
+    ///
+    /// When [`Options::ENABLE_BLOCK_QUOTE_ADMONITIONS`] is enabled, this function is
+    /// passed a string when it confronts a block quote that looks like this. The outer
+    /// square braces, and the exclamation mark, are not passed to it.
+    ///
+    /// ```text
+    /// > [!INSERT TAG HERE]
+    ///     ^^^^^^^^^^^^^^^
+    /// ```
+    ///
+    /// The Markdown parser respects matching square braces, which you can use to work
+    /// with more complex syntax. If square brackets are not nested, they will not match.
+    /// Admonition tags cannot span multiple lines.
+    ///
+    /// ```rust
+    /// use pulldown_cmark::{Parser, Options, AdmonitionTagCallback, DefaultBrokenLinkCallback, Tag, TagEnd, TextMergeStream, Event};
+    /// #[derive(Clone, Debug, Copy, Eq, PartialEq)]
+    /// enum Admonition<'input> {
+    ///     Video(&'input str),
+    /// }
+    /// struct AdmonitionHandler;
+    /// impl<'input> AdmonitionTagCallback<'input> for AdmonitionHandler {
+    ///     type DataKind = Admonition<'input>;
+    ///     fn handle_admonition_tag(&mut self, input: &'input str) -> Option<Self::DataKind> {
+    ///         if input.starts_with("video=") {
+    ///             Some(Admonition::Video(&input[6..]))
+    ///         } else {
+    ///             None
+    ///         }
+    ///     }
+    /// }
+    /// let parser = Parser::new_with_callbacks(
+    ///     "> [!video=http://mydomain.example/improperly[nested]",
+    ///     Options::ENABLE_BLOCK_QUOTE_ADMONITIONS,
+    ///     None::<DefaultBrokenLinkCallback>,
+    ///     AdmonitionHandler,
+    /// );
+    /// assert_eq!(vec![
+    ///     Event::Start(Tag::BlockQuote(None)),
+    ///     Event::Start(Tag::Paragraph),
+    ///     Event::Text(pulldown_cmark::CowStr::Borrowed("[!video=http://mydomain.example/improperly[nested]")),
+    ///     Event::End(TagEnd::Paragraph),
+    ///     Event::End(TagEnd::BlockQuote(None)),
+    /// ], TextMergeStream::new(parser).collect::<Vec<_>>());
+    /// ```
+    fn handle_admonition_tag(&mut self, tag: &'input str) -> Option<Self::DataKind>;
+}
+
+/// Enables the same set of tags that GitHub uses, including case-insensitive matching.
+///
+/// `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`
+#[derive(Debug)]
+pub struct GfmAdmonitionTagCallback;
+impl<'input> AdmonitionTagCallback<'input> for GfmAdmonitionTagCallback {
+    type DataKind = BlockQuoteKind;
+    fn handle_admonition_tag(&mut self, tag: &'input str) -> Option<Self::DataKind> {
+        Some(if tag.eq_ignore_ascii_case("note") {
+            BlockQuoteKind::Note
+        } else if tag.eq_ignore_ascii_case("tip") {
+            BlockQuoteKind::Tip
+        } else if tag.eq_ignore_ascii_case("important") {
+            BlockQuoteKind::Important
+        } else if tag.eq_ignore_ascii_case("warning") {
+            BlockQuoteKind::Warning
+        } else if tag.eq_ignore_ascii_case("caution") {
+            BlockQuoteKind::Caution
+        } else {
+            return None;
+        })
+    }
+}
+
+/// Always returns `None`.
+#[derive(Debug)]
+pub struct DisableAdmonitionTagCallback;
+impl<'input> AdmonitionTagCallback<'input> for DisableAdmonitionTagCallback {
+    type DataKind = std::convert::Infallible;
+    fn handle_admonition_tag(&mut self, _: &'input str) -> Option<Self::DataKind> {
+        None
+    }
+}
+
+impl<'input, T, U: Clone + Copy + Eq + PartialEq + 'input> AdmonitionTagCallback<'input> for T
+where
+    T: FnMut(&'input str) -> Option<U>,
+{
+    type DataKind = U;
+    fn handle_admonition_tag(&mut self, input: &'input str) -> Option<Self::DataKind> {
+        self(input)
+    }
+}
+
 /// Markdown event and source range iterator.
 ///
 /// Generates tuples where the first element is the markdown event and the second
@@ -2160,19 +2422,25 @@ impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 #[derive(Debug)]
-pub struct OffsetIter<'a, F = DefaultBrokenLinkCallback> {
-    inner: Parser<'a, F>,
+pub struct OffsetIter<
+    'a,
+    LF = DefaultBrokenLinkCallback,
+    AF: AdmonitionTagCallback<'a> = GfmAdmonitionTagCallback,
+> {
+    inner: Parser<'a, LF, AF>,
 }
 
-impl<'a, F: BrokenLinkCallback<'a>> OffsetIter<'a, F> {
+impl<'a, LF: BrokenLinkCallback<'a>, AF: AdmonitionTagCallback<'a>> OffsetIter<'a, LF, AF> {
     /// Returns a reference to the internal reference definition tracker.
     pub fn reference_definitions(&self) -> &RefDefs<'_> {
         self.inner.reference_definitions()
     }
 }
 
-impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
-    type Item = (Event<'a>, Range<usize>);
+impl<'a, LF: BrokenLinkCallback<'a>, AF: AdmonitionTagCallback<'a>> Iterator
+    for OffsetIter<'a, LF, AF>
+{
+    type Item = (Event<'a, AF::DataKind>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.inner.tree.cur() {
@@ -2185,7 +2453,12 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                 } else {
                     ix
                 };
-                let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
+                let tag_end: TagEnd<AF::DataKind> =
+                    if matches!(self.inner.tree[ix].item.body, ItemBody::BlockQuote) {
+                        TagEnd::BlockQuote(self.inner.handle_block_quote_admonition_pop())
+                    } else {
+                        body_to_tag_end(&self.inner.tree[ix].item.body)
+                    };
                 self.inner.tree.next_sibling(ix);
                 let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
                 debug_assert!(span.start <= span.end);
@@ -2206,7 +2479,12 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
 
                 let node = self.inner.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
+                let event: Event<AF::DataKind> =
+                    if matches!(self.inner.tree[cur_ix].item.body, ItemBody::BlockQuote) {
+                        Event::Start(Tag::BlockQuote(self.inner.handle_block_quote_admonition()))
+                    } else {
+                        item_to_event(item, self.inner.text, &mut self.inner.allocs)
+                    };
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
@@ -2219,7 +2497,7 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
     }
 }
 
-fn body_to_tag_end(body: &ItemBody) -> TagEnd {
+fn body_to_tag_end<Admonition>(body: &ItemBody) -> TagEnd<Admonition> {
     match *body {
         ItemBody::Paragraph => TagEnd::Paragraph,
         ItemBody::Emphasis => TagEnd::Emphasis,
@@ -2231,7 +2509,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
+        ItemBody::BlockQuote => TagEnd::BlockQuote(None),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
             let is_ordered = c == b'.' || c == b')';
@@ -2251,7 +2529,11 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a, Admonition>(
+    item: Item,
+    text: &'a str,
+    allocs: &mut Allocations<'a>,
+) -> Event<'a, Admonition> {
     let tag = match item.body {
         ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
@@ -2311,7 +2593,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
+        ItemBody::BlockQuote => Tag::BlockQuote(None),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
                 Tag::List(Some(listitem_start))
@@ -2342,10 +2624,12 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
     Event::Start(tag)
 }
 
-impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
-    type Item = Event<'a>;
+impl<'a, LF: BrokenLinkCallback<'a>, AF: AdmonitionTagCallback<'a>> Iterator
+    for Parser<'a, LF, AF>
+{
+    type Item = Event<'a, AF::DataKind>;
 
-    fn next(&mut self) -> Option<Event<'a>> {
+    fn next(&mut self) -> Option<Event<'a, AF::DataKind>> {
         match self.tree.cur() {
             None => {
                 let ix = self.tree.pop()?;
@@ -2356,7 +2640,12 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
                 } else {
                     ix
                 };
-                let tag_end = body_to_tag_end(&self.tree[ix].item.body);
+                let tag_end: TagEnd<AF::DataKind> =
+                    if matches!(self.tree[ix].item.body, ItemBody::BlockQuote) {
+                        TagEnd::BlockQuote(self.handle_block_quote_admonition_pop())
+                    } else {
+                        body_to_tag_end(&self.tree[ix].item.body)
+                    };
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag_end))
             }
@@ -2374,7 +2663,11 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
 
                 let node = self.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.text, &mut self.allocs);
+                let event = if matches!(self.tree[cur_ix].item.body, ItemBody::BlockQuote) {
+                    Event::Start(Tag::BlockQuote(self.handle_block_quote_admonition()))
+                } else {
+                    item_to_event(item, self.text, &mut self.allocs)
+                };
                 if let Event::Start(ref _tag) = event {
                     self.tree.push();
                 } else {

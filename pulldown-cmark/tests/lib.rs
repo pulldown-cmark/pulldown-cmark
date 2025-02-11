@@ -29,7 +29,7 @@ pub fn test_markdown_html(
         opts.insert(Options::ENABLE_SUBSCRIPT);
     }
     opts.insert(Options::ENABLE_TASKLISTS);
-    opts.insert(Options::ENABLE_GFM);
+    opts.insert(Options::ENABLE_BLOCK_QUOTE_ADMONITIONS);
     if old_footnotes {
         opts.insert(Options::ENABLE_OLD_FOOTNOTES);
     } else {

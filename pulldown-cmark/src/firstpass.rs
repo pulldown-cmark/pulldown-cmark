@@ -174,6 +174,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         item,
                         Item {
                             body: ItemBody::Paragraph
+                                | ItemBody::TightParagraph
                                 | ItemBody::MaybeDefinitionListTitle
                                 | ItemBody::DefinitionListDefinition(_),
                             ..
@@ -190,7 +191,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 })
             {
                 match item.body {
-                    ItemBody::Paragraph => {
+                    ItemBody::Paragraph | ItemBody::TightParagraph => {
                         item.body = ItemBody::DefinitionList(true);
                         let Item { start, end, .. } = *item;
                         let list_idx = self.tree.cur().unwrap();
@@ -2188,44 +2189,15 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
     }
 }
 
-// https://english.stackexchange.com/a/285573
 fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     let mut list_item = tree[list_ix].child;
     while let Some(listitem_ix) = list_item {
-        // first child is special, controls how we repoint list_item.child
-        let list_item_firstborn = tree[listitem_ix].child;
-
-        // Check that list item has children - this is not necessarily the case!
-        if let Some(firstborn_ix) = list_item_firstborn {
-            if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
-                tree[listitem_ix].child = tree[firstborn_ix].child;
+        let mut node_ix = tree[listitem_ix].child;
+        while let Some(node) = node_ix {
+            if let ItemBody::Paragraph = tree[node].item.body {
+                tree[node].item.body = ItemBody::TightParagraph;
             }
-
-            let mut list_item_child = Some(firstborn_ix);
-            let mut node_to_repoint = None;
-            while let Some(child_ix) = list_item_child {
-                // surgerize paragraphs
-                let repoint_ix = if let ItemBody::Paragraph = tree[child_ix].item.body {
-                    if let Some(child_firstborn) = tree[child_ix].child {
-                        if let Some(repoint_ix) = node_to_repoint {
-                            tree[repoint_ix].next = Some(child_firstborn);
-                        }
-                        let mut child_lastborn = child_firstborn;
-                        while let Some(lastborn_next_ix) = tree[child_lastborn].next {
-                            child_lastborn = lastborn_next_ix;
-                        }
-                        child_lastborn
-                    } else {
-                        child_ix
-                    }
-                } else {
-                    child_ix
-                };
-
-                node_to_repoint = Some(repoint_ix);
-                tree[repoint_ix].next = tree[child_ix].next;
-                list_item_child = tree[child_ix].next;
-            }
+            node_ix = tree[node].next;
         }
 
         list_item = tree[listitem_ix].next;

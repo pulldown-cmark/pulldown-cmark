@@ -2788,3 +2788,13 @@ the trailing space after the &gt; should be stripped
 .
 <p><a href="Wiki%3C">Link</a></p>
 ````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+* <c
+  >
+.
+<ul>
+<li>&lt;c
+<blockquote></blockquote></li>
+</ul>
+````````````````````````````````

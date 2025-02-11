@@ -101,6 +101,7 @@ pub(crate) enum ItemBody {
 
     // These are block items.
     Paragraph,
+    TightParagraph,
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
@@ -172,9 +173,6 @@ impl ItemBody {
                 | SoftBreak
                 | HardBreak(..)
         )
-    }
-    fn is_block(&self) -> bool {
-        !self.is_inline()
     }
 }
 
@@ -525,12 +523,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     can_close,
                                 );
                             }
-                            if self.tree[scan_ix].item.body.is_block() {
-                                // If this is a tight list, blocks and inlines might be
-                                // siblings. Inlines can't cross the boundary like that.
-                                scan = None;
-                                break;
-                            }
                             scan = self.tree[scan_ix].next;
                         }
                         scan
@@ -586,12 +578,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 } else {
                                     self.code_delims.insert(delim_count, scan_ix);
                                 }
-                            }
-                            if self.tree[scan_ix].item.body.is_block() {
-                                // If this is a tight list, blocks and inlines might be
-                                // siblings. Inlines can't cross the boundary like that.
-                                scan = None;
-                                break;
                             }
                             scan = self.tree[scan_ix].next;
                         }
@@ -864,15 +850,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         }
                     }
                 }
-                _ => {
-                    // If this is a tight list, blocks and inlines might be
-                    // siblings. Inlines can't cross the boundary like that.
-                    if let Some(cur_ix) = cur {
-                        if self.tree[cur_ix].item.body.is_block() {
-                            self.link_stack.clear();
-                        }
-                    }
-                }
+                _ => {}
             }
             prev = cur;
             cur = self.tree[cur_ix].next;
@@ -1132,13 +1110,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 }
                 _ => {
                     prev = cur;
-                    // If this is a tight list, blocks and inlines might be
-                    // siblings. Inlines can't cross the boundary like that.
-                    if let Some(cur_ix) = cur {
-                        if self.tree[cur_ix].item.body.is_block() {
-                            self.inline_stack.pop_all(&mut self.tree);
-                        }
-                    }
                     cur = self.tree[cur_ix].next;
                 }
             }
@@ -2207,6 +2178,13 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
         match self.inner.tree.cur() {
             None => {
                 let ix = self.inner.tree.pop()?;
+                let ix = if matches!(self.inner.tree[ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.inner.tree.next_sibling(ix);
+                    return self.next();
+                } else {
+                    ix
+                };
                 let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
                 self.inner.tree.next_sibling(ix);
                 let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
@@ -2214,6 +2192,14 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
+                let cur_ix =
+                    if matches!(self.inner.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                        // tight paragraphs emit nothing
+                        self.inner.tree.push();
+                        self.inner.tree.cur().unwrap()
+                    } else {
+                        cur_ix
+                    };
                 if self.inner.tree[cur_ix].item.body.is_maybe_inline() {
                     self.inner.handle_inline();
                 }
@@ -2363,11 +2349,25 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
         match self.tree.cur() {
             None => {
                 let ix = self.tree.pop()?;
+                let ix = if matches!(self.tree[ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.tree.next_sibling(ix);
+                    return self.next();
+                } else {
+                    ix
+                };
                 let tag_end = body_to_tag_end(&self.tree[ix].item.body);
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag_end))
             }
             Some(cur_ix) => {
+                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.tree.push();
+                    self.tree.cur().unwrap()
+                } else {
+                    cur_ix
+                };
                 if self.tree[cur_ix].item.body.is_maybe_inline() {
                     self.handle_inline();
                 }

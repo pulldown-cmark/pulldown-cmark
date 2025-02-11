@@ -404,7 +404,7 @@ impl<'a> LineStart<'a> {
         if !self
             .bytes
             .get(self.ix)
-            .map(|&b| is_ascii_whitespace_no_nl(b))
+            .map(|&b| is_ascii_whitespace(b))
             .unwrap_or(false)
         {
             *self = save;

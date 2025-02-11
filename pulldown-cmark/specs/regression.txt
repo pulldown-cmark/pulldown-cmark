@@ -2798,3 +2798,29 @@ the trailing space after the &gt; should be stripped
 <blockquote></blockquote></li>
 </ul>
 ````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/999
+
+```````````````````````````````` example_wikilinks
+- [x] * some text
+- [ ] > some text
+- [x]
+  * some text
+- [ ]
+  > some text
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+* some text</li>
+<li><input disabled="" type="checkbox"/>
+&gt; some text</li>
+<li><input disabled="" type="checkbox" checked=""/>
+<ul>
+<li>some text</li>
+</ul></li>
+<li><input disabled="" type="checkbox"/>
+<blockquote>
+<p>some text</p>
+</blockquote></li>
+</ul>
+````````````````````````````````

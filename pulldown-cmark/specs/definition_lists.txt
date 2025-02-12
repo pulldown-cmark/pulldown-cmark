@@ -251,6 +251,61 @@ fruit</p>
 </dl>
 ````````````````````````````````
 
+A lazy continuation may start with a `:`, if it has enough indent.
+
+```````````````````````````````` example
+apple
+   : > computer company
+     : red fruit
+
+orange
+   : > telecom company
+   : orange fruit
+
+chili's
+   : > restaurant company
+ : spicy fruit
+.
+<dl>
+<dt>apple</dt>
+<dd><blockquote>
+<p>computer company
+: red fruit</p>
+</blockquote>
+</dd>
+<dt>orange</dt>
+<dd><blockquote>
+<p>telecom company</p>
+</blockquote>
+</dd>
+<dd>orange fruit</dd>
+<dt>chili's</dt>
+<dd><blockquote>
+<p>restaurant company</p>
+</blockquote>
+</dd>
+<dd>spicy fruit</dd>
+</dl>
+````````````````````````````````
+
+It may not, however, lazily act as a definition in a list.
+
+```````````````````````````````` example
+> cherry
+> : keyboard company
+> pomegranate
+: tart fruit
+.
+<blockquote>
+<dl>
+<dt>cherry</dt>
+<dd>keyboard company
+pomegranate
+: tart fruit</dd>
+</dl>
+</blockquote>
+````````````````````````````````
+
 Definition terms may span multiple lines:
 
 ```````````````````````````````` example
@@ -437,9 +492,10 @@ Test|Table
 ----|-----
 : first
 .
-<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody></tbody>
+<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>: first</td><td></td></tr>
+</tbody>
 </table>
-<p>: first</p>
 ````````````````````````````````
 
 ```````````````````````````````` example
@@ -454,9 +510,10 @@ Test|Table
 <dt>first</dt>
 <dd>second</dd>
 </dl>
-<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody></tbody>
+<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>: fourth</td><td></td></tr>
+</tbody>
 </table>
-<p>: fourth</p>
 ````````````````````````````````
 
 
@@ -508,6 +565,19 @@ first
 </dl>
 <h2>My subsection</h2>
 <p>: fourth</p>
+````````````````````````````````
+
+
+Definition list titles can't be block quotes
+
+```````````````````````````````` example
+> first
+: second
+.
+<blockquote>
+<p>first
+: second</p>
+</blockquote>
 ````````````````````````````````
 
 

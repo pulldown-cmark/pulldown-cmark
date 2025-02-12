@@ -34,7 +34,6 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         allocs: Allocations::new(),
         options,
         lookup_table,
-        next_paragraph_task: None,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
     };
@@ -61,9 +60,6 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
-    /// This is `Some(item)` when the next paragraph
-    /// starts with a task list marker.
-    next_paragraph_task: Option<Item>,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
     brace_context_next: usize,
@@ -156,7 +152,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             self.begin_list_item = Some(task_list_marker.end + n);
                             return task_list_marker.end + n;
                         } else {
-                            self.next_paragraph_task = Some(task_list_marker);
+                            line_start.scan_all_space();
+                            let ix = start_ix + line_start.bytes_scanned();
+                            return self.parse_paragraph(ix, Some(task_list_marker));
                         }
                     }
                 }
@@ -407,7 +405,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        self.parse_paragraph(ix)
+        self.parse_paragraph(ix, None)
     }
 
     /// footnote definitions and GFM quote markers can be "interrupted"
@@ -576,7 +574,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Returns offset of line start after paragraph.
-    fn parse_paragraph(&mut self, start_ix: usize) -> usize {
+    fn parse_paragraph(&mut self, start_ix: usize, tasklist_marker: Option<Item>) -> usize {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
@@ -604,9 +602,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         });
         self.tree.push();
 
-        if let Some(item) = self.next_paragraph_task {
+        if let Some(item) = tasklist_marker {
             self.tree.append(item);
-            self.next_paragraph_task = None;
         }
 
         let bytes = self.text.as_bytes();

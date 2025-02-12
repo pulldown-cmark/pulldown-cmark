@@ -3339,3 +3339,31 @@ fn regression_test_209() {
 
     test_markdown_html(original, expected, false, false, false, false, true);
 }
+
+#[test]
+fn regression_test_210() {
+    let original = r##"- [x] * some text
+- [ ] > some text
+- [x]
+  * some text
+- [ ]
+  > some text
+"##;
+    let expected = r##"<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+* some text</li>
+<li><input disabled="" type="checkbox"/>
+&gt; some text</li>
+<li><input disabled="" type="checkbox" checked=""/>
+<ul>
+<li>some text</li>
+</ul></li>
+<li><input disabled="" type="checkbox"/>
+<blockquote>
+<p>some text</p>
+</blockquote></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true);
+}

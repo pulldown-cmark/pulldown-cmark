@@ -1437,7 +1437,7 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.12.3"
+version = "0.13.0"
 dependencies = [
  "bincode",
  "bitflags",

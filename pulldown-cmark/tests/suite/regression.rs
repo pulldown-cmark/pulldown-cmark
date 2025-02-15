@@ -16,7 +16,7 @@ This is a test of the details element.
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -31,7 +31,7 @@ fn regression_test_2() {
     let expected = r##"<p>see the <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn regression_test_3() {
 <a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn regression_test_4() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn regression_test_5() {
     let expected = r##"<p>foo§<strong>(bar)</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn regression_test_6() {
     let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn regression_test_7() {
 <!-- foo -->
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn regression_test_8() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -144,7 +144,7 @@ i8
     let expected = r##"<p><a href="../../../std/primitive.i8.html"><code>i8</code></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn regression_test_10() {
     let expected = r##"<p><a href="/url" title="title\*">a</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -168,7 +168,7 @@ fn regression_test_11() {
     let expected = r##"<p><a href="/url" title="title)">a</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -181,7 +181,7 @@ fn regression_test_12() {
 <p>[a]: /url (title))</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -194,7 +194,7 @@ b <?php but this is ?>
 <p>b <?php but this is ?></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -205,7 +205,7 @@ foo
     let expected = r##"<p>foo</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -215,7 +215,7 @@ fn regression_test_15() {
     let expected = r##"<p>`foo`</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -227,7 +227,7 @@ bar
 bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -240,7 +240,7 @@ fn regression_test_17() {
 <p>1) bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -262,7 +262,7 @@ fn regression_test_18() {
 <p>1)2)3)</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -272,7 +272,7 @@ fn regression_test_19() {
     let expected = r##"<p>[](&lt;&lt;&gt;)</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -282,7 +282,7 @@ fn regression_test_20() {
     let expected = r##"<p>`<code>foo``bar</code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -292,7 +292,7 @@ fn regression_test_21() {
     let expected = r##"<p>\<code>foo</code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -304,7 +304,7 @@ YOLO
     let expected = r##"<p>YOLO</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -320,7 +320,7 @@ A | B
 foo | bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -334,7 +334,7 @@ foo|bar
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -348,7 +348,7 @@ foo|bar
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -358,7 +358,7 @@ fn regression_test_26() {
     let expected = r##"<p><a href="url"><foo></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -368,7 +368,7 @@ fn regression_test_27() {
     let expected = r##"<p><a href="url"><foo>bar</foo></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -378,7 +378,7 @@ fn regression_test_28() {
     let expected = r##"<p><img src="http://example.com/logo.png" alt="http://example.com" /></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -388,7 +388,7 @@ fn regression_test_29() {
     let expected = r##"<p><a href="url"><a href="http://one">http://one</a> <a href="http://two">http://two</a></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -403,7 +403,7 @@ some text
 <p>some text</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -424,7 +424,7 @@ fn regression_test_31() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -439,7 +439,7 @@ x</p>
 <p>]: f</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -449,7 +449,7 @@ fn regression_test_33() {
     let expected = r##"<p>[foo]:</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -464,7 +464,7 @@ fn regression_test_34() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -479,7 +479,7 @@ yolo | swag
 <p>yolo | swag</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -489,7 +489,7 @@ fn regression_test_36() {
     let expected = r##"<foo bar>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -501,7 +501,7 @@ fn regression_test_37() {
  "hi"></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -514,7 +514,7 @@ __a__
 <p><strong>a</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -527,7 +527,7 @@ fn regression_test_39() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -537,7 +537,7 @@ fn regression_test_40() {
     let expected = r##"<p><code>\|</code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -550,7 +550,7 @@ Paragraph 2
 <p>Paragraph 2</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -560,7 +560,7 @@ fn regression_test_42() {
     let expected = r##"<p>[<a href="https://www.google.com/">link text</a>]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -572,7 +572,7 @@ fn regression_test_43() {
     let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>[a](&lt;</td><td>url&gt;)</td></tr></tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -586,7 +586,7 @@ fn regression_test_44() {
 <p>")</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -599,7 +599,7 @@ fn regression_test_45() {
 <p>)</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -612,7 +612,7 @@ fn regression_test_46() {
 <p>")</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -622,7 +622,7 @@ fn regression_test_47() {
     let expected = r##"<p>&lt;http:// &gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -632,7 +632,7 @@ fn regression_test_48() {
     let expected = r##"<p>&lt;http://&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -651,7 +651,7 @@ fn regression_test_49() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -670,7 +670,7 @@ fn regression_test_50() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -680,7 +680,7 @@ fn regression_test_51() {
     let expected = r##"<p><sup>*hi</sup>_</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -690,7 +690,7 @@ fn regression_test_52() {
     let expected = r##"<p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -704,7 +704,7 @@ bar">link</a></p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -719,7 +719,7 @@ fn regression_test_54() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -735,7 +735,7 @@ bar</a></p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -753,7 +753,7 @@ fn regression_test_56() {
 <p><a href="/foo">a b c</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -770,7 +770,7 @@ fn regression_test_57() {
 <p>[a b] [a &gt; b]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -783,7 +783,7 @@ package`]
     let expected = r##"<p><a href="https://example.com"><code>cargo package</code></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -798,7 +798,7 @@ fn regression_test_59() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -811,7 +811,7 @@ fn regression_test_60() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -827,7 +827,7 @@ the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -851,7 +851,7 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -869,7 +869,7 @@ fn regression_test_63() {
 <h1>assimp-rs <a href="https://crates.io/crates/assimp"><img src="http://meritbadge.herokuapp.com/assimp" alt="" /></a></h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -914,7 +914,7 @@ fn regression_test_64() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -924,7 +924,7 @@ fn regression_test_65() {
     let expected = r##"<p>&lt;foo</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -942,7 +942,7 @@ lo"></p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -953,7 +953,7 @@ fn regression_test_67() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -975,7 +975,7 @@ a
 2. a</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -991,7 +991,7 @@ fn regression_test_69() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1010,7 +1010,7 @@ bar</p></li>
 <p>baz</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1029,7 +1029,7 @@ fn regression_test_71() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1041,7 +1041,7 @@ fn regression_test_72() {
     let expected = r##"<p>[<code>]</code>]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1051,7 +1051,7 @@ fn regression_test_73() {
     let expected = r##"<p><del>foo</del>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1061,7 +1061,7 @@ fn regression_test_74() {
     let expected = r##"<p>foo<del>bar</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1071,7 +1071,7 @@ fn regression_test_75() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1081,7 +1081,7 @@ fn regression_test_76() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1091,7 +1091,7 @@ fn regression_test_77() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1101,7 +1101,7 @@ fn regression_test_78() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1111,7 +1111,7 @@ fn regression_test_79() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1121,7 +1121,7 @@ fn regression_test_80() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1131,7 +1131,7 @@ fn regression_test_81() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1141,7 +1141,7 @@ fn regression_test_82() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1234,7 +1234,7 @@ fn regression_test_83() {
 | baz | alef |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1244,7 +1244,7 @@ fn regression_test_84() {
     let expected = r##"<h3></h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1254,7 +1254,7 @@ fn regression_test_85() {
     let expected = r##"<h3></h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1264,7 +1264,7 @@ fn regression_test_86() {
     let expected = r##"<!doctype html>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1326,7 +1326,7 @@ fn regression_test_87() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1339,7 +1339,7 @@ b
 <p>b</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1353,7 +1353,7 @@ fn regression_test_89() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1367,7 +1367,7 @@ fn regression_test_90() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1379,7 +1379,7 @@ fn regression_test_91() {
 <h1>b</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1390,7 +1390,7 @@ fn regression_test_92() {
     let expected = r##"<h1>a\</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1403,7 +1403,7 @@ fn regression_test_93() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1415,7 +1415,7 @@ fn regression_test_94() {
 <blockquote></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1427,7 +1427,7 @@ fn regression_test_95() {
 >
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1439,7 +1439,7 @@ fn regression_test_96() {
 <blockquote><p>quote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1451,7 +1451,7 @@ fn regression_test_97() {
 > not quote
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1463,7 +1463,7 @@ fn regression_test_98() {
 <blockquote><p>quote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1475,7 +1475,7 @@ fn regression_test_99() {
 >not quote
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1494,7 +1494,7 @@ fn regression_test_100() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1504,7 +1504,7 @@ fn regression_test_101() {
     let expected = r##"<p>*<em><em>R]</em>-</em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1514,7 +1514,7 @@ fn regression_test_102() {
     let expected = r##"<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1528,7 +1528,7 @@ fn regression_test_103() {
 %</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1542,7 +1542,7 @@ fn regression_test_104() {
 %</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1552,7 +1552,7 @@ fn regression_test_105() {
     let expected = r##"<p>&lt;@1&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1566,7 +1566,7 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -1581,7 +1581,7 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -1595,7 +1595,7 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -1619,7 +1619,7 @@ fn regression_test_109() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1634,7 +1634,7 @@ fn regression_test_110() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1644,7 +1644,7 @@ fn regression_test_111() {
     let expected = r##"<p>j*<em><em>5</em>=</em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1710,7 +1710,7 @@ Table
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1723,7 +1723,7 @@ fn regression_test_113() {
 <p>[x]: (</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1745,7 +1745,7 @@ an unmatched asterisk.</p>
 <em>{</em>{</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1755,7 +1755,7 @@ fn regression_test_115() {
     let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1774,7 +1774,7 @@ _*xx-_-
 <p><em>*xx-</em>-</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1803,7 +1803,7 @@ fn regression_test_117() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1832,7 +1832,7 @@ fn regression_test_118() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1845,7 +1845,7 @@ fn regression_test_119() {
 <p>]: https://rust-lang.org</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1878,7 +1878,7 @@ fn regression_test_120() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1921,7 +1921,7 @@ The second hyphen should parse the same way in both samples.
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1936,7 +1936,7 @@ https://rust-lang.org
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1949,7 +1949,7 @@ Second try]: https://rust-lang.org
 <p>Second try]: https://rust-lang.org</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1972,7 +1972,7 @@ fn regression_test_124() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1984,7 +1984,7 @@ bar \
 <p>bar \</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -1998,7 +1998,7 @@ fn regression_test_126() {
 <p>[third try]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2018,7 +2018,7 @@ bar
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2040,7 +2040,7 @@ fn regression_test_128() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2051,7 +2051,7 @@ fn regression_test_129() {
     let expected = r##"<p>-</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2068,7 +2068,7 @@ foo)
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2085,7 +2085,7 @@ fn regression_test_131() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2104,7 +2104,7 @@ fn regression_test_132() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2125,7 +2125,7 @@ fn regression_test_133() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2136,7 +2136,7 @@ fn regression_test_134() {
     let expected = r##"<p>- baz</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2154,7 +2154,7 @@ GFM footnotes can interrupt link defs if they have three spaces, but not four.
 <p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2171,7 +2171,7 @@ Setext heading can interrupt link def if it has three spaces, but not four.
 <p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2191,7 +2191,7 @@ List can interrupt the paragraph at the start of a link definition if it starts 
 <p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2210,7 +2210,7 @@ second]
 <p>second]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2228,7 +2228,7 @@ second]
 second</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2245,7 +2245,7 @@ fn regression_test_140() {
 <p><a href="https://example.com">first</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2262,7 +2262,7 @@ fn regression_test_141() {
 ">first</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2281,7 +2281,7 @@ fn regression_test_142() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2300,7 +2300,7 @@ fn regression_test_143() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2319,7 +2319,7 @@ fn regression_test_144() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2336,7 +2336,7 @@ fn regression_test_145() {
 ">first</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2355,7 +2355,7 @@ fn regression_test_146() {
 <p><a href="https://example.com">first</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2366,7 +2366,7 @@ fn regression_test_147() {
     let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2382,7 +2382,7 @@ fn regression_test_148() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2398,7 +2398,7 @@ a]: https://example.com
     let expected = r##"<p><a href="https://example.com">a</a> <a href="https://example.com">b</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2419,7 +2419,7 @@ fn regression_test_150() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2441,7 +2441,7 @@ baz*</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2463,7 +2463,7 @@ baz`</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2485,7 +2485,7 @@ baz](https://example.com)</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2500,7 +2500,7 @@ part of the title'
 part of the title">mylink</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2517,7 +2517,7 @@ starts in column <em>three</em>.</li>
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2531,7 +2531,7 @@ fn regression_test_156() {
 <p>This is not in the list at all. It's a paragraph after it.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2543,7 +2543,7 @@ fn regression_test_157() {
     let expected = r##"<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2555,7 +2555,7 @@ fn regression_test_158() {
 -|- *</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2568,7 +2568,7 @@ fn regression_test_159() {
 <p>Another paragraph whose spaces must be removed.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2583,7 +2583,7 @@ fn regression_test_160() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2598,7 +2598,7 @@ fn regression_test_161() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2608,7 +2608,7 @@ fn regression_test_162() {
     let expected = r##"<p>&amp;#00000000; &amp;#x0000000;</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2618,7 +2618,7 @@ fn regression_test_163() {
     let expected = r##"<p>�</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2634,7 +2634,7 @@ t_</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2650,7 +2650,7 @@ N*</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2661,7 +2661,7 @@ fn regression_test_166() {
     let expected = r##" <foo>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2672,7 +2672,7 @@ fn regression_test_167() {
     let expected = r##"<foo>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2683,7 +2683,7 @@ fn regression_test_168() {
     let expected = r##"   <foo>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2699,7 +2699,7 @@ fn regression_test_169() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2718,7 +2718,7 @@ fn regression_test_170() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2734,7 +2734,7 @@ fn regression_test_171() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2750,7 +2750,7 @@ fn regression_test_172() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2766,7 +2766,7 @@ fn regression_test_173() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2782,7 +2782,7 @@ fn regression_test_174() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2800,7 +2800,7 @@ fn regression_test_175() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2813,7 +2813,7 @@ fn regression_test_176() {
 <p>[link]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2826,7 +2826,7 @@ fn regression_test_177() {
 <p>[link]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2838,7 +2838,7 @@ fn regression_test_178() {
     let expected = r##"<p><a href="test" title="()">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2851,7 +2851,7 @@ fn regression_test_179() {
 <p>[link]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2863,7 +2863,7 @@ fn regression_test_180() {
     let expected = r##"<p><a href="test" title="&quot;">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2876,7 +2876,7 @@ fn regression_test_181() {
 <p>[link]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2888,7 +2888,7 @@ fn regression_test_182() {
     let expected = r##"<p><a href="test" title="&#39;">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2906,7 +2906,7 @@ fn regression_test_183() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2920,7 +2920,7 @@ test2
 <p>test2</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2936,7 +2936,7 @@ test2</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2953,7 +2953,7 @@ fn regression_test_186() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2973,7 +2973,7 @@ fn regression_test_187() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2986,7 +2986,7 @@ fn regression_test_188() {
 <p>&lt;!p&gt;</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -2998,7 +2998,7 @@ fn regression_test_189() {
     let expected = r##"<p><a href="((()))">linky</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3014,7 +3014,7 @@ junk</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3026,7 +3026,7 @@ fn regression_test_191() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3037,7 +3037,7 @@ fn regression_test_192() {
     let expected = r##"<pre><code></code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3051,7 +3051,7 @@ fn regression_test_193() {
 text          ">link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3069,7 +3069,7 @@ _**
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3084,7 +3084,7 @@ fn regression_test_195() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3097,7 +3097,7 @@ fn regression_test_196() {
 <h2>--</h2>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -3109,7 +3109,7 @@ fn regression_test_197() {
 [40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -3124,7 +3124,7 @@ fn regression_test_198() {
 <h2>\</h2>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -3140,7 +3140,7 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false);
+    test_markdown_html(original, expected, false, true, false, false, false, false);
 }
 
 #[test]
@@ -3151,7 +3151,7 @@ fn regression_test_200() {
     let expected = r##"<p><code> </code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3169,7 +3169,7 @@ fn regression_test_201() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -3188,7 +3188,7 @@ fn regression_test_202() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -3212,7 +3212,7 @@ T U, V W</dd>
 <dd>x:.)</dd></dl></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -3234,7 +3234,7 @@ Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
 <p>&gt; Something is wrong!</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -3251,7 +3251,7 @@ stuff](https://example.com)</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3300,7 +3300,7 @@ fn regression_test_206() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3313,7 +3313,7 @@ fn regression_test_207() {
 &gt;</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -3323,7 +3323,7 @@ fn regression_test_208() {
     let expected = r##"<p><a href="Wiki%3C">Link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, true, false);
 }
 
 #[test]
@@ -3337,7 +3337,7 @@ fn regression_test_209() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, true, false);
 }
 
 #[test]
@@ -3365,5 +3365,5 @@ fn regression_test_210() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, true, false);
 }

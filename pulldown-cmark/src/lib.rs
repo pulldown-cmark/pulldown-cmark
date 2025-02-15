@@ -725,8 +725,10 @@ bitflags::bitflags! {
         /// ```markdown
         /// title 1
         ///   : definition 1
+        ///
         /// title 2
-        ///   : definition 2
+        ///   : definition 2a
+        ///   : definition 2b
         /// ```
         const ENABLE_DEFINITION_LIST = 1 << 12;
         const ENABLE_SUPERSCRIPT = 1 << 13;

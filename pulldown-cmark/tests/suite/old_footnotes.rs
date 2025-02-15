@@ -15,7 +15,7 @@ fn old_footnotes_test_1() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -34,7 +34,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn old_footnotes_test_3() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -71,7 +71,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 <p>I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -90,7 +90,7 @@ If a woodchuck could chuck wood.
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -110,7 +110,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 <p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn old_footnotes_test_7() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -159,7 +159,7 @@ fn old_footnotes_test_8() {
 <div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup><p>Common for people practicing music.</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, true, false, false, false);
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn old_footnotes_test_9() {
     let expected = r##"<p>[Reference to footnotes A<sup class="footnote-reference"><a href="#1">1</a></sup>, B<sup class="footnote-reference"><a href="#2">2</a></sup> and C<sup class="footnote-reference"><a href="#3">3</a></sup>.</p><div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup><p>Footnote A.</p></div><div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup><p>Footnote B.</p></div><div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup><p>Footnote C.</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -192,7 +192,7 @@ fn old_footnotes_test_10() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -211,5 +211,5 @@ fn old_footnotes_test_11() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }

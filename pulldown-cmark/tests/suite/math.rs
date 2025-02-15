@@ -15,7 +15,7 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 <p><code>\</code> may follow just after the first <code>$</code>: <span class="math math-inline">\{1, 2, 3\}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -28,7 +28,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <p><span class="math math-display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -41,7 +41,7 @@ $$$$
 <p><span class="math math-display"></span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -57,7 +57,7 @@ $$x$$$$$$y$$
 <p><span class="math math-display">x</span><span class="math math-display"></span>y$$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -82,7 +82,7 @@ $&alpha;$
 <p><span class="math math-inline">&amp;alpha;</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -95,7 +95,7 @@ Dollar at end of line$
 <p>Dollar at end of line$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -112,7 +112,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -126,7 +126,7 @@ hard break
 either</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -139,7 +139,7 @@ $$y = \$ x$$
 <p><span class="math math-display">y = \$ x</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -152,7 +152,7 @@ $$ $ $$
 <p>$$ $ $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -162,7 +162,7 @@ fn math_test_11() {
     let expected = r##"<p>alpha$<span class="math math-inline">beta</span>gamma$$delta</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -190,7 +190,7 @@ they should not allow inlines to do that $$2 +
 <span class="math math-inline">*</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn math_test_13() {
     let expected = r##"<p>these are math texts: foo<span class="math math-inline">y=x</span>bar and <span class="math math-inline">y=x</span>bar and foo<span class="math math-inline">y=x</span> bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -216,7 +216,7 @@ braces: ($x=y$) [$x=y$] {$x=y$}
 <p>braces: (<span class="math math-inline">x=y</span>) [<span class="math math-inline">x=y</span>] {<span class="math math-inline">x=y</span>}</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn math_test_15() {
     let expected = r##"<p><span class="math math-inline">x=y</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -245,7 +245,7 @@ $$a$$$$b$$
 <p><span class="math math-display">a</span><span class="math math-display">b</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -264,7 +264,7 @@ $$ Display `first $$ then` code
 <p><code>Code $$ first</code> then $$ display</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -288,7 +288,7 @@ $$ x + y
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -311,7 +311,7 @@ not</p>
 $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -334,7 +334,7 @@ math$</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -354,7 +354,7 @@ And this is inline math:
 <span class="math math-inline">\text{Hello $x$ there!}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -379,7 +379,7 @@ Math environment contains y: $x {$ $ } $y$
 <p>Math environment contains y: $x {$ $ } <span class="math math-inline">y</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -412,7 +412,7 @@ and expected to be as short as possible:</p>
 <p><span class="math math-display"></span>\text{first $$ second}$$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -434,7 +434,7 @@ $}$] $$
 <p>$}$] $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -444,7 +444,7 @@ fn math_test_25() {
     let expected = r##"<p><span class="math math-inline">x</span> <span class="math math-inline">`y`</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -486,7 +486,7 @@ b
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -500,7 +500,7 @@ fn math_test_27() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -523,7 +523,7 @@ A = 5
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -536,7 +536,7 @@ $$a<b$$
 <p><span class="math math-display">a&lt;b</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -551,7 +551,7 @@ fn math_test_30() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -563,7 +563,7 @@ fn math_test_31() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -579,7 +579,7 @@ fn math_test_32() {
 <p>1<span class="math math-inline">x</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -595,7 +595,7 @@ _$a$ equals $b$_
 <p><strong><span class="math math-inline">a</span> equals <span class="math math-inline">b</span></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -618,7 +618,7 @@ a
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -628,7 +628,7 @@ fn math_test_35() {
     let expected = r##"<p><span class="math math-inline">\{a\,b\}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -644,7 +644,7 @@ ${a}_b c_{d}$
 <p><span class="math math-inline">{a}_b c_{d}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -656,7 +656,7 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 <span class="math math-display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -666,7 +666,7 @@ fn math_test_38() {
     let expected = r##"<p><span class="math math-inline">x = \$</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -676,7 +676,7 @@ fn math_test_39() {
     let expected = r##"<p><em>Equation <span class="math math-inline">\Omega(69)</span> in italic text</em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -700,7 +700,7 @@ fn math_test_40() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -716,7 +716,7 @@ fn math_test_41() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -732,7 +732,7 @@ fn math_test_42() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -770,7 +770,7 @@ fn math_test_43() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -790,7 +790,7 @@ improperly <span class="math math-inline">}{</span> nested
 But this still isn't, because the braces are still counted: $}{$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -819,7 +819,7 @@ another improperly nested example
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -853,7 +853,7 @@ fn math_test_46() {
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{</span> 255 brace pairs and one unclosed brace</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -915,5 +915,5 @@ fn math_test_47() {
 }}}}}}}}}}}}}}}{$ 255 close braces and one open brace</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }

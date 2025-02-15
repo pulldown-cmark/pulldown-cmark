@@ -2824,3 +2824,15 @@ https://github.com/pulldown-cmark/pulldown-cmark/issues/999
 </blockquote></li>
 </ul>
 ````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/997
+
+Link refdef split from paragraph with line with spaces.
+
+```````````````````````````````` example
+[a]: /url
+    
+:
+.
+<p>:</p>
+````````````````````````````````

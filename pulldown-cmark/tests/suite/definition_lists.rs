@@ -300,7 +300,7 @@ chili's
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -320,7 +320,7 @@ pomegranate
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -621,7 +621,7 @@ fn definition_lists_test_26() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, true);
 }
 
 #[test]
@@ -720,6 +720,18 @@ level three</dt>
 <dt>level one</dt>
 <dd>l1</dd>
 </dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, true);
+}
+
+#[test]
+fn definition_lists_test_31() {
+    let original = r##"[a]: /url
+    
+:
+"##;
+    let expected = r##"<p>:</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, true);

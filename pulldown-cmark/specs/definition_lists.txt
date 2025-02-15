@@ -673,3 +673,15 @@ level three</dt>
 <dd>l1</dd>
 </dl>
 ````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/997
+
+Definition lists combined with link refdef
+
+```````````````````````````````` example_deflists
+[a]: /url
+    
+:
+.
+<p>:</p>
+````````````````````````````````

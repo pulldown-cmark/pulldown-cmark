@@ -2647,7 +2647,7 @@ ISSUE #655
 
 ISSUE #949
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 * def this
   : def text def text
 .
@@ -2661,7 +2661,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 * def this
 
   : def text def text
@@ -2676,7 +2676,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 **A:**
 
 > B C
@@ -2696,7 +2696,7 @@ T U, V W</dd>
 <dd>x:.)</dd></dl></blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 [abc] check `foobar_raz`
  Some preamble `foobar_raz`, not `barfoo_raz`
  :D
@@ -2823,4 +2823,16 @@ https://github.com/pulldown-cmark/pulldown-cmark/issues/999
 <p>some text</p>
 </blockquote></li>
 </ul>
+````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/997
+
+Link refdef split from paragraph with line with spaces.
+
+```````````````````````````````` example
+[a]: /url
+    
+:
+.
+<p>:</p>
 ````````````````````````````````

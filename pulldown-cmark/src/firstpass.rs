@@ -925,6 +925,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         count,
                         ix - start,
                         mode,
+                        self.options,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -932,6 +933,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         count,
                         ix - start,
                         mode,
+                        self.options,
                     );
                     let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
@@ -1176,14 +1178,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 c @ b'\'' | c @ b'"' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open =
-                        delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_open = delim_run_can_open(
+                        &self.text[start..],
+                        string_suffix,
+                        1,
+                        ix - start,
+                        mode,
+                        self.options,
+                    );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
                         string_suffix,
                         1,
                         ix - start,
                         mode,
+                        self.options,
                     );
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2258,6 +2267,7 @@ fn delim_run_can_open(
     run_len: usize,
     ix: usize,
     mode: TableParseMode,
+    options: Options,
 ) -> bool {
     let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
@@ -2279,15 +2289,18 @@ fn delim_run_can_open(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    // `*` and `~~` can be intraword, `_` and `~` cannot
-    if delim == b'*' && !is_punctuation(next_char) {
+    // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
+    if (delim == b'*' || delim == b'^') && !is_punctuation(next_char) {
         return true;
     }
     if delim == b'~' && run_len > 1 {
         return true;
     }
     let prev_char = s[..ix].chars().last().unwrap();
-    if delim == b'~' && prev_char == '~' && !is_punctuation(next_char) {
+    if delim == b'~'
+        && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT))
+        && !is_punctuation(next_char)
+    {
         return true;
     }
 
@@ -2304,6 +2317,7 @@ fn delim_run_can_close(
     run_len: usize,
     ix: usize,
     mode: TableParseMode,
+    options: Options,
 ) -> bool {
     if ix == 0 {
         return false;
@@ -2326,11 +2340,13 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    // `*` and `~~` can be intraword, `_` and `~` cannot
-    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
+    // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
+    if (delim == b'*' || delim == b'^' || (delim == b'~' && run_len > 1))
+        && !is_punctuation(prev_char)
+    {
         return true;
     }
-    if delim == b'~' && prev_char == '~' {
+    if delim == b'~' && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT)) {
         return true;
     }
 

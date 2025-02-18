@@ -25,13 +25,19 @@ Backslash escapes:
 ```````````````````````````````` example_super_sub
 ~This~is~nothing~
 .
-<p><sub>This~is~nothing</sub></p>
+<p><sub>This</sub>is<sub>nothing</sub></p>
 ````````````````````````````````
 
 ```````````````````````````````` example_super_sub
-~This ~~is stricken.~
+~This ~~is not stricken.~
 .
-<p><sub>This ~~is stricken.</sub></p>
+<p><sub>This ~~is not stricken.</sub></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+~~This ~is~~ stricken.~
+.
+<p><del>This ~is</del> stricken.~</p>
 ````````````````````````````````
 
 The first one wins.
@@ -40,4 +46,16 @@ The first one wins.
 ~This ~~is stricken~ but this is not~~
 .
 <p><sub>This ~~is stricken</sub> but this is not~~</p>
+````````````````````````````````
+
+Though strikethrough requires left and right flanking, subscript does not.
+Neither does superscript.
+
+```````````````````````````````` example_super_sub
+H~2~O
+
+y=x^2^a+xb+c
+.
+<p>H<sub>2</sub>O</p>
+<p>y=x<sup>2</sup>a+xb+c</p>
 ````````````````````````````````

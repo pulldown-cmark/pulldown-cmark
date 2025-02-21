@@ -875,45 +875,46 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }),
                     )
                 }
-                b'\\' => {
-                    if ix + 1 < bytes_len && is_ascii_punctuation(bytes[ix + 1]) {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        if bytes[ix + 1] == b'`' {
-                            let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
-                            self.tree.append(Item {
-                                start: ix + 1,
-                                end: ix + count + 1,
-                                body: ItemBody::MaybeCode(count, true),
-                            });
-                            begin_text = ix + 1 + count;
-                            backslash_escaped = false;
-                            LoopInstruction::ContinueAndSkip(count)
-                        } else if bytes[ix + 1] == b'|' && TableParseMode::Active == mode {
-                            // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
-                            // backslash escapes.
-                            //
-                            // This tree structure is intended for the benefit of inline analysis, and it
-                            // is supposed to operate as-if backslash escaped pipes were stripped out in a
-                            // separate pass.
-                            begin_text = ix + 1;
-                            backslash_escaped = false;
-                            LoopInstruction::ContinueAndSkip(1)
-                        } else if ix + 2 < bytes_len
-                            && bytes[ix + 1] == b'\\'
-                            && bytes[ix + 2] == b'|'
-                            && TableParseMode::Active == mode
-                        {
-                            // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
-                            begin_text = ix + 2;
-                            backslash_escaped = true;
-                            LoopInstruction::ContinueAndSkip(2)
-                        } else {
-                            begin_text = ix + 1;
-                            backslash_escaped = true;
-                            LoopInstruction::ContinueAndSkip(1)
-                        }
+                b'\\'
+                    if bytes
+                        .get(ix + 1)
+                        .copied()
+                        .map_or(false, is_ascii_punctuation) =>
+                {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    if bytes[ix + 1] == b'`' {
+                        let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
+                        self.tree.append(Item {
+                            start: ix + 1,
+                            end: ix + count + 1,
+                            body: ItemBody::MaybeCode(count, true),
+                        });
+                        begin_text = ix + 1 + count;
+                        backslash_escaped = false;
+                        LoopInstruction::ContinueAndSkip(count)
+                    } else if bytes[ix + 1] == b'|' && TableParseMode::Active == mode {
+                        // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
+                        // backslash escapes.
+                        //
+                        // This tree structure is intended for the benefit of inline analysis, and it
+                        // is supposed to operate as-if backslash escaped pipes were stripped out in a
+                        // separate pass.
+                        begin_text = ix + 1;
+                        backslash_escaped = false;
+                        LoopInstruction::ContinueAndSkip(1)
+                    } else if ix + 2 < bytes_len
+                        && bytes[ix + 1] == b'\\'
+                        && bytes[ix + 2] == b'|'
+                        && TableParseMode::Active == mode
+                    {
+                        // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
+                        begin_text = ix + 2;
+                        backslash_escaped = true;
+                        LoopInstruction::ContinueAndSkip(2)
                     } else {
-                        LoopInstruction::ContinueAndSkip(0)
+                        begin_text = ix + 1;
+                        backslash_escaped = true;
+                        LoopInstruction::ContinueAndSkip(1)
                     }
                 }
                 c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' => {
@@ -1061,20 +1062,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
-                b'!' => {
-                    if ix + 1 < bytes_len && bytes[ix + 1] == b'[' {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        backslash_escaped = false;
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 2,
-                            body: ItemBody::MaybeImage,
-                        });
-                        begin_text = ix + 2;
-                        LoopInstruction::ContinueAndSkip(1)
-                    } else {
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                b'!' if bytes.get(ix + 1) == Some(&b'[') => {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 2,
+                        body: ItemBody::MaybeImage,
+                    });
+                    begin_text = ix + 2;
+                    LoopInstruction::ContinueAndSkip(1)
                 }
                 b'[' => {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -1123,20 +1120,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(0)
                     }
                 }
-                b'.' => {
-                    if ix + 2 < bytes.len() && bytes[ix + 1] == b'.' && bytes[ix + 2] == b'.' {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        backslash_escaped = false;
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 3,
-                            body: ItemBody::SynthesizeChar('…'),
-                        });
-                        begin_text = ix + 3;
-                        LoopInstruction::ContinueAndSkip(2)
-                    } else {
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                b'.' if matches!(bytes.get(ix + 1..), Some(&[b'.', b'.', ..])) => {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 3,
+                        body: ItemBody::SynthesizeChar('…'),
+                    });
+                    begin_text = ix + 3;
+                    LoopInstruction::ContinueAndSkip(2)
                 }
                 b'-' => {
                     let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'-');

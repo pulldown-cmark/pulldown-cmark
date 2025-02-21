@@ -1548,7 +1548,7 @@ struct InlineStack {
     // a strikethrough delimiter will never match with any element
     // in the stack with index smaller than
     // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 9],
+    lower_bounds: [usize; 10],
 }
 
 impl InlineStack {
@@ -1560,6 +1560,7 @@ impl InlineStack {
     const ASTERISK_BASE: usize = 2;
     const TILDES: usize = 5;
     const UNDERSCORE_BASE: usize = 6;
+    const CIRCUMFLEXES: usize = 9;
 
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
@@ -1569,7 +1570,7 @@ impl InlineStack {
                 };
             }
         }
-        self.lower_bounds = [0; 9];
+        self.lower_bounds = [0; 10];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
@@ -1593,6 +1594,8 @@ impl InlineStack {
                     self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH],
                 )
             }
+        } else if c == b'^' {
+            self.lower_bounds[InlineStack::CIRCUMFLEXES]
         } else {
             self.lower_bounds[InlineStack::TILDES]
         }
@@ -1610,6 +1613,8 @@ impl InlineStack {
             if !both {
                 self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH] = new_bound;
             }
+        } else if c == b'^' {
+            self.lower_bounds[InlineStack::CIRCUMFLEXES] = new_bound;
         } else {
             self.lower_bounds[InlineStack::TILDES] = new_bound;
         }
@@ -1637,7 +1642,7 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                if c == b'~' && run_length != el.run_length {
+                if (c == b'~' || c == b'^') && run_length != el.run_length {
                     return false;
                 }
                 el.c == c
@@ -1670,6 +1675,8 @@ impl InlineStack {
     fn push(&mut self, el: InlineEl) {
         if el.c == b'~' {
             self.trim_lower_bound(InlineStack::TILDES);
+        } else if el.c == b'^' {
+            self.trim_lower_bound(InlineStack::CIRCUMFLEXES);
         }
         self.stack.push(el)
     }

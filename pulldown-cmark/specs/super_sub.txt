@@ -59,3 +59,26 @@ y=x^2^a+xb+c
 <p>H<sub>2</sub>O</p>
 <p>y=x<sup>2</sup>a+xb+c</p>
 ````````````````````````````````
+
+Superscript and subscript cannot group with a different delimiter count.
+
+```````````````````````````````` example_super_sub
+~foo~~
+
+^bar^^
+.
+<p>~foo~~</p>
+<p>^bar^^</p>
+````````````````````````````````
+
+The lower bound of superscript and subscript are separate.
+Emphasis example included for analogy.
+
+```````````````````````````````` example_super_sub
+~foo^~^bar~
+
+*foo_*_bar*
+.
+<p><sub>foo^</sub>^bar~</p>
+<p><em>foo_</em>_bar*</p>
+````````````````````````````````

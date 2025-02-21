@@ -85,3 +85,29 @@ y=x^2^a+xb+c
 
     test_markdown_html(original, expected, false, false, false, true, false, false);
 }
+
+#[test]
+fn super_sub_test_9() {
+    let original = r##"~foo~~
+
+^bar^^
+"##;
+    let expected = r##"<p>~foo~~</p>
+<p>^bar^^</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false);
+}
+
+#[test]
+fn super_sub_test_10() {
+    let original = r##"~foo^~^bar~
+
+*foo_*_bar*
+"##;
+    let expected = r##"<p><sub>foo^</sub>^bar~</p>
+<p><em>foo_</em>_bar*</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false);
+}

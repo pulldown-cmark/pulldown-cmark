@@ -101,6 +101,7 @@ pub(crate) enum ItemBody {
 
     // These are block items.
     Paragraph,
+    TightParagraph,
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
     FencedCodeBlock(CowIndex),
@@ -173,9 +174,6 @@ impl ItemBody {
                 | HardBreak(..)
         )
     }
-    fn is_block(&self) -> bool {
-        !self.is_inline()
-    }
 }
 
 #[derive(Debug)]
@@ -215,6 +213,7 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     // used by inline passes. store them here for reuse
     inline_stack: InlineStack,
     link_stack: LinkStack,
+    wikilink_stack: LinkStack,
     code_delims: CodeDelims,
     math_delims: MathDelims,
 }
@@ -273,6 +272,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         tree.reset();
         let inline_stack = Default::default();
         let link_stack = Default::default();
+        let wikilink_stack = Default::default();
         let html_scan_guard = Default::default();
         Parser {
             text,
@@ -282,6 +282,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             broken_link_callback,
             inline_stack,
             link_stack,
+            wikilink_stack,
             html_scan_guard,
             // always allow 100KiB
             link_ref_expansion_limit: text.len().max(100_000),
@@ -522,12 +523,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     can_close,
                                 );
                             }
-                            if self.tree[scan_ix].item.body.is_block() {
-                                // If this is a tight list, blocks and inlines might be
-                                // siblings. Inlines can't cross the boundary like that.
-                                scan = None;
-                                break;
-                            }
                             scan = self.tree[scan_ix].next;
                         }
                         scan
@@ -584,12 +579,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     self.code_delims.insert(delim_count, scan_ix);
                                 }
                             }
-                            if self.tree[scan_ix].item.body.is_block() {
-                                // If this is a tight list, blocks and inlines might be
-                                // siblings. Inlines can't cross the boundary like that.
-                                scan = None;
-                                break;
-                            }
                             scan = self.tree[scan_ix].next;
                         }
                         if scan.is_none() {
@@ -603,6 +592,16 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
+                    let link_open_doubled = self.tree[cur_ix]
+                        .next
+                        .map(|ix| self.tree[ix].item.body == ItemBody::MaybeLinkOpen)
+                        .unwrap_or(false);
+                    if self.options.contains(Options::ENABLE_WIKILINKS) && link_open_doubled {
+                        self.wikilink_stack.push(LinkStackEl {
+                            node: cur_ix,
+                            ty: LinkStackTy::Link,
+                        });
+                    }
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Link,
@@ -612,6 +611,16 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
+                    let link_open_doubled = self.tree[cur_ix]
+                        .next
+                        .map(|ix| self.tree[ix].item.body == ItemBody::MaybeLinkOpen)
+                        .unwrap_or(false);
+                    if self.options.contains(Options::ENABLE_WIKILINKS) && link_open_doubled {
+                        self.wikilink_stack.push(LinkStackEl {
+                            node: cur_ix,
+                            ty: LinkStackTy::Image,
+                        });
+                    }
                     self.link_stack.push(LinkStackEl {
                         node: cur_ix,
                         ty: LinkStackTy::Image,
@@ -621,7 +630,31 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     self.tree[cur_ix].item.body = ItemBody::Text {
                         backslash_escaped: false,
                     };
-                    if let Some(tos) = self.link_stack.pop() {
+                    let tos_link = self.link_stack.pop();
+                    if self.options.contains(Options::ENABLE_WIKILINKS)
+                        && self.tree[cur_ix]
+                            .next
+                            .map(|ix| {
+                                matches!(self.tree[ix].item.body, ItemBody::MaybeLinkClose(..))
+                            })
+                            .unwrap_or(false)
+                    {
+                        if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
+                            cur = self.tree[node].next;
+                            continue;
+                        }
+                    }
+                    if let Some(tos) = tos_link {
+                        // skip rendering if already in a link, unless its an
+                        // image
+                        if tos.ty != LinkStackTy::Image
+                            && matches!(
+                                self.tree[self.tree.peek_up().unwrap()].item.body,
+                                ItemBody::Link(..)
+                            )
+                        {
+                            continue;
+                        }
                         if tos.ty == LinkStackTy::Disabled {
                             continue;
                         }
@@ -652,7 +685,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             }
 
                             if tos.ty == LinkStackTy::Link {
-                                self.link_stack.disable_all_links();
+                                self.disable_all_links();
                             }
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
@@ -810,29 +843,111 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     cur_ix = tos.node;
 
                                     if tos.ty == LinkStackTy::Link {
-                                        self.link_stack.disable_all_links();
+                                        self.disable_all_links();
                                     }
                                 }
                             }
                         }
                     }
                 }
-                _ => {
-                    // If this is a tight list, blocks and inlines might be
-                    // siblings. Inlines can't cross the boundary like that.
-                    if let Some(cur_ix) = cur {
-                        if self.tree[cur_ix].item.body.is_block() {
-                            self.link_stack.clear();
-                        }
-                    }
-                }
+                _ => {}
             }
             prev = cur;
             cur = self.tree[cur_ix].next;
         }
         self.link_stack.clear();
+        self.wikilink_stack.clear();
         self.code_delims.clear();
         self.math_delims.clear();
+    }
+
+    /// Handles a wikilink.
+    ///
+    /// This function may bail early in case the link is malformed, so this
+    /// acts as a control flow guard. Returns the link node if a wikilink was
+    /// found and created.
+    fn handle_wikilink(
+        &mut self,
+        block_text: &'input str,
+        cur_ix: TreeIndex,
+        prev: Option<TreeIndex>,
+    ) -> Option<TreeIndex> {
+        let next_ix = self.tree[cur_ix].next.unwrap();
+        // this is a wikilink closing delim, try popping from
+        // the wikilink stack
+        if let Some(tos) = self.wikilink_stack.pop() {
+            if tos.ty == LinkStackTy::Disabled {
+                return None;
+            }
+            // fetches the beginning of the wikilink body
+            let Some(body_node) = self.tree[tos.node].next.and_then(|ix| self.tree[ix].next) else {
+                // skip if no next node exists, like at end of input
+                return None;
+            };
+            let start_ix = self.tree[body_node].item.start;
+            let end_ix = self.tree[cur_ix].item.start;
+            let wikilink = match scan_wikilink_pipe(
+                block_text,
+                start_ix, // bounded by closing tag
+                end_ix - start_ix,
+            ) {
+                Some((rest, wikitext)) => {
+                    // bail early if the wikiname would be empty
+                    if wikitext.is_empty() {
+                        return None;
+                    }
+                    // [[WikiName|rest]]
+                    let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                    if let Some(body_node) = body_node {
+                        // break node so passes can actually format
+                        // the display text
+                        self.tree[body_node].item.start = rest;
+                        Some((true, body_node, wikitext))
+                    } else {
+                        None
+                    }
+                }
+                None => {
+                    let wikitext = &block_text[start_ix..end_ix];
+                    // bail early if the wikiname would be empty
+                    if wikitext.is_empty() {
+                        return None;
+                    }
+                    let body_node = self.tree.create_node(Item {
+                        start: start_ix,
+                        end: end_ix,
+                        body: ItemBody::Text {
+                            backslash_escaped: false,
+                        },
+                    });
+                    Some((false, body_node, wikitext))
+                }
+            };
+
+            if let Some((has_pothole, body_node, wikiname)) = wikilink {
+                let link_ix = self.allocs.allocate_link(
+                    LinkType::WikiLink { has_pothole },
+                    wikiname.into(),
+                    "".into(),
+                    "".into(),
+                );
+                if let Some(prev_ix) = prev {
+                    self.tree[prev_ix].next = None;
+                }
+                if tos.ty == LinkStackTy::Image {
+                    self.tree[tos.node].item.body = ItemBody::Image(link_ix);
+                } else {
+                    self.tree[tos.node].item.body = ItemBody::Link(link_ix);
+                }
+                self.tree[tos.node].child = Some(body_node);
+                self.tree[tos.node].next = self.tree[next_ix].next;
+                self.tree[tos.node].item.end = end_ix + 1;
+                self.disable_all_links();
+                return Some(tos.node);
+            }
+        }
+
+        None
     }
 
     fn handle_emphasis_and_hard_break(&mut self) {
@@ -995,18 +1110,16 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 }
                 _ => {
                     prev = cur;
-                    // If this is a tight list, blocks and inlines might be
-                    // siblings. Inlines can't cross the boundary like that.
-                    if let Some(cur_ix) = cur {
-                        if self.tree[cur_ix].item.body.is_block() {
-                            self.inline_stack.pop_all(&mut self.tree);
-                        }
-                    }
                     cur = self.tree[cur_ix].next;
                 }
             }
         }
         self.inline_stack.pop_all(&mut self.tree);
+    }
+
+    fn disable_all_links(&mut self) {
+        self.link_stack.disable_all_links();
+        self.wikilink_stack.disable_all_links();
     }
 
     /// Returns next byte index, url and title.
@@ -1016,7 +1129,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         mut ix: usize,
         node: Option<TreeIndex>,
     ) -> Option<(usize, CowStr<'input>, CowStr<'input>)> {
-        if scan_ch(&underlying.as_bytes()[ix..], b'(') == 0 {
+        if underlying.as_bytes().get(ix) != Some(&b'(') {
             return None;
         }
         ix += 1;
@@ -1049,7 +1162,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         } else {
             "".into()
         };
-        if scan_ch(&underlying.as_bytes()[ix..], b')') == 0 {
+        if underlying.as_bytes().get(ix) != Some(&b')') {
             return None;
         }
         ix += 1;
@@ -1435,7 +1548,7 @@ struct InlineStack {
     // a strikethrough delimiter will never match with any element
     // in the stack with index smaller than
     // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 9],
+    lower_bounds: [usize; 10],
 }
 
 impl InlineStack {
@@ -1447,6 +1560,7 @@ impl InlineStack {
     const ASTERISK_BASE: usize = 2;
     const TILDES: usize = 5;
     const UNDERSCORE_BASE: usize = 6;
+    const CIRCUMFLEXES: usize = 9;
 
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
@@ -1456,7 +1570,7 @@ impl InlineStack {
                 };
             }
         }
-        self.lower_bounds = [0; 9];
+        self.lower_bounds = [0; 10];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
@@ -1480,6 +1594,8 @@ impl InlineStack {
                     self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH],
                 )
             }
+        } else if c == b'^' {
+            self.lower_bounds[InlineStack::CIRCUMFLEXES]
         } else {
             self.lower_bounds[InlineStack::TILDES]
         }
@@ -1497,6 +1613,8 @@ impl InlineStack {
             if !both {
                 self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH] = new_bound;
             }
+        } else if c == b'^' {
+            self.lower_bounds[InlineStack::CIRCUMFLEXES] = new_bound;
         } else {
             self.lower_bounds[InlineStack::TILDES] = new_bound;
         }
@@ -1524,7 +1642,7 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                if c == b'~' && run_length != el.run_length {
+                if (c == b'~' || c == b'^') && run_length != el.run_length {
                     return false;
                 }
                 el.c == c
@@ -1557,6 +1675,8 @@ impl InlineStack {
     fn push(&mut self, el: InlineEl) {
         if el.c == b'~' {
             self.trim_lower_bound(InlineStack::TILDES);
+        } else if el.c == b'^' {
+            self.trim_lower_bound(InlineStack::CIRCUMFLEXES);
         }
         self.stack.push(el)
     }
@@ -2065,6 +2185,13 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
         match self.inner.tree.cur() {
             None => {
                 let ix = self.inner.tree.pop()?;
+                let ix = if matches!(self.inner.tree[ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.inner.tree.next_sibling(ix);
+                    return self.next();
+                } else {
+                    ix
+                };
                 let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
                 self.inner.tree.next_sibling(ix);
                 let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
@@ -2072,6 +2199,14 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
+                let cur_ix =
+                    if matches!(self.inner.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                        // tight paragraphs emit nothing
+                        self.inner.tree.push();
+                        self.inner.tree.cur().unwrap()
+                    } else {
+                        cur_ix
+                    };
                 if self.inner.tree[cur_ix].item.body.is_maybe_inline() {
                     self.inner.handle_inline();
                 }
@@ -2221,11 +2356,25 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
         match self.tree.cur() {
             None => {
                 let ix = self.tree.pop()?;
+                let ix = if matches!(self.tree[ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.tree.next_sibling(ix);
+                    return self.next();
+                } else {
+                    ix
+                };
                 let tag_end = body_to_tag_end(&self.tree[ix].item.body);
                 self.tree.next_sibling(ix);
                 Some(Event::End(tag_end))
             }
             Some(cur_ix) => {
+                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.tree.push();
+                    self.tree.cur().unwrap()
+                } else {
+                    cur_ix
+                };
                 if self.tree[cur_ix].item.body.is_maybe_inline() {
                     self.handle_inline();
                 }
@@ -2692,6 +2841,34 @@ text
             Event::InlineHtml(CowStr::Boxed("<foo\nbar>".to_string().into())),
             Event::End(TagEnd::Paragraph),
             Event::End(TagEnd::BlockQuote(None)),
+        ];
+        assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_has_pothole() {
+        let input = "[[foo]] [[bar|baz]]";
+        let events: Vec<_> = Parser::new_ext(input, Options::ENABLE_WIKILINKS).collect();
+        let expected = [
+            Event::Start(Tag::Paragraph),
+            Event::Start(Tag::Link {
+                link_type: LinkType::WikiLink { has_pothole: false },
+                dest_url: CowStr::Borrowed("foo"),
+                title: CowStr::Borrowed(""),
+                id: CowStr::Borrowed(""),
+            }),
+            Event::Text(CowStr::Borrowed("foo")),
+            Event::End(TagEnd::Link),
+            Event::Text(CowStr::Borrowed(" ")),
+            Event::Start(Tag::Link {
+                link_type: LinkType::WikiLink { has_pothole: true },
+                dest_url: CowStr::Borrowed("bar"),
+                title: CowStr::Borrowed(""),
+                id: CowStr::Borrowed(""),
+            }),
+            Event::Text(CowStr::Borrowed("baz")),
+            Event::End(TagEnd::Link),
+            Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
     }

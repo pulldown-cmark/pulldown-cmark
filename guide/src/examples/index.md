@@ -9,3 +9,4 @@ Example | Description
 [parser-map-event-print.rs](parser-map-event-print.md) | Dump events to the console in flat form
 [parser-map-tag-print.rs](parser-map-tag-print.md) | Dump block-level tag events to the console in descriptive form
 [string-to-string.rs](string-to-string.md) | Convert markdown to HTML
+[normalize-wikilink.rs](normalize-wikilink.md) | Normalizes wikilinks' destination url

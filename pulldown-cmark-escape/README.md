@@ -1,10 +1,10 @@
 # pulldown-cmark-escape
 
 [![Tests](https://github.com/pulldown-cmark/pulldown-cmark/actions/workflows/rust.yml/badge.svg)](https://github.com/pulldown-cmark/pulldown-cmark/actions/workflows/rust.yml)
-[![Docs](https://docs.rs/pulldown-cmark/badge.svg)](https://docs.rs/pulldown-cmark)
+[![Docs](https://docs.rs/pulldown-cmark-escape/badge.svg)](https://docs.rs/pulldown-cmark-escape)
 [![Crates.io](https://img.shields.io/crates/v/pulldown-cmark-escape.svg?maxAge=2592000)](https://crates.io/crates/pulldown-cmark-escape)
 
-[Documentation](https://docs.rs/pulldown-cmark/)
+[Documentation](https://docs.rs/pulldown-cmark-escape/)
 
 This crate allows to escape HTML and links and it is part of the pulldown-cmark
 project, by providing `escape_html`, `escape_html_body_text` (for

@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark"
-version = "0.12.2"
+version = "0.13.0"
 authors = [
     "Raph Levien <raph.levien@gmail.com>",
     "Marcus Klaas de Vries <mail@marcusklaas.nl>",
@@ -54,6 +54,11 @@ doc-scrape-examples = true
 
 [[example]]
 name = "broken-link-callbacks"
+required-features = ["html"]
+doc-scrape-examples = true
+
+[[example]]
+name = "normalize-wikilink"
 required-features = ["html"]
 doc-scrape-examples = true
 

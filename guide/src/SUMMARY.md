@@ -2,6 +2,13 @@
 
 [Guide](index.md)
 - [Cheat sheet](cheat-sheet.md)
+- [Developer guide](dev/index.md)
+  - [Block Structure Parsing](dev/block-parsing.md) 
+  - [Inline Processing](dev/inline-processing.md)
+  - [String Handling](dev/string-handling.md)
+  - [HTML Generation](dev/html-generation.md)
+  - [Performance Optimizations](dev/performance.md)
+  - [Adding Extensions](dev/extensions.md)
 - [Code examples](examples/index.md)
   - [broken-link-callbacks.rs](examples/broken-link-callbacks.md)
   - [event-filter.rs](examples/event-filter.md)
@@ -10,6 +17,7 @@
   - [parser-map-event-print.rs](examples/parser-map-event-print.md)
   - [parser-map-tag-print.rs](examples/parser-map-tag-print.md)
   - [string-to-string.rs](examples/string-to-string.md)
+  - [normalize-wikilink.rs](examples/normalize-wikilink.md)
 
 ---
 - [Detailed Specifications](specs.md)
@@ -25,3 +33,4 @@
   - [math](./specs/math.md)
   - [heading attributes](./specs/heading_attrs.md)
   - [metadata blocks](./specs/metadata_blocks.md)
+  - [wikilinks](./specs/wikilinks.md)

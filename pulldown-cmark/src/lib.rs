@@ -159,6 +159,8 @@ pub enum Tag<'a> {
     /// The identifier is prefixed with `#` and the last one in the attributes
     /// list is chosen, classes are prefixed with `.` and custom attributes
     /// have no prefix and can optionally have a value (`myattr` or `myattr=myvalue`).
+    ///
+    /// `id`, `classes` and `attrs` are only parsed and populated with [`Options::ENABLE_HEADING_ATTRIBUTES`], `None` or empty otherwise.
     Heading {
         level: HeadingLevel,
         id: Option<CowStr<'a>>,
@@ -167,11 +169,36 @@ pub enum Tag<'a> {
         attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
+    /// A block quote.
+    ///
+    /// The `BlockQuoteKind` is only parsed & populated with [`Options::ENABLE_GFM`], `None` otherwise.
+    ///
+    /// ```markdown
+    /// > regular quote
+    ///
+    /// > [!NOTE]
+    /// > note quote
+    /// ```
     BlockQuote(Option<BlockQuoteKind>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
 
-    /// A HTML block.
+    /// An HTML block.
+    ///
+    /// A line that begins with some predefined tags (HTML block tags) (see [CommonMark Spec](https://spec.commonmark.org/0.31.2/#html-blocks) for more details) or any tag that is followed only by whitespace.
+    ///
+    /// Most HTML blocks end on an empty line, though some e.g. `<pre>` like `<script>` or `<!-- Comments -->` don't.
+    /// ```markdown
+    /// <body> Is HTML block even though here is non-whitespace.
+    /// Block ends on an empty line.
+    ///
+    /// <some-random-tag>
+    /// This is HTML block.
+    ///
+    /// <pre> Doesn't end on empty lines.
+    ///
+    /// This is still the same block.</pre>
+    /// ```
     HtmlBlock,
 
     /// A list. If the list is ordered the field indicates the number of the first item.
@@ -181,27 +208,58 @@ pub enum Tag<'a> {
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
     /// be referred to.
+    ///
+    /// Only parsed and emitted with [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
     #[cfg_attr(feature = "serde", serde(borrow))]
     FootnoteDefinition(CowStr<'a>),
 
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionList,
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionListTitle,
+    /// Only parsed and emitted with [`Options::ENABLE_DEFINITION_LIST`].
     DefinitionListDefinition,
 
     /// A table. Contains a vector describing the text-alignment for each of its columns.
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     Table(Vec<Alignment>),
     /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableHead,
     /// A table row. Is used both for header rows as body rows. Contains only `TableCell`s.
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableRow,
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableCell,
 
     // span-level tags
+    /// [Emphasis](https://spec.commonmark.org/0.31.2/#emphasis-and-strong-emphasis).
+    /// ```markdown
+    /// half*emph* _strong_ _multi _level__
+    /// ```
     Emphasis,
+    /// [Strong emphasis](https://spec.commonmark.org/0.31.2/#emphasis-and-strong-emphasis).
+    /// ```markdown
+    /// half**strong** __strong__ __multi __level____
+    /// ```
     Strong,
+    /// Only parsed and emitted with [`Options::ENABLE_STRIKETHROUGH`].
+    ///
+    /// ```markdown
+    /// ~strike through~
+    /// ```
     Strikethrough,
+    /// Only parsed and emitted with [`Options::ENABLE_SUPERSCRIPT`].
+    ///
+    /// ```markdown
+    /// ^superscript^
+    /// ```
     Superscript,
+    /// Only parsed and emitted with [`Options::ENABLE_SUBSCRIPT`], if disabled `~something~` is parsed as [`Strikethrough`](Self::Strikethrough).
+    /// ```markdown
+    /// ~subscript~ ~~if also enabled this is strikethrough~~
+    /// ```
     Subscript,
 
     /// A link.
@@ -224,6 +282,8 @@ pub enum Tag<'a> {
     },
 
     /// A metadata block.
+    /// Only parsed and emitted with [`Options::ENABLE_YAML_STYLE_METADATA_BLOCKS`]
+    /// or [`Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS`].
     MetadataBlock(MetadataBlockKind),
 }
 
@@ -434,6 +494,14 @@ pub enum LinkType {
     Autolink,
     /// Email address in autolink like `<john@example.org>`
     Email,
+    /// Wikilink link like `[[foo]]` or `[[foo|bar]]`
+    WikiLink {
+        /// `true` if the wikilink was piped.
+        ///
+        /// * `true` - `[[foo|bar]]`
+        /// * `false` - `[[foo]]`
+        has_pothole: bool,
+    },
 }
 
 impl LinkType {
@@ -462,35 +530,84 @@ pub enum Event<'a> {
     /// End of a tagged element.
     End(TagEnd),
     /// A text node.
+    ///
+    /// All text, outside and inside [`Tag`]s.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Text(CowStr<'a>),
-    /// An inline code node.
+    /// An [inline code node](https://spec.commonmark.org/0.31.2/#code-spans).
+    ///
+    /// ```markdown
+    /// `code`
+    /// ```
     #[cfg_attr(feature = "serde", serde(borrow))]
     Code(CowStr<'a>),
     /// An inline math environment node.
+    /// Requires [`Options::ENABLE_MATH`].
+    ///
+    /// ```markdown
+    /// $math$
+    /// ```
     #[cfg_attr(feature = "serde", serde(borrow))]
     InlineMath(CowStr<'a>),
     /// A display math environment node.
+    /// Requires [`Options::ENABLE_MATH`].
+    ///
+    /// ```markdown
+    /// $$math$$
+    /// ```
     #[cfg_attr(feature = "serde", serde(borrow))]
     DisplayMath(CowStr<'a>),
     /// An HTML node.
+    ///
+    /// A line of HTML inside [`Tag::HtmlBlock`] includes the line break.
     #[cfg_attr(feature = "serde", serde(borrow))]
     Html(CowStr<'a>),
-    /// An inline HTML node.
+    /// An [inline HTML node](https://spec.commonmark.org/0.31.2/#raw-html).
+    ///
+    /// Contains only the tag itself, e.g. `<open-tag>`, `</close-tag>` or `<!-- comment -->`.
+    ///
+    /// **Note**: Under some conditions HTML can also be parsed as an HTML Block, see [`Tag::HtmlBlock`] for details.
     #[cfg_attr(feature = "serde", serde(borrow))]
     InlineHtml(CowStr<'a>),
     /// A reference to a footnote with given label, which may or may not be defined
-    /// by an event with a `Tag::FootnoteDefinition` tag. Definitions and references to them may
-    /// occur in any order.
+    /// by an event with a [`Tag::FootnoteDefinition`] tag. Definitions and references to them may
+    /// occur in any order. Only parsed and emitted with [`Options::ENABLE_FOOTNOTES`] or [`Options::ENABLE_OLD_FOOTNOTES`].
+    ///
+    /// ```markdown
+    /// [^1]
+    /// ```
     #[cfg_attr(feature = "serde", serde(borrow))]
     FootnoteReference(CowStr<'a>),
-    /// A soft line break.
+    /// A [soft line break](https://spec.commonmark.org/0.31.2/#soft-line-breaks).
+    ///
+    /// Any line break that isn't a [`HardBreak`](Self::HardBreak), or the end of e.g. a paragraph.
     SoftBreak,
-    /// A hard line break.
+    /// A [hard line break](https://spec.commonmark.org/0.31.2/#hard-line-breaks).
+    ///
+    /// A line ending that is either preceded by at least two spaces or `\`.
+    ///
+    /// ```markdown
+    /// hard··
+    /// line\
+    /// breaks
+    /// ```
+    /// *`·` is a space*
     HardBreak,
     /// A horizontal ruler.
+    ///
+    /// ```markdown
+    /// ***
+    /// ···---
+    /// _·_··_····_··
+    /// ```
+    /// *`·` is any whitespace*
     Rule,
     /// A task list marker, rendered as a checkbox in HTML. Contains a true when it is checked.
+    /// Only parsed and emitted with [`Options::ENABLE_TASKLISTS`].
+    /// ```markdown
+    /// - [ ] unchecked
+    /// - [x] checked
+    /// ```
     TaskListMarker(bool),
 }
 
@@ -551,6 +668,13 @@ bitflags::bitflags! {
         const ENABLE_FOOTNOTES = 1 << 2;
         const ENABLE_STRIKETHROUGH = 1 << 3;
         const ENABLE_TASKLISTS = 1 << 4;
+        /// Enables replacement of ASCII punctuation characters with
+        /// Unicode ligatures and smart quotes.
+        ///
+        /// This includes replacing `--` with `—`, `---` with `—`, `...` with `…`,
+        /// `"quote"` with `“quote”`, and `'quote'` with `‘quote’`.
+        ///
+        /// The replacement takes place during the parsing of the document.
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
         /// Extension to allow headings to have ID and classes.
         ///
@@ -601,12 +725,16 @@ bitflags::bitflags! {
         /// ```markdown
         /// title 1
         ///   : definition 1
+        ///
         /// title 2
-        ///   : definition 2
+        ///   : definition 2a
+        ///   : definition 2b
         /// ```
         const ENABLE_DEFINITION_LIST = 1 << 12;
         const ENABLE_SUPERSCRIPT = 1 << 13;
         const ENABLE_SUBSCRIPT = 1 << 14;
+        /// Obsidian-style Wikilinks.
+        const ENABLE_WIKILINKS = 1 << 15;
     }
 }
 

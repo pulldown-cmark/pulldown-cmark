@@ -19,5 +19,8 @@ harness = false
 [dependencies]
 pulldown-cmark = { path = "../pulldown-cmark" }
 
+[features]
+simd = [ "pulldown-cmark/simd" ]
+
 [dev-dependencies]
 criterion = "0.5.1"

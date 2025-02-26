@@ -2647,7 +2647,7 @@ ISSUE #655
 
 ISSUE #949
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 * def this
   : def text def text
 .
@@ -2661,7 +2661,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 * def this
 
   : def text def text
@@ -2676,7 +2676,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 **A:**
 
 > B C
@@ -2696,7 +2696,7 @@ T U, V W</dd>
 <dd>x:.)</dd></dl></blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example_deflists
 [abc] check `foobar_raz`
  Some preamble `foobar_raz`, not `barfoo_raz`
  :D
@@ -2781,4 +2781,58 @@ the trailing space after the &gt; should be stripped
 .
 <h1 class="bar">the trailing space after the &gt; should be stripped
 &gt;</h1>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+[[Wiki<|Link]]
+.
+<p><a href="Wiki%3C">Link</a></p>
+````````````````````````````````
+
+```````````````````````````````` example_wikilinks
+* <c
+  >
+.
+<ul>
+<li>&lt;c
+<blockquote></blockquote></li>
+</ul>
+````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/999
+
+```````````````````````````````` example_wikilinks
+- [x] * some text
+- [ ] > some text
+- [x]
+  * some text
+- [ ]
+  > some text
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+* some text</li>
+<li><input disabled="" type="checkbox"/>
+&gt; some text</li>
+<li><input disabled="" type="checkbox" checked=""/>
+<ul>
+<li>some text</li>
+</ul></li>
+<li><input disabled="" type="checkbox"/>
+<blockquote>
+<p>some text</p>
+</blockquote></li>
+</ul>
+````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/997
+
+Link refdef split from paragraph with line with spaces.
+
+```````````````````````````````` example
+[a]: /url
+    
+:
+.
+<p>:</p>
 ````````````````````````````````

@@ -16,7 +16,7 @@ bar</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }
 
 #[test]
@@ -41,5 +41,5 @@ bim</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false);
 }

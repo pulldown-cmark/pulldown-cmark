@@ -404,7 +404,7 @@ impl<'a> LineStart<'a> {
         if !self
             .bytes
             .get(self.ix)
-            .map(|&b| is_ascii_whitespace_no_nl(b))
+            .map(|&b| is_ascii_whitespace(b))
             .unwrap_or(false)
         {
             *self = save;
@@ -491,12 +491,11 @@ fn scan_attr_value_chars(data: &[u8]) -> usize {
 }
 
 pub(crate) fn scan_eol(bytes: &[u8]) -> Option<usize> {
-    if bytes.is_empty() {
-        return Some(0);
-    }
-    match bytes[0] {
-        b'\n' => Some(1),
-        b'\r' => Some(if bytes.get(1) == Some(&b'\n') { 2 } else { 1 }),
+    match bytes {
+        &[] => Some(0),
+        &[b'\n', ..] => Some(1),
+        &[b'\r', b'\n', ..] => Some(2),
+        &[b'\r', ..] => Some(1),
         _ => None,
     }
 }
@@ -906,7 +905,7 @@ fn char_from_codepoint(input: usize) -> Option<char> {
 // doesn't bother to check data[0] == '&'
 pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
     let mut end = 1;
-    if scan_ch(&bytes[end..], b'#') == 1 {
+    if bytes.get(end) == Some(&b'#') {
         end += 1;
         let (bytecount, codepoint) = if end < bytes.len() && bytes[end] | 0x20 == b'x' {
             end += 1;
@@ -915,7 +914,7 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
             parse_decimal(&bytes[end..], 7)
         };
         end += bytecount;
-        return if bytecount == 0 || scan_ch(&bytes[end..], b';') == 0 {
+        return if bytecount == 0 || bytes.get(end) != Some(&b';') {
             (0, None)
         } else {
             (
@@ -925,12 +924,26 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
         };
     }
     end += scan_while(&bytes[end..], is_ascii_alphanumeric);
-    if scan_ch(&bytes[end..], b';') == 1 {
+    if bytes.get(end) == Some(&b';') {
         if let Some(value) = entities::get_entity(&bytes[1..end]) {
             return (end + 1, Some(value.into()));
         }
     }
     (0, None)
+}
+
+pub(crate) fn scan_wikilink_pipe(data: &str, start_ix: usize, len: usize) -> Option<(usize, &str)> {
+    let bytes = data.as_bytes();
+    let end_ix = std::cmp::min(start_ix + len, bytes.len());
+    let mut i = start_ix;
+
+    while i < end_ix {
+        if bytes[i] == b'|' {
+            return Some((i + 1, &data[start_ix..i]));
+        }
+        i += 1;
+    }
+    None
 }
 
 // note: dest returned is raw, still needs to be unescaped
@@ -1019,7 +1032,7 @@ fn scan_attribute(
     ix += scan_attribute_name(&data[ix..])?;
     let ix_after_attribute = ix;
     ix = scan_whitespace_with_newline_handler_without_buffer(data, ix, newline_handler)?;
-    if scan_ch(&data[ix..], b'=') == 1 {
+    if data.get(ix) == Some(&b'=') {
         ix = scan_whitespace_with_newline_handler(
             data,
             ix_after_attribute,
@@ -1150,28 +1163,23 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
     let mut i = 0;
     let bytes = input.as_bytes();
     while i < bytes.len() {
-        match bytes[i] {
+        match bytes[i..] {
             // Tables are special, because they're parsed as-if the tables
             // were parsed in a discrete pass, changing `\|` to `|`, and then
             // passing the changed string to the inline parser.
-            b'\\'
-                if is_in_table
-                    && i + 2 < bytes.len()
-                    && bytes[i + 1] == b'\\'
-                    && bytes[i + 2] == b'|' =>
-            {
+            [b'\\', b'\\', b'|', ..] if is_in_table => {
                 // even number of `\`s before pipe
                 // odd number is handled in the normal way below
                 result.push_str(&input[mark..i]);
                 mark = i + 2;
                 i += 3;
             }
-            b'\\' if i + 1 < bytes.len() && is_ascii_punctuation(bytes[i + 1]) => {
+            [b'\\', cx, ..] if is_ascii_punctuation(cx) => {
                 result.push_str(&input[mark..i]);
                 mark = i + 1;
                 i += 2;
             }
-            b'&' => match scan_entity(&bytes[i..]) {
+            [b'&', ..] => match scan_entity(&bytes[i..]) {
                 (n, Some(value)) => {
                     result.push_str(&input[mark..i]);
                     result.push_str(&value);
@@ -1180,7 +1188,7 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
                 }
                 _ => i += 1,
             },
-            b'\r' => {
+            [b'\r', ..] => {
                 result.push_str(&input[mark..i]);
                 i += 1;
                 mark = i;
@@ -1317,7 +1325,7 @@ pub(crate) fn scan_html_block_inner(
         i += scan_ch(&data[i..], b'/');
     }
 
-    if scan_ch(&data[i..], b'>') == 0 {
+    if data.get(i) != Some(&b'>') {
         None
     } else {
         i += 1;
@@ -1414,13 +1422,13 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
             return None;
         }
 
-        if scan_ch(&bytes[i..], b'.') == 0 {
+        if bytes.get(i) != Some(&b'.') {
             break;
         }
         i += 1;
     }
 
-    if scan_ch(&bytes[i..], b'>') == 0 {
+    if bytes.get(i) != Some(&b'>') {
         return None;
     }
 
@@ -1456,7 +1464,7 @@ pub(crate) fn scan_inline_html_comment(
             while let Some(x) = memchr(b'-', &bytes[ix..]) {
                 ix += x + 1;
                 scan_guard.comment = ix;
-                if scan_ch(&bytes[ix..], b'-') == 1 && scan_ch(&bytes[ix + 1..], b'>') == 1 {
+                if bytes.get(ix) == Some(&b'-') && bytes.get(ix + 1) == Some(&b'>') {
                     return Some(ix + 2);
                 }
             }
@@ -1470,7 +1478,7 @@ pub(crate) fn scan_inline_html_comment(
             let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
             ix += close_brackets;
 
-            if close_brackets == 0 || scan_ch(&bytes[ix..], b'>') == 0 {
+            if close_brackets == 0 || bytes.get(ix) != Some(&b'>') {
                 scan_guard.cdata = ix;
                 None
             } else {
@@ -1481,7 +1489,7 @@ pub(crate) fn scan_inline_html_comment(
         // including the character >, and the character >.
         _ if c.is_ascii_alphabetic() && ix > scan_guard.declaration => {
             ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-            if scan_ch(&bytes[ix..], b'>') == 0 {
+            if bytes.get(ix) != Some(&b'>') {
                 scan_guard.declaration = ix;
                 None
             } else {
@@ -1504,7 +1512,7 @@ pub(crate) fn scan_inline_html_processing(
     }
     while let Some(offset) = memchr(b'?', &bytes[ix..]) {
         ix += offset + 1;
-        if scan_ch(&bytes[ix..], b'>') == 1 {
+        if bytes.get(ix) == Some(&b'>') {
             return Some(ix + 1);
         }
     }

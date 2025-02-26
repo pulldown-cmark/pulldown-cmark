@@ -34,7 +34,6 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         allocs: Allocations::new(),
         options,
         lookup_table,
-        next_paragraph_task: None,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
     };
@@ -61,9 +60,6 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
-    /// This is `Some(item)` when the next paragraph
-    /// starts with a task list marker.
-    next_paragraph_task: Option<Item>,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
     brace_context_next: usize,
@@ -156,7 +152,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             self.begin_list_item = Some(task_list_marker.end + n);
                             return task_list_marker.end + n;
                         } else {
-                            self.next_paragraph_task = Some(task_list_marker);
+                            line_start.scan_all_space();
+                            let ix = start_ix + line_start.bytes_scanned();
+                            return self.parse_paragraph(ix, Some(task_list_marker));
                         }
                     }
                 }
@@ -174,6 +172,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         item,
                         Item {
                             body: ItemBody::Paragraph
+                                | ItemBody::TightParagraph
                                 | ItemBody::MaybeDefinitionListTitle
                                 | ItemBody::DefinitionListDefinition(_),
                             ..
@@ -190,7 +189,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 })
             {
                 match item.body {
-                    ItemBody::Paragraph => {
+                    ItemBody::Paragraph | ItemBody::TightParagraph => {
                         item.body = ItemBody::DefinitionList(true);
                         let Item { start, end, .. } = *item;
                         let list_idx = self.tree.cur().unwrap();
@@ -247,13 +246,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     // and break out if we can't re-scan all of them
                     let ix = start_ix + line_start.bytes_scanned();
                     let mut lazy_line_start = LineStart::new(&bytes[ix..]);
-                    let current_container =
-                        scan_containers(&self.tree, &mut lazy_line_start, self.options)
-                            == self.tree.spine_len();
+                    let tree_position =
+                        scan_containers(&self.tree, &mut lazy_line_start, self.options);
+                    let current_container = tree_position == self.tree.spine_len();
                     if !lazy_line_start.scan_space(4)
                         && self.scan_paragraph_interrupt(
                             &bytes[ix + lazy_line_start.bytes_scanned()..],
                             current_container,
+                            tree_position,
                         )
                     {
                         return ix;
@@ -406,7 +406,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        self.parse_paragraph(ix)
+        self.parse_paragraph(ix, None)
     }
 
     /// footnote definitions and GFM quote markers can be "interrupted"
@@ -419,11 +419,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         bytes: &'input [u8],
     ) -> Option<LineStart<'input>> {
         let mut line_start = LineStart::new(bytes);
-        let current_container =
-            scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
-        if !line_start.scan_space(4)
-            && self
-                .scan_paragraph_interrupt(&bytes[line_start.bytes_scanned()..], current_container)
+        let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+        let current_container = tree_position == self.tree.spine_len();
+        if (!line_start.scan_space(4)
+            && self.scan_paragraph_interrupt(
+                &bytes[line_start.bytes_scanned()..],
+                current_container,
+                tree_position,
+            ))
+            || scan_blank_line(&bytes[line_start.bytes_scanned()..]).is_some()
         {
             None
         } else {
@@ -553,8 +557,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     ) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
-        let current_container =
-            scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
+        let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+        let current_container = tree_position == self.tree.spine_len();
         if !current_container {
             return None;
         }
@@ -566,6 +570,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
             &self.tree,
+            tree_position,
         ) {
             return None;
         }
@@ -575,7 +580,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Returns offset of line start after paragraph.
-    fn parse_paragraph(&mut self, start_ix: usize) -> usize {
+    fn parse_paragraph(&mut self, start_ix: usize, tasklist_marker: Option<Item>) -> usize {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
@@ -603,9 +608,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         });
         self.tree.push();
 
-        if let Some(item) = self.next_paragraph_task {
+        if let Some(item) = tasklist_marker {
             self.tree.append(item);
-            self.next_paragraph_task = None;
         }
 
         let bytes = self.text.as_bytes();
@@ -641,8 +645,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let current_container =
-                scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
+            let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+            let current_container = tree_position == self.tree.spine_len();
             let trailing_backslash_pos = match brk {
                 Some(Item {
                     start,
@@ -669,7 +673,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 // first check for non-empty lists, then for other interrupts
                 let suffix = &bytes[ix_new..];
-                if self.scan_paragraph_interrupt(suffix, current_container) {
+                if self.scan_paragraph_interrupt(suffix, current_container, tree_position) {
                     if let Some(pos) = trailing_backslash_pos {
                         self.tree.append_text(pos, pos + 1, false);
                     }
@@ -871,45 +875,46 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }),
                     )
                 }
-                b'\\' => {
-                    if ix + 1 < bytes_len && is_ascii_punctuation(bytes[ix + 1]) {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        if bytes[ix + 1] == b'`' {
-                            let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
-                            self.tree.append(Item {
-                                start: ix + 1,
-                                end: ix + count + 1,
-                                body: ItemBody::MaybeCode(count, true),
-                            });
-                            begin_text = ix + 1 + count;
-                            backslash_escaped = false;
-                            LoopInstruction::ContinueAndSkip(count)
-                        } else if bytes[ix + 1] == b'|' && TableParseMode::Active == mode {
-                            // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
-                            // backslash escapes.
-                            //
-                            // This tree structure is intended for the benefit of inline analysis, and it
-                            // is supposed to operate as-if backslash escaped pipes were stripped out in a
-                            // separate pass.
-                            begin_text = ix + 1;
-                            backslash_escaped = false;
-                            LoopInstruction::ContinueAndSkip(1)
-                        } else if ix + 2 < bytes_len
-                            && bytes[ix + 1] == b'\\'
-                            && bytes[ix + 2] == b'|'
-                            && TableParseMode::Active == mode
-                        {
-                            // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
-                            begin_text = ix + 2;
-                            backslash_escaped = true;
-                            LoopInstruction::ContinueAndSkip(2)
-                        } else {
-                            begin_text = ix + 1;
-                            backslash_escaped = true;
-                            LoopInstruction::ContinueAndSkip(1)
-                        }
+                b'\\'
+                    if bytes
+                        .get(ix + 1)
+                        .copied()
+                        .map_or(false, is_ascii_punctuation) =>
+                {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    if bytes[ix + 1] == b'`' {
+                        let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
+                        self.tree.append(Item {
+                            start: ix + 1,
+                            end: ix + count + 1,
+                            body: ItemBody::MaybeCode(count, true),
+                        });
+                        begin_text = ix + 1 + count;
+                        backslash_escaped = false;
+                        LoopInstruction::ContinueAndSkip(count)
+                    } else if bytes[ix + 1] == b'|' && TableParseMode::Active == mode {
+                        // Yeah, it's super weird that backslash escaped pipes in tables aren't "real"
+                        // backslash escapes.
+                        //
+                        // This tree structure is intended for the benefit of inline analysis, and it
+                        // is supposed to operate as-if backslash escaped pipes were stripped out in a
+                        // separate pass.
+                        begin_text = ix + 1;
+                        backslash_escaped = false;
+                        LoopInstruction::ContinueAndSkip(1)
+                    } else if ix + 2 < bytes_len
+                        && bytes[ix + 1] == b'\\'
+                        && bytes[ix + 2] == b'|'
+                        && TableParseMode::Active == mode
+                    {
+                        // To parse `\\|`, discard the backslashes and parse the `|` that follows it.
+                        begin_text = ix + 2;
+                        backslash_escaped = true;
+                        LoopInstruction::ContinueAndSkip(2)
                     } else {
-                        LoopInstruction::ContinueAndSkip(0)
+                        begin_text = ix + 1;
+                        backslash_escaped = true;
+                        LoopInstruction::ContinueAndSkip(1)
                     }
                 }
                 c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' => {
@@ -921,6 +926,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         count,
                         ix - start,
                         mode,
+                        self.options,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -928,6 +934,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         count,
                         ix - start,
                         mode,
+                        self.options,
                     );
                     let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
@@ -1055,20 +1062,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     begin_text = ix + 1;
                     LoopInstruction::ContinueAndSkip(0)
                 }
-                b'!' => {
-                    if ix + 1 < bytes_len && bytes[ix + 1] == b'[' {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        backslash_escaped = false;
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 2,
-                            body: ItemBody::MaybeImage,
-                        });
-                        begin_text = ix + 2;
-                        LoopInstruction::ContinueAndSkip(1)
-                    } else {
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                b'!' if bytes.get(ix + 1) == Some(&b'[') => {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 2,
+                        body: ItemBody::MaybeImage,
+                    });
+                    begin_text = ix + 2;
+                    LoopInstruction::ContinueAndSkip(1)
                 }
                 b'[' => {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -1117,20 +1120,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(0)
                     }
                 }
-                b'.' => {
-                    if ix + 2 < bytes.len() && bytes[ix + 1] == b'.' && bytes[ix + 2] == b'.' {
-                        self.tree.append_text(begin_text, ix, backslash_escaped);
-                        backslash_escaped = false;
-                        self.tree.append(Item {
-                            start: ix,
-                            end: ix + 3,
-                            body: ItemBody::SynthesizeChar('…'),
-                        });
-                        begin_text = ix + 3;
-                        LoopInstruction::ContinueAndSkip(2)
-                    } else {
-                        LoopInstruction::ContinueAndSkip(0)
-                    }
+                b'.' if matches!(bytes.get(ix + 1..), Some(&[b'.', b'.', ..])) => {
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 3,
+                        body: ItemBody::SynthesizeChar('…'),
+                    });
+                    begin_text = ix + 3;
+                    LoopInstruction::ContinueAndSkip(2)
                 }
                 b'-' => {
                     let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'-');
@@ -1172,14 +1171,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 c @ b'\'' | c @ b'"' => {
                     let string_suffix = &self.text[ix..];
-                    let can_open =
-                        delim_run_can_open(&self.text[start..], string_suffix, 1, ix - start, mode);
+                    let can_open = delim_run_can_open(
+                        &self.text[start..],
+                        string_suffix,
+                        1,
+                        ix - start,
+                        mode,
+                        self.options,
+                    );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
                         string_suffix,
                         1,
                         ix - start,
                         mode,
+                        self.options,
                     );
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -1705,7 +1711,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             return None;
         }
         i += 2;
-        if scan_ch(&bytes[i..], b':') == 0 {
+        if bytes.get(i) != Some(&b':') {
             return None;
         }
         i += 1;
@@ -1740,14 +1746,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             &self.text[start..],
             &|bytes| {
                 let mut line_start = LineStart::new(bytes);
-                let current_container = scan_containers(&self.tree, &mut line_start, self.options)
-                    == self.tree.spine_len();
+                let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+                let current_container = tree_position == self.tree.spine_len();
                 if line_start.scan_space(4) {
                     return Some(line_start.bytes_scanned());
                 }
                 let bytes_scanned = line_start.bytes_scanned();
                 let suffix = &bytes[bytes_scanned..];
-                if self.scan_paragraph_interrupt(suffix, current_container)
+                if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
                     || (current_container && scan_setext_heading(suffix).is_some())
                 {
                     None
@@ -1762,12 +1768,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
         let bytes = &self.text.as_bytes()[start..];
-        if scan_ch(bytes, b'[') == 0 {
+        if bytes.get(0) != Some(&b'[') {
             return None;
         }
         let (mut i, label) = self.parse_refdef_label(start + 1)?;
         i += 1;
-        if scan_ch(&bytes[i..], b':') == 0 {
+        if bytes.get(i) != Some(&b':') {
             return None;
         }
         i += 1;
@@ -1791,11 +1797,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            let current_container =
-                scan_containers(&self.tree, &mut line_start, self.options) == self.tree.spine_len();
+            let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+            let current_container = tree_position == self.tree.spine_len();
             if !line_start.scan_space(4) {
                 let suffix = &bytes[i + line_start.bytes_scanned()..];
-                if self.scan_paragraph_interrupt(suffix, current_container)
+                if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
                     || scan_setext_heading(suffix).is_some()
                 {
                     return None;
@@ -1850,12 +1856,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         bytecount += 1;
                     }
                     let mut line_start = LineStart::new(&bytes[bytecount..]);
-                    let current_container =
-                        scan_containers(&self.tree, &mut line_start, self.options)
-                            == self.tree.spine_len();
+                    let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+                    let current_container = tree_position == self.tree.spine_len();
                     if !line_start.scan_space(4) {
                         let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
-                        if self.scan_paragraph_interrupt(suffix, current_container)
+                        if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
                             || scan_setext_heading(suffix).is_some()
                         {
                             return None;
@@ -1956,13 +1961,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Checks whether we should break a paragraph on the given input.
-    fn scan_paragraph_interrupt(&self, bytes: &[u8], current_container: bool) -> bool {
+    fn scan_paragraph_interrupt(
+        &self,
+        bytes: &[u8],
+        current_container: bool,
+        tree_position: usize,
+    ) -> bool {
         if scan_paragraph_interrupt_no_table(
             bytes,
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
             &self.tree,
+            tree_position,
         ) {
             return true;
         }
@@ -2116,6 +2127,7 @@ fn scan_paragraph_interrupt_no_table(
     has_footnote: bool,
     definition_list: bool,
     tree: &Tree<Item>,
+    tree_position: usize,
 ) -> bool {
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
@@ -2132,7 +2144,20 @@ fn scan_paragraph_interrupt_no_table(
         })
         || bytes.starts_with(b"<")
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
-        || definition_list && bytes.starts_with(b":")
+        || definition_list
+            && ((current_container
+                && tree.peek_up().map_or(false, |cur| {
+                    matches!(
+                        tree[cur].item.body,
+                        ItemBody::Paragraph
+                            | ItemBody::TightParagraph
+                            | ItemBody::MaybeDefinitionListTitle
+                    )
+                }))
+                || tree.walk_spine().nth(tree_position).map_or(false, |cur| {
+                    matches!(tree[*cur].item.body, ItemBody::DefinitionListDefinition(_))
+                }))
+            && bytes.starts_with(b":")
         || (has_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(
@@ -2188,44 +2213,15 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
     }
 }
 
-// https://english.stackexchange.com/a/285573
 fn surgerize_tight_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     let mut list_item = tree[list_ix].child;
     while let Some(listitem_ix) = list_item {
-        // first child is special, controls how we repoint list_item.child
-        let list_item_firstborn = tree[listitem_ix].child;
-
-        // Check that list item has children - this is not necessarily the case!
-        if let Some(firstborn_ix) = list_item_firstborn {
-            if let ItemBody::Paragraph = tree[firstborn_ix].item.body {
-                tree[listitem_ix].child = tree[firstborn_ix].child;
+        let mut node_ix = tree[listitem_ix].child;
+        while let Some(node) = node_ix {
+            if let ItemBody::Paragraph = tree[node].item.body {
+                tree[node].item.body = ItemBody::TightParagraph;
             }
-
-            let mut list_item_child = Some(firstborn_ix);
-            let mut node_to_repoint = None;
-            while let Some(child_ix) = list_item_child {
-                // surgerize paragraphs
-                let repoint_ix = if let ItemBody::Paragraph = tree[child_ix].item.body {
-                    if let Some(child_firstborn) = tree[child_ix].child {
-                        if let Some(repoint_ix) = node_to_repoint {
-                            tree[repoint_ix].next = Some(child_firstborn);
-                        }
-                        let mut child_lastborn = child_firstborn;
-                        while let Some(lastborn_next_ix) = tree[child_lastborn].next {
-                            child_lastborn = lastborn_next_ix;
-                        }
-                        child_lastborn
-                    } else {
-                        child_ix
-                    }
-                } else {
-                    child_ix
-                };
-
-                node_to_repoint = Some(repoint_ix);
-                tree[repoint_ix].next = tree[child_ix].next;
-                list_item_child = tree[child_ix].next;
-            }
+            node_ix = tree[node].next;
         }
 
         list_item = tree[listitem_ix].next;
@@ -2264,6 +2260,7 @@ fn delim_run_can_open(
     run_len: usize,
     ix: usize,
     mode: TableParseMode,
+    options: Options,
 ) -> bool {
     let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
@@ -2285,15 +2282,18 @@ fn delim_run_can_open(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    // `*` and `~~` can be intraword, `_` and `~` cannot
-    if delim == b'*' && !is_punctuation(next_char) {
+    // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
+    if (delim == b'*' || delim == b'^') && !is_punctuation(next_char) {
         return true;
     }
     if delim == b'~' && run_len > 1 {
         return true;
     }
     let prev_char = s[..ix].chars().last().unwrap();
-    if delim == b'~' && prev_char == '~' && !is_punctuation(next_char) {
+    if delim == b'~'
+        && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT))
+        && !is_punctuation(next_char)
+    {
         return true;
     }
 
@@ -2310,6 +2310,7 @@ fn delim_run_can_close(
     run_len: usize,
     ix: usize,
     mode: TableParseMode,
+    options: Options,
 ) -> bool {
     if ix == 0 {
         return false;
@@ -2332,11 +2333,13 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    // `*` and `~~` can be intraword, `_` and `~` cannot
-    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
+    // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
+    if (delim == b'*' || delim == b'^' || (delim == b'~' && run_len > 1))
+        && !is_punctuation(prev_char)
+    {
         return true;
     }
-    if delim == b'~' && prev_char == '~' {
+    if delim == b'~' && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT)) {
         return true;
     }
 
@@ -2722,7 +2725,11 @@ mod simd {
             match callback(offset, *bytes.get_unchecked(offset)) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     offset += skip + 1;
-                    mask = mask.wrapping_shr((skip + 1 + mask_ix) as u32);
+                    let shift = skip + 1 + mask_ix;
+                    if shift >= 32 {
+                        break;
+                    }
+                    mask >>= shift;
                 }
                 LoopInstruction::BreakAtWith(ix, val) => return Err((ix, val)),
             }

@@ -54,3 +54,8 @@ jobs:
     - name: Check benchmarks are not broken
       working-directory: bench
       run: cargo check --benches
+    # Make sure the WASM target builds for the main package
+    - name: Add WASM target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build WASM target
+      run: cargo build --package pulldown-cmark --target wasm32-unknown-unknown

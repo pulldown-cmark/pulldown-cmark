@@ -34,8 +34,9 @@ extern crate std;
 use alloc::string::String;
 
 use core::fmt::{self, Arguments};
+use core::str::from_utf8;
+#[cfg(feature = "std")]
 use std::io::{self, Write};
-use std::str::from_utf8;
 
 #[rustfmt::skip]
 static HREF_SAFE: [u8; 128] = [
@@ -58,6 +59,7 @@ static SINGLE_QUOTE_ESCAPE: &str = "&#x27;";
 /// `W: StrWrite`. Since we need the latter a lot, we choose to wrap
 /// `Write` types.
 #[derive(Debug)]
+#[cfg(feature = "std")]
 pub struct IoWriter<W>(pub W);
 
 /// Trait that allows writing string slices. This is basically an extension
@@ -69,6 +71,7 @@ pub trait StrWrite {
     fn write_fmt(&mut self, args: Arguments) -> Result<(), Self::Error>;
 }
 
+#[cfg(feature = "std")]
 impl<W> StrWrite for IoWriter<W>
 where
     W: Write,
@@ -457,6 +460,8 @@ mod simd {
 
 #[cfg(test)]
 mod test {
+    use alloc::string::String;
+
     pub use super::{escape_href, escape_html, escape_html_body_text};
 
     #[test]

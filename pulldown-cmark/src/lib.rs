@@ -68,7 +68,11 @@
 //! }
 //! ```
 //!
-
+#![warn(
+    clippy::alloc_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::std_instead_of_core
+)]
 // When compiled for the rustc compiler itself we want to make sure that this is
 // an unstable crate.
 #![cfg_attr(rustbuild, feature(staged_api, rustc_private))]

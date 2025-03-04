@@ -20,8 +20,20 @@
 
 //! Utility functions for HTML escaping. Only useful when building your own
 //! HTML renderer.
+#![warn(
+    clippy::alloc_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::std_instead_of_core
+)]
+#![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
-use std::fmt::{self, Arguments};
+#[cfg(feature = "std")]
+extern crate std;
+
+use alloc::string::String;
+
+use core::fmt::{self, Arguments};
 use std::io::{self, Write};
 use std::str::from_utf8;
 

@@ -27,10 +27,10 @@ use core::{
     num::NonZeroUsize,
     ops::{Index, Range},
 };
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
 use std::collections::HashMap;
 
-#[cfg(all(not(feature = "std"), feature = "hashbrown"))]
+#[cfg(feature = "hashbrown")]
 use hashbrown::HashMap;
 use unicase::UniCase;
 

@@ -21,10 +21,10 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use alloc::{string::String, vec::Vec};
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
 use std::collections::HashMap;
 
-#[cfg(all(not(feature = "std"), feature = "hashbrown"))]
+#[cfg(feature = "hashbrown")]
 use hashbrown::HashMap;
 #[cfg(feature = "std")]
 use pulldown_cmark_escape::IoWriter;

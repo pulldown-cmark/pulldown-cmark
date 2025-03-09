@@ -1,10 +1,17 @@
-use std::borrow::{Borrow, Cow};
-use std::fmt;
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::str::from_utf8;
+use alloc::{
+    borrow::{Cow, ToOwned},
+    boxed::Box,
+    string::{String, ToString},
+};
+use core::{
+    borrow::Borrow,
+    fmt,
+    hash::{Hash, Hasher},
+    ops::Deref,
+    str::from_utf8,
+};
 
-const MAX_INLINE_STR_LEN: usize = 3 * std::mem::size_of::<isize>() - 2;
+const MAX_INLINE_STR_LEN: usize = 3 * core::mem::size_of::<isize>() - 2;
 
 /// Returned when trying to convert a `&str` into a `InlineStr`
 /// but it fails because it doesn't fit.
@@ -40,7 +47,7 @@ impl From<char> for InlineStr {
     }
 }
 
-impl std::cmp::PartialEq<InlineStr> for InlineStr {
+impl core::cmp::PartialEq<InlineStr> for InlineStr {
     fn eq(&self, other: &InlineStr) -> bool {
         self.deref() == other.deref()
     }
@@ -93,9 +100,11 @@ pub enum CowStr<'a> {
 
 #[cfg(feature = "serde")]
 mod serde_impl {
-    use super::CowStr;
+    use core::fmt;
+
     use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-    use std::fmt;
+
+    use super::CowStr;
 
     impl<'a> Serialize for CowStr<'a> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -162,7 +171,7 @@ impl<'a> Hash for CowStr<'a> {
     }
 }
 
-impl<'a> std::clone::Clone for CowStr<'a> {
+impl<'a> core::clone::Clone for CowStr<'a> {
     fn clone(&self) -> Self {
         match self {
             CowStr::Boxed(s) => match InlineStr::try_from(&**s) {
@@ -175,7 +184,7 @@ impl<'a> std::clone::Clone for CowStr<'a> {
     }
 }
 
-impl<'a> std::cmp::PartialEq<CowStr<'a>> for CowStr<'a> {
+impl<'a> core::cmp::PartialEq<CowStr<'a>> for CowStr<'a> {
     fn eq(&self, other: &CowStr<'_>) -> bool {
         self.deref() == other.deref()
     }
@@ -281,6 +290,11 @@ impl<'a> fmt::Display for CowStr<'a> {
 
 #[cfg(test)]
 mod test_special_string {
+    use alloc::{
+        borrow::ToOwned,
+        string::{String, ToString},
+    };
+
     use super::*;
 
     #[test]
@@ -297,8 +311,8 @@ mod test_special_string {
 
     #[test]
     fn cowstr_size() {
-        let size = std::mem::size_of::<CowStr>();
-        let word_size = std::mem::size_of::<isize>();
+        let size = core::mem::size_of::<CowStr>();
+        let word_size = core::mem::size_of::<isize>();
         assert_eq!(3 * word_size, size);
     }
 
@@ -427,6 +441,6 @@ mod test_special_string {
     }
 
     fn variant_eq<T>(a: &T, b: &T) -> bool {
-        std::mem::discriminant(a) == std::mem::discriminant(b)
+        core::mem::discriminant(a) == core::mem::discriminant(b)
     }
 }

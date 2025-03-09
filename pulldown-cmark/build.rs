@@ -4,7 +4,7 @@ fn main() {
 
 // If the "gen-tests" feature is absent,
 // this function will be compiled down to nothing
-#[cfg(not(feature = "gen-tests"))]
+#[cfg(any(not(feature = "gen-tests"), not(feature = "std")))]
 fn generate_tests_from_spec() {}
 
 // If the feature is present, generate tests
@@ -18,7 +18,7 @@ fn generate_tests_from_spec() {}
 // .
 // expected html output
 // ````````````````````````````````
-#[cfg(feature = "gen-tests")]
+#[cfg(all(feature = "gen-tests", feature = "std"))]
 fn generate_tests_from_spec() {
     use std::fs::{self, File};
     use std::io::{Read, Write};

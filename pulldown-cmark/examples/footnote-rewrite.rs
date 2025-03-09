@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::fmt::Write as _;
-use std::io::Write as _;
+use std::{collections::HashMap, fmt::Write as _, io::Write as _};
 
 use pulldown_cmark::{html, CowStr, Event, Options, Parser, Tag, TagEnd};
 

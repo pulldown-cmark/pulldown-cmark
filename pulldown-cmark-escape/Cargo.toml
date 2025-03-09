@@ -16,3 +16,4 @@ readme = "./README.md"
 
 [features]
 simd = []
+std = []

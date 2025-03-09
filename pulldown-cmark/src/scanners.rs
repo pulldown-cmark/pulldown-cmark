@@ -20,15 +20,16 @@
 
 //! Scanners for fragments of CommonMark syntax
 
-use std::char;
-
-use crate::parse::HtmlScanGuard;
-pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
-use crate::strings::CowStr;
-use crate::{entities, BlockQuoteKind, HeadingLevel};
-use crate::{Alignment, LinkType};
+use alloc::{string::String, vec::Vec};
+use core::char;
 
 use memchr::memchr;
+
+pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
+use crate::{
+    entities, parse::HtmlScanGuard, strings::CowStr, Alignment, BlockQuoteKind, HeadingLevel,
+    LinkType,
+};
 
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
@@ -934,7 +935,7 @@ pub(crate) fn scan_entity(bytes: &[u8]) -> (usize, Option<CowStr<'static>>) {
 
 pub(crate) fn scan_wikilink_pipe(data: &str, start_ix: usize, len: usize) -> Option<(usize, &str)> {
     let bytes = data.as_bytes();
-    let end_ix = std::cmp::min(start_ix + len, bytes.len());
+    let end_ix = core::cmp::min(start_ix + len, bytes.len());
     let mut i = start_ix;
 
     while i < end_ix {
@@ -1236,7 +1237,7 @@ fn is_html_tag(tag: &[u8]) -> bool {
                     // We can compare case insensitively because the probes are
                     // all lower case alpha strings.
                     match a.cmp(&(b | 0x20)) {
-                        std::cmp::Ordering::Equal => None,
+                        core::cmp::Ordering::Equal => None,
                         inequality => Some(inequality),
                     }
                 })

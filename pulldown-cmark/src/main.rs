@@ -22,12 +22,14 @@
 
 #![forbid(unsafe_code)]
 
-use pulldown_cmark::{html, BrokenLink, Options, Parser};
+use std::{
+    env,
+    fs::File,
+    io::{self, Read},
+    path::PathBuf,
+};
 
-use std::env;
-use std::fs::File;
-use std::io::{self, Read};
-use std::path::PathBuf;
+use pulldown_cmark::{html, BrokenLink, Options, Parser};
 
 fn dry_run(text: &str, opts: Options, broken_links: &mut Vec<BrokenLink<'static>>) {
     let p = Parser::new_with_broken_link_callback(

@@ -68,7 +68,11 @@
 //! }
 //! ```
 //!
-
+#![warn(
+    clippy::alloc_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::std_instead_of_core
+)]
 // When compiled for the rustc compiler itself we want to make sure that this is
 // an unstable crate.
 #![cfg_attr(rustbuild, feature(staged_api, rustc_private))]
@@ -76,6 +80,18 @@
 // Forbid unsafe code unless the SIMD feature is enabled.
 #![cfg_attr(not(feature = "simd"), forbid(unsafe_code))]
 #![warn(missing_debug_implementations)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(all(not(feature = "std"), not(feature = "hashbrown")))]
+compile_error!("\"hashbrown\" feature should be enabled in \"no_std\" environment.");
+
+use alloc::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -94,13 +110,15 @@ mod scanners;
 mod strings;
 mod tree;
 
-use std::fmt::Display;
+use core::fmt::Display;
 
-pub use crate::parse::{
-    BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+pub use crate::{
+    parse::{
+        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+    },
+    strings::{CowStr, InlineStr},
+    utils::*,
 };
-pub use crate::strings::{CowStr, InlineStr};
-pub use crate::utils::*;
 
 /// Codeblock kind.
 #[derive(Clone, Debug, PartialEq)]
@@ -419,7 +437,7 @@ pub enum TagEnd {
 /// Make sure `TagEnd` is no more than two bytes in size.
 /// This is why it's used instead of just using `Tag`.
 #[cfg(target_pointer_width = "64")]
-const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); std::mem::size_of::<TagEnd>()];
+const _STATIC_ASSERT_TAG_END_SIZE: [(); 2] = [(); core::mem::size_of::<TagEnd>()];
 
 impl<'a> From<Tag<'a>> for TagEnd {
     fn from(value: Tag) -> Self {
@@ -439,7 +457,7 @@ pub enum HeadingLevel {
 }
 
 impl Display for HeadingLevel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::H1 => write!(f, "h1"),
             Self::H2 => write!(f, "h2"),

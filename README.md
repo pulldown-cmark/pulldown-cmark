@@ -13,10 +13,10 @@ a library.
 
 It is designed to be:
 
-* Fast; a bare minimum of allocation and copying
-* Safe; written in pure Rust with no unsafe blocks (except in the opt-in SIMD feature)
-* Versatile; in particular source-maps are supported
-* Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
+- Fast; a bare minimum of allocation and copying
+- Safe; written in pure Rust with no unsafe blocks (except in the opt-in SIMD feature)
+- Versatile; in particular source-maps are supported
+- Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
 
 Further, it optionally supports parsing footnotes,
 [Github flavored tables](https://github.github.com/gfm/#tables-extension-),
@@ -182,6 +182,32 @@ For a higher release performance you may want this configuration in your profile
 lto = true
 codegen-units = 1
 panic = "abort"
+```
+
+### `no_std` support
+
+`no_std` support can be enabled by compiling with `--no-default-features` to
+disable `std` support and `--features hashbrown` for `Hash` collections that are only
+defined in `std` for internal usages in crate. For example:
+
+```toml
+[dependencies]
+pulldown-cmark = { version = "*", default-features = false, features = ["hashbrown", ...others] }
+```
+
+To support both `std` and `no_std` builds in project, you can use the following
+in your `Cargo.toml`:
+
+```toml
+[features]
+default = ["std", ...others]
+
+std = ["pulldown-cmark/std"]
+hashbrown = ["pulldown-cmark/hashbrown"]
+...others
+
+[dependencies]
+pulldown-cmark = { version = "*", default-features = false }
 ```
 
 ## Authors

@@ -6,8 +6,11 @@
 
 //! A Vec-based container for a tree structure.
 
-use std::num::NonZeroUsize;
-use std::ops::{Add, Sub};
+use alloc::vec::Vec;
+use core::{
+    num::NonZeroUsize,
+    ops::{Add, Sub},
+};
 
 use crate::parse::{Item, ItemBody};
 
@@ -166,7 +169,7 @@ impl<T: Default> Tree<T> {
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
-    pub(crate) fn walk_spine(&self) -> impl std::iter::DoubleEndedIterator<Item = &TreeIndex> {
+    pub(crate) fn walk_spine(&self) -> impl core::iter::DoubleEndedIterator<Item = &TreeIndex> {
         self.spine.iter()
     }
 
@@ -247,19 +250,19 @@ impl Tree<Item> {
     }
 }
 
-impl<T> std::fmt::Debug for Tree<T>
+impl<T> core::fmt::Debug for Tree<T>
 where
-    T: std::fmt::Debug,
+    T: core::fmt::Debug,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         fn debug_tree<T>(
             tree: &Tree<T>,
             cur: TreeIndex,
             indent: usize,
-            f: &mut std::fmt::Formatter<'_>,
-        ) -> std::fmt::Result
+            f: &mut core::fmt::Formatter<'_>,
+        ) -> core::fmt::Result
         where
-            T: std::fmt::Debug,
+            T: core::fmt::Debug,
         {
             for _ in 0..indent {
                 write!(f, "  ")?;
@@ -283,7 +286,7 @@ where
     }
 }
 
-impl<T> std::ops::Index<TreeIndex> for Tree<T> {
+impl<T> core::ops::Index<TreeIndex> for Tree<T> {
     type Output = Node<T>;
 
     fn index(&self, ix: TreeIndex) -> &Self::Output {
@@ -291,7 +294,7 @@ impl<T> std::ops::Index<TreeIndex> for Tree<T> {
     }
 }
 
-impl<T> std::ops::IndexMut<TreeIndex> for Tree<T> {
+impl<T> core::ops::IndexMut<TreeIndex> for Tree<T> {
     fn index_mut(&mut self, ix: TreeIndex) -> &mut Node<T> {
         self.nodes.index_mut(ix.get())
     }

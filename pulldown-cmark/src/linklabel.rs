@@ -20,10 +20,14 @@
 
 //! Link label parsing and matching.
 
+use alloc::string::String;
+
 use unicase::UniCase;
 
-use crate::scanners::{is_ascii_punctuation, is_ascii_whitespace, scan_eol};
-use crate::strings::CowStr;
+use crate::{
+    scanners::{is_ascii_punctuation, is_ascii_whitespace, scan_eol},
+    strings::CowStr,
+};
 
 #[derive(Debug)]
 pub(crate) enum ReferenceLabel<'a> {

@@ -1,23 +1,22 @@
 //! The first pass resolves all block structure, generating an AST. Within a block, items
 //! are in a linear chain with potential inline markup identified.
 
-use std::cmp::max;
-use std::ops::Range;
-
-use crate::parse::{
-    scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
-    LINK_MAX_NESTED_PARENS,
-};
-use crate::strings::CowStr;
-use crate::tree::{Tree, TreeIndex};
-use crate::Options;
-use crate::{
-    linklabel::{scan_link_label_rest, LinkLabel},
-    HeadingLevel,
-};
-use crate::{scanners::*, MetadataBlockKind};
+use alloc::{string::String, vec::Vec};
+use core::{cmp::max, ops::Range};
 
 use unicase::UniCase;
+
+use crate::{
+    linklabel::{scan_link_label_rest, LinkLabel},
+    parse::{
+        scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
+        LINK_MAX_NESTED_PARENS,
+    },
+    scanners::*,
+    strings::CowStr,
+    tree::{Tree, TreeIndex},
+    HeadingLevel, MetadataBlockKind, Options,
+};
 
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
@@ -2161,7 +2160,7 @@ fn scan_paragraph_interrupt_no_table(
         || (has_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(
-                std::str::from_utf8(&bytes[2..]).unwrap(),
+                core::str::from_utf8(&bytes[2..]).unwrap(),
                 &|_| None,
                 tree.is_in_table(),
             )
@@ -2595,11 +2594,12 @@ mod simd {
     //!
     //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
-    use super::{LookupTable, LoopInstruction};
-    use crate::Options;
     use core::arch::x86_64::*;
 
-    const VECTOR_SIZE: usize = std::mem::size_of::<__m128i>();
+    use super::{LookupTable, LoopInstruction};
+    use crate::Options;
+
+    const VECTOR_SIZE: usize = core::mem::size_of::<__m128i>();
 
     /// Generates a lookup table containing the bitmaps for our
     /// special marker bytes. This is effectively a 128 element 2d bitvector,
@@ -2756,7 +2756,7 @@ mod simd {
             let mask = compute_mask(lut, bytes, ix);
             let block_start = ix;
             ix = match process_mask(mask, bytes, ix, &mut callback) {
-                Ok(ix) => std::cmp::max(ix, VECTOR_SIZE + block_start),
+                Ok(ix) => core::cmp::max(ix, VECTOR_SIZE + block_start),
                 Err((end_ix, val)) => return (end_ix, val),
             };
         }
@@ -2774,8 +2774,7 @@ mod simd {
 
     #[cfg(test)]
     mod simd_test {
-        use super::super::create_lut;
-        use super::{iterate_special_bytes, LoopInstruction};
+        use super::{super::create_lut, iterate_special_bytes, LoopInstruction};
         use crate::Options;
 
         fn check_expected_indices(bytes: &[u8], expected: &[usize], skip: usize) {

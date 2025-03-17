@@ -39,8 +39,8 @@ jobs:
       run: cargo test --features=simd,gen-tests
     - name: Cargo test with serde feature enabled
       run: cargo test --features=serde
-    - name: Cargo test without default features
-      run: cargo test --no-default-features
+    - name: Cargo test in no_std environment
+      run: cargo test --no-default-features --features hashbrown
   regression:
     runs-on: ubuntu-latest
     steps:

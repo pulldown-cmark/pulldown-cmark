@@ -192,7 +192,7 @@ defined in `std` for internal usages in crate. For example:
 
 ```toml
 [dependencies]
-pulldown-cmark = { version = "*", default-features = false, features = ["hashbrown", ...others] }
+pulldown-cmark = { version = "*", default-features = false, features = ["hashbrown", "other features"] }
 ```
 
 To support both `std` and `no_std` builds in project, you can use the following
@@ -200,12 +200,11 @@ in your `Cargo.toml`:
 
 ```toml
 [features]
-default = ["std", ...others]
+default = ["std", "other features"]
 
 std = ["pulldown-cmark/std"]
 hashbrown = ["pulldown-cmark/hashbrown"]
-...others
-
+other_features = []
 [dependencies]
 pulldown-cmark = { version = "*", default-features = false }
 ```

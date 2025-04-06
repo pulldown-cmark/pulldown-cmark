@@ -3,8 +3,7 @@ use std::{collections::HashMap, fmt::Write as _, io::Write as _};
 
 /// This example shows how to do footnotes as bottom-notes, in the style of GitHub.
 fn main() {
-    let markdown_input: &str =
-r#"
+    let markdown_input: &str = r#"
     This is an [^a] footnote [^a].
 
     [^a]: a footnote contents

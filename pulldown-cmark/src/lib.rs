@@ -114,8 +114,8 @@ use core::fmt::Display;
 
 pub use crate::{
     parse::{
-        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback,
-        OffsetIter, Parser, RefDefs, HardBreakStyle
+        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, HardBreakStyle, OffsetIter,
+        Parser, RefDefs,
     },
     strings::{CowStr, InlineStr},
     utils::*,

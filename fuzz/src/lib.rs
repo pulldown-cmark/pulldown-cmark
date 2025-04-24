@@ -13,7 +13,7 @@ use mozjs::rooted;
 use mozjs::rust::wrappers::JS_CallFunctionName;
 use mozjs::rust::SIMPLE_GLOBAL_CLASS;
 use mozjs::rust::{JSEngine, RealmOptions, Runtime};
-use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, HardBreakStyle, LinkType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
@@ -301,6 +301,8 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
 /// - Resets the link type to `LinkType::Inline`.
 ///
 /// - Resets all code blocks to `CodeBlockKind::Fenced`.
+///
+/// - Make all `HardBreak`s into `HardBreak(HardBreakStyle::BackSlash)`.
 pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
     let mut normalized = Vec::with_capacity(events.len());
     for event in events.into_iter() {
@@ -329,6 +331,11 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
             {
                 *prev = format!("{prev}\n").into();
                 normalized.push(event);
+            }
+
+            // As commonmark.js doesn't differentiate between hard break stylings:
+            (_, Event::HardBreak(_)) => {
+                normalized.push(Event::HardBreak(HardBreakStyle::BackSlash))
             }
 
             // Other events are passed through.

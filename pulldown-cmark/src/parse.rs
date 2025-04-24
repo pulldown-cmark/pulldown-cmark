@@ -192,7 +192,7 @@ pub enum HardBreakStyle {
     /// ```plain
     /// Line break!··
     /// ```
-    DoubleSpace
+    DoubleSpace,
 }
 
 impl HardBreakStyle {

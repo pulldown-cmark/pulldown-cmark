@@ -24,7 +24,7 @@ fn main() {
             Event::FootnoteReference(s) => println!("FootnoteReference: {:?}", s),
             Event::TaskListMarker(b) => println!("TaskListMarker: {:?}", b),
             Event::SoftBreak => println!("SoftBreak"),
-            Event::HardBreak => println!("HardBreak"),
+            Event::HardBreak(s) => println!("HardBreak: {:?}", s),
             Event::Rule => println!("Rule"),
         };
         event

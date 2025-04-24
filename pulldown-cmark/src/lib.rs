@@ -114,7 +114,8 @@ use core::fmt::Display;
 
 pub use crate::{
     parse::{
-        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
+        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback,
+        OffsetIter, Parser, RefDefs, HardBreakStyle
     },
     strings::{CowStr, InlineStr},
     utils::*,
@@ -610,7 +611,7 @@ pub enum Event<'a> {
     /// breaks
     /// ```
     /// *`·` is a space*
-    HardBreak,
+    HardBreak(HardBreakStyle),
     /// A horizontal ruler.
     ///
     /// ```markdown
@@ -642,7 +643,7 @@ impl<'a> Event<'a> {
             Event::InlineHtml(s) => Event::InlineHtml(s.into_static()),
             Event::FootnoteReference(s) => Event::FootnoteReference(s.into_static()),
             Event::SoftBreak => Event::SoftBreak,
-            Event::HardBreak => Event::HardBreak,
+            Event::HardBreak(style) => Event::HardBreak(style),
             Event::Rule => Event::Rule,
             Event::TaskListMarker(b) => Event::TaskListMarker(b),
         }

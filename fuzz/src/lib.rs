@@ -279,7 +279,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             XmlEvent::Empty(tag) => match tag.name().as_ref() {
                 b"thematic_break" => events.push(Event::Rule),
                 b"softbreak" => events.push(Event::SoftBreak),
-                b"linebreak" => events.push(Event::HardBreak),
+                b"linebreak" => events.push(Event::HardBreak(HardBreakStyle::BackSlash)),
                 name => anyhow::bail!("empty tag: {}", String::from_utf8_lossy(name)),
             },
             event => anyhow::bail!("event {event:?}"),

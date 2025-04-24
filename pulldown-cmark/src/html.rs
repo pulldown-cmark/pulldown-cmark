@@ -131,7 +131,7 @@ where
                 SoftBreak => {
                     self.write_newline()?;
                 }
-                HardBreak => {
+                HardBreak(_) => {
                     self.write("<br />\n")?;
                 }
                 Rule => {
@@ -510,7 +510,7 @@ where
                     escape_html(&mut self.writer, &text)?;
                     self.write("$$")?;
                 }
-                SoftBreak | HardBreak | Rule => {
+                SoftBreak | HardBreak(_) | Rule => {
                     self.write(" ")?;
                 }
                 FootnoteReference(name) => {

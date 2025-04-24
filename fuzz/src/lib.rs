@@ -13,7 +13,7 @@ use mozjs::rooted;
 use mozjs::rust::wrappers::JS_CallFunctionName;
 use mozjs::rust::SIMPLE_GLOBAL_CLASS;
 use mozjs::rust::{JSEngine, RealmOptions, Runtime};
-use pulldown_cmark::{CodeBlockKind, Event, HardBreakStyle, LinkType, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, HardBreakKind, LinkType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
@@ -279,7 +279,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
             XmlEvent::Empty(tag) => match tag.name().as_ref() {
                 b"thematic_break" => events.push(Event::Rule),
                 b"softbreak" => events.push(Event::SoftBreak),
-                b"linebreak" => events.push(Event::HardBreak(HardBreakStyle::BackSlash)),
+                b"linebreak" => events.push(Event::HardBreak(HardBreakKind::BackSlash)),
                 name => anyhow::bail!("empty tag: {}", String::from_utf8_lossy(name)),
             },
             event => anyhow::bail!("event {event:?}"),
@@ -302,7 +302,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
 ///
 /// - Resets all code blocks to `CodeBlockKind::Fenced`.
 ///
-/// - Make all `HardBreak`s into `HardBreak(HardBreakStyle::BackSlash)`.
+/// - Make all `HardBreak`s into `HardBreak(HardBreakKind::BackSlash)`.
 pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
     let mut normalized = Vec::with_capacity(events.len());
     for event in events.into_iter() {
@@ -335,7 +335,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
 
             // As commonmark.js doesn't differentiate between hard break stylings:
             (_, Event::HardBreak(_)) => {
-                normalized.push(Event::HardBreak(HardBreakStyle::BackSlash))
+                normalized.push(Event::HardBreak(HardBreakKind::BackSlash))
             }
 
             // Other events are passed through.

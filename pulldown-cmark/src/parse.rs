@@ -184,7 +184,7 @@ impl ItemBody {
 
 /// The style of an [`Event::HardBreak`].
 #[derive(Clone, Debug, PartialEq)]
-pub enum HardBreakStyle {
+pub enum HardBreakKind {
     /// ```plain
     /// Line break!\
     /// ```
@@ -192,15 +192,15 @@ pub enum HardBreakStyle {
     /// ```plain
     /// Line break!··
     /// ```
-    DoubleSpace,
+    Spaces,
 }
 
-impl HardBreakStyle {
+impl HardBreakKind {
     const fn from_bool(src: bool) -> Self {
         if src {
             Self::BackSlash
         } else {
-            Self::DoubleSpace
+            Self::Spaces
         }
     }
 }
@@ -2298,7 +2298,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::InlineHtml => return Event::InlineHtml(text[item.start..item.end].into()),
         ItemBody::OwnedInlineHtml(cow_ix) => return Event::InlineHtml(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
-        ItemBody::HardBreak(style) => return Event::HardBreak(HardBreakStyle::from_bool(style)),
+        ItemBody::HardBreak(style) => return Event::HardBreak(HardBreakKind::from_bool(style)),
         ItemBody::FootnoteReference(cow_ix) => {
             return Event::FootnoteReference(allocs.take_cow(cow_ix))
         }

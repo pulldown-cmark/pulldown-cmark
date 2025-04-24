@@ -114,7 +114,7 @@ use core::fmt::Display;
 
 pub use crate::{
     parse::{
-        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, HardBreakStyle, OffsetIter,
+        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, HardBreakKind, OffsetIter,
         Parser, RefDefs,
     },
     strings::{CowStr, InlineStr},
@@ -611,7 +611,7 @@ pub enum Event<'a> {
     /// breaks
     /// ```
     /// *`·` is a space*
-    HardBreak(HardBreakStyle),
+    HardBreak(HardBreakKind),
     /// A horizontal ruler.
     ///
     /// ```markdown

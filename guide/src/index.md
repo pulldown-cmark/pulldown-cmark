@@ -53,7 +53,7 @@ example, is the code to transform soft line breaks into hard breaks:
 
 ```rust
 let parser = parser.map(|event| match event {
-	Event::SoftBreak => Event::HardBreak(HardBreakStyle::DoubleSpace),
+	Event::SoftBreak => Event::HardBreak(HardBreakKind::Spaces),
 	_ => event
 });
 ```

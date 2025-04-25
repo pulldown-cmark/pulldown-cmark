@@ -334,9 +334,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
             }
 
             // As commonmark.js doesn't differentiate between hard break stylings:
-            (_, Event::HardBreak(_)) => {
-                normalized.push(Event::HardBreak(HardBreakKind::BackSlash))
-            }
+            (_, Event::HardBreak(_)) => normalized.push(Event::HardBreak(HardBreakKind::BackSlash)),
 
             // Other events are passed through.
             (_, _) => normalized.push(event),

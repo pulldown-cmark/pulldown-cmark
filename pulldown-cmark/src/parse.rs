@@ -20,20 +20,26 @@
 
 //! Tree-based two pass parser.
 
-use std::cmp::{max, min};
-use std::collections::{HashMap, VecDeque};
-use std::iter::FusedIterator;
-use std::num::NonZeroUsize;
-use std::ops::{Index, Range};
+use alloc::{borrow::ToOwned, boxed::Box, collections::VecDeque, string::String, vec::Vec};
+use core::{
+    cmp::{max, min},
+    iter::FusedIterator,
+    num::NonZeroUsize,
+    ops::{Index, Range},
+};
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
+use std::collections::HashMap;
 
+#[cfg(feature = "hashbrown")]
+use hashbrown::HashMap;
 use unicase::UniCase;
 
-use crate::firstpass::run_first_pass;
-use crate::linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel};
-use crate::scanners::*;
-use crate::strings::CowStr;
-use crate::tree::{Tree, TreeIndex};
 use crate::{
+    firstpass::run_first_pass,
+    linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel},
+    scanners::*,
+    strings::CowStr,
+    tree::{Tree, TreeIndex},
     Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
     Options, Tag, TagEnd,
 };
@@ -178,7 +184,7 @@ impl ItemBody {
 
 #[derive(Debug)]
 pub struct BrokenLink<'a> {
-    pub span: std::ops::Range<usize>,
+    pub span: core::ops::Range<usize>,
     pub link_type: LinkType,
     pub reference: CowStr<'a>,
 }
@@ -218,8 +224,8 @@ pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
     math_delims: MathDelims,
 }
 
-impl<'input, F> std::fmt::Debug for Parser<'input, F> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<'input, F> core::fmt::Debug for Parser<'input, F> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // Only print the fields that have public types.
         f.debug_struct("Parser")
             .field("text", &self.text)
@@ -941,7 +947,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 }
                 self.tree[tos.node].child = Some(body_node);
                 self.tree[tos.node].next = self.tree[next_ix].next;
-                self.tree[tos.node].item.end = end_ix + 1;
+                self.tree[tos.node].item.end = end_ix + 2;
                 self.disable_all_links();
                 return Some(tos.node);
             }
@@ -1781,7 +1787,7 @@ impl LinkStack {
 
     fn pop(&mut self) -> Option<LinkStackEl> {
         let el = self.inner.pop();
-        self.disabled_ix = std::cmp::min(self.disabled_ix, self.inner.len());
+        self.disabled_ix = core::cmp::min(self.disabled_ix, self.inner.len());
         el
     }
 
@@ -2056,16 +2062,16 @@ impl<'a> Allocations<'a> {
     }
 
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
-        std::mem::replace(&mut self.cows[ix.0], "".into())
+        core::mem::replace(&mut self.cows[ix.0], "".into())
     }
 
     pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>) {
         let default_link = (LinkType::ShortcutUnknown, "".into(), "".into(), "".into());
-        std::mem::replace(&mut self.links[ix.0], default_link)
+        core::mem::replace(&mut self.links[ix.0], default_link)
     }
 
     pub fn take_alignment(&mut self, ix: AlignmentIndex) -> Vec<Alignment> {
-        std::mem::take(&mut self.alignments[ix.0])
+        core::mem::take(&mut self.alignments[ix.0])
     }
 }
 
@@ -2397,6 +2403,8 @@ impl<'a, F: BrokenLinkCallback<'a>> FusedIterator for Parser<'a, F> {}
 
 #[cfg(test)]
 mod test {
+    use alloc::{borrow::ToOwned, string::ToString, vec::Vec};
+
     use super::*;
     use crate::tree::Node;
 
@@ -2417,14 +2425,14 @@ mod test {
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
-        let node_size = std::mem::size_of::<Node<Item>>();
+        let node_size = core::mem::size_of::<Node<Item>>();
         assert_eq!(48, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
-        let body_size = std::mem::size_of::<ItemBody>();
+        let body_size = core::mem::size_of::<ItemBody>();
         assert_eq!(16, body_size);
     }
 
@@ -2445,6 +2453,29 @@ mod test {
         // dont crash
         Parser::new("\\\\\r\r").count();
         Parser::new("\\\r\r\\.\\\\\r\r\\.\\").count();
+    }
+
+    #[test]
+    fn issue_1030() {
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_WIKILINKS);
+
+        let parser = Parser::new_ext("For a new ferrari, [[Wikientry|click here]]!", opts);
+
+        let offsets = parser
+            .into_offset_iter()
+            .map(|(_ev, range)| range)
+            .collect::<Vec<_>>();
+        let expected_offsets = vec![
+            (0..44),  // Paragraph START
+            (0..19),  // `For a new ferrari, `
+            (19..43), // Wikilink START
+            (31..41), // `click here`
+            (19..43), // Wikilink END
+            (43..44), // `!`
+            (0..44),  // Paragraph END
+        ];
+        assert_eq!(offsets, expected_offsets);
     }
 
     #[test]
@@ -2482,7 +2513,7 @@ mod test {
 
     #[test]
     fn issue_283() {
-        let input = std::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap();
+        let input = core::str::from_utf8(b"\xf0\x9b\xb2\x9f<td:^\xf0\x9b\xb2\x9f").unwrap();
         // dont crash
         parser_with_extensions(input).count();
     }

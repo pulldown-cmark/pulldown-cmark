@@ -20,13 +20,19 @@
 
 //! HTML renderer that takes an iterator of events as input.
 
+use alloc::{string::String, vec::Vec};
+#[cfg(all(feature = "std", not(feature = "hashbrown")))]
 use std::collections::HashMap;
 
-use crate::strings::CowStr;
-use crate::Event::*;
-use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
-use pulldown_cmark_escape::{
-    escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
+#[cfg(feature = "hashbrown")]
+use hashbrown::HashMap;
+#[cfg(feature = "std")]
+use pulldown_cmark_escape::IoWriter;
+use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
+
+use crate::{
+    strings::CowStr, Alignment, BlockQuoteKind, CodeBlockKind, Event, Event::*, LinkType, Tag,
+    TagEnd,
 };
 
 enum TableState {
@@ -587,6 +593,7 @@ where
 /// </ul>
 /// "#);
 /// ```
+#[cfg(feature = "std")]
 pub fn write_html_io<'a, I, W>(writer: W, iter: I) -> std::io::Result<()>
 where
     I: Iterator<Item = Event<'a>>,
@@ -622,10 +629,10 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> core::fmt::Result
 where
     I: Iterator<Item = Event<'a>>,
-    W: std::fmt::Write,
+    W: core::fmt::Write,
 {
     HtmlWriter::new(iter, FmtWriter(writer)).run()
 }

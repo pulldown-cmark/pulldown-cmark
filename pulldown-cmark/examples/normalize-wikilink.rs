@@ -1,6 +1,7 @@
+use std::io::Write;
+
 use pulldown_cmark::{html, CowStr, Event, LinkType, Options, Parser, Tag};
 use regex::RegexBuilder;
-use std::io::Write;
 
 /// This example demonstrates how to normalize the href of a wikilink. The
 /// details of this implementation can be tweaked for different use cases.

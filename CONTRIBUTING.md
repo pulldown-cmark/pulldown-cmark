@@ -9,9 +9,10 @@ frustration later on.
 
 ### Getting familiar with the project
 
-**The architecture** is somewhat unique; it was originally inspired by [XML pull parsers](http://www.xmlpull.org), but ended up going in somewhat of its own direction. To get familiar with it, 
+**The architecture** is somewhat unique; it was originally inspired by [XML pull parsers](http://www.xmlpull.org), but ended up going in somewhat of its own direction. To get familiar with it,
+
 - start by reading the [README](README.md) page, which gives some details on the design of the parser (pull-based events) and some rationalization for it;
-- read the [blog post](https://fullyfaithful.eu/pulldown-cmark) about the release of pulldown-cmark 0.3 by Marcus Klaas de Vries.
+- read the [blog post](https://web.archive.org/web/20220901143924/https://fullyfaithful.eu/pulldown-cmark/) about the release of pulldown-cmark 0.3 by Marcus Klaas de Vries.
 
 **The source code** can be approached by skimming the [API documentation](https://docs.rs/pulldown-cmark/latest/pulldown_cmark) first, then explore the code for the main struct, [`Parser`](https://docs.rs/pulldown-cmark/latest/pulldown_cmark/struct.Parser.html)
 

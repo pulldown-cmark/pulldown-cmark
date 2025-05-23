@@ -9,8 +9,10 @@
 //! Its author proposed the solution in
 //! <https://github.com/raphlinus/pulldown-cmark/issues/708>.
 
+use alloc::string::String;
+use core::ops::Range;
+
 use crate::{CowStr, Event};
-use std::ops::Range;
 
 /// Merge consecutive `Event::Text` events into only one.
 #[derive(Debug)]
@@ -134,6 +136,8 @@ where
 
 #[cfg(test)]
 mod test {
+    use alloc::vec::Vec;
+
     use super::*;
     use crate::Parser;
 

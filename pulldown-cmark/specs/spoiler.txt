@@ -1,0 +1,113 @@
+# Spoiler tests
+
+```````````````````````````````` example_super_sub
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this inside?
+> :::
+.
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this inside?</p>
+</details>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p></blockquote>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this inside?
+> :::
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this inside?</p>
+</details>
+</blockquote>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this collapsable?
+> > Is this **bold**?
+> > Is this **bold**?
+> :::
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p></blockquote>
+</details>
+</blockquote>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+::: spoiler Is this expandable?
+Is this collapsable?
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+::: spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````

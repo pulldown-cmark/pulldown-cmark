@@ -265,6 +265,23 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         break;
                     }
                 }
+            } else if line_start.scan_spoiler_fence() {
+                let mut summary_start = start_ix + line_start.bytes_scanned();
+                summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
+                let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
+                let summary_end = line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                let info_string =
+                    unescape(&self.text[summary_start..summary_end], self.tree.is_in_table());
+                let cow_ix = self.allocs.allocate_cow(info_string);
+
+                self.tree.append(Item {
+                    start: container_start,
+                    end: 0, // will get set later
+                    body: ItemBody::Spoiler(cow_ix),
+                });
+                self.tree.push();
+
+                return summary_end + 1;
             } else {
                 line_start = save;
                 break;
@@ -276,6 +293,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
+                    ItemBody::Spoiler(..) => (),
                     ItemBody::BlockQuote(..) => (),
                     ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
                         if self.begin_list_item.is_some() =>
@@ -2132,6 +2150,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
+        || scan_closing_spoiler_fence(bytes).is_some()
         || scan_blockquote_start(bytes).is_some()
         || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
             ! current_container ||

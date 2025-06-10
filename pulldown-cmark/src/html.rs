@@ -276,6 +276,18 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
+            Tag::SpoilerBlock(summary) => {
+                if !self.end_newline {
+                    self.write_newline()?;
+                }
+                if summary.is_empty() {
+                    self.write("<details>")
+                } else {
+                    self.write("<details><summary>")?;
+                    escape_html(&mut self.writer, summary.as_ref())?;
+                    self.write("</summary>")
+                }
+            }
             Tag::List(Some(1)) => {
                 if self.end_newline {
                     self.write("<ol>\n")
@@ -433,6 +445,9 @@ where
             }
             TagEnd::CodeBlock => {
                 self.write("</code></pre>\n")?;
+            }
+            TagEnd::SpoilerBlock => {
+                self.write("</details>\n")?;
             }
             TagEnd::List(true) => {
                 self.write("</ol>\n")?;

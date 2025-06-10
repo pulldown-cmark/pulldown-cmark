@@ -269,6 +269,26 @@ impl<'a> LineStart<'a> {
         }
     }
 
+    pub(crate) fn scan_spoiler_fence(&mut self) -> bool {
+        if self.scan_case_insensitive(b":::") { 
+            if self.scan_case_insensitive(b" spoiler ") {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn scan_closing_spoiler_fence(&mut self) -> bool {
+        if self.scan_case_insensitive(b":::") { 
+                true
+        } else {
+            false
+        }
+    }
+
     /// Scan a definition marker.
     ///
     /// Definition markers are single colons, preceded by at most three spaces
@@ -733,6 +753,30 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
             let next_line = i + scan_nextline(suffix);
             // FIXME: make sure this is correct
             if suffix[..(next_line - i)].iter().any(|&b| b == b'`') {
+                return None;
+            }
+        }
+        Some((i, c))
+    } else {
+        None
+    }
+}
+
+/// Scan closing spoiler fence.
+///
+/// Returns number of bytes scanned and the char that is repeated to make the spoiler fence.
+pub(crate) fn scan_closing_spoiler_fence(data: &[u8]) -> Option<(usize, u8)> {
+    let c = *data.first()?;
+    if !(c == b':') {
+        return None;
+    }
+    let i = 1 + scan_ch_repeat(&data[1..], c);
+    if i >= 3 {
+        if c == b':' {
+            let suffix = &data[i..];
+            let next_line = i + scan_nextline(suffix);
+            // FIXME: make sure this is correct
+            if suffix[..(next_line - i)].iter().any(|&b| b == b':') {
                 return None;
             }
         }

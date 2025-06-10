@@ -200,6 +200,7 @@ pub enum Tag<'a> {
     BlockQuote(Option<BlockQuoteKind>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
+    SpoilerBlock(CowStr<'a>),
 
     /// An HTML block.
     ///
@@ -312,6 +313,7 @@ impl<'a> Tag<'a> {
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
             Tag::BlockQuote(kind) => TagEnd::BlockQuote(*kind),
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
+            Tag::SpoilerBlock(_) => TagEnd::SpoilerBlock,
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
             Tag::Item => TagEnd::Item,
@@ -353,6 +355,7 @@ impl<'a> Tag<'a> {
             },
             Tag::BlockQuote(k) => Tag::BlockQuote(k),
             Tag::CodeBlock(kb) => Tag::CodeBlock(kb.into_static()),
+            Tag::SpoilerBlock(s) => Tag::SpoilerBlock(s.into_static()),
             Tag::HtmlBlock => Tag::HtmlBlock,
             Tag::List(v) => Tag::List(v),
             Tag::Item => Tag::Item,
@@ -405,6 +408,7 @@ pub enum TagEnd {
 
     BlockQuote(Option<BlockQuoteKind>),
     CodeBlock,
+    SpoilerBlock,
 
     HtmlBlock,
 

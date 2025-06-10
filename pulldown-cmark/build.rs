@@ -86,7 +86,7 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {old_footnotes}, {subscript}, {wikilinks}, {deflists});
+    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {old_footnotes}, {subscript}, {wikilinks}, {deflists}, {spoiler});
 }}
 "###,
                     spec_name,
@@ -99,6 +99,7 @@ fn {}_test_{i}() {{
                     subscript = testcase.subscript,
                     wikilinks = testcase.wikilinks,
                     deflists = testcase.deflists,
+                    spoiler = testcase.spoiler,
                 ))
                 .unwrap();
 
@@ -157,6 +158,7 @@ pub struct TestCase {
     pub subscript: bool,
     pub wikilinks: bool,
     pub deflists: bool,
+    pub spoiler: bool,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -167,7 +169,7 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (i_start, smart_punct, metadata_blocks, old_footnotes, subscript, wikilinks, deflists) =
+        let (i_start, smart_punct, metadata_blocks, old_footnotes, subscript, wikilinks, deflists, spoiler) =
             self.spec.find(prefix).and_then(|pos| {
                 let smartpunct_suffix = "_smartpunct\n";
                 let metadata_blocks_suffix = "_metadata_blocks\n";
@@ -175,10 +177,12 @@ impl<'a> Iterator for Spec<'a> {
                 let super_sub_suffix = "_super_sub\n";
                 let wikilinks_suffix = "_wikilinks\n";
                 let deflists_suffix = "_deflists\n";
+                let spoiler_suffix = "_spoiler\n";
                 if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
                     Some((
                         pos + prefix.len() + smartpunct_suffix.len(),
                         true,
+                        false,
                         false,
                         false,
                         false,
@@ -194,6 +198,7 @@ impl<'a> Iterator for Spec<'a> {
                         false,
                         false,
                         false,
+                        false,
                     ))
                 } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
                     Some((
@@ -201,6 +206,7 @@ impl<'a> Iterator for Spec<'a> {
                         false,
                         false,
                         true,
+                        false,
                         false,
                         false,
                         false,
@@ -214,6 +220,7 @@ impl<'a> Iterator for Spec<'a> {
                         true,
                         false,
                         false,
+                        false,
                     ))
                 } else if spec[(pos + prefix.len())..].starts_with(wikilinks_suffix) {
                     Some((
@@ -223,6 +230,7 @@ impl<'a> Iterator for Spec<'a> {
                         false,
                         false,
                         true,
+                        false,
                         false,
                     ))
                 } else if spec[(pos + prefix.len())..].starts_with(deflists_suffix) {
@@ -234,10 +242,23 @@ impl<'a> Iterator for Spec<'a> {
                         false,
                         false,
                         true,
+                        false,
+                    ))
+                } else if spec[(pos + prefix.len())..].starts_with(spoiler_suffix) {
+                    Some((
+                        pos + prefix.len() + spoiler_suffix.len(),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        true,
                     ))
                 } else if spec[(pos + prefix.len())..].starts_with('\n') {
                     Some((
                         pos + prefix.len() + 1,
+                        false,
                         false,
                         false,
                         false,
@@ -269,6 +290,7 @@ impl<'a> Iterator for Spec<'a> {
             subscript,
             wikilinks,
             deflists,
+            spoiler,
         };
 
         Some(test_case)

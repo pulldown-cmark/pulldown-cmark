@@ -757,6 +757,8 @@ bitflags::bitflags! {
         const ENABLE_SUBSCRIPT = 1 << 14;
         /// Obsidian-style Wikilinks.
         const ENABLE_WIKILINKS = 1 << 15;
+        /// Colon-style Spoilers.
+        const ENABLE_SPOILER = 1 << 16;
     }
 }
 

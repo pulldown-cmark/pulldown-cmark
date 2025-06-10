@@ -1,6 +1,6 @@
 # Spoiler tests
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 > Is this **bold**?
 > Is this **bold**?
 > ::: spoiler Is this expandable?
@@ -16,7 +16,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -33,7 +33,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -56,7 +56,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -85,7 +85,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 ::: spoiler Is this expandable?
 Is this collapsable?
 :::
@@ -98,7 +98,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example_spoiler
 ::: spoiler Is this expandable?
 Is this collapsable?
 

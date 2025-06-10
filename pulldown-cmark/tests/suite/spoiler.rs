@@ -20,7 +20,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -41,7 +41,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -68,7 +68,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -101,7 +101,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -118,7 +118,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -136,5 +136,5 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }

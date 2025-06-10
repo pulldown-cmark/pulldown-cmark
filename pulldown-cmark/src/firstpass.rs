@@ -265,7 +265,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         break;
                     }
                 }
-            } else if line_start.scan_spoiler_fence() {
+            } else if self.options.contains(Options::ENABLE_SPOILER) && line_start.scan_spoiler_fence() {
                 let mut summary_start = start_ix + line_start.bytes_scanned();
                 summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
                 let line_end = summary_start + scan_nextline(&bytes[summary_start..]);

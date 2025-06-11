@@ -16,6 +16,7 @@ mod old_footnotes;
 mod regression;
 mod smart_punct;
 mod spec;
+mod spoiler;
 mod strikethrough;
 mod super_sub;
 mod table;

@@ -73,6 +73,9 @@ fn main() {
                 Tag::CodeBlock(code_block_kind) => {
                     println!("CodeBlock code_block_kind: {:?}", code_block_kind)
                 }
+                Tag::SpoilerBlock(summary) => {
+                    println!("SpoilerBlock summary: {:?}", summary)
+                }
                 Tag::Link {
                     link_type,
                     dest_url,

@@ -270,7 +270,7 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_spoiler_fence(&mut self) -> bool {
-        if self.scan_case_insensitive(b":::") { 
+        if self.scan_case_insensitive(b":::") {
             if self.scan_case_insensitive(b" spoiler ") {
                 true
             } else {
@@ -282,8 +282,8 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_closing_spoiler_fence(&mut self) -> bool {
-        if self.scan_case_insensitive(b":::") { 
-                true
+        if self.scan_case_insensitive(b":::") {
+            true
         } else {
             false
         }

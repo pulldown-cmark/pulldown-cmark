@@ -265,14 +265,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         break;
                     }
                 }
-            } else if self.options.contains(Options::ENABLE_SPOILER) && line_start.scan_spoiler_fence() {
+            } else if self.options.contains(Options::ENABLE_SPOILER)
+                && line_start.scan_spoiler_fence()
+            {
                 let mut summary_start = start_ix + line_start.bytes_scanned();
                 summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
                 let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
-                let summary_end = line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
-                let info_string =
-                    unescape(&self.text[summary_start..summary_end], self.tree.is_in_table());
-                let cow_ix = self.allocs.allocate_cow(info_string);
+                let summary_end =
+                    line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                let summary = unescape(
+                    &self.text[summary_start..summary_end],
+                    self.tree.is_in_table(),
+                );
+                let cow_ix = self.allocs.allocate_cow(summary);
 
                 self.tree.append(Item {
                     start: container_start,

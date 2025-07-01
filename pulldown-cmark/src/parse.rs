@@ -191,11 +191,17 @@ pub struct BrokenLink<'a> {
 
 /// Markdown event iterator.
 pub struct Parser<'input, F = DefaultBrokenLinkCallback> {
+    broken_link_callback: Option<F>,
+    inner: ParserInner<'input>,
+}
+
+// Inner state for `Parser`, extracted so that it can remain generic over the callback without
+// re-compiling complex logic for each instantiation of the generic type.
+struct ParserInner<'input> {
     text: &'input str,
     options: Options,
     tree: Tree<Item>,
     allocs: Allocations<'input>,
-    broken_link_callback: Option<F>,
     html_scan_guard: HtmlScanGuard,
 
     // https://github.com/pulldown-cmark/pulldown-cmark/issues/844
@@ -228,8 +234,8 @@ impl<'input, F> core::fmt::Debug for Parser<'input, F> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // Only print the fields that have public types.
         f.debug_struct("Parser")
-            .field("text", &self.text)
-            .field("options", &self.options)
+            .field("text", &self.inner.text)
+            .field("options", &self.inner.options)
             .field(
                 "broken_link_callback",
                 &self.broken_link_callback.as_ref().map(|_| ..),
@@ -281,28 +287,40 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         let wikilink_stack = Default::default();
         let html_scan_guard = Default::default();
         Parser {
-            text,
-            options,
-            tree,
-            allocs,
             broken_link_callback,
-            inline_stack,
-            link_stack,
-            wikilink_stack,
-            html_scan_guard,
-            // always allow 100KiB
-            link_ref_expansion_limit: text.len().max(100_000),
-            code_delims: CodeDelims::new(),
-            math_delims: MathDelims::new(),
+
+            inner: ParserInner {
+                text,
+                options,
+                tree,
+                allocs,
+                inline_stack,
+                link_stack,
+                wikilink_stack,
+                html_scan_guard,
+                // always allow 100KiB
+                link_ref_expansion_limit: text.len().max(100_000),
+                code_delims: CodeDelims::new(),
+                math_delims: MathDelims::new(),
+            },
         }
     }
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
     pub fn reference_definitions(&self) -> &RefDefs<'_> {
-        &self.allocs.refdefs
+        &self.inner.allocs.refdefs
     }
 
+    /// Consumes the event iterator and produces an iterator that produces
+    /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
+    /// range in the markdown source.
+    pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
+        OffsetIter { parser: self }
+    }
+}
+
+impl<'input> ParserInner<'input> {
     /// Use a link label to fetch a type, url, and title.
     ///
     /// This function enforces the [`link_ref_expansion_limit`].
@@ -327,6 +345,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         link_label: CowStr<'input>,
         span: Range<usize>,
         link_type: LinkType,
+        broken_link_callback: &mut Option<&mut dyn BrokenLinkCallback<'input>>,
     ) -> Option<(LinkType, CowStr<'input>, CowStr<'input>)> {
         if self.link_ref_expansion_limit == 0 {
             return None;
@@ -347,7 +366,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 (link_type, url, title)
             })
             .or_else(|| {
-                match self.broken_link_callback.as_mut() {
+                match broken_link_callback {
                     Some(callback) => {
                         // Construct a BrokenLink struct, which will be passed to the callback
                         let broken_link = BrokenLink {
@@ -380,8 +399,11 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// inline markup passes are run on the remainder of the chain.
     ///
     /// Note: there's some potential for optimization here, but that's future work.
-    fn handle_inline(&mut self) {
-        self.handle_inline_pass1();
+    fn handle_inline(
+        &mut self,
+        broken_link_callback: &mut Option<&mut dyn BrokenLinkCallback<'input>>,
+    ) {
+        self.handle_inline_pass1(broken_link_callback);
         self.handle_emphasis_and_hard_break();
     }
 
@@ -390,7 +412,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// This function handles both inline HTML and code spans, because they have
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
-    fn handle_inline_pass1(&mut self) {
+    fn handle_inline_pass1(
+        &mut self,
+        broken_link_callback: &mut Option<&mut dyn BrokenLinkCallback<'input>>,
+    ) {
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -816,6 +841,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         link_label,
                                         (self.tree[tos.node].item.start)..end,
                                         link_type,
+                                        broken_link_callback,
                                     )
                                 {
                                     let link_ix =
@@ -1432,13 +1458,6 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             )?;
             Some((span, i + ix - 1))
         }
-    }
-
-    /// Consumes the event iterator and produces an iterator that produces
-    /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
-    /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
-        OffsetIter { inner: self }
     }
 }
 
@@ -2174,13 +2193,13 @@ impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 #[derive(Debug)]
 pub struct OffsetIter<'a, F = DefaultBrokenLinkCallback> {
-    inner: Parser<'a, F>,
+    parser: Parser<'a, F>,
 }
 
 impl<'a, F: BrokenLinkCallback<'a>> OffsetIter<'a, F> {
     /// Returns a reference to the internal reference definition tracker.
     pub fn reference_definitions(&self) -> &RefDefs<'_> {
-        self.inner.reference_definitions()
+        self.parser.reference_definitions()
     }
 }
 
@@ -2188,42 +2207,73 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.tree.cur() {
+        let broken_link_callback = self
+            .parser
+            .broken_link_callback
+            .as_mut()
+            .map(|f| f as &mut dyn BrokenLinkCallback<'a>);
+
+        self.parser.inner.next_event_range(broken_link_callback)
+    }
+}
+
+impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
+    type Item = Event<'a>;
+
+    fn next(&mut self) -> Option<Event<'a>> {
+        let broken_link_callback = self
+            .broken_link_callback
+            .as_mut()
+            .map(|f| f as &mut dyn BrokenLinkCallback<'a>);
+
+        self.inner
+            .next_event_range(broken_link_callback)
+            .map(|(event, _range)| event)
+    }
+}
+
+impl<'a, F: BrokenLinkCallback<'a>> FusedIterator for Parser<'a, F> {}
+
+impl<'input> ParserInner<'input> {
+    fn next_event_range(
+        &mut self,
+        mut broken_link_callback: Option<&mut dyn BrokenLinkCallback<'input>>,
+    ) -> Option<(Event<'input>, Range<usize>)> {
+        match self.tree.cur() {
             None => {
-                let ix = self.inner.tree.pop()?;
-                let ix = if matches!(self.inner.tree[ix].item.body, ItemBody::TightParagraph) {
+                let ix = self.tree.pop()?;
+                let ix = if matches!(self.tree[ix].item.body, ItemBody::TightParagraph) {
                     // tight paragraphs emit nothing
-                    self.inner.tree.next_sibling(ix);
-                    return self.next();
+                    self.tree.next_sibling(ix);
+                    return self.next_event_range(broken_link_callback);
                 } else {
                     ix
                 };
-                let tag_end = body_to_tag_end(&self.inner.tree[ix].item.body);
-                self.inner.tree.next_sibling(ix);
-                let span = self.inner.tree[ix].item.start..self.inner.tree[ix].item.end;
+                let tag_end = body_to_tag_end(&self.tree[ix].item.body);
+                self.tree.next_sibling(ix);
+                let span = self.tree[ix].item.start..self.tree[ix].item.end;
                 debug_assert!(span.start <= span.end);
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
-                let cur_ix =
-                    if matches!(self.inner.tree[cur_ix].item.body, ItemBody::TightParagraph) {
-                        // tight paragraphs emit nothing
-                        self.inner.tree.push();
-                        self.inner.tree.cur().unwrap()
-                    } else {
-                        cur_ix
-                    };
-                if self.inner.tree[cur_ix].item.body.is_maybe_inline() {
-                    self.inner.handle_inline();
+                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.tree.push();
+                    self.tree.cur().unwrap()
+                } else {
+                    cur_ix
+                };
+                if self.tree[cur_ix].item.body.is_maybe_inline() {
+                    self.handle_inline(&mut broken_link_callback);
                 }
 
-                let node = self.inner.tree[cur_ix];
+                let node = self.tree[cur_ix];
                 let item = node.item;
-                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
+                let event = item_to_event(item, self.text, &mut self.allocs);
                 if let Event::Start(..) = event {
-                    self.inner.tree.push();
+                    self.tree.push();
                 } else {
-                    self.inner.tree.next_sibling(cur_ix);
+                    self.tree.next_sibling(cur_ix);
                 }
                 debug_assert!(item.start <= item.end);
                 Some((event, item.start..item.end))
@@ -2354,52 +2404,6 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
 
     Event::Start(tag)
 }
-
-impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
-    type Item = Event<'a>;
-
-    fn next(&mut self) -> Option<Event<'a>> {
-        match self.tree.cur() {
-            None => {
-                let ix = self.tree.pop()?;
-                let ix = if matches!(self.tree[ix].item.body, ItemBody::TightParagraph) {
-                    // tight paragraphs emit nothing
-                    self.tree.next_sibling(ix);
-                    return self.next();
-                } else {
-                    ix
-                };
-                let tag_end = body_to_tag_end(&self.tree[ix].item.body);
-                self.tree.next_sibling(ix);
-                Some(Event::End(tag_end))
-            }
-            Some(cur_ix) => {
-                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
-                    // tight paragraphs emit nothing
-                    self.tree.push();
-                    self.tree.cur().unwrap()
-                } else {
-                    cur_ix
-                };
-                if self.tree[cur_ix].item.body.is_maybe_inline() {
-                    self.handle_inline();
-                }
-
-                let node = self.tree[cur_ix];
-                let item = node.item;
-                let event = item_to_event(item, self.text, &mut self.allocs);
-                if let Event::Start(ref _tag) = event {
-                    self.tree.push();
-                } else {
-                    self.tree.next_sibling(cur_ix);
-                }
-                Some(event)
-            }
-        }
-    }
-}
-
-impl<'a, F: BrokenLinkCallback<'a>> FusedIterator for Parser<'a, F> {}
 
 #[cfg(test)]
 mod test {

@@ -31,8 +31,11 @@ use pulldown_cmark_escape::IoWriter;
 use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
 
 use crate::{
-    strings::CowStr, Alignment, BlockQuoteKind, CodeBlockKind, Event, Event::*, LinkType, Tag,
-    TagEnd,
+    strings::CowStr,
+    Alignment, BlockQuoteKind, CodeBlockKind,
+    ContainerKind::*,
+    Event::{self, *},
+    LinkType, Tag, TagEnd,
 };
 
 enum TableState {
@@ -276,7 +279,19 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
-            Tag::SpoilerBlock(summary) => {
+            Tag::ContainerBlock(Example, _) => {
+                if !self.end_newline {
+                    self.write_newline()?;
+                }
+                // if summary.is_empty() {
+                self.write("<div class=\"example\">")
+                // } else {
+                //     self.write("<div class=\"")?;
+                //     escape_html(&mut self.writer, summary.as_ref())?;
+                //     self.write("\">")
+                // }
+            }
+            Tag::ContainerBlock(Spoiler, summary) => {
                 if !self.end_newline {
                     self.write_newline()?;
                 }
@@ -446,8 +461,11 @@ where
             TagEnd::CodeBlock => {
                 self.write("</code></pre>\n")?;
             }
-            TagEnd::SpoilerBlock => {
+            TagEnd::ContainerBlock(Spoiler) => {
                 self.write("</details>\n")?;
+            }
+            TagEnd::ContainerBlock(Example) => {
+                self.write("</div>\n")?;
             }
             TagEnd::List(true) => {
                 self.write("</ol>\n")?;

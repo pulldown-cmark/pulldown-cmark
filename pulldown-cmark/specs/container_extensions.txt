@@ -1,6 +1,6 @@
 # Spoiler tests
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 > Is this **bold**?
 > Is this **bold**?
 > ::: spoiler Is this expandable?
@@ -16,7 +16,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -33,7 +33,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -56,7 +56,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -85,7 +85,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 ::: spoiler Is this expandable?
 Is this collapsable?
 :::
@@ -98,7 +98,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_spoiler
+```````````````````````````````` example_container_extensions
 ::: spoiler Is this expandable?
 Is this collapsable?
 
@@ -110,4 +110,31 @@ Is this **bold**?
 <p>Is this collapsable?</p>
 <p>Is this <strong>bold</strong>?</p>
 </details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: example Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<div class="example">
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</div>
 ````````````````````````````````

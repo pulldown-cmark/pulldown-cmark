@@ -158,6 +158,14 @@ pub enum BlockQuoteKind {
     Caution,
 }
 
+/// ContainerBlock kind (Spoiler only).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ContainerKind {
+    Spoiler,
+    Example,
+}
+
 /// Metadata block kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -200,7 +208,7 @@ pub enum Tag<'a> {
     BlockQuote(Option<BlockQuoteKind>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
-    SpoilerBlock(CowStr<'a>),
+    ContainerBlock(ContainerKind, CowStr<'a>),
 
     /// An HTML block.
     ///
@@ -313,7 +321,7 @@ impl<'a> Tag<'a> {
             Tag::Heading { level, .. } => TagEnd::Heading(*level),
             Tag::BlockQuote(kind) => TagEnd::BlockQuote(*kind),
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
-            Tag::SpoilerBlock(_) => TagEnd::SpoilerBlock,
+            Tag::ContainerBlock(kind, _) => TagEnd::ContainerBlock(*kind),
             Tag::HtmlBlock => TagEnd::HtmlBlock,
             Tag::List(number) => TagEnd::List(number.is_some()),
             Tag::Item => TagEnd::Item,
@@ -355,7 +363,7 @@ impl<'a> Tag<'a> {
             },
             Tag::BlockQuote(k) => Tag::BlockQuote(k),
             Tag::CodeBlock(kb) => Tag::CodeBlock(kb.into_static()),
-            Tag::SpoilerBlock(s) => Tag::SpoilerBlock(s.into_static()),
+            Tag::ContainerBlock(k, s) => Tag::ContainerBlock(k, s.into_static()),
             Tag::HtmlBlock => Tag::HtmlBlock,
             Tag::List(v) => Tag::List(v),
             Tag::Item => Tag::Item,
@@ -408,7 +416,7 @@ pub enum TagEnd {
 
     BlockQuote(Option<BlockQuoteKind>),
     CodeBlock,
-    SpoilerBlock,
+    ContainerBlock(ContainerKind),
 
     HtmlBlock,
 
@@ -757,8 +765,8 @@ bitflags::bitflags! {
         const ENABLE_SUBSCRIPT = 1 << 14;
         /// Obsidian-style Wikilinks.
         const ENABLE_WIKILINKS = 1 << 15;
-        /// Colon-style Spoilers.
-        const ENABLE_SPOILER = 1 << 16;
+        /// Colon-delimited Container Extension Blocks.
+        const ENABLE_CONTAINER_EXTENSIONS = 1 << 16;
     }
 }
 

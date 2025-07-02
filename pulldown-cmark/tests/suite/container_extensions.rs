@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn spoiler_test_1() {
+fn container_extensions_test_1() {
     let original = r##"> Is this **bold**?
 > Is this **bold**?
 > ::: spoiler Is this expandable?
@@ -24,7 +24,7 @@ Is this <strong>bold</strong>?</p>
 }
 
 #[test]
-fn spoiler_test_2() {
+fn container_extensions_test_2() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -45,7 +45,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 }
 
 #[test]
-fn spoiler_test_3() {
+fn container_extensions_test_3() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -72,7 +72,7 @@ Is this <strong>bold</strong>?</p>
 }
 
 #[test]
-fn spoiler_test_4() {
+fn container_extensions_test_4() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -105,7 +105,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 }
 
 #[test]
-fn spoiler_test_5() {
+fn container_extensions_test_5() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 :::
@@ -122,7 +122,7 @@ Is this collapsable?
 }
 
 #[test]
-fn spoiler_test_6() {
+fn container_extensions_test_6() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 
@@ -134,6 +134,41 @@ Is this **bold**?
 <p>Is this collapsable?</p>
 <p>Is this <strong>bold</strong>?</p>
 </details>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_7() {
+    let original = r##":::spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+"##;
+    let expected = r##"<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_8() {
+    let original = r##"::: example Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+"##;
+    let expected = r##"<div class="example">
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</div>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, true);

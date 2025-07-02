@@ -40,8 +40,8 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
-    Options, Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
+    MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -114,7 +114,7 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
-    Spoiler(CowIndex),
+    Container(ContainerKind, CowIndex),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     FootnoteDefinition(CowIndex),
@@ -1452,8 +1452,8 @@ pub(crate) fn scan_containers(
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
-            ItemBody::Spoiler(..) => {
-                if line_start.scan_closing_spoiler_fence() {
+            ItemBody::Container(..) => {
+                if line_start.scan_closing_container_extensions_fence() {
                     break;
                 }
             }
@@ -2250,7 +2250,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::Spoiler(_) => TagEnd::SpoilerBlock,
+        ItemBody::Container(kind, _) => TagEnd::ContainerBlock(kind),
         ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
@@ -2331,7 +2331,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::Spoiler(cow_ix) => Tag::SpoilerBlock(allocs.take_cow(cow_ix)),
+        ItemBody::Container(kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {

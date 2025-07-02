@@ -15,6 +15,7 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
+    ContainerKind::*,
     HeadingLevel, MetadataBlockKind, Options,
 };
 
@@ -265,10 +266,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         break;
                     }
                 }
-            } else if self.options.contains(Options::ENABLE_SPOILER)
-                && line_start.scan_spoiler_fence()
+            } else if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
+                && line_start.scan_container_extensions_fence()
             {
-                let mut summary_start = start_ix + line_start.bytes_scanned();
+                let mut kind_start = start_ix + line_start.bytes_scanned();
+                kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
+
+                let kind_end = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
+                // line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                //
+                let kind = unescape(
+                    &self.text[kind_start..(kind_start + kind_end)],
+                    self.tree.is_in_table(),
+                );
+
+                // let mut summary_start = start_ix + line_start.bytes_scanned();
+                let mut summary_start = kind_start + kind_end;
                 summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
                 let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
                 let summary_end =
@@ -279,13 +292,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 );
                 let cow_ix = self.allocs.allocate_cow(summary);
 
-                self.tree.append(Item {
-                    start: container_start,
-                    end: 0, // will get set later
-                    body: ItemBody::Spoiler(cow_ix),
-                });
+                if kind.eq_ignore_ascii_case("spoiler") {
+                    self.tree.append(Item {
+                        start: container_start,
+                        end: 0, // will get set later
+                        body: ItemBody::Container(Spoiler, cow_ix),
+                    });
+                } else if kind.eq_ignore_ascii_case("example") {
+                    self.tree.append(Item {
+                        start: container_start,
+                        end: 0, // will get set later
+                        body: ItemBody::Container(Example, cow_ix),
+                    });
+                }
                 self.tree.push();
-
                 return summary_end + 1;
             } else {
                 line_start = save;
@@ -298,7 +318,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
-                    ItemBody::Spoiler(..) => (),
+                    ItemBody::Container(..) => (),
                     ItemBody::BlockQuote(..) => (),
                     ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
                         if self.begin_list_item.is_some() =>
@@ -2155,7 +2175,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
-        || scan_closing_spoiler_fence(bytes).is_some()
+        || scan_closing_container_extensions_fence(bytes).is_some()
         || scan_blockquote_start(bytes).is_some()
         || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
             ! current_container ||

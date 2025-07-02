@@ -269,19 +269,19 @@ impl<'a> LineStart<'a> {
         }
     }
 
-    pub(crate) fn scan_spoiler_fence(&mut self) -> bool {
+    pub(crate) fn scan_container_extensions_fence(&mut self) -> bool {
         if self.scan_case_insensitive(b":::") {
-            if self.scan_case_insensitive(b" spoiler ") {
-                true
-            } else {
-                false
-            }
+            // if self.scan_case_insensitive(b" spoiler ") {
+            true
+            // } else {
+            //     false
+            // }
         } else {
             false
         }
     }
 
-    pub(crate) fn scan_closing_spoiler_fence(&mut self) -> bool {
+    pub(crate) fn scan_closing_container_extensions_fence(&mut self) -> bool {
         if self.scan_case_insensitive(b":::") {
             true
         } else {
@@ -455,7 +455,7 @@ fn is_ascii_alpha(c: u8) -> bool {
     c.is_ascii_alphabetic()
 }
 
-fn is_ascii_alphanumeric(c: u8) -> bool {
+pub(crate) fn is_ascii_alphanumeric(c: u8) -> bool {
     matches!(c, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
@@ -765,7 +765,7 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
 /// Scan closing spoiler fence.
 ///
 /// Returns number of bytes scanned and the char that is repeated to make the spoiler fence.
-pub(crate) fn scan_closing_spoiler_fence(data: &[u8]) -> Option<(usize, u8)> {
+pub(crate) fn scan_closing_container_extensions_fence(data: &[u8]) -> Option<(usize, u8)> {
     let c = *data.first()?;
     if !(c == b':') {
         return None;

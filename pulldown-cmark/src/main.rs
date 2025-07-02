@@ -109,7 +109,11 @@ pub fn main() -> std::io::Result<()> {
         "enable Commonmark-HS-Extensions compatible definition lists",
     );
     opts.optflag("W", "enable-wikilinks", "enable wikilinks");
-    opts.optflag("s", "enable-spoiler", "enable spoiler");
+    opts.optflag(
+        "C",
+        "enable-container-extensions",
+        "enable container extensions",
+    );
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -166,8 +170,8 @@ pub fn main() -> std::io::Result<()> {
     if matches.opt_present("enable-wikilinks") {
         opts.insert(Options::ENABLE_WIKILINKS);
     }
-    if matches.opt_present("enable-spoiler") {
-        opts.insert(Options::ENABLE_SPOILER);
+    if matches.opt_present("enable-container-extensions") {
+        opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
     }
 
     let mut input = String::new();

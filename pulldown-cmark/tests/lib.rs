@@ -15,7 +15,7 @@ pub fn test_markdown_html(
     subscript: bool,
     wikilinks: bool,
     deflists: bool,
-    spoiler: bool,
+    container_extensions: bool,
 ) {
     let mut s = String::new();
 
@@ -48,8 +48,8 @@ pub fn test_markdown_html(
     if deflists {
         opts.insert(Options::ENABLE_DEFINITION_LIST);
     }
-    if spoiler {
-        opts.insert(Options::ENABLE_SPOILER);
+    if container_extensions {
+        opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
     }
 
     let p = Parser::new_ext(input, opts);

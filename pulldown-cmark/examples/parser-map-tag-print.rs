@@ -73,8 +73,8 @@ fn main() {
                 Tag::CodeBlock(code_block_kind) => {
                     println!("CodeBlock code_block_kind: {:?}", code_block_kind)
                 }
-                Tag::SpoilerBlock(summary) => {
-                    println!("SpoilerBlock summary: {:?}", summary)
+                Tag::ContainerBlock(kind, summary) => {
+                    println!("ContainerBlock ({:?}) summary: {:?}", kind, summary)
                 }
                 Tag::Link {
                     link_type,

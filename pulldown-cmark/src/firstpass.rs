@@ -271,16 +271,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             {
                 let mut kind_start = start_ix + line_start.bytes_scanned();
                 kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
-
                 let kind_end = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
-                // line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
-                //
                 let kind = unescape(
                     &self.text[kind_start..(kind_start + kind_end)],
                     self.tree.is_in_table(),
                 );
 
-                // let mut summary_start = start_ix + line_start.bytes_scanned();
                 let mut summary_start = kind_start + kind_end;
                 summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
                 let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
@@ -295,13 +291,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if kind.eq_ignore_ascii_case("spoiler") {
                     self.tree.append(Item {
                         start: container_start,
-                        end: 0, // will get set later
+                        end: 0,
                         body: ItemBody::Container(Spoiler, cow_ix),
                     });
                 } else if kind.eq_ignore_ascii_case("example") {
                     self.tree.append(Item {
                         start: container_start,
-                        end: 0, // will get set later
+                        end: 0,
                         body: ItemBody::Container(Example, cow_ix),
                     });
                 }

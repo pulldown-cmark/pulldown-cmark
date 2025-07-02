@@ -127,7 +127,7 @@ Is this **bold**?
 ````````````````````````````````
 
 ```````````````````````````````` example_container_extensions
-::: example Is this expandable?
+::: example
 Is this collapsable?
 
 Is this **bold**?

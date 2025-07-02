@@ -283,13 +283,7 @@ where
                 if !self.end_newline {
                     self.write_newline()?;
                 }
-                // if summary.is_empty() {
                 self.write("<div class=\"example\">")
-                // } else {
-                //     self.write("<div class=\"")?;
-                //     escape_html(&mut self.writer, summary.as_ref())?;
-                //     self.write("\">")
-                // }
             }
             Tag::ContainerBlock(Spoiler, summary) => {
                 if !self.end_newline {

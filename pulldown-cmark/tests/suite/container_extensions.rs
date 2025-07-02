@@ -159,7 +159,7 @@ Is this **bold**?
 
 #[test]
 fn container_extensions_test_8() {
-    let original = r##"::: example Is this expandable?
+    let original = r##"::: example
 Is this collapsable?
 
 Is this **bold**?

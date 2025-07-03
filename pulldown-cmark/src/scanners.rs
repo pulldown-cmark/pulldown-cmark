@@ -271,11 +271,7 @@ impl<'a> LineStart<'a> {
 
     pub(crate) fn scan_container_extensions_fence(&mut self) -> bool {
         if self.scan_case_insensitive(b":::") {
-            // if self.scan_case_insensitive(b" spoiler ") {
             true
-            // } else {
-            //     false
-            // }
         } else {
             false
         }
@@ -762,9 +758,9 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
     }
 }
 
-/// Scan closing spoiler fence.
+/// Scan closing container extension fence.
 ///
-/// Returns number of bytes scanned and the char that is repeated to make the spoiler fence.
+/// Returns number of bytes scanned and the char that is repeated to make the container extension fence.
 pub(crate) fn scan_closing_container_extensions_fence(data: &[u8]) -> Option<(usize, u8)> {
     let c = *data.first()?;
     if !(c == b':') {

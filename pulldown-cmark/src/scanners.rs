@@ -269,6 +269,22 @@ impl<'a> LineStart<'a> {
         }
     }
 
+    pub(crate) fn scan_container_extensions_fence(&mut self) -> bool {
+        if self.scan_case_insensitive(b":::") {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn scan_closing_container_extensions_fence(&mut self) -> bool {
+        if self.scan_case_insensitive(b":::") {
+            true
+        } else {
+            false
+        }
+    }
+
     /// Scan a definition marker.
     ///
     /// Definition markers are single colons, preceded by at most three spaces
@@ -435,7 +451,7 @@ fn is_ascii_alpha(c: u8) -> bool {
     c.is_ascii_alphabetic()
 }
 
-fn is_ascii_alphanumeric(c: u8) -> bool {
+pub(crate) fn is_ascii_alphanumeric(c: u8) -> bool {
     matches!(c, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
@@ -733,6 +749,30 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
             let next_line = i + scan_nextline(suffix);
             // FIXME: make sure this is correct
             if suffix[..(next_line - i)].iter().any(|&b| b == b'`') {
+                return None;
+            }
+        }
+        Some((i, c))
+    } else {
+        None
+    }
+}
+
+/// Scan closing container extension fence.
+///
+/// Returns number of bytes scanned and the char that is repeated to make the container extension fence.
+pub(crate) fn scan_closing_container_extensions_fence(data: &[u8]) -> Option<(usize, u8)> {
+    let c = *data.first()?;
+    if !(c == b':') {
+        return None;
+    }
+    let i = 1 + scan_ch_repeat(&data[1..], c);
+    if i >= 3 {
+        if c == b':' {
+            let suffix = &data[i..];
+            let next_line = i + scan_nextline(suffix);
+            // FIXME: make sure this is correct
+            if suffix[..(next_line - i)].iter().any(|&b| b == b':') {
                 return None;
             }
         }

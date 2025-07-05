@@ -279,11 +279,13 @@ where
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
             }
-            Tag::ContainerBlock(Example, _) => {
+            Tag::ContainerBlock(Default, kind) => {
                 if !self.end_newline {
                     self.write_newline()?;
                 }
-                self.write("<div class=\"example\">")
+                self.write("<div class=\"")?;
+                escape_html(&mut self.writer, &kind)?;
+                self.write("\">")
             }
             Tag::ContainerBlock(Spoiler, summary) => {
                 if !self.end_newline {
@@ -458,7 +460,7 @@ where
             TagEnd::ContainerBlock(Spoiler) => {
                 self.write("</details>\n")?;
             }
-            TagEnd::ContainerBlock(Example) => {
+            TagEnd::ContainerBlock(Default) => {
                 self.write("</div>\n")?;
             }
             TagEnd::List(true) => {

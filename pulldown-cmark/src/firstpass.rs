@@ -286,19 +286,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     &self.text[summary_start..summary_end],
                     self.tree.is_in_table(),
                 );
-                let cow_ix = self.allocs.allocate_cow(summary);
+                let summary_cow_ix = self.allocs.allocate_cow(summary);
 
                 if kind.eq_ignore_ascii_case("spoiler") {
                     self.tree.append(Item {
                         start: container_start,
                         end: 0,
-                        body: ItemBody::Container(Spoiler, cow_ix),
+                        body: ItemBody::Container(Spoiler, summary_cow_ix),
                     });
-                } else if kind.eq_ignore_ascii_case("example") {
+                } else {
+                    let kind_cow_ix = self.allocs.allocate_cow(kind);
                     self.tree.append(Item {
                         start: container_start,
                         end: 0,
-                        body: ItemBody::Container(Example, cow_ix),
+                        body: ItemBody::Container(Default, kind_cow_ix),
                     });
                 }
                 self.tree.push();

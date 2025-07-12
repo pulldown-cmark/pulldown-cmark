@@ -113,9 +113,7 @@ mod tree;
 use core::fmt::Display;
 
 pub use crate::{
-    parse::{
-        BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
-    },
+    parse::{BrokenLink, DefaultParserCallbacks, OffsetIter, Parser, ParserCallbacks, RefDefs},
     strings::{CowStr, InlineStr},
     utils::*,
 };

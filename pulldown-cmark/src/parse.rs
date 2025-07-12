@@ -2133,8 +2133,10 @@ pub(crate) struct HtmlScanGuard {
 pub trait ParserCallbacks<'input> {
     fn handle_broken_link(
         &mut self,
-        link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)>;
+        #[allow(unused_variables)] link: BrokenLink<'input>,
+    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+        None
+    }
 }
 
 impl<'input, T> ParserCallbacks<'input> for T
@@ -2162,14 +2164,7 @@ impl<'input> ParserCallbacks<'input> for Box<dyn ParserCallbacks<'input>> {
 #[derive(Debug)]
 pub struct DefaultParserCallbacks;
 
-impl<'input> ParserCallbacks<'input> for DefaultParserCallbacks {
-    fn handle_broken_link(
-        &mut self,
-        _link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
-        None
-    }
-}
+impl<'input> ParserCallbacks<'input> for DefaultParserCallbacks {}
 
 /// Markdown event and source range iterator.
 ///

@@ -267,6 +267,30 @@ impl<'input> Parser<'input, DefaultParserCallbacks> {
 }
 
 impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
+    /// Creates a new event iterator for markdown text with given options and optionally, callbacks.
+    ///
+    /// ```
+    /// # use pulldown_cmark::{BrokenLink, CowStr, Event, Options, Parser, ParserCallbacks, Tag};
+    /// struct CustomCallbacks;
+    /// impl<'input> ParserCallbacks<'input> for CustomCallbacks {
+    ///     fn handle_broken_link(
+    ///         &mut self,
+    ///         link: BrokenLink<'input>,
+    ///     ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+    ///         Some(("https://target".into(), link.reference))
+    ///     }
+    /// }
+    ///
+    /// let mut parser =
+    ///     Parser::new_with_callbacks("[broken]", Options::empty(), Some(CustomCallbacks));
+    ///
+    /// assert!(matches!(
+    ///     parser.nth(1),
+    ///     Some(Event::Start(Tag::Link { .. }))
+    /// ));
+    /// ```
+    ///
+    /// See the [`ParserCallbacks`] trait for a list of callbacks that can be overridden.
     pub fn new_with_callbacks(text: &'input str, options: Options, callbacks: Option<CB>) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
@@ -308,20 +332,23 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
     }
 }
 
-impl<'input, F> Parser<'input, BrokenLinkCallback<F>>
-where
-    BrokenLinkCallback<F>: ParserCallbacks<'input>,
-{
+impl<'input, F> Parser<'input, BrokenLinkCallback<F>> {
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
     /// the provided callback will be called with the reference name,
     /// and the returned pair will be used as the link URL and title if it is not
     /// `None`.
+    ///
+    /// This constructor is provided for backwards compatibility.
+    /// This and other callbacks can also be customized with [`Parser::new_with_callbacks`].
     pub fn new_with_broken_link_callback(
         text: &'input str,
         options: Options,
         broken_link_callback: Option<F>,
-    ) -> Self {
+    ) -> Self
+    where
+        F: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
+    {
         Self::new_with_callbacks(text, options, broken_link_callback.map(BrokenLinkCallback))
     }
 }
@@ -2138,8 +2165,17 @@ pub(crate) struct HtmlScanGuard {
     pub comment: usize,
 }
 
-/// Trait to customize [`Parser`] behavior with callbacks.
+/// Trait to customize [`Parser`] behavior with callbacks. See [`Parser::new_with_callbacks`].
+///
+/// All methods have a default implementation, so you can choose which ones to override.
 pub trait ParserCallbacks<'input> {
+    /// Potentially provide a custom definition for a broken link.
+    ///
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// this callback will be called with information about the reference,
+    /// and the returned pair will be used as the link URL and title if it is not
+    /// `None`.
     fn handle_broken_link(
         &mut self,
         #[allow(unused_variables)] link: BrokenLink<'input>,
@@ -2148,7 +2184,9 @@ pub trait ParserCallbacks<'input> {
     }
 }
 
-/// TODO: doc
+/// Wrapper to implement [`ParserCallbacks::handle_broken_link`] with a closure.
+///
+/// Used internally by [`Parser::new_with_broken_link_callback`].
 #[allow(missing_debug_implementations)]
 pub struct BrokenLinkCallback<F>(F);
 
@@ -2173,7 +2211,9 @@ impl<'input> ParserCallbacks<'input> for Box<dyn ParserCallbacks<'input>> {
     }
 }
 
-/// Broken link callback that does nothing.
+/// [Parser] callbacks that do nothing.
+///
+/// Used when no custom callbacks are provided.
 #[allow(missing_debug_implementations)]
 pub struct DefaultParserCallbacks;
 

@@ -404,7 +404,7 @@ impl<'input> ParserInner<'input> {
     /// inline markup passes are run on the remainder of the chain.
     ///
     /// Note: there's some potential for optimization here, but that's future work.
-    fn handle_inline(&mut self, callbacks: &mut Option<&mut dyn ParserCallbacks<'input>>) {
+    fn handle_inline(&mut self, callbacks: Option<&mut dyn ParserCallbacks<'input>>) {
         self.handle_inline_pass1(callbacks);
         self.handle_emphasis_and_hard_break();
     }
@@ -414,7 +414,7 @@ impl<'input> ParserInner<'input> {
     /// This function handles both inline HTML and code spans, because they have
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
-    fn handle_inline_pass1(&mut self, callbacks: &mut Option<&mut dyn ParserCallbacks<'input>>) {
+    fn handle_inline_pass1(&mut self, mut callbacks: Option<&mut dyn ParserCallbacks<'input>>) {
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -840,7 +840,7 @@ impl<'input> ParserInner<'input> {
                                         link_label,
                                         (self.tree[tos.node].item.start)..end,
                                         link_type,
-                                        callbacks,
+                                        &mut callbacks,
                                     )
                                 {
                                     let link_ix =
@@ -2232,7 +2232,7 @@ impl<'a, CB: ParserCallbacks<'a>> FusedIterator for Parser<'a, CB> {}
 impl<'input> ParserInner<'input> {
     fn next_event_range(
         &mut self,
-        mut callbacks: Option<&mut dyn ParserCallbacks<'input>>,
+        callbacks: Option<&mut dyn ParserCallbacks<'input>>,
     ) -> Option<(Event<'input>, Range<usize>)> {
         match self.tree.cur() {
             None => {
@@ -2259,7 +2259,7 @@ impl<'input> ParserInner<'input> {
                     cur_ix
                 };
                 if self.tree[cur_ix].item.body.is_maybe_inline() {
-                    self.handle_inline(&mut callbacks);
+                    self.handle_inline(callbacks);
                 }
 
                 let node = self.tree[cur_ix];

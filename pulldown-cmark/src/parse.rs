@@ -262,21 +262,12 @@ impl<'input> Parser<'input, DefaultParserCallbacks> {
 
     /// Creates a new event iterator for a markdown string with given options.
     pub fn new_ext(text: &'input str, options: Options) -> Self {
-        Self::new_with_broken_link_callback(text, options, None)
+        Self::new_with_callbacks(text, options, None)
     }
 }
 
-impl<'input, F: ParserCallbacks<'input>> Parser<'input, F> {
-    /// In case the parser encounters any potential links that have a broken
-    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
-    /// the provided callback will be called with the reference name,
-    /// and the returned pair will be used as the link URL and title if it is not
-    /// `None`.
-    pub fn new_with_broken_link_callback(
-        text: &'input str,
-        options: Options,
-        broken_link_callback: Option<F>,
-    ) -> Self {
+impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
+    pub fn new_with_callbacks(text: &'input str, options: Options, callbacks: Option<CB>) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
@@ -284,7 +275,7 @@ impl<'input, F: ParserCallbacks<'input>> Parser<'input, F> {
         let wikilink_stack = Default::default();
         let html_scan_guard = Default::default();
         Parser {
-            callbacks: broken_link_callback,
+            callbacks,
 
             inner: ParserInner {
                 text,
@@ -312,8 +303,26 @@ impl<'input, F: ParserCallbacks<'input>> Parser<'input, F> {
     /// Consumes the event iterator and produces an iterator that produces
     /// `(Event, Range)` pairs, where the `Range` value maps to the corresponding
     /// range in the markdown source.
-    pub fn into_offset_iter(self) -> OffsetIter<'input, F> {
+    pub fn into_offset_iter(self) -> OffsetIter<'input, CB> {
         OffsetIter { parser: self }
+    }
+}
+
+impl<'input, F> Parser<'input, BrokenLinkCallback<F>>
+where
+    BrokenLinkCallback<F>: ParserCallbacks<'input>,
+{
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: ` entry at the bottom)
+    /// the provided callback will be called with the reference name,
+    /// and the returned pair will be used as the link URL and title if it is not
+    /// `None`.
+    pub fn new_with_broken_link_callback(
+        text: &'input str,
+        options: Options,
+        broken_link_callback: Option<F>,
+    ) -> Self {
+        Self::new_with_callbacks(text, options, broken_link_callback.map(BrokenLinkCallback))
     }
 }
 
@@ -2139,15 +2148,19 @@ pub trait ParserCallbacks<'input> {
     }
 }
 
-impl<'input, T> ParserCallbacks<'input> for T
+/// TODO: doc
+#[allow(missing_debug_implementations)]
+pub struct BrokenLinkCallback<F>(F);
+
+impl<'input, F> ParserCallbacks<'input> for BrokenLinkCallback<F>
 where
-    T: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
+    F: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
 {
     fn handle_broken_link(
         &mut self,
         link: BrokenLink<'input>,
     ) -> Option<(CowStr<'input>, CowStr<'input>)> {
-        self(link)
+        self.0(link)
     }
 }
 
@@ -2161,7 +2174,7 @@ impl<'input> ParserCallbacks<'input> for Box<dyn ParserCallbacks<'input>> {
 }
 
 /// Broken link callback that does nothing.
-#[derive(Debug)]
+#[allow(missing_debug_implementations)]
 pub struct DefaultParserCallbacks;
 
 impl<'input> ParserCallbacks<'input> for DefaultParserCallbacks {}

@@ -15,8 +15,7 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    ContainerKind::*,
-    HeadingLevel, MetadataBlockKind, Options,
+    ContainerKind, HeadingLevel, MetadataBlockKind, Options,
 };
 
 /// Runs the first pass, which resolves the block structure of the document,
@@ -269,7 +268,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             } else if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
                 && line_start.scan_container_extensions_fence()
             {
-                let mut kind_start = start_ix + line_start.bytes_scanned();
+                let fence_length = scan_ch_repeat(&bytes[start_ix..], b':');
+
+                let mut kind_start = start_ix + fence_length;
                 kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
                 let kind_end = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
                 let kind = unescape(
@@ -292,14 +293,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append(Item {
                         start: container_start,
                         end: 0,
-                        body: ItemBody::Container(Spoiler, summary_cow_ix),
+                        body: ItemBody::Container(
+                            fence_length,
+                            ContainerKind::Spoiler,
+                            summary_cow_ix,
+                        ),
                     });
                 } else {
                     let kind_cow_ix = self.allocs.allocate_cow(kind);
                     self.tree.append(Item {
                         start: container_start,
                         end: 0,
-                        body: ItemBody::Container(Default, kind_cow_ix),
+                        body: ItemBody::Container(
+                            fence_length,
+                            ContainerKind::Default,
+                            kind_cow_ix,
+                        ),
                     });
                 }
                 self.tree.push();

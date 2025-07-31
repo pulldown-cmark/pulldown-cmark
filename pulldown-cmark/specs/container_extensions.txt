@@ -138,3 +138,30 @@ Is this **bold**?
 <p>Is this <strong>bold</strong>?</p>
 </div>
 ````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::: example
+Is this collapsable?
+
+Is this **bold**?
+::::
+.
+<div class="example">
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::::spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````

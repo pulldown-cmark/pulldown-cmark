@@ -2438,14 +2438,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = core::mem::size_of::<Node<Item>>();
-        assert_eq!(48, node_size);
+        assert_eq!(56, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = core::mem::size_of::<ItemBody>();
-        assert_eq!(16, body_size);
+        assert_eq!(24, body_size);
     }
 
     #[test]

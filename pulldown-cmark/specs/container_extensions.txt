@@ -185,12 +185,7 @@ content
 
 ::: end
 .
-<div class="block">
-<p>content</p>
-<div class="end">
-
-</div>
-</div>
+<div class="block"><p>content</p></div><p>end</p>
 ````````````````````````````````
 
 ```````````````````````````````` example_container_extensions
@@ -200,10 +195,5 @@ content
 ::: block
  :::
 .
-<div class="block">
-
-</div>
-<div class="block">
-
-</div>
+<div class="block"></div><div class="block"></div>
 ````````````````````````````````

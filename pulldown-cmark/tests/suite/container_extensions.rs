@@ -20,9 +20,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -43,9 +41,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -72,9 +68,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -107,9 +101,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -126,9 +118,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -146,9 +136,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -166,9 +154,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -185,9 +171,7 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -204,9 +188,7 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -224,9 +206,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -242,9 +222,7 @@ content
 <p>:::</p>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -255,17 +233,10 @@ content
 
 ::: end
 "##;
-    let expected = r##"<div class="block">
-<p>content</p>
-<div class="end">
-
-</div>
-</div>
+    let expected = r##"<div class="block"><p>content</p></div><p>end</p>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
 
 #[test]
@@ -276,15 +247,8 @@ fn container_extensions_test_13() {
 ::: block
  :::
 "##;
-    let expected = r##"<div class="block">
-
-</div>
-<div class="block">
-
-</div>
+    let expected = r##"<div class="block"></div><div class="block"></div>
 "##;
 
-    test_markdown_html(
-        original, expected, false, false, false, false, false, false, true,
-    );
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }

@@ -269,15 +269,8 @@ impl<'a> LineStart<'a> {
         }
     }
 
-    pub(crate) fn scan_container_extensions_fence(&mut self) -> bool {
-        if self.scan_case_insensitive(b":::") {
-            true
-        } else {
-            false
-        }
-    }
-
     pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: usize) -> bool {
+        self.scan_all_space();
         for _ in 0..length {
             if !self.scan_ch(b':') {
                 return false;

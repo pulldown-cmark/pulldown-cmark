@@ -165,3 +165,45 @@ Is this **bold**?
 <p>Is this <strong>bold</strong>?</p>
 </details>
 ````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::
+
+content
+
+:::
+.
+<p>:::</p>
+<p>content</p>
+<p>:::</p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: block
+
+content
+
+::: end
+.
+<div class="block">
+<p>content</p>
+<div class="end">
+
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+ ::: block
+:::
+
+::: block
+ :::
+.
+<div class="block">
+
+</div>
+<div class="block">
+
+</div>
+````````````````````````````````

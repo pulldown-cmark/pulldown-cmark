@@ -266,53 +266,59 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
             } else if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
-                && line_start.scan_container_extensions_fence()
+                && scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':') > 2
             {
-                let fence_length = scan_ch_repeat(&bytes[start_ix..], b':');
+                let fence_length =
+                    //3 +
+                    scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
 
-                let mut kind_start = start_ix + fence_length;
+                let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length; // - 3;
                 kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
-                let kind_end = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
-                let kind = unescape(
-                    &self.text[kind_start..(kind_start + kind_end)],
-                    self.tree.is_in_table(),
-                );
-
-                let mut summary_start = kind_start + kind_end;
-                summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
-                let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
-                let summary_end =
-                    line_end - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
-                let summary = unescape(
-                    &self.text[summary_start..summary_end],
-                    self.tree.is_in_table(),
-                );
-                let summary_cow_ix = self.allocs.allocate_cow(summary);
-
-                if kind.eq_ignore_ascii_case("spoiler") {
-                    self.tree.append(Item {
-                        start: container_start,
-                        end: 0,
-                        body: ItemBody::Container(
-                            fence_length,
-                            ContainerKind::Spoiler,
-                            summary_cow_ix,
-                        ),
-                    });
+                let kind_length = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
+                if kind_length == 0 {
+                    break;
                 } else {
-                    let kind_cow_ix = self.allocs.allocate_cow(kind);
-                    self.tree.append(Item {
-                        start: container_start,
-                        end: 0,
-                        body: ItemBody::Container(
-                            fence_length,
-                            ContainerKind::Default,
-                            kind_cow_ix,
-                        ),
-                    });
+                    let kind = unescape(
+                        &self.text[kind_start..(kind_start + kind_length)],
+                        self.tree.is_in_table(),
+                    );
+
+                    let mut summary_start = kind_start + kind_length;
+                    summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
+                    let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
+                    let summary_end = line_end
+                        - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                    let summary = unescape(
+                        &self.text[summary_start..summary_end],
+                        self.tree.is_in_table(),
+                    );
+                    let summary_cow_ix = self.allocs.allocate_cow(summary);
+
+                    if kind.eq_ignore_ascii_case("spoiler") {
+                        self.tree.append(Item {
+                            start: container_start,
+                            end: 0,
+                            body: ItemBody::Container(
+                                fence_length,
+                                ContainerKind::Spoiler,
+                                summary_cow_ix,
+                            ),
+                        });
+                    } else {
+                        let kind_cow_ix = self.allocs.allocate_cow(kind);
+                        self.tree.append(Item {
+                            start: container_start,
+                            end: 0,
+                            body: ItemBody::Container(
+                                fence_length,
+                                ContainerKind::Default,
+                                kind_cow_ix,
+                            ),
+                        });
+                    }
+                    self.tree.push();
+                    return summary_end + 1;
                 }
-                self.tree.push();
-                return summary_end + 1;
             } else {
                 line_start = save;
                 break;

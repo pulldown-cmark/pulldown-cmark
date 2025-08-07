@@ -274,7 +274,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                 let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length; // - 3;
                 kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
-                let kind_length = scan_while(&bytes[kind_start..], is_ascii_alphanumeric);
+                let kind_length = scan_while(&bytes[kind_start..], |c| {
+                    is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
+                });
                 if kind_length == 0 {
                     break;
                 } else {
@@ -2187,7 +2189,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
-        || scan_closing_container_extensions_fence(bytes).is_some()
+        || scan_interrupting_container_extensions_fence(bytes)
         || scan_blockquote_start(bytes).is_some()
         || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
             ! current_container ||

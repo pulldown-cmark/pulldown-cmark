@@ -1468,49 +1468,69 @@ pub(crate) fn scan_containers(
     line_start: &mut LineStart<'_>,
     options: Options,
 ) -> usize {
-    let mut i = 0;
-    for &node_ix in tree.walk_spine() {
-        match tree[node_ix].item.body {
-            ItemBody::Container(length, ..) => {
-                if line_start.scan_closing_container_extensions_fence(length) {
-                    break;
+    if tree.spine_len() > 0 {
+        let mut i = tree.spine_len();
+        for &node_ix in tree.walk_spine().rev() {
+            match tree[node_ix].item.body {
+                ItemBody::Container(length, ..) => {
+                    if line_start.scan_closing_container_extensions_fence(length) {
+                        break;
+                    }
                 }
+                _ => (),
             }
-            ItemBody::BlockQuote(..) => {
-                let save = line_start.clone();
-                let _ = line_start.scan_space(3);
-                if !line_start.scan_blockquote_marker() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::ListItem(indent) => {
-                let save = line_start.clone();
-                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::DefinitionListDefinition(indent) => {
-                let save = line_start.clone();
-                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::FootnoteDefinition(..) if options.has_gfm_footnotes() => {
-                let save = line_start.clone();
-                if !line_start.scan_space(4) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            _ => (),
+            i = i - 1;
         }
-        i += 1;
+        if i > 0 {
+            i - 1
+        } else {
+            let mut i = 0;
+            for &node_ix in tree.walk_spine() {
+                match tree[node_ix].item.body {
+                    ItemBody::BlockQuote(..) => {
+                        let save = line_start.clone();
+                        let _ = line_start.scan_space(3);
+                        if !line_start.scan_blockquote_marker() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::ListItem(indent) => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::DefinitionListDefinition(indent) => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::FootnoteDefinition(..) if options.has_gfm_footnotes() => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(4) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    _ => (),
+                }
+                i = i + 1;
+            }
+            if i < tree.spine_len() {
+                i
+            } else {
+                tree.spine_len()
+            }
+        }
+    } else {
+        0
     }
-    i
 }
+
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
     let _ = scan_containers(tree, &mut line_start, options);

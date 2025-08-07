@@ -270,13 +270,19 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: usize) -> bool {
-        self.scan_all_space();
-        for _ in 0..length {
-            if !self.scan_ch(b':') {
-                return false;
-            }
+        let nl_ix = scan_nextline(&self.bytes[self.ix..]);
+        let eol_length = scan_rev_while(&self.bytes[self.ix..nl_ix], |c| {
+            c == b'\n' || c == b'\r' || c == b' '
+        });
+        let fence_length =
+            scan_rev_while(&self.bytes[self.ix..(nl_ix - eol_length)], |c| c == b':');
+
+        if fence_length >= length {
+            self.ix = self.ix + (nl_ix - eol_length);
+            true
+        } else {
+            false
         }
-        true
     }
 
     /// Scan a definition marker.
@@ -517,7 +523,9 @@ pub(crate) fn scan_blank_line(bytes: &[u8]) -> Option<usize> {
 }
 
 pub(crate) fn scan_nextline(bytes: &[u8]) -> usize {
-    memchr(b'\n', bytes).map_or(bytes.len(), |x| x + 1)
+    memchr(b'\n', bytes).map_or(memchr(b'\r', bytes).map_or(bytes.len(), |x| x + 1), |x| {
+        x + 1
+    })
 }
 
 // return: end byte for closing code fence, or None
@@ -752,27 +760,16 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
     }
 }
 
-/// Scan closing container extension fence.
-///
-/// Returns number of bytes scanned and the char that is repeated to make the container extension fence.
-pub(crate) fn scan_closing_container_extensions_fence(data: &[u8]) -> Option<(usize, u8)> {
-    let c = *data.first()?;
-    if !(c == b':') {
-        return None;
-    }
-    let i = 1 + scan_ch_repeat(&data[1..], c);
-    if i >= 3 {
-        if c == b':' {
-            let suffix = &data[i..];
-            let next_line = i + scan_nextline(suffix);
-            // FIXME: make sure this is correct
-            if suffix[..(next_line - i)].iter().any(|&b| b == b':') {
-                return None;
-            }
-        }
-        Some((i, c))
+pub(crate) fn scan_interrupting_container_extensions_fence(data: &[u8]) -> bool {
+    let fence_length = scan_ch_repeat(data, b':');
+    let kind_start = fence_length + scan_whitespace_no_nl(&data[fence_length..]);
+    let kind_length = scan_while(&data[kind_start..], |c| {
+        is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
+    });
+    if fence_length > 2 && kind_length > 0 {
+        true
     } else {
-        None
+        false
     }
 }
 

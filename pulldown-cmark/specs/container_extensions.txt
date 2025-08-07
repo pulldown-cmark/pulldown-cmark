@@ -185,7 +185,11 @@ content
 
 ::: end
 .
-<div class="block"><p>content</p></div><p>end</p>
+<div class="block">
+<p>content</p>
+<div class="end">
+</div>
+</div>
 ````````````````````````````````
 
 ```````````````````````````````` example_container_extensions
@@ -195,5 +199,64 @@ content
 ::: block
  :::
 .
-<div class="block"></div><div class="block"></div>
+<div class="block">
+</div>
+<div class="block">
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+::: b
+
+:::
+:::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::
+Hi
+:::
+.
+<p>:::
+Hi
+:::</p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::::: foo
+Hi
+:::
+::::::
+.
+<div class="foo">
+<p>Hi
+:::</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+> ::: foo
+> Hi
+.
+<blockquote>
+<div class="foo">
+<p>Hi</p>
+</div>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: c_d
+Hi
+:::
+.
+<div class="c_d">
+<p>Hi</p>
+</div>
 ````````````````````````````````

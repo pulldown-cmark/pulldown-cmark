@@ -19,7 +19,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -44,7 +44,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn definition_lists_test_3() {
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -80,7 +80,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -105,7 +105,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -144,7 +144,7 @@ crisp, pleasant to taste</p>
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -166,7 +166,7 @@ fn definition_lists_test_7() {
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -189,7 +189,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -223,7 +223,7 @@ orange
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -261,7 +261,7 @@ fruit</p>
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -300,7 +300,7 @@ chili's
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -320,7 +320,7 @@ pomegranate
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -341,7 +341,7 @@ c</dt>
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -363,7 +363,7 @@ bim
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -385,7 +385,7 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -400,7 +400,7 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -417,7 +417,7 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -460,7 +460,7 @@ bar
 :   baz</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -506,7 +506,7 @@ fn definition_lists_test_19() {
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -521,7 +521,7 @@ fn definition_lists_test_20() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -543,7 +543,7 @@ Test|Table
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -556,7 +556,7 @@ fn definition_lists_test_22() {
 <p>: first</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -576,7 +576,7 @@ My section
 <p>: fourth</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -588,7 +588,7 @@ fn definition_lists_test_24() {
 <p>: first</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -607,7 +607,7 @@ fn definition_lists_test_25() {
 <p>: fourth</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -621,7 +621,7 @@ fn definition_lists_test_26() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -640,7 +640,7 @@ third
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -663,7 +663,7 @@ first
 : fourth
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -687,7 +687,7 @@ third
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -722,7 +722,7 @@ level three</dt>
 </dl>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -734,5 +734,5 @@ fn definition_lists_test_31() {
     let expected = r##"<p>:</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, true, false);
 }

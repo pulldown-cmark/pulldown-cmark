@@ -4,6 +4,7 @@
 pub use super::test_markdown_html;
 
 mod blockquotes_tags;
+mod container_extensions;
 mod definition_lists;
 mod footnotes;
 mod gfm_strikethrough;

@@ -40,8 +40,8 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
-    Options, Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
+    MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -114,6 +114,7 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
+    Container(usize, ContainerKind, CowIndex),
     List(bool, u8, u64), // is_tight, list character, list start index
     ListItem(usize),     // indent level
     FootnoteDefinition(CowIndex),
@@ -1467,44 +1468,69 @@ pub(crate) fn scan_containers(
     line_start: &mut LineStart<'_>,
     options: Options,
 ) -> usize {
-    let mut i = 0;
-    for &node_ix in tree.walk_spine() {
-        match tree[node_ix].item.body {
-            ItemBody::BlockQuote(..) => {
-                let save = line_start.clone();
-                let _ = line_start.scan_space(3);
-                if !line_start.scan_blockquote_marker() {
-                    *line_start = save;
-                    break;
+    if tree.spine_len() > 0 {
+        let mut i = tree.spine_len();
+        for &node_ix in tree.walk_spine().rev() {
+            match tree[node_ix].item.body {
+                ItemBody::Container(length, ..) => {
+                    if line_start.scan_closing_container_extensions_fence(length) {
+                        break;
+                    }
                 }
+                _ => (),
             }
-            ItemBody::ListItem(indent) => {
-                let save = line_start.clone();
-                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::DefinitionListDefinition(indent) => {
-                let save = line_start.clone();
-                if !line_start.scan_space(indent) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            ItemBody::FootnoteDefinition(..) if options.has_gfm_footnotes() => {
-                let save = line_start.clone();
-                if !line_start.scan_space(4) && !line_start.is_at_eol() {
-                    *line_start = save;
-                    break;
-                }
-            }
-            _ => (),
+            i = i - 1;
         }
-        i += 1;
+        if i > 0 {
+            i - 1
+        } else {
+            let mut i = 0;
+            for &node_ix in tree.walk_spine() {
+                match tree[node_ix].item.body {
+                    ItemBody::BlockQuote(..) => {
+                        let save = line_start.clone();
+                        let _ = line_start.scan_space(3);
+                        if !line_start.scan_blockquote_marker() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::ListItem(indent) => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::DefinitionListDefinition(indent) => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(indent) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    ItemBody::FootnoteDefinition(..) if options.has_gfm_footnotes() => {
+                        let save = line_start.clone();
+                        if !line_start.scan_space(4) && !line_start.is_at_eol() {
+                            *line_start = save;
+                            break;
+                        }
+                    }
+                    _ => (),
+                }
+                i = i + 1;
+            }
+            if i < tree.spine_len() {
+                i
+            } else {
+                tree.spine_len()
+            }
+        }
+    } else {
+        0
     }
-    i
 }
+
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
     let _ = scan_containers(tree, &mut line_start, options);
@@ -2294,6 +2320,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
+        ItemBody::Container(_, kind, _) => TagEnd::ContainerBlock(kind),
         ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
@@ -2374,6 +2401,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
+        ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {
@@ -2430,14 +2458,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = core::mem::size_of::<Node<Item>>();
-        assert_eq!(48, node_size);
+        assert_eq!(56, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = core::mem::size_of::<ItemBody>();
-        assert_eq!(16, body_size);
+        assert_eq!(24, body_size);
     }
 
     #[test]

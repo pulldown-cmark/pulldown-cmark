@@ -15,7 +15,7 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    HeadingLevel, MetadataBlockKind, Options,
+    ContainerKind, HeadingLevel, MetadataBlockKind, Options,
 };
 
 /// Runs the first pass, which resolves the block structure of the document,
@@ -265,6 +265,61 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         break;
                     }
                 }
+            } else if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
+                && scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':') > 2
+            {
+                let fence_length =
+                    scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
+
+                let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;
+                kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
+                let kind_length = scan_while(&bytes[kind_start..], |c| {
+                    is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
+                });
+                if kind_length == 0 {
+                    break;
+                } else {
+                    let kind = unescape(
+                        &self.text[kind_start..(kind_start + kind_length)],
+                        self.tree.is_in_table(),
+                    );
+
+                    let mut summary_start = kind_start + kind_length;
+                    summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
+                    let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
+                    let summary_end = line_end
+                        - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                    let summary = unescape(
+                        &self.text[summary_start..summary_end],
+                        self.tree.is_in_table(),
+                    );
+                    let summary_cow_ix = self.allocs.allocate_cow(summary);
+
+                    if kind.eq_ignore_ascii_case("spoiler") {
+                        self.tree.append(Item {
+                            start: container_start,
+                            end: 0,
+                            body: ItemBody::Container(
+                                fence_length,
+                                ContainerKind::Spoiler,
+                                summary_cow_ix,
+                            ),
+                        });
+                    } else {
+                        let kind_cow_ix = self.allocs.allocate_cow(kind);
+                        self.tree.append(Item {
+                            start: container_start,
+                            end: 0,
+                            body: ItemBody::Container(
+                                fence_length,
+                                ContainerKind::Default,
+                                kind_cow_ix,
+                            ),
+                        });
+                    }
+                    self.tree.push();
+                    return summary_end + 1;
+                }
             } else {
                 line_start = save;
                 break;
@@ -276,6 +331,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
             if let Some(node_ix) = self.tree.peek_up() {
                 match &mut self.tree[node_ix].item.body {
+                    ItemBody::Container(..) => (),
                     ItemBody::BlockQuote(..) => (),
                     ItemBody::ListItem(indent) | ItemBody::DefinitionListDefinition(indent)
                         if self.begin_list_item.is_some() =>
@@ -2132,6 +2188,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
+        || scan_interrupting_container_extensions_fence(bytes)
         || scan_blockquote_start(bytes).is_some()
         || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
             ! current_container ||

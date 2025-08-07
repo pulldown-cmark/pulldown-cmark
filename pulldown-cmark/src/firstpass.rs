@@ -269,10 +269,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 && scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':') > 2
             {
                 let fence_length =
-                    //3 +
                     scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
 
-                let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length; // - 3;
+                let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;
                 kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
                 let kind_length = scan_while(&bytes[kind_start..], |c| {
                     is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'

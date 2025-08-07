@@ -219,6 +219,32 @@ content
 ````````````````````````````````
 
 ```````````````````````````````` example_container_extensions
+:::: a
+::: b
+
+:::
+::::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+:::: b
+
+::::
+:::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
 :::
 Hi
 :::

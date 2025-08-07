@@ -279,6 +279,40 @@ fn container_extensions_test_14() {
 
 #[test]
 fn container_extensions_test_15() {
+    let original = r##":::: a
+::: b
+
+:::
+::::
+"##;
+    let expected = r##"<div class="a">
+<div class="b">
+</div>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_16() {
+    let original = r##"::: a
+:::: b
+
+::::
+:::
+"##;
+    let expected = r##"<div class="a">
+<div class="b">
+</div>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_17() {
     let original = r##":::
 Hi
 :::
@@ -292,7 +326,7 @@ Hi
 }
 
 #[test]
-fn container_extensions_test_16() {
+fn container_extensions_test_18() {
     let original = r##"::::: foo
 Hi
 :::
@@ -308,7 +342,7 @@ Hi
 }
 
 #[test]
-fn container_extensions_test_17() {
+fn container_extensions_test_19() {
     let original = r##"> ::: foo
 > Hi
 "##;
@@ -323,7 +357,7 @@ fn container_extensions_test_17() {
 }
 
 #[test]
-fn container_extensions_test_18() {
+fn container_extensions_test_20() {
     let original = r##"::: c_d
 Hi
 :::

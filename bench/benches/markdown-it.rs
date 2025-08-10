@@ -3,7 +3,7 @@ use pulldown_cmark::{html, Parser};
 use std::fs::{read_dir, read_to_string};
 
 pub fn markdown_it_samples(c: &mut Criterion) {
-    let folder = read_dir("../pulldown-cmark/third_party/markdown-it").unwrap();
+    let folder = read_dir("./third_party/markdown-it").unwrap();
     for entry in folder {
         let entry = entry.unwrap();
 

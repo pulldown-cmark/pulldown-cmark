@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use pulldown_cmark::{html, Options, Parser};
 use std::str::from_utf8;
 
-static CRDT_BYTES: &[u8] = include_bytes!("../../pulldown-cmark/third_party/xi-editor/crdt.md");
+static CRDT_BYTES: &[u8] = include_bytes!("../third_party/xi-editor/crdt.md");
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut full_opts = Options::empty();

@@ -191,7 +191,7 @@ pub struct BrokenLink<'a> {
 
 /// Markdown event iterator.
 pub struct Parser<'input, CB = DefaultParserCallbacks> {
-    callbacks: Option<CB>,
+    callbacks: CB,
     inner: ParserInner<'input>,
 }
 
@@ -236,7 +236,7 @@ impl<'input, CB> core::fmt::Debug for Parser<'input, CB> {
         f.debug_struct("Parser")
             .field("text", &self.inner.text)
             .field("options", &self.inner.options)
-            .field("callbacks", &self.callbacks.as_ref().map(|_| ..))
+            .field("callbacks", &..)
             .finish()
     }
 }
@@ -262,12 +262,12 @@ impl<'input> Parser<'input, DefaultParserCallbacks> {
 
     /// Creates a new event iterator for a markdown string with given options.
     pub fn new_ext(text: &'input str, options: Options) -> Self {
-        Self::new_with_callbacks(text, options, None)
+        Self::new_with_callbacks(text, options, DefaultParserCallbacks)
     }
 }
 
 impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
-    /// Creates a new event iterator for markdown text with given options and optionally, callbacks.
+    /// Creates a new event iterator for markdown text with given options and callbacks.
     ///
     /// ```
     /// # use pulldown_cmark::{BrokenLink, CowStr, Event, Options, Parser, ParserCallbacks, Tag};
@@ -282,7 +282,7 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
     /// }
     ///
     /// let mut parser =
-    ///     Parser::new_with_callbacks("[broken]", Options::empty(), Some(CustomCallbacks));
+    ///     Parser::new_with_callbacks("[broken]", Options::empty(), CustomCallbacks);
     ///
     /// assert!(matches!(
     ///     parser.nth(1),
@@ -291,7 +291,7 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
     /// ```
     ///
     /// See the [`ParserCallbacks`] trait for a list of callbacks that can be overridden.
-    pub fn new_with_callbacks(text: &'input str, options: Options, callbacks: Option<CB>) -> Self {
+    pub fn new_with_callbacks(text: &'input str, options: Options, callbacks: CB) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
@@ -349,7 +349,7 @@ impl<'input, F> Parser<'input, BrokenLinkCallback<F>> {
     where
         F: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
     {
-        Self::new_with_callbacks(text, options, broken_link_callback.map(BrokenLinkCallback))
+        Self::new_with_callbacks(text, options, BrokenLinkCallback(broken_link_callback))
     }
 }
 
@@ -377,7 +377,7 @@ impl<'input> ParserInner<'input> {
         link_label: CowStr<'input>,
         span: Range<usize>,
         link_type: LinkType,
-        callbacks: &mut Option<&mut dyn ParserCallbacks<'input>>,
+        callbacks: &mut dyn ParserCallbacks<'input>,
     ) -> Option<(LinkType, CowStr<'input>, CowStr<'input>)> {
         if self.link_ref_expansion_limit == 0 {
             return None;
@@ -398,21 +398,16 @@ impl<'input> ParserInner<'input> {
                 (link_type, url, title)
             })
             .or_else(|| {
-                match callbacks {
-                    Some(callback) => {
-                        // Construct a BrokenLink struct, which will be passed to the callback
-                        let broken_link = BrokenLink {
-                            span,
-                            link_type,
-                            reference: link_label,
-                        };
+                // Construct a BrokenLink struct, which will be passed to the callback
+                let broken_link = BrokenLink {
+                    span,
+                    link_type,
+                    reference: link_label,
+                };
 
-                        callback
-                            .handle_broken_link(broken_link)
-                            .map(|(url, title)| (link_type.to_unknown(), url, title))
-                    }
-                    None => None,
-                }
+                callbacks
+                    .handle_broken_link(broken_link)
+                    .map(|(url, title)| (link_type.to_unknown(), url, title))
             })?;
 
         // Limit expansion from link references.
@@ -431,7 +426,7 @@ impl<'input> ParserInner<'input> {
     /// inline markup passes are run on the remainder of the chain.
     ///
     /// Note: there's some potential for optimization here, but that's future work.
-    fn handle_inline(&mut self, callbacks: &mut Option<&mut dyn ParserCallbacks<'input>>) {
+    fn handle_inline(&mut self, callbacks: &mut dyn ParserCallbacks<'input>) {
         self.handle_inline_pass1(callbacks);
         self.handle_emphasis_and_hard_break();
     }
@@ -441,7 +436,7 @@ impl<'input> ParserInner<'input> {
     /// This function handles both inline HTML and code spans, because they have
     /// the same precedence. It also handles links, even though they have lower
     /// precedence, because the URL of links must not be processed.
-    fn handle_inline_pass1(&mut self, callbacks: &mut Option<&mut dyn ParserCallbacks<'input>>) {
+    fn handle_inline_pass1(&mut self, callbacks: &mut dyn ParserCallbacks<'input>) {
         let mut cur = self.tree.cur();
         let mut prev = None;
 
@@ -2188,7 +2183,7 @@ pub trait ParserCallbacks<'input> {
 ///
 /// Used internally by [`Parser::new_with_broken_link_callback`].
 #[allow(missing_debug_implementations)]
-pub struct BrokenLinkCallback<F>(F);
+pub struct BrokenLinkCallback<F>(Option<F>);
 
 impl<'input, F> ParserCallbacks<'input> for BrokenLinkCallback<F>
 where
@@ -2198,7 +2193,7 @@ where
         &mut self,
         link: BrokenLink<'input>,
     ) -> Option<(CowStr<'input>, CowStr<'input>)> {
-        self.0(link)
+        self.0.as_mut().and_then(|cb| cb(link))
     }
 }
 
@@ -2227,7 +2222,7 @@ impl<'input> ParserCallbacks<'input> for DefaultParserCallbacks {}
 /// Constructed from a `Parser` using its
 /// [`into_offset_iter`](struct.Parser.html#method.into_offset_iter) method.
 #[derive(Debug)]
-pub struct OffsetIter<'a, CB = DefaultParserCallbacks> {
+pub struct OffsetIter<'a, CB> {
     parser: Parser<'a, CB>,
 }
 
@@ -2242,13 +2237,9 @@ impl<'a, CB: ParserCallbacks<'a>> Iterator for OffsetIter<'a, CB> {
     type Item = (Event<'a>, Range<usize>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let callbacks = self
-            .parser
-            .callbacks
-            .as_mut()
-            .map(|f| f as &mut dyn ParserCallbacks<'a>);
-
-        self.parser.inner.next_event_range(callbacks)
+        self.parser
+            .inner
+            .next_event_range(&mut self.parser.callbacks)
     }
 }
 
@@ -2256,13 +2247,8 @@ impl<'a, CB: ParserCallbacks<'a>> Iterator for Parser<'a, CB> {
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Event<'a>> {
-        let callback = self
-            .callbacks
-            .as_mut()
-            .map(|f| f as &mut dyn ParserCallbacks<'a>);
-
         self.inner
-            .next_event_range(callback)
+            .next_event_range(&mut self.callbacks)
             .map(|(event, _range)| event)
     }
 }
@@ -2272,7 +2258,7 @@ impl<'a, CB: ParserCallbacks<'a>> FusedIterator for Parser<'a, CB> {}
 impl<'input> ParserInner<'input> {
     fn next_event_range(
         &mut self,
-        mut callbacks: Option<&mut dyn ParserCallbacks<'input>>,
+        callbacks: &mut dyn ParserCallbacks<'input>,
     ) -> Option<(Event<'input>, Range<usize>)> {
         match self.tree.cur() {
             None => {
@@ -2299,7 +2285,7 @@ impl<'input> ParserInner<'input> {
                     cur_ix
                 };
                 if self.tree[cur_ix].item.body.is_maybe_inline() {
-                    self.handle_inline(&mut callbacks);
+                    self.handle_inline(callbacks);
                 }
 
                 let node = self.tree[cur_ix];

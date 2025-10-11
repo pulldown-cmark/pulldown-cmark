@@ -269,15 +269,15 @@ impl<'a> LineStart<'a> {
         }
     }
 
-    pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: usize) -> bool {
+    pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: u8) -> bool {
         let nl_ix = scan_nextline(&self.bytes[self.ix..]);
-        let eol_length = scan_rev_while(&self.bytes[self.ix..nl_ix], |c| {
+        let eol_length = scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix)], |c| {
             c == b'\n' || c == b'\r' || c == b' '
         });
         let fence_length =
-            scan_rev_while(&self.bytes[self.ix..(nl_ix - eol_length)], |c| c == b':');
+            scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix - eol_length)], |c| c == b':');
 
-        if fence_length >= length {
+        if fence_length >= length as usize {
             self.ix = self.ix + (nl_ix - eol_length);
             true
         } else {

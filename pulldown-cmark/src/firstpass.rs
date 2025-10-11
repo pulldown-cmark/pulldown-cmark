@@ -2,7 +2,7 @@
 //! are in a linear chain with potential inline markup identified.
 
 use alloc::{string::String, vec::Vec};
-use core::{cmp::max, ops::Range};
+use core::{cmp::max, ops::Range, u8};
 
 use unicase::UniCase;
 
@@ -35,6 +35,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         lookup_table,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
+        container_depth: 0,
     };
     first_pass.run()
 }
@@ -59,6 +60,7 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
+    container_depth: u8,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
     brace_context_next: usize,
@@ -133,6 +135,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
+                if self.container_depth < u8::MAX {
+                    self.container_depth = self.container_depth + 1;
+                }
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
                     self.begin_list_item = Some(after_marker_index + n);
@@ -221,6 +226,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.last_line_blank = false;
                     }
                 }
+                if self.container_depth < u8::MAX {
+                    self.container_depth = self.container_depth + 1;
+                }
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
                     self.begin_list_item = Some(after_marker_index + n);
@@ -238,6 +246,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     end: 0, // will get set later
                     body: ItemBody::BlockQuote(kind),
                 });
+                if self.container_depth < u8::MAX {
+                    self.container_depth = self.container_depth + 1;
+                }
                 self.tree.push();
                 if kind.is_some() {
                     // blockquote tag leaves us at the end of the line
@@ -271,60 +282,92 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let fence_length =
                     scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
 
-                let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;
-                kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
-                let kind_length = scan_while(&bytes[kind_start..], |c| {
-                    is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
-                });
-                if kind_length == 0 {
+                if fence_length > u8::MAX as usize || self.container_depth == u8::MAX {
                     break;
                 } else {
-                    let kind = unescape(
-                        &self.text[kind_start..(kind_start + kind_length)],
-                        self.tree.is_in_table(),
-                    );
-
-                    let mut summary_start = kind_start + kind_length;
-                    summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
-                    let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
-                    let summary_end = line_end
-                        - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
-                    let summary = unescape(
-                        &self.text[summary_start..summary_end],
-                        self.tree.is_in_table(),
-                    );
-                    let summary_cow_ix = self.allocs.allocate_cow(summary);
-
-                    if kind.eq_ignore_ascii_case("spoiler") {
-                        self.tree.append(Item {
-                            start: container_start,
-                            end: 0,
-                            body: ItemBody::Container(
-                                fence_length,
-                                ContainerKind::Spoiler,
-                                summary_cow_ix,
-                            ),
-                        });
+                    let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;
+                    kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
+                    let kind_length = scan_while(&bytes[kind_start..], |c| {
+                        is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
+                    });
+                    if kind_length == 0 {
+                        break;
                     } else {
-                        let kind_cow_ix = self.allocs.allocate_cow(kind);
-                        self.tree.append(Item {
-                            start: container_start,
-                            end: 0,
-                            body: ItemBody::Container(
-                                fence_length,
-                                ContainerKind::Default,
-                                kind_cow_ix,
-                            ),
-                        });
+                        let kind = unescape(
+                            &self.text[kind_start..(kind_start + kind_length)],
+                            self.tree.is_in_table(),
+                        );
+
+                        let mut summary_start = kind_start + kind_length;
+                        summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
+                        let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
+                        let summary_end = line_end
+                            - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
+                        let summary = unescape(
+                            &self.text[summary_start..summary_end],
+                            self.tree.is_in_table(),
+                        );
+                        let summary_cow_ix = self.allocs.allocate_cow(summary);
+                        if kind.eq_ignore_ascii_case("spoiler") {
+                            self.tree.append(Item {
+                                start: container_start,
+                                end: 0,
+                                body: ItemBody::Container(
+                                    self.container_depth,
+                                    fence_length as u8,
+                                    ContainerKind::Spoiler,
+                                    summary_cow_ix,
+                                ),
+                            });
+                        } else {
+                            let kind_cow_ix = self.allocs.allocate_cow(kind);
+                            self.tree.append(Item {
+                                start: container_start,
+                                end: 0,
+                                body: ItemBody::Container(
+                                    self.container_depth,
+                                    fence_length as u8,
+                                    ContainerKind::Default,
+                                    kind_cow_ix,
+                                ),
+                            });
+                        }
+                        self.tree.push();
+                        if self.container_depth < u8::MAX {
+                            self.container_depth = self.container_depth + 1;
+                        }
+                        return summary_end + 1;
                     }
-                    self.tree.push();
-                    return summary_end + 1;
                 }
             } else {
                 line_start = save;
                 break;
             }
         }
+
+        if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && self.container_depth > 0 {
+            let mut i = self.tree.spine_len();
+            for &node_ix in self.tree.walk_spine().rev() {
+                match self.tree[node_ix].item.body {
+                    ItemBody::Container(depth, length, ..) => {
+                        if depth == (self.container_depth - 1) {
+                            if line_start.scan_closing_container_extensions_fence(length) {
+                                break;
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+                i = i - 1;
+            }
+
+            if i > 0 {
+                for _ in i..=self.tree.spine_len() {
+                    self.pop(start_ix);
+                }
+            }
+        }
+
 
         let ix = start_ix + line_start.bytes_scanned();
 
@@ -670,6 +713,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         loop {
+
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
                 TableParseMode::Scan
             } else {
@@ -702,6 +746,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let mut line_start = LineStart::new(&bytes[ix..]);
             let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
             let current_container = tree_position == self.tree.spine_len();
+
             let trailing_backslash_pos = match brk {
                 Some(Item {
                     start,
@@ -734,6 +779,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                     break;
                 }
+                if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && !current_container {
+                    if line_start.scan_closing_container_extensions_fence(3) {
+                        break;
+                    }
+                }
             }
             line_start.scan_all_space();
             if line_start.is_at_eol() {
@@ -742,10 +792,33 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
                 break;
             }
+
+            if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && self.container_depth > 0 {
+                let mut i = self.tree.spine_len();
+                for &node_ix in self.tree.walk_spine().rev() {
+                    match self.tree[node_ix].item.body {
+                        ItemBody::Container(depth, length, ..) => {
+                            if depth == (self.container_depth - 1) {
+                                if line_start.scan_closing_container_extensions_fence(length) {
+                                    break;
+                                }
+                            }
+                        }
+                        _ => (),
+                    }
+                    i = i - 1;
+                }
+
+                if i > 0 {
+                    break;
+                }
+            }
+
             ix = next_ix + line_start.bytes_scanned();
             if let Some(item) = brk {
                 self.tree.append(item);
             }
+
         }
 
         self.pop(ix);
@@ -1562,6 +1635,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn pop(&mut self, ix: usize) {
         let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
+
+        match self.tree[cur_ix].item.body {
+          ItemBody::Container(..) |  ItemBody::BlockQuote(..) | ItemBody::ListItem(..) | ItemBody::DefinitionListDefinition(..) | ItemBody::FootnoteDefinition(..) => {
+            self.container_depth = self.container_depth - 1;
+          }
+          _ => {
+          }
+        }
+
         if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
@@ -1790,6 +1872,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // TODO: check whether the label here is strictly necessary
             body: ItemBody::FootnoteDefinition(self.allocs.allocate_cow(label)),
         });
+        if self.container_depth < u8::MAX {
+            self.container_depth = self.container_depth + 1;
+        }
         self.tree.push();
         Some(i)
     }

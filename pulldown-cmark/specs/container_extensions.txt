@@ -286,3 +286,37 @@ Hi
 <p>Hi</p>
 </div>
 ````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: container
+> shouldn't close, right?
+> :::
+> x
+:::
+.
+<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+````````````````````````````````
+
+
+```````````````````````````````` example_container_extensions
+::: container
+> shouldn't close, right?
+> :::
+> x
+
+:::
+.
+<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+````````````````````````````````

@@ -369,3 +369,44 @@ Hi
 
     test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
+
+#[test]
+fn container_extensions_test_21() {
+    let original = r##"::: container
+> shouldn't close, right?
+> :::
+> x
+:::
+"##;
+    let expected = r##"<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_22() {
+    let original = r##"::: container
+> shouldn't close, right?
+> :::
+> x
+
+:::
+"##;
+    let expected = r##"<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}

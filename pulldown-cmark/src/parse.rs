@@ -2377,7 +2377,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::Container(_, _, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
+        ItemBody::Container(_, _, kind, cow_ix) => {
+            Tag::ContainerBlock(kind, allocs.take_cow(cow_ix))
+        }
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {

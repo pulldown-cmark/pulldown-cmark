@@ -368,7 +368,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
         }
 
-
         let ix = start_ix + line_start.bytes_scanned();
 
         if let Some(n) = scan_blank_line(&bytes[ix..]) {
@@ -713,7 +712,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         loop {
-
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
                 TableParseMode::Scan
             } else {
@@ -779,7 +777,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                     break;
                 }
-                if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && !current_container {
+                if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && !current_container
+                {
                     if line_start.scan_closing_container_extensions_fence(3) {
                         break;
                     }
@@ -793,7 +792,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && self.container_depth > 0 {
+            if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
+                && self.container_depth > 0
+            {
                 let mut i = self.tree.spine_len();
                 for &node_ix in self.tree.walk_spine().rev() {
                     match self.tree[node_ix].item.body {
@@ -818,7 +819,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if let Some(item) = brk {
                 self.tree.append(item);
             }
-
         }
 
         self.pop(ix);
@@ -1637,11 +1637,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree[cur_ix].item.end = ix;
 
         match self.tree[cur_ix].item.body {
-          ItemBody::Container(..) |  ItemBody::BlockQuote(..) | ItemBody::ListItem(..) | ItemBody::DefinitionListDefinition(..) | ItemBody::FootnoteDefinition(..) => {
-            self.container_depth = self.container_depth - 1;
-          }
-          _ => {
-          }
+            ItemBody::Container(..)
+            | ItemBody::BlockQuote(..)
+            | ItemBody::ListItem(..)
+            | ItemBody::DefinitionListDefinition(..)
+            | ItemBody::FootnoteDefinition(..) => {
+                self.container_depth = self.container_depth - 1;
+            }
+            _ => {}
         }
 
         if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {

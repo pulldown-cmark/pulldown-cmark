@@ -275,7 +275,9 @@ impl<'a> LineStart<'a> {
             c == b'\n' || c == b'\r' || c == b' '
         });
         let fence_length =
-            scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix - eol_length)], |c| c == b':');
+            scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix - eol_length)], |c| {
+                c == b':'
+            });
 
         if fence_length >= length as usize {
             self.ix = self.ix + (nl_ix - eol_length);

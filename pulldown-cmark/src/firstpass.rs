@@ -282,7 +282,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let fence_length =
                     scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
 
-                if fence_length > u8::MAX as usize || self.container_depth == u8::MAX {
+                if fence_length > u8::MAX as usize || self.tree.spine_len() > CONTAINER_BLOCK_NEST_LIMIT {
                     break;
                 } else {
                     let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;

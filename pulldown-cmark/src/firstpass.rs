@@ -791,25 +791,23 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
-                && self.container_depth > 0
-            {
-                let mut i = self.tree.spine_len();
-                for &node_ix in self.tree.walk_spine().rev() {
+            if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) {
+                let mut closes = false;
+                for &node_ix in self.tree.walk_spine().rev().skip(1) {
                     match self.tree[node_ix].item.body {
-                        ItemBody::Container(depth, length, ..) => {
-                            if depth == (self.container_depth - 1) {
-                                if line_start.scan_closing_container_extensions_fence(length) {
-                                    break;
-                                }
+                        ItemBody::Container(_, length, ..) => {
+                            if line_start.scan_closing_container_extensions_fence(length) {
+                                closes = true;
+                                break;
                             }
                         }
-                        _ => (),
+                        _ => {
+                            break;
+                        }
                     }
-                    i = i - 1;
                 }
 
-                if i > 0 {
+                if closes {
                     break;
                 }
             }

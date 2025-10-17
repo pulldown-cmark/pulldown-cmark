@@ -345,29 +345,28 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
         }
 
-        if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && self.container_depth > 0 {
-            let mut i = self.tree.spine_len();
-            for &node_ix in self.tree.walk_spine().rev() {
+        if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) {
+            let mut pop_count = None;
+            for (i, &node_ix) in self.tree.walk_spine().rev().enumerate() {
                 match self.tree[node_ix].item.body {
-                    ItemBody::Container(depth, length, ..) => {
-                        if depth == (self.container_depth - 1) {
-                            if line_start.scan_closing_container_extensions_fence(length) {
-                                break;
-                            }
+                    ItemBody::Container(_, length, ..) => {
+                        if line_start.scan_closing_container_extensions_fence(length) {
+                            pop_count = Some(i + 1);
+                            break;
                         }
                     }
-                    _ => (),
+                    _ => {
+                        break;
+                    }
                 }
-                i = i - 1;
             }
 
-            if i > 0 {
-                for _ in i..=self.tree.spine_len() {
+            if let Some(c) = pop_count {
+                for _ in 0..c {
                     self.pop(start_ix);
                 }
             }
         }
-
         let ix = start_ix + line_start.bytes_scanned();
 
         if let Some(n) = scan_blank_line(&bytes[ix..]) {

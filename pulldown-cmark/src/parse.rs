@@ -114,9 +114,9 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
-    Container(u8, u8, ContainerKind, CowIndex),
-    List(bool, u8, u64), // is_tight, list character, list start index
-    ListItem(usize),     // indent level
+    Container(u8, ContainerKind, CowIndex), // (fence length, specific renderer, descriptor used in renderer)
+    List(bool, u8, u64),                    // is_tight, list character, list start index
+    ListItem(usize),                        // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
@@ -2296,7 +2296,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
-        ItemBody::Container(_, _, kind, _) => TagEnd::ContainerBlock(kind),
+        ItemBody::Container(_, kind, _) => TagEnd::ContainerBlock(kind),
         ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
@@ -2377,9 +2377,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
-        ItemBody::Container(_, _, kind, cow_ix) => {
-            Tag::ContainerBlock(kind, allocs.take_cow(cow_ix))
-        }
+        ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {

@@ -35,7 +35,6 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         lookup_table,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
-        container_depth: 0,
     };
     first_pass.run()
 }
@@ -60,7 +59,6 @@ struct FirstPass<'a, 'b> {
     allocs: Allocations<'a>,
     options: Options,
     lookup_table: &'b LookupTable,
-    container_depth: u8,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
     brace_context_next: usize,
@@ -135,9 +133,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
-                if self.container_depth < u8::MAX {
-                    self.container_depth = self.container_depth + 1;
-                }
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
                     self.begin_list_item = Some(after_marker_index + n);
@@ -226,9 +221,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.last_line_blank = false;
                     }
                 }
-                if self.container_depth < u8::MAX {
-                    self.container_depth = self.container_depth + 1;
-                }
                 self.tree.push();
                 if let Some(n) = scan_blank_line(&bytes[after_marker_index..]) {
                     self.begin_list_item = Some(after_marker_index + n);
@@ -246,9 +238,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     end: 0, // will get set later
                     body: ItemBody::BlockQuote(kind),
                 });
-                if self.container_depth < u8::MAX {
-                    self.container_depth = self.container_depth + 1;
-                }
                 self.tree.push();
                 if kind.is_some() {
                     // blockquote tag leaves us at the end of the line
@@ -279,13 +268,20 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             } else if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
                 && scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':') > 2
             {
-                let fence_length =
-                    scan_ch_repeat(&bytes[(start_ix + line_start.bytes_scanned())..], b':');
-
-                if fence_length > u8::MAX as usize || self.container_depth == u8::MAX {
+                let fence_length = scan_while_max(
+                    &bytes[(start_ix + line_start.bytes_scanned())..],
+                    |c| c == b':',
+                    u8::MAX as usize,
+                );
+                if fence_length > u8::MAX as usize || self.tree.spine_len() > u8::MAX as usize {
                     break;
                 } else {
-                    let mut kind_start = start_ix + line_start.bytes_scanned() + fence_length;
+                    let excess_colons = scan_while(
+                        &bytes[(start_ix + line_start.bytes_scanned() + fence_length)..],
+                        |c| c == b':',
+                    );
+                    let mut kind_start =
+                        start_ix + line_start.bytes_scanned() + fence_length + excess_colons;
                     kind_start += scan_whitespace_no_nl(&bytes[kind_start..]);
                     let kind_length = scan_while(&bytes[kind_start..], |c| {
                         is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
@@ -297,7 +293,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             &self.text[kind_start..(kind_start + kind_length)],
                             self.tree.is_in_table(),
                         );
-
                         let mut summary_start = kind_start + kind_length;
                         summary_start += scan_whitespace_no_nl(&bytes[summary_start..]);
                         let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
@@ -313,7 +308,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                 start: container_start,
                                 end: 0,
                                 body: ItemBody::Container(
-                                    self.container_depth,
                                     fence_length as u8,
                                     ContainerKind::Spoiler,
                                     summary_cow_ix,
@@ -325,7 +319,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                 start: container_start,
                                 end: 0,
                                 body: ItemBody::Container(
-                                    self.container_depth,
                                     fence_length as u8,
                                     ContainerKind::Default,
                                     kind_cow_ix,
@@ -333,9 +326,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                         }
                         self.tree.push();
-                        if self.container_depth < u8::MAX {
-                            self.container_depth = self.container_depth + 1;
-                        }
                         return summary_end + 1;
                     }
                 }
@@ -349,7 +339,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let mut pop_count = None;
             for (i, &node_ix) in self.tree.walk_spine().rev().enumerate() {
                 match self.tree[node_ix].item.body {
-                    ItemBody::Container(_, length, ..) => {
+                    ItemBody::Container(length, ..) => {
                         if line_start.scan_closing_container_extensions_fence(length) {
                             pop_count = Some(i + 1);
                             break;
@@ -795,7 +785,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let mut closes = false;
                 for &node_ix in self.tree.walk_spine().rev().skip(1) {
                     match self.tree[node_ix].item.body {
-                        ItemBody::Container(_, length, ..) => {
+                        ItemBody::Container(length, ..) => {
                             if line_start.scan_closing_container_extensions_fence(length) {
                                 closes = true;
                                 break;
@@ -1632,18 +1622,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn pop(&mut self, ix: usize) {
         let cur_ix = self.tree.pop().unwrap();
         self.tree[cur_ix].item.end = ix;
-
-        match self.tree[cur_ix].item.body {
-            ItemBody::Container(..)
-            | ItemBody::BlockQuote(..)
-            | ItemBody::ListItem(..)
-            | ItemBody::DefinitionListDefinition(..)
-            | ItemBody::FootnoteDefinition(..) => {
-                self.container_depth = self.container_depth - 1;
-            }
-            _ => {}
-        }
-
         if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
@@ -1872,9 +1850,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // TODO: check whether the label here is strictly necessary
             body: ItemBody::FootnoteDefinition(self.allocs.allocate_cow(label)),
         });
-        if self.container_depth < u8::MAX {
-            self.container_depth = self.container_depth + 1;
-        }
         self.tree.push();
         Some(i)
     }

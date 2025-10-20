@@ -410,3 +410,45 @@ x</p>
 
     test_markdown_html(original, expected, false, false, false, false, false, false, true);
 }
+
+#[test]
+fn container_extensions_test_23() {
+    let original = r##"::: a
+:::: b
+::::: c
+::::
+x
+"##;
+    let expected = r##"<div class="a">
+<div class="b">
+<div class="c">
+</div>
+</div>
+<p>x</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_24() {
+    let original = r##"::: a
+content :::
+"##;
+    let expected = r##"<div class="a"><p>content :::</p></div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn container_extensions_test_25() {
+    let original = r##":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: a
+content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+"##;
+    let expected = r##"<div class="a"><p>content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</p></div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+}

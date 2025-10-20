@@ -270,17 +270,10 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: u8) -> bool {
-        let nl_ix = scan_nextline(&self.bytes[self.ix..]);
-        let eol_length = scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix)], |c| {
-            c == b'\n' || c == b'\r' || c == b' '
-        });
-        let fence_length =
-            scan_rev_while(&self.bytes[self.ix..(self.ix + nl_ix - eol_length)], |c| {
-                c == b':'
-            });
+        let fence_length = scan_while_max(&self.bytes[self.ix..], |c| c == b':', u8::MAX as usize);
 
         if fence_length >= length as usize {
-            self.ix = self.ix + (nl_ix - eol_length);
+            self.ix = self.ix + fence_length;
             true
         } else {
             false
@@ -488,6 +481,16 @@ where
     data.iter().take_while(|&&c| f(c)).count()
 }
 
+pub(crate) fn scan_while_max<F>(data: &[u8], mut f: F, m: usize) -> usize
+where
+    F: FnMut(u8) -> bool,
+{
+    data.iter()
+        .enumerate()
+        .take_while(|(i, c)| *i < m && f(**c))
+        .count()
+}
+
 pub(crate) fn scan_rev_while<F>(data: &[u8], mut f: F) -> usize
 where
     F: FnMut(u8) -> bool,
@@ -525,9 +528,7 @@ pub(crate) fn scan_blank_line(bytes: &[u8]) -> Option<usize> {
 }
 
 pub(crate) fn scan_nextline(bytes: &[u8]) -> usize {
-    memchr(b'\n', bytes).map_or(memchr(b'\r', bytes).map_or(bytes.len(), |x| x + 1), |x| {
-        x + 1
-    })
+    memchr(b'\n', bytes).map_or(bytes.len(), |x| x + 1)
 }
 
 // return: end byte for closing code fence, or None

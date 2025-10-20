@@ -346,6 +346,7 @@ fn issue_819() {
         // Trailing newline doesn't matter. Just the actual HTML.
         assert_eq!(expected, s.trim_end_matches('\n'));
     }
+
     for orig in original {
         let mut s = String::new();
         let mut opts = Options::empty();

@@ -271,7 +271,6 @@ impl<'a> LineStart<'a> {
 
     pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: u8) -> bool {
         let fence_length = scan_while_max(&self.bytes[self.ix..], |c| c == b':', u8::MAX as usize);
-
         if fence_length >= length as usize {
             self.ix = self.ix + fence_length;
             true

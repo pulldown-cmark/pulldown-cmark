@@ -273,7 +273,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     |c| c == b':',
                     u8::MAX as usize,
                 );
-                if fence_length > u8::MAX as usize || self.tree.spine_len() > u8::MAX as usize {
+                if self.tree.spine_len() > u8::MAX as usize {
                     break;
                 } else {
                     let excess_colons = scan_while(

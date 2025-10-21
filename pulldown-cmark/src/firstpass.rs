@@ -298,12 +298,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         let line_end = summary_start + scan_nextline(&bytes[summary_start..]);
                         let summary_end = line_end
                             - scan_rev_while(&bytes[summary_start..line_end], is_ascii_whitespace);
-                        let summary = unescape(
-                            &self.text[summary_start..summary_end],
-                            self.tree.is_in_table(),
-                        );
-                        let summary_cow_ix = self.allocs.allocate_cow(summary);
                         if kind.eq_ignore_ascii_case("spoiler") {
+                            let summary = unescape(
+                                &self.text[summary_start..summary_end],
+                                self.tree.is_in_table(),
+                            );
+                            let summary_cow_ix = self.allocs.allocate_cow(summary);
                             self.tree.append(Item {
                                 start: container_start,
                                 end: 0,

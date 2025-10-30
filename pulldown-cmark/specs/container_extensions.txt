@@ -1,0 +1,351 @@
+# Spoiler tests
+
+```````````````````````````````` example_container_extensions
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this inside?
+> :::
+.
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this inside?</p>
+</details>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p></blockquote>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this inside?
+> :::
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this inside?</p>
+</details>
+</blockquote>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: spoiler Is this expandable?
+Is this collapsable?
+> Is this **bold**?
+> Is this **bold**?
+> ::: spoiler Is this expandable?
+> Is this collapsable?
+> > Is this **bold**?
+> > Is this **bold**?
+> :::
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p>
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<blockquote><p>Is this <strong>bold</strong>?
+Is this <strong>bold</strong>?</p></blockquote>
+</details>
+</blockquote>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: spoiler Is this expandable?
+Is this collapsable?
+:::
+**is this seperate and bold**
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+</details>
+<p><strong>is this seperate and bold</strong></p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: example
+Is this collapsable?
+
+Is this **bold**?
+:::
+.
+<div class="example">
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::: example
+Is this collapsable?
+
+Is this **bold**?
+::::
+.
+<div class="example">
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::::spoiler Is this expandable?
+Is this collapsable?
+
+Is this **bold**?
+:::::
+.
+<details>
+<summary>Is this expandable?</summary>
+<p>Is this collapsable?</p>
+<p>Is this <strong>bold</strong>?</p>
+</details>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::
+
+content
+
+:::
+.
+<p>:::</p>
+<p>content</p>
+<p>:::</p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: block
+
+content
+
+::: end
+.
+<div class="block">
+<p>content</p>
+<div class="end">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+ ::: block
+:::
+
+::: block
+ :::
+.
+<div class="block">
+</div>
+<div class="block">
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+::: b
+
+:::
+:::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::: a
+::: b
+
+:::
+::::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+:::: b
+
+::::
+:::
+.
+<div class="a">
+<div class="b">
+</div>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::
+Hi
+:::
+.
+<p>:::
+Hi
+:::</p>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::::: foo
+Hi
+:::
+::::::
+.
+<div class="foo">
+<p>Hi
+:::</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+> ::: foo
+> Hi
+.
+<blockquote>
+<div class="foo">
+<p>Hi</p>
+</div>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: c_d
+Hi
+:::
+.
+<div class="c_d">
+<p>Hi</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: container
+> shouldn't close, right?
+> :::
+> x
+:::
+.
+<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: container
+> shouldn't close, right?
+> :::
+> x
+
+:::
+.
+<div class="container">
+<blockquote>
+<p>shouldn't close, right?
+:::
+x</p>
+</blockquote>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+:::: b
+::::: c
+::::
+x
+.
+<div class="a">
+<div class="b">
+<div class="c">
+</div>
+</div>
+<p>x</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+::: a
+content :::
+.
+<div class="a"><p>content :::</p></div>
+````````````````````````````````
+
+```````````````````````````````` example_container_extensions
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: a
+content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.
+<div class="a"><p>content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</p></div>
+````````````````````````````````

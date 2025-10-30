@@ -269,6 +269,16 @@ impl<'a> LineStart<'a> {
         }
     }
 
+    pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: u8) -> bool {
+        let fence_length = scan_while_max(&self.bytes[self.ix..], |c| c == b':', u8::MAX as usize);
+        if fence_length >= length as usize {
+            self.ix = self.ix + fence_length;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Scan a definition marker.
     ///
     /// Definition markers are single colons, preceded by at most three spaces
@@ -435,7 +445,7 @@ fn is_ascii_alpha(c: u8) -> bool {
     c.is_ascii_alphabetic()
 }
 
-fn is_ascii_alphanumeric(c: u8) -> bool {
+pub(crate) fn is_ascii_alphanumeric(c: u8) -> bool {
     matches!(c, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
@@ -468,6 +478,16 @@ where
     F: FnMut(u8) -> bool,
 {
     data.iter().take_while(|&&c| f(c)).count()
+}
+
+pub(crate) fn scan_while_max<F>(data: &[u8], mut f: F, m: usize) -> usize
+where
+    F: FnMut(u8) -> bool,
+{
+    data.iter()
+        .enumerate()
+        .take_while(|(i, c)| *i < m && f(**c))
+        .count()
 }
 
 pub(crate) fn scan_rev_while<F>(data: &[u8], mut f: F) -> usize
@@ -739,6 +759,19 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
         Some((i, c))
     } else {
         None
+    }
+}
+
+pub(crate) fn scan_interrupting_container_extensions_fence(data: &[u8]) -> bool {
+    let fence_length = scan_ch_repeat(data, b':');
+    let kind_start = fence_length + scan_whitespace_no_nl(&data[fence_length..]);
+    let kind_length = scan_while(&data[kind_start..], |c| {
+        is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
+    });
+    if fence_length > 2 && kind_length > 0 {
+        true
+    } else {
+        false
     }
 }
 

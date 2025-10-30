@@ -15,6 +15,7 @@ pub fn test_markdown_html(
     subscript: bool,
     wikilinks: bool,
     deflists: bool,
+    container_extensions: bool,
 ) {
     let mut s = String::new();
 
@@ -46,6 +47,9 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
     if deflists {
         opts.insert(Options::ENABLE_DEFINITION_LIST);
+    }
+    if container_extensions {
+        opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
     }
 
     let p = Parser::new_ext(input, opts);

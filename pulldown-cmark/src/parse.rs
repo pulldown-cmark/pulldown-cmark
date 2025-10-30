@@ -40,8 +40,8 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
-    Options, Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
+    MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -114,8 +114,9 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
-    List(bool, u8, u64), // is_tight, list character, list start index
-    ListItem(usize),     // indent level
+    Container(u8, ContainerKind, CowIndex), // (fence length, specific renderer, descriptor used in renderer)
+    List(bool, u8, u64),                    // is_tight, list character, list start index
+    ListItem(usize),                        // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
@@ -1505,6 +1506,7 @@ pub(crate) fn scan_containers(
     }
     i
 }
+
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
     let _ = scan_containers(tree, &mut line_start, options);
@@ -2294,6 +2296,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
         ItemBody::IndentCodeBlock | ItemBody::FencedCodeBlock(..) => TagEnd::CodeBlock,
+        ItemBody::Container(_, kind, _) => TagEnd::ContainerBlock(kind),
         ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
         ItemBody::List(_, c, _) => {
@@ -2374,6 +2377,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
+        ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
             if c == b'.' || c == b')' {

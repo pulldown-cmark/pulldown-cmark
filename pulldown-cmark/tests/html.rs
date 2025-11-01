@@ -317,6 +317,88 @@ fn trim_space_nl_at_end_of_paragraph() {
 }
 
 #[test]
+fn cjk_friendly_emphasis_disabled_by_default() {
+    let input = "これは_強調_です";
+    let expected = "<p>これは_強調_です</p>\n";
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new(input));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn cjk_friendly_emphasis_enabled() {
+    let input = "これは_強調_です";
+    let expected = "<p>これは<em>強調</em>です</p>\n";
+
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new_ext(input, opts));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn cjk_friendly_emphasis_handles_cjk_suffix() {
+    let input = "_強調_箇所";
+    let expected = "<p><em>強調</em>箇所</p>\n";
+
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new_ext(input, opts));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn cjk_friendly_emphasis_simplified_chinese_punctuation() {
+    let input = "这是。**强调**吗？";
+    let expected = "<p>这是。<strong>强调</strong>吗？</p>\n";
+
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new_ext(input, opts));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn cjk_friendly_emphasis_traditional_chinese_with_link() {
+    let input = "請參考**[CommonMark](https://commonmark.org/)**文檔";
+    let expected =
+        "<p>請參考<strong><a href=\"https://commonmark.org/\">CommonMark</a></strong>文檔</p>\n";
+
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new_ext(input, opts));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn cjk_friendly_emphasis_korean_with_code() {
+    let input = "코드를 굵게 만들자**`someCode()`**고";
+    let expected = "<p>코드를 굵게 만들자<strong><code>someCode()</code></strong>고</p>\n";
+
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+
+    let mut output = String::new();
+    html::push_html(&mut output, Parser::new_ext(input, opts));
+
+    assert_eq!(expected, output);
+}
+
+#[test]
 fn trim_space_before_soft_break() {
     let original = "one \ntwo";
     let expected = "<p>one\ntwo</p>\n";

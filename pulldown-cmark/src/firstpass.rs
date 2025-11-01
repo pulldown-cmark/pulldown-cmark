@@ -7,6 +7,10 @@ use core::{cmp::max, ops::Range};
 use unicase::UniCase;
 
 use crate::{
+    cjk::{
+        is_cjk_character, is_ideographic_variation_selector, is_non_cjk_punctuation_character,
+        is_non_emoji_general_variation_selector,
+    },
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
         scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
@@ -2248,6 +2252,36 @@ fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
+#[inline]
+fn previous_two_chars(s: &str, ix: usize) -> (Option<char>, Option<char>) {
+    let mut iter = s[..ix].chars();
+    let mut prev_prev = None;
+    let mut prev = None;
+    while let Some(ch) = iter.next() {
+        prev_prev = prev;
+        prev = Some(ch);
+    }
+    (prev, prev_prev)
+}
+
+#[inline]
+fn base_char_for_sequence(prev: Option<char>, prev_prev: Option<char>) -> Option<char> {
+    match prev {
+        Some(ch) if is_non_emoji_general_variation_selector(ch) => prev_prev,
+        other => other,
+    }
+}
+
+#[inline]
+fn is_prev_cjk_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
+    base_char_for_sequence(prev, prev_prev).map_or(false, is_cjk_character)
+}
+
+#[inline]
+fn is_prev_non_cjk_punctuation_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
+    base_char_for_sequence(prev, prev_prev).map_or(false, is_non_cjk_punctuation_character)
+}
+
 /// Determines whether the delimiter run starting at given index is
 /// left-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims).
@@ -2281,23 +2315,44 @@ fn delim_run_can_open(
         }
     }
     let delim = suffix.bytes().next().unwrap();
+    let cjk_friendly = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+    let restricted_next = if cjk_friendly {
+        is_non_cjk_punctuation_character(next_char)
+    } else {
+        is_punctuation(next_char)
+    };
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || delim == b'^') && !is_punctuation(next_char) {
+    if (delim == b'*' || delim == b'^') && !restricted_next {
         return true;
     }
     if delim == b'~' && run_len > 1 {
         return true;
     }
-    let prev_char = s[..ix].chars().last().unwrap();
+    let (prev_char_opt, prev_prev_char) = previous_two_chars(s, ix);
+    let prev_char = match prev_char_opt {
+        Some(ch) => ch,
+        None => return true,
+    };
     if delim == b'~'
         && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT))
-        && !is_punctuation(next_char)
+        && !restricted_next
     {
         return true;
     }
 
+    let prev_non_cjk_seq = if cjk_friendly {
+        is_prev_non_cjk_punctuation_sequence(prev_char_opt, prev_prev_char)
+    } else {
+        is_punctuation(prev_char)
+    };
+    let prev_cjk_seq = cjk_friendly && is_prev_cjk_sequence(prev_char_opt, prev_prev_char);
+    let prev_is_ivs = cjk_friendly && is_ideographic_variation_selector(prev_char);
+    let prev_base_char = base_char_for_sequence(prev_char_opt, prev_prev_char);
+    let blocked_by_quote = matches!(prev_base_char, Some(']') | Some(')'));
+
     prev_char.is_whitespace()
-        || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
+        || (prev_non_cjk_seq && (delim != b'\'' || !blocked_by_quote))
+        || (cjk_friendly && (prev_cjk_seq || prev_is_ivs))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2314,7 +2369,11 @@ fn delim_run_can_close(
     if ix == 0 {
         return false;
     }
-    let prev_char = s[..ix].chars().last().unwrap();
+    let (prev_char_opt, prev_prev_char) = previous_two_chars(s, ix);
+    let prev_char = match prev_char_opt {
+        Some(ch) => ch,
+        None => return false,
+    };
     if prev_char.is_whitespace() {
         return false;
     }
@@ -2332,17 +2391,29 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
+    let cjk_friendly = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
+    let prev_non_cjk_seq = if cjk_friendly {
+        is_prev_non_cjk_punctuation_sequence(prev_char_opt, prev_prev_char)
+    } else {
+        is_punctuation(prev_char)
+    };
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || delim == b'^' || (delim == b'~' && run_len > 1))
-        && !is_punctuation(prev_char)
-    {
+    if (delim == b'*' || delim == b'^' || (delim == b'~' && run_len > 1)) && !prev_non_cjk_seq {
         return true;
     }
     if delim == b'~' && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT)) {
         return true;
     }
 
-    next_char.is_whitespace() || is_punctuation(next_char)
+    if !cjk_friendly {
+        next_char.is_whitespace() || is_punctuation(next_char)
+    } else if prev_non_cjk_seq {
+        next_char.is_whitespace()
+            || is_non_cjk_punctuation_character(next_char)
+            || is_cjk_character(next_char)
+    } else {
+        true
+    }
 }
 
 fn create_lut(options: &Options) -> LookupTable {

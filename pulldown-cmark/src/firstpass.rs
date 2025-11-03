@@ -2252,7 +2252,6 @@ fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
-#[inline]
 fn previous_two_chars(s: &str, ix: usize) -> (Option<char>, Option<char>) {
     let mut iter = s[..ix].chars();
     let mut prev_prev = None;
@@ -2264,7 +2263,6 @@ fn previous_two_chars(s: &str, ix: usize) -> (Option<char>, Option<char>) {
     (prev, prev_prev)
 }
 
-#[inline]
 fn base_char_for_sequence(prev: Option<char>, prev_prev: Option<char>) -> Option<char> {
     match prev {
         Some(ch) if is_non_emoji_general_variation_selector(ch) => prev_prev,
@@ -2272,12 +2270,10 @@ fn base_char_for_sequence(prev: Option<char>, prev_prev: Option<char>) -> Option
     }
 }
 
-#[inline]
 fn is_prev_cjk_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
     base_char_for_sequence(prev, prev_prev).map_or(false, is_cjk_character)
 }
 
-#[inline]
 fn is_prev_non_cjk_punctuation_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
     base_char_for_sequence(prev, prev_prev).map_or(false, is_non_cjk_punctuation_character)
 }

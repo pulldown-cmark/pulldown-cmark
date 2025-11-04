@@ -2252,8 +2252,8 @@ fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
-fn previous_two_chars(s: &str, ix: usize) -> (Option<char>, Option<char>) {
-    let mut iter = s[..ix].chars().rev();
+fn previous_two_chars(prefix: &str) -> (Option<char>, Option<char>) {
+    let mut iter = prefix.chars().rev();
     let prev = iter.next();
     let prev_prev = iter.next();
     (prev, prev_prev)
@@ -2320,7 +2320,7 @@ fn delim_run_can_open(
     if delim == b'~' && run_len > 1 {
         return true;
     }
-    let (prev_char_opt, prev_prev_char) = previous_two_chars(s, ix);
+    let (prev_char_opt, prev_prev_char) = previous_two_chars(&s[..ix]);
     let prev_char = match prev_char_opt {
         Some(ch) => ch,
         None => return true,
@@ -2361,7 +2361,7 @@ fn delim_run_can_close(
     if ix == 0 {
         return false;
     }
-    let (prev_char_opt, prev_prev_char) = previous_two_chars(s, ix);
+    let (prev_char_opt, prev_prev_char) = previous_two_chars(&s[..ix]);
     let prev_char = match prev_char_opt {
         Some(ch) => ch,
         None => return false,

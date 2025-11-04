@@ -101,6 +101,7 @@ pub mod html;
 
 pub mod utils;
 
+mod cjk;
 mod entities;
 mod firstpass;
 mod linklabel;
@@ -753,6 +754,12 @@ bitflags::bitflags! {
         const ENABLE_SUBSCRIPT = 1 << 14;
         /// Obsidian-style Wikilinks.
         const ENABLE_WIKILINKS = 1 << 15;
+        /// CommonMark CJK-friendly emphasis heuristics.
+        ///
+        /// Aligns delimiter run handling with the
+        /// [CommonMark CJK-friendly amendments](https://github.com/tats-u/markdown-cjk-friendly/blob/main/specification.md),
+        /// enabling emphasis between CJK characters without surrounding whitespace.
+        const ENABLE_CJK_FRIENDLY_EMPHASIS = 1 << 16;
     }
 }
 

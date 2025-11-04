@@ -2253,13 +2253,9 @@ fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
 }
 
 fn previous_two_chars(s: &str, ix: usize) -> (Option<char>, Option<char>) {
-    let mut iter = s[..ix].chars();
-    let mut prev_prev = None;
-    let mut prev = None;
-    while let Some(ch) = iter.next() {
-        prev_prev = prev;
-        prev = Some(ch);
-    }
+    let mut iter = s[..ix].chars().rev();
+    let prev = iter.next();
+    let prev_prev = iter.next();
     (prev, prev_prev)
 }
 

@@ -5,18 +5,19 @@ use pulldown_cmark::{Options, Parser};
 #[rustfmt::skip]
 mod suite;
 
+#[derive(Default)]
+pub struct TestMarkdownHtmlOptions {
+    pub smart_punct: bool,
+    pub metadata_blocks: bool,
+    pub old_footnotes: bool,
+    pub subscript: bool,
+    pub wikilinks: bool,
+    pub deflists: bool,
+    pub container_extensions: bool,
+}
+
 #[inline(never)]
-pub fn test_markdown_html(
-    input: &str,
-    output: &str,
-    smart_punct: bool,
-    metadata_blocks: bool,
-    old_footnotes: bool,
-    subscript: bool,
-    wikilinks: bool,
-    deflists: bool,
-    container_extensions: bool,
-) {
+pub fn test_markdown_html(input: &str, output: &str, test_opts: TestMarkdownHtmlOptions) {
     let mut s = String::new();
 
     let mut opts = Options::empty();
@@ -24,31 +25,31 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_SUPERSCRIPT);
-    if wikilinks {
+    if test_opts.wikilinks {
         opts.insert(Options::ENABLE_WIKILINKS);
     }
-    if subscript {
+    if test_opts.subscript {
         opts.insert(Options::ENABLE_SUBSCRIPT);
     }
     opts.insert(Options::ENABLE_TASKLISTS);
     opts.insert(Options::ENABLE_GFM);
-    if old_footnotes {
+    if test_opts.old_footnotes {
         opts.insert(Options::ENABLE_OLD_FOOTNOTES);
     } else {
         opts.insert(Options::ENABLE_FOOTNOTES);
     }
-    if metadata_blocks {
+    if test_opts.metadata_blocks {
         opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
         opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
     }
-    if smart_punct {
+    if test_opts.smart_punct {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
     opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-    if deflists {
+    if test_opts.deflists {
         opts.insert(Options::ENABLE_DEFINITION_LIST);
     }
-    if container_extensions {
+    if test_opts.container_extensions {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
     }
 

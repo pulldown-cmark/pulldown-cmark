@@ -51,7 +51,7 @@ fn generate_tests_from_spec() {
     for file_path in &spec_files {
         let mut raw_spec = String::new();
 
-        File::open(&file_path)
+        File::open(file_path)
             .and_then(|mut f| f.read_to_string(&mut raw_spec))
             .expect("Could not read the spec file");
 
@@ -74,7 +74,10 @@ fn generate_tests_from_spec() {
             .write_all(b"// Please, do not modify it manually\n")
             .unwrap();
         spec_rs
-            .write_all(b"\nuse super::test_markdown_html;\n")
+            .write_all(b"\n#![allow(clippy::field_reassign_with_default)]\n")
+            .unwrap();
+        spec_rs
+            .write_all(b"\nuse super::{test_markdown_html, TestMarkdownHtmlOptions};\n")
             .unwrap();
 
         for (i, testcase) in spec.enumerate() {
@@ -86,20 +89,15 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {old_footnotes}, {subscript}, {wikilinks}, {deflists}, {container_extensions});
+    {test_opts}
+    test_markdown_html(original, expected, test_opts);
 }}
 "###,
                     spec_name,
                     i = i + 1,
                     original = testcase.original,
                     expected = testcase.expected,
-                    smart_punct = testcase.smart_punct,
-                    metadata_blocks = testcase.metadata_blocks,
-                    old_footnotes = testcase.old_footnotes,
-                    subscript = testcase.subscript,
-                    wikilinks = testcase.wikilinks,
-                    deflists = testcase.deflists,
-                    container_extensions = testcase.container_extensions,
+                    test_opts = testcase.test_opts.gen_test_opts()
                 ))
                 .unwrap();
 
@@ -125,7 +123,7 @@ fn {}_test_{i}() {{
         .write_all(b"// Please, do not modify it manually\n")
         .unwrap();
     mod_rs
-        .write_all(b"\npub use super::test_markdown_html;\n\n")
+        .write_all(b"\npub use super::{test_markdown_html, TestMarkdownHtmlOptions};\n\n")
         .unwrap();
 
     for file_path in &spec_files {
@@ -152,6 +150,12 @@ impl<'a> Spec<'a> {
 pub struct TestCase {
     pub original: String,
     pub expected: String,
+    pub test_opts: TestCaseOptions,
+}
+
+#[cfg(feature = "gen-tests")]
+#[derive(Default)]
+pub struct TestCaseOptions {
     pub smart_punct: bool,
     pub metadata_blocks: bool,
     pub old_footnotes: bool,
@@ -169,16 +173,7 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (
-            i_start,
-            smart_punct,
-            metadata_blocks,
-            old_footnotes,
-            subscript,
-            wikilinks,
-            deflists,
-            container_extensions,
-        ) = self.spec.find(prefix).and_then(|pos| {
+        let (i_start, test_opts) = self.spec.find(prefix).and_then(|pos| {
             let smartpunct_suffix = "_smartpunct\n";
             let metadata_blocks_suffix = "_metadata_blocks\n";
             let old_footnotes_suffix = "_old_footnotes\n";
@@ -186,94 +181,35 @@ impl<'a> Iterator for Spec<'a> {
             let wikilinks_suffix = "_wikilinks\n";
             let deflists_suffix = "_deflists\n";
             let container_extensions_suffix = "_container_extensions\n";
+
+            let mut test_opts = TestCaseOptions::default();
+
             if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
-                Some((
-                    pos + prefix.len() + smartpunct_suffix.len(),
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
+                test_opts.smart_punct = true;
+                Some((pos + prefix.len() + smartpunct_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(metadata_blocks_suffix) {
-                Some((
-                    pos + prefix.len() + metadata_blocks_suffix.len(),
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
+                test_opts.metadata_blocks = true;
+                Some((pos + prefix.len() + metadata_blocks_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
-                Some((
-                    pos + prefix.len() + old_footnotes_suffix.len(),
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
+                test_opts.old_footnotes = true;
+                Some((pos + prefix.len() + old_footnotes_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(super_sub_suffix) {
-                Some((
-                    pos + prefix.len() + super_sub_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                ))
+                test_opts.subscript = true;
+                Some((pos + prefix.len() + super_sub_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(wikilinks_suffix) {
-                Some((
-                    pos + prefix.len() + wikilinks_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                ))
+                test_opts.wikilinks = true;
+                Some((pos + prefix.len() + wikilinks_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(deflists_suffix) {
-                Some((
-                    pos + prefix.len() + deflists_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                ))
+                test_opts.deflists = true;
+                Some((pos + prefix.len() + deflists_suffix.len(), test_opts))
             } else if spec[(pos + prefix.len())..].starts_with(container_extensions_suffix) {
+                test_opts.container_extensions = true;
                 Some((
                     pos + prefix.len() + container_extensions_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
+                    test_opts,
                 ))
             } else if spec[(pos + prefix.len())..].starts_with('\n') {
-                Some((
-                    pos + prefix.len() + 1,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
+                Some((pos + prefix.len() + 1, test_opts))
             } else {
                 None
             }
@@ -292,15 +228,44 @@ impl<'a> Iterator for Spec<'a> {
         let test_case = TestCase {
             original: spec[i_start..i_end].to_string().replace("→", "\t"),
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
-            smart_punct,
-            metadata_blocks,
-            old_footnotes,
-            subscript,
-            wikilinks,
-            deflists,
-            container_extensions,
+            test_opts,
         };
 
         Some(test_case)
+    }
+}
+
+#[cfg(feature = "gen-tests")]
+impl TestCaseOptions {
+    fn gen_test_opts(&self) -> String {
+        let mut mut_s = String::new();
+
+        if self.smart_punct {
+            mut_s.push_str("\n    test_opts.smart_punct = true;");
+        }
+        if self.metadata_blocks {
+            mut_s.push_str("\n    test_opts.metadata_blocks = true;");
+        }
+        if self.old_footnotes {
+            mut_s.push_str("\n    test_opts.old_footnotes = true;");
+        }
+        if self.subscript {
+            mut_s.push_str("\n    test_opts.subscript = true;");
+        }
+        if self.wikilinks {
+            mut_s.push_str("\n    test_opts.wikilinks = true;");
+        }
+        if self.deflists {
+            mut_s.push_str("\n    test_opts.deflists = true;");
+        }
+
+        let mut ret = String::new();
+        if mut_s.is_empty() {
+            ret.push_str("let test_opts = TestMarkdownHtmlOptions::default();");
+        } else {
+            ret.push_str("let mut test_opts = TestMarkdownHtmlOptions::default();");
+            ret.push_str(&mut_s);
+        }
+        ret
     }
 }

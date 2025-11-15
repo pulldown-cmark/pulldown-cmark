@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn heading_attrs_test_1() {
@@ -22,8 +23,9 @@ multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 <h2 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -39,8 +41,9 @@ fn heading_attrs_test_2() {
 <h3 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -57,8 +60,9 @@ fn heading_attrs_test_3() {
 <h4>non-attribute-block {#id4}</h4>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -70,8 +74,9 @@ fn heading_attrs_test_4() {
 <h2 id="myid2">tabs</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -83,8 +88,9 @@ nextline
 <p>nextline</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -106,8 +112,9 @@ nextline {.class}
 <p>](https://example.com/) {#myid3}</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -122,8 +129,9 @@ cont
 </h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -142,8 +150,9 @@ fn heading_attrs_test_8() {
 }</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -155,8 +164,9 @@ fn heading_attrs_test_9() {
 <h2 id="id2">recommended style with spaces</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -170,8 +180,9 @@ fn heading_attrs_test_10() {
 <h3 class="myclass">H3</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -183,8 +194,9 @@ fn heading_attrs_test_11() {
 <h2 class="class1#id2.class2">H2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -196,8 +208,9 @@ fn heading_attrs_test_12() {
 <h2>H2 {#id2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -209,8 +222,9 @@ fn heading_attrs_test_13() {
 <h2>H2 #id2}</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -222,8 +236,9 @@ fn heading_attrs_test_14() {
 <h2>H2 {#id2} <!-- hello --></h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -241,8 +256,9 @@ fn heading_attrs_test_15() {
 <h5 id="id5"><a href="uri">text</a></h5>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -252,8 +268,9 @@ fn heading_attrs_test_16() {
     let expected = r##"<h1 id="last">H1</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -263,8 +280,9 @@ fn heading_attrs_test_17() {
     let expected = r##"<h1 class="z a zz">H1</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -274,8 +292,9 @@ fn heading_attrs_test_18() {
     let expected = r##"<h1 class="a a a">H1</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -287,8 +306,9 @@ fn heading_attrs_test_19() {
 <h2 id="m" class="z a">H2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -300,8 +320,9 @@ fn heading_attrs_test_20() {
 <h2 id="myid" class="myclass" unknown="" this#is.ignored="" attr="value">H2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -311,8 +332,9 @@ fn heading_attrs_test_21() {
     let expected = r##"<h1 myattr="value" other_attr="">Header</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -322,8 +344,9 @@ fn heading_attrs_test_22() {
     let expected = r##"<h4 id="id" class="class1" myattr="" other_attr="false">Header</h4>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -335,8 +358,9 @@ fn heading_attrs_test_23() {
 <h2 class="bar">H2 {.foo</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -346,8 +370,9 @@ fn heading_attrs_test_24() {
     let expected = r##"<h1>H1 {.foo}bar}</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -357,8 +382,9 @@ fn heading_attrs_test_25() {
     let expected = r##"<h1>H1 {<i>foo</i>}</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -368,8 +394,9 @@ fn heading_attrs_test_26() {
     let expected = r##"<h1>H1 {.foo}</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -382,8 +409,9 @@ fn heading_attrs_test_27() {
 .bar}</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -397,8 +425,9 @@ fn heading_attrs_test_28() {
 <h2>H2 {}</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -408,8 +437,9 @@ fn heading_attrs_test_29() {
     let expected = r##"<h2>H2 {}</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -427,8 +457,9 @@ newline can be used for setext heading {
 }</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -442,8 +473,9 @@ fn heading_attrs_test_31() {
 <h3>stray backslash at the end is preserved \</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -461,8 +493,9 @@ stray backslash at the end is preserved \
 <h2>stray backslash at the end is preserved \</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -476,8 +509,9 @@ fn heading_attrs_test_33() {
 <h3 id="foo**bar**baz">H3</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -496,8 +530,9 @@ H2-2 {#foo**bar**baz}
 <h2 id="foo**bar**baz">H2-2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -511,8 +546,9 @@ fn heading_attrs_test_35() {
 <h3 class="a&quot;b&#39;c&amp;d">H3</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -524,8 +560,9 @@ fn heading_attrs_test_36() {
 <h2>H2</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -537,8 +574,9 @@ fn heading_attrs_test_37() {
 <h1 class="foo bar">H1</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -557,8 +595,9 @@ fn heading_attrs_test_38() {
 <p>#{}</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -585,8 +624,9 @@ fn heading_attrs_test_39() {
 <h2>{}</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -606,8 +646,9 @@ fn heading_attrs_test_40() {
 <h3 id="vt">vertical tab</h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -622,8 +663,9 @@ fn heading_attrs_test_41() {
 <h1 id="vt.myclass">vertical tab (U+000B)</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -635,6 +677,7 @@ fn heading_attrs_test_42() {
 <h2 id="ideographic-space　.myclass">IDEOGRAPHIC SPACE (U+3000)</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

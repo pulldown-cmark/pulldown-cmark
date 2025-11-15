@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn gfm_table_test_1() {
@@ -27,8 +28,9 @@ fn gfm_table_test_1() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -53,8 +55,9 @@ bar | baz
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -81,8 +84,9 @@ fn gfm_table_test_3() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -111,8 +115,9 @@ fn gfm_table_test_4() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -145,8 +150,9 @@ bar
 <p>bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -160,8 +166,9 @@ fn gfm_table_test_6() {
 | bar |</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -191,8 +198,9 @@ fn gfm_table_test_7() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -211,8 +219,9 @@ fn gfm_table_test_8() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -239,6 +248,7 @@ fn gfm_table_test_9() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

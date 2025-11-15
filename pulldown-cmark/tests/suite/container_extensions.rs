@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn container_extensions_test_1() {
@@ -22,8 +23,10 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -44,8 +47,10 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -72,8 +77,10 @@ Is this <strong>bold</strong>?</p>
 </details>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -106,8 +113,10 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -124,8 +133,10 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -143,8 +154,10 @@ Is this **bold**?
 </details>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -162,8 +175,10 @@ Is this **bold**?
 </details>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -180,8 +195,10 @@ Is this **bold**?
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -198,8 +215,10 @@ Is this **bold**?
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -217,8 +236,10 @@ Is this **bold**?
 </details>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -234,8 +255,10 @@ content
 <p>:::</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -253,8 +276,10 @@ content
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -271,8 +296,10 @@ fn container_extensions_test_13() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -289,8 +316,10 @@ fn container_extensions_test_14() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -307,8 +336,10 @@ fn container_extensions_test_15() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -325,8 +356,10 @@ fn container_extensions_test_16() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -340,8 +373,10 @@ Hi
 :::</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -357,8 +392,10 @@ Hi
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -373,8 +410,10 @@ fn container_extensions_test_19() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -388,8 +427,10 @@ Hi
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -409,8 +450,10 @@ x</p>
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -431,8 +474,10 @@ x</p>
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -452,8 +497,10 @@ x
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -464,8 +511,10 @@ content :::
     let expected = r##"<div class="a"><p>content :::</p></div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -476,6 +525,8 @@ content ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     let expected = r##"<div class="a"><p>content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</p></div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    test_markdown_html(original, expected, opts);
 }

@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn regression_test_1() {
@@ -18,8 +19,9 @@ This is a test of the details element.
 </details>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -34,8 +36,9 @@ fn regression_test_2() {
     let expected = r##"<p>see the <a href="https://medium.com/@jlouis666/quickcheck-advice-c357efb4e7e6">many</a> <a href="http://www.quviq.com/products/erlang-quickcheck/">articles</a> <a href="https://wiki.haskell.org/Introduction_to_QuickCheck1">on</a> <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -52,8 +55,9 @@ fn regression_test_3() {
 <a href="https://docs.rs/debug_stub_derive/0.3.0/"><img src="https://docs.rs/debug_stub_derive/badge.svg?version=0.3.0" alt="debug-stub-derive on docs.rs" /></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -74,8 +78,9 @@ fn regression_test_4() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -85,8 +90,9 @@ fn regression_test_5() {
     let expected = r##"<p>foo§<strong>(bar)</strong></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -96,8 +102,9 @@ fn regression_test_6() {
     let expected = r##"<p><a href="https://example.com">https://example.com</a> hello</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -111,8 +118,9 @@ fn regression_test_7() {
 <!-- foo -->
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -139,8 +147,9 @@ fn regression_test_8() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -154,8 +163,9 @@ i8
     let expected = r##"<p><a href="../../../std/primitive.i8.html"><code>i8</code></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -167,8 +177,9 @@ fn regression_test_10() {
     let expected = r##"<p><a href="/url" title="title\*">a</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -180,8 +191,9 @@ fn regression_test_11() {
     let expected = r##"<p><a href="/url" title="title)">a</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -194,8 +206,9 @@ fn regression_test_12() {
 <p>[a]: /url (title))</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -208,8 +221,9 @@ b <?php but this is ?>
 <p>b <?php but this is ?></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -220,8 +234,9 @@ foo
     let expected = r##"<p>foo</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -231,8 +246,9 @@ fn regression_test_15() {
     let expected = r##"<p>`foo`</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -244,8 +260,9 @@ bar
 bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -258,8 +275,9 @@ fn regression_test_17() {
 <p>1) bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -281,8 +299,9 @@ fn regression_test_18() {
 <p>1)2)3)</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -292,8 +311,9 @@ fn regression_test_19() {
     let expected = r##"<p>[](&lt;&lt;&gt;)</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -303,8 +323,9 @@ fn regression_test_20() {
     let expected = r##"<p>`<code>foo``bar</code></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -314,8 +335,9 @@ fn regression_test_21() {
     let expected = r##"<p>\<code>foo</code></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -327,8 +349,9 @@ YOLO
     let expected = r##"<p>YOLO</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -344,8 +367,9 @@ A | B
 foo | bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -359,8 +383,9 @@ foo|bar
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -374,8 +399,9 @@ foo|bar
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -385,8 +411,9 @@ fn regression_test_26() {
     let expected = r##"<p><a href="url"><foo></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -396,8 +423,9 @@ fn regression_test_27() {
     let expected = r##"<p><a href="url"><foo>bar</foo></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -407,8 +435,9 @@ fn regression_test_28() {
     let expected = r##"<p><img src="http://example.com/logo.png" alt="http://example.com" /></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -418,8 +447,9 @@ fn regression_test_29() {
     let expected = r##"<p><a href="url"><a href="http://one">http://one</a> <a href="http://two">http://two</a></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -434,8 +464,9 @@ some text
 <p>some text</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -456,8 +487,9 @@ fn regression_test_31() {
 </ol>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -472,8 +504,9 @@ x</p>
 <p>]: f</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -483,8 +516,9 @@ fn regression_test_33() {
     let expected = r##"<p>[foo]:</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -499,8 +533,9 @@ fn regression_test_34() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -515,8 +550,9 @@ yolo | swag
 <p>yolo | swag</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -526,8 +562,9 @@ fn regression_test_36() {
     let expected = r##"<foo bar>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -539,8 +576,9 @@ fn regression_test_37() {
  "hi"></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -553,8 +591,9 @@ __a__
 <p><strong>a</strong></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -567,8 +606,9 @@ fn regression_test_39() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -578,8 +618,9 @@ fn regression_test_40() {
     let expected = r##"<p><code>\|</code></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -592,8 +633,9 @@ Paragraph 2
 <p>Paragraph 2</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -603,8 +645,9 @@ fn regression_test_42() {
     let expected = r##"<p>[<a href="https://www.google.com/">link text</a>]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -616,8 +659,9 @@ fn regression_test_43() {
     let expected = r##"<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>[a](&lt;</td><td>url&gt;)</td></tr></tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -631,8 +675,9 @@ fn regression_test_44() {
 <p>")</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -645,8 +690,9 @@ fn regression_test_45() {
 <p>)</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -659,8 +705,9 @@ fn regression_test_46() {
 <p>")</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -670,8 +717,9 @@ fn regression_test_47() {
     let expected = r##"<p>&lt;http:// &gt;</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -681,8 +729,9 @@ fn regression_test_48() {
     let expected = r##"<p>&lt;http://&gt;</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -701,8 +750,9 @@ fn regression_test_49() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -721,8 +771,9 @@ fn regression_test_50() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -732,8 +783,9 @@ fn regression_test_51() {
     let expected = r##"<p><sup>*hi</sup>_</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -743,8 +795,9 @@ fn regression_test_52() {
     let expected = r##"<p>email: <a href="mailto:john@example.com">john@example.com</a>_</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -758,8 +811,9 @@ bar">link</a></p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -774,8 +828,9 @@ fn regression_test_54() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -791,8 +846,9 @@ bar</a></p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -810,8 +866,9 @@ fn regression_test_56() {
 <p><a href="/foo">a b c</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -828,8 +885,9 @@ fn regression_test_57() {
 <p>[a b] [a &gt; b]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -842,8 +900,9 @@ package`]
     let expected = r##"<p><a href="https://example.com"><code>cargo package</code></a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -858,8 +917,9 @@ fn regression_test_59() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -872,8 +932,9 @@ fn regression_test_60() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -889,8 +950,9 @@ the size of <code>usize</code> and have the same alignment.</p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -914,8 +976,9 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -933,8 +996,9 @@ fn regression_test_63() {
 <h1>assimp-rs <a href="https://crates.io/crates/assimp"><img src="http://meritbadge.herokuapp.com/assimp" alt="" /></a></h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -979,8 +1043,9 @@ fn regression_test_64() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -990,8 +1055,9 @@ fn regression_test_65() {
     let expected = r##"<p>&lt;foo</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1009,8 +1075,9 @@ lo"></p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1021,8 +1088,9 @@ fn regression_test_67() {
 </code></pre>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1044,8 +1112,9 @@ a
 2. a</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1061,8 +1130,9 @@ fn regression_test_69() {
 </ol>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1081,8 +1151,9 @@ bar</p></li>
 <p>baz</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1101,8 +1172,9 @@ fn regression_test_71() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1114,8 +1186,9 @@ fn regression_test_72() {
     let expected = r##"<p>[<code>]</code>]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1125,8 +1198,9 @@ fn regression_test_73() {
     let expected = r##"<p><del>foo</del>bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1136,8 +1210,9 @@ fn regression_test_74() {
     let expected = r##"<p>foo<del>bar</del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1147,8 +1222,9 @@ fn regression_test_75() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1158,8 +1234,9 @@ fn regression_test_76() {
     let expected = r##"<p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1169,8 +1246,9 @@ fn regression_test_77() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1180,8 +1258,9 @@ fn regression_test_78() {
     let expected = r##"<p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1191,8 +1270,9 @@ fn regression_test_79() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1202,8 +1282,9 @@ fn regression_test_80() {
     let expected = r##"<p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1213,8 +1294,9 @@ fn regression_test_81() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1224,8 +1306,9 @@ fn regression_test_82() {
     let expected = r##"<p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1318,8 +1401,9 @@ fn regression_test_83() {
 | baz | alef |</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1329,8 +1413,9 @@ fn regression_test_84() {
     let expected = r##"<h3></h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1340,8 +1425,9 @@ fn regression_test_85() {
     let expected = r##"<h3></h3>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1351,8 +1437,9 @@ fn regression_test_86() {
     let expected = r##"<!doctype html>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1414,8 +1501,9 @@ fn regression_test_87() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1428,8 +1516,9 @@ b
 <p>b</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1443,8 +1532,9 @@ fn regression_test_89() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1458,8 +1548,9 @@ fn regression_test_90() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1471,8 +1562,9 @@ fn regression_test_91() {
 <h1>b</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1483,8 +1575,9 @@ fn regression_test_92() {
     let expected = r##"<h1>a\</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1497,8 +1590,9 @@ fn regression_test_93() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1510,8 +1604,9 @@ fn regression_test_94() {
 <blockquote></blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1523,8 +1618,9 @@ fn regression_test_95() {
 >
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1536,8 +1632,9 @@ fn regression_test_96() {
 <blockquote><p>quote</p></blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1549,8 +1646,9 @@ fn regression_test_97() {
 > not quote
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1562,8 +1660,9 @@ fn regression_test_98() {
 <blockquote><p>quote</p></blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1575,8 +1674,9 @@ fn regression_test_99() {
 >not quote
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1595,8 +1695,9 @@ fn regression_test_100() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1606,8 +1707,9 @@ fn regression_test_101() {
     let expected = r##"<p>*<em><em>R]</em>-</em></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1617,8 +1719,9 @@ fn regression_test_102() {
     let expected = r##"<p><strong><em><em>foo</em>bar</em>baz</strong>**</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1632,8 +1735,9 @@ fn regression_test_103() {
 %</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1647,8 +1751,9 @@ fn regression_test_104() {
 %</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1658,8 +1763,9 @@ fn regression_test_105() {
     let expected = r##"<p>&lt;@1&gt;</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1673,9 +1779,11 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1690,9 +1798,11 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1706,9 +1816,11 @@ Things
     let expected = r##"<p>Things</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1732,8 +1844,9 @@ fn regression_test_109() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1748,8 +1861,9 @@ fn regression_test_110() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1759,8 +1873,9 @@ fn regression_test_111() {
     let expected = r##"<p>j*<em><em>5</em>=</em></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1826,8 +1941,9 @@ Table
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1840,8 +1956,9 @@ fn regression_test_113() {
 <p>[x]: (</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1863,8 +1980,9 @@ an unmatched asterisk.</p>
 <em>{</em>{</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1874,8 +1992,9 @@ fn regression_test_115() {
     let expected = r##"<p>*<em>a.*.<em><em>a</em>.</em></em>.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1894,8 +2013,9 @@ _*xx-_-
 <p><em>*xx-</em>-</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1924,8 +2044,9 @@ fn regression_test_117() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1954,8 +2075,9 @@ fn regression_test_118() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -1968,8 +2090,9 @@ fn regression_test_119() {
 <p>]: https://rust-lang.org</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2002,8 +2125,9 @@ fn regression_test_120() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2046,8 +2170,9 @@ The second hyphen should parse the same way in both samples.
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2062,8 +2187,9 @@ https://rust-lang.org
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2076,8 +2202,9 @@ Second try]: https://rust-lang.org
 <p>Second try]: https://rust-lang.org</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2100,8 +2227,9 @@ fn regression_test_124() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2113,8 +2241,9 @@ bar \
 <p>bar \</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2128,8 +2257,9 @@ fn regression_test_126() {
 <p>[third try]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2149,8 +2279,9 @@ bar
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2172,8 +2303,9 @@ fn regression_test_128() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2184,8 +2316,9 @@ fn regression_test_129() {
     let expected = r##"<p>-</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2202,8 +2335,9 @@ foo)
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2220,8 +2354,9 @@ fn regression_test_131() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2240,8 +2375,9 @@ fn regression_test_132() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2262,8 +2398,9 @@ fn regression_test_133() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2274,8 +2411,9 @@ fn regression_test_134() {
     let expected = r##"<p>- baz</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2293,8 +2431,9 @@ GFM footnotes can interrupt link defs if they have three spaces, but not four.
 <p>GFM footnotes can interrupt link defs if they have three spaces, but not four.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2311,8 +2450,9 @@ Setext heading can interrupt link def if it has three spaces, but not four.
 <p>Setext heading can interrupt link def if it has three spaces, but not four.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2332,8 +2472,9 @@ List can interrupt the paragraph at the start of a link definition if it starts 
 <p>List can interrupt the paragraph at the start of a link definition if it starts with three spaces, but not four.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2352,8 +2493,9 @@ second]
 <p>second]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2371,8 +2513,9 @@ second]
 second</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2389,8 +2532,9 @@ fn regression_test_140() {
 <p><a href="https://example.com">first</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2407,8 +2551,9 @@ fn regression_test_141() {
 ">first</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2427,8 +2572,9 @@ fn regression_test_142() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2447,8 +2593,9 @@ fn regression_test_143() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2467,8 +2614,9 @@ fn regression_test_144() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2485,8 +2633,9 @@ fn regression_test_145() {
 ">first</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2505,8 +2654,9 @@ fn regression_test_146() {
 <p><a href="https://example.com">first</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2517,8 +2667,9 @@ fn regression_test_147() {
     let expected = r##"<p>'<a href="https://example.com">foo</a>'bar</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2534,8 +2685,9 @@ fn regression_test_148() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2551,8 +2703,9 @@ a]: https://example.com
     let expected = r##"<p><a href="https://example.com">a</a> <a href="https://example.com">b</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2573,8 +2726,9 @@ fn regression_test_150() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2596,8 +2750,9 @@ baz*</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2619,8 +2774,9 @@ baz`</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2642,8 +2798,9 @@ baz](https://example.com)</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2658,8 +2815,9 @@ part of the title'
 part of the title">mylink</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2676,8 +2834,9 @@ starts in column <em>three</em>.</li>
 </ol>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2691,8 +2850,9 @@ fn regression_test_156() {
 <p>This is not in the list at all. It's a paragraph after it.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2704,8 +2864,9 @@ fn regression_test_157() {
     let expected = r##"<p><code>\!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp; \!\&amp;quot;\#\$\%\&amp;</code></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2717,8 +2878,9 @@ fn regression_test_158() {
 -|- *</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2731,8 +2893,9 @@ fn regression_test_159() {
 <p>Another paragraph whose spaces must be removed.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2747,8 +2910,9 @@ fn regression_test_160() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2763,8 +2927,9 @@ fn regression_test_161() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2774,8 +2939,9 @@ fn regression_test_162() {
     let expected = r##"<p>&amp;#00000000; &amp;#x0000000;</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2785,8 +2951,9 @@ fn regression_test_163() {
     let expected = r##"<p>�</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2802,8 +2969,9 @@ t_</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2819,8 +2987,9 @@ N*</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2831,8 +3000,9 @@ fn regression_test_166() {
     let expected = r##" <foo>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2843,8 +3013,9 @@ fn regression_test_167() {
     let expected = r##"<foo>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2855,8 +3026,9 @@ fn regression_test_168() {
     let expected = r##"   <foo>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2872,8 +3044,9 @@ fn regression_test_169() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2892,8 +3065,9 @@ fn regression_test_170() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2909,8 +3083,9 @@ fn regression_test_171() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2926,8 +3101,9 @@ fn regression_test_172() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2943,8 +3119,9 @@ fn regression_test_173() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2960,8 +3137,9 @@ fn regression_test_174() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2979,8 +3157,9 @@ fn regression_test_175() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -2993,8 +3172,9 @@ fn regression_test_176() {
 <p>[link]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3007,8 +3187,9 @@ fn regression_test_177() {
 <p>[link]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3020,8 +3201,9 @@ fn regression_test_178() {
     let expected = r##"<p><a href="test" title="()">link</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3034,8 +3216,9 @@ fn regression_test_179() {
 <p>[link]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3047,8 +3230,9 @@ fn regression_test_180() {
     let expected = r##"<p><a href="test" title="&quot;">link</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3061,8 +3245,9 @@ fn regression_test_181() {
 <p>[link]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3074,8 +3259,9 @@ fn regression_test_182() {
     let expected = r##"<p><a href="test" title="&#39;">link</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3093,8 +3279,9 @@ fn regression_test_183() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3108,8 +3295,9 @@ test2
 <p>test2</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3125,8 +3313,9 @@ test2</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3143,8 +3332,9 @@ fn regression_test_186() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3164,8 +3354,9 @@ fn regression_test_187() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3178,8 +3369,9 @@ fn regression_test_188() {
 <p>&lt;!p&gt;</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3191,8 +3383,9 @@ fn regression_test_189() {
     let expected = r##"<p><a href="((()))">linky</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3208,8 +3401,9 @@ junk</p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3221,8 +3415,9 @@ fn regression_test_191() {
 </code></pre>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3233,8 +3428,9 @@ fn regression_test_192() {
     let expected = r##"<pre><code></code></pre>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3248,8 +3444,9 @@ fn regression_test_193() {
 text          ">link</a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3267,8 +3464,9 @@ _**
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3283,8 +3481,9 @@ fn regression_test_195() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3297,9 +3496,11 @@ fn regression_test_196() {
 <h2>--</h2>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3311,9 +3512,11 @@ fn regression_test_197() {
 [40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3328,9 +3531,11 @@ fn regression_test_198() {
 <h2>\</h2>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3346,9 +3551,11 @@ bar
 <p>bar</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3359,8 +3566,9 @@ fn regression_test_200() {
     let expected = r##"<p><code> </code></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3378,9 +3586,10 @@ fn regression_test_201() {
 </ul>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3399,9 +3608,10 @@ fn regression_test_202() {
 </ul>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3425,9 +3635,10 @@ T U, V W</dd>
 <dd>x:.)</dd></dl></blockquote>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3449,9 +3660,10 @@ Some preamble <code>foobar_raz</code>, not <code>barfoo_raz</code></dt>
 <p>&gt; Something is wrong!</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3468,8 +3680,9 @@ stuff](https://example.com)</li>
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3518,8 +3731,9 @@ fn regression_test_206() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3532,8 +3746,9 @@ fn regression_test_207() {
 &gt;</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3543,9 +3758,10 @@ fn regression_test_208() {
     let expected = r##"<p><a href="Wiki%3C">Link</a></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.wikilinks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_WIKILINKS);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3559,9 +3775,10 @@ fn regression_test_209() {
 </ul>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.wikilinks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_WIKILINKS);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3589,9 +3806,10 @@ fn regression_test_210() {
 </ul>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.wikilinks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_WIKILINKS);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -3603,6 +3821,7 @@ fn regression_test_211() {
     let expected = r##"<p>:</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

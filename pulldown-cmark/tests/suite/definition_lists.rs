@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn definition_lists_test_1() {
@@ -21,9 +22,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -48,9 +50,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -67,9 +70,10 @@ fn definition_lists_test_3() {
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -88,9 +92,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -115,9 +120,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -156,9 +162,10 @@ crisp, pleasant to taste</p>
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -180,9 +187,10 @@ fn definition_lists_test_7() {
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -205,9 +213,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -241,9 +250,10 @@ orange
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -281,9 +291,10 @@ fruit</p>
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -322,9 +333,10 @@ chili's
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -344,9 +356,10 @@ pomegranate
 </blockquote>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -367,9 +380,10 @@ c</dt>
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -391,9 +405,10 @@ bim
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -415,9 +430,10 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -432,9 +448,10 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -451,9 +468,10 @@ Bloze
 <p>Bloze</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -496,9 +514,10 @@ bar
 :   baz</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -544,9 +563,10 @@ fn definition_lists_test_19() {
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -561,9 +581,10 @@ fn definition_lists_test_20() {
 </table>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -585,9 +606,10 @@ Test|Table
 </table>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -600,9 +622,10 @@ fn definition_lists_test_22() {
 <p>: first</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -622,9 +645,10 @@ My section
 <p>: fourth</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -636,9 +660,10 @@ fn definition_lists_test_24() {
 <p>: first</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -657,9 +682,10 @@ fn definition_lists_test_25() {
 <p>: fourth</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -673,9 +699,10 @@ fn definition_lists_test_26() {
 </blockquote>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -694,9 +721,10 @@ third
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -719,9 +747,10 @@ first
 : fourth
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -745,9 +774,10 @@ third
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -782,9 +812,10 @@ level three</dt>
 </dl>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -796,7 +827,8 @@ fn definition_lists_test_31() {
     let expected = r##"<p>:</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.deflists = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    test_markdown_html(original, expected, opts);
 }

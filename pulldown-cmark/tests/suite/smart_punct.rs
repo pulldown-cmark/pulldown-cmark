@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn smart_punct_test_1() {
@@ -14,9 +15,10 @@ fn smart_punct_test_1() {
 “‘Shelob’ is my name.”</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -26,9 +28,10 @@ fn smart_punct_test_2() {
     let expected = r##"<p>‘A’, ‘B’, and ‘C’ are letters.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -40,9 +43,10 @@ So is 'pine.'
 So is ‘pine.’</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -52,9 +56,10 @@ fn smart_punct_test_4() {
     let expected = r##"<p>‘He said, “I want to go.”’</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -64,9 +69,10 @@ fn smart_punct_test_5() {
     let expected = r##"<p>Were you alive in the 70’s?</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -76,9 +82,10 @@ fn smart_punct_test_6() {
     let expected = r##"<p>Here is some quoted ‘<code>code</code>’ and a “<a href="url">quoted link</a>”.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -88,9 +95,10 @@ fn smart_punct_test_7() {
     let expected = r##"<p>’tis the season to be ‘jolly’</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -100,9 +108,10 @@ fn smart_punct_test_8() {
     let expected = r##"<p>‘We’ll use Jane’s boat and John’s truck,’ Jenna said.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -115,9 +124,10 @@ fn smart_punct_test_9() {
 <p>“Second paragraph by same speaker, in fiction.”</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -127,9 +137,10 @@ fn smart_punct_test_10() {
     let expected = r##"<p>[a]’s b’</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -143,9 +154,10 @@ This isn't either.
 5'8"</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -163,9 +175,10 @@ en – en
 2–3</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -193,9 +206,10 @@ nine———
 thirteen———––.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -205,9 +219,10 @@ fn smart_punct_test_14() {
     let expected = r##"<p>Escaped hyphens: -- ---.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -217,9 +232,10 @@ fn smart_punct_test_15() {
     let expected = r##"<p>Ellipses…and…and….</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -229,7 +245,8 @@ fn smart_punct_test_16() {
     let expected = r##"<p>No ellipses...</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.smart_punct = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    test_markdown_html(original, expected, opts);
 }

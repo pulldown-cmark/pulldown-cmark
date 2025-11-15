@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn table_test_1() {
@@ -13,8 +14,9 @@ fn table_test_1() {
     let expected = r##"<h2>Test header</h2>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -26,8 +28,9 @@ fn table_test_2() {
 </table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -48,8 +51,9 @@ fn table_test_3() {
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -76,8 +80,9 @@ fn table_test_4() {
 </ol>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -93,8 +98,9 @@ fn table_test_5() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -110,8 +116,9 @@ fn table_test_6() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -127,8 +134,9 @@ fn table_test_7() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -144,8 +152,9 @@ fn table_test_8() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -171,8 +180,9 @@ fn table_test_9() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -184,8 +194,9 @@ fn table_test_10() {
 |ぃ|い|</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -199,8 +210,9 @@ fn table_test_11() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -214,8 +226,9 @@ fn table_test_12() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -316,8 +329,9 @@ b</p>
 <p>b</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -331,8 +345,9 @@ fn table_test_14() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -348,8 +363,9 @@ fn table_test_15() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -365,8 +381,9 @@ fn table_test_16() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -416,8 +433,9 @@ fn table_test_17() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -455,8 +473,9 @@ fn table_test_18() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -486,8 +505,9 @@ fn table_test_19() {
 | Not   | Enough |</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -501,8 +521,9 @@ fn table_test_20() {
 <p>|</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -516,8 +537,9 @@ fn table_test_21() {
 | Table | Body   |</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -539,8 +561,9 @@ fn table_test_22() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -566,8 +589,9 @@ fn table_test_23() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -589,8 +613,9 @@ A: Interrupting —?</p>
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -604,8 +629,9 @@ fn table_test_25() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -619,8 +645,9 @@ fn table_test_26() {
 </tbody></table>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -638,8 +665,9 @@ moo | moo
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -657,6 +685,7 @@ moo | moo
 </ol>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn metadata_blocks_test_1() {
@@ -14,9 +15,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -30,9 +33,11 @@ another_field: 0
 another_field: 0</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -44,9 +49,11 @@ fn metadata_blocks_test_3() {
 <hr>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -62,9 +69,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -80,9 +89,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -97,9 +108,11 @@ another_field: 0
     let expected = r##"<p>My paragraph here.</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -119,9 +132,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -142,9 +157,11 @@ another_field: 0
 ---a</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -156,9 +173,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -170,9 +189,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -187,9 +208,11 @@ Things
 </code></pre>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -201,7 +224,9 @@ fn metadata_blocks_test_12() {
 "##;
     let expected = r##""##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.metadata_blocks = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+    test_markdown_html(original, expected, opts);
 }

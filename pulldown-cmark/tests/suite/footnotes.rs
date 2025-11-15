@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn footnotes_test_1() {
@@ -17,8 +18,9 @@ fn footnotes_test_1() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -37,8 +39,9 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -59,8 +62,9 @@ fn footnotes_test_3() {
 </ul>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -82,8 +86,9 @@ fn footnotes_test_4() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -120,8 +125,9 @@ fn footnotes_test_5() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -145,8 +151,9 @@ d</p>
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -169,8 +176,9 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -189,8 +197,9 @@ If a woodchuck could chuck wood.
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -223,8 +232,9 @@ fn footnotes_test_9() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -244,8 +254,9 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 <p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -289,8 +300,9 @@ fn footnotes_test_11() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -306,8 +318,9 @@ fn footnotes_test_12() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -326,8 +339,9 @@ fn footnotes_test_13() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -351,8 +365,9 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -409,8 +424,9 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -448,8 +464,9 @@ test suite into pulldown-cmark should be fine.</p>
 <p>[otherlink<sup class="footnote-reference"><a href="#c">1</a></sup>]: https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -474,8 +491,9 @@ fn main() {
 </code></pre>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -489,8 +507,9 @@ fn footnotes_test_18() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -514,8 +533,9 @@ fn footnotes_test_19() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -577,8 +597,9 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 </blockquote>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -590,8 +611,9 @@ fn footnotes_test_21() {
     let expected = r##"<p>Test <a href="https://rust-lang.org">^</a> link</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -631,8 +653,9 @@ second</a>
 fourth]</p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -647,8 +670,9 @@ fn footnotes_test_23() {
 </a></p>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -669,8 +693,9 @@ footnote [^quux]</p>
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -689,8 +714,9 @@ fn footnotes_test_25() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -709,6 +735,7 @@ fn footnotes_test_26() {
 </div>
 "##;
 
-    let test_opts = TestMarkdownHtmlOptions::default();
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

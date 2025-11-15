@@ -3,7 +3,8 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
-use super::{test_markdown_html, TestMarkdownHtmlOptions};
+use super::{default_opts, test_markdown_html};
+use pulldown_cmark::Options;
 
 #[test]
 fn super_sub_test_1() {
@@ -12,9 +13,10 @@ fn super_sub_test_1() {
     let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -24,9 +26,10 @@ fn super_sub_test_2() {
     let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -36,9 +39,10 @@ fn super_sub_test_3() {
     let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -48,9 +52,10 @@ fn super_sub_test_4() {
     let expected = r##"<p><sub>This</sub>is<sub>nothing</sub></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -60,9 +65,10 @@ fn super_sub_test_5() {
     let expected = r##"<p><sub>This ~~is not stricken.</sub></p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -72,9 +78,10 @@ fn super_sub_test_6() {
     let expected = r##"<p><del>This ~is</del> stricken.~</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -84,9 +91,10 @@ fn super_sub_test_7() {
     let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -99,9 +107,10 @@ y=x^2^a+xb+c
 <p>y=x<sup>2</sup>a+xb+c</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -114,9 +123,10 @@ fn super_sub_test_9() {
 <p>^bar^^</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }
 
 #[test]
@@ -129,7 +139,8 @@ fn super_sub_test_10() {
 <p><em>foo_</em>_bar*</p>
 "##;
 
-    let mut test_opts = TestMarkdownHtmlOptions::default();
-    test_opts.subscript = true;
-    test_markdown_html(original, expected, test_opts);
+    let mut opts = default_opts();
+    opts.insert(Options::ENABLE_SUBSCRIPT);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+    test_markdown_html(original, expected, opts);
 }

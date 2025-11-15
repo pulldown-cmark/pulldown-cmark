@@ -77,7 +77,10 @@ fn generate_tests_from_spec() {
             .write_all(b"\n#![allow(clippy::field_reassign_with_default)]\n")
             .unwrap();
         spec_rs
-            .write_all(b"\nuse super::{test_markdown_html, TestMarkdownHtmlOptions};\n")
+            .write_all(b"\nuse super::{default_opts, test_markdown_html};\n")
+            .unwrap();
+        spec_rs
+            .write_all(b"use pulldown_cmark::Options;\n")
             .unwrap();
 
         for (i, testcase) in spec.enumerate() {
@@ -89,15 +92,15 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    {test_opts}
-    test_markdown_html(original, expected, test_opts);
+    {opts}
+    test_markdown_html(original, expected, opts);
 }}
 "###,
                     spec_name,
                     i = i + 1,
                     original = testcase.original,
                     expected = testcase.expected,
-                    test_opts = testcase.test_opts.gen_test_opts()
+                    opts = testcase.test_opts.gen_opts()
                 ))
                 .unwrap();
 
@@ -123,7 +126,7 @@ fn {}_test_{i}() {{
         .write_all(b"// Please, do not modify it manually\n")
         .unwrap();
     mod_rs
-        .write_all(b"\npub use super::{test_markdown_html, TestMarkdownHtmlOptions};\n\n")
+        .write_all(b"\npub use super::{default_opts, test_markdown_html};\n\n")
         .unwrap();
 
     for file_path in &spec_files {
@@ -237,35 +240,36 @@ impl<'a> Iterator for Spec<'a> {
 
 #[cfg(feature = "gen-tests")]
 impl TestCaseOptions {
-    fn gen_test_opts(&self) -> String {
-        let mut mut_s = String::new();
+    fn gen_opts(&self) -> String {
+        let mut s = String::new();
 
-        if self.smart_punct {
-            mut_s.push_str("\n    test_opts.smart_punct = true;");
-        }
-        if self.metadata_blocks {
-            mut_s.push_str("\n    test_opts.metadata_blocks = true;");
-        }
-        if self.old_footnotes {
-            mut_s.push_str("\n    test_opts.old_footnotes = true;");
+        s.push_str("let mut opts = default_opts();");
+
+        if self.wikilinks {
+            s.push_str("\n    opts.insert(Options::ENABLE_WIKILINKS);");
         }
         if self.subscript {
-            mut_s.push_str("\n    test_opts.subscript = true;");
+            s.push_str("\n    opts.insert(Options::ENABLE_SUBSCRIPT);");
         }
-        if self.wikilinks {
-            mut_s.push_str("\n    test_opts.wikilinks = true;");
+        if self.old_footnotes {
+            s.push_str("\n    opts.insert(Options::ENABLE_OLD_FOOTNOTES);");
+        } else {
+            s.push_str("\n    opts.insert(Options::ENABLE_FOOTNOTES);");
+        }
+        if self.metadata_blocks {
+            s.push_str("\n    opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);");
+            s.push_str("\n    opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);");
+        }
+        if self.smart_punct {
+            s.push_str("\n    opts.insert(Options::ENABLE_SMART_PUNCTUATION);");
         }
         if self.deflists {
-            mut_s.push_str("\n    test_opts.deflists = true;");
+            s.push_str("\n    opts.insert(Options::ENABLE_DEFINITION_LIST);");
+        }
+        if self.container_extensions {
+            s.push_str("\n    opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);");
         }
 
-        let mut ret = String::new();
-        if mut_s.is_empty() {
-            ret.push_str("let test_opts = TestMarkdownHtmlOptions::default();");
-        } else {
-            ret.push_str("let mut test_opts = TestMarkdownHtmlOptions::default();");
-            ret.push_str(&mut_s);
-        }
-        ret
+        s
     }
 }

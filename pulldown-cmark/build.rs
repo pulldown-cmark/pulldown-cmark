@@ -74,9 +74,6 @@ fn generate_tests_from_spec() {
             .write_all(b"// Please, do not modify it manually\n")
             .unwrap();
         spec_rs
-            .write_all(b"\n#![allow(clippy::field_reassign_with_default)]\n")
-            .unwrap();
-        spec_rs
             .write_all(b"\nuse super::{default_opts, test_markdown_html};\n")
             .unwrap();
         spec_rs

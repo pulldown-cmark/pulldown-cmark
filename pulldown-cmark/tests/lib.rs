@@ -5,7 +5,7 @@ use pulldown_cmark::{Options, Parser};
 #[rustfmt::skip]
 mod suite;
 
-pub fn default_opts() -> Options {
+pub fn default_test_opts() -> Options {
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_MATH);
     opts.insert(Options::ENABLE_TABLES);

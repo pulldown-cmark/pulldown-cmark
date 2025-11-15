@@ -74,7 +74,7 @@ fn generate_tests_from_spec() {
             .write_all(b"// Please, do not modify it manually\n")
             .unwrap();
         spec_rs
-            .write_all(b"\nuse super::{default_opts, test_markdown_html};\n")
+            .write_all(b"\nuse super::{default_test_opts, test_markdown_html};\n")
             .unwrap();
         spec_rs
             .write_all(b"use pulldown_cmark::Options;\n")
@@ -123,7 +123,7 @@ fn {}_test_{i}() {{
         .write_all(b"// Please, do not modify it manually\n")
         .unwrap();
     mod_rs
-        .write_all(b"\npub use super::{default_opts, test_markdown_html};\n\n")
+        .write_all(b"\npub use super::{default_test_opts, test_markdown_html};\n\n")
         .unwrap();
 
     for file_path in &spec_files {
@@ -240,7 +240,7 @@ impl TestCaseOptions {
     fn gen_opts(&self) -> String {
         let mut s = String::new();
 
-        s.push_str("let mut opts = default_opts();");
+        s.push_str("let mut opts = default_test_opts();");
 
         if self.wikilinks {
             s.push_str("\n    opts.insert(Options::ENABLE_WIKILINKS);");

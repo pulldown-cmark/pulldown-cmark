@@ -2746,7 +2746,7 @@ fn extract_attribute_block_content_from_header_text(
 /// See also: [`Options::ENABLE_ATTRIBUTES`].
 ///
 /// [`Options::ENABLE_ATTRIBUTES`]: `crate::Options::ENABLE_ATTRIBUTES`
-fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<Attributes<'_>> {
+pub(crate) fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<Attributes<'_>> {
     let mut id = None;
     let mut classes = Vec::new();
     let mut attrs = Vec::new();
@@ -2875,6 +2875,65 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<Attributes<'_
     }
 
     Some(Attributes { id, classes, attrs })
+}
+
+/// Scan for an inline attribute block starting at the given position.
+/// Returns the parsed attributes and the byte index after the closing `}`.
+/// Returns None if no valid attribute block is found at the position.
+pub(crate) fn scan_inline_attribute_block(
+    text: &str,
+    start: usize,
+) -> Option<(Attributes<'_>, usize)> {
+    let bytes = text.as_bytes();
+
+    // Must start with '{'
+    if bytes.get(start) != Some(&b'{') {
+        return None;
+    }
+
+    let mut ix = start + 1;
+    let mut depth = 1;
+
+    // Find the matching closing brace, checking for invalid characters
+    while ix < bytes.len() && depth > 0 {
+        match bytes[ix] {
+            b'{' => {
+                // Nested braces not allowed
+                return None;
+            }
+            b'}' => {
+                depth -= 1;
+            }
+            b'<' | b'>' | b'\\' => {
+                // These characters make the attribute block invalid
+                return None;
+            }
+            b'"' => {
+                // Skip quoted content
+                ix += 1;
+                while ix < bytes.len() {
+                    match bytes[ix] {
+                        b'"' => break,
+                        b'\\' if ix + 1 < bytes.len() => ix += 1, // skip escaped char
+                        _ => {}
+                    }
+                    ix += 1;
+                }
+            }
+            _ => {}
+        }
+        ix += 1;
+    }
+
+    if depth != 0 {
+        return None;
+    }
+
+    // Parse the content inside the braces
+    let content = &text[(start + 1)..(ix - 1)];
+    let attrs = parse_inside_attribute_block(content)?;
+
+    Some((attrs, ix))
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

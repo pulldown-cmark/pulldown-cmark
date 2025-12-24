@@ -212,6 +212,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                             dest_url,
                             title,
                             id,
+                            attrs: None,
                         }
                     } else {
                         Tag::Image {
@@ -219,6 +220,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                             dest_url,
                             title,
                             id,
+                            attrs: None,
                         }
                     }));
                 }
@@ -350,6 +352,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&format!("mailto:{dest_url}")).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
+                attrs: None,
             })),
             Event::Start(Tag::Link {
                 dest_url, title, ..
@@ -358,6 +361,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
+                attrs: None,
             })),
             // commonmark.js does not record the link type.
             Event::Start(Tag::Image {
@@ -370,6 +374,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: id.clone(),
+                attrs: None,
             })),
             // commonmark.js does not distinguish between fenced code
             // blocks with a "" info string and indented code blocks.

@@ -366,22 +366,30 @@ pub enum Tag<'a> {
     Subscript,
 
     /// A link.
+    ///
+    /// `attrs` is only parsed and populated with [`Options::ENABLE_ATTRIBUTES`], `None` otherwise.
     Link {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
         /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
+        /// Optional attributes from `{#id .class key=value}` syntax.
+        attrs: Option<Attributes<'a>>,
     },
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title,
     /// the fourth is the link identifier.
+    ///
+    /// `attrs` is only parsed and populated with [`Options::ENABLE_ATTRIBUTES`], `None` otherwise.
     Image {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
         /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
+        /// Optional attributes from `{#id .class key=value}` syntax.
+        attrs: Option<Attributes<'a>>,
     },
 
     /// A metadata block.
@@ -458,22 +466,26 @@ impl<'a> Tag<'a> {
                 dest_url,
                 title,
                 id,
+                attrs,
             } => Tag::Link {
                 link_type,
                 dest_url: dest_url.into_static(),
                 title: title.into_static(),
                 id: id.into_static(),
+                attrs: attrs.map(|a| a.into_static()),
             },
             Tag::Image {
                 link_type,
                 dest_url,
                 title,
                 id,
+                attrs,
             } => Tag::Image {
                 link_type,
                 dest_url: dest_url.into_static(),
                 title: title.into_static(),
                 id: id.into_static(),
+                attrs: attrs.map(|a| a.into_static()),
             },
             Tag::MetadataBlock(v) => Tag::MetadataBlock(v),
             Tag::DefinitionList => Tag::DefinitionList,

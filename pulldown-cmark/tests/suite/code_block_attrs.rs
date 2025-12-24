@@ -9,7 +9,7 @@ fn code_block_attrs_test_1() {
 xyz
 ```
 "##;
-    let expected = r##"<pre id="ident" class="class" data-key="value"><code>xyz
+    let expected = r##"<pre id="ident" class="class" key="value"><code>xyz
 </code></pre>
 "##;
 
@@ -48,7 +48,7 @@ fn code_block_attrs_test_4() {
 print("hello")
 ```
 "##;
-    let expected = r##"<pre class="highlight" data-key="value"><code class="language-python">print("hello")
+    let expected = r##"<pre class="highlight" key="value"><code class="language-python">print("hello")
 </code></pre>
 "##;
 
@@ -113,7 +113,7 @@ fn code_block_attrs_test_9() {
 xyz
 ~~~
 "##;
-    let expected = r##"<pre id="ident" class="class" data-key="value"><code>xyz
+    let expected = r##"<pre id="ident" class="class" key="value"><code>xyz
 </code></pre>
 "##;
 
@@ -139,7 +139,7 @@ fn code_block_attrs_test_11() {
 code
 ```
 "##;
-    let expected = r##"<pre data-key="value with spaces"><code>code
+    let expected = r##"<pre key="value with spaces"><code>code
 </code></pre>
 "##;
 
@@ -152,7 +152,7 @@ fn code_block_attrs_test_12() {
 code
 ```
 "##;
-    let expected = r##"<pre id="id" data-key="multi word value" data-other="simple"><code>code
+    let expected = r##"<pre id="id" key="multi word value" other="simple"><code>code
 </code></pre>
 "##;
 

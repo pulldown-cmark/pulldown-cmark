@@ -14,7 +14,7 @@ Attributes only (no info string):
 xyz
 ```
 .
-<pre id="ident" class="class" data-key="value"><code>xyz
+<pre id="ident" class="class" key="value"><code>xyz
 </code></pre>
 ````````````````````````````````
 
@@ -47,7 +47,7 @@ fn main() {}
 print("hello")
 ```
 .
-<pre class="highlight" data-key="value"><code class="language-python">print("hello")
+<pre class="highlight" key="value"><code class="language-python">print("hello")
 </code></pre>
 ````````````````````````````````
 
@@ -107,7 +107,7 @@ Works with tilde fences too:
 xyz
 ~~~
 .
-<pre id="ident" class="class" data-key="value"><code>xyz
+<pre id="ident" class="class" key="value"><code>xyz
 </code></pre>
 ````````````````````````````````
 
@@ -129,7 +129,7 @@ Attribute values can be quoted:
 code
 ```
 .
-<pre data-key="value with spaces"><code>code
+<pre key="value with spaces"><code>code
 </code></pre>
 ````````````````````````````````
 
@@ -138,7 +138,7 @@ code
 code
 ```
 .
-<pre id="id" data-key="multi word value" data-other="simple"><code>code
+<pre id="id" key="multi word value" other="simple"><code>code
 </code></pre>
 ````````````````````````````````
 

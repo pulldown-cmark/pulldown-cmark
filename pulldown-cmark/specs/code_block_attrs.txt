@@ -1,0 +1,222 @@
+Run this with `cargo test --features gen-tests suite::code_block_attrs`.
+
+Examples and edge cases for attribute blocks on fenced code blocks.
+
+Attribute blocks can appear after the opening fence in a fenced code block.
+They affect the `<pre>` element.
+
+# Basic usage
+
+Attributes only (no info string):
+
+```````````````````````````````` example
+``` {#ident .class key=value}
+xyz
+```
+.
+<pre id="ident" class="class" data-key="value"><code>xyz
+</code></pre>
+````````````````````````````````
+
+Multiple classes and attributes:
+
+```````````````````````````````` example
+``` {#mycode .ruby .number-lines}
+xyz
+```
+.
+<pre id="mycode" class="ruby number-lines"><code>xyz
+</code></pre>
+````````````````````````````````
+
+# Info string with attributes
+
+Info string followed by attribute block:
+
+```````````````````````````````` example
+``` rust {#ident .class}
+fn main() {}
+```
+.
+<pre id="ident" class="class"><code class="language-rust">fn main() {}
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+```python {.highlight key=value}
+print("hello")
+```
+.
+<pre class="highlight" data-key="value"><code class="language-python">print("hello")
+</code></pre>
+````````````````````````````````
+
+# Content after attribute block
+
+If any non-space content comes after the attribute spec, the
+whole thing is treated as a raw info string:
+
+```````````````````````````````` example
+``` {#foo} bar
+xyz
+```
+.
+<pre><code class="language-{#foo}">xyz
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+```{.class} something
+code
+```
+.
+<pre><code class="language-{.class}">code
+</code></pre>
+````````````````````````````````
+
+# No space before attribute block
+
+Attribute block can be adjacent to info string:
+
+```````````````````````````````` example
+```rust{#id}
+code
+```
+.
+<pre><code class="language-rust{#id}">code
+</code></pre>
+````````````````````````````````
+
+There needs to be whitespace separating the info string from the attribute block:
+
+```````````````````````````````` example
+```rust {#id}
+code
+```
+.
+<pre id="id"><code class="language-rust">code
+</code></pre>
+````````````````````````````````
+
+# Tilde fences
+
+Works with tilde fences too:
+
+```````````````````````````````` example
+~~~ {#ident .class key=value}
+xyz
+~~~
+.
+<pre id="ident" class="class" data-key="value"><code>xyz
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+~~~~ruby {#mycode .number-lines}
+xyz
+~~~~
+.
+<pre id="mycode" class="number-lines"><code class="language-ruby">xyz
+</code></pre>
+````````````````````````````````
+
+# Quoted attribute values
+
+Attribute values can be quoted:
+
+```````````````````````````````` example
+``` {key="value with spaces"}
+code
+```
+.
+<pre data-key="value with spaces"><code>code
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+``` {#id key="multi word value" other=simple}
+code
+```
+.
+<pre id="id" data-key="multi word value" data-other="simple"><code>code
+</code></pre>
+````````````````````````````````
+
+# Edge cases
+
+Empty attribute block:
+
+```````````````````````````````` example
+``` {}
+code
+```
+.
+<pre><code>code
+</code></pre>
+````````````````````````````````
+
+Just whitespace in attribute block:
+
+```````````````````````````````` example
+``` {   }
+code
+```
+.
+<pre><code>code
+</code></pre>
+````````````````````````````````
+
+Code blocks still work without attributes:
+
+```````````````````````````````` example
+```rust
+fn main() {}
+```
+.
+<pre><code class="language-rust">fn main() {}
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+```
+plain code
+```
+.
+<pre><code>plain code
+</code></pre>
+````````````````````````````````
+
+# Invalid attribute blocks
+
+Nested braces are not allowed:
+
+```````````````````````````````` example
+``` {key={nested}}
+code
+```
+.
+<pre><code class="language-{key={nested}}">code
+</code></pre>
+````````````````````````````````
+
+Backslash is not allowed in attribute block:
+
+```````````````````````````````` example
+``` {key=val\ue}
+code
+```
+.
+<pre><code class="language-{key=val\ue}">code
+</code></pre>
+````````````````````````````````
+
+Angle brackets are not allowed:
+
+```````````````````````````````` example
+``` {key=<value>}
+code
+```
+.
+<pre><code class="language-{key=&lt;value&gt;}">code
+</code></pre>
+````````````````````````````````

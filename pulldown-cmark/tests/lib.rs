@@ -44,7 +44,7 @@ pub fn test_markdown_html(
     if smart_punct {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
-    opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+    opts.insert(Options::ENABLE_ATTRIBUTES);
     if deflists {
         opts.insert(Options::ENABLE_DEFINITION_LIST);
     }

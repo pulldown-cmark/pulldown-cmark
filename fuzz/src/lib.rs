@@ -160,7 +160,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                 b"code_block" => {
                     match tag.try_get_attribute("info")? {
                         Some(info) => events.push(Event::Start(Tag::CodeBlock(
-                            CodeBlockKind::Fenced(info.unescape_value()?.into_owned().into()),
+                            CodeBlockKind::Fenced(info.unescape_value()?.into_owned().into(), None),
                         ))),
                         None => events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Indented))),
                     }
@@ -374,7 +374,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
             // commonmark.js does not distinguish between fenced code
             // blocks with a "" info string and indented code blocks.
             Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => Some(Event::Start(
-                Tag::CodeBlock(CodeBlockKind::Fenced("".into())),
+                Tag::CodeBlock(CodeBlockKind::Fenced("".into(), None)),
             )),
 
             // pulldown-cmark can generate empty text and HTML events.
@@ -491,12 +491,12 @@ mod tests {
     fn test_normalize_empty_code_block() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("".into()),
                 Event::End(TagEnd::CodeBlock)
             ]),
             vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::End(TagEnd::CodeBlock)
             ]
         );
@@ -506,12 +506,12 @@ mod tests {
     fn test_normalize_non_empty_code_block() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("fn main() {}".into()),
                 Event::End(TagEnd::CodeBlock)
             ]),
             vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("fn main() {}\n".into()),
                 Event::End(TagEnd::CodeBlock)
             ]

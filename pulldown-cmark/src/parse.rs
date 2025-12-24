@@ -40,8 +40,8 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
-    MetadataBlockKind, Options, Tag, TagEnd,
+    Alignment, Attributes, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel,
+    LinkType, MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -110,7 +110,7 @@ pub(crate) enum ItemBody {
     TightParagraph,
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
-    FencedCodeBlock(CowIndex),
+    FencedCodeBlock(CowIndex, Option<AttributesIndex>), // info string, optional attributes
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
@@ -2001,7 +2001,10 @@ pub(crate) struct CowIndex(usize);
 pub(crate) struct AlignmentIndex(usize);
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct HeadingIndex(NonZeroUsize);
+pub(crate) struct AttributesIndex(NonZeroUsize);
+
+/// Deprecated alias for AttributesIndex
+pub(crate) type HeadingIndex = AttributesIndex;
 
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
@@ -2010,15 +2013,7 @@ pub(crate) struct Allocations<'a> {
     links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
-    headings: Vec<HeadingAttributes<'a>>,
-}
-
-/// Used by the heading attributes extension.
-#[derive(Clone)]
-pub(crate) struct HeadingAttributes<'a> {
-    pub id: Option<CowStr<'a>>,
-    pub classes: Vec<CowStr<'a>>,
-    pub attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
+    attributes: Vec<Attributes<'a>>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -2066,7 +2061,7 @@ impl<'a> Allocations<'a> {
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
-            headings: Vec::new(),
+            attributes: Vec::new(),
         }
     }
 
@@ -2094,13 +2089,18 @@ impl<'a> Allocations<'a> {
         AlignmentIndex(ix)
     }
 
-    pub fn allocate_heading(&mut self, attrs: HeadingAttributes<'a>) -> HeadingIndex {
-        let ix = self.headings.len();
-        self.headings.push(attrs);
-        // This won't panic. `self.headings.len()` can't be `usize::MAX` since
+    pub fn allocate_attributes(&mut self, attrs: Attributes<'a>) -> AttributesIndex {
+        let ix = self.attributes.len();
+        self.attributes.push(attrs);
+        // This won't panic. `self.attributes.len()` can't be `usize::MAX` since
         // such a long Vec cannot fit in memory.
-        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
-        HeadingIndex(ix_nonzero)
+        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many attributes");
+        AttributesIndex(ix_nonzero)
+    }
+
+    /// Deprecated alias for allocate_attributes
+    pub fn allocate_heading(&mut self, attrs: Attributes<'a>) -> AttributesIndex {
+        self.allocate_attributes(attrs)
     }
 
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
@@ -2141,11 +2141,11 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
     }
 }
 
-impl<'a> Index<HeadingIndex> for Allocations<'a> {
-    type Output = HeadingAttributes<'a>;
+impl<'a> Index<AttributesIndex> for Allocations<'a> {
+    type Output = Attributes<'a>;
 
-    fn index(&self, ix: HeadingIndex) -> &Self::Output {
-        self.headings.index(ix.0.get() - 1)
+    fn index(&self, ix: AttributesIndex) -> &Self::Output {
+        &self.attributes[ix.0.get() - 1]
     }
 }
 
@@ -2379,8 +2379,8 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
                 id,
             }
         }
-        ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+        ItemBody::Heading(level, Some(attrs_ix)) => {
+            let Attributes { id, classes, attrs } = allocs.index(attrs_ix);
             Tag::Heading {
                 level,
                 id: id.clone(),
@@ -2394,8 +2394,15 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             classes: Vec::new(),
             attrs: Vec::new(),
         },
-        ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
+        ItemBody::FencedCodeBlock(cow_ix, None) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix), None))
+        }
+        ItemBody::FencedCodeBlock(cow_ix, Some(attrs_ix)) => {
+            let Attributes { id, classes, attrs } = allocs.index(attrs_ix).clone();
+            Tag::CodeBlock(CodeBlockKind::Fenced(
+                allocs.take_cow(cow_ix),
+                Some(Attributes { id, classes, attrs }),
+            ))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
@@ -2455,14 +2462,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = core::mem::size_of::<Node<Item>>();
-        assert_eq!(48, node_size);
+        assert_eq!(56, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = core::mem::size_of::<ItemBody>();
-        assert_eq!(16, body_size);
+        assert_eq!(24, body_size);
     }
 
     #[test]
@@ -2804,7 +2811,7 @@ mod test {
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
             match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) => {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax, _))) => {
                     assert_eq!(syntax.as_ref(), "test");
                     found += 1;
                 }

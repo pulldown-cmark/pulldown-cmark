@@ -1314,6 +1314,19 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                     LoopInstruction::ContinueAndSkip(0)
                 }
+                b'\0' => {
+                    // U+0000 must be replaced with U+FFFD
+                    // https://spec.commonmark.org/0.31.2/#insecure-characters
+                    self.tree.append_text(begin_text, ix, backslash_escaped);
+                    backslash_escaped = false;
+                    self.tree.append(Item {
+                        start: ix,
+                        end: ix + 1,
+                        body: ItemBody::SynthesizeChar('\u{fffd}'),
+                    });
+                    begin_text = ix + 1;
+                    LoopInstruction::ContinueAndSkip(0)
+                }
                 _ => LoopInstruction::ContinueAndSkip(0),
             }
         });
@@ -2479,7 +2492,7 @@ fn create_lut(options: &Options) -> LookupTable {
 fn special_bytes(options: &Options) -> [bool; 256] {
     let mut bytes = [false; 256];
     let standard_bytes = [
-        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+        b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'\0',
     ];
 
     for &byte in &standard_bytes {
@@ -2528,7 +2541,7 @@ type LookupTable = [bool; 256];
 
 /// This function walks the byte slices from the given index and
 /// calls the callback function on all bytes (and their indices) that are in the following set:
-/// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
+/// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`, `\0`
 /// It is guaranteed not call the callback on other bytes.
 /// Whenever `callback(ix, byte)` returns a `ContinueAndSkip(n)` value, the callback
 /// will not be called with an index that is less than `ix + n + 1`.
@@ -2725,7 +2738,7 @@ mod simd {
     pub(super) fn compute_lookup(options: &Options) -> [u8; 16] {
         let mut lookup = [0u8; 16];
         let standard_bytes = [
-            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`',
+            b'\n', b'\r', b'*', b'_', b'&', b'\\', b'[', b']', b'<', b'!', b'`', b'\0',
         ];
 
         for &byte in &standard_bytes {
@@ -2943,7 +2956,7 @@ mod simd {
         fn exhaustive_search() {
             let chars = [
                 b'\n', b'\r', b'*', b'_', b'~', b'^', b'|', b'&', b'\\', b'[', b']', b'<', b'!',
-                b'`', b'$', b'{', b'}',
+                b'`', b'$', b'{', b'}', b'\0',
             ];
 
             for &c in &chars {

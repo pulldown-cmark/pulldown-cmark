@@ -27,7 +27,7 @@ use memchr::memchr;
 
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::{
-    entities, parse::HtmlScanGuard, strings::CowStr, Alignment, BlockQuoteKind, HeadingLevel,
+    entities, parse::HtmlScanGuard, strings::CowStr, AdmonitionKind, Alignment, HeadingLevel,
     LinkType,
 };
 
@@ -225,19 +225,19 @@ impl<'a> LineStart<'a> {
         ok
     }
 
-    pub(crate) fn scan_blockquote_tag(&mut self) -> Option<BlockQuoteKind> {
+    pub(crate) fn scan_blockquote_tag(&mut self) -> Option<AdmonitionKind> {
         let saved_ix = self.ix;
         let tag = if self.scan_ch(b'[') && self.scan_ch(b'!') {
             let tag = if self.scan_case_insensitive(b"note") {
-                Some(BlockQuoteKind::Note)
+                Some(AdmonitionKind::Note)
             } else if self.scan_case_insensitive(b"tip") {
-                Some(BlockQuoteKind::Tip)
+                Some(AdmonitionKind::Tip)
             } else if self.scan_case_insensitive(b"important") {
-                Some(BlockQuoteKind::Important)
+                Some(AdmonitionKind::Important)
             } else if self.scan_case_insensitive(b"warning") {
-                Some(BlockQuoteKind::Warning)
+                Some(AdmonitionKind::Warning)
             } else if self.scan_case_insensitive(b"caution") {
-                Some(BlockQuoteKind::Caution)
+                Some(AdmonitionKind::Caution)
             } else {
                 None
             };

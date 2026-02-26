@@ -151,7 +151,7 @@ impl<'a> CodeBlockKind<'a> {
 /// BlockQuote kind (Note, Tip, Important, Warning, Caution).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum BlockQuoteKind {
+pub enum AdmonitionKind {
     Note,
     Tip,
     Important,
@@ -196,17 +196,20 @@ pub enum Tag<'a> {
         attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
-    /// A block quote.
+    /// A block quote or admonition.
     ///
-    /// The `BlockQuoteKind` is only parsed & populated with [`Options::ENABLE_GFM`], `None` otherwise.
+    /// Block quotes share the same notation as admonitions.
+    /// Admonitions were added to GFM in 2025, but not to the spec.
+    /// See <https://github.com/orgs/community/discussions/16925>.
+    /// The `AdmonitionKind` is only parsed & populated with [`Options::ENABLE_GFM`], `None` otherwise.
     ///
     /// ```markdown
     /// > regular quote
     ///
     /// > [!NOTE]
-    /// > note quote
+    /// > note admonition
     /// ```
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote(Option<AdmonitionKind>),
     /// A code block.
     CodeBlock(CodeBlockKind<'a>),
     ContainerBlock(ContainerKind, CowStr<'a>),
@@ -415,7 +418,7 @@ pub enum TagEnd {
     Paragraph,
     Heading(HeadingLevel),
 
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote(Option<AdmonitionKind>),
     CodeBlock,
     ContainerBlock(ContainerKind),
 

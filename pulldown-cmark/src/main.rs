@@ -91,11 +91,7 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("B", "enable-subscript", "enable subscript");
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
-    opts.optflag(
-        "H",
-        "enable-heading-attributes",
-        "enable heading attributes",
-    );
+    opts.optflag("H", "enable-attributes", "enable element attributes");
     opts.optflag("M", "enable-metadata-blocks", "enable metadata blocks");
     opts.optflag(
         "R",
@@ -154,8 +150,8 @@ pub fn main() -> std::io::Result<()> {
     if matches.opt_present("enable-smart-punctuation") {
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
-    if matches.opt_present("enable-heading-attributes") {
-        opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+    if matches.opt_present("enable-attributes") {
+        opts.insert(Options::ENABLE_ATTRIBUTES);
     }
     if matches.opt_present("enable-metadata-blocks") {
         opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);

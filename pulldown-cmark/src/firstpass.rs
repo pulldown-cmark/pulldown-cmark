@@ -2386,6 +2386,26 @@ fn delim_run_can_open(
     if next_char.is_whitespace() {
         return false;
     }
+    let delim = suffix.bytes().next().unwrap();
+    // `^` with punctuation content (e.g. `^+^`) requires a preceding alphanumeric
+    // or delimiter character (e.g. `H^+^`, `NH~4~^+^`). At start of line (ix == 0)
+    // there is no preceding character, so `^` cannot open with punctuation content.
+    // This check must run before the `ix == 0` early return below.
+    if delim == b'^' && is_punctuation(next_char) {
+        if ix == 0 {
+            return false;
+        }
+        if options.contains(Options::ENABLE_SUPERSCRIPT) {
+            let prev_char = s[..ix].chars().last();
+            // Allow after alphanumeric (H^+^) or after closing delimiters
+            // like ~ or ^ (NH~4~^+^, x^2^^+^)
+            if prev_char.is_some_and(|c| c.is_alphanumeric() || c == '~' || c == '^') {
+                return true;
+            }
+        }
+        // Punctuation content without qualifying predecessor -- don't open
+        return false;
+    }
     if ix == 0 {
         return true;
     }
@@ -2397,9 +2417,12 @@ fn delim_run_can_open(
             return false;
         }
     }
-    let delim = suffix.bytes().next().unwrap();
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || delim == b'^') && !is_punctuation(next_char) {
+    if delim == b'*' && !is_punctuation(next_char) {
+        return true;
+    }
+    // `^` with non-punctuation content can open intraword
+    if delim == b'^' {
         return true;
     }
     if delim == b'~' && run_len > 1 {
@@ -2450,9 +2473,10 @@ fn delim_run_can_close(
     }
     let delim = suffix.bytes().next().unwrap();
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || delim == b'^' || (delim == b'~' && run_len > 1))
-        && !is_punctuation(prev_char)
-    {
+    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
+        return true;
+    }
+    if delim == b'^' && !is_punctuation(prev_char) {
         return true;
     }
     if delim == b'~' && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT)) {

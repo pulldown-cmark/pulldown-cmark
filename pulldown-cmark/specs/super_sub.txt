@@ -82,3 +82,34 @@ Emphasis example included for analogy.
 <p><sub>foo^</sub>^bar~</p>
 <p><em>foo_</em>_bar*</p>
 ````````````````````````````````
+
+Superscript with punctuation content (chemical ions, math).
+When preceded by an alphanumeric character, superscript opens
+even if the content is punctuation like `+` or `-`.
+
+```````````````````````````````` example_super_sub
+H^+^ + OH^-^
+.
+<p>H<sup>+</sup> + OH<sup>-</sup></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+Ca^2+^ + CO~3~^2-^
+.
+<p>Ca<sup>2+</sup> + CO<sub>3</sub><sup>2-</sup></p>
+````````````````````````````````
+
+```````````````````````````````` example_super_sub
+NH~4~^+^
+.
+<p>NH<sub>4</sub><sup>+</sup></p>
+````````````````````````````````
+
+Standalone punctuation-only superscript without a preceding
+alphanumeric does not open (avoids false positives).
+
+```````````````````````````````` example_super_sub
+^+^ not superscript
+.
+<p>^+^ not superscript</p>
+````````````````````````````````

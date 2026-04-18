@@ -7,6 +7,7 @@ use core::{cmp::max, ops::Range, u8};
 use unicase::UniCase;
 
 use crate::{
+    cjk::{is_cjk_character, is_non_cjk_punctuation, previous_chars_skip_vs},
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
         scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
@@ -2378,6 +2379,7 @@ fn delim_run_can_open(
     mode: TableParseMode,
     options: Options,
 ) -> bool {
+    let cjk_mode = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
     } else {
@@ -2417,8 +2419,16 @@ fn delim_run_can_open(
             return false;
         }
     }
+
+    // In CJK mode, use non-CJK punctuation for flanking checks
+    let next_is_punct = if cjk_mode {
+        is_non_cjk_punctuation(next_char)
+    } else {
+        is_punctuation(next_char)
+    };
+
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if delim == b'*' && !is_punctuation(next_char) {
+    if delim == b'*' && !next_is_punct {
         return true;
     }
     // `^` with non-punctuation content can open intraword
@@ -2428,16 +2438,30 @@ fn delim_run_can_open(
     if delim == b'~' && run_len > 1 {
         return true;
     }
-    let prev_char = s[..ix].chars().last().unwrap();
+
+    let (prev_char_raw, _) = if cjk_mode {
+        previous_chars_skip_vs(s, ix)
+    } else {
+        (s[..ix].chars().last(), None)
+    };
+    let prev_char = prev_char_raw.unwrap();
+
     if delim == b'~'
         && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT))
-        && !is_punctuation(next_char)
+        && !next_is_punct
     {
         return true;
     }
 
+    let prev_is_punct = if cjk_mode {
+        is_non_cjk_punctuation(prev_char)
+    } else {
+        is_punctuation(prev_char)
+    };
+
     prev_char.is_whitespace()
-        || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
+        || prev_is_punct && (delim != b'\'' || ![']', ')'].contains(&prev_char))
+        || (cjk_mode && is_cjk_character(prev_char))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2451,10 +2475,18 @@ fn delim_run_can_close(
     mode: TableParseMode,
     options: Options,
 ) -> bool {
+    let cjk_mode = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     if ix == 0 {
         return false;
     }
-    let prev_char = s[..ix].chars().last().unwrap();
+
+    let (prev_char_raw, _) = if cjk_mode {
+        previous_chars_skip_vs(s, ix)
+    } else {
+        (s[..ix].chars().last(), None)
+    };
+    let prev_char = prev_char_raw.unwrap();
+
     if prev_char.is_whitespace() {
         return false;
     }
@@ -2472,18 +2504,32 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
+
+    // In CJK mode, use non-CJK punctuation for flanking checks
+    let prev_is_punct = if cjk_mode {
+        is_non_cjk_punctuation(prev_char)
+    } else {
+        is_punctuation(prev_char)
+    };
+
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
+    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !prev_is_punct {
         return true;
     }
-    if delim == b'^' && !is_punctuation(prev_char) {
+    if delim == b'^' && !prev_is_punct {
         return true;
     }
     if delim == b'~' && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT)) {
         return true;
     }
 
-    next_char.is_whitespace() || is_punctuation(next_char)
+    let next_is_punct = if cjk_mode {
+        is_non_cjk_punctuation(next_char)
+    } else {
+        is_punctuation(next_char)
+    };
+
+    next_char.is_whitespace() || next_is_punct || (cjk_mode && is_cjk_character(next_char))
 }
 
 fn create_lut(options: &Options) -> LookupTable {

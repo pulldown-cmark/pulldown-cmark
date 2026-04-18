@@ -101,6 +101,7 @@ pub mod html;
 
 pub mod utils;
 
+mod cjk;
 mod entities;
 mod firstpass;
 mod linklabel;
@@ -768,6 +769,16 @@ bitflags::bitflags! {
         const ENABLE_WIKILINKS = 1 << 15;
         /// Colon-delimited Container Extension Blocks.
         const ENABLE_CONTAINER_EXTENSIONS = 1 << 16;
+        /// CJK-friendly emphasis heuristics.
+        ///
+        /// When enabled, delimiter run detection distinguishes CJK punctuation
+        /// (e.g. `「」、。！？（）`) from non-CJK punctuation, allowing emphasis
+        /// to work correctly adjacent to CJK text without surrounding whitespace.
+        ///
+        /// This implements the [CommonMark CJK-friendly amendments](https://github.com/tats-u/markdown-cjk-friendly/blob/main/specification.md).
+        ///
+        /// Default behavior (when disabled) is unchanged from standard CommonMark.
+        const ENABLE_CJK_FRIENDLY_EMPHASIS = 1 << 17;
     }
 }
 

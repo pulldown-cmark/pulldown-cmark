@@ -41,7 +41,7 @@ use crate::{
     strings::CowStr,
     tree::{Tree, TreeIndex},
     Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
-    MetadataBlockKind, Options, Tag, TagEnd,
+    ListType, MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -115,7 +115,7 @@ pub(crate) enum ItemBody {
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
     Container(u8, ContainerKind, CowIndex), // (fence length, specific renderer, descriptor used in renderer)
-    List(bool, u8, u64),                    // is_tight, list character, list start index
+    List(bool, ListType, u64),              // is_tight, list character, list start index
     ListItem(usize),                        // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
@@ -2320,10 +2320,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Container(_, kind, _) => TagEnd::ContainerBlock(kind),
         ItemBody::BlockQuote(kind) => TagEnd::BlockQuote(kind),
         ItemBody::HtmlBlock => TagEnd::HtmlBlock,
-        ItemBody::List(_, c, _) => {
-            let is_ordered = c == b'.' || c == b')';
-            TagEnd::List(is_ordered)
-        }
+        ItemBody::List(_, marker_type, _) => TagEnd::List(marker_type.is_ordered()),
         ItemBody::ListItem(_) => TagEnd::Item,
         ItemBody::TableHead => TagEnd::TableHead,
         ItemBody::TableCell => TagEnd::TableCell,
@@ -2400,11 +2397,12 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
-        ItemBody::List(_, c, listitem_start) => {
-            if c == b'.' || c == b')' {
-                Tag::List(Some(listitem_start))
-            } else {
-                Tag::List(None)
+        ItemBody::List(tight, marker_type, listitem_start) => {
+            let start = marker_type.is_ordered().then_some(listitem_start);
+            Tag::List {
+                start,
+                marker_type,
+                tight,
             }
         }
         ItemBody::ListItem(_) => Tag::Item,

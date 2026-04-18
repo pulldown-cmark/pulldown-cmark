@@ -13,7 +13,7 @@ use mozjs::rooted;
 use mozjs::rust::wrappers::JS_CallFunctionName;
 use mozjs::rust::SIMPLE_GLOBAL_CLASS;
 use mozjs::rust::{JSEngine, RealmOptions, Runtime};
-use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, LinkType, ListType, Parser, Tag, TagEnd};
 use quick_xml::escape::unescape;
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::reader::Reader;
@@ -173,16 +173,28 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                 }
                 b"list" => {
                     let start = tag.try_get_attribute("start")?;
-                    match &start {
-                        Some(start) => events.push(Event::Start(Tag::List(Some(
-                            start.unescape_value()?.parse()?,
-                        )))),
-                        None => events.push(Event::Start(Tag::List(None))),
+                    let start = match &start {
+                        Some(start) => Some(start.unescape_value()?.parse()?),
+                        None => None,
                     };
                     let tight = match tag.try_get_attribute("tight") {
                         Ok(Some(value)) if value.unescape_value()? == "true" => true,
                         _ => false,
                     };
+                    let marker_type = match tag.try_get_attribute("delimiter") {
+                        Ok(Some(value)) => match &*value.unescape_value()? {
+                            "paren" => ListType::RightParenthesis,
+                            "period" => ListType::FullStop,
+                            s => anyhow::bail!("unexpected list delimiter {s:?}"),
+                        },
+                        // We don't otherwise receive the marker type, so default to `-`.
+                        _ => ListType::HyphenMinus,
+                    };
+                    events.push(Event::Start(Tag::List {
+                        start,
+                        tight,
+                        marker_type,
+                    }));
                     block_container_stack.push((start.is_some(), tight));
                 }
                 b"item" => events.push(Event::Start(Tag::Item)),
@@ -298,6 +310,8 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
 ///
 /// - Adds a final newline to non-empty `Tag::CodeBlock` tags.
 ///
+/// - Resets list type of unordered lists to `ListType::HyphenMinus`.
+///
 /// - Resets the link type to `LinkType::Inline`.
 ///
 /// - Resets all code blocks to `CodeBlockKind::Fenced`.
@@ -339,6 +353,17 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
     normalized
         .into_iter()
         .filter_map(|event| match event {
+            // commonmark.js does not record the list type.
+            Event::Start(Tag::List {
+                start,
+                tight,
+                marker_type,
+            }) if !marker_type.is_ordered() => Some(Event::Start(Tag::List {
+                start,
+                tight,
+                marker_type: ListType::HyphenMinus,
+            })),
+
             // commonmark.js does not record the link type.
             Event::Start(Tag::Link {
                 link_type: LinkType::Email,
@@ -451,14 +476,22 @@ mod tests {
     fn test_normalize_non_empty_list() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::List(None)),
+                Event::Start(Tag::List {
+                    start: None,
+                    tight: true,
+                    marker_type: ListType::Asterisk
+                }),
                 Event::Start(Tag::Item),
                 Event::Text("foo".into()),
                 Event::End(TagEnd::Item),
                 Event::End(TagEnd::List(false)),
             ]),
             vec![
-                Event::Start(Tag::List(None)),
+                Event::Start(Tag::List {
+                    start: None,
+                    tight: true,
+                    marker_type: ListType::HyphenMinus
+                }),
                 Event::Start(Tag::Item),
                 Event::Start(Tag::Paragraph),
                 Event::Text("foo".into()),
@@ -473,13 +506,21 @@ mod tests {
     fn test_normalize_empty_list() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::List(None)),
+                Event::Start(Tag::List {
+                    start: None,
+                    tight: true,
+                    marker_type: ListType::HyphenMinus
+                }),
                 Event::Start(Tag::Item),
                 Event::End(TagEnd::Item),
                 Event::End(TagEnd::List(false)),
             ]),
             vec![
-                Event::Start(Tag::List(None)),
+                Event::Start(Tag::List {
+                    start: None,
+                    tight: true,
+                    marker_type: ListType::HyphenMinus
+                }),
                 Event::Start(Tag::Item),
                 Event::End(TagEnd::Item),
                 Event::End(TagEnd::List(false)),

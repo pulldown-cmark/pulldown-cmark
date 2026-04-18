@@ -28,7 +28,7 @@ use memchr::memchr;
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::{
     entities, parse::HtmlScanGuard, strings::CowStr, Alignment, BlockQuoteKind, HeadingLevel,
-    LinkType,
+    LinkType, ListType,
 };
 
 // sorted for binary search
@@ -312,13 +312,11 @@ impl<'a> LineStart<'a> {
 
     /// Scan a list marker.
     ///
-    /// Return value is the character, the start index, and the indent in spaces.
-    /// For ordered list markers, the character will be one of b'.' or b')'. For
-    /// bullet list markers, it will be one of b'-', b'+', or b'*'.
+    /// Return value is the list type, the start index, and the indent in spaces.
     pub(crate) fn scan_list_marker_with_indent(
         &mut self,
         indent: usize,
-    ) -> Option<(u8, u64, usize)> {
+    ) -> Option<(ListType, u64, usize)> {
         let save = self.clone();
         if self.ix < self.bytes.len() {
             let c = self.bytes[self.ix];
@@ -367,12 +365,21 @@ impl<'a> LineStart<'a> {
         c: u8,
         start: u64,
         mut indent: usize,
-    ) -> Option<(u8, u64, usize)> {
+    ) -> Option<(ListType, u64, usize)> {
         let save = self.clone();
+
+        let ty = match c {
+            b'-' => ListType::HyphenMinus,
+            b'+' => ListType::PlusSign,
+            b'*' => ListType::Asterisk,
+            b'.' => ListType::FullStop,
+            b')' => ListType::RightParenthesis,
+            _ => unreachable!(),
+        };
 
         // skip the rest of the line if it's blank
         if scan_blank_line(&self.bytes[self.ix..]).is_some() {
-            return Some((c, start, indent));
+            return Some((ty, start, indent));
         }
 
         let post_indent = self.scan_space_upto(4);
@@ -381,7 +388,7 @@ impl<'a> LineStart<'a> {
         } else {
             *self = save;
         }
-        Some((c, start, indent))
+        Some((ty, start, indent))
     }
 
     /// Returns Some(is_checked) when a task list marker was found. Resets itself

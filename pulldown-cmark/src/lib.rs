@@ -229,9 +229,18 @@ pub enum Tag<'a> {
     /// ```
     HtmlBlock,
 
-    /// A list. If the list is ordered the field indicates the number of the first item.
-    /// Contains only list items.
-    List(Option<u64>), // TODO: add delim and tight for ast (not needed for html)
+    /// A list. Contains only list items.
+    List {
+        /// If the list is ordered, the number of the first item.
+        start: Option<u64>,
+        /// Whether the list is [tight](https://spec.commonmark.org/0.31.2/#loose) or loose.
+        tight: bool,
+        /// The type of marker used in the list: either `-`, `+`, `*`, `.`, or `)`.
+        ///
+        /// This will only be `-`, `+`, or `*` if `start` is `None`, and will only be `.` or `)` if
+        /// `start` is `Some`.
+        marker_type: ListType,
+    },
     /// A list item.
     Item,
     /// A footnote definition. The value contained is the footnote's label by which it can
@@ -324,7 +333,7 @@ impl<'a> Tag<'a> {
             Tag::CodeBlock(_) => TagEnd::CodeBlock,
             Tag::ContainerBlock(kind, _) => TagEnd::ContainerBlock(*kind),
             Tag::HtmlBlock => TagEnd::HtmlBlock,
-            Tag::List(number) => TagEnd::List(number.is_some()),
+            Tag::List { start: number, .. } => TagEnd::List(number.is_some()),
             Tag::Item => TagEnd::Item,
             Tag::FootnoteDefinition(_) => TagEnd::FootnoteDefinition,
             Tag::Table(_) => TagEnd::Table,
@@ -366,7 +375,15 @@ impl<'a> Tag<'a> {
             Tag::CodeBlock(kb) => Tag::CodeBlock(kb.into_static()),
             Tag::ContainerBlock(k, s) => Tag::ContainerBlock(k, s.into_static()),
             Tag::HtmlBlock => Tag::HtmlBlock,
-            Tag::List(v) => Tag::List(v),
+            Tag::List {
+                start,
+                tight,
+                marker_type,
+            } => Tag::List {
+                start,
+                tight,
+                marker_type,
+            },
             Tag::Item => Tag::Item,
             Tag::FootnoteDefinition(a) => Tag::FootnoteDefinition(a.into_static()),
             Tag::Table(v) => Tag::Table(v),
@@ -659,6 +676,36 @@ impl<'a> Event<'a> {
             Event::Rule => Event::Rule,
             Event::TaskListMarker(b) => Event::TaskListMarker(b),
         }
+    }
+}
+
+/// The type of markers in an ordered or unordered list, i.e. `-`, `+`, `*`, `.` or `)`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[repr(u8)]
+pub enum ListType {
+    /// `-`. Used for unordered lists.
+    HyphenMinus = b'-',
+    /// `+`. Used for unordered lists.
+    PlusSign = b'+',
+    /// `*`. Used for unordered lists.
+    Asterisk = b'*',
+    /// `.`. Used for ordered lists (e.g. `1.`).
+    FullStop = b'.',
+    /// `)`. Used for ordered lists (e.g. `1)`).
+    RightParenthesis = b')',
+}
+
+impl ListType {
+    /// Returns whether the list type is for ordered lists.
+    pub const fn is_ordered(self) -> bool {
+        matches!(self, Self::FullStop | Self::RightParenthesis)
+    }
+}
+
+impl Display for ListType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(char::from(*self as u8).encode_utf8(&mut [0]))
     }
 }
 

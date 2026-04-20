@@ -111,3 +111,43 @@ fn super_sub_test_10() {
 
     test_markdown_html(original, expected, false, false, false, true, false, false, false);
 }
+
+#[test]
+fn super_sub_test_11() {
+    let original = r##"H^+^ + OH^-^
+"##;
+    let expected = r##"<p>H<sup>+</sup> + OH<sup>-</sup></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn super_sub_test_12() {
+    let original = r##"Ca^2+^ + CO~3~^2-^
+"##;
+    let expected = r##"<p>Ca<sup>2+</sup> + CO<sub>3</sub><sup>2-</sup></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn super_sub_test_13() {
+    let original = r##"NH~4~^+^
+"##;
+    let expected = r##"<p>NH<sub>4</sub><sup>+</sup></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn super_sub_test_14() {
+    let original = r##"^+^ not superscript
+"##;
+    let expected = r##"<p>^+^ not superscript</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+}

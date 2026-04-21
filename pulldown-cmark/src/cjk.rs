@@ -2,6 +2,9 @@ use crate::puncttable::is_punctuation;
 
 /// Returns true when `ch` is considered a CJK character by the
 /// CommonMark CJK-friendly amendments specification.
+///
+/// These ranges are based on Unicode version 17.
+/// The source is https://github.com/tats-u/markdown-cjk-friendly/blob/c91e073f40ace3ec2250c58dddcc2fee73fec37b/ranges.md.
 pub(crate) fn is_cjk_character(ch: char) -> bool {
     let cp = ch as u32;
     matches!(

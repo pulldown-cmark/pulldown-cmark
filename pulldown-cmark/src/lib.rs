@@ -772,8 +772,8 @@ bitflags::bitflags! {
         /// CommonMark CJK-friendly emphasis heuristics.
         ///
         /// Aligns delimiter run handling with the
-        /// [CommonMark CJK-friendly amendments](https://github.com/tats-u/markdown-cjk-friendly/blob/main/specification.md),
-        /// enabling emphasis between CJK characters without surrounding whitespace.
+        /// [CommonMark CJK-friendly amendments/extension](https://github.com/tats-u/markdown-cjk-friendly/blob/main/specification.md),
+        /// enabling emphasis around CJK characters without surrounding whitespace.
         const ENABLE_CJK_FRIENDLY_EMPHASIS = 1 << 17;
     }
 }

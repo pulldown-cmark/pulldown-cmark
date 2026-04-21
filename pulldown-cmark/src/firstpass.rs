@@ -2540,15 +2540,14 @@ fn delim_run_can_close(
         return true;
     }
 
-    if !cjk_friendly {
-        next_char.is_whitespace() || is_punctuation(next_char)
-    } else if prev_non_cjk_seq {
-        next_char.is_whitespace()
-            || is_non_cjk_punctuation_character(next_char)
-            || is_cjk_character(next_char)
-    } else {
-        true
-    }
+    next_char.is_whitespace()
+        || if !cjk_friendly {
+            is_punctuation(next_char)
+        } else {
+            !prev_non_cjk_seq
+                || is_non_cjk_punctuation_character(next_char)
+                || is_cjk_character(next_char)
+        }
 }
 
 fn create_lut(options: &Options) -> LookupTable {

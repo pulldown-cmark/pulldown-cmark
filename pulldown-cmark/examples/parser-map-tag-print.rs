@@ -56,9 +56,13 @@ fn main() {
                     level, id, classes, attrs
                 ),
                 Tag::Paragraph => println!("Paragraph"),
-                Tag::List(ordered_list_first_item_number) => println!(
-                    "List ordered_list_first_item_number: {:?}",
-                    ordered_list_first_item_number
+                Tag::List {
+                    start: ordered_list_first_item_number,
+                    tight,
+                    marker_type,
+                } => println!(
+                    "List ordered_list_first_item_number: {:?} tight: {} marker_type: {}",
+                    ordered_list_first_item_number, tight, marker_type,
                 ),
                 Tag::DefinitionList => println!("Definition list"),
                 Tag::DefinitionListTitle => println!("Definition title (definition list item)"),

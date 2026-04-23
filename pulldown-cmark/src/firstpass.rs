@@ -15,7 +15,7 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    ContainerKind, HeadingLevel, MetadataBlockKind, Options,
+    ContainerKind, HeadingLevel, ListType, MetadataBlockKind, Options,
 };
 
 /// Runs the first pass, which resolves the block structure of the document,
@@ -1675,11 +1675,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     /// Continue an existing list or start a new one if there's not an open
     /// list that matches.
-    fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
+    fn continue_list(&mut self, start: usize, ty: ListType, index: u64) {
         self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
-                if existing_ch == ch {
+            if let ItemBody::List(ref mut is_tight, existing_ty, _) = self.tree[node_ix].item.body {
+                if existing_ty == ty {
                     if self.last_line_blank {
                         *is_tight = false;
                         self.last_line_blank = false;
@@ -1693,7 +1693,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.append(Item {
             start,
             end: 0, // will get set later
-            body: ItemBody::List(true, ch, index),
+            body: ItemBody::List(true, ty, index),
         });
         self.tree.push();
         self.last_line_blank = false;

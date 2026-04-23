@@ -32,7 +32,7 @@ use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, Fmt
 
 use crate::{
     strings::CowStr,
-    Alignment, BlockQuoteKind, CodeBlockKind,
+    AdmonitionKind, Alignment, CodeBlockKind,
     ContainerKind::*,
     Event::{self, *},
     LinkType, Tag, TagEnd,
@@ -244,23 +244,33 @@ where
                     _ => self.write(">"),
                 }
             }
-            Tag::BlockQuote(kind) => {
-                let class_str = match kind {
-                    None => "",
-                    Some(kind) => match kind {
-                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
-                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
-                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
-                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
-                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
-                    },
-                };
-                if self.end_newline {
-                    self.write(&format!("<blockquote{}>\n", class_str))
-                } else {
-                    self.write(&format!("\n<blockquote{}>\n", class_str))
+            Tag::BlockQuote(kind) => match kind {
+                None => {
+                    if self.end_newline {
+                        self.write("<blockquote>\n")
+                    } else {
+                        self.write("\n<blockquote>\n")
+                    }
                 }
-            }
+                Some(kind) => {
+                    let suffix = match kind {
+                        AdmonitionKind::Note => "note",
+                        AdmonitionKind::Tip => "tip",
+                        AdmonitionKind::Important => "important",
+                        AdmonitionKind::Warning => "warning",
+                        AdmonitionKind::Caution => "caution",
+                    };
+                    if self.end_newline {
+                        self.write(&format!(
+                            "<div role=\"note\" class=\"markdown-alert-{suffix}\">\n"
+                        ))
+                    } else {
+                        self.write(&format!(
+                            "\n<div role=\"note\" class=\"markdown-alert-{suffix}\">\n"
+                        ))
+                    }
+                }
+            },
             Tag::CodeBlock(info) => {
                 if !self.end_newline {
                     self.write_newline()?;
@@ -451,9 +461,10 @@ where
                 }
                 self.table_cell_index += 1;
             }
-            TagEnd::BlockQuote(_) => {
-                self.write("</blockquote>\n")?;
-            }
+            TagEnd::BlockQuote(kind) => match kind {
+                Some(_admonition_kind) => self.write("</div>\n")?,
+                None => self.write("</blockquote>\n")?,
+            },
             TagEnd::CodeBlock => {
                 self.write("</code></pre>\n")?;
             }

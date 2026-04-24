@@ -2849,3 +2849,117 @@ hello world
 ���
 hello�world</p>
 ````````````````````````````````
+
+Replace NUL with U+FFFD in code spans
+
+```````````````````````````````` example
+`first second`
+`start `
+` end`
+` `
+.
+<p><code>first�second</code>
+<code>start�</code>
+<code>�end</code>
+<code>�</code></p>
+````````````````````````````````
+
+Replace NUL with U+FFFD in math spans
+
+```````````````````````````````` example
+$$first second$$
+$$start $$
+$$ end$$
+$$ $$
+.
+<p><span class="math math-display">first�second</span>
+<span class="math math-display">start�</span>
+<span class="math math-display">�end</span>
+<span class="math math-display">�</span></p>
+````````````````````````````````
+
+Replace NUL with U+FFFD in link titles
+
+```````````````````````````````` example
+[x](x "first second")
+[x](x "start ")
+[x](x " end")
+[x](x " ")
+.
+<p><a href="x" title="first�second">x</a>
+<a href="x" title="start�">x</a>
+<a href="x" title="�end">x</a>
+<a href="x" title="�">x</a></p>
+````````````````````````````````
+
+Replace NUL with U+FFFD in link destinations
+EF BF BD is UTF-8 for U+FFFD
+
+https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=064c457a9cbae22d41e355686f9a09ae
+
+```````````````````````````````` example
+[x](<first second>)
+[x](<start >)
+[x](< end>)
+[x](< >)
+.
+<p><a href="first%EF%BF%BDsecond">x</a>
+<a href="start%EF%BF%BD">x</a>
+<a href="%EF%BF%BDend">x</a>
+<a href="%EF%BF%BD">x</a></p>
+````````````````````````````````
+
+Replace NUL with U+FFFD in link reference definitions
+
+```````````````````````````````` example
+[first second]: https://example.com/a
+[start ]: https://example.com/b
+[ end]: https://example.com/c
+[ ]: https://example.com/d
+
+[first�second][]
+[start�][]
+[�end][]
+[�][]
+.
+<p><a href="https://example.com/a">first�second</a>
+<a href="https://example.com/b">start�</a>
+<a href="https://example.com/c">�end</a>
+<a href="https://example.com/d">�</a></p>
+````````````````````````````````
+
+Replace NUL with U+FFFD in link references
+
+```````````````````````````````` example
+[first�second]: https://example.com/a
+[start�]: https://example.com/b
+[�end]: https://example.com/c
+[�]: https://example.com/d
+
+[first second][]
+[start ][]
+[ end][]
+[ ][]
+.
+<p><a href="https://example.com/a">first�second</a>
+<a href="https://example.com/b">start�</a>
+<a href="https://example.com/c">�end</a>
+<a href="https://example.com/d">�</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[first�second]: https://example.com/a
+[start�]: https://example.com/b
+[�end]: https://example.com/c
+[�]: https://example.com/d
+
+[a][first second]
+[b][start ]
+[c][ end]
+[d][ ]
+.
+<p><a href="https://example.com/a">a</a>
+<a href="https://example.com/b">b</a>
+<a href="https://example.com/c">c</a>
+<a href="https://example.com/d">d</a></p>
+````````````````````````````````

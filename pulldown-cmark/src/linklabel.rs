@@ -86,6 +86,14 @@ pub(crate) fn scan_link_label_rest<'t>(
                 only_white_space = false;
                 mark = ix;
             }
+            b'\0' => {
+                label.push_str(&text[mark..ix]);
+                label.push('\u{fffd}');
+                ix += 1;
+                codepoints += 1;
+                only_white_space = false;
+                mark = ix;
+            }
             b'\\' if is_ascii_punctuation(*bytes.get(ix + 1)?) => {
                 ix += 2;
                 codepoints += 2;

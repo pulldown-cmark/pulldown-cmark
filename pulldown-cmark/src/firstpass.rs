@@ -9,13 +9,12 @@ use unicase::UniCase;
 use crate::{
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
-        scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
-        LINK_MAX_NESTED_PARENS,
+        scan_containers, Allocations, FootnoteDef, Item, ItemBody, LinkDef, LINK_MAX_NESTED_PARENS,
     },
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    ContainerKind, HeadingLevel, MetadataBlockKind, Options,
+    Attributes, ContainerKind, HeadingLevel, MetadataBlockKind, Options,
 };
 
 /// Runs the first pass, which resolves the block structure of the document,
@@ -1493,11 +1492,22 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // to just do a forward scan here?
         let mut ix = info_start + scan_nextline(&bytes[info_start..]);
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
-        let info_string = unescape(&self.text[info_start..info_end], self.tree.is_in_table());
+
+        // Parse info string and optional attributes
+        let (info_string, attrs) = if self.options.contains(Options::ENABLE_ATTRIBUTES) {
+            self.parse_fenced_code_block_info(&self.text[info_start..info_end])
+        } else {
+            (
+                unescape(&self.text[info_start..info_end], self.tree.is_in_table()),
+                None,
+            )
+        };
+
+        let attrs_ix = attrs.map(|a| self.allocs.allocate_attributes(a));
         self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
+            body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string), attrs_ix),
         });
         self.tree.push();
         loop {
@@ -1527,6 +1537,80 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_code_text(remaining_space, ix, next_ix);
             ix = next_ix;
         }
+    }
+
+    /// Parses the info string of a fenced code block, extracting the language
+    /// and optional attributes.
+    ///
+    /// According to the spec:
+    /// - `{#id .class}` alone: no language, just attributes
+    /// - `{#foo} bar`: treated as raw info string (content after attr block)
+    /// - `bar {#foo}`: language is "bar", attributes are parsed
+    fn parse_fenced_code_block_info(&self, info: &'a str) -> (CowStr<'a>, Option<Attributes<'a>>) {
+        let info = info.trim();
+        if info.is_empty() {
+            return ("".into(), None);
+        }
+
+        let bytes = info.as_bytes();
+
+        // Check if the info string starts with `{` - could be attributes only
+        if bytes[0] == b'{' {
+            // Find the closing brace
+            if let Some(close_pos) = info.find('}') {
+                let after_brace = &info[close_pos + 1..];
+                // If there's non-whitespace content after the closing brace,
+                // treat the whole thing as a raw info string
+                if !after_brace.trim().is_empty() {
+                    let lang = info.split_whitespace().next().unwrap_or("");
+                    return (unescape(lang, self.tree.is_in_table()), None);
+                }
+                // Otherwise, parse as attributes only (no language)
+                let attr_content = &info[1..close_pos];
+                // Check that attribute block doesn't contain invalid characters
+                if attr_content.contains('<')
+                    || attr_content.contains('>')
+                    || attr_content.contains('{')
+                    || attr_content.contains('}')
+                    || attr_content.contains('\\')
+                {
+                    let lang = info.split_whitespace().next().unwrap_or("");
+                    return (unescape(lang, self.tree.is_in_table()), None);
+                }
+                let attrs = parse_inside_attribute_block(attr_content);
+                return ("".into(), attrs);
+            }
+        }
+
+        // Check if info string ends with `}` - could have trailing attributes
+        if bytes[bytes.len() - 1] == b'}' {
+            // Find the opening brace for the attribute block
+            // We need to find the last `{` that forms a valid attribute block
+            if let Some(open_pos) = info.rfind('{') {
+                let before_brace = &info[..open_pos];
+                let attr_content = &info[open_pos + 1..info.len() - 1];
+
+                // The part before the brace should end with whitespace for it to be
+                // a separate attribute block
+                if before_brace.is_empty() || before_brace.ends_with(char::is_whitespace) {
+                    // Check that attribute block doesn't contain invalid characters
+                    if !attr_content.contains('<')
+                        && !attr_content.contains('>')
+                        && !attr_content.contains('{')
+                        && !attr_content.contains('}')
+                        && !attr_content.contains('\\')
+                    {
+                        let lang = before_brace.split_whitespace().next().unwrap_or("");
+                        let attrs = parse_inside_attribute_block(attr_content);
+                        return (unescape(lang, self.tree.is_in_table()), attrs);
+                    }
+                }
+            }
+        }
+
+        // No valid attribute block found, just extract the language (first word)
+        let lang = info.split_whitespace().next().unwrap_or("");
+        (unescape(lang, self.tree.is_in_table()), None)
     }
 
     fn parse_metadata_block(&mut self, start_ix: usize, metadata_block_ch: u8) -> usize {
@@ -1738,8 +1822,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let header_node_idx = self.tree.push(); // so that we can set the endpoint later
 
         // trim the trailing attribute block before parsing the entire line, if necessary
-        let (end, content_end, attrs) = if self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES)
-        {
+        let (end, content_end, attrs) = if self.options.contains(Options::ENABLE_ATTRIBUTES) {
             // the start of the next line is the end of the header since the
             // header cannot have line breaks
             let header_end = header_start + scan_nextline(&bytes[header_start..]);
@@ -2180,8 +2263,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         header_start: usize,
         header_end: usize,
-    ) -> (usize, Option<HeadingAttributes<'a>>) {
-        if !self.options.contains(Options::ENABLE_HEADING_ATTRIBUTES) {
+    ) -> (usize, Option<Attributes<'a>>) {
+        if !self.options.contains(Options::ENABLE_ATTRIBUTES) {
             return (header_end, None);
         }
 
@@ -2684,35 +2767,197 @@ fn extract_attribute_block_content_from_header_text(
 /// * to follow the major design of implementations with the support for the
 ///   attribute blocks extension (as of this writing).
 ///
-/// See also: [`Options::ENABLE_HEADING_ATTRIBUTES`].
+/// See also: [`Options::ENABLE_ATTRIBUTES`].
 ///
-/// [`Options::ENABLE_HEADING_ATTRIBUTES`]: `crate::Options::ENABLE_HEADING_ATTRIBUTES`
-fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttributes<'_>> {
+/// [`Options::ENABLE_ATTRIBUTES`]: `crate::Options::ENABLE_ATTRIBUTES`
+pub(crate) fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<Attributes<'_>> {
     let mut id = None;
     let mut classes = Vec::new();
     let mut attrs = Vec::new();
 
-    for attr in inside_attr_block.split_ascii_whitespace() {
-        // iterator returned by `str::split_ascii_whitespace` never emits empty
-        // strings, so taking first byte won't panic.
-        if attr.len() > 1 {
-            let first_byte = attr.as_bytes()[0];
-            if first_byte == b'#' {
-                id = Some(attr[1..].into());
-            } else if first_byte == b'.' {
-                classes.push(attr[1..].into());
-            } else {
-                let split = attr.split_once('=');
-                if let Some((key, value)) = split {
-                    attrs.push((key.into(), Some(value.into())));
+    let mut chars = inside_attr_block.char_indices().peekable();
+
+    while let Some((start, c)) = chars.next() {
+        // Skip whitespace
+        if c.is_ascii_whitespace() {
+            continue;
+        }
+
+        match c {
+            '#' => {
+                // ID attribute: #identifier
+                let id_start = start + 1;
+                let mut id_end = id_start;
+                while let Some(&(pos, ch)) = chars.peek() {
+                    if ch.is_ascii_whitespace() {
+                        break;
+                    }
+                    id_end = pos + ch.len_utf8();
+                    chars.next();
+                }
+                if id_end > id_start {
+                    id = Some(inside_attr_block[id_start..id_end].into());
+                }
+            }
+            '.' => {
+                // Class attribute: .classname
+                let class_start = start + 1;
+                let mut class_end = class_start;
+                while let Some(&(pos, ch)) = chars.peek() {
+                    if ch.is_ascii_whitespace() {
+                        break;
+                    }
+                    class_end = pos + ch.len_utf8();
+                    chars.next();
+                }
+                if class_end > class_start {
+                    classes.push(inside_attr_block[class_start..class_end].into());
+                }
+            }
+            _ => {
+                // Key-value attribute: key=value or key="quoted value" or just key
+                let key_start = start;
+                let mut key_end = start + c.len_utf8();
+
+                // Scan the key
+                while let Some(&(pos, ch)) = chars.peek() {
+                    if ch == '=' || ch.is_ascii_whitespace() {
+                        break;
+                    }
+                    key_end = pos + ch.len_utf8();
+                    chars.next();
+                }
+
+                let key = &inside_attr_block[key_start..key_end];
+
+                // Check for '='
+                if let Some(&(_, '=')) = chars.peek() {
+                    chars.next(); // consume '='
+
+                    // Check for quoted or unquoted value
+                    if let Some(&(val_start, ch)) = chars.peek() {
+                        if ch.is_ascii_whitespace() {
+                            // Key with '=' followed by whitespace = empty value
+                            attrs.push((key.into(), Some("".into())));
+                        } else if ch == '"' {
+                            // Quoted value
+                            chars.next(); // consume opening quote
+                            let content_start = val_start + 1;
+                            let mut content_end = content_start;
+                            let mut value = String::new();
+                            let mut escaped = false;
+
+                            while let Some((pos, ch)) = chars.next() {
+                                if escaped {
+                                    value.push(ch);
+                                    escaped = false;
+                                } else if ch == '\\' {
+                                    escaped = true;
+                                } else if ch == '"' {
+                                    content_end = pos;
+                                    break;
+                                } else {
+                                    value.push(ch);
+                                }
+                            }
+
+                            if value.is_empty() && content_end > content_start {
+                                // No escapes, use slice directly
+                                attrs.push((
+                                    key.into(),
+                                    Some(inside_attr_block[content_start..content_end].into()),
+                                ));
+                            } else {
+                                attrs.push((key.into(), Some(value.into())));
+                            }
+                        } else {
+                            // Unquoted value
+                            let mut val_end = val_start + ch.len_utf8();
+                            chars.next(); // consume first char of value
+                            while let Some(&(pos, ch)) = chars.peek() {
+                                if ch.is_ascii_whitespace() {
+                                    break;
+                                }
+                                val_end = pos + ch.len_utf8();
+                                chars.next();
+                            }
+                            attrs.push((
+                                key.into(),
+                                Some(inside_attr_block[val_start..val_end].into()),
+                            ));
+                        }
+                    } else {
+                        // Key with '=' at end of string = empty value
+                        attrs.push((key.into(), Some("".into())));
+                    }
                 } else {
-                    attrs.push((attr.into(), None));
+                    // Key without value
+                    attrs.push((key.into(), None));
                 }
             }
         }
     }
 
-    Some(HeadingAttributes { id, classes, attrs })
+    Some(Attributes { id, classes, attrs })
+}
+
+/// Scan for an inline attribute block starting at the given position.
+/// Returns the parsed attributes and the byte index after the closing `}`.
+/// Returns None if no valid attribute block is found at the position.
+pub(crate) fn scan_inline_attribute_block(
+    text: &str,
+    start: usize,
+) -> Option<(Attributes<'_>, usize)> {
+    let bytes = text.as_bytes();
+
+    // Must start with '{'
+    if bytes.get(start) != Some(&b'{') {
+        return None;
+    }
+
+    let mut ix = start + 1;
+    let mut depth = 1;
+
+    // Find the matching closing brace, checking for invalid characters
+    while ix < bytes.len() && depth > 0 {
+        match bytes[ix] {
+            b'{' => {
+                // Nested braces not allowed
+                return None;
+            }
+            b'}' => {
+                depth -= 1;
+            }
+            b'<' | b'>' | b'\\' => {
+                // These characters make the attribute block invalid
+                return None;
+            }
+            b'"' => {
+                // Skip quoted content
+                ix += 1;
+                while ix < bytes.len() {
+                    match bytes[ix] {
+                        b'"' => break,
+                        b'\\' if ix + 1 < bytes.len() => ix += 1, // skip escaped char
+                        _ => {}
+                    }
+                    ix += 1;
+                }
+            }
+            _ => {}
+        }
+        ix += 1;
+    }
+
+    if depth != 0 {
+        return None;
+    }
+
+    // Parse the content inside the braces
+    let content = &text[(start + 1)..(ix - 1)];
+    let attrs = parse_inside_attribute_block(content)?;
+
+    Some((attrs, ix))
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "simd"))]

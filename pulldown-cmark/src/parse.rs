@@ -35,13 +35,13 @@ use hashbrown::HashMap;
 use unicase::UniCase;
 
 use crate::{
-    firstpass::run_first_pass,
+    firstpass::{run_first_pass, scan_inline_attribute_block},
     linklabel::{scan_link_label_rest, FootnoteLabel, LinkLabel, ReferenceLabel},
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
-    MetadataBlockKind, Options, Tag, TagEnd,
+    Alignment, Attributes, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel,
+    LinkType, MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -110,7 +110,7 @@ pub(crate) enum ItemBody {
     TightParagraph,
     Rule,
     Heading(HeadingLevel, Option<HeadingIndex>), // heading level
-    FencedCodeBlock(CowIndex),
+    FencedCodeBlock(CowIndex, Option<AttributesIndex>), // info string, optional attributes
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
@@ -455,7 +455,21 @@ impl<'input> ParserInner<'input> {
                     };
 
                     if let Some((ix, uri, link_type)) = autolink {
-                        let node = scan_nodes_to_ix(&self.tree, next, ix);
+                        // Check for inline attributes immediately after the autolink
+                        let (final_ix, attrs) = if self.options.contains(Options::ENABLE_ATTRIBUTES)
+                        {
+                            if let Some((attrs, attr_end)) =
+                                scan_inline_attribute_block(block_text, ix)
+                            {
+                                (attr_end, Some(attrs))
+                            } else {
+                                (ix, None)
+                            }
+                        } else {
+                            (ix, None)
+                        };
+
+                        let node = scan_nodes_to_ix(&self.tree, next, final_ix);
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
                             end: ix - 1,
@@ -463,17 +477,22 @@ impl<'input> ParserInner<'input> {
                                 backslash_escaped: false,
                             },
                         });
-                        let link_ix =
-                            self.allocs
-                                .allocate_link(link_type, uri, "".into(), "".into());
+                        let link_ix = self.allocs.allocate_link_with_attrs(
+                            link_type,
+                            uri,
+                            "".into(),
+                            "".into(),
+                            attrs,
+                        );
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
-                        self.tree[cur_ix].item.end = ix;
+                        self.tree[cur_ix].item.end = final_ix;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = Some(text_node);
                         prev = cur;
                         cur = node;
                         if let Some(node_ix) = cur {
-                            self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
+                            self.tree[node_ix].item.start =
+                                max(self.tree[node_ix].item.start, final_ix);
                         }
                         continue;
                     } else {
@@ -715,15 +734,33 @@ impl<'input> ParserInner<'input> {
                         if let Some((next_ix, url, title)) =
                             self.scan_inline_link(block_text, self.tree[cur_ix].item.end, next)
                         {
-                            let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
+                            // Check for inline attributes immediately after the link
+                            let (final_ix, attrs) =
+                                if self.options.contains(Options::ENABLE_ATTRIBUTES) {
+                                    if let Some((attrs, attr_end)) =
+                                        scan_inline_attribute_block(block_text, next_ix)
+                                    {
+                                        (attr_end, Some(attrs))
+                                    } else {
+                                        (next_ix, None)
+                                    }
+                                } else {
+                                    (next_ix, None)
+                                };
+
+                            let next_node = scan_nodes_to_ix(&self.tree, next, final_ix);
                             if let Some(prev_ix) = prev {
                                 self.tree[prev_ix].next = None;
                             }
                             cur = Some(tos.node);
                             cur_ix = tos.node;
-                            let link_ix =
-                                self.allocs
-                                    .allocate_link(LinkType::Inline, url, title, "".into());
+                            let link_ix = self.allocs.allocate_link_with_attrs(
+                                LinkType::Inline,
+                                url,
+                                title,
+                                "".into(),
+                                attrs,
+                            );
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -731,10 +768,10 @@ impl<'input> ParserInner<'input> {
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
-                            self.tree[cur_ix].item.end = next_ix;
+                            self.tree[cur_ix].item.end = final_ix;
                             if let Some(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start =
-                                    max(self.tree[next_node_ix].item.start, next_ix);
+                                    max(self.tree[next_node_ix].item.start, final_ix);
                             }
 
                             if tos.ty == LinkStackTy::Link {
@@ -866,8 +903,35 @@ impl<'input> ParserInner<'input> {
                                         callbacks,
                                     )
                                 {
-                                    let link_ix =
-                                        self.allocs.allocate_link(def_link_type, url, title, id);
+                                    // For collapsed links [foo][], the actual end is after []
+                                    // For shortcut links [foo], the end is correct
+                                    // For reference links [foo][bar], end_ix from RefScan::LinkLabel is used
+                                    let source_end = match link_type {
+                                        LinkType::Collapsed => end + 2, // add [] length
+                                        _ => end,
+                                    };
+
+                                    // Check for inline attributes immediately after the reference
+                                    let (final_end, attrs) =
+                                        if self.options.contains(Options::ENABLE_ATTRIBUTES) {
+                                            if let Some((attrs, attr_end)) =
+                                                scan_inline_attribute_block(block_text, source_end)
+                                            {
+                                                (attr_end, Some(attrs))
+                                            } else {
+                                                (source_end, None)
+                                            }
+                                        } else {
+                                            (source_end, None)
+                                        };
+
+                                    let link_ix = self.allocs.allocate_link_with_attrs(
+                                        def_link_type,
+                                        url,
+                                        title,
+                                        id,
+                                        attrs,
+                                    );
                                     self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
                                     {
                                         ItemBody::Image(link_ix)
@@ -876,9 +940,16 @@ impl<'input> ParserInner<'input> {
                                     };
                                     let label_node = self.tree[tos.node].next;
 
+                                    // Recalculate node_after_link if we consumed attributes
+                                    let final_node_after_link = if final_end != end {
+                                        scan_nodes_to_ix(&self.tree, node_after_link, final_end)
+                                    } else {
+                                        node_after_link
+                                    };
+
                                     // lets do some tree surgery to add the link to the tree
                                     // 1st: skip the label node and close node
-                                    self.tree[tos.node].next = node_after_link;
+                                    self.tree[tos.node].next = final_node_after_link;
 
                                     // then, if it exists, add the label node as a child to the link node
                                     if label_node != cur {
@@ -890,9 +961,9 @@ impl<'input> ParserInner<'input> {
                                         }
                                     }
 
-                                    self.tree[tos.node].item.end = end;
+                                    self.tree[tos.node].item.end = final_end;
 
-                                    // set up cur so next node will be node_after_link
+                                    // set up cur so next node will be final_node_after_link
                                     cur = Some(tos.node);
                                     cur_ix = tos.node;
 
@@ -2001,24 +2072,25 @@ pub(crate) struct CowIndex(usize);
 pub(crate) struct AlignmentIndex(usize);
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct HeadingIndex(NonZeroUsize);
+pub(crate) struct AttributesIndex(NonZeroUsize);
+
+/// Deprecated alias for AttributesIndex
+pub(crate) type HeadingIndex = AttributesIndex;
 
 #[derive(Clone)]
 pub(crate) struct Allocations<'a> {
     pub refdefs: RefDefs<'a>,
     pub footdefs: FootnoteDefs<'a>,
-    links: Vec<(LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>)>,
+    links: Vec<(
+        LinkType,
+        CowStr<'a>,
+        CowStr<'a>,
+        CowStr<'a>,
+        Option<Attributes<'a>>,
+    )>,
     cows: Vec<CowStr<'a>>,
     alignments: Vec<Vec<Alignment>>,
-    headings: Vec<HeadingAttributes<'a>>,
-}
-
-/// Used by the heading attributes extension.
-#[derive(Clone)]
-pub(crate) struct HeadingAttributes<'a> {
-    pub id: Option<CowStr<'a>>,
-    pub classes: Vec<CowStr<'a>>,
-    pub attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
+    attributes: Vec<Attributes<'a>>,
 }
 
 /// Keeps track of the reference definitions defined in the document.
@@ -2066,7 +2138,7 @@ impl<'a> Allocations<'a> {
             links: Vec::with_capacity(128),
             cows: Vec::new(),
             alignments: Vec::new(),
-            headings: Vec::new(),
+            attributes: Vec::new(),
         }
     }
 
@@ -2084,7 +2156,20 @@ impl<'a> Allocations<'a> {
         id: CowStr<'a>,
     ) -> LinkIndex {
         let ix = self.links.len();
-        self.links.push((ty, url, title, id));
+        self.links.push((ty, url, title, id, None));
+        LinkIndex(ix)
+    }
+
+    pub fn allocate_link_with_attrs(
+        &mut self,
+        ty: LinkType,
+        url: CowStr<'a>,
+        title: CowStr<'a>,
+        id: CowStr<'a>,
+        attrs: Option<Attributes<'a>>,
+    ) -> LinkIndex {
+        let ix = self.links.len();
+        self.links.push((ty, url, title, id, attrs));
         LinkIndex(ix)
     }
 
@@ -2094,21 +2179,41 @@ impl<'a> Allocations<'a> {
         AlignmentIndex(ix)
     }
 
-    pub fn allocate_heading(&mut self, attrs: HeadingAttributes<'a>) -> HeadingIndex {
-        let ix = self.headings.len();
-        self.headings.push(attrs);
-        // This won't panic. `self.headings.len()` can't be `usize::MAX` since
+    pub fn allocate_attributes(&mut self, attrs: Attributes<'a>) -> AttributesIndex {
+        let ix = self.attributes.len();
+        self.attributes.push(attrs);
+        // This won't panic. `self.attributes.len()` can't be `usize::MAX` since
         // such a long Vec cannot fit in memory.
-        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many headings");
-        HeadingIndex(ix_nonzero)
+        let ix_nonzero = NonZeroUsize::new(ix.wrapping_add(1)).expect("too many attributes");
+        AttributesIndex(ix_nonzero)
+    }
+
+    /// Deprecated alias for allocate_attributes
+    pub fn allocate_heading(&mut self, attrs: Attributes<'a>) -> AttributesIndex {
+        self.allocate_attributes(attrs)
     }
 
     pub fn take_cow(&mut self, ix: CowIndex) -> CowStr<'a> {
         core::mem::replace(&mut self.cows[ix.0], "".into())
     }
 
-    pub fn take_link(&mut self, ix: LinkIndex) -> (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>) {
-        let default_link = (LinkType::ShortcutUnknown, "".into(), "".into(), "".into());
+    pub fn take_link(
+        &mut self,
+        ix: LinkIndex,
+    ) -> (
+        LinkType,
+        CowStr<'a>,
+        CowStr<'a>,
+        CowStr<'a>,
+        Option<Attributes<'a>>,
+    ) {
+        let default_link = (
+            LinkType::ShortcutUnknown,
+            "".into(),
+            "".into(),
+            "".into(),
+            None,
+        );
         core::mem::replace(&mut self.links[ix.0], default_link)
     }
 
@@ -2126,7 +2231,13 @@ impl<'a> Index<CowIndex> for Allocations<'a> {
 }
 
 impl<'a> Index<LinkIndex> for Allocations<'a> {
-    type Output = (LinkType, CowStr<'a>, CowStr<'a>, CowStr<'a>);
+    type Output = (
+        LinkType,
+        CowStr<'a>,
+        CowStr<'a>,
+        CowStr<'a>,
+        Option<Attributes<'a>>,
+    );
 
     fn index(&self, ix: LinkIndex) -> &Self::Output {
         self.links.index(ix.0)
@@ -2141,11 +2252,11 @@ impl<'a> Index<AlignmentIndex> for Allocations<'a> {
     }
 }
 
-impl<'a> Index<HeadingIndex> for Allocations<'a> {
-    type Output = HeadingAttributes<'a>;
+impl<'a> Index<AttributesIndex> for Allocations<'a> {
+    type Output = Attributes<'a>;
 
-    fn index(&self, ix: HeadingIndex) -> &Self::Output {
-        self.headings.index(ix.0.get() - 1)
+    fn index(&self, ix: AttributesIndex) -> &Self::Output {
+        &self.attributes[ix.0.get() - 1]
     }
 }
 
@@ -2362,25 +2473,27 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
         ItemBody::Link(link_ix) => {
-            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            let (link_type, dest_url, title, id, attrs) = allocs.take_link(link_ix);
             Tag::Link {
                 link_type,
                 dest_url,
                 title,
                 id,
+                attrs,
             }
         }
         ItemBody::Image(link_ix) => {
-            let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
+            let (link_type, dest_url, title, id, attrs) = allocs.take_link(link_ix);
             Tag::Image {
                 link_type,
                 dest_url,
                 title,
                 id,
+                attrs,
             }
         }
-        ItemBody::Heading(level, Some(heading_ix)) => {
-            let HeadingAttributes { id, classes, attrs } = allocs.index(heading_ix);
+        ItemBody::Heading(level, Some(attrs_ix)) => {
+            let Attributes { id, classes, attrs } = allocs.index(attrs_ix);
             Tag::Heading {
                 level,
                 id: id.clone(),
@@ -2394,8 +2507,15 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             classes: Vec::new(),
             attrs: Vec::new(),
         },
-        ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
+        ItemBody::FencedCodeBlock(cow_ix, None) => {
+            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix), None))
+        }
+        ItemBody::FencedCodeBlock(cow_ix, Some(attrs_ix)) => {
+            let Attributes { id, classes, attrs } = allocs.index(attrs_ix).clone();
+            Tag::CodeBlock(CodeBlockKind::Fenced(
+                allocs.take_cow(cow_ix),
+                Some(Attributes { id, classes, attrs }),
+            ))
         }
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::Container(_, kind, cow_ix) => Tag::ContainerBlock(kind, allocs.take_cow(cow_ix)),
@@ -2455,14 +2575,14 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = core::mem::size_of::<Node<Item>>();
-        assert_eq!(48, node_size);
+        assert_eq!(56, node_size);
     }
 
     #[test]
     #[cfg(target_pointer_width = "64")]
     fn body_size() {
         let body_size = core::mem::size_of::<ItemBody>();
-        assert_eq!(16, body_size);
+        assert_eq!(24, body_size);
     }
 
     #[test]
@@ -2784,6 +2904,7 @@ mod test {
                     dest_url,
                     title,
                     id,
+                    ..
                 } => Some((link_type, dest_url, title, id)),
                 _ => None,
             },
@@ -2804,7 +2925,7 @@ mod test {
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
             match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) => {
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax, _))) => {
                     assert_eq!(syntax.as_ref(), "test");
                     found += 1;
                 }
@@ -2916,6 +3037,7 @@ text
                 dest_url: CowStr::Borrowed("foo"),
                 title: CowStr::Borrowed(""),
                 id: CowStr::Borrowed(""),
+                attrs: None,
             }),
             Event::Text(CowStr::Borrowed("foo")),
             Event::End(TagEnd::Link),
@@ -2925,6 +3047,7 @@ text
                 dest_url: CowStr::Borrowed("bar"),
                 title: CowStr::Borrowed(""),
                 id: CowStr::Borrowed(""),
+                attrs: None,
             }),
             Event::Text(CowStr::Borrowed("baz")),
             Event::End(TagEnd::Link),

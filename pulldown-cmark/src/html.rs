@@ -266,15 +266,45 @@ where
                     self.write_newline()?;
                 }
                 match info {
-                    CodeBlockKind::Fenced(info) => {
-                        let lang = info.split(' ').next().unwrap();
-                        if lang.is_empty() {
-                            self.write("<pre><code>")
-                        } else {
-                            self.write("<pre><code class=\"language-")?;
-                            escape_html(&mut self.writer, lang)?;
-                            self.write("\">")
+                    CodeBlockKind::Fenced(info, attrs) => {
+                        self.write("<pre")?;
+                        // Write attributes on the <pre> tag
+                        if let Some(attrs) = attrs {
+                            if let Some(id) = &attrs.id {
+                                self.write(" id=\"")?;
+                                escape_html(&mut self.writer, id)?;
+                                self.write("\"")?;
+                            }
+                            let mut classes_iter = attrs.classes.iter();
+                            if let Some(class) = classes_iter.next() {
+                                self.write(" class=\"")?;
+                                escape_html(&mut self.writer, class)?;
+                                for class in classes_iter {
+                                    self.write(" ")?;
+                                    escape_html(&mut self.writer, class)?;
+                                }
+                                self.write("\"")?;
+                            }
+                            for (attr, value) in &attrs.attrs {
+                                self.write(" ")?;
+                                escape_html(&mut self.writer, attr)?;
+                                if let Some(val) = value {
+                                    self.write("=\"")?;
+                                    escape_html(&mut self.writer, val)?;
+                                    self.write("\"")?;
+                                } else {
+                                    self.write("=\"\"")?;
+                                }
+                            }
                         }
+                        self.write("><code")?;
+                        let lang = info.split(' ').next().unwrap();
+                        if !lang.is_empty() {
+                            self.write(" class=\"language-")?;
+                            escape_html(&mut self.writer, lang)?;
+                            self.write("\"")?;
+                        }
+                        self.write(">")
                     }
                     CodeBlockKind::Indented => self.write("<pre><code>"),
                 }
@@ -360,8 +390,38 @@ where
                 dest_url,
                 title,
                 id: _,
+                attrs,
             } => {
-                self.write("<a href=\"mailto:")?;
+                self.write("<a")?;
+                if let Some(ref attrs) = attrs {
+                    if let Some(ref id) = attrs.id {
+                        self.write(" id=\"")?;
+                        escape_html(&mut self.writer, id)?;
+                        self.write("\"")?;
+                    }
+                    let mut classes_iter = attrs.classes.iter();
+                    if let Some(class) = classes_iter.next() {
+                        self.write(" class=\"")?;
+                        escape_html(&mut self.writer, class)?;
+                        for class in classes_iter {
+                            self.write(" ")?;
+                            escape_html(&mut self.writer, class)?;
+                        }
+                        self.write("\"")?;
+                    }
+                    for (attr, value) in &attrs.attrs {
+                        self.write(" ")?;
+                        escape_html(&mut self.writer, attr)?;
+                        if let Some(val) = value {
+                            self.write("=\"")?;
+                            escape_html(&mut self.writer, val)?;
+                            self.write("\"")?;
+                        } else {
+                            self.write("=\"\"")?;
+                        }
+                    }
+                }
+                self.write(" href=\"mailto:")?;
                 escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
@@ -374,8 +434,38 @@ where
                 dest_url,
                 title,
                 id: _,
+                attrs,
             } => {
-                self.write("<a href=\"")?;
+                self.write("<a")?;
+                if let Some(ref attrs) = attrs {
+                    if let Some(ref id) = attrs.id {
+                        self.write(" id=\"")?;
+                        escape_html(&mut self.writer, id)?;
+                        self.write("\"")?;
+                    }
+                    let mut classes_iter = attrs.classes.iter();
+                    if let Some(class) = classes_iter.next() {
+                        self.write(" class=\"")?;
+                        escape_html(&mut self.writer, class)?;
+                        for class in classes_iter {
+                            self.write(" ")?;
+                            escape_html(&mut self.writer, class)?;
+                        }
+                        self.write("\"")?;
+                    }
+                    for (attr, value) in &attrs.attrs {
+                        self.write(" ")?;
+                        escape_html(&mut self.writer, attr)?;
+                        if let Some(val) = value {
+                            self.write("=\"")?;
+                            escape_html(&mut self.writer, val)?;
+                            self.write("\"")?;
+                        } else {
+                            self.write("=\"\"")?;
+                        }
+                    }
+                }
+                self.write(" href=\"")?;
                 escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
@@ -388,8 +478,38 @@ where
                 dest_url,
                 title,
                 id: _,
+                attrs,
             } => {
-                self.write("<img src=\"")?;
+                self.write("<img")?;
+                if let Some(ref attrs) = attrs {
+                    if let Some(ref id) = attrs.id {
+                        self.write(" id=\"")?;
+                        escape_html(&mut self.writer, id)?;
+                        self.write("\"")?;
+                    }
+                    let mut classes_iter = attrs.classes.iter();
+                    if let Some(class) = classes_iter.next() {
+                        self.write(" class=\"")?;
+                        escape_html(&mut self.writer, class)?;
+                        for class in classes_iter {
+                            self.write(" ")?;
+                            escape_html(&mut self.writer, class)?;
+                        }
+                        self.write("\"")?;
+                    }
+                    for (attr, value) in &attrs.attrs {
+                        self.write(" ")?;
+                        escape_html(&mut self.writer, attr)?;
+                        if let Some(val) = value {
+                            self.write("=\"")?;
+                            escape_html(&mut self.writer, val)?;
+                            self.write("\"")?;
+                        } else {
+                            self.write("=\"\"")?;
+                        }
+                    }
+                }
+                self.write(" src=\"")?;
                 escape_href(&mut self.writer, &dest_url)?;
                 self.write("\" alt=\"")?;
                 self.raw_text()?;

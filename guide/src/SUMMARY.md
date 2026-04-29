@@ -2,6 +2,7 @@
 
 [Guide](index.md)
 - [Cheat sheet](cheat-sheet.md)
+- [Demo](demo.md)
 - [Developer guide](dev/index.md)
   - [Block Structure Parsing](dev/block-parsing.md) 
   - [Inline Processing](dev/inline-processing.md)

@@ -36,6 +36,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         last_line_blank: false,
         allocs: Allocations::new(),
         options,
+        cjk_friendly_emphasis: options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS),
         lookup_table,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
@@ -62,6 +63,7 @@ struct FirstPass<'a, 'b> {
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
+    cjk_friendly_emphasis: bool,
     lookup_table: &'b LookupTable,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
@@ -1046,6 +1048,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -1054,6 +1057,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
@@ -1297,6 +1301,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -1305,6 +1310,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2381,6 +2387,7 @@ fn delim_run_can_open(
     ix: usize,
     mode: TableParseMode,
     options: Options,
+    cjk_friendly_emphasis: bool,
 ) -> bool {
     let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
@@ -2391,8 +2398,6 @@ fn delim_run_can_open(
         return false;
     }
     let delim = suffix.bytes().next().unwrap();
-    let cjk_friendly =
-        matches!(delim, b'*' | b'_') && options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     // `^` with punctuation content (e.g. `^+^`) requires a preceding alphanumeric
     // or delimiter character (e.g. `H^+^`, `NH~4~^+^`). At start of line (ix == 0)
     // there is no preceding character, so `^` cannot open with punctuation content.
@@ -2423,7 +2428,7 @@ fn delim_run_can_open(
             return false;
         }
     }
-    if cjk_friendly {
+    if cjk_friendly_emphasis && matches!(delim, b'*' | b'_') {
         return cjk_friendly_delim_run_can_open(s, ix, next_char, delim);
     }
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
@@ -2459,6 +2464,7 @@ fn delim_run_can_close(
     ix: usize,
     mode: TableParseMode,
     options: Options,
+    cjk_friendly_emphasis: bool,
 ) -> bool {
     if ix == 0 {
         return false;
@@ -2481,9 +2487,7 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    let cjk_friendly =
-        matches!(delim, b'*' | b'_') && options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
-    if cjk_friendly {
+    if cjk_friendly_emphasis && matches!(delim, b'*' | b'_') {
         let mut previous_chars = s[..ix].chars().rev();
         let _ = previous_chars.next();
         return cjk_friendly_delim_run_can_close(

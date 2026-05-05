@@ -8,8 +8,8 @@ use unicase::UniCase;
 
 use crate::{
     cjk::{
-        is_cjk_character, is_ideographic_variation_selector, is_non_cjk_punctuation_character,
-        is_non_emoji_general_variation_selector,
+        classify_preceding_cjk_friendly_sequence, is_cjk_character,
+        is_non_cjk_punctuation_character, CjkFriendlySequenceKind,
     },
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
@@ -2376,21 +2376,6 @@ fn previous_two_chars(prefix: &str) -> (Option<char>, Option<char>) {
     (prev, prev_prev)
 }
 
-fn base_char_for_sequence(prev: Option<char>, prev_prev: Option<char>) -> Option<char> {
-    match prev {
-        Some(ch) if is_non_emoji_general_variation_selector(ch) => prev_prev,
-        other => other,
-    }
-}
-
-fn is_prev_cjk_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
-    base_char_for_sequence(prev, prev_prev).map_or(false, is_cjk_character)
-}
-
-fn is_prev_non_cjk_punctuation_sequence(prev: Option<char>, prev_prev: Option<char>) -> bool {
-    base_char_for_sequence(prev, prev_prev).map_or(false, is_non_cjk_punctuation_character)
-}
-
 /// Determines whether the delimiter run starting at given index is
 /// left-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims).
@@ -2472,19 +2457,24 @@ fn delim_run_can_open(
         return true;
     }
 
-    let prev_non_cjk_seq = if cjk_friendly {
-        is_prev_non_cjk_punctuation_sequence(prev_char_opt, prev_prev_char)
-    } else {
-        is_punctuation(prev_char)
-    };
-    let prev_cjk_seq = cjk_friendly && is_prev_cjk_sequence(prev_char_opt, prev_prev_char);
-    let prev_is_ivs = cjk_friendly && is_ideographic_variation_selector(prev_char);
-    let prev_base_char = base_char_for_sequence(prev_char_opt, prev_prev_char);
-    let blocked_by_quote = matches!(prev_base_char, Some(']') | Some(')'));
+    let (prev_non_cjk_seq, prev_cjk_seq, prev_cjk_ambiguous_punct_seq, prev_is_ivs, prev_base_char) =
+        if cjk_friendly {
+            let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
+            (
+                prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation,
+                prev_sequence.kind == CjkFriendlySequenceKind::Cjk,
+                prev_sequence.kind == CjkFriendlySequenceKind::CjkAmbiguousPunctuation,
+                prev_sequence.kind == CjkFriendlySequenceKind::IdeographicVariationSelector,
+                prev_sequence.base_char,
+            )
+        } else {
+            (is_punctuation(prev_char), false, false, false, prev_char)
+        };
+    let blocked_by_quote = matches!(prev_base_char, ']' | ')');
 
     prev_char.is_whitespace()
         || (prev_non_cjk_seq && (delim != b'\'' || !blocked_by_quote))
-        || (cjk_friendly && (prev_cjk_seq || prev_is_ivs))
+        || (cjk_friendly && (prev_cjk_seq || prev_cjk_ambiguous_punct_seq || prev_is_ivs))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2525,7 +2515,8 @@ fn delim_run_can_close(
     let delim = suffix.bytes().next().unwrap();
     let cjk_friendly = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     let prev_non_cjk_seq = if cjk_friendly {
-        is_prev_non_cjk_punctuation_sequence(prev_char_opt, prev_prev_char)
+        let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
+        prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation
     } else {
         is_punctuation(prev_char)
     };

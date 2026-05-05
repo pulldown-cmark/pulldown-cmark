@@ -4,7 +4,7 @@ use crate::puncttable::is_punctuation;
 /// CommonMark CJK-friendly amendments specification.
 ///
 /// These ranges are based on Unicode version 17.
-/// The source is https://github.com/tats-u/markdown-cjk-friendly/blob/c91e073f40ace3ec2250c58dddcc2fee73fec37b/ranges.md.
+/// The source is https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/ranges.md.
 pub(crate) fn is_cjk_character(ch: char) -> bool {
     let cp = ch as u32;
     matches!(
@@ -79,6 +79,64 @@ pub(crate) fn is_cjk_punctuation_character(ch: char) -> bool {
 
 pub(crate) fn is_non_cjk_punctuation_character(ch: char) -> bool {
     is_punctuation(ch) && !is_cjk_character(ch)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CjkFriendlySequenceKind {
+    Cjk,
+    CjkAmbiguousPunctuation,
+    NonCjkPunctuation,
+    IdeographicVariationSelector,
+    Other,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct CjkFriendlySequence {
+    pub(crate) base_char: char,
+    pub(crate) kind: CjkFriendlySequenceKind,
+}
+
+pub(crate) fn classify_preceding_cjk_friendly_sequence(
+    prev: char,
+    prev_prev: Option<char>,
+) -> CjkFriendlySequence {
+    if is_non_emoji_general_variation_selector(prev) {
+        let Some(base_char) = prev_prev else {
+            return CjkFriendlySequence {
+                base_char: prev,
+                kind: CjkFriendlySequenceKind::Other,
+            };
+        };
+        let kind = if is_cjk_ambiguous_punctuation_sequence(base_char, prev) {
+            CjkFriendlySequenceKind::CjkAmbiguousPunctuation
+        } else if is_cjk_character(base_char) {
+            CjkFriendlySequenceKind::Cjk
+        } else if is_non_cjk_punctuation_character(base_char) {
+            CjkFriendlySequenceKind::NonCjkPunctuation
+        } else {
+            CjkFriendlySequenceKind::Other
+        };
+        return CjkFriendlySequence { base_char, kind };
+    }
+
+    let kind = if is_ideographic_variation_selector(prev) {
+        CjkFriendlySequenceKind::IdeographicVariationSelector
+    } else if is_cjk_character(prev) {
+        CjkFriendlySequenceKind::Cjk
+    } else if is_non_cjk_punctuation_character(prev) {
+        CjkFriendlySequenceKind::NonCjkPunctuation
+    } else {
+        CjkFriendlySequenceKind::Other
+    };
+
+    CjkFriendlySequence {
+        base_char: prev,
+        kind,
+    }
+}
+
+pub(crate) fn is_cjk_ambiguous_punctuation_sequence(ch: char, vs: char) -> bool {
+    vs as u32 == 0xFE01 && matches!(ch as u32, 0x2018 | 0x2019 | 0x201C | 0x201D)
 }
 
 pub(crate) fn is_non_emoji_general_variation_selector(ch: char) -> bool {

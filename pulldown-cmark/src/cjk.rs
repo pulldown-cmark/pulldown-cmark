@@ -92,8 +92,8 @@ pub(crate) enum CjkFriendlySequenceKind {
 
 #[derive(Clone, Copy)]
 pub(crate) struct CjkFriendlySequence {
-    pub(crate) base_char: char,
     pub(crate) kind: CjkFriendlySequenceKind,
+    pub(crate) is_punctuation: bool,
 }
 
 pub(crate) fn classify_preceding_cjk_friendly_sequence(
@@ -103,8 +103,8 @@ pub(crate) fn classify_preceding_cjk_friendly_sequence(
     if is_non_emoji_general_variation_selector(prev) {
         let Some(base_char) = prev_prev else {
             return CjkFriendlySequence {
-                base_char: prev,
                 kind: CjkFriendlySequenceKind::Other,
+                is_punctuation: false,
             };
         };
         let kind = if is_cjk_ambiguous_punctuation_sequence(base_char, prev) {
@@ -116,7 +116,10 @@ pub(crate) fn classify_preceding_cjk_friendly_sequence(
         } else {
             CjkFriendlySequenceKind::Other
         };
-        return CjkFriendlySequence { base_char, kind };
+        return CjkFriendlySequence {
+            kind,
+            is_punctuation: is_punctuation(base_char),
+        };
     }
 
     let kind = if is_ideographic_variation_selector(prev) {
@@ -130,8 +133,8 @@ pub(crate) fn classify_preceding_cjk_friendly_sequence(
     };
 
     CjkFriendlySequence {
-        base_char: prev,
         kind,
+        is_punctuation: is_punctuation(prev),
     }
 }
 

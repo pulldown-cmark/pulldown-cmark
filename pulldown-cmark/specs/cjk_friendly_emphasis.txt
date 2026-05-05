@@ -5,6 +5,17 @@ Run this with `cargo test --features gen-tests suite::cjk_friendly_emphasis`.
 Test cases are based on
 <https://github.com/tats-u/markdown-cjk-friendly/tree/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d>.
 
+The markdown-cjk-friendly project is licensed under the MIT License:
+Copyright (c) 2024 Tatsunori Uchino, and authors and contributors of original packages
+
+The CommonMark CJK-friendly Amendments Specification is licensed under the
+Creative Commons CC-BY-SA 4.0 license:
+Copyright (C) 2024 Tatsunori Uchino
+
+The CommonMark spec is released under the Creative Commons
+CC-BY-SA 4.0 license:
+Copyright (C) 2014-16 John MacFarlane
+
 Without the extension, pulldown-cmark should keep CommonMark-compatible
 emphasis behavior. This case is based on the first README problem example:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/README.md#L33>.

@@ -114,6 +114,11 @@ pub fn main() -> std::io::Result<()> {
         "enable-container-extensions",
         "enable container extensions",
     );
+    opts.optflag(
+        "",
+        "enable-cjk-friendly-emphasis",
+        "enable CJK-friendly emphasis",
+    );
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -172,6 +177,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-container-extensions") {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    }
+    if matches.opt_present("enable-cjk-friendly-emphasis") {
+        opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     }
 
     let mut input = String::new();

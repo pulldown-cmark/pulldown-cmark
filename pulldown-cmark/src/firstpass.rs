@@ -2369,13 +2369,6 @@ fn fixup_end_of_definition_list(tree: &mut Tree<Item>, list_ix: TreeIndex) {
     }
 }
 
-fn previous_two_chars(prefix: &str) -> (Option<char>, Option<char>) {
-    let mut iter = prefix.chars().rev();
-    let prev = iter.next();
-    let prev_prev = iter.next();
-    (prev, prev_prev)
-}
-
 /// Determines whether the delimiter run starting at given index is
 /// left-flanking, as defined by the commonmark spec (and isn't intraword
 /// for _ delims).
@@ -2445,8 +2438,8 @@ fn delim_run_can_open(
     if delim == b'~' && run_len > 1 {
         return true;
     }
-    let (prev_char_opt, prev_prev_char) = previous_two_chars(&s[..ix]);
-    let prev_char = match prev_char_opt {
+    let mut previous_chars = s[..ix].chars().rev();
+    let prev_char = match previous_chars.next() {
         Some(ch) => ch,
         None => return true,
     };
@@ -2459,6 +2452,7 @@ fn delim_run_can_open(
 
     let (prev_non_cjk_seq, prev_cjk_seq, prev_cjk_ambiguous_punct_seq, prev_is_ivs, prev_base_char) =
         if cjk_friendly {
+            let prev_prev_char = previous_chars.next();
             let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
             (
                 prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation,
@@ -2491,8 +2485,8 @@ fn delim_run_can_close(
     if ix == 0 {
         return false;
     }
-    let (prev_char_opt, prev_prev_char) = previous_two_chars(&s[..ix]);
-    let prev_char = match prev_char_opt {
+    let mut previous_chars = s[..ix].chars().rev();
+    let prev_char = match previous_chars.next() {
         Some(ch) => ch,
         None => return false,
     };
@@ -2515,6 +2509,7 @@ fn delim_run_can_close(
     let delim = suffix.bytes().next().unwrap();
     let cjk_friendly = options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     let prev_non_cjk_seq = if cjk_friendly {
+        let prev_prev_char = previous_chars.next();
         let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
         prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation
     } else {

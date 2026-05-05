@@ -400,3 +400,34 @@ fn cjk_friendly_emphasis_test_7() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
 }
+
+#[test]
+fn cjk_friendly_emphasis_test_8() {
+    let original = r##"foo_bar_
+
+_foo_bar
+
+_foo_bar_baz_
+"##;
+    let expected = r##"<p>foo_bar_</p>
+<p>_foo_bar</p>
+<p><em>foo_bar_baz</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn cjk_friendly_emphasis_test_9() {
+    let original = r##"あ**()**あ[^1]
+
+[^1]: ~~あ~~
+"##;
+    let expected = r##"<p>あ<strong>()</strong>あ<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p><del>あ</del></p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
+}

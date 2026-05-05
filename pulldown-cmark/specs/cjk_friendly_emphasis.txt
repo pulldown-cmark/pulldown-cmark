@@ -396,3 +396,36 @@ __注意__：注意事項
 <p>简体字 / 新字体。︀<strong>Mainland China or Japan.</strong></p>
 <p>“︁Git”︁<strong>Hub</strong></p>
 ````````````````````````````````
+
+CJK-friendly emphasis should keep CommonMark's underscore intraword behavior.
+These cases are based on CommonMark 0.31.2 examples 360, 374, and 376:
+<https://spec.commonmark.org/0.31.2/#example-360>
+<https://spec.commonmark.org/0.31.2/#example-374>
+<https://spec.commonmark.org/0.31.2/#example-376>.
+
+```````````````````````````````` example_cjk_friendly_emphasis
+foo_bar_
+
+_foo_bar
+
+_foo_bar_baz_
+.
+<p>foo_bar_</p>
+<p>_foo_bar</p>
+<p><em>foo_bar_baz</em></p>
+````````````````````````````````
+
+CJK-friendly emphasis should remain compatible with other enabled extensions.
+This case is based on the compatibility checks in the original micromark test:
+<https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/test/micromark.spec.ts#L121-L135>.
+
+```````````````````````````````` example_cjk_friendly_emphasis
+あ**()**あ[^1]
+
+[^1]: ~~あ~~
+.
+<p>あ<strong>()</strong>あ<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p><del>あ</del></p>
+</div>
+````````````````````````````````

@@ -415,6 +415,20 @@ _foo_bar_baz_
 <p><em>foo_bar_baz</em></p>
 ````````````````````````````````
 
+CJK-friendly emphasis should keep underscore intraword restrictions next to CJK
+characters. These cases are based on the amended flanking and underscore rules
+in the specification:
+<https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/specification.md#62-emphasis-and-strong-emphasis>.
+
+```````````````````````````````` example_cjk_friendly_emphasis
+漢_abc_
+
+_abc_漢
+.
+<p>漢_abc_</p>
+<p>_abc_漢</p>
+````````````````````````````````
+
 CJK-friendly emphasis should remain compatible with other enabled extensions.
 This case is based on the compatibility checks in the original micromark test:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/test/micromark.spec.ts#L121-L135>.

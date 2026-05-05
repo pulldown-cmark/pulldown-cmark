@@ -419,6 +419,19 @@ _foo_bar_baz_
 
 #[test]
 fn cjk_friendly_emphasis_test_9() {
+    let original = r##"漢_abc_
+
+_abc_漢
+"##;
+    let expected = r##"<p>漢_abc_</p>
+<p>_abc_漢</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn cjk_friendly_emphasis_test_10() {
     let original = r##"あ**()**あ[^1]
 
 [^1]: ~~あ~~

@@ -2450,25 +2450,22 @@ fn delim_run_can_open(
         return true;
     }
 
-    let (prev_non_cjk_seq, prev_cjk_seq, prev_cjk_ambiguous_punct_seq, prev_is_ivs, prev_base_char) =
-        if cjk_friendly {
+    prev_char.is_whitespace()
+        || if cjk_friendly {
             let prev_prev_char = previous_chars.next();
             let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
-            (
-                prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation,
-                prev_sequence.kind == CjkFriendlySequenceKind::Cjk,
-                prev_sequence.kind == CjkFriendlySequenceKind::CjkAmbiguousPunctuation,
-                prev_sequence.kind == CjkFriendlySequenceKind::IdeographicVariationSelector,
-                prev_sequence.base_char,
-            )
+            let blocked_by_quote = matches!(prev_sequence.base_char, ']' | ')');
+            (prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation
+                && (delim != b'\'' || !blocked_by_quote))
+                || matches!(
+                    prev_sequence.kind,
+                    CjkFriendlySequenceKind::Cjk
+                        | CjkFriendlySequenceKind::CjkAmbiguousPunctuation
+                        | CjkFriendlySequenceKind::IdeographicVariationSelector
+                )
         } else {
-            (is_punctuation(prev_char), false, false, false, prev_char)
-        };
-    let blocked_by_quote = matches!(prev_base_char, ']' | ')');
-
-    prev_char.is_whitespace()
-        || (prev_non_cjk_seq && (delim != b'\'' || !blocked_by_quote))
-        || (cjk_friendly && (prev_cjk_seq || prev_cjk_ambiguous_punct_seq || prev_is_ivs))
+            is_punctuation(prev_char) && (delim != b'\'' || !matches!(prev_char, ']' | ')'))
+        }
 }
 
 /// Determines whether the delimiter run starting at given index is

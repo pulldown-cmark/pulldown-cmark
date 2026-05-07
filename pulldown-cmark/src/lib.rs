@@ -278,6 +278,12 @@ pub enum Tag<'a> {
     /// ~strike through~
     /// ```
     Strikethrough,
+    /// Only parsed and emitted with [`Options::ENABLE_HIGHLIGHT`].
+    ///
+    /// ```markdown
+    /// ==highlighted==
+    /// ```
+    Highlight,
     /// Only parsed and emitted with [`Options::ENABLE_SUPERSCRIPT`].
     ///
     /// ```markdown
@@ -336,6 +342,7 @@ impl<'a> Tag<'a> {
             Tag::Emphasis => TagEnd::Emphasis,
             Tag::Strong => TagEnd::Strong,
             Tag::Strikethrough => TagEnd::Strikethrough,
+            Tag::Highlight => TagEnd::Highlight,
             Tag::Link { .. } => TagEnd::Link,
             Tag::Image { .. } => TagEnd::Image,
             Tag::MetadataBlock(kind) => TagEnd::MetadataBlock(*kind),
@@ -376,6 +383,7 @@ impl<'a> Tag<'a> {
             Tag::Emphasis => Tag::Emphasis,
             Tag::Strong => Tag::Strong,
             Tag::Strikethrough => Tag::Strikethrough,
+            Tag::Highlight => Tag::Highlight,
             Tag::Superscript => Tag::Superscript,
             Tag::Subscript => Tag::Subscript,
             Tag::Link {
@@ -438,6 +446,7 @@ pub enum TagEnd {
     Emphasis,
     Strong,
     Strikethrough,
+    Highlight,
     Superscript,
     Subscript,
 
@@ -768,6 +777,10 @@ bitflags::bitflags! {
         const ENABLE_WIKILINKS = 1 << 15;
         /// Colon-delimited Container Extension Blocks.
         const ENABLE_CONTAINER_EXTENSIONS = 1 << 16;
+        /// Allow highlighting text via `==highlight==` syntax, rendered as
+        /// `<mark>highlight</mark>`. Originates from markdown-it / pandoc; not part
+        /// of CommonMark or GFM.
+        const ENABLE_HIGHLIGHT = 1 << 17;
     }
 }
 

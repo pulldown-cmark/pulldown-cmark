@@ -321,7 +321,7 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'input> {
         &self.inner.allocs.refdefs
     }
 
@@ -2230,7 +2230,7 @@ pub struct OffsetIter<'a, CB> {
 
 impl<'a, CB: ParserCallbacks<'a>> OffsetIter<'a, CB> {
     /// Returns a reference to the internal reference definition tracker.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'a> {
         self.parser.reference_definitions()
     }
 }

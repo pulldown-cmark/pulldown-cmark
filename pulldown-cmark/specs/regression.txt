@@ -2836,3 +2836,21 @@ Link refdef split from paragraph with line with spaces.
 .
 <p>:</p>
 ````````````````````````````````
+
+<https://github.com/pulldown-cmark/pulldown-cmark/issues/1080>
+
+```````````````````````````````` example
+[link]\[id]
+
+[id]: https://en.wikipedia.org
+.
+<p>[link][id]</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[id]\[]
+
+[id]: https://en.wikipedia.org
+.
+<p><a href="https://en.wikipedia.org">id</a>[]</p>
+````````````````````````````````

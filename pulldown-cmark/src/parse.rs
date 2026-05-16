@@ -744,7 +744,7 @@ impl<'input> ParserInner<'input> {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
                             let scan_result =
-                                scan_reference(&self.tree, block_text, next, self.options);
+                                scan_reference(&self.tree, block_text, cur_ix, self.options);
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
@@ -1792,19 +1792,19 @@ fn scan_link_label<'text>(
 fn scan_reference<'b>(
     tree: &Tree<Item>,
     text: &'b str,
-    cur: Option<TreeIndex>,
+    cur_ix: TreeIndex,
     options: Options,
 ) -> RefScan<'b> {
-    let cur_ix = match cur {
-        None => return RefScan::Failed,
-        Some(cur_ix) => cur_ix,
-    };
-    let start = tree[cur_ix].item.start;
+    let start = tree[cur_ix].item.end;
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
+        let next_ix = match tree[cur_ix].next {
+            Some(next_ix) if tree[next_ix].item.start == tree[cur_ix].item.end => next_ix,
+            _ => return RefScan::Failed,
+        };
         // TODO: this unwrap is sus and should be looked at closer
-        let closing_node = tree[cur_ix].next.unwrap();
+        let closing_node = tree[next_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else {
         let label = scan_link_label(tree, &text[start..], options);

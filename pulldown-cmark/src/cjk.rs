@@ -98,10 +98,10 @@ pub(crate) struct CjkFriendlySequence {
 
 pub(crate) fn classify_preceding_cjk_friendly_sequence(
     prev: char,
-    prev_prev: Option<char>,
+    get_prev_prev: impl FnOnce() -> Option<char>,
 ) -> CjkFriendlySequence {
     if is_non_emoji_general_variation_selector(prev) {
-        let Some(base_char) = prev_prev else {
+        let Some(base_char) = get_prev_prev() else {
             return CjkFriendlySequence {
                 kind: CjkFriendlySequenceKind::Other,
                 is_punctuation: false,

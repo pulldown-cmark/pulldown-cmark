@@ -2488,11 +2488,13 @@ fn delim_run_can_close(
     }
     let delim = suffix.bytes().next().unwrap();
     if cjk_friendly_emphasis && matches!(delim, b'*' | b'_') {
-        let mut previous_chars = s[..ix].chars().rev();
-        let _ = previous_chars.next();
         return cjk_friendly_delim_run_can_close(
             prev_char,
-            previous_chars.next(),
+            || {
+                let mut previous_chars = s[..ix].chars().rev();
+                let _ = previous_chars.next();
+                previous_chars.next()
+            },
             next_char,
             delim,
         );
@@ -2522,17 +2524,17 @@ fn cjk_friendly_delim_run_can_open(s: &str, ix: usize, next_char: char, delim: u
     }
 
     let flanking =
-        cjk_friendly_delim_run_flanking(prev_char, previous_chars.next(), next_char, delim);
+        cjk_friendly_delim_run_flanking(prev_char, || previous_chars.next(), next_char, delim);
     flanking.can_open
 }
 
 fn cjk_friendly_delim_run_can_close(
     prev_char: char,
-    prev_prev_char: Option<char>,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
     next_char: char,
     delim: u8,
 ) -> bool {
-    cjk_friendly_delim_run_flanking(prev_char, prev_prev_char, next_char, delim).can_close
+    cjk_friendly_delim_run_flanking(prev_char, get_prev_prev_char, next_char, delim).can_close
 }
 
 struct CjkFriendlyDelimiterRunFlanking {
@@ -2542,11 +2544,11 @@ struct CjkFriendlyDelimiterRunFlanking {
 
 fn cjk_friendly_delim_run_flanking(
     prev_char: char,
-    prev_prev_char: Option<char>,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
     next_char: char,
     delim: u8,
 ) -> CjkFriendlyDelimiterRunFlanking {
-    let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, prev_prev_char);
+    let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
     let before_non_cjk_punctuation =
         prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation;
     let before_space_or_non_cjk_punctuation =

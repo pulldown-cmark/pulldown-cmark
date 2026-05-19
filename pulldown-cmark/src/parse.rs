@@ -2361,26 +2361,31 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
                 Some(Event::End(tag_end))
             }
             Some(cur_ix) => {
-                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
-                    // tight paragraphs emit nothing
-                    self.tree.push();
-                    self.tree.cur().unwrap()
-                } else {
-                    cur_ix
-                };
-                if self.tree[cur_ix].item.body.is_maybe_inline() {
-                    self.handle_inline();
-                }
+                let maybe_cur_ix =
+                    if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                        // tight paragraphs emit nothing
+                        self.tree.push();
+                        self.tree.cur()
+                    } else {
+                        Some(cur_ix)
+                    };
+                if let Some(cur_ix) = maybe_cur_ix {
+                    if self.tree[cur_ix].item.body.is_maybe_inline() {
+                        self.handle_inline();
+                    }
 
-                let node = self.tree[cur_ix];
-                let item = node.item;
-                let event = item_to_event(item, self.text, &mut self.allocs);
-                if let Event::Start(ref _tag) = event {
-                    self.tree.push();
+                    let node = self.tree[cur_ix];
+                    let item = node.item;
+                    let event = item_to_event(item, self.text, &mut self.allocs);
+                    if let Event::Start(ref _tag) = event {
+                        self.tree.push();
+                    } else {
+                        self.tree.next_sibling(cur_ix);
+                    }
+                    Some(event)
                 } else {
-                    self.tree.next_sibling(cur_ix);
+                    None
                 }
-                Some(event)
             }
         }
     }

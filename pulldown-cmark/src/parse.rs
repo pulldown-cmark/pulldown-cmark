@@ -2446,6 +2446,13 @@ mod test {
     }
 
     #[test]
+    fn issue_1095() {
+        let s = "- [n]:Z\r\n\t\t";
+        let parser = Parser::new_ext(s, Options::all());
+        for _ in parser {}
+    }
+
+    #[test]
     fn issue_1030() {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_WIKILINKS);

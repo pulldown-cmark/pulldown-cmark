@@ -2480,9 +2480,7 @@ fn delim_run_can_close(
     }
     let delim = suffix.bytes().next().unwrap();
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*'
-        || (delim == b'~' && run_len > 1)
-        || (delim == b'=' && run_len == 2))
+    if (delim == b'*' || (delim == b'~' && run_len > 1) || (delim == b'=' && run_len == 2))
         && !is_punctuation(prev_char)
     {
         return true;

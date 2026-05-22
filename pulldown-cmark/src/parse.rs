@@ -1073,8 +1073,7 @@ impl<'input> ParserInner<'input> {
                                         }
                                     }
                                 } else if c == b'=' {
-                                    if inc == 2
-                                        && self.options.contains(Options::ENABLE_HIGHLIGHT)
+                                    if inc == 2 && self.options.contains(Options::ENABLE_HIGHLIGHT)
                                     {
                                         ItemBody::Highlight
                                     } else {

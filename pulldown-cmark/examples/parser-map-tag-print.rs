@@ -81,6 +81,7 @@ fn main() {
                     dest_url,
                     title,
                     id,
+                    ..
                 } => println!(
                     "Link link_type: {:?} url: {} title: {} id: {}",
                     link_type, dest_url, title, id
@@ -90,6 +91,7 @@ fn main() {
                     dest_url,
                     title,
                     id,
+                    ..
                 } => println!(
                     "Image link_type: {:?} url: {} title: {} id: {}",
                     link_type, dest_url, title, id

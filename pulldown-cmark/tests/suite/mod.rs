@@ -4,6 +4,7 @@
 pub use super::test_markdown_html;
 
 mod blockquotes_tags;
+mod code_block_attrs;
 mod container_extensions;
 mod definition_lists;
 mod footnotes;
@@ -11,6 +12,7 @@ mod gfm_strikethrough;
 mod gfm_table;
 mod gfm_tasklist;
 mod heading_attrs;
+mod inline_link_attrs;
 mod math;
 mod metadata_blocks;
 mod old_footnotes;

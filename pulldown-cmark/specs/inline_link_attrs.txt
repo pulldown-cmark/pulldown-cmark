@@ -1,0 +1,154 @@
+Run this with `cargo test --features gen-tests suite::inline_link_attrs`.
+
+Examples and edge cases for attribute blocks on inline links and images.
+
+Attribute blocks can appear immediately after links and images.
+They affect the `<a>` or `<img>` element.
+
+# Basic inline link attributes
+
+Attributes immediately after inline link:
+
+```````````````````````````````` example
+[text](url){#ident .class key=value}
+.
+<p><a id="ident" class="class" key="value" href="url">text</a></p>
+````````````````````````````````
+
+Multiple classes:
+
+```````````````````````````````` example
+[click here](https://example.com){.btn .primary}
+.
+<p><a class="btn primary" href="https://example.com">click here</a></p>
+````````````````````````````````
+
+# Inline image attributes
+
+Attributes on inline images:
+
+```````````````````````````````` example
+![alt text](image.png){#myimg .centered}
+.
+<p><img id="myimg" class="centered" src="image.png" alt="alt text" /></p>
+````````````````````````````````
+
+```````````````````````````````` example
+![logo](logo.svg){.logo width=100 height=50}
+.
+<p><img class="logo" width="100" height="50" src="logo.svg" alt="logo" /></p>
+````````````````````````````````
+
+# Link with title and attributes
+
+```````````````````````````````` example
+[text](url "title"){#id}
+.
+<p><a id="id" href="url" title="title">text</a></p>
+````````````````````````````````
+
+# Reference link attributes
+
+Attributes on reference-style links:
+
+```````````````````````````````` example
+[foo][bar]{.special}
+
+[bar]: /url
+.
+<p><a class="special" href="/url">foo</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[example]{#mylink}
+
+[example]: https://example.com
+.
+<p><a id="mylink" href="https://example.com">example</a></p>
+````````````````````````````````
+
+# Collapsed reference links
+
+```````````````````````````````` example
+[foo][]{.highlight}
+
+[foo]: /url
+.
+<p><a class="highlight" href="/url">foo</a></p>
+````````````````````````````````
+
+# Reference image attributes
+
+```````````````````````````````` example
+![alt][img]{.responsive}
+
+[img]: photo.jpg
+.
+<p><img class="responsive" src="photo.jpg" alt="alt" /></p>
+````````````````````````````````
+
+# Autolink attributes
+
+Attributes on autolinks:
+
+```````````````````````````````` example
+<https://example.com>{.autolink}
+.
+<p><a class="autolink" href="https://example.com">https://example.com</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+<user@example.com>{#email .contact}
+.
+<p><a id="email" class="contact" href="mailto:user@example.com">user@example.com</a></p>
+````````````````````````````````
+
+# Multiple attributes
+
+```````````````````````````````` example
+[link](url){#id}{.class}
+.
+<p><a id="id" href="url">link</a>{.class}</p>
+````````````````````````````````
+
+Note: Only the first attribute block is consumed. The second one becomes text.
+
+# No space between link and attributes
+
+Attribute block must immediately follow the link (no space):
+
+```````````````````````````````` example
+[text](url) {#id}
+.
+<p><a href="url">text</a> {#id}</p>
+````````````````````````````````
+
+# Quoted attribute values
+
+```````````````````````````````` example
+[link](url){title="Link Title" data-info="some info"}
+.
+<p><a title="Link Title" data-info="some info" href="url">link</a></p>
+````````````````````````````````
+
+# Empty attribute block
+
+```````````````````````````````` example
+[link](url){}
+.
+<p><a href="url">link</a></p>
+````````````````````````````````
+
+# Links still work without attributes
+
+```````````````````````````````` example
+[normal link](https://example.com)
+.
+<p><a href="https://example.com">normal link</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+![normal image](photo.jpg)
+.
+<p><img src="photo.jpg" alt="normal image" /></p>
+````````````````````````````````

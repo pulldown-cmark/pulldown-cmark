@@ -121,14 +121,71 @@ pub use crate::{
     utils::*,
 };
 
+/// Attributes for elements that support the attributes extension.
+///
+/// This includes id (specified as `#id`), classes (specified as `.class`),
+/// and custom key-value attributes (specified as `key=value` or just `key`).
+///
+/// Only parsed and populated with [`Options::ENABLE_ATTRIBUTES`].
+#[derive(Clone, Debug, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Attributes<'a> {
+    /// The id attribute (last one wins if multiple specified).
+    pub id: Option<CowStr<'a>>,
+    /// Class attributes (accumulated from all `.class` specifications).
+    pub classes: Vec<CowStr<'a>>,
+    /// Custom key-value attributes. Value is None if no value was specified.
+    #[cfg_attr(feature = "serde", serde(borrow))]
+    pub attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
+}
+
+impl<'a> Attributes<'a> {
+    /// Returns true if there are no attributes.
+    pub fn is_empty(&self) -> bool {
+        self.id.is_none() && self.classes.is_empty() && self.attrs.is_empty()
+    }
+
+    /// Converts this to a static lifetime by converting all borrowed strings to owned.
+    pub fn into_static(self) -> Attributes<'static> {
+        Attributes {
+            id: self.id.map(|s| s.into_static()),
+            classes: self.classes.into_iter().map(|s| s.into_static()).collect(),
+            attrs: self
+                .attrs
+                .into_iter()
+                .map(|(k, v)| (k.into_static(), v.map(|v| v.into_static())))
+                .collect(),
+        }
+    }
+
+    /// Merges another set of attributes into this one.
+    /// For id, the new one overwrites the old one.
+    /// For classes, they are accumulated.
+    /// For attrs, new values overwrite old values for the same key.
+    pub fn merge(&mut self, other: Attributes<'a>) {
+        if other.id.is_some() {
+            self.id = other.id;
+        }
+        self.classes.extend(other.classes);
+        for (key, value) in other.attrs {
+            if let Some(existing) = self.attrs.iter_mut().find(|(k, _)| k == &key) {
+                existing.1 = value;
+            } else {
+                self.attrs.push((key, value));
+            }
+        }
+    }
+}
+
 /// Codeblock kind.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CodeBlockKind<'a> {
     Indented,
     /// The value contained in the tag describes the language of the code, which may be empty.
+    /// The optional Attributes are parsed when [`Options::ENABLE_ATTRIBUTES`] is set.
     #[cfg_attr(feature = "serde", serde(borrow))]
-    Fenced(CowStr<'a>),
+    Fenced(CowStr<'a>, Option<Attributes<'a>>),
 }
 
 impl<'a> CodeBlockKind<'a> {
@@ -137,13 +194,31 @@ impl<'a> CodeBlockKind<'a> {
     }
 
     pub fn is_fenced(&self) -> bool {
-        matches!(*self, CodeBlockKind::Fenced(_))
+        matches!(*self, CodeBlockKind::Fenced(..))
+    }
+
+    /// Returns the info string for fenced code blocks, or None for indented.
+    pub fn info_string(&self) -> Option<&CowStr<'a>> {
+        match self {
+            CodeBlockKind::Indented => None,
+            CodeBlockKind::Fenced(info, _) => Some(info),
+        }
+    }
+
+    /// Returns the attributes for fenced code blocks, or None for indented.
+    pub fn attributes(&self) -> Option<&Attributes<'a>> {
+        match self {
+            CodeBlockKind::Indented => None,
+            CodeBlockKind::Fenced(_, attrs) => attrs.as_ref(),
+        }
     }
 
     pub fn into_static(self) -> CodeBlockKind<'static> {
         match self {
             CodeBlockKind::Indented => CodeBlockKind::Indented,
-            CodeBlockKind::Fenced(s) => CodeBlockKind::Fenced(s.into_static()),
+            CodeBlockKind::Fenced(s, attrs) => {
+                CodeBlockKind::Fenced(s.into_static(), attrs.map(|a| a.into_static()))
+            }
         }
     }
 }
@@ -187,7 +262,7 @@ pub enum Tag<'a> {
     /// list is chosen, classes are prefixed with `.` and custom attributes
     /// have no prefix and can optionally have a value (`myattr` or `myattr=myvalue`).
     ///
-    /// `id`, `classes` and `attrs` are only parsed and populated with [`Options::ENABLE_HEADING_ATTRIBUTES`], `None` or empty otherwise.
+    /// `id`, `classes` and `attrs` are only parsed and populated with [`Options::ENABLE_ATTRIBUTES`], `None` or empty otherwise.
     Heading {
         level: HeadingLevel,
         id: Option<CowStr<'a>>,
@@ -291,22 +366,30 @@ pub enum Tag<'a> {
     Subscript,
 
     /// A link.
+    ///
+    /// `attrs` is only parsed and populated with [`Options::ENABLE_ATTRIBUTES`], `None` otherwise.
     Link {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
         /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
+        /// Optional attributes from `{#id .class key=value}` syntax.
+        attrs: Option<Attributes<'a>>,
     },
 
     /// An image. The first field is the link type, the second the destination URL and the third is a title,
     /// the fourth is the link identifier.
+    ///
+    /// `attrs` is only parsed and populated with [`Options::ENABLE_ATTRIBUTES`], `None` otherwise.
     Image {
         link_type: LinkType,
         dest_url: CowStr<'a>,
         title: CowStr<'a>,
         /// Identifier of reference links, e.g. `world` in the link `[hello][world]`.
         id: CowStr<'a>,
+        /// Optional attributes from `{#id .class key=value}` syntax.
+        attrs: Option<Attributes<'a>>,
     },
 
     /// A metadata block.
@@ -383,22 +466,26 @@ impl<'a> Tag<'a> {
                 dest_url,
                 title,
                 id,
+                attrs,
             } => Tag::Link {
                 link_type,
                 dest_url: dest_url.into_static(),
                 title: title.into_static(),
                 id: id.into_static(),
+                attrs: attrs.map(|a| a.into_static()),
             },
             Tag::Image {
                 link_type,
                 dest_url,
                 title,
                 id,
+                attrs,
             } => Tag::Image {
                 link_type,
                 dest_url: dest_url.into_static(),
                 title: title.into_static(),
                 id: id.into_static(),
+                attrs: attrs.map(|a| a.into_static()),
             },
             Tag::MetadataBlock(v) => Tag::MetadataBlock(v),
             Tag::DefinitionList => Tag::DefinitionList,
@@ -707,14 +794,22 @@ bitflags::bitflags! {
         ///
         /// The replacement takes place during the parsing of the document.
         const ENABLE_SMART_PUNCTUATION = 1 << 5;
-        /// Extension to allow headings to have ID and classes.
+        /// Extension to allow elements to have attributes.
         ///
-        /// `# text { #id .class1 .class2 myattr other_attr=myvalue }`
-        /// is interpreted as a level 1 heading
-        /// with the content `text`, ID `id`, classes `class1` and `class2` and
-        /// custom attributes `myattr` (without value) and
-        /// `other_attr` with value `myvalue`.
-        /// Note that ID, classes, and custom attributes should be space-separated.
+        /// Attributes can be specified on:
+        /// - Headings: `# text { #id .class1 .class2 myattr other_attr=myvalue }`
+        /// - Fenced code blocks: ```` ``` {#id .class} ````
+        /// - Inline elements: `` `code`{.class} ``, `*em*{.class}`, `[link](url){.class}`
+        /// - Block elements via prefix: `{.class}` on its own line before a block
+        /// - Reference definitions: `[ref]: url "title" {.class}`
+        ///
+        /// ID is specified as `#id`, classes as `.class`, and custom attributes
+        /// as `myattr` or `myattr=myvalue`. Multiple attributes are space-separated.
+        ///
+        /// For backwards compatibility, `ENABLE_HEADING_ATTRIBUTES` is an alias for this option.
+        const ENABLE_ATTRIBUTES = 1 << 6;
+        /// Deprecated alias for [`Options::ENABLE_ATTRIBUTES`].
+        #[deprecated(since = "0.13.0", note = "Use ENABLE_ATTRIBUTES instead")]
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
         /// Metadata blocks in YAML style, i.e.:
         /// - starting with a `---` line

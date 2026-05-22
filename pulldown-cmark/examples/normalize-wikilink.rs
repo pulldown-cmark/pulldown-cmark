@@ -18,6 +18,7 @@ Wanna go for a [[Wiki Walk]]?"#;
             dest_url,
             title,
             id,
+            ..
         }) = event
         {
             let new_link = normalize_wikilink(dest_url);
@@ -26,6 +27,7 @@ Wanna go for a [[Wiki Walk]]?"#;
                 dest_url: new_link,
                 title,
                 id,
+                attrs: None,
             })
         } else {
             event

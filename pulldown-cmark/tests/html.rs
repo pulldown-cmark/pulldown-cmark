@@ -350,7 +350,7 @@ fn issue_819() {
     for orig in original {
         let mut s = String::new();
         let mut opts = Options::empty();
-        opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+        opts.insert(Options::ENABLE_ATTRIBUTES);
         html::push_html(&mut s, Parser::new_ext(orig, opts));
         // Trailing newline doesn't matter. Just the actual HTML.
         assert_eq!(expected, s.trim_end_matches('\n'));

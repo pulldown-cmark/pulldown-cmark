@@ -160,7 +160,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                 b"code_block" => {
                     match tag.try_get_attribute("info")? {
                         Some(info) => events.push(Event::Start(Tag::CodeBlock(
-                            CodeBlockKind::Fenced(info.unescape_value()?.into_owned().into()),
+                            CodeBlockKind::Fenced(info.unescape_value()?.into_owned().into(), None),
                         ))),
                         None => events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Indented))),
                     }
@@ -212,6 +212,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                             dest_url,
                             title,
                             id,
+                            attrs: None,
                         }
                     } else {
                         Tag::Image {
@@ -219,6 +220,7 @@ pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
                             dest_url,
                             title,
                             id,
+                            attrs: None,
                         }
                     }));
                 }
@@ -350,6 +352,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&format!("mailto:{dest_url}")).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
+                attrs: None,
             })),
             Event::Start(Tag::Link {
                 dest_url, title, ..
@@ -358,6 +361,7 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: "".into(), // commonmark.js does not record this
+                attrs: None,
             })),
             // commonmark.js does not record the link type.
             Event::Start(Tag::Image {
@@ -370,11 +374,12 @@ pub fn normalize(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
                 dest_url: urldecode(&dest_url).into(),
                 title: title.clone(),
                 id: id.clone(),
+                attrs: None,
             })),
             // commonmark.js does not distinguish between fenced code
             // blocks with a "" info string and indented code blocks.
             Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => Some(Event::Start(
-                Tag::CodeBlock(CodeBlockKind::Fenced("".into())),
+                Tag::CodeBlock(CodeBlockKind::Fenced("".into(), None)),
             )),
 
             // pulldown-cmark can generate empty text and HTML events.
@@ -491,12 +496,12 @@ mod tests {
     fn test_normalize_empty_code_block() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("".into()),
                 Event::End(TagEnd::CodeBlock)
             ]),
             vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::End(TagEnd::CodeBlock)
             ]
         );
@@ -506,12 +511,12 @@ mod tests {
     fn test_normalize_non_empty_code_block() {
         assert_eq!(
             normalize(vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("fn main() {}".into()),
                 Event::End(TagEnd::CodeBlock)
             ]),
             vec![
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into()))),
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("rust".into(), None))),
                 Event::Text("fn main() {}\n".into()),
                 Event::End(TagEnd::CodeBlock)
             ]

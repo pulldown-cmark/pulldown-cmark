@@ -449,6 +449,10 @@ pub(crate) fn is_ascii_alphanumeric(c: u8) -> bool {
     matches!(c, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
+pub(crate) fn is_ascii_numeric(c: u8) -> bool {
+    matches!(c, b'0'..=b'9')
+}
+
 fn is_ascii_letterdigitdash(c: u8) -> bool {
     c == b'-' || is_ascii_alphanumeric(c)
 }

@@ -1077,7 +1077,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         && !bytes[..ix]
                             .last()
                             .copied()
-                            .map_or(true, is_ascii_whitespace);
+                            .map_or(true, is_ascii_whitespace)
+                        && !bytes.get(ix + 1).copied().map_or(false, is_ascii_numeric);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
                     // storing Option<u8>, which is bigger than u8.

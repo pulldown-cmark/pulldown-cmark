@@ -1231,6 +1231,12 @@ pub(crate) fn unescape<'a, I: Into<CowStr<'a>>>(input: I, is_in_table: bool) -> 
                 i += 1;
                 mark = i;
             }
+            [b'\0', ..] => {
+                result.push_str(&input[mark..i]);
+                result.push('\u{fffd}');
+                i += 1;
+                mark = i;
+            }
             _ => i += 1,
         }
     }

@@ -2836,3 +2836,16 @@ Link refdef split from paragraph with line with spaces.
 .
 <p>:</p>
 ````````````````````````````````
+
+U+0000 must be replaced with U+FFFD: https://spec.commonmark.org/0.31.2/#insecure-characters
+See https://github.com/pulldown-cmark/pulldown-cmark/issues/1065
+
+```````````````````````````````` example
+ 
+   
+hello world
+.
+<p>�
+���
+hello�world</p>
+````````````````````````````````

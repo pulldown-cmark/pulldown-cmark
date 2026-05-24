@@ -2493,7 +2493,7 @@ fn delim_run_can_close(
     if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
         return cjk_friendly_delim_run_can_close(
             prev_char,
-            || s[..(ix - prev_char.len_utf8())].chars().rev().next(),
+            || s[..(ix - prev_char.len_utf8())].chars().next_back(),
             next_char,
             delim,
         );

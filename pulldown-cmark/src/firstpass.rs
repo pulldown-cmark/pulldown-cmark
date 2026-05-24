@@ -9,7 +9,7 @@ use unicase::UniCase;
 use crate::{
     cjk::{
         classify_preceding_cjk_friendly_sequence, is_cjk_character,
-        is_non_emoji_general_variation_selector,
+        is_non_emoji_general_variation_selector, is_preceding_cjk_friendly_punctuation,
     },
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
@@ -2486,6 +2486,9 @@ fn delim_run_can_close(
             return true;
         }
     }
+    if next_char.is_whitespace() {
+        return true;
+    }
     let delim = suffix.bytes().next().unwrap();
     if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
         return cjk_friendly_delim_run_can_close(
@@ -2576,6 +2579,14 @@ fn cjk_friendly_delim_run_flanking(
     next_char: char,
     delim: u8,
 ) -> CjkFriendlyDelimiterRunFlanking {
+    if delim == b'_' {
+        return cjk_friendly_underscore_delim_run_flanking(
+            prev_char,
+            get_prev_prev_char,
+            next_char,
+        );
+    }
+
     let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
     let cjk_changes_flanking = delim == b'*';
     let before_cjk_or_ivs = cjk_changes_flanking
@@ -2613,6 +2624,28 @@ fn cjk_friendly_delim_run_flanking(
     CjkFriendlyDelimiterRunFlanking {
         can_open,
         can_close,
+    }
+}
+
+fn cjk_friendly_underscore_delim_run_flanking(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+) -> CjkFriendlyDelimiterRunFlanking {
+    let before_punctuation = is_preceding_cjk_friendly_punctuation(prev_char, get_prev_prev_char);
+    let before_space_or_punctuation = prev_char.is_whitespace() || before_punctuation;
+
+    let after_punctuation = is_punctuation(next_char);
+    let after_space_or_punctuation = next_char.is_whitespace() || after_punctuation;
+
+    let open = !next_char.is_whitespace()
+        && (!after_punctuation || before_space_or_punctuation || matches!(next_char, '*' | '_'));
+    let close = !prev_char.is_whitespace()
+        && (!before_punctuation || after_space_or_punctuation || matches!(prev_char, '*' | '_'));
+
+    CjkFriendlyDelimiterRunFlanking {
+        can_open: open && (before_space_or_punctuation || !close),
+        can_close: close && (after_space_or_punctuation || !open),
     }
 }
 

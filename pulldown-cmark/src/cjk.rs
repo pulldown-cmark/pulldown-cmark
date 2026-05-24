@@ -114,6 +114,17 @@ pub(crate) fn classify_preceding_cjk_friendly_sequence(
     }
 }
 
+pub(crate) fn is_preceding_cjk_friendly_punctuation(
+    prev: char,
+    get_prev_prev: impl FnOnce() -> Option<char>,
+) -> bool {
+    if is_non_emoji_general_variation_selector(prev) {
+        return get_prev_prev().is_some_and(is_punctuation);
+    }
+
+    is_punctuation(prev)
+}
+
 pub(crate) fn is_cjk_ambiguous_punctuation_sequence(ch: char, vs: char) -> bool {
     vs as u32 == 0xFE01 && matches!(ch as u32, 0x2018 | 0x2019 | 0x201C | 0x201D)
 }

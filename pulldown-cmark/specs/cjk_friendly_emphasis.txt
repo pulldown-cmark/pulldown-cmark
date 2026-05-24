@@ -440,6 +440,24 @@ _abc_漢
 <p>_abc_漢</p>
 ````````````````````````````````
 
+CJK-friendly emphasis should also apply the amended flanking rules to GFM
+strikethrough, while preserving existing strikethrough behavior.
+
+```````````````````````````````` example_cjk_friendly_emphasis
+真~~（她~~
+
+~~真，~~她
+
+This~~is~~stricken
+
+Here I strike out an exclamation point~~!~~.
+.
+<p>真<del>（她</del></p>
+<p><del>真，</del>她</p>
+<p>This<del>is</del>stricken</p>
+<p>Here I strike out an exclamation point<del>!</del>.</p>
+````````````````````````````````
+
 CJK-friendly emphasis should remain compatible with other enabled extensions.
 This case is based on the compatibility checks in the original micromark test:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/test/micromark.spec.ts#L121-L135>.

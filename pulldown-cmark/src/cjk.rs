@@ -7,6 +7,9 @@ use crate::puncttable::is_punctuation;
 /// The source is https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/ranges.md.
 pub(crate) fn is_cjk_character(ch: char) -> bool {
     let cp = ch as u32;
+    if cp < 0x1100 {
+        return false;
+    }
     matches!(
         cp,
         0x1100..=0x11ff

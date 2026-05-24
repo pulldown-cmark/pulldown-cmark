@@ -7,6 +7,10 @@ use core::{cmp::max, ops::Range, u8};
 use unicase::UniCase;
 
 use crate::{
+    cjk::{
+        classify_preceding_cjk_friendly_sequence, is_cjk_character,
+        is_non_emoji_general_variation_selector, is_preceding_cjk_friendly_punctuation,
+    },
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
         scan_containers, Allocations, FootnoteDef, HeadingAttributes, Item, ItemBody, LinkDef,
@@ -32,6 +36,7 @@ pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Alloc
         last_line_blank: false,
         allocs: Allocations::new(),
         options,
+        cjk_friendly_emphasis: options.contains(Options::ENABLE_CJK_FRIENDLY_EMPHASIS),
         lookup_table,
         brace_context_next: 0,
         brace_context_stack: Vec::new(),
@@ -58,6 +63,7 @@ struct FirstPass<'a, 'b> {
     last_line_blank: bool,
     allocs: Allocations<'a>,
     options: Options,
+    cjk_friendly_emphasis: bool,
     lookup_table: &'b LookupTable,
     /// Math environment brace nesting.
     brace_context_stack: Vec<u8>,
@@ -1042,6 +1048,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -1050,6 +1057,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
 
@@ -1294,6 +1302,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
                     let can_close = delim_run_can_close(
                         &self.text[start..],
@@ -1302,6 +1311,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         ix - start,
                         mode,
                         self.options,
+                        self.cjk_friendly_emphasis,
                     );
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2378,6 +2388,7 @@ fn delim_run_can_open(
     ix: usize,
     mode: TableParseMode,
     options: Options,
+    cjk_friendly_emphasis: bool,
 ) -> bool {
     let next_char = if let Some(c) = suffix[run_len..].chars().next() {
         c
@@ -2418,6 +2429,9 @@ fn delim_run_can_open(
             return false;
         }
     }
+    if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
+        return cjk_friendly_delim_run_can_open(s, ix, next_char, delim);
+    }
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
     if delim == b'*' && !is_punctuation(next_char) {
         return true;
@@ -2438,7 +2452,7 @@ fn delim_run_can_open(
     }
 
     prev_char.is_whitespace()
-        || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
+        || is_punctuation(prev_char) && (delim != b'\'' || !matches!(prev_char, ']' | ')'))
 }
 
 /// Determines whether the delimiter run starting at given index is
@@ -2451,6 +2465,7 @@ fn delim_run_can_close(
     ix: usize,
     mode: TableParseMode,
     options: Options,
+    cjk_friendly_emphasis: bool,
 ) -> bool {
     if ix == 0 {
         return false;
@@ -2472,7 +2487,18 @@ fn delim_run_can_close(
             return true;
         }
     }
+    if next_char.is_whitespace() {
+        return true;
+    }
     let delim = suffix.bytes().next().unwrap();
+    if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
+        return cjk_friendly_delim_run_can_close(
+            prev_char,
+            || s[..(ix - prev_char.len_utf8())].chars().next_back(),
+            next_char,
+            delim,
+        );
+    }
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
     if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
         return true;
@@ -2485,6 +2511,143 @@ fn delim_run_can_close(
     }
 
     next_char.is_whitespace() || is_punctuation(next_char)
+}
+
+fn is_cjk_friendly_delim(delim: u8, run_len: usize) -> bool {
+    matches!(delim, b'*' | b'_') || delim == b'~' && run_len > 1
+}
+
+fn cjk_friendly_delim_run_can_open(s: &str, ix: usize, next_char: char, delim: u8) -> bool {
+    if delim == b'~' {
+        return true;
+    }
+
+    let mut previous_chars = s[..ix].chars().rev();
+    let prev_char = match previous_chars.next() {
+        Some(ch) => ch,
+        None => return true,
+    };
+    if prev_char.is_whitespace() {
+        return true;
+    }
+
+    let flanking =
+        cjk_friendly_delim_run_flanking(prev_char, || previous_chars.next(), next_char, delim);
+    flanking.can_open
+}
+
+fn cjk_friendly_delim_run_can_close(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+    delim: u8,
+) -> bool {
+    if delim == b'~' {
+        return cjk_friendly_strikethrough_delim_run_can_close(
+            prev_char,
+            get_prev_prev_char,
+            next_char,
+        );
+    }
+
+    cjk_friendly_delim_run_flanking(prev_char, get_prev_prev_char, next_char, delim).can_close
+}
+
+fn cjk_friendly_strikethrough_delim_run_can_close(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+) -> bool {
+    if next_char.is_whitespace() || is_punctuation(next_char) {
+        return true;
+    }
+    if !is_punctuation(prev_char) && !is_non_emoji_general_variation_selector(prev_char) {
+        return true;
+    }
+
+    let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
+    !prev_sequence.is_punctuation || prev_sequence.is_cjk || is_cjk_character(next_char)
+}
+
+struct CjkFriendlyDelimiterRunFlanking {
+    can_open: bool,
+    can_close: bool,
+}
+
+fn cjk_friendly_delim_run_flanking(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+    delim: u8,
+) -> CjkFriendlyDelimiterRunFlanking {
+    if delim == b'_' {
+        return cjk_friendly_underscore_delim_run_flanking(
+            prev_char,
+            get_prev_prev_char,
+            next_char,
+        );
+    }
+
+    let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
+    let cjk_changes_flanking = delim == b'*';
+    let before_cjk_or_ivs = cjk_changes_flanking
+        && (prev_sequence.is_cjk || prev_sequence.is_ideographic_variation_selector);
+    let before_space_or_punctuation = prev_char.is_whitespace() || prev_sequence.is_punctuation;
+
+    let after_cjk = cjk_changes_flanking && is_cjk_character(next_char);
+    let after_punctuation = is_punctuation(next_char);
+    let after_space_or_punctuation = next_char.is_whitespace() || after_punctuation;
+
+    let open = !next_char.is_whitespace()
+        && (!after_punctuation
+            || before_space_or_punctuation
+            || before_cjk_or_ivs
+            || after_cjk
+            || matches!(next_char, '*' | '_'));
+    let close = !prev_char.is_whitespace()
+        && (!prev_sequence.is_punctuation
+            || after_space_or_punctuation
+            || prev_sequence.is_cjk
+            || after_cjk
+            || matches!(prev_char, '*' | '_'));
+
+    let can_open = if delim == b'*' {
+        open
+    } else {
+        open && (before_space_or_punctuation || !close)
+    };
+    let can_close = if delim == b'*' {
+        close
+    } else {
+        close && (after_space_or_punctuation || !open)
+    };
+
+    CjkFriendlyDelimiterRunFlanking {
+        can_open,
+        can_close,
+    }
+}
+
+fn cjk_friendly_underscore_delim_run_flanking(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+) -> CjkFriendlyDelimiterRunFlanking {
+    let before_punctuation = is_preceding_cjk_friendly_punctuation(prev_char, get_prev_prev_char);
+    let before_space_or_punctuation = prev_char.is_whitespace() || before_punctuation;
+
+    let after_punctuation = is_punctuation(next_char);
+    let after_space_or_punctuation = next_char.is_whitespace() || after_punctuation;
+
+    let open = !next_char.is_whitespace()
+        && (!after_punctuation || before_space_or_punctuation || matches!(next_char, '*' | '_'));
+    let close = !prev_char.is_whitespace()
+        && (!before_punctuation || after_space_or_punctuation || matches!(prev_char, '*' | '_'));
+
+    CjkFriendlyDelimiterRunFlanking {
+        can_open: open && (before_space_or_punctuation || !close),
+        can_close: close && (after_space_or_punctuation || !open),
+    }
 }
 
 fn create_lut(options: &Options) -> LookupTable {

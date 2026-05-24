@@ -1189,6 +1189,7 @@ impl<'input> ParserInner<'input> {
         ix += 1;
 
         let scan_separator = |ix: &mut usize| {
+            let start = *ix;
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
             if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
                 *ix += bl;
@@ -1199,6 +1200,7 @@ impl<'input> ParserInner<'input> {
                 );
             }
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
+            *ix - start
         };
 
         scan_separator(&mut ix);
@@ -1207,9 +1209,12 @@ impl<'input> ParserInner<'input> {
         let dest = unescape(dest, self.tree.is_in_table());
         ix += dest_length;
 
-        scan_separator(&mut ix);
+        let title_sep = scan_separator(&mut ix);
 
         let title = if let Some((bytes_scanned, t)) = self.scan_link_title(underlying, ix, node) {
+            if title_sep == 0 {
+                return None;
+            }
             ix += bytes_scanned;
             scan_separator(&mut ix);
             t

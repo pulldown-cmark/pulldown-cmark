@@ -80,22 +80,10 @@ pub(crate) fn is_cjk_punctuation_character(ch: char) -> bool {
     is_cjk_character(ch) && is_punctuation(ch)
 }
 
-pub(crate) fn is_non_cjk_punctuation_character(ch: char) -> bool {
-    is_punctuation(ch) && !is_cjk_character(ch)
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CjkFriendlySequenceKind {
-    Cjk,
-    CjkAmbiguousPunctuation,
-    NonCjkPunctuation,
-    IdeographicVariationSelector,
-    Other,
-}
-
 #[derive(Clone, Copy)]
 pub(crate) struct CjkFriendlySequence {
-    pub(crate) kind: CjkFriendlySequenceKind,
+    pub(crate) is_cjk: bool,
+    pub(crate) is_ideographic_variation_selector: bool,
     pub(crate) is_punctuation: bool,
 }
 
@@ -106,37 +94,22 @@ pub(crate) fn classify_preceding_cjk_friendly_sequence(
     if is_non_emoji_general_variation_selector(prev) {
         let Some(base_char) = get_prev_prev() else {
             return CjkFriendlySequence {
-                kind: CjkFriendlySequenceKind::Other,
+                is_cjk: false,
+                is_ideographic_variation_selector: false,
                 is_punctuation: false,
             };
         };
-        let kind = if is_cjk_ambiguous_punctuation_sequence(base_char, prev) {
-            CjkFriendlySequenceKind::CjkAmbiguousPunctuation
-        } else if is_cjk_character(base_char) {
-            CjkFriendlySequenceKind::Cjk
-        } else if is_non_cjk_punctuation_character(base_char) {
-            CjkFriendlySequenceKind::NonCjkPunctuation
-        } else {
-            CjkFriendlySequenceKind::Other
-        };
         return CjkFriendlySequence {
-            kind,
+            is_cjk: is_cjk_character(base_char)
+                || is_cjk_ambiguous_punctuation_sequence(base_char, prev),
+            is_ideographic_variation_selector: false,
             is_punctuation: is_punctuation(base_char),
         };
     }
 
-    let kind = if is_ideographic_variation_selector(prev) {
-        CjkFriendlySequenceKind::IdeographicVariationSelector
-    } else if is_cjk_character(prev) {
-        CjkFriendlySequenceKind::Cjk
-    } else if is_non_cjk_punctuation_character(prev) {
-        CjkFriendlySequenceKind::NonCjkPunctuation
-    } else {
-        CjkFriendlySequenceKind::Other
-    };
-
     CjkFriendlySequence {
-        kind,
+        is_cjk: is_cjk_character(prev),
+        is_ideographic_variation_selector: is_ideographic_variation_selector(prev),
         is_punctuation: is_punctuation(prev),
     }
 }

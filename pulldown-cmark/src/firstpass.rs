@@ -9,7 +9,7 @@ use unicase::UniCase;
 use crate::{
     cjk::{
         classify_preceding_cjk_friendly_sequence, is_cjk_character,
-        is_non_cjk_punctuation_character, CjkFriendlySequenceKind,
+        is_non_emoji_general_variation_selector,
     },
     linklabel::{scan_link_label_rest, LinkLabel},
     parse::{
@@ -2428,7 +2428,7 @@ fn delim_run_can_open(
             return false;
         }
     }
-    if cjk_friendly_emphasis && matches!(delim, b'*' | b'_') {
+    if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
         return cjk_friendly_delim_run_can_open(s, ix, next_char, delim);
     }
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
@@ -2487,7 +2487,7 @@ fn delim_run_can_close(
         }
     }
     let delim = suffix.bytes().next().unwrap();
-    if cjk_friendly_emphasis && matches!(delim, b'*' | b'_') {
+    if cjk_friendly_emphasis && is_cjk_friendly_delim(delim, run_len) {
         return cjk_friendly_delim_run_can_close(
             prev_char,
             || s[..(ix - prev_char.len_utf8())].chars().rev().next(),
@@ -2509,7 +2509,15 @@ fn delim_run_can_close(
     next_char.is_whitespace() || is_punctuation(next_char)
 }
 
+fn is_cjk_friendly_delim(delim: u8, run_len: usize) -> bool {
+    matches!(delim, b'*' | b'_') || delim == b'~' && run_len > 1
+}
+
 fn cjk_friendly_delim_run_can_open(s: &str, ix: usize, next_char: char, delim: u8) -> bool {
+    if delim == b'~' {
+        return true;
+    }
+
     let mut previous_chars = s[..ix].chars().rev();
     let prev_char = match previous_chars.next() {
         Some(ch) => ch,
@@ -2530,7 +2538,31 @@ fn cjk_friendly_delim_run_can_close(
     next_char: char,
     delim: u8,
 ) -> bool {
+    if delim == b'~' {
+        return cjk_friendly_strikethrough_delim_run_can_close(
+            prev_char,
+            get_prev_prev_char,
+            next_char,
+        );
+    }
+
     cjk_friendly_delim_run_flanking(prev_char, get_prev_prev_char, next_char, delim).can_close
+}
+
+fn cjk_friendly_strikethrough_delim_run_can_close(
+    prev_char: char,
+    get_prev_prev_char: impl FnOnce() -> Option<char>,
+    next_char: char,
+) -> bool {
+    if next_char.is_whitespace() || is_punctuation(next_char) {
+        return true;
+    }
+    if !is_punctuation(prev_char) && !is_non_emoji_general_variation_selector(prev_char) {
+        return true;
+    }
+
+    let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
+    !prev_sequence.is_punctuation || prev_sequence.is_cjk || is_cjk_character(next_char)
 }
 
 struct CjkFriendlyDelimiterRunFlanking {
@@ -2545,30 +2577,27 @@ fn cjk_friendly_delim_run_flanking(
     delim: u8,
 ) -> CjkFriendlyDelimiterRunFlanking {
     let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
-    let before_non_cjk_punctuation =
-        prev_sequence.kind == CjkFriendlySequenceKind::NonCjkPunctuation;
-    let before_space_or_non_cjk_punctuation =
-        before_non_cjk_punctuation || prev_char.is_whitespace();
-    let before_cjk_or_ivs = matches!(
-        prev_sequence.kind,
-        CjkFriendlySequenceKind::Cjk
-            | CjkFriendlySequenceKind::CjkAmbiguousPunctuation
-            | CjkFriendlySequenceKind::IdeographicVariationSelector
-    );
+    let cjk_changes_flanking = delim == b'*';
+    let before_cjk_or_ivs = cjk_changes_flanking
+        && (prev_sequence.is_cjk || prev_sequence.is_ideographic_variation_selector);
     let before_space_or_punctuation = prev_char.is_whitespace() || prev_sequence.is_punctuation;
 
-    let after_non_cjk_punctuation = is_non_cjk_punctuation_character(next_char);
-    let after_space_or_non_cjk_punctuation = after_non_cjk_punctuation || next_char.is_whitespace();
-    let after_space_or_punctuation = next_char.is_whitespace() || is_punctuation(next_char);
+    let after_cjk = cjk_changes_flanking && is_cjk_character(next_char);
+    let after_punctuation = is_punctuation(next_char);
+    let after_space_or_punctuation = next_char.is_whitespace() || after_punctuation;
 
-    let open = !after_space_or_non_cjk_punctuation
-        || (after_non_cjk_punctuation
-            && (before_space_or_non_cjk_punctuation || before_cjk_or_ivs))
-        || matches!(next_char, '*' | '_');
-    let close = !before_space_or_non_cjk_punctuation
-        || (before_non_cjk_punctuation
-            && (after_space_or_non_cjk_punctuation || is_cjk_character(next_char)))
-        || matches!(prev_char, '*' | '_');
+    let open = !next_char.is_whitespace()
+        && (!after_punctuation
+            || before_space_or_punctuation
+            || before_cjk_or_ivs
+            || after_cjk
+            || matches!(next_char, '*' | '_'));
+    let close = !prev_char.is_whitespace()
+        && (!prev_sequence.is_punctuation
+            || after_space_or_punctuation
+            || prev_sequence.is_cjk
+            || after_cjk
+            || matches!(prev_char, '*' | '_'));
 
     let can_open = if delim == b'*' {
         open

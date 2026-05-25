@@ -23,7 +23,7 @@
 use alloc::{string::String, vec::Vec};
 use core::char;
 
-use memchr::memchr;
+use memchr::{memchr, memchr2};
 
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::{
@@ -531,7 +531,12 @@ pub(crate) fn scan_blank_line(bytes: &[u8]) -> Option<usize> {
 }
 
 pub(crate) fn scan_nextline(bytes: &[u8]) -> usize {
-    memchr(b'\n', bytes).map_or(bytes.len(), |x| x + 1)
+    // Per CommonMark, a line ending is LF, CRLF, or a lone CR.
+    match memchr2(b'\n', b'\r', bytes) {
+        Some(x) if bytes[x] == b'\r' && bytes.get(x + 1) == Some(&b'\n') => x + 2,
+        Some(x) => x + 1,
+        None => bytes.len(),
+    }
 }
 
 // return: end byte for closing code fence, or None

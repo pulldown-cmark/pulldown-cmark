@@ -4,6 +4,7 @@ members = [
   "bench",
   "dos-fuzzer",
   "fuzz",
+  "guide/demo",
   "pulldown-cmark",
   "pulldown-cmark-escape",
 ]

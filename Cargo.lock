@@ -438,6 +438,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dlmalloc"
+version = "0.2.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f5b01c17f85ee988d832c40e549a64bd89ab2c9f8d8a613bdf5122ae507e294"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "dos-fuzzer"
 version = "0.1.0"
 dependencies = [
@@ -1506,6 +1517,14 @@ name = "pulldown-cmark-bench"
 version = "0.0.0"
 dependencies = [
  "criterion",
+ "pulldown-cmark",
+]
+
+[[package]]
+name = "pulldown-cmark-demo"
+version = "0.0.0"
+dependencies = [
+ "dlmalloc",
  "pulldown-cmark",
 ]
 

@@ -15,7 +15,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
-      run: rustup default stable
+      run: |
+        rustup default stable
+        rustup target add wasm32v1-none
     - name: Install mdBook
       run: |
         mkdir mdbook && cd mdbook
@@ -27,6 +29,8 @@ jobs:
       run: |
         rustc prepare-specs.rs
         ./prepare-specs
+        rustc prepare-demo.rs
+        ./prepare-demo
         mdbook build
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v3.0.1

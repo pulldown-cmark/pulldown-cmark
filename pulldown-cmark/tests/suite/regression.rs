@@ -3382,6 +3382,30 @@ fn regression_test_211() {
 
 #[test]
 fn regression_test_212() {
+    let original = r##"[link]\[id]
+
+[id]: https://en.wikipedia.org
+"##;
+    let expected = r##"<p>[link][id]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_213() {
+    let original = r##"[id]\[]
+
+[id]: https://en.wikipedia.org
+"##;
+    let expected = r##"<p><a href="https://en.wikipedia.org">id</a>[]</p>
+"##;
+  
+    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+}
+  
+#[test]
+fn regression_test_214() {
     let original = r##"[a](https://example.com"test")
 [a](<https://example.com>"test")
 [a](https://example.com(test))

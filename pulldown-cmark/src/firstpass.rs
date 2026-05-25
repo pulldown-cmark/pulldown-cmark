@@ -1032,7 +1032,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         LoopInstruction::ContinueAndSkip(1)
                     }
                 }
-                c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' => {
+                c @ b'*' | c @ b'_' | c @ b'~' | c @ b'^' | c @ b'=' => {
                     let string_suffix = &self.text[ix..];
                     let count = 1 + scan_ch_repeat(&string_suffix.as_bytes()[1..], c);
                     let can_open = delim_run_can_open(
@@ -1051,7 +1051,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         mode,
                         self.options,
                     );
-                    let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
+                    let is_valid_seq = match c {
+                        b'~' => count <= 2,
+                        b'=' => count == 2,
+                        _ => true,
+                    };
 
                     if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -2429,6 +2433,9 @@ fn delim_run_can_open(
     if delim == b'~' && run_len > 1 {
         return true;
     }
+    if delim == b'=' && run_len == 2 {
+        return true;
+    }
     let prev_char = s[..ix].chars().last().unwrap();
     if delim == b'~'
         && (prev_char == '~' || options.contains(Options::ENABLE_SUBSCRIPT))
@@ -2474,7 +2481,9 @@ fn delim_run_can_close(
     }
     let delim = suffix.bytes().next().unwrap();
     // `*`, `~~`, and `^` can be intraword, `~` can only be interword if it's subscript, `_` cannot
-    if (delim == b'*' || (delim == b'~' && run_len > 1)) && !is_punctuation(prev_char) {
+    if (delim == b'*' || (delim == b'~' && run_len > 1) || (delim == b'=' && run_len == 2))
+        && !is_punctuation(prev_char)
+    {
         return true;
     }
     if delim == b'^' && !is_punctuation(prev_char) {
@@ -2521,6 +2530,9 @@ fn special_bytes(options: &Options) -> [bool; 256] {
     if options.contains(Options::ENABLE_SUPERSCRIPT) {
         bytes[b'^' as usize] = true;
     }
+    if options.contains(Options::ENABLE_HIGHLIGHT) {
+        bytes[b'=' as usize] = true;
+    }
     if options.contains(Options::ENABLE_MATH) {
         bytes[b'$' as usize] = true;
         bytes[b'{' as usize] = true;
@@ -2552,8 +2564,13 @@ struct LookupTable {
 type LookupTable = [bool; 256];
 
 /// This function walks the byte slices from the given index and
-/// calls the callback function on all bytes (and their indices) that are in the following set:
-/// `` ` ``, `\`, `&`, `*`, `_`, `~`, `!`, `<`, `[`, `]`, `|`, `\r`, `\n`
+/// calls the callback function on all bytes (and their indices) that are in the
+/// special-bytes set defined by [`special_bytes`]/[`simd::compute_lookup`].
+/// The always-included bytes are
+/// `` ` ``, `\`, `&`, `*`, `_`, `!`, `<`, `[`, `]`, `\r`, `\n`; additional bytes
+/// are added when their corresponding option is enabled (e.g. `|` with tables,
+/// `~` with strikethrough/subscript, `^` with superscript, `=` with highlight,
+/// `$`/`{`/`}` with math, and `.`/`-`/`"`/`'` with smart punctuation).
 /// It is guaranteed not call the callback on other bytes.
 /// Whenever `callback(ix, byte)` returns a `ContinueAndSkip(n)` value, the callback
 /// will not be called with an index that is less than `ix + n + 1`.
@@ -2766,6 +2783,9 @@ mod simd {
         }
         if options.contains(Options::ENABLE_SUPERSCRIPT) {
             add_lookup_byte(&mut lookup, b'^');
+        }
+        if options.contains(Options::ENABLE_HIGHLIGHT) {
+            add_lookup_byte(&mut lookup, b'=');
         }
         if options.contains(Options::ENABLE_MATH) {
             add_lookup_byte(&mut lookup, b'$');

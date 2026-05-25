@@ -355,6 +355,7 @@ where
             Tag::Emphasis => self.write("<em>"),
             Tag::Strong => self.write("<strong>"),
             Tag::Strikethrough => self.write("<del>"),
+            Tag::Highlight => self.write("<mark>"),
             Tag::Link {
                 link_type: LinkType::Email,
                 dest_url,
@@ -495,6 +496,9 @@ where
             }
             TagEnd::Strikethrough => {
                 self.write("</del>")?;
+            }
+            TagEnd::Highlight => {
+                self.write("</mark>")?;
             }
             TagEnd::Link => {
                 self.write("</a>")?;

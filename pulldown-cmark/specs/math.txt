@@ -399,6 +399,31 @@ $}$] $$
 <p>$}$] $$</p>
 ````````````````````````````````
 
+The inline math closer cannot be immediately followed by a digit.
+The opener can be, though.
+Display math isn't subject to this rule.
+
+```````````````````````````````` example
+$1$2$3
+
+$1$2$3$
+
+$1{$2$}3$
+
+$$1$$2$$3
+
+$$1$$2$$3$$
+
+$$1{$$2$$}3$$
+.
+<p>$1$2$3</p>
+<p>$1$2<span class="math math-inline">3</span></p>
+<p><span class="math math-inline">1{$2$}3</span></p>
+<p><span class="math math-display">1</span>2$$3</p>
+<p><span class="math math-display">1</span>2<span class="math math-display">3</span></p>
+<p><span class="math math-display">1{$$2$$}3</span></p>
+````````````````````````````````
+
 ## Edge case tests comparison with GitHub
 
 Test cases

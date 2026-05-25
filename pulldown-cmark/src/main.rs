@@ -114,6 +114,7 @@ pub fn main() -> std::io::Result<()> {
         "enable-container-extensions",
         "enable container extensions",
     );
+    opts.optflag("", "enable-highlight", "enable highlight");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -172,6 +173,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-container-extensions") {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    }
+    if matches.opt_present("enable-highlight") {
+        opts.insert(Options::ENABLE_HIGHLIGHT);
     }
 
     let mut input = String::new();

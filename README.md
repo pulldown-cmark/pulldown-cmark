@@ -20,8 +20,10 @@ It is designed to be:
 
 Further, it optionally supports parsing footnotes,
 [Github flavored tables](https://github.github.com/gfm/#tables-extension-),
-[Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-) and
-[strikethrough](https://github.github.com/gfm/#strikethrough-extension-).
+[Github flavored task lists](https://github.github.com/gfm/#task-list-items-extension-),
+[strikethrough](https://github.github.com/gfm/#strikethrough-extension-) and
+[highlight](https://github.com/markdown-it/markdown-it-mark) (`==marked==`,
+rendered as `<mark>`).
 
 Rustc 1.71.1 or newer is required to build the crate.
 

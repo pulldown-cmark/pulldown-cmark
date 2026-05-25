@@ -439,6 +439,31 @@ $}$] $$
 
 #[test]
 fn math_test_25() {
+    let original = r##"$1$2$3
+
+$1$2$3$
+
+$1{$2$}3$
+
+$$1$$2$$3
+
+$$1$$2$$3$$
+
+$$1{$$2$$}3$$
+"##;
+    let expected = r##"<p>$1$2$3</p>
+<p>$1$2<span class="math math-inline">3</span></p>
+<p><span class="math math-inline">1{$2$}3</span></p>
+<p><span class="math math-display">1</span>2$$3</p>
+<p><span class="math math-display">1</span>2<span class="math math-display">3</span></p>
+<p><span class="math math-display">1{$$2$$}3</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn math_test_26() {
     let original = r##"$x$ $`y`$
 "##;
     let expected = r##"<p><span class="math math-inline">x</span> <span class="math math-inline">`y`</span></p>
@@ -448,7 +473,7 @@ fn math_test_25() {
 }
 
 #[test]
-fn math_test_26() {
+fn math_test_27() {
     let original = r##"- $a$
 
   ```math
@@ -490,7 +515,7 @@ b
 }
 
 #[test]
-fn math_test_27() {
+fn math_test_28() {
     let original = r##"- ![node logo](https://nodejs.org/static/images/logo.svg)
 - $x$
 "##;
@@ -504,7 +529,7 @@ fn math_test_27() {
 }
 
 #[test]
-fn math_test_28() {
+fn math_test_29() {
     let original = r##"<details>
 
 $A = 5$
@@ -527,7 +552,7 @@ A = 5
 }
 
 #[test]
-fn math_test_29() {
+fn math_test_30() {
     let original = r##"$a<b$
 
 $$a<b$$
@@ -540,7 +565,7 @@ $$a<b$$
 }
 
 #[test]
-fn math_test_30() {
+fn math_test_31() {
     let original = r##"[^a]
 
 [^a]: Lorem $a$
@@ -555,7 +580,7 @@ fn math_test_30() {
 }
 
 #[test]
-fn math_test_31() {
+fn math_test_32() {
     let original = r##"[$a$](x)
 "##;
     let expected = r##"<p>
@@ -567,7 +592,7 @@ fn math_test_31() {
 }
 
 #[test]
-fn math_test_32() {
+fn math_test_33() {
     let original = r##"a$x$
 
 -$x$
@@ -583,7 +608,7 @@ fn math_test_32() {
 }
 
 #[test]
-fn math_test_33() {
+fn math_test_34() {
     let original = r##"_$a$ equals $b$_
 
 _$a$ equals $b$_
@@ -599,7 +624,7 @@ _$a$ equals $b$_
 }
 
 #[test]
-fn math_test_34() {
+fn math_test_35() {
     let original = r##"$$
 a
 $$
@@ -622,7 +647,7 @@ a
 }
 
 #[test]
-fn math_test_35() {
+fn math_test_36() {
     let original = r##"$\{a\,b\}$
 "##;
     let expected = r##"<p><span class="math math-inline">\{a\,b\}</span></p>
@@ -632,7 +657,7 @@ fn math_test_35() {
 }
 
 #[test]
-fn math_test_36() {
+fn math_test_37() {
     let original = r##"$a <b > c$
 
 $[(a+b)c](d+e)$
@@ -648,7 +673,7 @@ ${a}_b c_{d}$
 }
 
 #[test]
-fn math_test_37() {
+fn math_test_38() {
     let original = r##"When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
 $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 "##;
@@ -660,7 +685,7 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 }
 
 #[test]
-fn math_test_38() {
+fn math_test_39() {
     let original = r##"$x = \$$
 "##;
     let expected = r##"<p><span class="math math-inline">x = \$</span></p>
@@ -670,7 +695,7 @@ fn math_test_38() {
 }
 
 #[test]
-fn math_test_39() {
+fn math_test_40() {
     let original = r##"_Equation $\Omega(69)$ in italic text_
 "##;
     let expected = r##"<p><em>Equation <span class="math math-inline">\Omega(69)</span> in italic text</em></p>
@@ -680,7 +705,7 @@ fn math_test_39() {
 }
 
 #[test]
-fn math_test_40() {
+fn math_test_41() {
     let original = r##"$\pi$
 '$\pi$
 "$\pi$
@@ -704,7 +729,7 @@ fn math_test_40() {
 }
 
 #[test]
-fn math_test_41() {
+fn math_test_42() {
     let original = r##"| first $|$ second |
 |--------|---------|
 | a ${   | }$ b    |
@@ -720,7 +745,7 @@ fn math_test_41() {
 }
 
 #[test]
-fn math_test_42() {
+fn math_test_43() {
     let original = r##"| first $\|$ second |
 |-------------------|
 | a ${   \| }$ b    |
@@ -736,7 +761,7 @@ fn math_test_42() {
 }
 
 #[test]
-fn math_test_43() {
+fn math_test_44() {
     let original = r##"| Description | Test case |
 |-------------|-----------|
 | Single      | $\$       |
@@ -774,7 +799,7 @@ fn math_test_43() {
 }
 
 #[test]
-fn math_test_44() {
+fn math_test_45() {
     let original = r##"This is not an inline math environment: $}{$
 But, because it's nested too deeply, this is parsed as an inline math environment:
 {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
@@ -794,7 +819,7 @@ But this still isn't, because the braces are still counted: $}{$</p>
 }
 
 #[test]
-fn math_test_45() {
+fn math_test_46() {
     let original = r##"This is also deeply nested, but, unlike the first example,
 they don't have an equal number of close braces and open braces,
 so aren't detected as math.
@@ -823,7 +848,7 @@ another improperly nested example
 }
 
 #[test]
-fn math_test_46() {
+fn math_test_47() {
     let original = r##"${}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
@@ -857,7 +882,7 @@ fn math_test_46() {
 }
 
 #[test]
-fn math_test_47() {
+fn math_test_48() {
     let original = r##"${{{{{{{{{{{{{{{{{{{{ 20 open braces
 {{{{{{{{{{{{{{{{{{{{  40 open braces
 {{{{{{{{{{{{{{{{{{{{  60 open braces

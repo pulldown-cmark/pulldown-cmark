@@ -79,6 +79,7 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Highlight,
     Superscript,
     Subscript,
     Math(CowIndex, bool), // true for display math
@@ -165,6 +166,7 @@ impl ItemBody {
                 | Emphasis
                 | Strong
                 | Strikethrough
+                | Highlight
                 | Math(..)
                 | Code(..)
                 | Link(..)
@@ -321,7 +323,7 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'input> {
         &self.inner.allocs.refdefs
     }
 
@@ -1070,6 +1072,15 @@ impl<'input> ParserInner<'input> {
                                             backslash_escaped: false,
                                         }
                                     }
+                                } else if c == b'=' {
+                                    if inc == 2 && self.options.contains(Options::ENABLE_HIGHLIGHT)
+                                    {
+                                        ItemBody::Highlight
+                                    } else {
+                                        ItemBody::Text {
+                                            backslash_escaped: false,
+                                        }
+                                    }
                                 } else if inc == 2 {
                                     ItemBody::Strong
                                 } else {
@@ -1189,6 +1200,7 @@ impl<'input> ParserInner<'input> {
         ix += 1;
 
         let scan_separator = |ix: &mut usize| {
+            let start = *ix;
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
             if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
                 *ix += bl;
@@ -1199,6 +1211,7 @@ impl<'input> ParserInner<'input> {
                 );
             }
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
+            *ix - start
         };
 
         scan_separator(&mut ix);
@@ -1207,9 +1220,12 @@ impl<'input> ParserInner<'input> {
         let dest = unescape(dest, self.tree.is_in_table());
         ix += dest_length;
 
-        scan_separator(&mut ix);
+        let title_sep = scan_separator(&mut ix);
 
         let title = if let Some((bytes_scanned, t)) = self.scan_link_title(underlying, ix, node) {
+            if title_sep == 0 {
+                return None;
+            }
             ix += bytes_scanned;
             scan_separator(&mut ix);
             t
@@ -1596,7 +1612,7 @@ struct InlineStack {
     // a strikethrough delimiter will never match with any element
     // in the stack with index smaller than
     // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 10],
+    lower_bounds: [usize; 11],
 }
 
 impl InlineStack {
@@ -1609,6 +1625,7 @@ impl InlineStack {
     const TILDES: usize = 5;
     const UNDERSCORE_BASE: usize = 6;
     const CIRCUMFLEXES: usize = 9;
+    const EQUALS: usize = 10;
 
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
@@ -1618,7 +1635,7 @@ impl InlineStack {
                 };
             }
         }
-        self.lower_bounds = [0; 10];
+        self.lower_bounds = [0; 11];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
@@ -1644,6 +1661,8 @@ impl InlineStack {
             }
         } else if c == b'^' {
             self.lower_bounds[InlineStack::CIRCUMFLEXES]
+        } else if c == b'=' {
+            self.lower_bounds[InlineStack::EQUALS]
         } else {
             self.lower_bounds[InlineStack::TILDES]
         }
@@ -1663,6 +1682,8 @@ impl InlineStack {
             }
         } else if c == b'^' {
             self.lower_bounds[InlineStack::CIRCUMFLEXES] = new_bound;
+        } else if c == b'=' {
+            self.lower_bounds[InlineStack::EQUALS] = new_bound;
         } else {
             self.lower_bounds[InlineStack::TILDES] = new_bound;
         }
@@ -1690,7 +1711,7 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                if (c == b'~' || c == b'^') && run_length != el.run_length {
+                if (c == b'~' || c == b'^' || c == b'=') && run_length != el.run_length {
                     return false;
                 }
                 el.c == c
@@ -1725,6 +1746,8 @@ impl InlineStack {
             self.trim_lower_bound(InlineStack::TILDES);
         } else if el.c == b'^' {
             self.trim_lower_bound(InlineStack::CIRCUMFLEXES);
+        } else if el.c == b'=' {
+            self.trim_lower_bound(InlineStack::EQUALS);
         }
         self.stack.push(el)
     }
@@ -2230,7 +2253,7 @@ pub struct OffsetIter<'a, CB> {
 
 impl<'a, CB: ParserCallbacks<'a>> OffsetIter<'a, CB> {
     /// Returns a reference to the internal reference definition tracker.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'a> {
         self.parser.reference_definitions()
     }
 }
@@ -2313,6 +2336,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Subscript => TagEnd::Subscript,
         ItemBody::Strong => TagEnd::Strong,
         ItemBody::Strikethrough => TagEnd::Strikethrough,
+        ItemBody::Highlight => TagEnd::Highlight,
         ItemBody::Link(..) => TagEnd::Link,
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
@@ -2361,6 +2385,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Subscript => Tag::Subscript,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
+        ItemBody::Highlight => Tag::Highlight,
         ItemBody::Link(link_ix) => {
             let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
             Tag::Link {

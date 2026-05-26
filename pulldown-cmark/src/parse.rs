@@ -3023,7 +3023,7 @@ text
             .filter_map(|(e, r)| matches!(e, Event::Text(_)).then_some(r.clone()))
             .collect();
 
-        let mut seen = std::collections::HashMap::new();
+        let mut seen = HashMap::new();
         for r in &text_ranges {
             *seen.entry(r.clone()).or_insert(0usize) += 1;
         }

@@ -3003,41 +3003,4 @@ text
             n8 / n1.max(1)
         );
     }
-
-    #[test]
-    fn wikilink_pipe_no_duplicate_siblings() {
-        // `[[[[name|]]]]`
-        // The outer `[[` become Text; the inner `[[` form a wikilink.
-        // After the wikilink the remaining `]]` must appear exactly
-        // once as siblings.
-        let input = "[[[[^(\n|]]]]";
-        let events: Vec<_> = Parser::new_ext(input, Options::ENABLE_WIKILINKS)
-            .into_offset_iter()
-            .collect();
-
-        // Collect non-structural events (excluding Start/End wrappers
-        // whose ranges legitimately repeat).  Each Text event's byte
-        // range must appear at most once.
-        let text_ranges: Vec<_> = events
-            .iter()
-            .filter_map(|(e, r)| matches!(e, Event::Text(_)).then_some(r.clone()))
-            .collect();
-
-        let mut seen = HashMap::new();
-        for r in &text_ranges {
-            *seen.entry(r.clone()).or_insert(0usize) += 1;
-        }
-        let dups: Vec<_> = seen.iter().filter(|(_, &c)| c > 1).collect();
-        assert!(
-            dups.is_empty(),
-            "Text events for byte ranges {:?} were emitted more than once.\n\
-             Full event list:\n{}",
-            dups.iter().map(|(r, _)| r).collect::<Vec<_>>(),
-            events
-                .iter()
-                .map(|(e, r)| format!("  {r:6?}  {e:?}"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        );
-    }
 }

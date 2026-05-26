@@ -2453,6 +2453,18 @@ mod test {
     }
 
     #[test]
+    fn issue_1084() {
+        let markdown_input = "* [ ] ~![=?\\*\x0c\x00\x00  \x0d* [  1=1\x00\x0d<!]:[=?\\\x0d\x0c\n* [ ] \x0d\x0c%    ";
+
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_TASKLISTS);
+        options.insert(Options::ENABLE_STRIKETHROUGH);
+
+        let parser = Parser::new_ext(markdown_input, options);
+        for _ in parser {}
+    }
+
+    #[test]
     fn issue_1030() {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_WIKILINKS);

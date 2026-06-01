@@ -958,6 +958,29 @@ impl<'input> ParserInner<'input> {
                         // break node so passes can actually format
                         // the display text
                         self.tree[body_node].item.start = rest;
+
+                        // Terminate the child chain so it does not extend
+                        // past the closing `]]` into sibling content.
+                        let mut scan = body_node;
+                        loop {
+                            if scan == cur_ix {
+                                // body_node is the closing delimiter node
+                                // (empty display text after `|`); cut here.
+                                self.tree[scan].next = None;
+                                break;
+                            }
+                            match self.tree[scan].next {
+                                Some(n) if n == cur_ix => {
+                                    // scan is the last display-text node;
+                                    // cut before cur_ix.
+                                    self.tree[scan].next = None;
+                                    break;
+                                }
+                                Some(n) => scan = n,
+                                None => break,
+                            }
+                        }
+
                         Some((true, body_node, wikitext))
                     } else {
                         None
@@ -2956,5 +2979,28 @@ text
             Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_no_event_blowup() {
+        // Regression: handle_wikilink reused an existing tree node as
+        // the wikilink's child without terminating that node's `next`
+        // chain.  The `next` chain threaded through the closing `]]`
+        // into the content after the wikilink, so the EventIter
+        // visited that tail content both as children (via child ptr)
+        // and as siblings (via next ptr). Adversarial repeated
+        // `[[|]]` patterns compounded exponentially.
+        let one = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(1);
+        let eight = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(8);
+
+        let n1 = Parser::new_ext(&one, Options::ENABLE_WIKILINKS).count();
+        let n8 = Parser::new_ext(&eight, Options::ENABLE_WIKILINKS).count();
+
+        assert!(
+            n8 <= n1 * 20,
+            "Event count should scale linearly with input length; \
+             got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
+            n8 / n1.max(1)
+        );
     }
 }

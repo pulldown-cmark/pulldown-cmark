@@ -146,13 +146,21 @@ Wikilinks cannot be empty. They will render as-is.
 <p>]] [[]] [[|]] [[|Symbol]] [[</p>
 ````````````````````````````````
 
+If the display text is empty then we omit it from the output anchor.
+
+```````````````````````````````` example_wikilinks
+[[link|]]
+.
+<p><a href="link"></a></p>
+````````````````````````````````
+
 When a wikilink with a pipe separator is nested inside extra brackets, the
 trailing `]]` after the wikilink must appear exactly once.
 
 ```````````````````````````````` example_wikilinks
-[[[[link|]]]]
+[[[[link|display]]]]
 .
-<p>[[<a href="link">]</a>]]</p>
+<p>[[<a href="link">display</a>]]</p>
 ````````````````````````````````
 
 Other interactions wikilinks have with other Markdown syntax:

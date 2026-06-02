@@ -953,37 +953,46 @@ impl<'input> ParserInner<'input> {
                         return None;
                     }
                     // [[WikiName|rest]]
-                    let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
-                    if let Some(body_node) = body_node {
-                        // break node so passes can actually format
-                        // the display text
-                        self.tree[body_node].item.start = rest;
-
-                        // Terminate the child chain so it does not extend
-                        // past the closing `]]` into sibling content.
-                        let mut scan = body_node;
-                        loop {
-                            if scan == cur_ix {
-                                // body_node is the closing delimiter node
-                                // (empty display text after `|`); cut here.
-                                self.tree[scan].next = None;
-                                break;
-                            }
-                            match self.tree[scan].next {
-                                Some(n) if n == cur_ix => {
-                                    // scan is the last display-text node;
-                                    // cut before cur_ix.
-                                    self.tree[scan].next = None;
-                                    break;
-                                }
-                                Some(n) => scan = n,
-                                None => break,
-                            }
-                        }
-
+                    if rest >= end_ix {
+                        // Empty display text: the `|` is immediately followed
+                        // by `]]`. Create a zero-length synthetic node so the
+                        // anchor has no content, rather than accidentally
+                        // capturing the closing `]` delimiter.
+                        let body_node = self.tree.create_node(Item {
+                            start: rest,
+                            end: rest,
+                            body: ItemBody::Text {
+                                backslash_escaped: false,
+                            },
+                        });
                         Some((true, body_node, wikitext))
                     } else {
-                        None
+                        let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                        if let Some(body_node) = body_node {
+                            // break node so passes can actually format
+                            // the display text
+                            self.tree[body_node].item.start = rest;
+
+                            // Terminate the child chain so it does not extend
+                            // past the closing `]]` into sibling content.
+                            let mut scan = body_node;
+                            loop {
+                                match self.tree[scan].next {
+                                    Some(n) if n == cur_ix => {
+                                        // scan is the last display-text node;
+                                        // cut before cur_ix.
+                                        self.tree[scan].next = None;
+                                        break;
+                                    }
+                                    Some(n) => scan = n,
+                                    None => break,
+                                }
+                            }
+
+                            Some((true, body_node, wikitext))
+                        } else {
+                            None
+                        }
                     }
                 }
                 None => {

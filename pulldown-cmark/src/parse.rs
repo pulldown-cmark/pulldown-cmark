@@ -695,6 +695,7 @@ impl<'input> ParserInner<'input> {
                             .unwrap_or(false)
                     {
                         if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
+                            prev = Some(node);
                             cur = self.tree[node].next;
                             continue;
                         }
@@ -972,22 +973,6 @@ impl<'input> ParserInner<'input> {
                             // break node so passes can actually format
                             // the display text
                             self.tree[body_node].item.start = rest;
-
-                            // Terminate the child chain so it does not extend
-                            // past the closing `]]` into sibling content.
-                            let mut scan = body_node;
-                            loop {
-                                match self.tree[scan].next {
-                                    Some(n) if n == cur_ix => {
-                                        // scan is the last display-text node;
-                                        // cut before cur_ix.
-                                        self.tree[scan].next = None;
-                                        break;
-                                    }
-                                    Some(n) => scan = n,
-                                    None => break,
-                                }
-                            }
 
                             Some((true, body_node, wikitext))
                         } else {

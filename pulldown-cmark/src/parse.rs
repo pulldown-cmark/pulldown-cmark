@@ -695,6 +695,7 @@ impl<'input> ParserInner<'input> {
                             .unwrap_or(false)
                     {
                         if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
+                            prev = Some(node);
                             cur = self.tree[node].next;
                             continue;
                         }
@@ -953,14 +954,30 @@ impl<'input> ParserInner<'input> {
                         return None;
                     }
                     // [[WikiName|rest]]
-                    let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
-                    if let Some(body_node) = body_node {
-                        // break node so passes can actually format
-                        // the display text
-                        self.tree[body_node].item.start = rest;
+                    if rest >= end_ix {
+                        // Empty display text: the `|` is immediately followed
+                        // by `]]`. Create a zero-length synthetic node so the
+                        // anchor has no content, rather than accidentally
+                        // capturing the closing `]` delimiter.
+                        let body_node = self.tree.create_node(Item {
+                            start: rest,
+                            end: rest,
+                            body: ItemBody::Text {
+                                backslash_escaped: false,
+                            },
+                        });
                         Some((true, body_node, wikitext))
                     } else {
-                        None
+                        let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                        if let Some(body_node) = body_node {
+                            // break node so passes can actually format
+                            // the display text
+                            self.tree[body_node].item.start = rest;
+
+                            Some((true, body_node, wikitext))
+                        } else {
+                            None
+                        }
                     }
                 }
                 None => {
@@ -2956,5 +2973,28 @@ text
             Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_no_event_blowup() {
+        // Regression: handle_wikilink reused an existing tree node as
+        // the wikilink's child without terminating that node's `next`
+        // chain.  The `next` chain threaded through the closing `]]`
+        // into the content after the wikilink, so the EventIter
+        // visited that tail content both as children (via child ptr)
+        // and as siblings (via next ptr). Adversarial repeated
+        // `[[|]]` patterns compounded exponentially.
+        let one = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(1);
+        let eight = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(8);
+
+        let n1 = Parser::new_ext(&one, Options::ENABLE_WIKILINKS).count();
+        let n8 = Parser::new_ext(&eight, Options::ENABLE_WIKILINKS).count();
+
+        assert!(
+            n8 <= n1 * 20,
+            "Event count should scale linearly with input length; \
+             got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
+            n8 / n1.max(1)
+        );
     }
 }

@@ -177,6 +177,26 @@ fn wikilinks_test_15() {
 
 #[test]
 fn wikilinks_test_16() {
+    let original = r##"[[link|]]
+"##;
+    let expected = r##"<p><a href="link"></a></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true, false, false);
+}
+
+#[test]
+fn wikilinks_test_17() {
+    let original = r##"[[[[link|display]]]]
+"##;
+    let expected = r##"<p>[[<a href="link">display</a>]]</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, true, false, false);
+}
+
+#[test]
+fn wikilinks_test_18() {
     let original = r##"[inline link]([[url]])
 "##;
     let expected = r##"<p><a href="%5B%5Burl%5D%5D">inline link</a></p>
@@ -186,7 +206,7 @@ fn wikilinks_test_16() {
 }
 
 #[test]
-fn wikilinks_test_17() {
+fn wikilinks_test_19() {
     let original = r##"[inline link]([[url)]]
 "##;
     let expected = r##"<p><a href="%5B%5Burl">inline link</a>]]</p>
@@ -196,7 +216,7 @@ fn wikilinks_test_17() {
 }
 
 #[test]
-fn wikilinks_test_18() {
+fn wikilinks_test_20() {
     let original = r##"`[[code]]`
 "##;
     let expected = r##"<p><code>[[code]]</code></p>
@@ -206,7 +226,7 @@ fn wikilinks_test_18() {
 }
 
 #[test]
-fn wikilinks_test_19() {
+fn wikilinks_test_21() {
     let original = r##"emphasis **cross [[over** here]]
 "##;
     let expected = r##"<p>emphasis **cross <a href="over**%20here">over** here</a></p>
@@ -216,7 +236,7 @@ fn wikilinks_test_19() {
 }
 
 #[test]
-fn wikilinks_test_20() {
+fn wikilinks_test_22() {
     let original = r##"[[first\|second]]
 "##;
     let expected = r##"<p><a href="first%5C">second</a></p>
@@ -226,7 +246,7 @@ fn wikilinks_test_20() {
 }
 
 #[test]
-fn wikilinks_test_21() {
+fn wikilinks_test_23() {
     let original = r##"[[first&#33;second]]
 "##;
     let expected = r##"<p><a href="first&amp;#33;second">first&amp;#33;second</a></p>

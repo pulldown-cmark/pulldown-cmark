@@ -547,10 +547,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ix = next_ix;
         }
 
-        if let Some((next_ix, _tree_idx)) = self.parse_table_caption(ix) {
-            ix = next_ix
-        } 
-
         self.pop(ix);
         Some(ix)
     }
@@ -667,7 +663,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // Check for a caption
         if scan_ch(&bytes[ix..], b':') == 1 && self.options.contains(Options::ENABLE_TABLE_CAPTIONS) {
-            return None;
+            let (ix, row_ix) = self.parse_table_caption(ix)?;
+            return Some((ix, row_ix));
         }
 
         let (ix, row_ix) = self.parse_table_row_inner(ix, row_cells, missing_empty_cells)?;
@@ -678,38 +675,31 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self, 
         mut ix: usize,
     ) -> Option<(usize, TreeIndex)> {
+
         let bytes = self.text.as_bytes();
-        let mut line_start = LineStart::new(&bytes[ix..]);
-        let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
-        if tree_position != self.tree.spine_len() {
-            return None;
+        ix += scan_ch(&bytes[ix..], b':');
+        ix += scan_whitespace_no_nl(&bytes[ix..]);
+        let start_ix = ix;
+        
+        let tree_idx = self.tree.append(Item {
+            start: start_ix,
+            end: ix,
+            body: ItemBody::TableCaption
+        });
+
+        self.tree.push();
+        let (next_ix, _brk) = self.parse_line(ix, None, TableParseMode::Active);
+
+        self.tree[tree_idx].item.end = next_ix;
+        self.tree.pop();
+
+        ix = next_ix;
+
+        if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
+            ix += eol_bytes;
         }
-        line_start.scan_all_space();
-        ix += line_start.bytes_scanned();
 
-        if scan_ch(&bytes[ix..], b':') == 1 {
-            ix += 1;
-            let start_ix = ix;
-            
-            ix += scan_whitespace_no_nl(&bytes[ix..]);
-            let tree_idx = self.tree.append(Item {
-                start: start_ix,
-                end: ix,
-                body: ItemBody::TableCaption
-            });
-
-            self.tree.push();
-            let (next_ix, _brk) = self.parse_line(ix, None, TableParseMode::Active);
-
-            self.tree[tree_idx].item.end = next_ix;
-            self.tree.pop();
-
-            ix = next_ix;
-            Some((ix, tree_idx))
-        }
-        else {
-            None
-        }
+        Some((ix, tree_idx))
     }
 
     /// Returns offset of line start after paragraph.

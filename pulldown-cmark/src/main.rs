@@ -75,7 +75,7 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("e", "events", "print event sequence instead of rendering");
     // Check for conflicting short flags when adding a new one!
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
-    opts.optflag("C", "enable-table-captions", "enable Pandoc-style captions for tables");
+    opts.optflag("c", "enable-table-captions", "enable Pandoc-style captions for tables");
     opts.optflag("m", "enable-math", "enable LaTeX-style math");
     opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
     opts.optflag(

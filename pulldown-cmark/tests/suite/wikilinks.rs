@@ -182,7 +182,7 @@ fn wikilinks_test_16() {
     let expected = r##"<p><a href="link"></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, true, false, false, false);
 }
 
 #[test]
@@ -192,7 +192,7 @@ fn wikilinks_test_17() {
     let expected = r##"<p>[[<a href="link">display</a>]]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, false, false, false, false, true, false, false, false);
 }
 
 #[test]

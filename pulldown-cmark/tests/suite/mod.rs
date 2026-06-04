@@ -21,4 +21,5 @@ mod spec;
 mod strikethrough;
 mod super_sub;
 mod table;
+mod table_captions;
 mod wikilinks;

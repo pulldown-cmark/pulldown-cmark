@@ -251,7 +251,7 @@ pub enum Tag<'a> {
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     Table(Vec<Alignment>),
-    /// A table caption. 
+    /// A table caption.
     /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     TableCaption,
     /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
@@ -787,9 +787,8 @@ bitflags::bitflags! {
         /// `<mark>highlight</mark>`. Originates from markdown-it / pandoc; not part
         /// of CommonMark or GFM.
         const ENABLE_HIGHLIGHT = 1 << 17;
-
         /// Semi-Pandoc style captions for tables.
-        const ENABLE_TABLE_CAPTIONS = 1 << 18; 
+        const ENABLE_TABLE_CAPTIONS = 1 << 18;
     }
 }
 

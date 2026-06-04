@@ -1595,7 +1595,8 @@ impl Tree<Item> {
         fn might_be_in_table(item: &Item) -> bool {
             item.body.is_inline()
                 || matches!(item.body, |ItemBody::TableHead| ItemBody::TableRow
-                    | ItemBody::TableCell |ItemBody::TableCaption)
+                    | ItemBody::TableCell
+                    | ItemBody::TableCaption)
         }
         for &ix in self.walk_spine().rev() {
             if matches!(self[ix].item.body, ItemBody::Table(_)) {

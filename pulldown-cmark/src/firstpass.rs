@@ -660,9 +660,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         ) {
             return None;
         }
-
-        // Check for a caption
-        if scan_ch(&bytes[ix..], b':') == 1 && self.options.contains(Options::ENABLE_TABLE_CAPTIONS) {
+        if scan_ch(&bytes[ix..], b':') == 1 && self.options.contains(Options::ENABLE_TABLE_CAPTIONS)
+        {
             let (ix, row_ix) = self.parse_table_caption(ix)?;
             return Some((ix, row_ix));
         }
@@ -671,20 +670,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         Some((ix, row_ix))
     }
 
-    fn parse_table_caption(
-        &mut self, 
-        mut ix: usize,
-    ) -> Option<(usize, TreeIndex)> {
-
+    fn parse_table_caption(&mut self, mut ix: usize) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         ix += scan_ch(&bytes[ix..], b':');
         ix += scan_whitespace_no_nl(&bytes[ix..]);
         let start_ix = ix;
-        
         let tree_idx = self.tree.append(Item {
             start: start_ix,
             end: ix,
-            body: ItemBody::TableCaption
+            body: ItemBody::TableCaption,
         });
 
         self.tree.push();

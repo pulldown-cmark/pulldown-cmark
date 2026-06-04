@@ -219,9 +219,7 @@ where
                 self.table_alignments = alignments;
                 self.write("<table>")
             }
-            Tag::TableCaption => {
-                self.write("<caption>")
-            }
+            Tag::TableCaption => self.write("<caption>"),
             Tag::TableHead => {
                 self.table_state = TableState::Head;
                 self.table_cell_index = 0;

@@ -2527,10 +2527,6 @@ fn is_cjk_friendly_delim(delim: u8, run_len: usize) -> bool {
 }
 
 fn cjk_friendly_delim_run_can_open(s: &str, ix: usize, next_char: char, delim: u8) -> bool {
-    if delim == b'~' {
-        return true;
-    }
-
     let mut previous_chars = s[..ix].chars().rev();
     let prev_char = match previous_chars.next() {
         Some(ch) => ch,
@@ -2598,7 +2594,7 @@ fn cjk_friendly_delim_run_flanking(
     }
 
     let prev_sequence = classify_preceding_cjk_friendly_sequence(prev_char, get_prev_prev_char);
-    let cjk_changes_flanking = delim == b'*';
+    let cjk_changes_flanking = matches!(delim, b'*' | b'~');
     let before_cjk_or_ivs = cjk_changes_flanking
         && (prev_sequence.is_cjk || prev_sequence.is_ideographic_variation_selector);
     let before_space_or_punctuation = prev_char.is_whitespace() || prev_sequence.is_punctuation;
@@ -2620,7 +2616,7 @@ fn cjk_friendly_delim_run_flanking(
             || after_cjk
             || matches!(prev_char, '*' | '_'));
 
-    let can_open = if delim == b'*' {
+    let can_open = if matches!(delim, b'*' | b'~') {
         open
     } else {
         open && (before_space_or_punctuation || !close)

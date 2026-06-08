@@ -356,3 +356,15 @@ fn issue_819() {
         assert_eq!(expected, s.trim_end_matches('\n'));
     }
 }
+
+// Can't easily use regression.txt due to newline normalization.
+#[test]
+fn issue_1056() {
+    let original = "```\rcode\rblock\r\n```\n";
+    let expected = "<pre><code>code\rblock\n</code></pre>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original));
+
+    assert_eq!(expected, s);
+}

@@ -1,0 +1,166 @@
+Highlighted text uses `==` delimiters, mirroring the markdown-it / pandoc
+extension. The pairing rules mirror GFM's `~~` strikethrough.
+
+# Basic
+
+```````````````````````````````` example
+==hi==
+.
+<p><mark>hi</mark></p>
+````````````````````````````````
+
+```````````````````````````````` example
+==hello world==
+.
+<p><mark>hello world</mark></p>
+````````````````````````````````
+
+# Nesting with emphasis
+
+```````````````````````````````` example
+==*hi*==
+.
+<p><mark><em>hi</em></mark></p>
+````````````````````````````````
+
+```````````````````````````````` example
+*==hi==*
+.
+<p><em><mark>hi</mark></em></p>
+````````````````````````````````
+
+```````````````````````````````` example
+==**bold** and *em*==
+.
+<p><mark><strong>bold</strong> and <em>em</em></mark></p>
+````````````````````````````````
+
+# Single `=` is literal
+
+```````````````````````````````` example
+=hi=
+.
+<p>=hi=</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a = b
+.
+<p>a = b</p>
+````````````````````````````````
+
+# Whitespace adjacent to inner edges fails flanking
+
+```````````````````````````````` example
+== hi ==
+.
+<p>== hi ==</p>
+````````````````````````````````
+
+```````````````````````````````` example
+==hi ==
+.
+<p>==hi ==</p>
+````````````````````````````````
+
+```````````````````````````````` example
+== hi==
+.
+<p>== hi==</p>
+````````````````````````````````
+
+# Triple and quadruple runs do not pair
+
+```````````````````````````````` example
+===hi===
+.
+<p>===hi===</p>
+````````````````````````````````
+
+```````````````````````````````` example
+====hi====
+.
+<p>====hi====</p>
+````````````````````````````````
+
+```````````````````````````````` example
+====
+.
+<p>====</p>
+````````````````````````````````
+
+# Intraword highlight (mirrors `~~`)
+
+```````````````````````````````` example
+a==b==c
+.
+<p>a<mark>b</mark>c</p>
+````````````````````````````````
+
+```````````````````````````````` example
+==This==is==highlighted==
+.
+<p><mark>This</mark>is<mark>highlighted</mark></p>
+````````````````````````````````
+
+# Across a soft line break
+
+```````````````````````````````` example
+==a
+b==
+.
+<p><mark>a
+b</mark></p>
+````````````````````````````````
+
+# Backslash escapes
+
+```````````````````````````````` example
+==hi \== there==
+.
+<p><mark>hi == there</mark></p>
+````````````````````````````````
+
+```````````````````````````````` example
+\==not highlighted==
+.
+<p>==not highlighted==</p>
+````````````````````````````````
+
+# Inside other block contexts
+
+```````````````````````````````` example
+- ==in a list==
+.
+<ul>
+<li><mark>in a list</mark></li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+> ==in a quote==
+.
+<blockquote>
+<p><mark>in a quote</mark></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+# ==in a heading==
+.
+<h1><mark>in a heading</mark></h1>
+````````````````````````````````
+
+# Combined with strikethrough
+
+```````````````````````````````` example
+==~~both~~==
+.
+<p><mark><del>both</del></mark></p>
+````````````````````````````````
+
+```````````````````````````````` example
+~~==both==~~
+.
+<p><del><mark>both</mark></del></p>
+````````````````````````````````

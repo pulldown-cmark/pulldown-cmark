@@ -114,6 +114,7 @@ pub fn main() -> std::io::Result<()> {
         "enable-container-extensions",
         "enable container extensions",
     );
+    opts.optflag("", "enable-highlight", "enable highlight");
     opts.optflag(
         "",
         "enable-cjk-friendly-emphasis",
@@ -177,6 +178,9 @@ pub fn main() -> std::io::Result<()> {
     }
     if matches.opt_present("enable-container-extensions") {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    }
+    if matches.opt_present("enable-highlight") {
+        opts.insert(Options::ENABLE_HIGHLIGHT);
     }
     if matches.opt_present("enable-cjk-friendly-emphasis") {
         opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);

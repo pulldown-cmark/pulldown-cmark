@@ -2836,3 +2836,46 @@ Link refdef split from paragraph with line with spaces.
 .
 <p>:</p>
 ````````````````````````````````
+
+<https://github.com/pulldown-cmark/pulldown-cmark/issues/1080>
+
+```````````````````````````````` example
+[link]\[id]
+
+[id]: https://en.wikipedia.org
+.
+<p>[link][id]</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[id]\[]
+
+[id]: https://en.wikipedia.org
+.
+<p><a href="https://en.wikipedia.org">id</a>[]</p>
+````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/1099
+
+Link must be separated from title by at least one space
+
+```````````````````````````````` example
+[a](https://example.com"test")
+[a](<https://example.com>"test")
+[a](https://example.com(test))
+[a](<https://example.com>(test))
+
+[a](https://example.com "test")
+[a](<https://example.com> "test")
+[a](https://example.com (test))
+[a](<https://example.com> (test))
+.
+<p><a href="https://example.com%22test%22">a</a>
+[a](<a href="https://example.com">https://example.com</a>"test")
+<a href="https://example.com(test)">a</a>
+[a](<a href="https://example.com">https://example.com</a>(test))</p>
+<p><a href="https://example.com" title="test">a</a>
+<a href="https://example.com" title="test">a</a>
+<a href="https://example.com" title="test">a</a>
+<a href="https://example.com" title="test">a</a></p>
+````````````````````````````````

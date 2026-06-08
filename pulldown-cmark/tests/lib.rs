@@ -24,6 +24,7 @@ pub fn test_markdown_html(
     opts.insert(Options::ENABLE_MATH);
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
+    opts.insert(Options::ENABLE_HIGHLIGHT);
     opts.insert(Options::ENABLE_SUPERSCRIPT);
     if wikilinks {
         opts.insert(Options::ENABLE_WIKILINKS);

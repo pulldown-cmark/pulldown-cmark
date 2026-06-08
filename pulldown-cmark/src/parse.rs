@@ -79,6 +79,7 @@ pub(crate) enum ItemBody {
     Emphasis,
     Strong,
     Strikethrough,
+    Highlight,
     Superscript,
     Subscript,
     Math(CowIndex, bool), // true for display math
@@ -165,6 +166,7 @@ impl ItemBody {
                 | Emphasis
                 | Strong
                 | Strikethrough
+                | Highlight
                 | Math(..)
                 | Code(..)
                 | Link(..)
@@ -321,7 +323,7 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
 
     /// Returns a reference to the internal `RefDefs` object, which provides access
     /// to the internal map of reference definitions.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'input> {
         &self.inner.allocs.refdefs
     }
 
@@ -693,6 +695,7 @@ impl<'input> ParserInner<'input> {
                             .unwrap_or(false)
                     {
                         if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
+                            prev = Some(node);
                             cur = self.tree[node].next;
                             continue;
                         }
@@ -744,7 +747,7 @@ impl<'input> ParserInner<'input> {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
                             let scan_result =
-                                scan_reference(&self.tree, block_text, next, self.options);
+                                scan_reference(&self.tree, block_text, cur_ix, self.options);
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
@@ -951,14 +954,30 @@ impl<'input> ParserInner<'input> {
                         return None;
                     }
                     // [[WikiName|rest]]
-                    let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
-                    if let Some(body_node) = body_node {
-                        // break node so passes can actually format
-                        // the display text
-                        self.tree[body_node].item.start = rest;
+                    if rest >= end_ix {
+                        // Empty display text: the `|` is immediately followed
+                        // by `]]`. Create a zero-length synthetic node so the
+                        // anchor has no content, rather than accidentally
+                        // capturing the closing `]` delimiter.
+                        let body_node = self.tree.create_node(Item {
+                            start: rest,
+                            end: rest,
+                            body: ItemBody::Text {
+                                backslash_escaped: false,
+                            },
+                        });
                         Some((true, body_node, wikitext))
                     } else {
-                        None
+                        let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                        if let Some(body_node) = body_node {
+                            // break node so passes can actually format
+                            // the display text
+                            self.tree[body_node].item.start = rest;
+
+                            Some((true, body_node, wikitext))
+                        } else {
+                            None
+                        }
                     }
                 }
                 None => {
@@ -1065,6 +1084,15 @@ impl<'input> ParserInner<'input> {
                                 } else if c == b'^' {
                                     if self.options.contains(Options::ENABLE_SUPERSCRIPT) {
                                         ItemBody::Superscript
+                                    } else {
+                                        ItemBody::Text {
+                                            backslash_escaped: false,
+                                        }
+                                    }
+                                } else if c == b'=' {
+                                    if inc == 2 && self.options.contains(Options::ENABLE_HIGHLIGHT)
+                                    {
+                                        ItemBody::Highlight
                                     } else {
                                         ItemBody::Text {
                                             backslash_escaped: false,
@@ -1189,6 +1217,7 @@ impl<'input> ParserInner<'input> {
         ix += 1;
 
         let scan_separator = |ix: &mut usize| {
+            let start = *ix;
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
             if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
                 *ix += bl;
@@ -1199,6 +1228,7 @@ impl<'input> ParserInner<'input> {
                 );
             }
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
+            *ix - start
         };
 
         scan_separator(&mut ix);
@@ -1207,9 +1237,12 @@ impl<'input> ParserInner<'input> {
         let dest = unescape(dest, self.tree.is_in_table());
         ix += dest_length;
 
-        scan_separator(&mut ix);
+        let title_sep = scan_separator(&mut ix);
 
         let title = if let Some((bytes_scanned, t)) = self.scan_link_title(underlying, ix, node) {
+            if title_sep == 0 {
+                return None;
+            }
             ix += bytes_scanned;
             scan_separator(&mut ix);
             t
@@ -1596,7 +1629,7 @@ struct InlineStack {
     // a strikethrough delimiter will never match with any element
     // in the stack with index smaller than
     // `lower_bounds[InlineStack::TILDES]`.
-    lower_bounds: [usize; 10],
+    lower_bounds: [usize; 11],
 }
 
 impl InlineStack {
@@ -1609,6 +1642,7 @@ impl InlineStack {
     const TILDES: usize = 5;
     const UNDERSCORE_BASE: usize = 6;
     const CIRCUMFLEXES: usize = 9;
+    const EQUALS: usize = 10;
 
     fn pop_all(&mut self, tree: &mut Tree<Item>) {
         for el in self.stack.drain(..) {
@@ -1618,7 +1652,7 @@ impl InlineStack {
                 };
             }
         }
-        self.lower_bounds = [0; 10];
+        self.lower_bounds = [0; 11];
     }
 
     fn get_lowerbound(&self, c: u8, count: usize, both: bool) -> usize {
@@ -1644,6 +1678,8 @@ impl InlineStack {
             }
         } else if c == b'^' {
             self.lower_bounds[InlineStack::CIRCUMFLEXES]
+        } else if c == b'=' {
+            self.lower_bounds[InlineStack::EQUALS]
         } else {
             self.lower_bounds[InlineStack::TILDES]
         }
@@ -1663,6 +1699,8 @@ impl InlineStack {
             }
         } else if c == b'^' {
             self.lower_bounds[InlineStack::CIRCUMFLEXES] = new_bound;
+        } else if c == b'=' {
+            self.lower_bounds[InlineStack::EQUALS] = new_bound;
         } else {
             self.lower_bounds[InlineStack::TILDES] = new_bound;
         }
@@ -1690,7 +1728,7 @@ impl InlineStack {
             .cloned()
             .enumerate()
             .rfind(|(_, el)| {
-                if (c == b'~' || c == b'^') && run_length != el.run_length {
+                if (c == b'~' || c == b'^' || c == b'=') && run_length != el.run_length {
                     return false;
                 }
                 el.c == c
@@ -1725,6 +1763,8 @@ impl InlineStack {
             self.trim_lower_bound(InlineStack::TILDES);
         } else if el.c == b'^' {
             self.trim_lower_bound(InlineStack::CIRCUMFLEXES);
+        } else if el.c == b'=' {
+            self.trim_lower_bound(InlineStack::EQUALS);
         }
         self.stack.push(el)
     }
@@ -1792,19 +1832,19 @@ fn scan_link_label<'text>(
 fn scan_reference<'b>(
     tree: &Tree<Item>,
     text: &'b str,
-    cur: Option<TreeIndex>,
+    cur_ix: TreeIndex,
     options: Options,
 ) -> RefScan<'b> {
-    let cur_ix = match cur {
-        None => return RefScan::Failed,
-        Some(cur_ix) => cur_ix,
-    };
-    let start = tree[cur_ix].item.start;
+    let start = tree[cur_ix].item.end;
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
+        let next_ix = match tree[cur_ix].next {
+            Some(next_ix) if tree[next_ix].item.start == tree[cur_ix].item.end => next_ix,
+            _ => return RefScan::Failed,
+        };
         // TODO: this unwrap is sus and should be looked at closer
-        let closing_node = tree[cur_ix].next.unwrap();
+        let closing_node = tree[next_ix].next.unwrap();
         RefScan::Collapsed(tree[closing_node].next)
     } else {
         let label = scan_link_label(tree, &text[start..], options);
@@ -2230,7 +2270,7 @@ pub struct OffsetIter<'a, CB> {
 
 impl<'a, CB: ParserCallbacks<'a>> OffsetIter<'a, CB> {
     /// Returns a reference to the internal reference definition tracker.
-    pub fn reference_definitions(&self) -> &RefDefs<'_> {
+    pub fn reference_definitions(&self) -> &RefDefs<'a> {
         self.parser.reference_definitions()
     }
 }
@@ -2313,6 +2353,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         ItemBody::Subscript => TagEnd::Subscript,
         ItemBody::Strong => TagEnd::Strong,
         ItemBody::Strikethrough => TagEnd::Strikethrough,
+        ItemBody::Highlight => TagEnd::Highlight,
         ItemBody::Link(..) => TagEnd::Link,
         ItemBody::Image(..) => TagEnd::Image,
         ItemBody::Heading(level, _) => TagEnd::Heading(level),
@@ -2361,6 +2402,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::Subscript => Tag::Subscript,
         ItemBody::Strong => Tag::Strong,
         ItemBody::Strikethrough => Tag::Strikethrough,
+        ItemBody::Highlight => Tag::Highlight,
         ItemBody::Link(link_ix) => {
             let (link_type, dest_url, title, id) = allocs.take_link(link_ix);
             Tag::Link {
@@ -2931,5 +2973,28 @@ text
             Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_no_event_blowup() {
+        // Regression: handle_wikilink reused an existing tree node as
+        // the wikilink's child without terminating that node's `next`
+        // chain.  The `next` chain threaded through the closing `]]`
+        // into the content after the wikilink, so the EventIter
+        // visited that tail content both as children (via child ptr)
+        // and as siblings (via next ptr). Adversarial repeated
+        // `[[|]]` patterns compounded exponentially.
+        let one = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(1);
+        let eight = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(8);
+
+        let n1 = Parser::new_ext(&one, Options::ENABLE_WIKILINKS).count();
+        let n8 = Parser::new_ext(&eight, Options::ENABLE_WIKILINKS).count();
+
+        assert!(
+            n8 <= n1 * 20,
+            "Event count should scale linearly with input length; \
+             got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
+            n8 / n1.max(1)
+        );
     }
 }

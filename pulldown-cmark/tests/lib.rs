@@ -16,6 +16,7 @@ pub fn test_markdown_html(
     wikilinks: bool,
     deflists: bool,
     container_extensions: bool,
+    cjk_friendly_emphasis: bool,
 ) {
     let mut s = String::new();
 
@@ -51,6 +52,9 @@ pub fn test_markdown_html(
     }
     if container_extensions {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    }
+    if cjk_friendly_emphasis {
+        opts.insert(Options::ENABLE_CJK_FRIENDLY_EMPHASIS);
     }
 
     let p = Parser::new_ext(input, opts);

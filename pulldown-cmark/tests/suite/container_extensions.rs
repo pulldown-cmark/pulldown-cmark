@@ -20,7 +20,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -41,7 +41,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -68,7 +68,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -101,7 +101,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -118,7 +118,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -136,7 +136,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -154,7 +154,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -171,7 +171,7 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -188,7 +188,7 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -206,7 +206,7 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -222,7 +222,7 @@ content
 <p>:::</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -240,7 +240,7 @@ content
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -257,7 +257,7 @@ fn container_extensions_test_13() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -274,7 +274,7 @@ fn container_extensions_test_14() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -291,7 +291,7 @@ fn container_extensions_test_15() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -308,7 +308,7 @@ fn container_extensions_test_16() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -322,7 +322,7 @@ Hi
 :::</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -338,7 +338,7 @@ Hi
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn container_extensions_test_19() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -367,7 +367,7 @@ Hi
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -387,7 +387,7 @@ x</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -408,7 +408,7 @@ x</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -428,7 +428,7 @@ x
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -439,7 +439,7 @@ content :::
     let expected = r##"<div class="a"><p>content :::</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }
 
 #[test]
@@ -450,5 +450,5 @@ content ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     let expected = r##"<div class="a"><p>content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false);
 }

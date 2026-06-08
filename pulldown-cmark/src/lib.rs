@@ -101,6 +101,7 @@ pub mod html;
 
 pub mod utils;
 
+mod cjk;
 mod entities;
 mod firstpass;
 mod linklabel;
@@ -781,6 +782,12 @@ bitflags::bitflags! {
         /// `<mark>highlight</mark>`. Originates from markdown-it / pandoc; not part
         /// of CommonMark or GFM.
         const ENABLE_HIGHLIGHT = 1 << 17;
+        /// CommonMark CJK-friendly emphasis heuristics.
+        ///
+        /// Aligns delimiter run handling with the
+        /// [CommonMark CJK-friendly amendments/extension](https://github.com/tats-u/markdown-cjk-friendly/blob/main/specification.md),
+        /// enabling emphasis around CJK characters without surrounding whitespace.
+        const ENABLE_CJK_FRIENDLY_EMPHASIS = 1 << 18;
     }
 }
 

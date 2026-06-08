@@ -2616,7 +2616,7 @@ fn cjk_friendly_delim_run_flanking(
             || after_cjk
             || matches!(prev_char, '*' | '_'));
 
-    let can_open = if matches!(delim, b'*' | b'~') {
+    let can_open = if cjk_changes_flanking {
         open
     } else {
         open && (before_space_or_punctuation || !close)

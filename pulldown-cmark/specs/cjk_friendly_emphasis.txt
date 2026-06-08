@@ -455,7 +455,7 @@ Here I strike out an exclamation point~~!~~.
 <p>真<del>（她</del></p>
 <p><del>真，</del>她</p>
 <p>This<del>is</del>stricken</p>
-<p>Here I strike out an exclamation point<del>!</del>.</p>
+<p>Here I strike out an exclamation point~~!~~.</p>
 ````````````````````````````````
 
 CJK-friendly emphasis should remain compatible with other enabled extensions.

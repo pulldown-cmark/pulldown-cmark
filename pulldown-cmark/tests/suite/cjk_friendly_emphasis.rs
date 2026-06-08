@@ -443,7 +443,7 @@ Here I strike out an exclamation point~~!~~.
     let expected = r##"<p>真<del>（她</del></p>
 <p><del>真，</del>她</p>
 <p>This<del>is</del>stricken</p>
-<p>Here I strike out an exclamation point<del>!</del>.</p>
+<p>Here I strike out an exclamation point~~!~~.</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, true);

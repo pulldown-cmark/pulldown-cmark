@@ -236,6 +236,27 @@ fn html_test_12() {
 }
 
 #[test]
+fn html_test_13() {
+    let original = "A | B\n---|---\nfoo | bar|\n:caption\n\nA\n:foo";
+    let expected = r##"<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody>
+<tr><td>foo</td><td>bar</td></tr>
+<caption>caption</caption>
+</tbody></table>
+<dl>
+<dt>A</dt>
+<dd>foo</dd>
+</dl>
+"##;
+    let mut s = String::new();
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_TABLES);
+    opts.insert(Options::ENABLE_TABLE_CAPTIONS);
+    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    html::push_html(&mut s, Parser::new_ext(original, opts));
+    assert_eq!(expected, s);
+}
+
+#[test]
 fn html_test_broken_callback() {
     let original = r##"[foo],
 [bar],

@@ -694,7 +694,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ix += eol_bytes;
         }
 
-        let table_idx = self.tree.peek_up().expect("we must be in a table right now");
+        let table_idx = self
+            .tree
+            .peek_up()
+            .expect("we must be in a table right now");
         self.tree[tree_idx].next = self.tree[table_idx].child;
         self.tree[table_idx].child = Some(tree_idx);
         self.tree.move_to_sibling(before_idx);

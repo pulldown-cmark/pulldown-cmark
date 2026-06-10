@@ -174,6 +174,14 @@ impl<T: Default> Tree<T> {
     }
 
     /// Moves focus to the next sibling of the given node.
+    pub(crate) fn move_to_sibling(&mut self, cur_ix: Option<TreeIndex>) {
+        if let Some(cur) = cur_ix {
+            self[cur].next = None;
+        }
+        self.cur = cur_ix;
+    }
+
+    /// Moves focus to the next sibling of the given node.
     pub(crate) fn next_sibling(&mut self, cur_ix: TreeIndex) -> Option<TreeIndex> {
         self.cur = self[cur_ix].next;
         self.cur

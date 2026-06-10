@@ -251,6 +251,9 @@ pub enum Tag<'a> {
     /// A table. Contains a vector describing the text-alignment for each of its columns.
     /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
     Table(Vec<Alignment>),
+    /// A table caption.
+    /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
+    TableCaption,
     /// A table header. Contains only `TableCell`s. Note that the table body starts immediately
     /// after the closure of the `TableHead` tag. There is no `TableBody` tag.
     /// Only parsed and emitted with [`Options::ENABLE_TABLES`].
@@ -334,6 +337,7 @@ impl<'a> Tag<'a> {
             Tag::Item => TagEnd::Item,
             Tag::FootnoteDefinition(_) => TagEnd::FootnoteDefinition,
             Tag::Table(_) => TagEnd::Table,
+            Tag::TableCaption => TagEnd::TableCaption,
             Tag::TableHead => TagEnd::TableHead,
             Tag::TableRow => TagEnd::TableRow,
             Tag::TableCell => TagEnd::TableCell,
@@ -377,6 +381,7 @@ impl<'a> Tag<'a> {
             Tag::Item => Tag::Item,
             Tag::FootnoteDefinition(a) => Tag::FootnoteDefinition(a.into_static()),
             Tag::Table(v) => Tag::Table(v),
+            Tag::TableCaption => Tag::TableCaption,
             Tag::TableHead => Tag::TableHead,
             Tag::TableRow => Tag::TableRow,
             Tag::TableCell => Tag::TableCell,
@@ -439,6 +444,7 @@ pub enum TagEnd {
     DefinitionListDefinition,
 
     Table,
+    TableCaption,
     TableHead,
     TableRow,
     TableCell,
@@ -781,6 +787,8 @@ bitflags::bitflags! {
         /// `<mark>highlight</mark>`. Originates from markdown-it / pandoc; not part
         /// of CommonMark or GFM.
         const ENABLE_HIGHLIGHT = 1 << 17;
+        /// Semi-Pandoc style captions for tables.
+        const ENABLE_TABLE_CAPTIONS = 1 << 18;
     }
 }
 

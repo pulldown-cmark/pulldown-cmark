@@ -131,6 +131,7 @@ pub(crate) enum ItemBody {
 
     // Tables
     Table(AlignmentIndex),
+    TableCaption,
     TableHead,
     TableRow,
     TableCell,
@@ -1594,7 +1595,8 @@ impl Tree<Item> {
         fn might_be_in_table(item: &Item) -> bool {
             item.body.is_inline()
                 || matches!(item.body, |ItemBody::TableHead| ItemBody::TableRow
-                    | ItemBody::TableCell)
+                    | ItemBody::TableCell
+                    | ItemBody::TableCaption)
         }
         for &ix in self.walk_spine().rev() {
             if matches!(self[ix].item.body, ItemBody::Table(_)) {
@@ -2367,6 +2369,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
         }
         ItemBody::ListItem(_) => TagEnd::Item,
         ItemBody::TableHead => TagEnd::TableHead,
+        ItemBody::TableCaption => TagEnd::TableCaption,
         ItemBody::TableCell => TagEnd::TableCell,
         ItemBody::TableRow => TagEnd::TableRow,
         ItemBody::Table(..) => TagEnd::Table,
@@ -2450,6 +2453,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             }
         }
         ItemBody::ListItem(_) => Tag::Item,
+        ItemBody::TableCaption => Tag::TableCaption,
         ItemBody::TableHead => Tag::TableHead,
         ItemBody::TableCell => Tag::TableCell,
         ItemBody::TableRow => Tag::TableRow,

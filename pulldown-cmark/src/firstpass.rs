@@ -675,6 +675,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         ix += scan_ch(&bytes[ix..], b':');
         ix += scan_whitespace_no_nl(&bytes[ix..]);
         let start_ix = ix;
+        let before_idx = self.tree.cur();
         let tree_idx = self.tree.append(Item {
             start: start_ix,
             end: ix,
@@ -692,6 +693,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
             ix += eol_bytes;
         }
+
+        let table_idx = self.tree.peek_up().expect("we must be in a table right now");
+        self.tree[tree_idx].next = self.tree[table_idx].child;
+        self.tree[table_idx].child = Some(tree_idx);
+        self.tree.move_to_sibling(before_idx);
 
         Some((ix, tree_idx))
     }

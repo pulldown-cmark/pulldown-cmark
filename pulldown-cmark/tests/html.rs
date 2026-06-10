@@ -221,9 +221,9 @@ fn html_test_11() {
 #[test]
 fn html_test_12() {
     let original = "A | B\n---|---\nfoo | bar |\n: caption";
-    let expected = r##"<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody>
+    let expected = r##"<table><caption>caption</caption>
+<thead><tr><th>A</th><th>B</th></tr></thead><tbody>
 <tr><td>foo</td><td>bar</td></tr>
-<caption>caption</caption>
 </tbody></table>
 "##;
 

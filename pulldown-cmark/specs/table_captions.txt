@@ -14,9 +14,26 @@ Test|row
 
 Test ending
 .
-<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
-<tr><td>Test</td><td>row</td></tr>
+<table>
 <caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>Test</td><td>row</td></tr>
+</tbody></table>
+<p>Test ending</p>
+````````````````````````````````
+
+```````````````````````````````` example_table_captions
+Test|Table
+----|-----
+: Test Caption
+Test|row
+
+Test ending
+.
+<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>Test</td><td>row</td></tr>
 </tbody></table>
 <p>Test ending</p>
 ````````````````````````````````
@@ -35,10 +52,11 @@ Test with quote
 > Paragraph
 .
 <blockquote>
-<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
 <tr><td>Row 1</td><td>Every</td></tr>
 <tr><td>Row 2</td><td>Day</td></tr>
-<caption>Test Caption</caption>
 </tbody></table>
 <p>Paragraph</p>
 </blockquote>
@@ -64,10 +82,11 @@ Test with list
 </li>
 <li>
 <p>Second entry</p>
-<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
+<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
 <tr><td>Row 1</td><td>Part 2</td></tr>
 <tr><td>Row 2</td><td>Part 2</td></tr>
-<caption>Test Caption</caption>
 </tbody></table>
 </li>
 </ol>
@@ -86,10 +105,11 @@ Basic example.
 |✓    |✓    |
 : Done ✓
 .
-<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
-<tr><td>✓</td><td>✓</td></tr>
-<tr><td>✓</td><td>✓</td></tr>
+<table>
 <caption>Done ✓</caption>
+<thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
+<tr><td>✓</td><td>✓</td></tr>
+<tr><td>✓</td><td>✓</td></tr>
 </tbody></table>
 ````````````````````````````````
 
@@ -101,9 +121,10 @@ Hiragana-containing table.
 |ぃ|ぃ|
 : ぁ
 .
-<table><thead><tr><th>ぁ</th><th>ぃ</th></tr></thead><tbody>
-<tr><td>ぃ</td><td>ぃ</td></tr>
+<table>
 <caption>ぁ</caption>
+<thead><tr><th>ぁ</th><th>ぃ</th></tr></thead><tbody>
+<tr><td>ぃ</td><td>ぃ</td></tr>
 </tbody></table>
 ````````````````````````````````
 
@@ -115,9 +136,10 @@ Test russian symbols.
 |Ячейка 1 |Ячейка 2 |
 : Подпись
 .
-<table><thead><tr><th>Колонка 1</th><th>Колонка 2</th></tr></thead><tbody>
-<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>
+<table>
 <caption>Подпись</caption>
+<thead><tr><th>Колонка 1</th><th>Колонка 2</th></tr></thead><tbody>
+<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>
 </tbody></table>
 ````````````````````````````````
 

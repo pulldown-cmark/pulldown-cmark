@@ -12,9 +12,10 @@ Test|row
 
 Test ending
 "##;
-    let expected = r##"<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
-<tr><td>Test</td><td>row</td></tr>
+    let expected = r##"<table>
 <caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>Test</td><td>row</td></tr>
 </tbody></table>
 <p>Test ending</p>
 "##;
@@ -24,6 +25,26 @@ Test ending
 
 #[test]
 fn table_captions_test_2() {
+    let original = r##"Test|Table
+----|-----
+: Test Caption
+Test|row
+
+Test ending
+"##;
+    let expected = r##"<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<tr><td>Test</td><td>row</td></tr>
+</tbody></table>
+<p>Test ending</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn table_captions_test_3() {
     let original = r##"> Test  | Table
 > ------|------
 > Row 1 | Every
@@ -33,10 +54,11 @@ fn table_captions_test_2() {
 > Paragraph
 "##;
     let expected = r##"<blockquote>
-<table><thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
+<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Test</th><th>Table</th></tr></thead><tbody>
 <tr><td>Row 1</td><td>Every</td></tr>
 <tr><td>Row 2</td><td>Day</td></tr>
-<caption>Test Caption</caption>
 </tbody></table>
 <p>Paragraph</p>
 </blockquote>
@@ -46,7 +68,7 @@ fn table_captions_test_2() {
 }
 
 #[test]
-fn table_captions_test_3() {
+fn table_captions_test_4() {
     let original = r##" 1. First entry
  2. Second entry
 
@@ -62,10 +84,11 @@ fn table_captions_test_3() {
 </li>
 <li>
 <p>Second entry</p>
-<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
+<table>
+<caption>Test Caption</caption>
+<thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
 <tr><td>Row 1</td><td>Part 2</td></tr>
 <tr><td>Row 2</td><td>Part 2</td></tr>
-<caption>Test Caption</caption>
 </tbody></table>
 </li>
 </ol>
@@ -75,33 +98,18 @@ fn table_captions_test_3() {
 }
 
 #[test]
-fn table_captions_test_4() {
+fn table_captions_test_5() {
     let original = r##"|Col 1|Col 2|
 |-----|-----|
 |✓    |✓    |
 |✓    |✓    |
 : Done ✓
 "##;
-    let expected = r##"<table><thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
-<tr><td>✓</td><td>✓</td></tr>
-<tr><td>✓</td><td>✓</td></tr>
+    let expected = r##"<table>
 <caption>Done ✓</caption>
-</tbody></table>
-"##;
-
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
-}
-
-#[test]
-fn table_captions_test_5() {
-    let original = r##"|ぁ|ぃ|
-|-|-|
-|ぃ|ぃ|
-: ぁ
-"##;
-    let expected = r##"<table><thead><tr><th>ぁ</th><th>ぃ</th></tr></thead><tbody>
-<tr><td>ぃ</td><td>ぃ</td></tr>
-<caption>ぁ</caption>
+<thead><tr><th>Col 1</th><th>Col 2</th></tr></thead><tbody>
+<tr><td>✓</td><td>✓</td></tr>
+<tr><td>✓</td><td>✓</td></tr>
 </tbody></table>
 "##;
 
@@ -110,14 +118,32 @@ fn table_captions_test_5() {
 
 #[test]
 fn table_captions_test_6() {
+    let original = r##"|ぁ|ぃ|
+|-|-|
+|ぃ|ぃ|
+: ぁ
+"##;
+    let expected = r##"<table>
+<caption>ぁ</caption>
+<thead><tr><th>ぁ</th><th>ぃ</th></tr></thead><tbody>
+<tr><td>ぃ</td><td>ぃ</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, true);
+}
+
+#[test]
+fn table_captions_test_7() {
     let original = r##"|Колонка 1|Колонка 2|
 |---------|---------|
 |Ячейка 1 |Ячейка 2 |
 : Подпись
 "##;
-    let expected = r##"<table><thead><tr><th>Колонка 1</th><th>Колонка 2</th></tr></thead><tbody>
-<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>
+    let expected = r##"<table>
 <caption>Подпись</caption>
+<thead><tr><th>Колонка 1</th><th>Колонка 2</th></tr></thead><tbody>
+<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>
 </tbody></table>
 "##;
 

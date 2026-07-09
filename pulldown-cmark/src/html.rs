@@ -219,6 +219,7 @@ where
                 self.table_alignments = alignments;
                 self.write("<table>")
             }
+            Tag::TableCaption => self.write("<caption>"),
             Tag::TableHead => {
                 self.table_state = TableState::Head;
                 self.table_cell_index = 0;
@@ -433,6 +434,9 @@ where
             }
             TagEnd::Table => {
                 self.write("</tbody></table>\n")?;
+            }
+            TagEnd::TableCaption => {
+                self.write("</caption>\n")?;
             }
             TagEnd::TableHead => {
                 self.write("</tr></thead><tbody>\n")?;

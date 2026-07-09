@@ -10,7 +10,7 @@ fn highlight_test_1() {
     let expected = r##"<p><mark>hi</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn highlight_test_2() {
     let expected = r##"<p><mark>hello world</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn highlight_test_3() {
     let expected = r##"<p><mark><em>hi</em></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn highlight_test_4() {
     let expected = r##"<p><em><mark>hi</mark></em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn highlight_test_5() {
     let expected = r##"<p><mark><strong>bold</strong> and <em>em</em></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn highlight_test_6() {
     let expected = r##"<p>=hi=</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn highlight_test_7() {
     let expected = r##"<p>a = b</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn highlight_test_8() {
     let expected = r##"<p>== hi ==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn highlight_test_9() {
     let expected = r##"<p>==hi ==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn highlight_test_10() {
     let expected = r##"<p>== hi==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -110,7 +110,7 @@ fn highlight_test_11() {
     let expected = r##"<p>===hi===</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -120,7 +120,7 @@ fn highlight_test_12() {
     let expected = r##"<p>====hi====</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn highlight_test_13() {
     let expected = r##"<p>====</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn highlight_test_14() {
     let expected = r##"<p>a<mark>b</mark>c</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn highlight_test_15() {
     let expected = r##"<p><mark>This</mark>is<mark>highlighted</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -162,7 +162,7 @@ b==
 b</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn highlight_test_17() {
     let expected = r##"<p><mark>hi == there</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn highlight_test_18() {
     let expected = r##"<p>==not highlighted==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn highlight_test_19() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn highlight_test_20() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn highlight_test_21() {
     let expected = r##"<h1><mark>in a heading</mark></h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn highlight_test_22() {
     let expected = r##"<p><mark><del>both</del></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }
 
 #[test]
@@ -236,5 +236,5 @@ fn highlight_test_23() {
     let expected = r##"<p><del><mark>both</mark></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false);
 }

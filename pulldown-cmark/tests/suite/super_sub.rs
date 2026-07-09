@@ -10,7 +10,7 @@ fn super_sub_test_1() {
     let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn super_sub_test_2() {
     let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn super_sub_test_3() {
     let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn super_sub_test_4() {
     let expected = r##"<p><sub>This</sub>is<sub>nothing</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn super_sub_test_5() {
     let expected = r##"<p><sub>This ~~is not stricken.</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn super_sub_test_6() {
     let expected = r##"<p><del>This ~is</del> stricken.~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn super_sub_test_7() {
     let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -83,7 +83,7 @@ y=x^2^a+xb+c
 <p>y=x<sup>2</sup>a+xb+c</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn super_sub_test_9() {
 <p>^bar^^</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn super_sub_test_10() {
 <p><em>foo_</em>_bar*</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn super_sub_test_11() {
     let expected = r##"<p>H<sup>+</sup> + OH<sup>-</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn super_sub_test_12() {
     let expected = r##"<p>Ca<sup>2+</sup> + CO<sub>3</sub><sup>2-</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn super_sub_test_13() {
     let expected = r##"<p>NH<sub>4</sub><sup>+</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }
 
 #[test]
@@ -149,5 +149,5 @@ fn super_sub_test_14() {
     let expected = r##"<p>^+^ not superscript</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false);
+    test_markdown_html(original, expected, false, false, false, true, false, false, false, false);
 }

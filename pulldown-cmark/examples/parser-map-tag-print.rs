@@ -29,6 +29,7 @@ fn main() {
         "| a | b |\n",
         "| - | - |\n",
         "| c | d |\n",
+        ": my caption\n",
         "\n",
         "hello[^1]\n",
         "[^1]: my footnote\n",
@@ -100,6 +101,7 @@ fn main() {
                     column_text_alignment_list
                 ),
                 Tag::TableHead => println!("TableHead (contains TableRow tags"),
+                Tag::TableCaption => println!("TableCaption (contains TableCaption tags)"),
                 Tag::TableRow => println!("TableRow (contains TableCell tags)"),
                 Tag::TableCell => println!("TableCell (contains inline tags)"),
                 Tag::FootnoteDefinition(label) => println!("FootnoteDefinition label: {}", label),

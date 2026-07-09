@@ -16,6 +16,7 @@ pub fn test_markdown_html(
     wikilinks: bool,
     deflists: bool,
     container_extensions: bool,
+    table_captions: bool,
 ) {
     let mut s = String::new();
 
@@ -51,6 +52,9 @@ pub fn test_markdown_html(
     }
     if container_extensions {
         opts.insert(Options::ENABLE_CONTAINER_EXTENSIONS);
+    }
+    if table_captions {
+        opts.insert(Options::ENABLE_TABLE_CAPTIONS);
     }
 
     let p = Parser::new_ext(input, opts);

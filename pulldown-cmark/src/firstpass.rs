@@ -1602,7 +1602,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
-        if self.text.as_bytes()[end - 2] == b'\r' {
+        let bytes = self.text.as_bytes();
+        if end >= start + 2 && bytes[end - 1] == b'\n' && bytes[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
                 start,

@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn container_extensions_test_1() {
+fn container_extensions_test_0001_l5() {
     let original = r##"> Is this **bold**?
 > Is this **bold**?
 > ::: spoiler Is this expandable?
@@ -20,11 +20,11 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_2() {
+fn container_extensions_test_0002_l21() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -41,11 +41,11 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_3() {
+fn container_extensions_test_0003_l38() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -68,11 +68,11 @@ Is this <strong>bold</strong>?</p>
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_4() {
+fn container_extensions_test_0004_l61() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -101,11 +101,11 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_5() {
+fn container_extensions_test_0005_l90() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 :::
@@ -118,11 +118,11 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_6() {
+fn container_extensions_test_0006_l103() {
     let original = r##"::: spoiler Is this expandable?
 Is this collapsable?
 
@@ -136,11 +136,11 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_7() {
+fn container_extensions_test_0007_l117() {
     let original = r##":::spoiler Is this expandable?
 Is this collapsable?
 
@@ -154,11 +154,11 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_8() {
+fn container_extensions_test_0008_l131() {
     let original = r##"::: example
 Is this collapsable?
 
@@ -171,11 +171,11 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_9() {
+fn container_extensions_test_0009_l144() {
     let original = r##":::: example
 Is this collapsable?
 
@@ -188,11 +188,11 @@ Is this **bold**?
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_10() {
+fn container_extensions_test_0010_l157() {
     let original = r##":::::spoiler Is this expandable?
 Is this collapsable?
 
@@ -206,11 +206,11 @@ Is this **bold**?
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_11() {
+fn container_extensions_test_0011_l171() {
     let original = r##":::
 
 content
@@ -222,11 +222,11 @@ content
 <p>:::</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_12() {
+fn container_extensions_test_0012_l183() {
     let original = r##"::: block
 
 content
@@ -240,11 +240,11 @@ content
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_13() {
+fn container_extensions_test_0013_l197() {
     let original = r##" ::: block
 :::
 
@@ -257,11 +257,11 @@ fn container_extensions_test_13() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_14() {
+fn container_extensions_test_0014_l210() {
     let original = r##"::: a
 ::: b
 
@@ -274,11 +274,11 @@ fn container_extensions_test_14() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_15() {
+fn container_extensions_test_0015_l223() {
     let original = r##":::: a
 ::: b
 
@@ -291,11 +291,11 @@ fn container_extensions_test_15() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_16() {
+fn container_extensions_test_0016_l236() {
     let original = r##"::: a
 :::: b
 
@@ -308,11 +308,11 @@ fn container_extensions_test_16() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_17() {
+fn container_extensions_test_0017_l249() {
     let original = r##":::
 Hi
 :::
@@ -322,11 +322,11 @@ Hi
 :::</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_18() {
+fn container_extensions_test_0018_l259() {
     let original = r##"::::: foo
 Hi
 :::
@@ -338,11 +338,11 @@ Hi
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_19() {
+fn container_extensions_test_0019_l271() {
     let original = r##"> ::: foo
 > Hi
 "##;
@@ -353,11 +353,11 @@ fn container_extensions_test_19() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_20() {
+fn container_extensions_test_0020_l282() {
     let original = r##"::: c_d
 Hi
 :::
@@ -367,11 +367,11 @@ Hi
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_21() {
+fn container_extensions_test_0021_l292() {
     let original = r##"::: container
 > shouldn't close, right?
 > :::
@@ -387,11 +387,11 @@ x</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_22() {
+fn container_extensions_test_0022_l308() {
     let original = r##"::: container
 > shouldn't close, right?
 > :::
@@ -408,11 +408,11 @@ x</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_23() {
+fn container_extensions_test_0023_l325() {
     let original = r##"::: a
 :::: b
 ::::: c
@@ -428,27 +428,27 @@ x
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_24() {
+fn container_extensions_test_0024_l341() {
     let original = r##"::: a
 content :::
 "##;
     let expected = r##"<div class="a"><p>content :::</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }
 
 #[test]
-fn container_extensions_test_25() {
+fn container_extensions_test_0025_l348() {
     let original = r##":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: a
 content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 "##;
     let expected = r##"<div class="a"><p>content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+    test_markdown_html(original, expected, "ENABLE_CONTAINER_EXTENSIONS");
 }

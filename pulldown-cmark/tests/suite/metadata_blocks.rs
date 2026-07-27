@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn metadata_blocks_test_1() {
+fn metadata_blocks_test_0001_l22() {
     let original = r##"---
 title: example
 another_field: 0
@@ -12,11 +12,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_2() {
+fn metadata_blocks_test_0002_l31() {
     let original = r##"---
 title: example
 another_field: 0
@@ -26,11 +26,11 @@ another_field: 0
 another_field: 0</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_3() {
+fn metadata_blocks_test_0003_l42() {
     let original = r##"---
 ---
 "##;
@@ -38,11 +38,11 @@ fn metadata_blocks_test_3() {
 <hr>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_4() {
+fn metadata_blocks_test_0004_l51() {
     let original = r##"---
 
 title: example
@@ -54,11 +54,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_5() {
+fn metadata_blocks_test_0005_l64() {
     let original = r##"My paragraph here.
 ---
 title: example
@@ -70,11 +70,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_6() {
+fn metadata_blocks_test_0006_l77() {
     let original = r##"My paragraph here.
 
 ---
@@ -85,11 +85,11 @@ another_field: 0
     let expected = r##"<p>My paragraph here.</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_7() {
+fn metadata_blocks_test_0007_l89() {
     let original = r##"---    
 title: example
 another_field: 0
@@ -105,11 +105,11 @@ another_field: 0
 another_field: 0</h2>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_8() {
+fn metadata_blocks_test_0008_l106() {
     let original = r##"---
 title: example
 another_field: 0
@@ -126,11 +126,11 @@ another_field: 0
 ---a</p>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_9() {
+fn metadata_blocks_test_0009_l125() {
     let original = r##"---
 title: example
 another_field: 0
@@ -138,11 +138,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_10() {
+fn metadata_blocks_test_0010_l136() {
     let original = r##"+++
 title: example
 another_field: 0
@@ -150,11 +150,11 @@ another_field: 0
 "##;
     let expected = r##""##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_11() {
+fn metadata_blocks_test_0011_l146() {
     let original = r##"    ---
     Things
     ---
@@ -165,11 +165,11 @@ Things
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }
 
 #[test]
-fn metadata_blocks_test_12() {
+fn metadata_blocks_test_0012_l159() {
     let original = r##"---
 - Item 1
 - Item 2
@@ -177,5 +177,5 @@ fn metadata_blocks_test_12() {
 "##;
     let expected = r##""##;
 
-    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS");
 }

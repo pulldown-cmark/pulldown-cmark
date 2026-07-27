@@ -167,7 +167,8 @@ impl<'a> Spec<'a> {
             .next()
             .and_then(|line| line.strip_prefix("Parser options:"))
             .unwrap_or("")
-            .trim_matches([' ', '`']);
+            .trim()
+            .trim_matches('`');
         Spec::new_with_opts(spec, opts)
     }
 }

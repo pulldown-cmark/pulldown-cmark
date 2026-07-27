@@ -8,7 +8,7 @@ available.
 
 Strikethrough text is any text wrapped in a matching pair of one or two tildes (`~`).
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~~Hi~~ Hello, ~there~ world!
 .
 <p><del>Hi</del> Hello, <del>there</del> world!</p>
@@ -17,7 +17,7 @@ Strikethrough text is any text wrapped in a matching pair of one or two tildes (
 As with regular emphasis delimiters, a new paragraph will cause strikethrough
 parsing to cease:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 This ~~has a
 
 new paragraph~~.
@@ -28,7 +28,7 @@ new paragraph~~.
 
 Three or more tildes do not create a strikethrough:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 This will ~~~not~~~ strike.
 .
 <p>This will ~~~not~~~ strike.</p>

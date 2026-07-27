@@ -1,3 +1,5 @@
+Parser options: `ENABLE_YAML_STYLE_METADATA_BLOCKS | ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS`
+
 Run this with `cargo test --features gen-tests suite::metadata_blocks`.
 
 Examples and edge cases for metadata blocks.
@@ -17,7 +19,7 @@ In both cases, only trailing spaces can be in the delimiting lines.
 All metadata blocks must be ended, EOF is not a valid ending of the block.
 
 Basic usage:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 title: example
 another_field: 0
@@ -26,7 +28,7 @@ another_field: 0
 ````````````````````````````````
 
 EOF is not a valid ending of the block:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 title: example
 another_field: 0
@@ -37,7 +39,7 @@ another_field: 0</p>
 ````````````````````````````````
 
 A metadata block cannot be empty:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 ---
 .
@@ -46,7 +48,7 @@ A metadata block cannot be empty:
 ````````````````````````````````
 
 A blank line cannot be after the start of the metadata block:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 
 title: example
@@ -59,7 +61,7 @@ another_field: 0</h2>
 ````````````````````````````````
 
 A metadata block cannot interrumpt a paragraph:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 My paragraph here.
 ---
 title: example
@@ -72,7 +74,7 @@ another_field: 0</h2>
 ````````````````````````````````
 
 But it can be after a blank line:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 My paragraph here.
 
 ---
@@ -84,7 +86,7 @@ another_field: 0
 ````````````````````````````````
 
 After the start sequence nothing but spaces can be in the same line:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---    
 title: example
 another_field: 0
@@ -101,7 +103,7 @@ another_field: 0</h2>
 ````````````````````````````````
 
 The same applies for the end sequence:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 title: example
 another_field: 0
@@ -120,7 +122,7 @@ another_field: 0
 
 
 The end sequence for YAML-style blocks can be three dots:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 title: example
 another_field: 0
@@ -131,7 +133,7 @@ another_field: 0
 
 Finally, pluses-style blocks also work following the same rules except the
 closing sequence must be `+++`:
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 +++
 title: example
 another_field: 0
@@ -141,7 +143,7 @@ another_field: 0
 
 Metadata blocks cannot be indented:
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
     ---
     Things
     ---
@@ -154,7 +156,7 @@ Things
 
 Metadata blocks may contain lists:
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 ---
 - Item 1
 - Item 2

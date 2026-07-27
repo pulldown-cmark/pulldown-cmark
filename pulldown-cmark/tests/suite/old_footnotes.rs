@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn old_footnotes_test_1() {
+fn old_footnotes_test_0001_l7() {
     let original = r##"Lorem ipsum.[^a]
 
 [^a]: Cool.
@@ -15,11 +15,11 @@ fn old_footnotes_test_1() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_2() {
+fn old_footnotes_test_0002_l21() {
     let original = r##"> This is the song that never ends.\
 > Yes it goes on and on my friends.[^lambchops]
 >
@@ -34,11 +34,11 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_3() {
+fn old_footnotes_test_0003_l39() {
     let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]:
@@ -56,11 +56,11 @@ fn old_footnotes_test_3() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_4() {
+fn old_footnotes_test_0004_l60() {
     let original = r##"[^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
 
 I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
@@ -71,11 +71,11 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 <p>I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_5() {
+fn old_footnotes_test_0005_l75() {
     let original = r##"[^ipsum]: How much wood would a woodchuck chuck.
 
 If a woodchuck could chuck wood.
@@ -90,11 +90,11 @@ If a woodchuck could chuck wood.
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_6() {
+fn old_footnotes_test_0006_l93() {
     let original = r##"> He's also really stupid. [^why]
 >
 > [^why]: Because your mamma!
@@ -110,11 +110,11 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 <p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_7() {
+fn old_footnotes_test_0007_l112() {
     let original = r##"Nested footnotes are considered poor style. [^a] [^xkcd]
 
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
@@ -144,11 +144,11 @@ fn old_footnotes_test_7() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_8() {
+fn old_footnotes_test_0008_l144() {
     let original = r##"[^Doh] Ray Me Fa So La Te Do! [^1]
 
 [^Doh]: I know. Wrong Doe. And it will render right.
@@ -159,11 +159,11 @@ fn old_footnotes_test_8() {
 <div class="footnote-definition" id="1"><sup class="footnote-definition-label">2</sup><p>Common for people practicing music.</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, true, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_9() {
+fn old_footnotes_test_0009_l157() {
     let original = r##"[Reference to footnotes A[^1], B[^2] and C[^3].
 
 [^1]: Footnote A.
@@ -173,11 +173,11 @@ fn old_footnotes_test_9() {
     let expected = r##"<p>[Reference to footnotes A<sup class="footnote-reference"><a href="#1">1</a></sup>, B<sup class="footnote-reference"><a href="#2">2</a></sup> and C<sup class="footnote-reference"><a href="#3">3</a></sup>.</p><div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup><p>Footnote A.</p></div><div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup><p>Footnote B.</p></div><div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup><p>Footnote C.</p></div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_10() {
+fn old_footnotes_test_0010_l169() {
     let original = r##"Lorem ipsum.[^a][^b]
 
 [^a]: Foo
@@ -192,11 +192,11 @@ fn old_footnotes_test_10() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }
 
 #[test]
-fn old_footnotes_test_11() {
+fn old_footnotes_test_0011_l186() {
     let original = r##"Lorem ipsum.[^a] [^b]
 
 [^a]: Foo
@@ -211,5 +211,5 @@ fn old_footnotes_test_11() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_OLD_FOOTNOTES");
 }

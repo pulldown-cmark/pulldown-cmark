@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn gfm_tasklist_test_1() {
+fn gfm_tasklist_test_0001_l28() {
     let original = r##"- [ ] foo
 - [x] bar
 "##;
@@ -16,11 +16,11 @@ bar</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TASKLISTS");
 }
 
 #[test]
-fn gfm_tasklist_test_2() {
+fn gfm_tasklist_test_0002_l42() {
     let original = r##"- [x] foo
   - [ ] bar
   - [x] baz
@@ -41,5 +41,5 @@ bim</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TASKLISTS");
 }

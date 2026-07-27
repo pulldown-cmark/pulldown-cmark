@@ -95,7 +95,7 @@ fn generate_tests_from_spec() {
                 .write_fmt(format_args!(
                     r###"
 #[test]
-fn {}_test_{i}() {{
+fn {}_test_{i:04}_l{line}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
@@ -107,6 +107,7 @@ fn {}_test_{i}() {{
                     original = testcase.original,
                     expected = testcase.expected,
                     options = testcase.options,
+                    line = testcase.line,
                 ))
                 .unwrap();
 
@@ -147,6 +148,7 @@ fn {}_test_{i}() {{
 pub struct Spec<'a> {
     spec: &'a str,
     options: String,
+    current_line: usize,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -155,6 +157,7 @@ impl<'a> Spec<'a> {
         Spec {
             spec,
             options: opts.to_string(),
+            current_line: 1,
         }
     }
 
@@ -174,6 +177,7 @@ pub struct TestCase {
     pub original: String,
     pub expected: String,
     pub options: String,
+    pub line: usize,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -184,12 +188,13 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (i_start, options) = self.spec.find(prefix).and_then(|pos| {
+        let (i_start, options, line) = spec.find(prefix).and_then(|pos| {
             let (options, _) = spec[(pos + prefix.len())..].split_once('\n')?;
-            Some((pos + prefix.len() + options.len() + 1, options))
+            let line = self.current_line + spec[..pos].lines().count();
+            Some((pos + prefix.len() + options.len() + 1, options, line))
         })?;
 
-        let i_end = self.spec[i_start..]
+        let i_end = spec[i_start..]
             .find("\n.\n")
             .map(|pos| (pos + 1) + i_start)?;
 
@@ -199,12 +204,14 @@ impl<'a> Iterator for Spec<'a> {
 
         let options = join_options(&[&self.options, options]);
 
+        self.current_line += spec[..e_end + 33].lines().count();
         self.spec = &self.spec[e_end + 33..];
 
         let test_case = TestCase {
             original: spec[i_start..i_end].to_string().replace("→", "\t"),
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
             options,
+            line,
         };
 
         Some(test_case)

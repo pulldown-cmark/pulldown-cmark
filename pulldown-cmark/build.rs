@@ -13,11 +13,13 @@ fn generate_tests_from_spec() {}
 // Test cases are present in the files in the
 // following format:
 //
-// ```````````````````````````````` example
+// ```````````````````````````````` example [options]
 // markdown
 // .
 // expected html output
 // ````````````````````````````````
+//
+// [options] is passed to `bitflags::parser::from_str_strict` to set parser options.
 #[cfg(all(feature = "gen-tests", feature = "std"))]
 fn generate_tests_from_spec() {
     use std::fs::{self, File};
@@ -28,27 +30,34 @@ fn generate_tests_from_spec() {
     // the specs/ directory. It's in an array to easily chain it to the other iterator
     // and make it easy to eventually add other hardcoded paths in the future if needed
     let hardcoded = [
-        "./third_party/CommonMark/spec.txt",
-        "./third_party/CommonMark/smart_punct.txt",
-        "./third_party/GitHub/gfm_table.txt",
-        "./third_party/GitHub/gfm_strikethrough.txt",
-        "./third_party/GitHub/gfm_tasklist.txt",
+        ("./third_party/CommonMark/spec.txt", ""),
+        (
+            "./third_party/CommonMark/smart_punct.txt",
+            "ENABLE_SMART_PUNCTUATION",
+        ),
+        ("./third_party/GitHub/gfm_table.txt", "ENABLE_TABLES"),
+        (
+            "./third_party/GitHub/gfm_strikethrough.txt",
+            "ENABLE_STRIKETHROUGH",
+        ),
+        ("./third_party/GitHub/gfm_tasklist.txt", "ENABLE_TASKLISTS"),
     ];
-    let hardcoded_iter = hardcoded.iter().map(PathBuf::from);
+    let hardcoded_iter = hardcoded
+        .iter()
+        .map(|(path, opts)| (PathBuf::from(path), Some(opts)));
 
     // Create an iterator over the files in the specs/ directory that have a .txt extension
     let mut spec_files = fs::read_dir("./specs")
         .expect("Could not find the 'specs' directory")
         .filter_map(Result::ok)
-        .map(|d| d.path())
-        .filter(|p| p.extension().map(|e| e.to_owned()).is_some())
+        .map(|d| (d.path(), None))
+        .filter(|(p, _)| p.extension().map(|e| e.to_owned()).is_some())
         .chain(hardcoded_iter)
         .collect::<Vec<_>>();
     // Sort by spec names
-    spec_files.sort_by(|p, q| p.file_stem().cmp(&q.file_stem()));
-    let spec_files = spec_files;
+    spec_files.sort_by(|(p, _), (q, _)| p.file_stem().cmp(&q.file_stem()));
 
-    for file_path in &spec_files {
+    for (file_path, opts) in &spec_files {
         let mut raw_spec = String::new();
 
         File::open(&file_path)
@@ -64,7 +73,11 @@ fn generate_tests_from_spec() {
 
         let spec_name = file_path.file_stem().unwrap().to_str().unwrap();
 
-        let spec = Spec::new(&raw_spec);
+        let spec = if let Some(opts) = opts {
+            Spec::new_with_opts(&raw_spec, opts)
+        } else {
+            Spec::new_infer_opts(&raw_spec)
+        };
         let mut n_tests = 0;
 
         spec_rs
@@ -86,22 +99,14 @@ fn {}_test_{i}() {{
     let original = r##"{original}"##;
     let expected = r##"{expected}"##;
 
-    test_markdown_html(original, expected, {smart_punct}, {metadata_blocks}, {old_footnotes}, {subscript}, {wikilinks}, {deflists}, {container_extensions}, {cjk_friendly_emphasis}, {strikethrough});
+    test_markdown_html(original, expected, {options:?});
 }}
 "###,
                     spec_name,
                     i = i + 1,
                     original = testcase.original,
                     expected = testcase.expected,
-                    smart_punct = testcase.smart_punct,
-                    metadata_blocks = testcase.metadata_blocks,
-                    old_footnotes = testcase.old_footnotes,
-                    subscript = testcase.subscript,
-                    wikilinks = testcase.wikilinks,
-                    deflists = testcase.deflists,
-                    container_extensions = testcase.container_extensions,
-                    cjk_friendly_emphasis = testcase.cjk_friendly_emphasis,
-                    strikethrough = testcase.strikethrough,
+                    options = testcase.options,
                 ))
                 .unwrap();
 
@@ -130,7 +135,7 @@ fn {}_test_{i}() {{
         .write_all(b"\npub use super::test_markdown_html;\n\n")
         .unwrap();
 
-    for file_path in &spec_files {
+    for (file_path, _) in &spec_files {
         let mod_name = file_path.file_stem().unwrap().to_str().unwrap();
         mod_rs.write_all(b"mod ").unwrap();
         mod_rs.write_all(mod_name.as_bytes()).unwrap();
@@ -141,12 +146,26 @@ fn {}_test_{i}() {{
 #[cfg(feature = "gen-tests")]
 pub struct Spec<'a> {
     spec: &'a str,
+    options: String,
 }
 
 #[cfg(feature = "gen-tests")]
 impl<'a> Spec<'a> {
-    pub fn new(spec: &'a str) -> Self {
-        Spec { spec }
+    pub fn new_with_opts(spec: &'a str, opts: &str) -> Self {
+        Spec {
+            spec,
+            options: opts.to_string(),
+        }
+    }
+
+    pub fn new_infer_opts(spec: &'a str) -> Self {
+        let opts = spec
+            .lines()
+            .next()
+            .and_then(|line| line.strip_prefix("Parser options:"))
+            .unwrap_or("")
+            .trim_matches([' ', '`']);
+        Spec::new_with_opts(spec, opts)
     }
 }
 
@@ -154,15 +173,7 @@ impl<'a> Spec<'a> {
 pub struct TestCase {
     pub original: String,
     pub expected: String,
-    pub smart_punct: bool,
-    pub metadata_blocks: bool,
-    pub old_footnotes: bool,
-    pub subscript: bool,
-    pub wikilinks: bool,
-    pub deflists: bool,
-    pub container_extensions: bool,
-    pub cjk_friendly_emphasis: bool,
-    pub strikethrough: bool,
+    pub options: String,
 }
 
 #[cfg(feature = "gen-tests")]
@@ -173,217 +184,39 @@ impl<'a> Iterator for Spec<'a> {
         let spec = self.spec;
         let prefix = "```````````````````````````````` example";
 
-        let (
-            i_start,
-            smart_punct,
-            metadata_blocks,
-            old_footnotes,
-            subscript,
-            wikilinks,
-            deflists,
-            container_extensions,
-            cjk_friendly_emphasis,
-            strikethrough,
-        ) = self.spec.find(prefix).and_then(|pos| {
-            let smartpunct_suffix = "_smartpunct\n";
-            let metadata_blocks_suffix = "_metadata_blocks\n";
-            let old_footnotes_suffix = "_old_footnotes\n";
-            let super_sub_suffix = "_super_sub\n";
-            let super_sub_strikethrough_suffix = "_super_sub_strikethrough\n";
-            let wikilinks_suffix = "_wikilinks\n";
-            let deflists_suffix = "_deflists\n";
-            let container_extensions_suffix = "_container_extensions\n";
-            let cjk_friendly_emphasis_suffix = "_cjk_friendly_emphasis\n";
-            let cjk_friendly_emphasis_strikethrough_suffix =
-                "_cjk_friendly_emphasis_strikethrough\n";
-            let strikethrough_suffix = "_strikethrough\n";
-            if spec[(pos + prefix.len())..].starts_with(smartpunct_suffix) {
-                Some((
-                    pos + prefix.len() + smartpunct_suffix.len(),
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(metadata_blocks_suffix) {
-                Some((
-                    pos + prefix.len() + metadata_blocks_suffix.len(),
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(old_footnotes_suffix) {
-                Some((
-                    pos + prefix.len() + old_footnotes_suffix.len(),
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(super_sub_suffix) {
-                Some((
-                    pos + prefix.len() + super_sub_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(super_sub_strikethrough_suffix) {
-                Some((
-                    pos + prefix.len() + super_sub_strikethrough_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(wikilinks_suffix) {
-                Some((
-                    pos + prefix.len() + wikilinks_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(deflists_suffix) {
-                Some((
-                    pos + prefix.len() + deflists_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(container_extensions_suffix) {
-                Some((
-                    pos + prefix.len() + container_extensions_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(cjk_friendly_emphasis_suffix) {
-                Some((
-                    pos + prefix.len() + cjk_friendly_emphasis_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    false,
-                ))
-            } else if spec[(pos + prefix.len())..]
-                .starts_with(cjk_friendly_emphasis_strikethrough_suffix)
-            {
-                Some((
-                    pos + prefix.len() + cjk_friendly_emphasis_strikethrough_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                    true,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with(strikethrough_suffix) {
-                Some((
-                    pos + prefix.len() + strikethrough_suffix.len(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
-                ))
-            } else if spec[(pos + prefix.len())..].starts_with('\n') {
-                Some((
-                    pos + prefix.len() + 1,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ))
-            } else {
-                None
-            }
+        let (i_start, options) = self.spec.find(prefix).and_then(|pos| {
+            let (options, _) = spec[(pos + prefix.len())..].split_once('\n')?;
+            Some((pos + prefix.len() + options.len() + 1, options))
         })?;
 
         let i_end = self.spec[i_start..]
             .find("\n.\n")
             .map(|pos| (pos + 1) + i_start)?;
 
-        let e_end = self.spec[i_end + 2..]
+        let e_end = spec[i_end + 2..]
             .find("````````````````````````````````\n")
             .map(|pos| pos + i_end + 2)?;
+
+        let options = join_options(&[&self.options, options]);
 
         self.spec = &self.spec[e_end + 33..];
 
         let test_case = TestCase {
             original: spec[i_start..i_end].to_string().replace("→", "\t"),
             expected: spec[i_end + 2..e_end].to_string().replace("→", "\t"),
-            smart_punct,
-            metadata_blocks,
-            old_footnotes,
-            subscript,
-            wikilinks,
-            deflists,
-            container_extensions,
-            cjk_friendly_emphasis,
-            strikethrough,
+            options,
         };
 
         Some(test_case)
     }
+}
+
+#[cfg(feature = "gen-tests")]
+fn join_options(parts: &[&str]) -> String {
+    let parts = parts
+        .iter()
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<_>>();
+    parts.join(" | ")
 }

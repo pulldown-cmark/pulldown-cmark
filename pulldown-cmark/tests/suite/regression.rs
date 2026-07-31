@@ -3457,3 +3457,52 @@ d ~~x ~[x](https://x)~ x~~
 
     test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_217() {
+    let original = r##"- [ ] a
+  -
+"##;
+    let expected = r##"<ul>
+<li>
+<h2>a</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_218() {
+    let original = r##"- [ ] x
+
+  y
+  -
+"##;
+    let expected = r##"<ul>
+<li>
+<p><input disabled="" type="checkbox"/>
+x</p>
+<h2>y</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_219() {
+    let original = r##"- [x] a {#id}
+  -
+"##;
+    let expected = r##"<ul>
+<li>
+<h2 id="id">a</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

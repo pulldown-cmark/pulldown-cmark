@@ -2905,3 +2905,51 @@ d ~~x ~[x](https://x)~ x~~
 <p>c ~x ~~<a href="https://x">x</a>~~ x~</p>
 <p>d ~~x <sub><a href="https://x">x</a></sub> x~~</p>
 ````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/1115
+
+A task list marker is only valid when the list item content is a
+paragraph. When the paragraph becomes a setext heading, the marker
+must not be emitted inside the heading.
+
+```````````````````````````````` example
+- [ ] a
+  -
+.
+<ul>
+<li>
+<h2>a</h2>
+</li>
+</ul>
+````````````````````````````````
+
+A task list marker on an earlier paragraph is kept when a *later*
+block in the same item becomes a setext heading (#1115).
+
+```````````````````````````````` example
+- [ ] x
+
+  y
+  -
+.
+<ul>
+<li>
+<p><input disabled="" type="checkbox"/>
+x</p>
+<h2>y</h2>
+</li>
+</ul>
+````````````````````````````````
+
+Heading attributes still apply when the marker is dropped (#1115).
+
+```````````````````````````````` example
+- [x] a {#id}
+  -
+.
+<ul>
+<li>
+<h2 id="id">a</h2>
+</li>
+</ul>
+````````````````````````````````

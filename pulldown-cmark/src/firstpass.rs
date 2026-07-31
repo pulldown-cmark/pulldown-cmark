@@ -883,6 +883,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             attrs.map(|attrs| self.allocs.allocate_heading(attrs)),
         );
 
+        // A task list marker is only valid when the list item's content is a
+        // paragraph. If this paragraph turned out to be a setext heading, drop
+        // the leading marker so it doesn't end up inside the heading (#1115).
+        if let Some(child_ix) = self.tree[node_ix].child {
+            if let ItemBody::TaskListMarker(_) = self.tree[child_ix].item.body {
+                self.tree[node_ix].child = self.tree[child_ix].next;
+            }
+        }
+
         Some(ix + n)
     }
 

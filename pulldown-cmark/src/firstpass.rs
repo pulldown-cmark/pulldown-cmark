@@ -884,11 +884,21 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         );
 
         // A task list marker is only valid when the list item's content is a
-        // paragraph. If this paragraph turned out to be a setext heading, drop
-        // the leading marker so it doesn't end up inside the heading (#1115).
+        // paragraph. If this paragraph turned out to be a setext heading, the
+        // marker would render inside the heading (#1115). Cancel the task-list
+        // interpretation and keep the marker's `[ ]`/`[x]` bytes as literal
+        // text (the node already spans them) rather than silently dropping it.
         if let Some(child_ix) = self.tree[node_ix].child {
             if let ItemBody::TaskListMarker(_) = self.tree[child_ix].item.body {
-                self.tree[node_ix].child = self.tree[child_ix].next;
+                // Grow the span across the whitespace that separated the marker
+                // from the text, so that spacing is preserved too. Scan only the
+                // whitespace run (not up to the next node) so a following
+                // backslash escape isn't pulled into the literal marker text.
+                let end = self.tree[child_ix].item.end;
+                self.tree[child_ix].item.end = end + scan_whitespace_no_nl(&bytes[end..]);
+                self.tree[child_ix].item.body = ItemBody::Text {
+                    backslash_escaped: false,
+                };
             }
         }
 

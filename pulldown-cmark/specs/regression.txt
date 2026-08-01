@@ -2909,8 +2909,9 @@ d ~~x ~[x](https://x)~ x~~
 https://github.com/pulldown-cmark/pulldown-cmark/issues/1115
 
 A task list marker is only valid when the list item content is a
-paragraph. When the paragraph becomes a setext heading, the marker
-must not be emitted inside the heading.
+paragraph. When the paragraph becomes a setext heading, the task-list
+interpretation is canceled and the marker bytes are kept as literal
+text instead of being emitted inside the heading.
 
 ```````````````````````````````` example
 - [ ] a
@@ -2918,7 +2919,7 @@ must not be emitted inside the heading.
 .
 <ul>
 <li>
-<h2>a</h2>
+<h2>[ ] a</h2>
 </li>
 </ul>
 ````````````````````````````````
@@ -2941,7 +2942,7 @@ x</p>
 </ul>
 ````````````````````````````````
 
-Heading attributes still apply when the marker is dropped (#1115).
+Heading attributes still apply when the marker is kept as text (#1115).
 
 ```````````````````````````````` example
 - [x] a {#id}
@@ -2949,7 +2950,21 @@ Heading attributes still apply when the marker is dropped (#1115).
 .
 <ul>
 <li>
-<h2 id="id">a</h2>
+<h2 id="id">[x] a</h2>
+</li>
+</ul>
+````````````````````````````````
+
+Only the separating whitespace is kept with the marker text, so a
+backslash escape right after it still resolves normally (#1115).
+
+```````````````````````````````` example
+- [ ] \*a\*
+  -
+.
+<ul>
+<li>
+<h2>[ ] *a*</h2>
 </li>
 </ul>
 ````````````````````````````````

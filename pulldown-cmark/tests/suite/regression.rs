@@ -3465,7 +3465,7 @@ fn regression_test_217() {
 "##;
     let expected = r##"<ul>
 <li>
-<h2>a</h2>
+<h2>[ ] a</h2>
 </li>
 </ul>
 "##;
@@ -3499,7 +3499,22 @@ fn regression_test_219() {
 "##;
     let expected = r##"<ul>
 <li>
-<h2 id="id">a</h2>
+<h2 id="id">[x] a</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_220() {
+    let original = r##"- [ ] \*a\*
+  -
+"##;
+    let expected = r##"<ul>
+<li>
+<h2>[ ] *a*</h2>
 </li>
 </ul>
 "##;

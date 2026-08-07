@@ -2332,13 +2332,19 @@ impl<'input> ParserInner<'input> {
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
-                let cur_ix = if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
-                    // tight paragraphs emit nothing
+                if matches!(self.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                    // Tight paragraphs emit neither Start nor End. Descend into
+                    // children when present; if the paragraph is empty, skip it
+                    // instead of unwrapping a missing child (see #1084 / #1095).
+                    // Do not return None here: that would end iteration early and
+                    // drop any remaining siblings or ancestors.
                     self.tree.push();
-                    self.tree.cur().unwrap()
-                } else {
-                    cur_ix
-                };
+                    if self.tree.cur().is_none() {
+                        let ix = self.tree.pop().unwrap();
+                        self.tree.next_sibling(ix);
+                    }
+                    return self.next_event_range(callbacks);
+                }
                 if self.tree[cur_ix].item.body.is_maybe_inline() {
                     self.handle_inline(callbacks);
                 }
@@ -2543,6 +2549,28 @@ mod test {
         // dont crash
         Parser::new("\\\\\r\r").count();
         Parser::new("\\\r\r\\.\\\\\r\r\\.\\").count();
+    }
+
+    #[test]
+    fn issue_1084() {
+        // Fuzz input: ENABLE_TASKLISTS + ENABLE_STRIKETHROUGH produced an empty
+        // TightParagraph and panicked on tree.cur().unwrap() during iteration.
+        let markdown_input = "* [ ] ~![=?\\*\x0c\x00\x00  \x0d* [  1=1\x00\x0d<!]:[=?\\\x0d\x0c\n* [ ] \x0d\x0c%    ";
+
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_TASKLISTS);
+        options.insert(Options::ENABLE_STRIKETHROUGH);
+
+        let parser = Parser::new_ext(markdown_input, options);
+        for _ in parser {}
+    }
+
+    #[test]
+    fn issue_1095() {
+        // Related empty TightParagraph panic via link-reference-like list item.
+        let s = "- [n]:Z\r\n\t\t";
+        let parser = Parser::new_ext(s, Options::all());
+        for _ in parser {}
     }
 
     #[test]

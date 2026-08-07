@@ -2,7 +2,7 @@
 //! are in a linear chain with potential inline markup identified.
 
 use alloc::{string::String, vec::Vec};
-use core::{cmp::max, ops::Range, u8};
+use core::{cmp::max, ops::Range};
 
 use unicase::UniCase;
 

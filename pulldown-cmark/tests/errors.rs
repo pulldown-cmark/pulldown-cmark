@@ -143,3 +143,13 @@ fn test_bad_slice_unicode() {
 fn test_simd_wrapping_shr_issue_651() {
     parse("`````````````````````````````````x`");
 }
+
+/// HTML declaration block with a lone CR line ending must not panic.
+/// Regression for https://github.com/pulldown-cmark/pulldown-cmark/issues/1112
+#[test]
+fn test_html_block_lone_cr_issue_1112() {
+    parse("<!S\r:");
+    // Also cover the code-block CRLF path with a lone CR after content.
+    parse("    code\r:");
+    parse("<!S\r\n:");
+}

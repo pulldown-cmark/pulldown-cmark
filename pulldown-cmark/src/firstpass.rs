@@ -1609,7 +1609,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             });
             start += ix + 1;
         }
-        if self.text.as_bytes()[end - 2] == b'\r' {
+        let bytes = self.text.as_bytes();
+        // Only split a true CRLF line ending. A lone CR (also a CommonMark line
+        // ending after scan_nextline) must not be treated as the start of CRLF,
+        // or a later line can get start > end (see issue #1112).
+        if end >= start + 2 && bytes[end - 1] == b'\n' && bytes[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append_text(start, end - 2, false);
             self.tree.append_text(end - 1, end, false);
@@ -1628,7 +1632,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
-        if self.text.as_bytes()[end - 2] == b'\r' {
+        let bytes = self.text.as_bytes();
+        // Only split a true CRLF line ending. A lone CR (also a CommonMark line
+        // ending after scan_nextline) must not be treated as the start of CRLF,
+        // or a later line can get start > end (see issue #1112).
+        if end >= start + 2 && bytes[end - 1] == b'\n' && bytes[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
                 start,

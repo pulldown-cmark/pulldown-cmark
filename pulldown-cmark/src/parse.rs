@@ -2546,6 +2546,12 @@ mod test {
     }
 
     #[test]
+    fn html_line_after_lone_cr() {
+        // dont crash
+        Parser::new("<!n\r%").count();
+    }
+
+    #[test]
     fn issue_1030() {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_WIKILINKS);

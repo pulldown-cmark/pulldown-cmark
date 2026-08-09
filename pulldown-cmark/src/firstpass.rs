@@ -1628,7 +1628,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
-        if self.text.as_bytes()[end - 2] == b'\r' {
+        // The CRLF check has to stay inside this line. A line shorter than two
+        // bytes would otherwise look at the byte before it, which can be the
+        // carriage return that ended the previous line.
+        if end >= start + 2 && self.text.as_bytes()[end - 2] == b'\r' {
             // Normalize CRLF to LF
             self.tree.append(Item {
                 start,

@@ -885,20 +885,72 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // A task list marker is only valid when the list item's content is a
         // paragraph. If this paragraph turned out to be a setext heading, the
-        // marker would render inside the heading (#1115). Cancel the task-list
-        // interpretation and keep the marker's `[ ]`/`[x]` bytes as literal
-        // text (the node already spans them) rather than silently dropping it.
+        // marker would render inside the heading (#1115). Rather than dropping it
+        // or freezing it as inert text, re-expose the marker's bytes to inline
+        // parsing so that a matching `[x]:` reference still resolves as a link,
+        // matching GitHub's postprocessing (review on #1124). Split the marker
+        // back into MaybeLinkOpen / text / MaybeLinkClose, preserving the spaces
+        // around it. A whitespace-only label (`[ ]`) simply can't match a
+        // definition, so it renders literally as before.
         if let Some(child_ix) = self.tree[node_ix].child {
             if let ItemBody::TaskListMarker(_) = self.tree[child_ix].item.body {
-                // Grow the span across the whitespace that separated the marker
-                // from the text, so that spacing is preserved too. Scan only the
-                // whitespace run (not up to the next node) so a following
-                // backslash escape isn't pulled into the literal marker text.
+                let m_start = self.tree[child_ix].item.start;
+                // Grow across the whitespace that separated the marker from the
+                // text. Scan only the whitespace run (not up to the next node) so
+                // a following backslash escape isn't pulled in.
                 let end = self.tree[child_ix].item.end;
-                self.tree[child_ix].item.end = end + scan_whitespace_no_nl(&bytes[end..]);
-                self.tree[child_ix].item.body = ItemBody::Text {
+                let m_end = end + scan_whitespace_no_nl(&bytes[end..]);
+                // scan_task_list_marker guarantees the shape `[`, one check char,
+                // `]` (optionally after up to 3 leading spaces).
+                let open = m_start
+                    + bytes[m_start..m_end]
+                        .iter()
+                        .position(|&b| b == b'[')
+                        .expect("task list marker contains '['");
+                let close = open + 2;
+                let orig_next = self.tree[child_ix].next;
+                let text = ItemBody::Text {
                     backslash_escaped: false,
                 };
+
+                // Reuse the marker node as the `[` MaybeLinkOpen.
+                self.tree[child_ix].item.start = open;
+                self.tree[child_ix].item.end = open + 1;
+                self.tree[child_ix].item.body = ItemBody::MaybeLinkOpen;
+
+                let inner_ix = self.tree.create_node(Item {
+                    start: open + 1,
+                    end: close,
+                    body: text,
+                });
+                let close_ix = self.tree.create_node(Item {
+                    start: close,
+                    end: close + 1,
+                    body: ItemBody::MaybeLinkClose(true),
+                });
+                self.tree[child_ix].next = Some(inner_ix);
+                self.tree[inner_ix].next = Some(close_ix);
+
+                let mut tail = close_ix;
+                if close + 1 < m_end {
+                    let ws_ix = self.tree.create_node(Item {
+                        start: close + 1,
+                        end: m_end,
+                        body: text,
+                    });
+                    self.tree[tail].next = Some(ws_ix);
+                    tail = ws_ix;
+                }
+                if open > m_start {
+                    let lead_ix = self.tree.create_node(Item {
+                        start: m_start,
+                        end: open,
+                        body: text,
+                    });
+                    self.tree[lead_ix].next = Some(child_ix);
+                    self.tree[node_ix].child = Some(lead_ix);
+                }
+                self.tree[tail].next = orig_next;
             }
         }
 

@@ -2968,3 +2968,20 @@ backslash escape right after it still resolves normally (#1115).
 </li>
 </ul>
 ````````````````````````````````
+
+When the task-list interpretation is canceled, the marker's bytes are
+re-exposed to inline parsing, so a matching reference definition still
+resolves `[x]` as a link, matching GitHub's postprocessing order (#1124).
+
+```````````````````````````````` example
+- [x] a
+  -
+
+[x]: https://example.com
+.
+<ul>
+<li>
+<h2><a href="https://example.com">x</a> a</h2>
+</li>
+</ul>
+````````````````````````````````

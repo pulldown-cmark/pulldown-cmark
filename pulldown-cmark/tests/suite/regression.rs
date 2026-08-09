@@ -3521,3 +3521,20 @@ fn regression_test_220() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_221() {
+    let original = r##"- [x] a
+  -
+
+[x]: https://example.com
+"##;
+    let expected = r##"<ul>
+<li>
+<h2><a href="https://example.com">x</a> a</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

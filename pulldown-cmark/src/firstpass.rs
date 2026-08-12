@@ -189,11 +189,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 match item.body {
                     ItemBody::Paragraph | ItemBody::TightParagraph => {
                         item.body = ItemBody::DefinitionList(true);
-                        let Item { start, end, .. } = *item;
                         let list_idx = self.tree.cur().unwrap();
                         // The content is a title, not a paragraph, so any task
-                        // list marker on it is canceled (#1124).
+                        // list marker on it is canceled (#1124). Read the node
+                        // back afterwards: cancelling moves its start back over
+                        // the marker and can prepend a child.
                         self.cancel_task_list_marker(list_idx);
+                        let Item { start, end, .. } = self.tree[list_idx].item;
                         let child = self.tree[list_idx].child;
                         let title_idx = self.tree.create_node(Item {
                             start,
@@ -903,6 +905,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// MaybeLinkClose, preserving the spaces around it. A whitespace-only label
     /// (`[ ]`) simply can't match a definition, so it renders literally.
     ///
+    /// The marker sits before `node_ix`'s own start, so grow the node to cover
+    /// it: those bytes are now part of its content.
+    ///
     /// Does nothing when `node_ix`'s first child is not a task list marker.
     fn cancel_task_list_marker(&mut self, node_ix: TreeIndex) {
         let bytes = self.text.as_bytes();
@@ -914,6 +919,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
 
         let m_start = self.tree[child_ix].item.start;
+        self.tree[node_ix].item.start = m_start;
         // Grow across the whitespace that separated the marker from the text.
         // Scan only the whitespace run (not up to the next node) so a following
         // backslash escape isn't pulled in.

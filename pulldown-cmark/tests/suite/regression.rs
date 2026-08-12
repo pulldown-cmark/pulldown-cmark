@@ -3622,3 +3622,34 @@ fn regression_test_226() {
 
     test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
 }
+
+#[test]
+fn regression_test_227() {
+    let original = r##"- [x] | a | b |
+  |---|---|
+"##;
+    let expected = r##"<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+| a | b |
+|---|---|</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_228() {
+    let original = r##"- [x] | a | b |
+  |---|---|---|
+
+[x]: /u
+"##;
+    let expected = r##"<ul>
+<li><table><thead><tr><th><a href="/u">x</a></th><th>a</th><th>b</th></tr></thead><tbody></tbody></table>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

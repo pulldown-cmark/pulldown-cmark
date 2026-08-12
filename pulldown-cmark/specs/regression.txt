@@ -3066,3 +3066,33 @@ list title too, matching the setext heading case (#1124).
 </li>
 </ul>
 ````````````````````````````````
+
+Counting the marker as a cell can also mean no table forms at all: the
+header here has three cells against a two column delimiter row, which
+is the same mismatch GitHub sees (#1124).
+
+```````````````````````````````` example
+- [x] | a | b |
+  |---|---|
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+| a | b |
+|---|---|</li>
+</ul>
+````````````````````````````````
+
+A reference definition resolves the canceled marker inside a table
+header cell too (#1124).
+
+```````````````````````````````` example
+- [x] | a | b |
+  |---|---|---|
+
+[x]: /u
+.
+<ul>
+<li><table><thead><tr><th><a href="/u">x</a></th><th>a</th><th>b</th></tr></thead><tbody></tbody></table>
+</li>
+</ul>
+````````````````````````````````

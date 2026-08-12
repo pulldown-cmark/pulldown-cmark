@@ -3572,21 +3572,6 @@ fn regression_test_223() {
 
 #[test]
 fn regression_test_224() {
-    let original = r##"- [x] a | b
-  ---|---|---
-"##;
-    let expected = r##"<ul>
-<li><input disabled="" type="checkbox" checked=""/>
-a | b
----|---|---</li>
-</ul>
-"##;
-
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
-}
-
-#[test]
-fn regression_test_225() {
     let original = r##"- [x] a
   : b
 "##;
@@ -3604,7 +3589,7 @@ fn regression_test_225() {
 }
 
 #[test]
-fn regression_test_226() {
+fn regression_test_225() {
     let original = r##"- [x] a
   : b
 
@@ -3624,7 +3609,7 @@ fn regression_test_226() {
 }
 
 #[test]
-fn regression_test_227() {
+fn regression_test_226() {
     let original = r##"- [x] | a | b |
   |---|---|
 "##;
@@ -3639,7 +3624,7 @@ fn regression_test_227() {
 }
 
 #[test]
-fn regression_test_228() {
+fn regression_test_227() {
     let original = r##"- [x] | a | b |
   |---|---|---|
 

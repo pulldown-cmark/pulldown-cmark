@@ -2555,6 +2555,27 @@ mod test {
     }
 
     #[test]
+    fn issue_1115_canceled_task_marker_offsets() {
+        // A canceled task list marker's bytes belong to whatever the content
+        // turned out to be, so that node's range has to cover them.
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_TABLES);
+        opts.insert(Options::ENABLE_TASKLISTS);
+
+        let heading = Parser::new_ext("- [x] a\n  -\n", opts)
+            .into_offset_iter()
+            .find_map(|(ev, range)| {
+                matches!(ev, Event::Start(Tag::Heading { .. })).then_some(range)
+            });
+        assert_eq!(heading, Some(2..12));
+
+        let table = Parser::new_ext("- [x] | a | b |\n  |---|---|---|\n", opts)
+            .into_offset_iter()
+            .find_map(|(ev, range)| matches!(ev, Event::Start(Tag::Table(_))).then_some(range));
+        assert_eq!(table, Some(2..32));
+    }
+
+    #[test]
     fn issue_320() {
         // dont crash
         parser_with_extensions(":\r\t> |\r:\r\t> |\r").count();

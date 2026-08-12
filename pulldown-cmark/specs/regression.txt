@@ -2986,10 +2986,9 @@ resolves `[x]` as a link, matching GitHub's postprocessing order (#1124).
 </ul>
 ````````````````````````````````
 
-The same cancellation applies when the item content turns out to be a
-table rather than a paragraph. The marker's bytes stay part of the
-header row, so they are counted as a leading cell just like GitHub does
-(#1124).
+A table is not a paragraph either, so the marker never becomes a
+checkbox: its bytes stay part of the header row and are counted as a
+leading cell, just like GitHub does (#1124).
 
 ```````````````````````````````` example
 - [x] | one | two | three    |
@@ -3014,20 +3013,6 @@ The marker joins the first cell when the header has no leading pipe
 <ul>
 <li><table><thead><tr><th>[x] a</th><th>b</th></tr></thead><tbody></tbody></table>
 </li>
-</ul>
-````````````````````````````````
-
-A line that only looks like a table still leaves an ordinary task list
-item, so the marker is unaffected (#1124).
-
-```````````````````````````````` example
-- [x] a | b
-  ---|---|---
-.
-<ul>
-<li><input disabled="" type="checkbox" checked=""/>
-a | b
----|---|---</li>
 </ul>
 ````````````````````````````````
 

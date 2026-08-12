@@ -190,10 +190,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     ItemBody::Paragraph | ItemBody::TightParagraph => {
                         item.body = ItemBody::DefinitionList(true);
                         let list_idx = self.tree.cur().unwrap();
-                        // The content is a title, not a paragraph, so any task
-                        // list marker on it is canceled (#1124). Read the node
-                        // back afterwards: cancelling moves its start back over
-                        // the marker and can prepend a child.
+                        // A title is not a paragraph (#1124). Read the node back
+                        // afterwards: canceling moves its start back over the
+                        // marker and can prepend a child.
                         self.cancel_task_list_marker(list_idx);
                         let Item { start, end, .. } = self.tree[list_idx].item;
                         let child = self.tree[list_idx].child;
@@ -703,9 +702,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.tree.append(item);
         }
 
-        // A task list marker is only valid when the item's content is a paragraph.
-        // If this turns out to be a table, the marker's bytes are ordinary row
-        // content, so the header row starts before the paragraph does (#1124).
+        // If this turns out to be a table rather than a paragraph, the marker's
+        // bytes are ordinary row content, so the header row starts before the
+        // paragraph does (#1124).
         let row_start = tasklist_marker.map_or(start_ix, |marker| marker.start);
 
         let bytes = self.text.as_bytes();
@@ -905,10 +904,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// MaybeLinkClose, preserving the spaces around it. A whitespace-only label
     /// (`[ ]`) simply can't match a definition, so it renders literally.
     ///
-    /// The marker sits before `node_ix`'s own start, so grow the node to cover
-    /// it: those bytes are now part of its content.
-    ///
-    /// Does nothing when `node_ix`'s first child is not a task list marker.
+    /// The marker sits before `node_ix`'s own start, so grow the node over it.
     fn cancel_task_list_marker(&mut self, node_ix: TreeIndex) {
         let bytes = self.text.as_bytes();
         let Some(child_ix) = self.tree[node_ix].child else {
@@ -925,13 +921,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // backslash escape isn't pulled in.
         let end = self.tree[child_ix].item.end;
         let m_end = end + scan_whitespace_no_nl(&bytes[end..]);
-        // scan_task_list_marker guarantees the shape `[`, one check char, `]`
-        // (optionally after up to 3 leading spaces).
-        let open = m_start
-            + bytes[m_start..m_end]
-                .iter()
-                .position(|&b| b == b'[')
-                .expect("task list marker contains '['");
+        // scan_task_list_marker guarantees the shape `[`, one check char, `]`,
+        // after up to 3 leading spaces.
+        let open = m_start + scan_whitespace_no_nl(&bytes[m_start..]);
         let close = open + 2;
         let orig_next = self.tree[child_ix].next;
         let text = ItemBody::Text {
@@ -1024,12 +1016,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         );
                     }
 
-                    if let (TableParseMode::Scan(row_start), true) = (mode, pipes > 0) {
+                    if let TableParseMode::Scan(row_start) = mode {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        if scan_containers(&self.tree, &mut line_start, self.options)
-                            == self.tree.spine_len()
+                        if pipes > 0
+                            && scan_containers(&self.tree, &mut line_start, self.options)
+                                == self.tree.spine_len()
                         {
                             let table_head_ix = next_line_ix + line_start.bytes_scanned();
                             let (table_head_bytes, alignment) =

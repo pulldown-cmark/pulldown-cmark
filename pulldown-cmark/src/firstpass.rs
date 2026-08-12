@@ -161,16 +161,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }
                     }
                 }
-            } else if let Some((indent, child, item)) = self
+            } else if let Some((indent, item)) = self
                 .options
                 .contains(Options::ENABLE_DEFINITION_LIST)
-                .then(|| {
-                    self.tree
-                        .cur()
-                        .map(|cur| (self.tree[cur].child, &mut self.tree[cur].item))
-                })
+                .then(|| self.tree.cur().map(|cur| &mut self.tree[cur].item))
                 .flatten()
-                .filter(|(_, item)| {
+                .filter(|item| {
                     matches!(
                         item,
                         Item {
@@ -186,8 +182,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     Some((
                         line_start
                             .scan_definition_list_definition_marker_with_indent(outer_indent)?,
-                        item.0,
-                        item.1,
+                        item,
                     ))
                 })
             {
@@ -196,6 +191,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         item.body = ItemBody::DefinitionList(true);
                         let Item { start, end, .. } = *item;
                         let list_idx = self.tree.cur().unwrap();
+                        // The content is a title, not a paragraph, so any task
+                        // list marker on it is canceled (#1124).
+                        self.cancel_task_list_marker(list_idx);
+                        let child = self.tree[list_idx].child;
                         let title_idx = self.tree.create_node(Item {
                             start,
                             end, // will get updated later if item not empty
@@ -702,11 +701,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.tree.append(item);
         }
 
+        // A task list marker is only valid when the item's content is a paragraph.
+        // If this turns out to be a table, the marker's bytes are ordinary row
+        // content, so the header row starts before the paragraph does (#1124).
+        let row_start = tasklist_marker.map_or(start_ix, |marker| marker.start);
+
         let bytes = self.text.as_bytes();
         let mut ix = start_ix;
         loop {
             let scan_mode = if self.options.contains(Options::ENABLE_TABLES) && ix == start_ix {
-                TableParseMode::Scan
+                TableParseMode::Scan(row_start)
             } else {
                 TableParseMode::Disabled
             };
@@ -720,6 +724,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             {
                 let table_cols = self.allocs[alignment_ix].len();
                 self.tree[node_ix].item.body = ItemBody::Table(alignment_ix);
+                self.tree[node_ix].item.start = row_start;
                 // this clears out any stuff we may have appended - but there may
                 // be a cleaner way
                 self.tree[node_ix].child = None;
@@ -728,7 +733,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.finish_list(ix);
                 }
                 self.tree.push();
-                if let Some(ix) = self.parse_table(table_cols, ix, next_ix) {
+                if let Some(ix) = self.parse_table(table_cols, row_start, next_ix) {
                     return ix;
                 }
             }
@@ -883,78 +888,88 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             attrs.map(|attrs| self.allocs.allocate_heading(attrs)),
         );
 
-        // A task list marker is only valid when the list item's content is a
-        // paragraph. If this paragraph turned out to be a setext heading, the
-        // marker would render inside the heading (#1115). Rather than dropping it
-        // or freezing it as inert text, re-expose the marker's bytes to inline
-        // parsing so that a matching `[x]:` reference still resolves as a link,
-        // matching GitHub's postprocessing (review on #1124). Split the marker
-        // back into MaybeLinkOpen / text / MaybeLinkClose, preserving the spaces
-        // around it. A whitespace-only label (`[ ]`) simply can't match a
-        // definition, so it renders literally as before.
-        if let Some(child_ix) = self.tree[node_ix].child {
-            if let ItemBody::TaskListMarker(_) = self.tree[child_ix].item.body {
-                let m_start = self.tree[child_ix].item.start;
-                // Grow across the whitespace that separated the marker from the
-                // text. Scan only the whitespace run (not up to the next node) so
-                // a following backslash escape isn't pulled in.
-                let end = self.tree[child_ix].item.end;
-                let m_end = end + scan_whitespace_no_nl(&bytes[end..]);
-                // scan_task_list_marker guarantees the shape `[`, one check char,
-                // `]` (optionally after up to 3 leading spaces).
-                let open = m_start
-                    + bytes[m_start..m_end]
-                        .iter()
-                        .position(|&b| b == b'[')
-                        .expect("task list marker contains '['");
-                let close = open + 2;
-                let orig_next = self.tree[child_ix].next;
-                let text = ItemBody::Text {
-                    backslash_escaped: false,
-                };
-
-                // Reuse the marker node as the `[` MaybeLinkOpen.
-                self.tree[child_ix].item.start = open;
-                self.tree[child_ix].item.end = open + 1;
-                self.tree[child_ix].item.body = ItemBody::MaybeLinkOpen;
-
-                let inner_ix = self.tree.create_node(Item {
-                    start: open + 1,
-                    end: close,
-                    body: text,
-                });
-                let close_ix = self.tree.create_node(Item {
-                    start: close,
-                    end: close + 1,
-                    body: ItemBody::MaybeLinkClose(true),
-                });
-                self.tree[child_ix].next = Some(inner_ix);
-                self.tree[inner_ix].next = Some(close_ix);
-
-                let mut tail = close_ix;
-                if close + 1 < m_end {
-                    let ws_ix = self.tree.create_node(Item {
-                        start: close + 1,
-                        end: m_end,
-                        body: text,
-                    });
-                    self.tree[tail].next = Some(ws_ix);
-                    tail = ws_ix;
-                }
-                if open > m_start {
-                    let lead_ix = self.tree.create_node(Item {
-                        start: m_start,
-                        end: open,
-                        body: text,
-                    });
-                    self.tree[lead_ix].next = Some(child_ix);
-                    self.tree[node_ix].child = Some(lead_ix);
-                }
-                self.tree[tail].next = orig_next;
-            }
-        }
+        self.cancel_task_list_marker(node_ix);
 
         Some(ix + n)
+    }
+
+    /// A task list marker is only valid when the list item's content is a
+    /// paragraph. When the content turns out to be a setext heading (#1115) or a
+    /// definition list title (#1124) instead, the marker would otherwise render
+    /// inside it. Cancel the task-list interpretation, but rather than dropping
+    /// the marker or freezing it as inert text, re-expose its bytes to inline
+    /// parsing so a matching `[x]:` reference still resolves as a link, matching
+    /// GitHub's postprocessing. Split the marker back into MaybeLinkOpen / text /
+    /// MaybeLinkClose, preserving the spaces around it. A whitespace-only label
+    /// (`[ ]`) simply can't match a definition, so it renders literally.
+    ///
+    /// Does nothing when `node_ix`'s first child is not a task list marker.
+    fn cancel_task_list_marker(&mut self, node_ix: TreeIndex) {
+        let bytes = self.text.as_bytes();
+        let Some(child_ix) = self.tree[node_ix].child else {
+            return;
+        };
+        if !matches!(self.tree[child_ix].item.body, ItemBody::TaskListMarker(_)) {
+            return;
+        }
+
+        let m_start = self.tree[child_ix].item.start;
+        // Grow across the whitespace that separated the marker from the text.
+        // Scan only the whitespace run (not up to the next node) so a following
+        // backslash escape isn't pulled in.
+        let end = self.tree[child_ix].item.end;
+        let m_end = end + scan_whitespace_no_nl(&bytes[end..]);
+        // scan_task_list_marker guarantees the shape `[`, one check char, `]`
+        // (optionally after up to 3 leading spaces).
+        let open = m_start
+            + bytes[m_start..m_end]
+                .iter()
+                .position(|&b| b == b'[')
+                .expect("task list marker contains '['");
+        let close = open + 2;
+        let orig_next = self.tree[child_ix].next;
+        let text = ItemBody::Text {
+            backslash_escaped: false,
+        };
+
+        // Reuse the marker node as the `[` MaybeLinkOpen.
+        self.tree[child_ix].item.start = open;
+        self.tree[child_ix].item.end = open + 1;
+        self.tree[child_ix].item.body = ItemBody::MaybeLinkOpen;
+
+        let inner_ix = self.tree.create_node(Item {
+            start: open + 1,
+            end: close,
+            body: text,
+        });
+        let close_ix = self.tree.create_node(Item {
+            start: close,
+            end: close + 1,
+            body: ItemBody::MaybeLinkClose(true),
+        });
+        self.tree[child_ix].next = Some(inner_ix);
+        self.tree[inner_ix].next = Some(close_ix);
+
+        let mut tail = close_ix;
+        if close + 1 < m_end {
+            let ws_ix = self.tree.create_node(Item {
+                start: close + 1,
+                end: m_end,
+                body: text,
+            });
+            self.tree[tail].next = Some(ws_ix);
+            tail = ws_ix;
+        }
+        if open > m_start {
+            let lead_ix = self.tree.create_node(Item {
+                start: m_start,
+                end: open,
+                body: text,
+            });
+            self.tree[lead_ix].next = Some(child_ix);
+            self.tree[node_ix].child = Some(lead_ix);
+        }
+        self.tree[tail].next = orig_next;
     }
 
     /// Parse a line of input, appending text and items to tree.
@@ -1003,7 +1018,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         );
                     }
 
-                    if mode == TableParseMode::Scan && pipes > 0 {
+                    if let (TableParseMode::Scan(row_start), true) = (mode, pipes > 0) {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
@@ -1017,7 +1032,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             if table_head_bytes > 0 {
                                 // computing header count from number of pipes
                                 let header_count =
-                                    count_header_cols(bytes, pipes, start, last_pipe_ix);
+                                    count_header_cols(bytes, pipes, row_start, last_pipe_ix);
 
                                 // make sure they match the number of columns we find in separator line
                                 if alignment.len() == header_count {
@@ -2282,8 +2297,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 /// Scanning modes for `Parser`'s `parse_line` method.
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum TableParseMode {
-    /// Inside a paragraph, scanning for table headers.
-    Scan,
+    /// Inside a paragraph, scanning for table headers. The index is where the
+    /// header row begins, which is before the paragraph itself when a task list
+    /// marker was consumed first: those bytes are still part of the row.
+    Scan(usize),
     /// Inside a table.
     Active,
     /// Inside a paragraph, not scanning for table headers.

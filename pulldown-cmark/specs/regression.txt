@@ -2985,3 +2985,84 @@ resolves `[x]` as a link, matching GitHub's postprocessing order (#1124).
 </li>
 </ul>
 ````````````````````````````````
+
+The same cancellation applies when the item content turns out to be a
+table rather than a paragraph. The marker's bytes stay part of the
+header row, so they are counted as a leading cell just like GitHub does
+(#1124).
+
+```````````````````````````````` example
+- [x] | one | two | three    |
+  |-----|-----|-------|------|
+  | one | two | three | four |
+.
+<ul>
+<li><table><thead><tr><th>[x]</th><th>one</th><th>two</th><th>three</th></tr></thead><tbody>
+<tr><td>one</td><td>two</td><td>three</td><td>four</td></tr>
+</tbody></table>
+</li>
+</ul>
+````````````````````````````````
+
+The marker joins the first cell when the header has no leading pipe
+(#1124).
+
+```````````````````````````````` example
+- [x] a | b
+  ---|---
+.
+<ul>
+<li><table><thead><tr><th>[x] a</th><th>b</th></tr></thead><tbody></tbody></table>
+</li>
+</ul>
+````````````````````````````````
+
+A line that only looks like a table still leaves an ordinary task list
+item, so the marker is unaffected (#1124).
+
+```````````````````````````````` example
+- [x] a | b
+  ---|---|---
+.
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+a | b
+---|---|---</li>
+</ul>
+````````````````````````````````
+
+A definition list title is not a paragraph either, so the marker is
+canceled and kept as text (#1124).
+
+```````````````````````````````` example_deflists
+- [x] a
+  : b
+.
+<ul>
+<li>
+<dl>
+<dt>[x] a</dt>
+<dd>b</dd>
+</dl>
+</li>
+</ul>
+````````````````````````````````
+
+A reference definition resolves the canceled marker in a definition
+list title too, matching the setext heading case (#1124).
+
+```````````````````````````````` example_deflists
+- [x] a
+  : b
+
+[x]: https://example.com
+.
+<ul>
+<li>
+<dl>
+<dt><a href="https://example.com">x</a> a</dt>
+<dd>b</dd>
+</dl>
+</li>
+</ul>
+````````````````````````````````

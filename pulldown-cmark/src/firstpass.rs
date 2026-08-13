@@ -2366,7 +2366,12 @@ fn scan_paragraph_interrupt_no_table(
         || (has_footnote
             && bytes.starts_with(b"[^")
             && scan_link_label_rest(
-                core::str::from_utf8(&bytes[2..]).unwrap(),
+                // This probe uses a `&|_| None` line-break handler, so it only ever
+                // inspects the current line. Scanning the entire remaining input here
+                // (via `from_utf8(&bytes[2..])`) used to make the UTF-8 validation
+                // O(n) per line, which is O(n²) overall for inputs with a `[^` on
+                // every line. Limit the slice to the current line; see #1076.
+                core::str::from_utf8(&bytes[2..2 + scan_nextline(&bytes[2..])]).unwrap(),
                 &|_| None,
                 tree.is_in_table(),
             )

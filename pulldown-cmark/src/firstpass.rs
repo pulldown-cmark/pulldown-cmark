@@ -254,7 +254,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let current_container = tree_position == self.tree.spine_len();
                     if !lazy_line_start.scan_space(4)
                         && self.scan_paragraph_interrupt(
-                            &bytes[ix + lazy_line_start.bytes_scanned()..],
+                            &self.text[ix + lazy_line_start.bytes_scanned()..],
                             current_container,
                             tree_position,
                         )
@@ -513,7 +513,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let current_container = tree_position == self.tree.spine_len();
         if (!line_start.scan_space(4)
             && self.scan_paragraph_interrupt(
-                &bytes[line_start.bytes_scanned()..],
+                &self.text[self.text.len() - bytes.len() + line_start.bytes_scanned()..],
                 current_container,
                 tree_position,
             ))
@@ -655,7 +655,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
         if scan_paragraph_interrupt_no_table(
-            &bytes[ix..],
+            &self.text[ix..],
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
@@ -763,7 +763,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
                 // first check for non-empty lists, then for other interrupts
-                let suffix = &bytes[ix_new..];
+                let suffix = &self.text[ix_new..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position) {
                     if let Some(pos) = trailing_backslash_pos {
                         self.tree.append_text(pos, pos + 1, false);
@@ -1956,9 +1956,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     return Some(line_start.bytes_scanned());
                 }
                 let bytes_scanned = line_start.bytes_scanned();
-                let suffix = &bytes[bytes_scanned..];
+                let off = self.text.len() - bytes.len() + bytes_scanned;
+                let suffix = &self.text[off..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                    || (current_container && scan_setext_heading(suffix).is_some())
+                    || (current_container && scan_setext_heading(suffix.as_bytes()).is_some())
                 {
                     None
                 } else {
@@ -2004,9 +2005,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
             let current_container = tree_position == self.tree.spine_len();
             if !line_start.scan_space(4) {
-                let suffix = &bytes[i + line_start.bytes_scanned()..];
+                let suffix = &self.text[i + line_start.bytes_scanned()..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                    || scan_setext_heading(suffix).is_some()
+                    || scan_setext_heading(suffix.as_bytes()).is_some()
                 {
                     return None;
                 }
@@ -2063,9 +2064,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
                     let current_container = tree_position == self.tree.spine_len();
                     if !line_start.scan_space(4) {
-                        let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
+                        let suffix = &text[bytecount + line_start.bytes_scanned()..];
                         if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                            || scan_setext_heading(suffix).is_some()
+                            || scan_setext_heading(suffix.as_bytes()).is_some()
                         {
                             return None;
                         }
@@ -2167,12 +2168,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Checks whether we should break a paragraph on the given input.
     fn scan_paragraph_interrupt(
         &self,
-        bytes: &[u8],
+        text: &str,
         current_container: bool,
         tree_position: usize,
     ) -> bool {
+        let bytes = text.as_bytes();
         if scan_paragraph_interrupt_no_table(
-            bytes,
+            text,
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
@@ -2326,13 +2328,14 @@ fn count_header_cols(
 /// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
 /// tables to interrupt the paragraph.
 fn scan_paragraph_interrupt_no_table(
-    bytes: &[u8],
+    text: &str,
     current_container: bool,
     has_footnote: bool,
     definition_list: bool,
     tree: &Tree<Item>,
     tree_position: usize,
 ) -> bool {
+    let bytes = text.as_bytes();
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
@@ -2364,14 +2367,13 @@ fn scan_paragraph_interrupt_no_table(
                 }))
             && bytes.starts_with(b":")
         || (has_footnote
-            && bytes.starts_with(b"[^")
+            && text.starts_with("[^")
             && scan_link_label_rest(
-                // This probe uses a `&|_| None` line-break handler, so it only ever
-                // inspects the current line. Scanning the entire remaining input here
-                // (via `from_utf8(&bytes[2..])`) used to make the UTF-8 validation
-                // O(n) per line, which is O(n²) overall for inputs with a `[^` on
-                // every line. Limit the slice to the current line; see #1076.
-                core::str::from_utf8(&bytes[2..2 + scan_nextline(&bytes[2..])]).unwrap(),
+                // Already a `&str`, so this no longer re-validates the remaining
+                // input as UTF-8 on every `[^` line. The linebreak handler
+                // rejects newlines, so the probe still only inspects the current
+                // line; see #1076.
+                &text[2..],
                 &|_| None,
                 tree.is_in_table(),
             )

@@ -299,14 +299,16 @@ where
                     self.write("</summary>")
                 }
             }
-            Tag::List(Some(1)) => {
+            Tag::List { start: Some(1), .. } => {
                 if self.end_newline {
                     self.write("<ol>\n")
                 } else {
                     self.write("\n<ol>\n")
                 }
             }
-            Tag::List(Some(start)) => {
+            Tag::List {
+                start: Some(start), ..
+            } => {
                 if self.end_newline {
                     self.write("<ol start=\"")?;
                 } else {
@@ -315,7 +317,7 @@ where
                 write!(&mut self.writer, "{}", start)?;
                 self.write("\">\n")
             }
-            Tag::List(None) => {
+            Tag::List { start: None, .. } => {
                 if self.end_newline {
                     self.write("<ul>\n")
                 } else {

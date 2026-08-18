@@ -749,6 +749,16 @@ impl<'input> ParserInner<'input> {
                             // to a defined link?
                             let scan_result =
                                 scan_reference(&self.tree, block_text, cur_ix, self.options);
+                            // A collapsed reference (`[label][]`) extends through the
+                            // trailing `[]`, unlike a shortcut (`[label]`). Remember the
+                            // end of that `[]` so the emitted span (and the span handed
+                            // to the broken-link callback) covers the whole construct,
+                            // matching how full references (`[label][ref]`) are handled.
+                            let collapsed_end = if let RefScan::Collapsed(_, end) = &scan_result {
+                                Some(*end)
+                            } else {
+                                None
+                            };
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
@@ -770,7 +780,7 @@ impl<'input> ParserInner<'input> {
                                     (next_node, LinkType::Reference)
                                 }
                                 // [reference][]
-                                RefScan::Collapsed(next_node) => {
+                                RefScan::Collapsed(next_node, _) => {
                                     // This reference has already been tried, and it's not
                                     // valid. Skip it.
                                     if !could_be_ref {
@@ -865,7 +875,8 @@ impl<'input> ParserInner<'input> {
                                 if let Some((def_link_type, url, title)) = self
                                     .fetch_link_type_url_title(
                                         link_label,
-                                        (self.tree[tos.node].item.start)..end,
+                                        (self.tree[tos.node].item.start)
+                                            ..collapsed_end.unwrap_or(end),
                                         link_type,
                                         callbacks,
                                     )
@@ -894,7 +905,7 @@ impl<'input> ParserInner<'input> {
                                         }
                                     }
 
-                                    self.tree[tos.node].item.end = end;
+                                    self.tree[tos.node].item.end = collapsed_end.unwrap_or(end);
 
                                     // set up cur so next node will be node_after_link
                                     cur = Some(tos.node);
@@ -1786,8 +1797,8 @@ impl InlineStack {
 enum RefScan<'a> {
     // label, source ix of label end
     LinkLabel(CowStr<'a>, usize),
-    // contains next node index
-    Collapsed(Option<TreeIndex>),
+    // the next node index, and the source ix of the end of the `[]`
+    Collapsed(Option<TreeIndex>, usize),
     UnexpectedFootnote,
     Failed,
 }
@@ -1857,7 +1868,7 @@ fn scan_reference<'b>(
         };
         // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[next_ix].next.unwrap();
-        RefScan::Collapsed(tree[closing_node].next)
+        RefScan::Collapsed(tree[closing_node].next, tree[closing_node].item.end)
     } else {
         let label = scan_link_label(tree, &text[start..], options);
         match label {
@@ -2660,6 +2671,27 @@ mod test {
                 .next()
                 .unwrap();
         assert_eq!(5..30, range);
+    }
+
+    #[test]
+    fn collapsed_link_offsets() {
+        // A collapsed reference link (`[foo][]`) must span the trailing `[]`,
+        // like a full reference link, rather than stopping at the label.
+        let range = Parser::new("[foo][]\n\n[foo]: /url")
+            .into_offset_iter()
+            .filter_map(|(ev, range)| match ev {
+                Event::Start(
+                    Tag::Link {
+                        link_type: LinkType::Collapsed,
+                        ..
+                    },
+                    ..,
+                ) => Some(range),
+                _ => None,
+            })
+            .next()
+            .unwrap();
+        assert_eq!(0..7, range);
     }
 
     #[test]

@@ -465,7 +465,51 @@ H2-2 {#foo**bar**baz}
 }
 
 #[test]
-fn heading_attrs_test_0035_l551() {
+fn heading_attrs_test_0035_l506() {
+    let original = r##"# H1 __{#my__id1}
+## H2 **{#my**id2}
+### H3 `{.code` }
+#### H4 ~~{.strike~~ }
+"##;
+    let expected = r##"<h1 id="my__id1">H1 __</h1>
+<h2 id="my**id2">H2 **</h2>
+<h3 class="code`">H3 `</h3>
+<h4 class="strike~~">H4 ~~</h4>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0036_l518() {
+    let original = r##"# H1__ {#my__id1}
+## H2** {#my**id2}
+### H3` {.code` }
+#### H4~~ {.strike~~ }
+"##;
+    let expected = r##"<h1 id="my__id1">H1__</h1>
+<h2 id="my**id2">H2**</h2>
+<h3 class="code`">H3`</h3>
+<h4 class="strike~~">H4~~</h4>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0037_l530() {
+    let original = r##"# H1__ {.foo__bar**baz}
+qux**
+"##;
+    let expected = r##"<h1 class="foo__bar**baz">H1__</h1>
+<p>qux**</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0038_l551() {
     let original = r##"# H1 {.foo#bar}
 ## H2 {#foo.bar}
 ### H3 {.a"b'c&d}
@@ -479,7 +523,7 @@ fn heading_attrs_test_0035_l551() {
 }
 
 #[test]
-fn heading_attrs_test_0036_l575() {
+fn heading_attrs_test_0039_l575() {
     let original = r##"# H1 {#}
 ## H2 {.}
 "##;
@@ -491,7 +535,7 @@ fn heading_attrs_test_0036_l575() {
 }
 
 #[test]
-fn heading_attrs_test_0037_l583() {
+fn heading_attrs_test_0040_l583() {
     let original = r##"# H1 {#foo #}
 # H1 {.foo . . .bar}
 "##;
@@ -503,7 +547,7 @@ fn heading_attrs_test_0037_l583() {
 }
 
 #[test]
-fn heading_attrs_test_0038_l593() {
+fn heading_attrs_test_0041_l593() {
     let original = r##"# {}
 ## {}
 ### {\}
@@ -522,7 +566,7 @@ fn heading_attrs_test_0038_l593() {
 }
 
 #[test]
-fn heading_attrs_test_0039_l608() {
+fn heading_attrs_test_0042_l608() {
     let original = r##"{}
 ==
 
@@ -549,7 +593,7 @@ fn heading_attrs_test_0039_l608() {
 }
 
 #[test]
-fn heading_attrs_test_0040_l638() {
+fn heading_attrs_test_0043_l638() {
     let original = r##"# horizontal tab	
 # horizontal tab	{#ht}
 ## form feed
@@ -569,7 +613,7 @@ fn heading_attrs_test_0040_l638() {
 }
 
 #[test]
-fn heading_attrs_test_0041_l665() {
+fn heading_attrs_test_0044_l665() {
     let original = r##"# horizontal tab (U+000A) {#ht	.myclass}
 ## form feed (U+000C) {#ff.myclass}
 
@@ -584,7 +628,7 @@ fn heading_attrs_test_0041_l665() {
 }
 
 #[test]
-fn heading_attrs_test_0042_l678() {
+fn heading_attrs_test_0045_l678() {
     let original = r##"# EN SPACE (U+2002) {#en-space .myclass}
 ## IDEOGRAPHIC SPACE (U+3000) {#ideographic-space　.myclass}
 "##;

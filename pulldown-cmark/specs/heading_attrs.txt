@@ -503,7 +503,7 @@ H2-2 {#foo**bar**baz}
 Parsing of attribute blocks takes precedence, even when unclosed inlines are
 present before the attribute blocks.
 
-````````````````````````````````.example
+```````````````````````````````` example
 # H1 __{#my__id1}
 ## H2 **{#my**id2}
 ### H3 `{.code` }
@@ -512,22 +512,22 @@ present before the attribute blocks.
 <h1 id="my__id1">H1 __</h1>
 <h2 id="my**id2">H2 **</h2>
 <h3 class="code`">H3 `</h3>
-<h4 class=".strike~~">H4 ~~</h4>
+<h4 class="strike~~">H4 ~~</h4>
 ````````````````````````````````
 
-````````````````````````````````.example
+```````````````````````````````` example
 # H1__ {#my__id1}
 ## H2** {#my**id2}
 ### H3` {.code` }
 #### H4~~ {.strike~~ }
 .
-<h1 id="my__id1">H1__ </h1>
-<h2 id="my**id2">H2** </h2>
-<h3 class="code`">H3` </h3>
-<h4 class=".strike~~">H4~~ </h4>
+<h1 id="my__id1">H1__</h1>
+<h2 id="my**id2">H2**</h2>
+<h3 class="code`">H3`</h3>
+<h4 class="strike~~">H4~~</h4>
 ````````````````````````````````
 
-````````````````````````````````.example
+```````````````````````````````` example
 # H1__ {.foo__bar**baz}
 qux**
 .

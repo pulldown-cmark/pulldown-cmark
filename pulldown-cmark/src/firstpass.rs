@@ -2368,16 +2368,8 @@ fn scan_paragraph_interrupt_no_table(
             && bytes.starts_with(b":")
         || (has_footnote
             && text.starts_with("[^")
-            && scan_link_label_rest(
-                // Already a `&str`, so this no longer re-validates the remaining
-                // input as UTF-8 on every `[^` line. The linebreak handler
-                // rejects newlines, so the probe still only inspects the current
-                // line; see #1076.
-                &text[2..],
-                &|_| None,
-                tree.is_in_table(),
-            )
-            .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
+            && scan_link_label_rest(&text[2..], &|_| None, tree.is_in_table())
+                .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

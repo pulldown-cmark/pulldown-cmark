@@ -4,17 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn cjk_friendly_emphasis_test_0001_l23() {
-    let original = r##"**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
-"##;
-    let expected = r##"<p>**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。</p>
-"##;
-
-    test_markdown_html(original, expected, "");
-}
-
-#[test]
-fn cjk_friendly_emphasis_test_0002_l32() {
+fn cjk_friendly_emphasis_test_0001_l27() {
     let original = r##"**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
 
 **该星号不会被识别，而是直接显示。**这是因为它没有被识别为强调符号。
@@ -30,7 +20,7 @@ fn cjk_friendly_emphasis_test_0002_l32() {
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0003_l47() {
+fn cjk_friendly_emphasis_test_0002_l42() {
     let original = r##"これは**私のやりたかったこと。**だからするの。
 
 **[製品ほげ](./product-foo)**と**[製品ふが](./product-bar)**をお試しください
@@ -292,7 +282,7 @@ Git**（注：不是GitHub）**
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0004_l308() {
+fn cjk_friendly_emphasis_test_0003_l303() {
     let original = r##"**이 [링크](https://example.kr/)**만을 강조하고 싶다.
 
 **스크립트(script)**라고
@@ -317,7 +307,7 @@ fn cjk_friendly_emphasis_test_0004_l308() {
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0005_l332() {
+fn cjk_friendly_emphasis_test_0004_l327() {
     let original = r##"a**〰**a
 
 a**〽**a
@@ -342,7 +332,7 @@ a**㊙**a
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0006_l356() {
+fn cjk_friendly_emphasis_test_0005_l351() {
     let original = r##"
 a**a«**a
 
@@ -374,7 +364,7 @@ a**a𐬻**a
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0007_l387() {
+fn cjk_friendly_emphasis_test_0006_l382() {
     let original = r##"__注意__：注意事項
 
 注意：__注意事項__
@@ -402,7 +392,7 @@ fn cjk_friendly_emphasis_test_0007_l387() {
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0008_l417() {
+fn cjk_friendly_emphasis_test_0007_l412() {
     let original = r##"foo_bar_
 
 _foo_bar
@@ -418,7 +408,7 @@ _foo_bar_baz_
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0009_l434() {
+fn cjk_friendly_emphasis_test_0008_l429() {
     let original = r##"漢_abc_
 
 _abc_漢
@@ -431,7 +421,7 @@ _abc_漢
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0010_l446() {
+fn cjk_friendly_emphasis_test_0009_l441() {
     let original = r##"真~~（她~~
 
 ~~真，~~她
@@ -468,7 +458,7 @@ Here I don't strike out an exclamation point~!~.
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_0011_l483() {
+fn cjk_friendly_emphasis_test_0010_l478() {
     let original = r##"あ**()**あ[^1]
 
 [^1]: ~~あ~~

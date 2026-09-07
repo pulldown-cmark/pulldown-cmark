@@ -212,8 +212,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     _ => unreachable!(),
                 }
                 let after_marker_index = start_ix + line_start.bytes_scanned();
+                // `outer_indent` is columns, not bytes. Subtracting it from a
+                // source offset can land inside a multibyte character (issue 1142).
                 self.tree.append(Item {
-                    start: container_start - outer_indent,
+                    start: start_ix + save.bytes_scanned(),
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });

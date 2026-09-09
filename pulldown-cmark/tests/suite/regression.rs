@@ -3795,3 +3795,15 @@ fn regression_test_237() {
 
     test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
 }
+
+#[test]
+fn regression_test_238() {
+    let original = r##"para
+::: note
+"##;
+    let expected = r##"<p>para
+::: note</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

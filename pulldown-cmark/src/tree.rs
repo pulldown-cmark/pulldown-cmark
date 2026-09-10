@@ -57,6 +57,8 @@ pub(crate) struct Node<T> {
 pub(crate) struct Tree<T> {
     nodes: Vec<Node<T>>,
     spine: Vec<TreeIndex>, // indices of nodes on path to current node
+    // positions in `spine` of the block quotes on it, in ascending order
+    spine_blockquotes: Vec<usize>,
     cur: Option<TreeIndex>,
 }
 
@@ -74,6 +76,7 @@ impl<T: Default> Tree<T> {
         Tree {
             nodes,
             spine: Vec::new(),
+            spine_blockquotes: Vec::new(),
             cur: None,
         }
     }
@@ -108,31 +111,6 @@ impl<T: Default> Tree<T> {
         TreeIndex::new(this)
     }
 
-    /// Push down one level, so that new items become children of the current node.
-    /// The new focus index is returned.
-    pub(crate) fn push(&mut self) -> TreeIndex {
-        let cur_ix = self.cur.unwrap();
-        self.spine.push(cur_ix);
-        self.cur = self[cur_ix].child;
-        cur_ix
-    }
-
-    /// Pop back up a level.
-    pub(crate) fn pop(&mut self) -> Option<TreeIndex> {
-        let ix = Some(self.spine.pop()?);
-        self.cur = ix;
-        ix
-    }
-
-    /// Remove the last node, as `pop` but removing it.
-    pub(crate) fn remove_node(&mut self) -> Option<TreeIndex> {
-        let ix = self.spine.pop()?;
-        self.cur = Some(ix);
-        self.nodes.pop()?;
-        self[ix].child = None;
-        Some(ix)
-    }
-
     /// Look at the parent node.
     pub(crate) fn peek_up(&self) -> Option<TreeIndex> {
         self.spine.last().copied()
@@ -156,16 +134,6 @@ impl<T: Default> Tree<T> {
     /// Returns the length of the spine.
     pub(crate) fn spine_len(&self) -> usize {
         self.spine.len()
-    }
-
-    /// Resets the focus to the first node added to the tree, if it exists.
-    pub(crate) fn reset(&mut self) {
-        self.cur = if self.is_empty() {
-            None
-        } else {
-            Some(TreeIndex::new(1))
-        };
-        self.spine.clear();
     }
 
     /// Walks the spine from a root node up to, but not including, the current node.
@@ -194,6 +162,64 @@ impl<T: Default> Tree<T> {
 }
 
 impl Tree<Item> {
+    /// Push down one level, so that new items become children of the current node.
+    /// The new focus index is returned.
+    pub(crate) fn push(&mut self) -> TreeIndex {
+        let cur_ix = self.cur.unwrap();
+        if let ItemBody::BlockQuote(..) = self[cur_ix].item.body {
+            self.spine_blockquotes.push(self.spine.len());
+        }
+        self.spine.push(cur_ix);
+        self.cur = self[cur_ix].child;
+        cur_ix
+    }
+
+    /// Pop back up a level.
+    pub(crate) fn pop(&mut self) -> Option<TreeIndex> {
+        let ix = Some(self.spine.pop()?);
+        self.pop_spine_blockquote();
+        self.cur = ix;
+        ix
+    }
+
+    /// Remove the last node, as `pop` but removing it.
+    pub(crate) fn remove_node(&mut self) -> Option<TreeIndex> {
+        let ix = self.spine.pop()?;
+        self.pop_spine_blockquote();
+        self.cur = Some(ix);
+        self.nodes.pop()?;
+        self[ix].child = None;
+        Some(ix)
+    }
+
+    fn pop_spine_blockquote(&mut self) {
+        if self.spine_blockquotes.last() == Some(&self.spine.len()) {
+            self.spine_blockquotes.pop();
+        }
+    }
+
+    /// Returns the spine position of the `n`th block quote on the spine
+    /// (counting from the root, starting at zero), if there are that many.
+    pub(crate) fn spine_blockquote(&self, n: usize) -> Option<usize> {
+        let pos = self.spine_blockquotes.get(n).copied();
+        debug_assert!(pos.map_or(true, |pos| matches!(
+            self[self.spine[pos]].item.body,
+            ItemBody::BlockQuote(..)
+        )));
+        pos
+    }
+
+    /// Resets the focus to the first node added to the tree, if it exists.
+    pub(crate) fn reset(&mut self) {
+        self.cur = if self.is_empty() {
+            None
+        } else {
+            Some(TreeIndex::new(1))
+        };
+        self.spine.clear();
+        self.spine_blockquotes.clear();
+    }
+
     /// Truncates the preceding siblings to the given end position,
     /// and returns the new current node.
     pub(crate) fn truncate_siblings(&mut self, end_byte_ix: usize) {

@@ -3200,3 +3200,43 @@ Definition lists don't cancel task lists (they act like paragraphs):
 </li>
 </ul>
 ````````````````````````````````
+
+A whitespace-only line in a nested list must consume the whole tab, even when a tab is split across list items:
+
+```````````````````````````````` example
+- - ```
+→
+    b
+.
+<ul>
+<li>
+<ul>
+<li>
+<pre><code>
+b
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+> - - ```
+>→
+>     b
+.
+<blockquote>
+<ul>
+<li>
+<ul>
+<li>
+<pre><code>
+b
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+````````````````````````````````

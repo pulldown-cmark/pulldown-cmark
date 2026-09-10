@@ -75,6 +75,26 @@ mod to_html {
         group.finish();
     }
 
+    pub fn pathological_blank_lines_in_nested_lists(c: &mut Criterion) {
+        let mut group = c.benchmark_group("pathological_blank_lines_in_nested_lists");
+        let mut buf = String::new();
+        for i in 1..20 {
+            let depth = i * 100;
+            for (name, prefix, blank_line) in [("list", "", "\n"), ("quote", "> ", ">\n")] {
+                buf.clear();
+                buf.push_str(prefix);
+                buf.push_str(&"- ".repeat(depth));
+                buf.push_str("a\n");
+                buf.push_str(&blank_line.repeat(depth));
+                group.throughput(Throughput::Bytes(buf.len() as u64));
+                group.bench_with_input(BenchmarkId::new(name, i), &buf, |b, buf| {
+                    b.iter(|| render_html(buf, Options::empty()));
+                });
+            }
+        }
+        group.finish();
+    }
+
     fn render_html(text: &str, opts: Options) -> String {
         let mut s = String::with_capacity(text.len() * 3 / 2);
         let p = Parser::new_ext(text, opts);
@@ -88,6 +108,7 @@ criterion_group!(
     to_html::pathological_missing_table_cells,
     to_html::pathological_link_def,
     to_html::pathological_codeblocks1,
-    to_html::advanced_pathological_codeblocks
+    to_html::advanced_pathological_codeblocks,
+    to_html::pathological_blank_lines_in_nested_lists
 );
 criterion_main!(benches);

@@ -2654,6 +2654,19 @@ mod test {
     }
 
     #[test]
+    fn issue_1142_deflist_offset_is_char_boundary() {
+        // Title `%`, definition whose text is combining acute U+0301, then a
+        // TAB-indented second definition. The second definition's start used
+        // to land inside the combining character.
+        let doc = "%\n:\u{301}\n\t:";
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_DEFINITION_LIST);
+        for (_event, range) in Parser::new_ext(doc, opts).into_offset_iter() {
+            let _ = &doc[range];
+        }
+    }
+
+    #[test]
     fn reference_link_offsets() {
         let range =
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")

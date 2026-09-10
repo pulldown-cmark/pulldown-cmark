@@ -1,3 +1,5 @@
+Parser options: `ENABLE_HIGHLIGHT`
+
 Highlighted text uses `==` delimiters, mirroring the markdown-it / pandoc
 extension. The pairing rules mirror GFM's `~~` strikethrough.
 
@@ -153,13 +155,13 @@ b</mark></p>
 
 # Combined with strikethrough
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ==~~both~~==
 .
 <p><mark><del>both</del></mark></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~~==both==~~
 .
 <p><del><mark>both</mark></del></p>

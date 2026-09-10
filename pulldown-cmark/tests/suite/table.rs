@@ -4,18 +4,18 @@
 use super::test_markdown_html;
 
 #[test]
-fn table_test_1() {
+fn table_test_0001_l11() {
     let original = r##"Test header
 -----------
 "##;
     let expected = r##"<h2>Test header</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_2() {
+fn table_test_0002_l22() {
     let original = r##"Test|Table
 ----|-----
 "##;
@@ -23,11 +23,11 @@ fn table_test_2() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_3() {
+fn table_test_0003_l53() {
     let original = r##"> Test  | Table
 > ------|------
 > Row 1 | Every
@@ -44,11 +44,11 @@ fn table_test_3() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_4() {
+fn table_test_0004_l74() {
     let original = r##" 1. First entry
  2. Second entry
 
@@ -71,11 +71,11 @@ fn table_test_4() {
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_5() {
+fn table_test_0005_l101() {
     let original = r##"|Col 1|Col 2|
 |-----|-----|
 |R1C1 |R1C2 |
@@ -87,11 +87,11 @@ fn table_test_5() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_6() {
+fn table_test_0006_l119() {
     let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |       |       |
@@ -103,11 +103,11 @@ fn table_test_6() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_7() {
+fn table_test_0007_l133() {
     let original = r##"| Col 1 | Col 2 |
 |-------|-------|
 |   x   |       |
@@ -119,11 +119,11 @@ fn table_test_7() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_8() {
+fn table_test_0008_l151() {
     let original = r##"|Col 1|Col 2|
 |-----|-----|
 |✓    |✓    |
@@ -135,11 +135,11 @@ fn table_test_8() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_9() {
+fn table_test_0009_l165() {
     let original = r##"|  Target                       | std |rustc|cargo| notes                      |
 |-------------------------------|-----|-----|-----|----------------------------|
 | `x86_64-unknown-linux-musl`   |  ✓  |     |     | 64-bit Linux with MUSL     |
@@ -161,11 +161,11 @@ fn table_test_9() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_10() {
+fn table_test_0010_l189() {
     let original = r##"|-|-|
 |ぃ|い|
 "##;
@@ -173,11 +173,11 @@ fn table_test_10() {
 |ぃ|い|</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_11() {
+fn table_test_0011_l199() {
     let original = r##"|ぁ|ぃ|
 |-|-|
 |ぃ|ぃ|
@@ -187,11 +187,11 @@ fn table_test_11() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_12() {
+fn table_test_0012_l211() {
     let original = r##"|Колонка 1|Колонка 2|
 |---------|---------|
 |Ячейка 1 |Ячейка 2 |
@@ -201,11 +201,11 @@ fn table_test_12() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_13() {
+fn table_test_0013_l271() {
     let original = r##"table a
 |  a  |  b  |
 | --- | --- |
@@ -302,11 +302,11 @@ b</p>
 <p>b</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_14() {
+fn table_test_0014_l394() {
     let original = r##"a | b
 - | -
 1 | 2
@@ -316,11 +316,11 @@ fn table_test_14() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_15() {
+fn table_test_0015_l427() {
     let original = r##"a | b\
 - | -
 1 | 2
@@ -332,11 +332,11 @@ fn table_test_15() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_16() {
+fn table_test_0016_l444() {
     let original = r##"a\
 | b | c |
 |---|---|
@@ -348,11 +348,11 @@ fn table_test_16() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_17() {
+fn table_test_0017_l472() {
     let original = r##"| Description | Test case |
 |-------------|-----------|
 | Single      | `\`       |
@@ -398,11 +398,11 @@ fn table_test_17() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_18() {
+fn table_test_0018_l521() {
     let original = r##"| Single | `\|` |
 |--|--|
 | Single | `\|` |
@@ -436,11 +436,11 @@ fn table_test_18() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_19() {
+fn table_test_0019_l600() {
     let original = r##"| Table | Header |
 |-------|--------|
 | Table | Body   |
@@ -466,11 +466,11 @@ fn table_test_19() {
 | Not   | Enough |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_20() {
+fn table_test_0020_l626() {
     let original = r##"| Table | Header |
 |-------|--------|
 |
@@ -480,11 +480,11 @@ fn table_test_20() {
 <p>|</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_21() {
+fn table_test_0021_l636() {
     let original = r##"|
 |-------|--------|
 | Table | Body   |
@@ -494,11 +494,11 @@ fn table_test_21() {
 | Table | Body   |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_22() {
+fn table_test_0022_l652() {
     let original = r##"| Single | [test](first\|second) |
 |--|--|
 
@@ -516,11 +516,11 @@ fn table_test_22() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_23() {
+fn table_test_0023_l676() {
     let original = r##"| Single | [first\|second] |
 |--|--|
 
@@ -542,11 +542,11 @@ fn table_test_23() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_24() {
+fn table_test_0024_l700() {
     let original = r##"Q: Knock knock.
 A: Who's there.
 Q: Interrupting cow.
@@ -564,11 +564,11 @@ A: Interrupting —?</p>
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_25() {
+fn table_test_0025_l720() {
     let original = r##"| ![Moo\\|Moo](image.png) |
 |-------------|
 | ![Moo\\\|Moo](image.png) |
@@ -578,11 +578,11 @@ fn table_test_25() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_26() {
+fn table_test_0026_l732() {
     let original = r##"| [Moo](https://example.org "Example\\|Link") |
 |---------------------------------------------|
 | [Moo](https://example.org "Example\\\|Link") |
@@ -592,11 +592,11 @@ fn table_test_26() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_27() {
+fn table_test_0027_l744() {
     let original = r##"moo | moo
 ----|----
 moo | moo
@@ -610,11 +610,11 @@ moo | moo
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn table_test_28() {
+fn table_test_0028_l758() {
     let original = r##"moo | moo
 ----|----
 moo | moo
@@ -628,5 +628,5 @@ moo | moo
 </ol>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }

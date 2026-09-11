@@ -661,6 +661,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
+            self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS),
             &self.tree,
             tree_position,
         ) {
@@ -2184,6 +2185,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
+            self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS),
             &self.tree,
             tree_position,
         ) {
@@ -2338,6 +2340,7 @@ fn scan_paragraph_interrupt_no_table(
     current_container: bool,
     has_footnote: bool,
     definition_list: bool,
+    container_extensions: bool,
     tree: &Tree<Item>,
     tree_position: usize,
 ) -> bool {
@@ -2345,7 +2348,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
         || scan_code_fence(bytes).is_some()
-        || scan_interrupting_container_extensions_fence(bytes)
+        || (container_extensions && scan_interrupting_container_extensions_fence(bytes))
         || scan_blockquote_start(bytes).is_some()
         || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
             ! current_container ||

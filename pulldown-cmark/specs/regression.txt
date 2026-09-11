@@ -3200,3 +3200,11 @@ Definition lists don't cancel task lists (they act like paragraphs):
 </li>
 </ul>
 ````````````````````````````````
+
+```````````````````````````````` example
+para
+::: note
+.
+<p>para
+::: note</p>
+````````````````````````````````

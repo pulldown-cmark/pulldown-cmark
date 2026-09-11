@@ -20,6 +20,7 @@ The main block types handled by the first pass are:
 
 - Container blocks:
   - Block quotes
+    - Admonitions (using block quote syntax + tags)
   - Lists (ordered and unordered)  
   - List items
   - Footnote definitions

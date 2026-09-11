@@ -775,6 +775,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && !current_container
                 {
                     if line_start.scan_closing_container_extensions_fence(3) {
+                        if let Some(pos) = trailing_backslash_pos {
+                            self.tree.append_text(pos, pos + 1, false);
+                        }
                         break;
                     }
                 }
@@ -804,6 +807,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
 
                 if closes {
+                    if let Some(pos) = trailing_backslash_pos {
+                        self.tree.append_text(pos, pos + 1, false);
+                    }
                     break;
                 }
             }

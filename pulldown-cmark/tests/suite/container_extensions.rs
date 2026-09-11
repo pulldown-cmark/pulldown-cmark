@@ -452,3 +452,59 @@ content ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
 }
+
+#[test]
+fn container_extensions_test_26() {
+    let original = r##"- \
+:::
+"##;
+    let expected = r##"<ul>
+<li>\</li>
+</ul>
+<p>:::</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+}
+
+#[test]
+fn container_extensions_test_27() {
+    let original = r##"- a\
+:::
+"##;
+    let expected = r##"<ul>
+<li>a\</li>
+</ul>
+<p>:::</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+}
+
+#[test]
+fn container_extensions_test_28() {
+    let original = r##"::: a
+x\
+:::
+"##;
+    let expected = r##"<div class="a">
+<p>x\</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+}
+
+#[test]
+fn container_extensions_test_29() {
+    let original = r##"::: a
+\
+:::
+"##;
+    let expected = r##"<div class="a">
+<p>\</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, true, false, false);
+}

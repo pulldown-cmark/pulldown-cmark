@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn heading_attrs_test_1() {
+fn heading_attrs_test_0001_l27() {
     let original = r##"with the ID {#myh1}
 ===================
 with a class {.myclass}
@@ -20,11 +20,11 @@ multiple! {.myclass1 myattr #myh3 otherattr=value .myclass2}
 <h2 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_2() {
+fn heading_attrs_test_0002_l45() {
     let original = r##"# with the ID {#myh1}
 ## with a class {.myclass}
 #### with a custom attribute {myattr=myvalue}
@@ -36,11 +36,11 @@ fn heading_attrs_test_2() {
 <h3 id="myh3" class="myclass1 myclass2" myattr="" otherattr="value">multiple!</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_3() {
+fn heading_attrs_test_0003_l59() {
     let original = r##"# H1 # {#id1}
 ## H2 ## with ## multiple ## hashes ## {#id2}
 ### with trailing hash # ### {#id3}
@@ -53,11 +53,11 @@ fn heading_attrs_test_3() {
 <h4>non-attribute-block {#id4}</h4>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_4() {
+fn heading_attrs_test_0004_l74() {
     let original = r##"# spaces {#myid1}    
 ## tabs {#myid2}		
 "##;
@@ -65,11 +65,11 @@ fn heading_attrs_test_4() {
 <h2 id="myid2">tabs</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_5() {
+fn heading_attrs_test_0005_l84() {
     let original = r##"# H1 \
 nextline
 "##;
@@ -77,11 +77,11 @@ nextline
 <p>nextline</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_6() {
+fn heading_attrs_test_0006_l94() {
     let original = r##"# H1 \
 {#myid}
 
@@ -99,11 +99,11 @@ nextline {.class}
 <p>](https://example.com/) {#myid3}</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_7() {
+fn heading_attrs_test_0007_l121() {
     let original = r##"H1
 cont
 {#myid}
@@ -114,11 +114,11 @@ cont
 </h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_8() {
+fn heading_attrs_test_0008_l134() {
     let original = r##"H1
 {
   .class1
@@ -133,11 +133,11 @@ fn heading_attrs_test_8() {
 }</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_9() {
+fn heading_attrs_test_0009_l165() {
     let original = r##"# without space, not recommended{#id1}
 ## recommended style with spaces {#id2}
 "##;
@@ -145,11 +145,11 @@ fn heading_attrs_test_9() {
 <h2 id="id2">recommended style with spaces</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_10() {
+fn heading_attrs_test_0010_l178() {
     let original = r##"# H1 { #id1 }
 ## H2 {.myclass      #id2 }
 ### H3 {     .myclass}
@@ -159,11 +159,11 @@ fn heading_attrs_test_10() {
 <h3 class="myclass">H3</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_11() {
+fn heading_attrs_test_0011_l192() {
     let original = r##"# H1 {#id1.class1.class2 .class3}
 ## H2 {.class1#id2.class2}
 "##;
@@ -171,11 +171,11 @@ fn heading_attrs_test_11() {
 <h2 class="class1#id2.class2">H2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_12() {
+fn heading_attrs_test_0012_l205() {
     let original = r##"# H1 { #id1
 ## H2 {#id2
 "##;
@@ -183,11 +183,11 @@ fn heading_attrs_test_12() {
 <h2>H2 {#id2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_13() {
+fn heading_attrs_test_0013_l215() {
     let original = r##"# H1 #id1 }
 ## H2 #id2}
 "##;
@@ -195,11 +195,11 @@ fn heading_attrs_test_13() {
 <h2>H2 #id2}</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_14() {
+fn heading_attrs_test_0014_l227() {
     let original = r##"# H1 { #id1 } foo
 ## H2 {#id2} <!-- hello -->
 "##;
@@ -207,11 +207,11 @@ fn heading_attrs_test_14() {
 <h2>H2 {#id2} <!-- hello --></h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_15() {
+fn heading_attrs_test_0015_l239() {
     let original = r##"# *H1* { #id1 }
 ## **H2** {#id2}
 ### _H3_ {#id3}
@@ -225,41 +225,41 @@ fn heading_attrs_test_15() {
 <h5 id="id5"><a href="uri">text</a></h5>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn heading_attrs_test_16() {
+fn heading_attrs_test_0016_l261() {
     let original = r##"# H1 {#first #second #last}
 "##;
     let expected = r##"<h1 id="last">H1</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_17() {
+fn heading_attrs_test_0017_l271() {
     let original = r##"# H1 {.z .a .zz}
 "##;
     let expected = r##"<h1 class="z a zz">H1</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_18() {
+fn heading_attrs_test_0018_l279() {
     let original = r##"# H1 {.a .a .a}
 "##;
     let expected = r##"<h1 class="a a a">H1</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_19() {
+fn heading_attrs_test_0019_l289() {
     let original = r##"# H1 {.myclass #myid}
 ## H2 {.z #m .a}
 "##;
@@ -267,11 +267,11 @@ fn heading_attrs_test_19() {
 <h2 id="m" class="z a">H2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_20() {
+fn heading_attrs_test_0020_l305() {
     let original = r##"# H1 {foo}
 ## H2 {#myid unknown this#is.ignored attr=value .myclass}
 "##;
@@ -279,31 +279,31 @@ fn heading_attrs_test_20() {
 <h2 id="myid" class="myclass" unknown="" this#is.ignored="" attr="value">H2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_21() {
+fn heading_attrs_test_0021_l313() {
     let original = r##"# Header # {myattr=value other_attr}
 "##;
     let expected = r##"<h1 myattr="value" other_attr="">Header</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_22() {
+fn heading_attrs_test_0022_l319() {
     let original = r##"#### Header {#id myattr= .class1 other_attr=false}
 "##;
     let expected = r##"<h4 id="id" class="class1" myattr="" other_attr="false">Header</h4>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_23() {
+fn heading_attrs_test_0023_l339() {
     let original = r##"# H1 {.foo{unknown}
 ## H2 {.foo{.bar}
 "##;
@@ -311,41 +311,41 @@ fn heading_attrs_test_23() {
 <h2 class="bar">H2 {.foo</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_24() {
+fn heading_attrs_test_0024_l349() {
     let original = r##"# H1 {.foo}bar}
 "##;
     let expected = r##"<h1>H1 {.foo}bar}</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_25() {
+fn heading_attrs_test_0025_l357() {
     let original = r##"# H1 {<i>foo</i>}
 "##;
     let expected = r##"<h1>H1 {<i>foo</i>}</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_26() {
+fn heading_attrs_test_0026_l365() {
     let original = r##"# H1 {.foo\}
 "##;
     let expected = r##"<h1>H1 {.foo}</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_27() {
+fn heading_attrs_test_0027_l373() {
     let original = r##"H1 {.foo
 .bar}
 ==
@@ -354,11 +354,11 @@ fn heading_attrs_test_27() {
 .bar}</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_28() {
+fn heading_attrs_test_0028_l389() {
     let original = r##"H1 {} {}
 =====
 
@@ -368,21 +368,21 @@ fn heading_attrs_test_28() {
 <h2>H2 {}</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_29() {
+fn heading_attrs_test_0029_l401() {
     let original = r##"## H2 {} ##
 "##;
     let expected = r##"<h2>H2 {}</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_30() {
+fn heading_attrs_test_0030_l410() {
     let original = r##"# H1 {\}
 ## this is also ok \{\}
 
@@ -396,11 +396,11 @@ newline can be used for setext heading {
 }</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_31() {
+fn heading_attrs_test_0031_l428() {
     let original = r##"# H1 \{.foo}
 ## H2 \\{.bar}
 ### stray backslash at the end is preserved \
@@ -410,11 +410,11 @@ fn heading_attrs_test_31() {
 <h3>stray backslash at the end is preserved \</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_32() {
+fn heading_attrs_test_0032_l459() {
     let original = r##"H1 \{.foo}
 ==
 H2 \\{.bar}
@@ -428,11 +428,11 @@ stray backslash at the end is preserved \
 <h2>stray backslash at the end is preserved \</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_33() {
+fn heading_attrs_test_0033_l478() {
     let original = r##"# H1 {#`code`}
 ## H2 {#foo__bar__baz}
 ### H3 {#foo**bar**baz}
@@ -442,11 +442,11 @@ fn heading_attrs_test_33() {
 <h3 id="foo**bar**baz">H3</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_34() {
+fn heading_attrs_test_0034_l488() {
     let original = r##"H1 {#`code`}
 ==
 
@@ -461,11 +461,55 @@ H2-2 {#foo**bar**baz}
 <h2 id="foo**bar**baz">H2-2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_35() {
+fn heading_attrs_test_0035_l506() {
+    let original = r##"# H1 __{#my__id1}
+## H2 **{#my**id2}
+### H3 `{.code` }
+#### H4 ~~{.strike~~ }
+"##;
+    let expected = r##"<h1 id="my__id1">H1 __</h1>
+<h2 id="my**id2">H2 **</h2>
+<h3 class="code`">H3 `</h3>
+<h4 class="strike~~">H4 ~~</h4>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0036_l518() {
+    let original = r##"# H1__ {#my__id1}
+## H2** {#my**id2}
+### H3` {.code` }
+#### H4~~ {.strike~~ }
+"##;
+    let expected = r##"<h1 id="my__id1">H1__</h1>
+<h2 id="my**id2">H2**</h2>
+<h3 class="code`">H3`</h3>
+<h4 class="strike~~">H4~~</h4>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0037_l530() {
+    let original = r##"# H1__ {.foo__bar**baz}
+qux**
+"##;
+    let expected = r##"<h1 class="foo__bar**baz">H1__</h1>
+<p>qux**</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
+}
+
+#[test]
+fn heading_attrs_test_0038_l551() {
     let original = r##"# H1 {.foo#bar}
 ## H2 {#foo.bar}
 ### H3 {.a"b'c&d}
@@ -475,11 +519,11 @@ fn heading_attrs_test_35() {
 <h3 class="a&quot;b&#39;c&amp;d">H3</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_36() {
+fn heading_attrs_test_0039_l575() {
     let original = r##"# H1 {#}
 ## H2 {.}
 "##;
@@ -487,11 +531,11 @@ fn heading_attrs_test_36() {
 <h2>H2</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_37() {
+fn heading_attrs_test_0040_l583() {
     let original = r##"# H1 {#foo #}
 # H1 {.foo . . .bar}
 "##;
@@ -499,11 +543,11 @@ fn heading_attrs_test_37() {
 <h1 class="foo bar">H1</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_38() {
+fn heading_attrs_test_0041_l593() {
     let original = r##"# {}
 ## {}
 ### {\}
@@ -518,11 +562,11 @@ fn heading_attrs_test_38() {
 <p>#{}</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_39() {
+fn heading_attrs_test_0042_l608() {
     let original = r##"{}
 ==
 
@@ -545,11 +589,11 @@ fn heading_attrs_test_39() {
 <h2>{}</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_40() {
+fn heading_attrs_test_0043_l638() {
     let original = r##"# horizontal tab	
 # horizontal tab	{#ht}
 ## form feed
@@ -565,11 +609,11 @@ fn heading_attrs_test_40() {
 <h3 id="vt">vertical tab</h3>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_41() {
+fn heading_attrs_test_0044_l665() {
     let original = r##"# horizontal tab (U+000A) {#ht	.myclass}
 ## form feed (U+000C) {#ff.myclass}
 
@@ -580,11 +624,11 @@ fn heading_attrs_test_41() {
 <h1 id="vt.myclass">vertical tab (U+000B)</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }
 
 #[test]
-fn heading_attrs_test_42() {
+fn heading_attrs_test_0045_l678() {
     let original = r##"# EN SPACE (U+2002) {#en-space .myclass}
 ## IDEOGRAPHIC SPACE (U+3000) {#ideographic-space　.myclass}
 "##;
@@ -592,5 +636,5 @@ fn heading_attrs_test_42() {
 <h2 id="ideographic-space　.myclass">IDEOGRAPHIC SPACE (U+3000)</h2>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES");
 }

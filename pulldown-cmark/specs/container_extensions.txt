@@ -1,6 +1,8 @@
+Parser options: `ENABLE_CONTAINER_EXTENSIONS`
+
 # Spoiler tests
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 > Is this **bold**?
 > Is this **bold**?
 > ::: spoiler Is this expandable?
@@ -16,7 +18,7 @@ Is this <strong>bold</strong>?</p>
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -33,7 +35,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -56,7 +58,7 @@ Is this <strong>bold</strong>?</p>
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: spoiler Is this expandable?
 Is this collapsable?
 > Is this **bold**?
@@ -85,7 +87,7 @@ Is this <strong>bold</strong>?</p></blockquote>
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: spoiler Is this expandable?
 Is this collapsable?
 :::
@@ -98,7 +100,7 @@ Is this collapsable?
 <p><strong>is this seperate and bold</strong></p>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: spoiler Is this expandable?
 Is this collapsable?
 
@@ -112,7 +114,7 @@ Is this **bold**?
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::spoiler Is this expandable?
 Is this collapsable?
 
@@ -126,7 +128,7 @@ Is this **bold**?
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: example
 Is this collapsable?
 
@@ -139,7 +141,7 @@ Is this **bold**?
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::: example
 Is this collapsable?
 
@@ -152,7 +154,7 @@ Is this **bold**?
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::::spoiler Is this expandable?
 Is this collapsable?
 
@@ -166,7 +168,7 @@ Is this **bold**?
 </details>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::
 
 content
@@ -178,7 +180,7 @@ content
 <p>:::</p>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: block
 
 content
@@ -192,7 +194,7 @@ content
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
  ::: block
 :::
 
@@ -205,7 +207,7 @@ content
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: a
 ::: b
 
@@ -218,7 +220,7 @@ content
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::: a
 ::: b
 
@@ -231,7 +233,7 @@ content
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: a
 :::: b
 
@@ -244,7 +246,7 @@ content
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::
 Hi
 :::
@@ -254,7 +256,7 @@ Hi
 :::</p>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::::: foo
 Hi
 :::
@@ -266,7 +268,7 @@ Hi
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 > ::: foo
 > Hi
 .
@@ -277,7 +279,7 @@ Hi
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: c_d
 Hi
 :::
@@ -287,7 +289,7 @@ Hi
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: container
 > shouldn't close, right?
 > :::
@@ -303,7 +305,7 @@ x</p>
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: container
 > shouldn't close, right?
 > :::
@@ -320,7 +322,7 @@ x</p>
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: a
 :::: b
 ::::: c
@@ -336,14 +338,14 @@ x
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 ::: a
 content :::
 .
 <div class="a"><p>content :::</p></div>
 ````````````````````````````````
 
-```````````````````````````````` example_container_extensions
+```````````````````````````````` example
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: a
 content :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 .

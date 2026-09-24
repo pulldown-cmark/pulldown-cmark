@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn gfm_table_test_1() {
+fn gfm_table_test_0001_l24() {
     let original = r##"| foo | bar |
 | --- | --- |
 | baz | bim |
@@ -25,11 +25,11 @@ fn gfm_table_test_1() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_2() {
+fn gfm_table_test_0002_l48() {
     let original = r##"| abc | defghi |
 :-: | -----------:
 bar | baz
@@ -50,11 +50,11 @@ bar | baz
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_3() {
+fn gfm_table_test_0003_l72() {
     let original = r##"| f\|oo  |
 | ------ |
 | b `\|` az |
@@ -77,11 +77,11 @@ fn gfm_table_test_3() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_4() {
+fn gfm_table_test_0004_l98() {
     let original = r##"| abc | def |
 | --- | --- |
 | bar | baz |
@@ -106,11 +106,11 @@ fn gfm_table_test_4() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_5() {
+fn gfm_table_test_0005_l123() {
     let original = r##"| abc | def |
 | --- | --- |
 | bar | baz |
@@ -139,11 +139,11 @@ bar
 <p>bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_6() {
+fn gfm_table_test_0006_l155() {
     let original = r##"| abc | def |
 | --- |
 | bar |
@@ -153,11 +153,11 @@ fn gfm_table_test_6() {
 | bar |</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_7() {
+fn gfm_table_test_0007_l169() {
     let original = r##"| abc | def |
 | --- | --- |
 | bar |
@@ -183,11 +183,11 @@ fn gfm_table_test_7() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_8() {
+fn gfm_table_test_0008_l197() {
     let original = r##"| abc | def |
 | --- | --- |
 "##;
@@ -202,11 +202,11 @@ fn gfm_table_test_8() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
-fn gfm_table_test_9() {
+fn gfm_table_test_0009_l214() {
     let original = r##"Hello World
 | abc | def |
 | --- | --- |
@@ -229,5 +229,5 @@ fn gfm_table_test_9() {
 </table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }

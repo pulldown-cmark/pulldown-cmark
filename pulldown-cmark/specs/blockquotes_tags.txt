@@ -1,3 +1,5 @@
+Parser options: `ENABLE_GFM`
+
 Run this with `cargo test --features gen-tests suite::blockquotes_tags`.
 
 Blockquotes can optionally have one of the following tags:

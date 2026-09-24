@@ -46,7 +46,7 @@ ISSUE #135
 
 ISSUE #145
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 |  Title A  |  Title B  |
 | --------- | --------- |
 | Content   | Content   |
@@ -274,7 +274,7 @@ foo | bar</p>
 
 ISSUE #318 (note the trailing whitespace on the first line)
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 foo|bar  
 ---|---
 foo|bar
@@ -286,7 +286,7 @@ foo|bar
 
 ISSUE #318
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 foo|bar\\
 ---|---
 foo|bar
@@ -330,7 +330,7 @@ ISSUE #328
 
 ISSUE #330 (NOTE THERE IS A SPACE ON THE LINE BETWEEN THE TABLE AND THE PARAGRAPH!)
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 Markdown | Less | Pretty
 --- | --- | ---
  
@@ -396,7 +396,7 @@ ISSUE #298
 
 TABLES IN BROKEN CONTAINERS
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 > foo | bar
 > --- | ---
 yolo | swag
@@ -427,7 +427,7 @@ ISSUE #336
 
 EMPHASIS ACROSS PARAGRAPHS
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~~*_**__
 
 __a__
@@ -476,7 +476,7 @@ ISSUE 375
 
 ISSUE 351
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 foo | bar
 --- | ---
 [a](< | url>)
@@ -536,7 +536,7 @@ ISSUE 382 (control chars)
 
 ISSUE 382
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 foo | bar
 --- | ---
 <http://| baz
@@ -553,7 +553,7 @@ foo | bar
 
 ISSUE 381
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 foo | bar
 --- | ---
 <http://|>
@@ -705,7 +705,7 @@ the size of <code>usize</code> and have the same alignment.</p>
 
 ISSUE 413
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 Lorem ipsum.[^a]
 
 An unordered list before the footnotes:
@@ -853,7 +853,7 @@ ISSUE 553
 
 ISSUE 557
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TASKLISTS
 * [ ] foo
 
 * [ ] bar
@@ -897,13 +897,13 @@ ISSUE 642
 
 ISSUE 532
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~~foo~~bar
 .
 <p><del>foo</del>bar</p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 foo~~bar~~
 .
 <p>foo<del>bar</del></p>
@@ -911,49 +911,49 @@ foo~~bar~~
 
 ISSUE 551
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 *~~__emphasis strike strong__~~* ~~*__strike emphasis strong__*~~
 .
 <p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 *~~__emphasis strike strong__~~* ~~*__`strike emphasis strong code`__*~~
 .
 <p><em><del><strong>emphasis strike strong</strong></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 *~~`emphasis strike code`~~* ~~*__strike emphasis strong__*~~
 .
 <p><em><del><code>emphasis strike code</code></del></em> <del><em><strong>strike emphasis strong</strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 *~~`emphasis strike code`~~* ~~*__`strike emphasis strong code`__*~~
 .
 <p><em><del><code>emphasis strike code</code></del></em> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 **~~_strong strike emphasis_~~** ~~*__strike emphasis strong__*~~
 .
 <p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 **~~_strong strike emphasis_~~** ~~*__`strike emphasis strong code`__*~~
 .
 <p><strong><del><em>strong strike emphasis</em></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 **~~`strong strike code`~~** ~~*__strike emphasis strong__*~~
 .
 <p><strong><del><code>strong strike code</code></del></strong> <del><em><strong>strike emphasis strong</strong></em></del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 **~~`strong strike code`~~** ~~*__`strike emphasis strong code`__*~~
 .
 <p><strong><del><code>strong strike code</code></del></strong> <del><em><strong><code>strike emphasis strong code</code></strong></em></del></p>
@@ -961,7 +961,7 @@ ISSUE 551
 
 ISSUE 656
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
   | foo | bar  |
   |-----|------|
   | baz | alef |
@@ -1078,7 +1078,7 @@ ISSUE 659
 
 ISSUE 540
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 | A | table    |
 | ------ | ---- |
 | not   |  in  |
@@ -1245,7 +1245,7 @@ ISSUE 674
 
 Table interruption when nested inside paragraph.
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 > alpha
 > | a | b |
 > |---|---|
@@ -1312,7 +1312,7 @@ ISSUE 687
 
 ISSUE 689
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_YAML_STYLE_METADATA_BLOCKS
 ---
 anything:
     indented4Spaces: true
@@ -1322,7 +1322,7 @@ Things
 <p>Things</p>
 ````````````````````````````````
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_YAML_STYLE_METADATA_BLOCKS
 ---
 something:
   nested:
@@ -1333,7 +1333,7 @@ Things
 <p>Things</p>
 ````````````````````````````````
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_YAML_STYLE_METADATA_BLOCKS
 ---
 lists:
     - indented 4 spaces
@@ -1387,7 +1387,7 @@ j***5*=*
 
 ISSUE 731
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 Not enough table
 
 |
@@ -1571,7 +1571,7 @@ ISSUE 753
 
 ISSUE 755
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 >>**#*
 >
 >**#*
@@ -1668,7 +1668,7 @@ Second try]: https://rust-lang.org
 
 ISSUE 772
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 [^foo][]
 
 [^foo][baz]
@@ -1822,7 +1822,7 @@ foo)
 
 https://gist.github.com/notriddle/0048782ad2e819a134c094a1cc52df84
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 [linkme-3]:
    [^foo]:
 
@@ -2182,7 +2182,7 @@ ISSUE 715
 
 ISSUE 817
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 ![^1]
 
 [^1]: foo
@@ -2193,7 +2193,7 @@ ISSUE 817
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 First ![^1][] Second
 
 [^1]: foo
@@ -2528,7 +2528,7 @@ junk</p>
 
 ISSUE 861
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
  ~~~
     ~~~
 .
@@ -2536,7 +2536,7 @@ ISSUE 861
 </code></pre>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
  ~~~
    ~~~
 .
@@ -2573,7 +2573,7 @@ _**
 
 ISSUE #907
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_GFM
 > [!Note]
 > - Foo
 .
@@ -2586,7 +2586,7 @@ ISSUE #907
 
 ISSUE #912
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_YAML_STYLE_METADATA_BLOCKS
  ---
 --
 ---
@@ -2601,7 +2601,7 @@ Technically, commonmark only requires our nesting cutoff to stop at 3.
 However, real user reports show that this limit is low enough to hit in reasonable circumstances.
 We instead set the limit at 32, which is the same limit used by cmark-gfm and markdown-it (making it a de facto standard).
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example
 [30](https://rust.org/something%3A((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))
 [40](https://rust.org/something%3A((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))
 .
@@ -2611,7 +2611,7 @@ We instead set the limit at 32, which is the same limit used by cmark-gfm and ma
 
 ISSUE #921
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_TASKLISTS
 - [x]		
 \
 -
@@ -2624,7 +2624,7 @@ ISSUE #921
 
 ISSUE #882
 
-```````````````````````````````` example_metadata_blocks
+```````````````````````````````` example ENABLE_TASKLISTS
 * [ ] 
 ---
 bar
@@ -2647,7 +2647,7 @@ ISSUE #655
 
 ISSUE #949
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_DEFINITION_LIST
 * def this
   : def text def text
 .
@@ -2661,7 +2661,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_DEFINITION_LIST
 * def this
 
   : def text def text
@@ -2676,7 +2676,7 @@ ISSUE #949
 </ul>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_DEFINITION_LIST
 **A:**
 
 > B C
@@ -2696,7 +2696,7 @@ T U, V W</dd>
 <dd>x:.)</dd></dl></blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_DEFINITION_LIST
 [abc] check `foobar_raz`
  Some preamble `foobar_raz`, not `barfoo_raz`
  :D
@@ -2729,7 +2729,7 @@ stuff](https://example.com)</li>
 
 ISSUE #963
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_HEADING_ATTRIBUTES
 foo
 {.class}
 ===
@@ -2774,7 +2774,7 @@ foo
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_HEADING_ATTRIBUTES
 the trailing space after the &gt; should be stripped
     > {.bar}
 ===
@@ -2783,13 +2783,13 @@ the trailing space after the &gt; should be stripped
 &gt;</h1>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example ENABLE_WIKILINKS
 [[Wiki<|Link]]
 .
 <p><a href="Wiki%3C">Link</a></p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example ENABLE_WIKILINKS
 * <c
   >
 .
@@ -2801,7 +2801,7 @@ the trailing space after the &gt; should be stripped
 
 https://github.com/pulldown-cmark/pulldown-cmark/issues/999
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example ENABLE_TASKLISTS
 - [x] * some text
 - [ ] > some text
 - [x]
@@ -2885,13 +2885,13 @@ https://github.com/pulldown-cmark/pulldown-cmark/issues/1108
 A malformed image-wrapped wikilink must not underflow when the link body
 starts at or after the closing delimiter.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example ENABLE_WIKILINKS
 ![[] ]()]]
 .
 <p><img src="" alt="[] " />]]</p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT
 a ~[x](https://x)~
 
 b ~~[x](https://x)~~
@@ -2935,7 +2935,7 @@ Replace NUL with U+FFFD in code spans
 
 Replace NUL with U+FFFD in math spans
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_MATH
 $$first second$$
 $$start $$
 $$ end$$
@@ -3054,7 +3054,7 @@ First <span title=" ">Second</span>
 </code></pre>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_HEADING_ATTRIBUTES
 # H1 {.f  #b }
 # H1 {f =b }
 # H1 {f }
@@ -3075,7 +3075,7 @@ First <span title=" ">Second</span>
 <p><a href="https://example.com/b" title="�">b</a></p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example ENABLE_WIKILINKS
 [[Z ]]
 [[Z |Z ]]
 .

@@ -4,82 +4,82 @@
 use super::test_markdown_html;
 
 #[test]
-fn blockquotes_tags_test_1() {
+fn blockquotes_tags_test_0001_l17() {
     let original = r##"> This is a normal blockquote without tag.
 "##;
     let expected = r##"<blockquote><p>This is a normal blockquote without tag.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_2() {
+fn blockquotes_tags_test_0002_l23() {
     let original = r##"> [!NOTE]
 > Note blockquote
 "##;
     let expected = r##"<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_3() {
+fn blockquotes_tags_test_0003_l30() {
     let original = r##"> [!TIP]
 > Tip blockquote
 "##;
     let expected = r##"<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_4() {
+fn blockquotes_tags_test_0004_l37() {
     let original = r##"> [!IMPORTANT]
 > Important blockquote
 "##;
     let expected = r##"<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_5() {
+fn blockquotes_tags_test_0005_l44() {
     let original = r##"> [!WARNING]
 > Warning blockquote
 "##;
     let expected = r##"<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_6() {
+fn blockquotes_tags_test_0006_l51() {
     let original = r##"> [!CAUTION]
 > Caution blockquote
 "##;
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_7() {
+fn blockquotes_tags_test_0007_l59() {
     let original = r##"> [!CAUTION]
 "##;
     let expected = r##"<blockquote class="markdown-alert-caution"></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_8() {
+fn blockquotes_tags_test_0008_l66() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > Line 2.
@@ -88,11 +88,11 @@ fn blockquotes_tags_test_8() {
 Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_9() {
+fn blockquotes_tags_test_0009_l76() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > [!CAUTION]
@@ -103,11 +103,11 @@ fn blockquotes_tags_test_9() {
 Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_10() {
+fn blockquotes_tags_test_0010_l88() {
     let original = r##"> [!CAUTION]
 > Line 1.
 > > [!TIP]
@@ -116,11 +116,11 @@ fn blockquotes_tags_test_10() {
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_11() {
+fn blockquotes_tags_test_0011_l98() {
     let original = r##"> [!CAUTION]
 > Line 1.
 
@@ -131,11 +131,11 @@ fn blockquotes_tags_test_11() {
     let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_12() {
+fn blockquotes_tags_test_0012_l110() {
     let original = r##"> > [!CAUTION]
 > > Line 1.
 > Line 2.
@@ -144,11 +144,11 @@ fn blockquotes_tags_test_12() {
 Line 2.</p></blockquote></blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_13() {
+fn blockquotes_tags_test_0013_l120() {
     let original = r##"> [!CAUTION]	
 > Line 1.
 > > [!NOTE]      
@@ -159,11 +159,11 @@ fn blockquotes_tags_test_13() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_14() {
+fn blockquotes_tags_test_0014_l132() {
     let original = r##"> [!caution]	
 > Line 1.
 > > [!note]      
@@ -174,11 +174,11 @@ fn blockquotes_tags_test_14() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_15() {
+fn blockquotes_tags_test_0015_l144() {
     let original = r##"  * loose lists
 
     > [!NOTE]
@@ -189,11 +189,11 @@ fn blockquotes_tags_test_15() {
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_16() {
+fn blockquotes_tags_test_0016_l156() {
     let original = r##"> [!NOTE]
 sink ships
 
@@ -216,11 +216,11 @@ sink ships
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_17() {
+fn blockquotes_tags_test_0017_l180() {
     let original = r##"  * loose lists
 
     > [!NOTE]
@@ -237,11 +237,11 @@ fn blockquotes_tags_test_17() {
 </li></ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }
 
 #[test]
-fn blockquotes_tags_test_18() {
+fn blockquotes_tags_test_0018_l198() {
     let original = r##"> [!Hello]
 > This should be a normal block quote.
 "##;
@@ -251,5 +251,5 @@ This should be a normal block quote.</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_GFM");
 }

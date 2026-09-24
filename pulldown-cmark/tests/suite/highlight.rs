@@ -4,157 +4,157 @@
 use super::test_markdown_html;
 
 #[test]
-fn highlight_test_1() {
+fn highlight_test_0001_l8() {
     let original = r##"==hi==
 "##;
     let expected = r##"<p><mark>hi</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_2() {
+fn highlight_test_0002_l14() {
     let original = r##"==hello world==
 "##;
     let expected = r##"<p><mark>hello world</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_3() {
+fn highlight_test_0003_l22() {
     let original = r##"==*hi*==
 "##;
     let expected = r##"<p><mark><em>hi</em></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_4() {
+fn highlight_test_0004_l28() {
     let original = r##"*==hi==*
 "##;
     let expected = r##"<p><em><mark>hi</mark></em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_5() {
+fn highlight_test_0005_l34() {
     let original = r##"==**bold** and *em*==
 "##;
     let expected = r##"<p><mark><strong>bold</strong> and <em>em</em></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_6() {
+fn highlight_test_0006_l42() {
     let original = r##"=hi=
 "##;
     let expected = r##"<p>=hi=</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_7() {
+fn highlight_test_0007_l48() {
     let original = r##"a = b
 "##;
     let expected = r##"<p>a = b</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_8() {
+fn highlight_test_0008_l56() {
     let original = r##"== hi ==
 "##;
     let expected = r##"<p>== hi ==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_9() {
+fn highlight_test_0009_l62() {
     let original = r##"==hi ==
 "##;
     let expected = r##"<p>==hi ==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_10() {
+fn highlight_test_0010_l68() {
     let original = r##"== hi==
 "##;
     let expected = r##"<p>== hi==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_11() {
+fn highlight_test_0011_l76() {
     let original = r##"===hi===
 "##;
     let expected = r##"<p>===hi===</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_12() {
+fn highlight_test_0012_l82() {
     let original = r##"====hi====
 "##;
     let expected = r##"<p>====hi====</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_13() {
+fn highlight_test_0013_l88() {
     let original = r##"====
 "##;
     let expected = r##"<p>====</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_14() {
+fn highlight_test_0014_l96() {
     let original = r##"a==b==c
 "##;
     let expected = r##"<p>a<mark>b</mark>c</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_15() {
+fn highlight_test_0015_l102() {
     let original = r##"==This==is==highlighted==
 "##;
     let expected = r##"<p><mark>This</mark>is<mark>highlighted</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_16() {
+fn highlight_test_0016_l110() {
     let original = r##"==a
 b==
 "##;
@@ -162,31 +162,31 @@ b==
 b</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_17() {
+fn highlight_test_0017_l120() {
     let original = r##"==hi \== there==
 "##;
     let expected = r##"<p><mark>hi == there</mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_18() {
+fn highlight_test_0018_l126() {
     let original = r##"\==not highlighted==
 "##;
     let expected = r##"<p>==not highlighted==</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_19() {
+fn highlight_test_0019_l134() {
     let original = r##"- ==in a list==
 "##;
     let expected = r##"<ul>
@@ -194,11 +194,11 @@ fn highlight_test_19() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_20() {
+fn highlight_test_0020_l142() {
     let original = r##"> ==in a quote==
 "##;
     let expected = r##"<blockquote>
@@ -206,35 +206,35 @@ fn highlight_test_20() {
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_21() {
+fn highlight_test_0021_l150() {
     let original = r##"# ==in a heading==
 "##;
     let expected = r##"<h1><mark>in a heading</mark></h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT");
 }
 
 #[test]
-fn highlight_test_22() {
+fn highlight_test_0022_l158() {
     let original = r##"==~~both~~==
 "##;
     let expected = r##"<p><mark><del>both</del></mark></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn highlight_test_23() {
+fn highlight_test_0023_l164() {
     let original = r##"~~==both==~~
 "##;
     let expected = r##"<p><del><mark>both</mark></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_HIGHLIGHT | ENABLE_STRIKETHROUGH");
 }

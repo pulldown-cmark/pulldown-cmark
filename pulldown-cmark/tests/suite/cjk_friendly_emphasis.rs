@@ -4,17 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn cjk_friendly_emphasis_test_1() {
-    let original = r##"**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
-"##;
-    let expected = r##"<p>**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。</p>
-"##;
-
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
-}
-
-#[test]
-fn cjk_friendly_emphasis_test_2() {
+fn cjk_friendly_emphasis_test_0001_l27() {
     let original = r##"**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
 
 **该星号不会被识别，而是直接显示。**这是因为它没有被识别为强调符号。
@@ -26,11 +16,11 @@ fn cjk_friendly_emphasis_test_2() {
 <p><strong>이 별표는 강조 표시로 인식되지 않고 그대로 표시됩니다(이 괄호 때문에)</strong>이 문장 때문에.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_3() {
+fn cjk_friendly_emphasis_test_0002_l42() {
     let original = r##"これは**私のやりたかったこと。**だからするの。
 
 **[製品ほげ](./product-foo)**と**[製品ふが](./product-bar)**をお試しください
@@ -288,11 +278,11 @@ Git**（注：不是GitHub）**
 <p><strong>“︁Git”︁</strong>Hub</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_4() {
+fn cjk_friendly_emphasis_test_0003_l303() {
     let original = r##"**이 [링크](https://example.kr/)**만을 강조하고 싶다.
 
 **스크립트(script)**라고
@@ -313,11 +303,11 @@ fn cjk_friendly_emphasis_test_4() {
 <p><strong>(k)</strong>ᄏ</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_5() {
+fn cjk_friendly_emphasis_test_0004_l327() {
     let original = r##"a**〰**a
 
 a**〽**a
@@ -338,11 +328,11 @@ a**㊙**a
 <p>a<strong>㊙</strong>a</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_6() {
+fn cjk_friendly_emphasis_test_0005_l351() {
     let original = r##"
 a**a«**a
 
@@ -370,11 +360,11 @@ a**a𐬻**a
 <p>a**a𐬻**a</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_7() {
+fn cjk_friendly_emphasis_test_0006_l382() {
     let original = r##"__注意__：注意事項
 
 注意：__注意事項__
@@ -398,11 +388,11 @@ fn cjk_friendly_emphasis_test_7() {
 <p>“︁Git”︁<strong>Hub</strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_8() {
+fn cjk_friendly_emphasis_test_0007_l412() {
     let original = r##"foo_bar_
 
 _foo_bar
@@ -414,11 +404,11 @@ _foo_bar_baz_
 <p><em>foo_bar_baz</em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_9() {
+fn cjk_friendly_emphasis_test_0008_l429() {
     let original = r##"漢_abc_
 
 _abc_漢
@@ -427,11 +417,11 @@ _abc_漢
 <p>_abc_漢</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, false);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_10() {
+fn cjk_friendly_emphasis_test_0009_l441() {
     let original = r##"真~~（她~~
 
 ~~真，~~她
@@ -464,11 +454,11 @@ Here I don't strike out an exclamation point~!~.
 <p>Here I don't strike out an exclamation point~!~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, true);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn cjk_friendly_emphasis_test_11() {
+fn cjk_friendly_emphasis_test_0010_l478() {
     let original = r##"あ**()**あ[^1]
 
 [^1]: ~~あ~~
@@ -479,5 +469,5 @@ fn cjk_friendly_emphasis_test_11() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, true, true);
+    test_markdown_html(original, expected, "ENABLE_CJK_FRIENDLY_EMPHASIS | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES");
 }

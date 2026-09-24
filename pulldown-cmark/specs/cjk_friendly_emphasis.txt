@@ -1,3 +1,5 @@
+Parser options: `ENABLE_CJK_FRIENDLY_EMPHASIS`
+
 Run this with `cargo test --features gen-tests suite::cjk_friendly_emphasis`.
 
 # CJK-friendly emphasis
@@ -17,19 +19,12 @@ CC-BY-SA 4.0 license:
 Copyright (C) 2014-16 John MacFarlane
 
 Without the extension, pulldown-cmark should keep CommonMark-compatible
-emphasis behavior. This case is based on the first README problem example:
-<https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/README.md#L33>.
-
-```````````````````````````````` example
-**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
-.
-<p>**このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。</p>
-````````````````````````````````
+emphasis behavior. This is tested in `regression.txt`.
 
 With the extension enabled, the README problem examples are emphasized:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/README.md#L33-L37>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 **このアスタリスクは強調記号として認識されず、そのまま表示されます。**この文のせいで。
 
 **该星号不会被识别，而是直接显示。**这是因为它没有被识别为强调符号。
@@ -44,7 +39,7 @@ With the extension enabled, the README problem examples are emphasized:
 Kana/Han strong emphasis test cases are based on
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/testcases/strong.md#L1-L169>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 これは**私のやりたかったこと。**だからするの。
 
 **[製品ほげ](./product-foo)**と**[製品ふが](./product-bar)**をお試しください
@@ -305,7 +300,7 @@ Git**（注：不是GitHub）**
 Korean strong emphasis test cases are based on
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/testcases/korean.md#L1-L11>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 **이 [링크](https://example.kr/)**만을 강조하고 싶다.
 
 **스크립트(script)**라고
@@ -329,7 +324,7 @@ Korean strong emphasis test cases are based on
 Pseudo-emoji test cases are based on
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/testcases/pseudo-emoji.md#L1-L11>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 a**〰**a
 
 a**〽**a
@@ -353,7 +348,7 @@ a**㊙**a
 Non-BMP punctuation and symbols test cases are based on
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/testcases/non-bmp.md#L1-L16>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 
 a**a«**a
 
@@ -384,7 +379,7 @@ a**a𐬻**a
 Underscore test cases around CJK punctuation are based on
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/testcases/underscore-cjk-punct.md#L1-L13>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 __注意__：注意事項
 
 注意：__注意事項__
@@ -414,7 +409,7 @@ These cases are based on CommonMark 0.31.2 examples 360, 374, and 376:
 <https://spec.commonmark.org/0.31.2/#example-374>
 <https://spec.commonmark.org/0.31.2/#example-376>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 foo_bar_
 
 _foo_bar
@@ -431,7 +426,7 @@ characters. These cases are based on the amended flanking and underscore rules
 in the specification:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/specification.md#62-emphasis-and-strong-emphasis>.
 
-```````````````````````````````` example_cjk_friendly_emphasis
+```````````````````````````````` example
 漢_abc_
 
 _abc_漢
@@ -443,7 +438,7 @@ _abc_漢
 CJK-friendly emphasis should also apply the amended flanking rules to GFM
 strikethrough, while preserving existing strikethrough behavior.
 
-```````````````````````````````` example_cjk_friendly_emphasis_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 真~~（她~~
 
 ~~真，~~她
@@ -480,7 +475,7 @@ CJK-friendly emphasis should remain compatible with other enabled extensions.
 This case is based on the compatibility checks in the original micromark test:
 <https://github.com/tats-u/markdown-cjk-friendly/blob/ee93f3c2dffc8c7eb25c7a1c9f3f962279ac247d/packages/micromark-extension-cjk-friendly/test/micromark.spec.ts#L121-L135>.
 
-```````````````````````````````` example_cjk_friendly_emphasis_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES
 あ**()**あ[^1]
 
 [^1]: ~~あ~~

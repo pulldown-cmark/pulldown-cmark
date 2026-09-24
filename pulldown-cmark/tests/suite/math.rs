@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn math_test_1() {
+fn math_test_0001_l12() {
     let original = r##"This sentence uses `$` delimiters to show math inline: $\sqrt{3x-1}+(1+x)^2$
 $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 
@@ -15,11 +15,11 @@ $\sum_{k=1}^n a_k b_k$: Mathematical expression at head of line
 <p><code>\</code> may follow just after the first <code>$</code>: <span class="math math-inline">\{1, 2, 3\}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_2() {
+fn math_test_0002_l25() {
     let original = r##"**The Cauchy-Schwarz Inequality**
 
 $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
@@ -28,11 +28,11 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 <p><span class="math math-display">\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_3() {
+fn math_test_0003_l36() {
     let original = r##"Oops empty $$ expression.
 
 $$$$
@@ -41,11 +41,11 @@ $$$$
 <p><span class="math math-display"></span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_4() {
+fn math_test_0004_l47() {
     let original = r##"$x$$$$$$$y$$
 
 $x$$$$$$y$$
@@ -57,11 +57,11 @@ $$x$$$$$$y$$
 <p><span class="math math-display">x</span><span class="math math-display"></span>y$$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_5() {
+fn math_test_0005_l62() {
     let original = r##"$a<b>c</b>$
 
 $${a*b*c} _c_ d$$
@@ -82,11 +82,11 @@ $&alpha;$
 <p><span class="math math-inline">&amp;alpha;</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_6() {
+fn math_test_0006_l86() {
     let original = r##"Hello $world.
 
 Dollar at end of line$
@@ -95,11 +95,11 @@ Dollar at end of line$
 <p>Dollar at end of line$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_7() {
+fn math_test_0007_l97() {
     let original = r##"$5x + 2 =
 17$
 
@@ -112,11 +112,11 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right)
 \left( \sum_{k=1}^n b_k^2 \right)</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_8() {
+fn math_test_0008_l112() {
     let original = r##"$not a\
 hard break  
 either$
@@ -126,11 +126,11 @@ hard break
 either</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_9() {
+fn math_test_0009_l125() {
     let original = r##"$\$$
 
 $$y = \$ x$$
@@ -139,11 +139,11 @@ $$y = \$ x$$
 <p><span class="math math-display">y = \$ x</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_10() {
+fn math_test_0010_l137() {
     let original = r##"$x $ x$
 
 $$ $ $$
@@ -152,21 +152,21 @@ $$ $ $$
 <p>$$ $ $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_11() {
+fn math_test_0011_l146() {
     let original = r##"alpha$$beta$gamma$$delta
 "##;
     let expected = r##"<p>alpha$<span class="math math-inline">beta</span>gamma$$delta</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_12() {
+fn math_test_0012_l154() {
     let original = r##"these are not math texts: $ y=x$, $y=x $, $
 y=x$ and $y=x
 $
@@ -190,21 +190,21 @@ they should not allow inlines to do that $$2 +
 <span class="math math-inline">*</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_13() {
+fn math_test_0013_l180() {
     let original = r##"these are math texts: foo$y=x$bar and $y=x$bar and foo$y=x$ bar
 "##;
     let expected = r##"<p>these are math texts: foo<span class="math math-inline">y=x</span>bar and <span class="math math-inline">y=x</span>bar and foo<span class="math math-inline">y=x</span> bar</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_14() {
+fn math_test_0014_l188() {
     let original = r##"math texts: $x=y$! and $x=y$? and $x=y$: and $x=y$. and $x=y$"
 
 also math texts: !$x=y$! and ?$x=y$? and :$x=y$: and .$x=y$. and "$x=y$"
@@ -216,21 +216,21 @@ braces: ($x=y$) [$x=y$] {$x=y$}
 <p>braces: (<span class="math math-inline">x=y</span>) [<span class="math math-inline">x=y</span>] {<span class="math math-inline">x=y</span>}</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_15() {
+fn math_test_0015_l202() {
     let original = r##"$x=y$
 "##;
     let expected = r##"<p><span class="math math-inline">x=y</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_16() {
+fn math_test_0016_l210() {
     let original = r##"$a$$b$
 
 $a$$$b$$
@@ -245,11 +245,11 @@ $$a$$$$b$$
 <p><span class="math math-display">a</span><span class="math math-display">b</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_17() {
+fn math_test_0017_l228() {
     let original = r##"$Inline `first$ then` code
 
 `Code $first` then$ inline
@@ -264,11 +264,11 @@ $$ Display `first $$ then` code
 <p><code>Code $$ first</code> then $$ display</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_18() {
+fn math_test_0018_l245() {
     let original = r##"$x + y - z$
 
 $x + y
@@ -288,11 +288,11 @@ $$ x + y
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_19() {
+fn math_test_0019_l268() {
     let original = r##"$not
 
 math$
@@ -311,11 +311,11 @@ not</p>
 $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_20() {
+fn math_test_0020_l290() {
     let original = r##"- $not
     - *
   math$
@@ -334,11 +334,11 @@ math$</li>
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_21() {
+fn math_test_0021_l313() {
     let original = r##"This is display math:
 $$
 \text{Hello $x^2$}
@@ -354,11 +354,11 @@ And this is inline math:
 <span class="math math-inline">\text{Hello $x$ there!}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_22() {
+fn math_test_0022_l332() {
     let original = r##"This is not valid math: $}{$
 
 Neither is this: { $}{$ }
@@ -379,11 +379,11 @@ Math environment contains y: $x {$ $ } $y$
 <p>Math environment contains y: $x {$ $ } <span class="math math-inline">y</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_23() {
+fn math_test_0023_l355() {
     let original = r##"This is not display math. It is inline math:
 
 $$\text{first $$ second}$
@@ -412,11 +412,11 @@ and expected to be as short as possible:</p>
 <p><span class="math math-display"></span>\text{first $$ second}$$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_24() {
+fn math_test_0024_l386() {
     let original = r##"$\text{\$}$
 
 $$x$x$$
@@ -434,11 +434,11 @@ $}$] $$
 <p>$}$] $$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_25() {
+fn math_test_0025_l408() {
     let original = r##"$1$2$3
 
 $1$2$3$
@@ -459,21 +459,21 @@ $$1{$$2$$}3$$
 <p><span class="math math-display">1{$$2$$}3</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_26() {
+fn math_test_0026_l436() {
     let original = r##"$x$ $`y`$
 "##;
     let expected = r##"<p><span class="math math-inline">x</span> <span class="math math-inline">`y`</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_27() {
+fn math_test_0027_l444() {
     let original = r##"- $a$
 
   ```math
@@ -511,11 +511,11 @@ b
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_28() {
+fn math_test_0028_l484() {
     let original = r##"- ![node logo](https://nodejs.org/static/images/logo.svg)
 - $x$
 "##;
@@ -525,11 +525,11 @@ fn math_test_28() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_29() {
+fn math_test_0029_l496() {
     let original = r##"<details>
 
 $A = 5$
@@ -548,11 +548,11 @@ A = 5
 </details>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_30() {
+fn math_test_0030_l517() {
     let original = r##"$a<b$
 
 $$a<b$$
@@ -561,11 +561,11 @@ $$a<b$$
 <p><span class="math math-display">a&lt;b</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_31() {
+fn math_test_0031_l528() {
     let original = r##"[^a]
 
 [^a]: Lorem $a$
@@ -576,11 +576,11 @@ fn math_test_31() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH | ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn math_test_32() {
+fn math_test_0032_l541() {
     let original = r##"[$a$](x)
 "##;
     let expected = r##"<p>
@@ -588,11 +588,11 @@ fn math_test_32() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_33() {
+fn math_test_0033_l551() {
     let original = r##"a$x$
 
 -$x$
@@ -604,11 +604,11 @@ fn math_test_33() {
 <p>1<span class="math math-inline">x</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_34() {
+fn math_test_0034_l565() {
     let original = r##"_$a$ equals $b$_
 
 _$a$ equals $b$_
@@ -620,11 +620,11 @@ _$a$ equals $b$_
 <p><strong><span class="math math-inline">a</span> equals <span class="math math-inline">b</span></strong></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_35() {
+fn math_test_0035_l579() {
     let original = r##"$$
 a
 $$
@@ -643,21 +643,21 @@ a
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_36() {
+fn math_test_0036_l600() {
     let original = r##"$\{a\,b\}$
 "##;
     let expected = r##"<p><span class="math math-inline">\{a\,b\}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_37() {
+fn math_test_0037_l608() {
     let original = r##"$a <b > c$
 
 $[(a+b)c](d+e)$
@@ -669,11 +669,11 @@ ${a}_b c_{d}$
 <p><span class="math math-inline">{a}_b c_{d}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_38() {
+fn math_test_0038_l622() {
     let original = r##"When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
 $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 "##;
@@ -681,31 +681,31 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 <span class="math math-display"> x = {-b \pm \sqrt{b^2-4ac} \over 2a} </span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_39() {
+fn math_test_0039_l632() {
     let original = r##"$x = \$$
 "##;
     let expected = r##"<p><span class="math math-inline">x = \$</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_40() {
+fn math_test_0040_l640() {
     let original = r##"_Equation $\Omega(69)$ in italic text_
 "##;
     let expected = r##"<p><em>Equation <span class="math math-inline">\Omega(69)</span> in italic text</em></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_41() {
+fn math_test_0041_l648() {
     let original = r##"$\pi$
 '$\pi$
 "$\pi$
@@ -725,11 +725,11 @@ fn math_test_41() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_42() {
+fn math_test_0042_l672() {
     let original = r##"| first $|$ second |
 |--------|---------|
 | a ${   | }$ b    |
@@ -741,11 +741,11 @@ fn math_test_42() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH | ENABLE_TABLES");
 }
 
 #[test]
-fn math_test_43() {
+fn math_test_0043_l695() {
     let original = r##"| first $\|$ second |
 |-------------------|
 | a ${   \| }$ b    |
@@ -757,11 +757,11 @@ fn math_test_43() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH | ENABLE_TABLES");
 }
 
 #[test]
-fn math_test_44() {
+fn math_test_0044_l707() {
     let original = r##"| Description | Test case |
 |-------------|-----------|
 | Single      | $\$       |
@@ -795,11 +795,11 @@ fn math_test_44() {
 </tbody></table>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH | ENABLE_TABLES");
 }
 
 #[test]
-fn math_test_45() {
+fn math_test_0045_l753() {
     let original = r##"This is not an inline math environment: $}{$
 But, because it's nested too deeply, this is parsed as an inline math environment:
 {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
@@ -815,11 +815,11 @@ improperly <span class="math math-inline">}{</span> nested
 But this still isn't, because the braces are still counted: $}{$</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_46() {
+fn math_test_0046_l769() {
     let original = r##"This is also deeply nested, but, unlike the first example,
 they don't have an equal number of close braces and open braces,
 so aren't detected as math.
@@ -844,11 +844,11 @@ another improperly nested example
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}</span></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_47() {
+fn math_test_0047_l798() {
     let original = r##"${}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  40 brace pairs
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  60 brace pairs
@@ -878,11 +878,11 @@ fn math_test_47() {
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{</span> 255 brace pairs and one unclosed brace</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }
 
 #[test]
-fn math_test_48() {
+fn math_test_0048_l832() {
     let original = r##"${{{{{{{{{{{{{{{{{{{{ 20 open braces
 {{{{{{{{{{{{{{{{{{{{  40 open braces
 {{{{{{{{{{{{{{{{{{{{  60 open braces
@@ -940,5 +940,5 @@ fn math_test_48() {
 }}}}}}}}}}}}}}}{$ 255 close braces and one open brace</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_MATH");
 }

@@ -3200,3 +3200,20 @@ Definition lists cancel task lists, just like headers do:
 </li>
 </ul>
 ````````````````````````````````
+
+ISSUE #1110
+
+```````````````````````````````` example_deflists
+��  2
+:<
+  {}
+ -
+.
+<dl>
+<dt>��  2</dt>
+<dd>
+<h2>&lt;
+</h2>
+</dd>
+</dl>
+````````````````````````````````

@@ -214,12 +214,15 @@ impl Tree<Item> {
                 self[child_ix].next = None;
                 // focus to the new last child (this node)
                 self.cur = Some(child_ix);
-            } else if self[child_ix].item.start == end_byte_ix {
+            } else if self[child_ix].item.start >= end_byte_ix {
                 // check whether the previous character is a backslash
-                let is_previous_char_backslash_escape = match self[child_ix].item.body {
-                    ItemBody::Text { backslash_escaped } => backslash_escaped,
-                    _ => false,
-                };
+                let is_previous_char_backslash_escape = self[child_ix].item.start == end_byte_ix
+                    && matches!(
+                        self[child_ix].item.body,
+                        ItemBody::Text {
+                            backslash_escaped: true
+                        }
+                    );
                 if is_previous_char_backslash_escape {
                     // rescue the backslash as a plain text content
                     let last_byte_ix = end_byte_ix - 1;

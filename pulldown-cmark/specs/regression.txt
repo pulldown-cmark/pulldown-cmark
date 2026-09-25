@@ -3177,7 +3177,7 @@ Task list canceling in tables.
 | one | two | three</li></ul>
 ````````````````````````````````
 
-Definition lists don't cancel task lists (they act like paragraphs):
+Definition lists cancel task lists, just like headers do:
 
 ```````````````````````````````` example_deflists
 - [x] a

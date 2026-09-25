@@ -1546,7 +1546,18 @@ pub(crate) fn scan_containers(
     options: Options,
 ) -> usize {
     let mut i = 0;
+    let mut blockquotes = 0;
     for &node_ix in tree.walk_spine() {
+        if line_start.is_at_eol() && line_start.remaining_space() == 0 {
+            // The rest of the line is empty, so from here on nothing can be
+            // consumed: every list item, definition and footnote definition
+            // matches, and the first block quote does not. Skip to it instead
+            // of walking the spine, which would make each blank line in a
+            // deeply nested list cost time proportional to the nesting depth.
+            return tree
+                .spine_blockquote(blockquotes)
+                .unwrap_or(tree.spine_len());
+        }
         match tree[node_ix].item.body {
             ItemBody::BlockQuote(..) => {
                 let save = line_start.clone();
@@ -1555,6 +1566,7 @@ pub(crate) fn scan_containers(
                     *line_start = save;
                     break;
                 }
+                blockquotes += 1;
             }
             ItemBody::ListItem(indent) => {
                 let save = line_start.clone();

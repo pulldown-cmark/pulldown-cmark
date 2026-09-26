@@ -580,8 +580,8 @@ pub(crate) fn scan_closing_code_fence(
         return None;
     }
     i += num_fence_chars_found;
-    let num_trailing_spaces = scan_ch_repeat(&bytes[i..], b' ');
-    i += num_trailing_spaces;
+    // CommonMark: the closing fence "may be followed only by spaces or tabs"
+    i += scan_while(&bytes[i..], |c| c == b' ' || c == b'\t');
     scan_eol(&bytes[i..]).map(|_| i)
 }
 

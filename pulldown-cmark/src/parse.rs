@@ -2712,6 +2712,37 @@ mod test {
     }
 
     #[test]
+    fn issue_983_tab_indented_list_offsets() {
+        // A nested list indented with a TAB could start on the previous line:
+        // inside the code block in the issue's input, or inside `漢` in the
+        // definition list below. With spaces it starts on its own line.
+        let tab = "*     indented code block\n\t+ nested list\n";
+        let spaces = "*     indented code block\n  + nested list\n";
+        for (doc, expected_starts) in [
+            (tab, [0, 0, 27, 27]),
+            (spaces, [0, 0, 28, 28]),
+            ("- a\r\n\t1. b\r\n", [0, 0, 6, 6]),
+            ("> - a\n>\t- b\n", [2, 2, 8, 8]),
+        ] {
+            let starts: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(Tag::List(_) | Tag::Item) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+
+        let doc = "a\n:\n\t漢\n\t- o\n";
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_DEFINITION_LIST);
+        for (_event, range) in Parser::new_ext(doc, opts).into_offset_iter() {
+            let _ = &doc[range];
+        }
+    }
+
+    #[test]
     fn reference_link_offsets() {
         let range =
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")

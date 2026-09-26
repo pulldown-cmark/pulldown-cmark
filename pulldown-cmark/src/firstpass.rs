@@ -131,9 +131,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if let Some((ch, index, indent)) = line_start.scan_list_marker_with_indent(outer_indent)
             {
                 let after_marker_index = start_ix + line_start.bytes_scanned();
-                self.continue_list(container_start - outer_indent, ch, index);
+                // `outer_indent` is columns, not bytes. Subtracting it from a
+                // source offset can land on the previous line (issue 983).
+                let item_start = start_ix + save.bytes_scanned();
+                self.continue_list(item_start, ch, index);
                 self.tree.append(Item {
-                    start: container_start - outer_indent,
+                    start: item_start,
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });

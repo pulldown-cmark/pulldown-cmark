@@ -1756,9 +1756,8 @@ impl InlineStack {
 
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
-            if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
-            } else {
+            self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
+            if !both {
                 self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
             }
         } else if c == b'*' {
@@ -3150,5 +3149,32 @@ text
              got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
             n8 / n1.max(1)
         );
+    }
+
+    #[test]
+    fn issue_1154() {
+        // A closer that can't open matches every opener a two-way closer of
+        // the same length would, so its failed search bounds both.
+        let mut tree = Tree::with_capacity(4);
+        let mut stack = InlineStack::default();
+        for _ in 0..3 {
+            let start = tree.append(Item {
+                start: 0,
+                end: 1,
+                body: ItemBody::Text {
+                    backslash_escaped: false,
+                },
+            });
+            stack.push(InlineEl {
+                start,
+                count: 1,
+                run_length: 1,
+                c: b'*',
+                both: false,
+            });
+        }
+        assert!(stack.find_match(&mut tree, b'_', 1, false).is_none());
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, false));
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, true));
     }
 }

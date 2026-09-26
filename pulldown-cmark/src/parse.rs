@@ -868,7 +868,6 @@ impl<'input> ParserInner<'input> {
                                     self.tree[footnote_ix].item.end = end;
                                     prev = Some(footnote_ix);
                                     cur = next;
-                                    self.link_stack.clear();
                                     continue;
                                 }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {

@@ -375,3 +375,27 @@ fn issue_1056() {
 
     assert_eq!(expected, s);
 }
+
+// Can't easily use regression.txt with an invisible byte order mark.
+#[test]
+fn issue_1156() {
+    let cases = [
+        ("\u{feff}# Heading\n", "<h1>Heading</h1>\n"),
+        (
+            "\u{feff}[a]: /url\n\n[a]\n",
+            "<p><a href=\"/url\">a</a></p>\n",
+        ),
+        ("a\u{feff}b\n", "<p>a\u{feff}b</p>\n"),
+    ];
+    for (original, expected) in cases {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original));
+        assert_eq!(expected, s);
+    }
+
+    let (_, range) = Parser::new("\u{feff}# Heading\n")
+        .into_offset_iter()
+        .next()
+        .unwrap();
+    assert_eq!(3..13, range);
+}

@@ -70,7 +70,12 @@ struct FirstPass<'a, 'b> {
 
 impl<'a, 'b> FirstPass<'a, 'b> {
     fn run(mut self) -> (Tree<Item>, Allocations<'a>) {
-        let mut ix = 0;
+        // A leading byte order mark is not part of the document.
+        let mut ix = if self.text.starts_with('\u{feff}') {
+            3
+        } else {
+            0
+        };
         while ix < self.text.len() {
             ix = self.parse_block(ix);
         }

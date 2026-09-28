@@ -3153,8 +3153,8 @@ text
 
     #[test]
     fn issue_1154() {
-        // A closer that can't open matches every opener a two-way closer of
-        // the same length would, so its failed search bounds both.
+        // If a `_` that can only close finds no opener, a `_` of the same length
+        // that can also open won't find one either, so its bound can go up too.
         let mut tree = Tree::with_capacity(4);
         let mut stack = InlineStack::default();
         for _ in 0..3 {

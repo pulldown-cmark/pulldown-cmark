@@ -2712,6 +2712,51 @@ mod test {
     }
 
     #[test]
+    fn issue_983_tab_indented_list_offsets() {
+        // A nested list indented with a TAB could start on the previous line:
+        // inside the code block in the issue's input, or inside `漢` in the
+        // definition list below. With spaces it starts on its own line.
+        for (doc, expected_starts) in [
+            (
+                "*     indented code block\n\t+ nested list\n",
+                [0, 0, 27, 27],
+            ),
+            (
+                "*     indented code block\n  + nested list\n",
+                [0, 0, 28, 28],
+            ),
+            ("- a\r\n\t1. b\r\n", [0, 0, 6, 6]),
+            ("> - a\n>\t- b\n", [2, 2, 8, 8]),
+        ] {
+            let starts: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(Tag::List(_) | Tag::Item) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+
+        for (doc, expected_starts) in [("a\n:\n\t漢\n\t- o\n", [0, 0, 2, 10, 10])] {
+            let starts: Vec<_> = Parser::new_ext(doc, Options::ENABLE_DEFINITION_LIST)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(
+                        Tag::List(_)
+                        | Tag::Item
+                        | Tag::DefinitionList
+                        | Tag::DefinitionListTitle
+                        | Tag::DefinitionListDefinition,
+                    ) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+    }
+
+    #[test]
     fn reference_link_offsets() {
         let range =
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")

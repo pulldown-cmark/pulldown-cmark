@@ -3200,3 +3200,55 @@ Definition lists cancel task lists, just like headers do:
 </li>
 </ul>
 ````````````````````````````````
+
+ISSUE #1149
+
+A closing code fence may be followed by spaces or tabs.
+
+```````````````````````````````` example
+~~~
+code
+~~~	
+<b>x</b>
+.
+<pre><code>code
+</code></pre>
+<p><b>x</b></p>
+````````````````````````````````
+
+```````````````````````````````` example
+```
+code
+```	 	
+<b>x</b>
+.
+<pre><code>code
+</code></pre>
+<p><b>x</b></p>
+````````````````````````````````
+
+```````````````````````````````` example
+```
+code
+```	x
+```
+.
+<pre><code>code
+```	x
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+- ~~~
+  code
+  ~~~	
+- b
+.
+<ul>
+<li>
+<pre><code>code
+</code></pre>
+</li>
+<li>b</li>
+</ul>
+````````````````````````````````

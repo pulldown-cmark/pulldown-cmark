@@ -129,7 +129,9 @@ impl<T: Default> Tree<T> {
         let ix = self.spine.pop()?;
         self.cur = Some(ix);
         self.nodes.pop()?;
-        self[ix].child = None;
+        if self.nodes.len() > ix.get() {
+            self[ix].child = None;
+        }
         Some(ix)
     }
 
@@ -297,5 +299,20 @@ impl<T> core::ops::Index<TreeIndex> for Tree<T> {
 impl<T> core::ops::IndexMut<TreeIndex> for Tree<T> {
     fn index_mut(&mut self, ix: TreeIndex) -> &mut Node<T> {
         self.nodes.index_mut(ix.get())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Tree;
+
+    #[test]
+    fn remove_node_of_just_pushed_child() {
+        let mut tree: Tree<()> = Tree::with_capacity(0);
+        tree.append(());
+        tree.push();
+        // Nothing has been appended as a child yet, so the node we just
+        // pushed into is also the last node in `nodes`.
+        assert!(tree.remove_node().is_some());
     }
 }

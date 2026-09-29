@@ -1463,8 +1463,10 @@ impl<'input> ParserInner<'input> {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
                 buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push(' ');
-                ix += 1;
+                ix += scan_eol(&spanned_bytes[ix..]).unwrap_or(1);
                 ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
+                // A paragraph continuation line has its leading spaces and tabs stripped.
+                ix += scan_while(&spanned_bytes[ix..], |c| c == b' ' || c == b'\t');
                 start_ix = ix;
             } else if c == b'\\'
                 && spanned_bytes.get(ix + 1) == Some(&b'|')
@@ -2794,6 +2796,28 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(0..7, range);
+    }
+
+    #[test]
+    fn issue_1131_code_span_strips_continuation_indent() {
+        // The leading spaces and tabs of a paragraph continuation line are not
+        // part of the code span content, and CRLF is a single line ending. The
+        // span's range still covers the source from backtick to backtick.
+        for (doc, code, range) in [
+            ("`` a\n  `b`\n  ``", "a `b`", 0..15),
+            ("`a\n\t b`", "a b", 0..7),
+            ("`a\r\n   b`", "a b", 0..9),
+            ("> `a\r\n>   b`", "a b", 2..12),
+        ] {
+            let spans: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(ev, range)| match ev {
+                    Event::Code(code) => Some((code.to_string(), range)),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(vec![(code.to_string(), range)], spans, "{doc:?}");
+        }
     }
 
     #[test]

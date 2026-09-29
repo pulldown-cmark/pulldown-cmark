@@ -249,6 +249,8 @@ fn regression_test() -> i32 {
         suffix: "a\n".into(),
         repeating_pattern_after_suffix: ">\n".into(),
     });
+    // https://github.com/pulldown-cmark/pulldown-cmark/issues/1154
+    check_pattern("*_ ".into());
     exit_code
 }
 

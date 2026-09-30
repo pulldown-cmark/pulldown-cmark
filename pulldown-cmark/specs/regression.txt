@@ -3310,3 +3310,51 @@ para
 <p>para
 ::: note</p>
 ````````````````````````````````
+
+The closing sequence of an ATX heading may be preceded and followed by
+spaces or tabs, and trailing spaces or tabs are not part of the heading:
+https://spec.commonmark.org/0.31.2/#atx-headings
+
+```````````````````````````````` example
+# foo→#
+.
+<h1>foo</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+### foo →###→
+.
+<h3>foo</h3>
+````````````````````````````````
+
+```````````````````````````````` example
+# foo→
+.
+<h1>foo</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+> # foo→#
+.
+<blockquote>
+<h1>foo</h1>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+# foo→#bar
+.
+<h1>foo→#bar</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+# foo→\#
+.
+<h1>foo→#</h1>
+````````````````````````````````
+
+```````````````````````````````` example
+# foo→#→{#id}
+.
+<h1 id="id">foo</h1>
+````````````````````````````````

@@ -630,8 +630,9 @@ If IDs and classes are specified with empty name, they are simply ignored.
 
 ### Trailing ASCII whitespaces
 
-Trailing non-U+0020 spaces in the heading content are preserved, even when an
-attribute block follows.
+Trailing spaces and tabs are stripped from the heading content, as in
+CommonMark. Other trailing ASCII whitespaces (form feed and vertical tab) are
+preserved, even when an attribute block follows.
 
 ```````````````````````````````` example
 # horizontal tab	
@@ -641,8 +642,8 @@ attribute block follows.
 ### vertical tab
 ### vertical tab{#vt}
 .
-<h1>horizontal tab	</h1>
-<h1 id="ht">horizontal tab	</h1>
+<h1>horizontal tab</h1>
+<h1 id="ht">horizontal tab</h1>
 <h2>form feed</h2>
 <h2 id="ff">form feed</h2>
 <h3>vertical tab</h3>

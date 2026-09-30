@@ -3934,3 +3934,75 @@ fn regression_test_247() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_248() {
+    let original = r##"# foo	#
+"##;
+    let expected = r##"<h1>foo</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_249() {
+    let original = r##"### foo 	###	
+"##;
+    let expected = r##"<h3>foo</h3>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_250() {
+    let original = r##"# foo	
+"##;
+    let expected = r##"<h1>foo</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_251() {
+    let original = r##"> # foo	#
+"##;
+    let expected = r##"<blockquote>
+<h1>foo</h1>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_252() {
+    let original = r##"# foo	#bar
+"##;
+    let expected = r##"<h1>foo	#bar</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_253() {
+    let original = r##"# foo	\#
+"##;
+    let expected = r##"<h1>foo	#</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_254() {
+    let original = r##"# foo	#	{#id}
+"##;
+    let expected = r##"<h1 id="id">foo</h1>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

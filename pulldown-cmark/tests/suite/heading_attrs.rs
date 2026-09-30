@@ -557,8 +557,8 @@ fn heading_attrs_test_40() {
 ### vertical tab
 ### vertical tab{#vt}
 "##;
-    let expected = r##"<h1>horizontal tab	</h1>
-<h1 id="ht">horizontal tab	</h1>
+    let expected = r##"<h1>horizontal tab</h1>
+<h1 id="ht">horizontal tab</h1>
 <h2>form feed</h2>
 <h2 id="ff">form feed</h2>
 <h3>vertical tab</h3>

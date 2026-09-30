@@ -1874,7 +1874,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let header_text = &bytes[header_start..content_end];
             let mut limit = header_text
                 .iter()
-                .rposition(|&b| !(b == b'\n' || b == b'\r' || b == b' '))
+                .rposition(|&b| !(b == b'\n' || b == b'\r' || b == b' ' || b == b'\t'))
                 .map_or(0, |i| i + 1);
             let closer = header_text[..limit]
                 .iter()
@@ -1883,7 +1883,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             if closer == 0 {
                 limit = closer;
             } else {
-                let spaces = scan_rev_while(&header_text[..closer], |b| b == b' ');
+                let spaces = scan_rev_while(&header_text[..closer], |b| b == b' ' || b == b'\t');
                 if spaces > 0 {
                     limit = closer - spaces;
                 }

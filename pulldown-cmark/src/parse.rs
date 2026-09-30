@@ -2821,6 +2821,29 @@ mod test {
     }
 
     #[test]
+    fn atx_heading_tab_before_closing_sequence_offsets() {
+        // Tabs count as spaces or tabs around the closing sequence and at the
+        // end of the heading, so the text stops where it would with spaces.
+        for (doc, text, range) in [
+            ("# foo #", "foo", 2..5),
+            ("# foo\t#", "foo", 2..5),
+            ("# foo \t", "foo", 2..5),
+            ("### foo \t###\t\n", "foo", 4..7),
+            ("> # foo\t#\r\n", "foo", 4..7),
+            ("# foo\t#bar", "foo\t#bar", 2..10),
+        ] {
+            let texts: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(ev, range)| match ev {
+                    Event::Text(text) => Some((text.to_string(), range)),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(vec![(text.to_string(), range)], texts, "{doc:?}");
+        }
+    }
+
+    #[test]
     fn footnote_offsets() {
         let range = parser_with_extensions("Testing this[^1] out.\n\n[^1]: Footnote.")
             .into_offset_iter()

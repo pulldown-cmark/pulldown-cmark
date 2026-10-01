@@ -684,3 +684,33 @@ fn footnotes_test_26() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn footnotes_test_27() {
+    let original = r##"[link[^1]](https://example.com)
+
+[^1]: note
+"##;
+    let expected = r##"<p><a href="https://example.com">link<sup class="footnote-reference"><a href="#1">1</a></sup></a></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>note</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn footnotes_test_28() {
+    let original = r##"![image[^1]](https://example.com/a.png)
+
+[^1]: note
+"##;
+    let expected = r##"<p><img src="https://example.com/a.png" alt="image[1]" /></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>note</p>
+</div>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

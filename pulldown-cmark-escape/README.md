@@ -10,6 +10,10 @@ This crate allows to escape HTML and links and it is part of the pulldown-cmark
 project, by providing `escape_html`, `escape_html_body_text` (for
 a less long output in body HTML strings) and `escape_href` functions.
 
+The optional `simd` feature accelerates HTML escaping with SSE4.2 (x86/x86_64),
+NEON (aarch64) and `simd128` (wasm32) using
+[fearless_simd](https://crates.io/crates/fearless_simd). It requires Rust 1.89 or newer.
+
 ## Authors
 
 The main author is Raph Levien. The implementation of the new design (v0.3+) was

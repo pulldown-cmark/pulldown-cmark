@@ -2699,14 +2699,30 @@ fn cjk_friendly_underscore_delim_run_flanking(
 }
 
 fn create_lut(options: &Options) -> LookupTable {
-    #[cfg(feature = "simd")]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         LookupTable {
             simd: simd::compute_lookup(options),
             scalar: special_bytes(options),
         }
     }
-    #[cfg(not(feature = "simd"))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         special_bytes(options)
     }
@@ -2756,13 +2772,29 @@ enum LoopInstruction<T> {
     BreakAtWith(usize, T),
 }
 
-#[cfg(feature = "simd")]
+#[cfg(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+))]
 struct LookupTable {
     simd: [u8; 16],
     scalar: [bool; 256],
 }
 
-#[cfg(not(feature = "simd"))]
+#[cfg(not(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+)))]
 type LookupTable = [bool; 256];
 
 /// This function walks the byte slices from the given index and
@@ -2778,8 +2810,8 @@ type LookupTable = [bool; 256];
 /// will not be called with an index that is less than `ix + n + 1`.
 /// When the callback returns a `BreakAtWith(end_ix, opt+val)`, no more callbacks will be
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
-/// If `BreakAtWith(..)` is never returned, this function will return the first
-/// index that is outside the byteslice bound and a `None` value.
+/// If `BreakAtWith(..)` is never returned, this function will return
+/// `bytes.len()` and a `None` value.
 fn iterate_special_bytes<F, T>(
     lut: &LookupTable,
     bytes: &[u8],
@@ -2789,11 +2821,27 @@ fn iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-    #[cfg(feature = "simd")]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         simd::iterate_special_bytes(lut, bytes, ix, callback)
     }
-    #[cfg(not(feature = "simd"))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         scalar_iterate_special_bytes(lut, bytes, ix, callback)
     }
@@ -2823,7 +2871,8 @@ where
         ix += 1;
     }
 
-    // A skip may overshoot the end, clamp like the SIMD implementation does.
+    // Clamp like the SIMD implementation does in case a skip overshoots the end
+    // (no current callback does that).
     (core::cmp::min(ix, bytes.len()), None)
 }
 
@@ -2939,7 +2988,15 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
     Some(HeadingAttributes { id, classes, attrs })
 }
 
-#[cfg(feature = "simd")]
+#[cfg(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+))]
 mod simd {
     //! SIMD byte scanning logic.
     //!
@@ -2959,7 +3016,8 @@ mod simd {
     //!
     //! The vector code is written once against `fearless_simd` and runs on SSE4.2
     //! (x86/x86_64), NEON (aarch64) and SIMD128 (wasm32). Other targets and CPUs
-    //! fall back to the scalar implementation.
+    //! fall back to the scalar implementation; this module is only compiled for
+    //! targets with a vector backend.
     //!
     //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
@@ -3006,19 +3064,6 @@ mod simd {
     const BITMASK_LOOKUP: [u8; 16] = [
         1, 2, 4, 8, 16, 32, 64, 128, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     ];
-
-    /// Shuffle indices that select by the lower nibble of every byte. PSHUFB on
-    /// x86 already ignores bits 4 to 6 and zeroes bytes with their most significant
-    /// bit set, which is fine for all our lookups, so masking is only needed on
-    /// other platforms where larger indices produce zero.
-    #[inline(always)]
-    fn low_nibble_index<S: Simd>(v: u8x16<S>) -> u8x16<S> {
-        if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-            v
-        } else {
-            v & 0x0f
-        }
-    }
 
     /// Generates a lookup table containing the bitmaps for our
     /// special marker bytes. This is effectively a 128 element 2d bitvector,
@@ -3078,7 +3123,7 @@ mod simd {
         let input = u8x16::from_slice(simd, &bytes[ix..ix + VECTOR_SIZE]);
         // Compute the bitmap using the bottom nibble as an index
         // into the lookup table.
-        let bitset = bitmap.swizzle_dyn(low_nibble_index(input));
+        let bitset = bitmap.swizzle_dyn(input & 0x0f);
         // Compute the high nibbles of the input.
         let higher_nibbles = input >> 4;
         // Create a bitmask for the bitmap by perform a left shift of the value
@@ -3110,7 +3155,10 @@ mod simd {
         // in length. A single 128-bit level is enough here, so only one copy of the
         // vector loop is generated per target.
         if bytes.len() >= VECTOR_SIZE {
-            if let Some(level) = Level::try_detect() {
+            // Without std there is no runtime detection, but the statically enabled
+            // level (e.g. NEON on aarch64) can still be used.
+            {
+                let level = Level::try_detect().unwrap_or(Level::baseline());
                 #[cfg(target_arch = "aarch64")]
                 if let Some(neon) = level.as_neon() {
                     return neon.vectorize(
@@ -3210,6 +3258,7 @@ mod simd {
     mod simd_test {
         use super::{super::create_lut, iterate_special_bytes, LoopInstruction};
         use crate::Options;
+        use alloc::vec::Vec;
 
         fn check_expected_indices(bytes: &[u8], expected: &[usize], skip: usize) {
             let mut opts = Options::empty();

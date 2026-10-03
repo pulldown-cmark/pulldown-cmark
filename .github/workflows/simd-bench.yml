@@ -2,6 +2,8 @@ name: SIMD benchmarks
 
 on:
   push:
+    # On main the merge-base is HEAD itself, so there is nothing to compare.
+    branches-ignore: [main, master]
     paths:
       - 'pulldown-cmark/src/**'
       - 'pulldown-cmark-escape/src/**'

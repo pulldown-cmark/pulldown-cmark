@@ -8,7 +8,7 @@
 # machine noise affects all variants equally. The fastest median per bench is
 # kept and a markdown table is printed comparing every variant to the first
 # one. Set BENCH_FEATURES_<label> to choose cargo features per variant
-# (default: simd).
+# (default: simd). Labels must be valid shell identifiers.
 set -euo pipefail
 
 rounds=$1
@@ -16,11 +16,17 @@ shift
 
 out=$(mktemp -d)
 labels=()
+dirs=()
 
 for pair in "$@"; do
     label=${pair%%=*}
     dir=${pair#*=}
+    if [[ ! $label =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        echo "invalid label: $label" >&2
+        exit 2
+    fi
     labels+=("$label")
+    dirs+=("$dir")
     features_var="BENCH_FEATURES_${label}"
     features=${!features_var-simd}
     echo "::group::build $label ($dir, features: '${features}')" >&2
@@ -33,16 +39,15 @@ for pair in "$@"; do
     echo "::endgroup::" >&2
 done
 
-# The markdown-it bench reads its inputs relative to the bench directory.
-bench_dir=${1#*=}/bench
-
 for round in $(seq 1 "$rounds"); do
-    for label in "${labels[@]}"; do
+    for i in "${!labels[@]}"; do
+        label=${labels[$i]}
         echo "round $round: $label" >&2
         while read -r bin; do
-            (cd "$bench_dir" && CRITERION_HOME="$out/criterion-$label" "$bin" --bench --noplot \
+            # The markdown-it bench reads its inputs relative to the bench directory.
+            (cd "${dirs[$i]}/bench" && CRITERION_HOME="$out/criterion-$label" "$bin" --bench --noplot \
                 --warm-up-time 1 --measurement-time 3 2>/dev/null) \
-                | LC_ALL=C awk '
+                | LC_ALL=C awk -v label="$label" '
                     NF == 1 { name = $1 }
                     /time:/ {
                         if ($1 != "time:") name = $1
@@ -53,20 +58,19 @@ for round in $(seq 1 "$rounds"); do
                             if (u ~ /^ns/) v /= 1000
                             else if (u ~ /^ms/) v *= 1000
                             else if (u ~ /^s/) v *= 1000000
-                            print name, v
+                            print label, name, v
                         }
-                    }' >>"$out/$label.txt"
+                    }' >>"$out/results.txt"
         done <"$out/$label.bins"
     done
 done
 
 awk -v labels="${labels[*]}" '
     BEGIN { n = split(labels, L, " ") }
-    FNR == 1 { f++ }
     {
-        if (!($1 in seen)) { order[++m] = $1; seen[$1] = 1 }
-        k = f SUBSEP $1
-        if (!(k in t) || $2 < t[k]) t[k] = $2
+        if (!($2 in seen)) { order[++m] = $2; seen[$2] = 1 }
+        k = $1 SUBSEP $2
+        if (!(k in t) || $3 < t[k]) t[k] = $3
     }
     END {
         printf "| bench |"
@@ -78,11 +82,15 @@ awk -v labels="${labels[*]}" '
         for (j = 1; j <= m; j++) {
             b = order[j]
             printf "| %s |", b
-            for (i = 1; i <= n; i++) printf " %.3f |", t[i SUBSEP b]
+            for (i = 1; i <= n; i++) {
+                k = L[i] SUBSEP b
+                if (k in t) printf " %.3f |", t[k]; else printf " - |"
+            }
             for (i = 2; i <= n; i++) {
-                d = (t[i SUBSEP b] / t[1 SUBSEP b] - 1) * 100
-                printf " %+.1f%% |", d
+                k = L[i] SUBSEP b; k1 = L[1] SUBSEP b
+                if ((k in t) && (k1 in t)) printf " %+.1f%% |", (t[k] / t[k1] - 1) * 100
+                else printf " - |"
             }
             printf "\n"
         }
-    }' $(for label in "${labels[@]}"; do echo "$out/$label.txt"; done)
+    }' "$out/results.txt"

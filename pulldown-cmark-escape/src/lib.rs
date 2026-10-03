@@ -217,11 +217,27 @@ static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"
 /// //let not_ok = format!("<a title={value}>test</a>");
 /// ````
 pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
-    #[cfg(feature = "simd")]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         simd::escape_html(w, s, &HTML_ESCAPE_TABLE, &simd::HTML_LOOKUP)
     }
-    #[cfg(not(feature = "simd"))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         escape_html_scalar(w, s, &HTML_ESCAPE_TABLE)
     }
@@ -246,7 +262,15 @@ pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
 ///
 /// </div>
 pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
-    #[cfg(feature = "simd")]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         simd::escape_html(
             w,
@@ -255,7 +279,15 @@ pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error>
             &simd::HTML_BODY_TEXT_LOOKUP,
         )
     }
-    #[cfg(not(feature = "simd"))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         escape_html_scalar(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
     }
@@ -287,7 +319,15 @@ fn escape_html_scalar<W: StrWrite>(
     w.write_str(&s[mark..])
 }
 
-#[cfg(feature = "simd")]
+#[cfg(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+))]
 mod simd {
     use super::{StrWrite, HTML_BODY_TEXT_ESCAPE_TABLE, HTML_ESCAPE_TABLE};
     use fearless_simd::{mask8x16, prelude::*, u8x16, Level};
@@ -296,9 +336,9 @@ mod simd {
 
     /// Number of bits per byte lane in the masks returned by [`movemask`].
     #[cfg(target_arch = "aarch64")]
-    const LANE_BITS: u32 = 4;
+    const LANE_BITS: usize = 4;
     #[cfg(not(target_arch = "aarch64"))]
-    const LANE_BITS: u32 = 1;
+    const LANE_BITS: usize = 1;
 
     /// Packs a byte mask into a scalar, where a set lane `i` sets bit
     /// `i * LANE_BITS` and all other bits are zero.
@@ -324,19 +364,6 @@ mod simd {
         }
     }
 
-    /// Shuffle indices that select by the lower nibble of every byte. PSHUFB on
-    /// x86 already ignores bits 4 to 6 and zeroes bytes with their most significant
-    /// bit set, which is fine for all our lookups, so masking is only needed on
-    /// other platforms where larger indices produce zero.
-    #[inline(always)]
-    fn low_nibble_index<S: Simd>(v: u8x16<S>) -> u8x16<S> {
-        if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-            v
-        } else {
-            v & 0x0f
-        }
-    }
-
     pub(super) fn escape_html<W: StrWrite>(
         w: W,
         s: &str,
@@ -348,7 +375,10 @@ mod simd {
         // is at least one VECTOR_SIZE in length to prevent reading out of bounds.
         // If either of these conditions is not met, we fall back to scalar code.
         if s.len() >= VECTOR_SIZE {
-            if let Some(level) = Level::try_detect() {
+            // Without std there is no runtime detection, but the statically enabled
+            // level (e.g. NEON on aarch64) can still be used.
+            {
+                let level = Level::try_detect().unwrap_or(Level::baseline());
                 #[cfg(target_arch = "aarch64")]
                 if let Some(neon) = level.as_neon() {
                     return neon.vectorize(
@@ -439,7 +469,7 @@ mod simd {
         // Bytes that share their lower nibble with an HTML special byte get mapped to that
         // corresponding special byte. Note that all HTML special bytes have distinct lower
         // nibbles. Other bytes either get mapped to 0 or 127.
-        let expected = lookup.swizzle_dyn(low_nibble_index(vector));
+        let expected = lookup.swizzle_dyn(vector & 0x0f);
         // We compare the original vector to the mapped output. Bytes that shared a lower
         // nibble with an HTML special byte match *only* if they are that special byte. Bytes
         // that have either a 0 lower nibble or their most significant bit set never match,
@@ -478,8 +508,8 @@ mod simd {
         while offset < upperbound {
             let mut mask = compute_mask(simd, lookup, bytes, offset);
             while mask != 0 {
-                let ix = mask.trailing_zeros() / LANE_BITS;
-                callback(offset + ix as usize)?;
+                let ix = mask.trailing_zeros() as usize / LANE_BITS;
+                callback(offset + ix)?;
                 mask &= mask - 1;
             }
             offset += VECTOR_SIZE;
@@ -488,10 +518,10 @@ mod simd {
         // Final iteration. We align the read with the end of the slice and
         // shift off the bytes at start we have already scanned.
         let mut mask = compute_mask(simd, lookup, bytes, upperbound);
-        mask >>= (offset - upperbound) * LANE_BITS as usize;
+        mask >>= (offset - upperbound) * LANE_BITS;
         while mask != 0 {
-            let ix = mask.trailing_zeros() / LANE_BITS;
-            callback(offset + ix as usize)?;
+            let ix = mask.trailing_zeros() as usize / LANE_BITS;
+            callback(offset + ix)?;
             mask &= mask - 1;
         }
         Ok(())
@@ -505,7 +535,7 @@ mod simd {
 
         fn special_indices(bytes: &[u8]) -> Vec<usize> {
             let mut vec = Vec::new();
-            dispatch!(Level::new(), simd => super::foreach_special_simd(simd, &super::HTML_LOOKUP, bytes, 0, |ix| {
+            dispatch!(Level::try_detect().unwrap_or(Level::baseline()), simd => super::foreach_special_simd(simd, &super::HTML_LOOKUP, bytes, 0, |ix| {
                 #[allow(clippy::unit_arg)]
                 Ok::<_, core::fmt::Error>(vec.push(ix))
             }))
@@ -523,7 +553,7 @@ mod simd {
         fn body_text_lookup_skips_quotes() {
             let bytes = "\"'<>&aaaaaaaaaaaaaaaaaaaa\"'".as_bytes();
             let mut vec = Vec::new();
-            dispatch!(Level::new(), simd => super::foreach_special_simd(simd, &super::HTML_BODY_TEXT_LOOKUP, bytes, 0, |ix| {
+            dispatch!(Level::try_detect().unwrap_or(Level::baseline()), simd => super::foreach_special_simd(simd, &super::HTML_BODY_TEXT_LOOKUP, bytes, 0, |ix| {
                 #[allow(clippy::unit_arg)]
                 Ok::<_, core::fmt::Error>(vec.push(ix))
             }))

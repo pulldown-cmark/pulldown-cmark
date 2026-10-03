@@ -12,6 +12,7 @@ env:
 jobs:
   pulldown-cmark:
     strategy:
+      fail-fast: false
       matrix:
         rust-version: ['1.71.1', 'stable', 'nightly']
     runs-on: ubuntu-latest

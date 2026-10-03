@@ -3007,6 +3007,19 @@ mod simd {
         1, 2, 4, 8, 16, 32, 64, 128, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     ];
 
+    /// Shuffle indices that select by the lower nibble of every byte. PSHUFB on
+    /// x86 already ignores bits 4 to 6 and zeroes bytes with their most significant
+    /// bit set, which is fine for all our lookups, so masking is only needed on
+    /// other platforms where larger indices produce zero.
+    #[inline(always)]
+    fn low_nibble_index<S: Simd>(v: u8x16<S>) -> u8x16<S> {
+        if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+            v
+        } else {
+            v & 0x0f
+        }
+    }
+
     /// Generates a lookup table containing the bitmaps for our
     /// special marker bytes. This is effectively a 128 element 2d bitvector,
     /// that can be indexed by a four bit row index (the lower nibble)
@@ -3065,7 +3078,7 @@ mod simd {
         let input = u8x16::from_slice(simd, &bytes[ix..ix + VECTOR_SIZE]);
         // Compute the bitmap using the bottom nibble as an index
         // into the lookup table.
-        let bitset = bitmap.swizzle_dyn(input & 0x0f);
+        let bitset = bitmap.swizzle_dyn(low_nibble_index(input));
         // Compute the high nibbles of the input.
         let higher_nibbles = input >> 4;
         // Create a bitmask for the bitmap by perform a left shift of the value

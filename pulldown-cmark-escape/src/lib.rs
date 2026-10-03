@@ -324,6 +324,19 @@ mod simd {
         }
     }
 
+    /// Shuffle indices that select by the lower nibble of every byte. PSHUFB on
+    /// x86 already ignores bits 4 to 6 and zeroes bytes with their most significant
+    /// bit set, which is fine for all our lookups, so masking is only needed on
+    /// other platforms where larger indices produce zero.
+    #[inline(always)]
+    fn low_nibble_index<S: Simd>(v: u8x16<S>) -> u8x16<S> {
+        if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+            v
+        } else {
+            v & 0x0f
+        }
+    }
+
     pub(super) fn escape_html<W: StrWrite>(
         w: W,
         s: &str,
@@ -426,7 +439,7 @@ mod simd {
         // Bytes that share their lower nibble with an HTML special byte get mapped to that
         // corresponding special byte. Note that all HTML special bytes have distinct lower
         // nibbles. Other bytes either get mapped to 0 or 127.
-        let expected = lookup.swizzle_dyn(vector & 0x0f);
+        let expected = lookup.swizzle_dyn(low_nibble_index(vector));
         // We compare the original vector to the mapped output. Bytes that shared a lower
         // nibble with an HTML special byte match *only* if they are that special byte. Bytes
         // that have either a 0 lower nibble or their most significant bit set never match,

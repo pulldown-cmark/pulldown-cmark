@@ -42,16 +42,17 @@ for round in $(seq 1 "$rounds"); do
         while read -r bin; do
             (cd "$bench_dir" && CRITERION_HOME="$out/criterion-$label" "$bin" --bench --noplot \
                 --warm-up-time 1 --measurement-time 3 2>/dev/null) \
-                | awk '
+                | LC_ALL=C awk '
                     NF == 1 { name = $1 }
                     /time:/ {
                         if ($1 != "time:") name = $1
                         for (i = 1; i <= NF; i++) if ($i == "time:") {
                             v = $(i + 3); u = $(i + 4)
                             sub(/\[/, "", v)
-                            if (u == "ns") v /= 1000
-                            if (u == "ms") v *= 1000
-                            if (u == "s") v *= 1000000
+                            # units: ns, µs, ms, s (µs is multi-byte, so match by prefix)
+                            if (u ~ /^ns/) v /= 1000
+                            else if (u ~ /^ms/) v *= 1000
+                            else if (u ~ /^s/) v *= 1000000
                             print name, v
                         }
                     }' >>"$out/$label.txt"

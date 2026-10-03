@@ -165,8 +165,9 @@ Or add this package as dependency of your project using `cargo add`:
 > cargo add pulldown-cmark --no-default-features
 ```
 
-SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
-enable them, build with simd feature:
+SIMD accelerated scanners are available for x86/x86_64 (SSE4.2), aarch64 (NEON) and
+wasm32 (`simd128` target feature), built on [fearless_simd](https://crates.io/crates/fearless_simd).
+The simd feature requires Rust 1.89 or newer. To enable them, build with simd feature:
 
 ```bash
 > cargo build --release --features simd

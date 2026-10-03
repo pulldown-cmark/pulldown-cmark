@@ -36,6 +36,8 @@ jobs:
       if: ${{ matrix.rust-version != '1.71.1' }}
       run: cargo test --verbose --workspace
     - name: Cargo test with simd feature enabled
+      # fearless_simd (used by the simd feature) requires Rust 1.89
+      if: ${{ matrix.rust-version != '1.71.1' }}
       run: cargo test --features=simd,gen-tests
     - name: Cargo test with serde feature enabled
       run: cargo test --features=serde

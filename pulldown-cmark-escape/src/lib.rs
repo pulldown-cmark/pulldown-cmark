@@ -217,11 +217,11 @@ static HTML_ESCAPES: [&str; 6] = ["", "&amp;", "&lt;", "&gt;", "&quot;", "&#39;"
 /// //let not_ok = format!("<a title={value}>test</a>");
 /// ````
 pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    #[cfg(feature = "simd")]
     {
-        simd::escape_html(w, s, &HTML_ESCAPE_TABLE)
+        simd::escape_html(w, s, &HTML_ESCAPE_TABLE, &simd::HTML_LOOKUP)
     }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    #[cfg(not(feature = "simd"))]
     {
         escape_html_scalar(w, s, &HTML_ESCAPE_TABLE)
     }
@@ -246,11 +246,16 @@ pub fn escape_html<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
 ///
 /// </div>
 pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error> {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    #[cfg(feature = "simd")]
     {
-        simd::escape_html(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
+        simd::escape_html(
+            w,
+            s,
+            &HTML_BODY_TEXT_ESCAPE_TABLE,
+            &simd::HTML_BODY_TEXT_LOOKUP,
+        )
     }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    #[cfg(not(feature = "simd"))]
     {
         escape_html_scalar(w, s, &HTML_BODY_TEXT_ESCAPE_TABLE)
     }
@@ -282,100 +287,164 @@ fn escape_html_scalar<W: StrWrite>(
     w.write_str(&s[mark..])
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+#[cfg(feature = "simd")]
 mod simd {
-    use super::StrWrite;
-    use std::arch::x86_64::*;
-    use std::mem::size_of;
+    use super::{StrWrite, HTML_BODY_TEXT_ESCAPE_TABLE, HTML_ESCAPE_TABLE};
+    use fearless_simd::{mask8x16, prelude::*, u8x16, Level};
 
-    const VECTOR_SIZE: usize = size_of::<__m128i>();
+    const VECTOR_SIZE: usize = 16;
 
-    pub(super) fn escape_html<W: StrWrite>(
-        mut w: W,
-        s: &str,
-        table: &'static [u8; 256],
-    ) -> Result<(), W::Error> {
-        // The SIMD accelerated code uses the PSHUFB instruction, which is part
-        // of the SSSE3 instruction set. Further, we can only use this code if
-        // the buffer is at least one VECTOR_SIZE in length to prevent reading
-        // out of bounds. If either of these conditions is not met, we fall back
-        // to scalar code.
-        if is_x86_feature_detected!("ssse3") && s.len() >= VECTOR_SIZE {
-            let bytes = s.as_bytes();
-            let mut mark = 0;
+    /// Number of bits per byte lane in the masks returned by [`movemask`].
+    #[cfg(target_arch = "aarch64")]
+    const LANE_BITS: u32 = 4;
+    #[cfg(not(target_arch = "aarch64"))]
+    const LANE_BITS: u32 = 1;
 
-            unsafe {
-                foreach_special_simd(bytes, 0, |i| {
-                    let escape_ix = *bytes.get_unchecked(i) as usize;
-                    let entry = table[escape_ix] as usize;
-                    w.write_str(s.get_unchecked(mark..i))?;
-                    mark = i + 1; // all escaped characters are ASCII
-                    if entry == 0 {
-                        w.write_str(s.get_unchecked(i..mark))
-                    } else {
-                        let replacement = super::HTML_ESCAPES[entry];
-                        w.write_str(replacement)
-                    }
-                })?;
-                w.write_str(s.get_unchecked(mark..))
-            }
-        } else {
-            super::escape_html_scalar(w, s, table)
+    /// Packs a byte mask into a scalar, where a set lane `i` sets bit
+    /// `i * LANE_BITS` and all other bits are zero.
+    #[inline(always)]
+    fn movemask<S: Simd>(simd: S, mask: mask8x16<S>) -> u64 {
+        #[cfg(target_arch = "aarch64")]
+        {
+            // NEON has no movemask instruction and the generic `to_bitmask` needs a
+            // horizontal add. Shifting right by four and narrowing (SHRN) packs every
+            // lane into a nibble instead, which is a lot cheaper.
+            use fearless_simd::{u16x8, u64x2};
+
+            let bytes: u8x16<S> = mask.select(u8x16::splat(simd, 0xff), u8x16::splat(simd, 0));
+            let wide: u16x8<S> = bytes.bitcast();
+            let narrowed = simd.narrow_u16x8(wide >> 4, wide >> 4);
+            let packed: u64x2<S> = narrowed.bitcast();
+            packed[0] & 0x1111_1111_1111_1111
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            let _ = simd;
+            mask.to_bitmask()
         }
     }
 
-    /// Creates the lookup table for use in `compute_mask`.
-    const fn create_lookup() -> [u8; 16] {
+    pub(super) fn escape_html<W: StrWrite>(
+        w: W,
+        s: &str,
+        table: &'static [u8; 256],
+        lookup: &'static [u8; 16],
+    ) -> Result<(), W::Error> {
+        // The SIMD accelerated code needs a byte shuffle instruction (PSHUFB on
+        // x86, TBL on aarch64). Further, we can only use this code if the buffer
+        // is at least one VECTOR_SIZE in length to prevent reading out of bounds.
+        // If either of these conditions is not met, we fall back to scalar code.
+        if s.len() >= VECTOR_SIZE {
+            if let Some(level) = Level::try_detect() {
+                #[cfg(target_arch = "aarch64")]
+                if let Some(neon) = level.as_neon() {
+                    return neon.vectorize(
+                        #[inline(always)]
+                        || escape_html_simd(neon, w, s, table, lookup),
+                    );
+                }
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                if let Some(sse4_2) = level.as_sse4_2() {
+                    return sse4_2.vectorize(
+                        #[inline(always)]
+                        || escape_html_simd(sse4_2, w, s, table, lookup),
+                    );
+                }
+                #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+                if let Some(wasm) = level.as_wasm_simd128() {
+                    return wasm.vectorize(
+                        #[inline(always)]
+                        || escape_html_simd(wasm, w, s, table, lookup),
+                    );
+                }
+                let _ = level;
+            }
+        }
+        super::escape_html_scalar(w, s, table)
+    }
+
+    /// Only call this when `s.len() >= VECTOR_SIZE`, panics otherwise.
+    #[inline(always)]
+    fn escape_html_simd<S: Simd, W: StrWrite>(
+        simd: S,
+        mut w: W,
+        s: &str,
+        table: &'static [u8; 256],
+        lookup: &[u8; 16],
+    ) -> Result<(), W::Error> {
+        let bytes = s.as_bytes();
+        let mut mark = 0;
+
+        foreach_special_simd(simd, lookup, bytes, 0, |i| {
+            let entry = table[bytes[i] as usize] as usize;
+            w.write_str(&s[mark..i])?;
+            mark = i + 1; // all escaped characters are ASCII
+            if entry == 0 {
+                w.write_str(&s[i..mark])
+            } else {
+                let replacement = super::HTML_ESCAPES[entry];
+                w.write_str(replacement)
+            }
+        })?;
+        w.write_str(&s[mark..])
+    }
+
+    /// Creates the lookup table for use in `compute_mask`, containing exactly
+    /// the bytes that are escaped by the given escape table. Every candidate
+    /// byte has a distinct lower nibble.
+    const fn create_lookup(escape_table: &[u8; 256]) -> [u8; 16] {
         let mut table = [0; 16];
-        table[(b'<' & 0x0f) as usize] = b'<';
-        table[(b'>' & 0x0f) as usize] = b'>';
-        table[(b'&' & 0x0f) as usize] = b'&';
-        table[(b'"' & 0x0f) as usize] = b'"';
-        table[(b'\'' & 0x0f) as usize] = b'\'';
+        let candidates = [b'<', b'>', b'&', b'"', b'\''];
+        let mut i = 0;
+        while i < candidates.len() {
+            let byte = candidates[i];
+            if escape_table[byte as usize] != 0 {
+                table[(byte & 0x0f) as usize] = byte;
+            }
+            i += 1;
+        }
         table[0] = 0b0111_1111;
         table
     }
 
-    #[target_feature(enable = "ssse3")]
-    /// Computes a byte mask at given offset in the byte buffer. Its first 16 (least significant)
-    /// bits correspond to whether there is an HTML special byte (&, <, ", >) at the 16 bytes
-    /// `bytes[offset..]`. For example, the mask `(1 << 3)` states that there is an HTML byte
-    /// at `offset + 3`. It is only safe to call this function when
-    /// `bytes.len() >= offset + VECTOR_SIZE`.
-    unsafe fn compute_mask(bytes: &[u8], offset: usize) -> i32 {
-        debug_assert!(bytes.len() >= offset + VECTOR_SIZE);
+    pub(super) static HTML_LOOKUP: [u8; 16] = create_lookup(&HTML_ESCAPE_TABLE);
+    pub(super) static HTML_BODY_TEXT_LOOKUP: [u8; 16] = create_lookup(&HTML_BODY_TEXT_ESCAPE_TABLE);
 
-        let table = create_lookup();
-        let lookup = _mm_loadu_si128(table.as_ptr() as *const __m128i);
-        let raw_ptr = bytes.as_ptr().add(offset) as *const __m128i;
+    /// Computes a byte mask at given offset in the byte buffer. Bit `i * LANE_BITS`
+    /// corresponds to whether there is an HTML special byte from `lookup` at
+    /// `bytes[offset + i]`. For example, the mask `(1 << (3 * LANE_BITS))` states that
+    /// there is an HTML byte at `offset + 3`. Panics when
+    /// `bytes.len() < offset + VECTOR_SIZE`.
+    #[inline(always)]
+    fn compute_mask<S: Simd>(simd: S, lookup: &[u8; 16], bytes: &[u8], offset: usize) -> u64 {
+        let lookup = u8x16::from_slice(simd, lookup);
 
         // Load the vector from memory.
-        let vector = _mm_loadu_si128(raw_ptr);
+        let vector = u8x16::from_slice(simd, &bytes[offset..offset + VECTOR_SIZE]);
         // We take the least significant 4 bits of every byte and use them as indices
         // to map into the lookup vector.
-        // Note that shuffle maps bytes with their most significant bit set to lookup[0].
         // Bytes that share their lower nibble with an HTML special byte get mapped to that
         // corresponding special byte. Note that all HTML special bytes have distinct lower
         // nibbles. Other bytes either get mapped to 0 or 127.
-        let expected = _mm_shuffle_epi8(lookup, vector);
+        let expected = lookup.swizzle_dyn(vector & 0x0f);
         // We compare the original vector to the mapped output. Bytes that shared a lower
         // nibble with an HTML special byte match *only* if they are that special byte. Bytes
-        // that have either a 0 lower nibble or their most significant bit set were mapped to
-        // 127 and will hence never match. All other bytes have non-zero lower nibbles but
-        // were mapped to 0 and will therefore also not match.
-        let matches = _mm_cmpeq_epi8(expected, vector);
-
+        // that have either a 0 lower nibble or their most significant bit set never match,
+        // since all lookup values are ASCII and lookup[0] is 127. All other bytes have
+        // non-zero lower nibbles but were mapped to 0 and will therefore also not match.
+        //
         // Translate matches to a bitmask, where every 1 corresponds to a HTML special character
         // and a 0 is a non-HTML byte.
-        _mm_movemask_epi8(matches)
+        movemask(simd, expected.simd_eq(vector))
     }
 
     /// Calls the given function with the index of every byte in the given byteslice
     /// that is either ", &, <, or > and for no other byte.
-    /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
-    /// occur otherwise.
-    #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<E, F>(
+    /// Only call this when `bytes.len() >= 16`, panics otherwise.
+    #[inline(always)]
+    fn foreach_special_simd<S: Simd, E, F>(
+        simd: S,
+        lookup: &[u8; 16],
         bytes: &[u8],
         mut offset: usize,
         mut callback: F,
@@ -392,59 +461,108 @@ mod simd {
         // allows us to quickly go through the buffer without a lookup and for every
         // single byte.
 
-        debug_assert!(bytes.len() >= VECTOR_SIZE);
         let upperbound = bytes.len() - VECTOR_SIZE;
         while offset < upperbound {
-            let mut mask = compute_mask(bytes, offset);
+            let mut mask = compute_mask(simd, lookup, bytes, offset);
             while mask != 0 {
-                let ix = mask.trailing_zeros();
+                let ix = mask.trailing_zeros() / LANE_BITS;
                 callback(offset + ix as usize)?;
-                mask ^= mask & -mask;
+                mask &= mask - 1;
             }
             offset += VECTOR_SIZE;
         }
 
         // Final iteration. We align the read with the end of the slice and
         // shift off the bytes at start we have already scanned.
-        let mut mask = compute_mask(bytes, upperbound);
-        mask >>= offset - upperbound;
+        let mut mask = compute_mask(simd, lookup, bytes, upperbound);
+        mask >>= (offset - upperbound) * LANE_BITS as usize;
         while mask != 0 {
-            let ix = mask.trailing_zeros();
+            let ix = mask.trailing_zeros() / LANE_BITS;
             callback(offset + ix as usize)?;
-            mask ^= mask & -mask;
+            mask &= mask - 1;
         }
         Ok(())
     }
 
     #[cfg(test)]
     mod html_scan_tests {
+        use alloc::vec;
+        use alloc::vec::Vec;
+        use fearless_simd::{dispatch, Level};
+
+        fn special_indices(bytes: &[u8]) -> Vec<usize> {
+            let mut vec = Vec::new();
+            dispatch!(Level::new(), simd => super::foreach_special_simd(simd, &super::HTML_LOOKUP, bytes, 0, |ix| {
+                #[allow(clippy::unit_arg)]
+                Ok::<_, core::fmt::Error>(vec.push(ix))
+            }))
+            .unwrap();
+            vec
+        }
+
         #[test]
         fn multichunk() {
-            let mut vec = Vec::new();
-            unsafe {
-                super::foreach_special_simd("&aXaaaa.a'aa9a<>aab&".as_bytes(), 0, |ix| {
-                    #[allow(clippy::unit_arg)]
-                    Ok::<_, std::fmt::Error>(vec.push(ix))
-                })
-                .unwrap();
-            }
+            let vec = special_indices("&aXaaaa.a'aa9a<>aab&".as_bytes());
             assert_eq!(vec, vec![0, 9, 14, 15, 19]);
+        }
+
+        #[test]
+        fn body_text_lookup_skips_quotes() {
+            let bytes = "\"'<>&aaaaaaaaaaaaaaaaaaaa\"'".as_bytes();
+            let mut vec = Vec::new();
+            dispatch!(Level::new(), simd => super::foreach_special_simd(simd, &super::HTML_BODY_TEXT_LOOKUP, bytes, 0, |ix| {
+                #[allow(clippy::unit_arg)]
+                Ok::<_, core::fmt::Error>(vec.push(ix))
+            }))
+            .unwrap();
+            assert_eq!(vec, vec![2, 3, 4]);
+        }
+
+        /// Compares the SIMD implementation to the scalar one on pseudo random
+        /// inputs of many lengths, mixing special, ASCII and multi-byte chars.
+        #[test]
+        fn matches_scalar() {
+            use alloc::string::String;
+
+            let alphabet = [
+                'a', ' ', '<', '>', '&', '"', '\'', '\0', '\x7f', 'ä', '€', '😀', 'ì', '.',
+            ];
+            let mut state = 0x2545_f491_4f6c_dd1du64;
+            for len in 0..96 {
+                for _ in 0..64 {
+                    let mut input = String::new();
+                    for _ in 0..len {
+                        state ^= state << 13;
+                        state ^= state >> 7;
+                        state ^= state << 17;
+                        input.push(alphabet[(state % alphabet.len() as u64) as usize]);
+                    }
+                    for table in [
+                        &super::super::HTML_ESCAPE_TABLE,
+                        &super::super::HTML_BODY_TEXT_ESCAPE_TABLE,
+                    ] {
+                        let lookup = if core::ptr::eq(table, &super::super::HTML_ESCAPE_TABLE) {
+                            &super::HTML_LOOKUP
+                        } else {
+                            &super::HTML_BODY_TEXT_LOOKUP
+                        };
+                        let mut expected = String::new();
+                        super::super::escape_html_scalar(&mut expected, &input, table).unwrap();
+                        let mut actual = String::new();
+                        super::escape_html(&mut actual, &input, table, lookup).unwrap();
+                        assert_eq!(actual, expected, "input: {:?}", input);
+                    }
+                }
+            }
         }
 
         // only match these bytes, and when we match them, match them VECTOR_SIZE times
         #[test]
         fn only_right_bytes_matched() {
-            for b in 0..255u8 {
+            for b in 0..=255u8 {
                 let right_byte = b == b'&' || b == b'<' || b == b'>' || b == b'"' || b == b'\'';
                 let vek = vec![b; super::VECTOR_SIZE];
-                let mut match_count = 0;
-                unsafe {
-                    super::foreach_special_simd(&vek, 0, |_| {
-                        match_count += 1;
-                        Ok::<_, std::fmt::Error>(())
-                    })
-                    .unwrap();
-                }
+                let match_count = special_indices(&vek).len();
                 assert!((match_count > 0) == (match_count == super::VECTOR_SIZE));
                 assert_eq!(
                     (match_count == super::VECTOR_SIZE),

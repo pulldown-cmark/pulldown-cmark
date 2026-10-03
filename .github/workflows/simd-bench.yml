@@ -1,0 +1,92 @@
+name: SIMD benchmarks
+
+on:
+  push:
+    paths:
+      - 'pulldown-cmark/src/**'
+      - 'pulldown-cmark-escape/src/**'
+      - '**/Cargo.toml'
+      - 'bench/**'
+      - '.github/workflows/simd-bench.yml'
+      - '.github/scripts/bench-ab.sh'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base ref to compare against (default: merge-base with upstream main)'
+        required: false
+        default: ''
+      rounds:
+        description: 'Interleaved benchmark rounds'
+        required: false
+        default: '3'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  bench:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86_64 linux (SSE4.2)
+            os: ubuntu-24.04
+          - name: aarch64 linux (NEON)
+            os: ubuntu-24.04-arm
+          - name: aarch64 macos (NEON)
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: head
+
+      - name: Install Rust
+        run: rustup default stable
+
+      - name: CPU info
+        run: |
+          uname -a
+          if [ -f /proc/cpuinfo ]; then
+            lscpu
+          else
+            sysctl -n machdep.cpu.brand_string
+          fi
+
+      - name: Resolve base
+        id: base
+        working-directory: head
+        run: |
+          base='${{ inputs.base }}'
+          if [ -z "$base" ]; then
+            git fetch --no-tags https://github.com/pulldown-cmark/pulldown-cmark main
+            base=$(git merge-base HEAD FETCH_HEAD)
+          fi
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+          git worktree add ../base "$base"
+          echo "base: $(git -C ../base log -1 --oneline)"
+          echo "head: $(git log -1 --oneline)"
+
+      - name: Test with simd (scanner + escaping run on this CPU's vector unit)
+        working-directory: head
+        run: cargo test -p pulldown-cmark -p pulldown-cmark-escape --features simd,gen-tests
+
+      - name: Benchmark
+        env:
+          BENCH_FEATURES_scalar: ''
+        run: |
+          rounds='${{ inputs.rounds }}'
+          {
+            echo "## ${{ matrix.name }}"
+            echo
+            echo "- \`base\`: ${{ steps.base.outputs.sha }} with \`--features simd\` (old SSSE3 code on x86, scalar on aarch64)"
+            echo "- \`head\`: ${{ github.sha }} with \`--features simd\` (fearless_simd)"
+            echo "- \`scalar\`: ${{ github.sha }} without simd"
+            echo
+            echo "Fastest median of ${rounds:-3} interleaved rounds. Negative is faster."
+            echo
+            bash head/.github/scripts/bench-ab.sh "${rounds:-3}" base="$PWD/base" head="$PWD/head" scalar="$PWD/head"
+          } | tee -a "$GITHUB_STEP_SUMMARY"

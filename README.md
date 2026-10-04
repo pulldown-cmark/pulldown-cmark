@@ -187,6 +187,13 @@ codegen-units = 1
 panic = "abort"
 ```
 
+Profile-guided optimization (PGO) helps considerably more: training on a
+markdown corpus and benchmarking on unrelated real-world READMEs made parsing
+about 16% and parsing plus HTML rendering about 14% faster (Apple M-series).
+See the [rustc PGO guide](https://doc.rust-lang.org/rustc/profile-guided-optimization.html)
+or [cargo-pgo](https://github.com/Kobzol/cargo-pgo); train with documents
+similar to your own.
+
 ### `no_std` support
 
 `no_std` support can be enabled by compiling with `--no-default-features` to

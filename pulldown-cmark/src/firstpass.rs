@@ -1612,7 +1612,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
-        while let Some(ix) = self.text[start..end].find('\0') {
+        while let Some(ix) = memchr::memchr(0, &self.text.as_bytes()[start..end]) {
             self.tree.append_text(start, start + ix, false);
             self.tree.append(Item {
                 start: start + ix,

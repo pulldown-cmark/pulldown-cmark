@@ -1023,7 +1023,7 @@ impl<'input> ParserInner<'input> {
                             backslash_escaped: false,
                         },
                     });
-                    if wikitext.contains('\0') {
+                    if memchr::memchr(0, wikitext.as_bytes()).is_some() {
                         self.tree[body_node].item.body = ItemBody::SynthesizeText(
                             self.allocs
                                 .allocate_cow(CowStr::from_replace_nuls(wikitext)),

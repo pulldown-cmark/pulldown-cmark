@@ -261,6 +261,11 @@ impl<'a> LineStart<'a> {
     }
 
     pub(crate) fn scan_blockquote_marker(&mut self) -> bool {
+        // Columns of a tab that the caller didn't consume are indentation in front of the `>`:
+        // the marker is then indented four or more columns, which makes it no marker.
+        if self.spaces_remaining > 0 {
+            return false;
+        }
         if self.scan_ch(b'>') {
             let _ = self.scan_space(1);
             true

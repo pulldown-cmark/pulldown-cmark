@@ -216,6 +216,28 @@ fn html_test_10() {
 }
 
 #[test]
+fn blockquote_marker_after_tab_is_indented() {
+    // A tab expands to the next tab stop, so `\t>` puts the `>` at column 4: too far in for a
+    // block quote marker (at most three spaces of indentation).
+    let cases = [
+        ("> a\n\t>b\n", "<blockquote>\n<p>a\n&gt;b</p>\n</blockquote>\n"),
+        (
+            "> *\n\t>a\n",
+            "<blockquote>\n<ul>\n<li></li>\n</ul>\n</blockquote>\n<pre><code>&gt;a\n</code></pre>\n",
+        ),
+        // unchanged: fewer than four columns, and a tab after the marker
+        ("> a\n   >b\n", "<blockquote>\n<p>a\nb</p>\n</blockquote>\n"),
+        (">\t> a\n", "<blockquote>\n<blockquote>\n<p>a</p>\n</blockquote>\n</blockquote>\n"),
+    ];
+
+    for (original, expected) in cases {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original));
+        assert_eq!(expected, s, "input {original:?}");
+    }
+}
+
+#[test]
 fn html_test_11() {
     let original = "hi ~~no~~";
     let expected = "<p>hi ~~no~~</p>\n";

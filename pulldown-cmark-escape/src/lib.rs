@@ -365,7 +365,7 @@ mod simd {
     }
 
     pub(super) fn escape_html<W: StrWrite>(
-        w: W,
+        mut w: W,
         s: &str,
         table: &'static [u8; 256],
         lookup: &'static [u8; 16],
@@ -383,21 +383,21 @@ mod simd {
                 if let Some(neon) = level.as_neon() {
                     return neon.vectorize(
                         #[inline(always)]
-                        || escape_html_simd(neon, w, s, table, lookup),
+                        || escape_html_simd(neon, &mut w, s, table, lookup),
                     );
                 }
                 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                 if let Some(sse4_2) = level.as_sse4_2() {
                     return sse4_2.vectorize(
                         #[inline(always)]
-                        || escape_html_simd(sse4_2, w, s, table, lookup),
+                        || escape_html_simd(sse4_2, &mut w, s, table, lookup),
                     );
                 }
                 #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
                 if let Some(wasm) = level.as_wasm_simd128() {
                     return wasm.vectorize(
                         #[inline(always)]
-                        || escape_html_simd(wasm, w, s, table, lookup),
+                        || escape_html_simd(wasm, &mut w, s, table, lookup),
                     );
                 }
                 let _ = level;
@@ -463,7 +463,7 @@ mod simd {
         let lookup = u8x16::from_slice(simd, lookup);
 
         // Load the vector from memory.
-        let vector = u8x16::from_slice(simd, &bytes[offset..offset + VECTOR_SIZE]);
+        let vector = u8x16::from_slice(simd, &bytes[offset..][..VECTOR_SIZE]);
         // We take the least significant 4 bits of every byte and use them as indices
         // to map into the lookup vector.
         // Bytes that share their lower nibble with an HTML special byte get mapped to that

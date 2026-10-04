@@ -3120,7 +3120,8 @@ mod simd {
         let bitmask_lookup = u8x16::from_slice(simd, &BITMASK_LOOKUP);
 
         // Load input from memory.
-        let input = u8x16::from_slice(simd, &bytes[ix..ix + VECTOR_SIZE]);
+        // Slicing the tail first lets the compiler reuse the loop bounds check.
+        let input = u8x16::from_slice(simd, &bytes[ix..][..VECTOR_SIZE]);
         // Compute the bitmap using the bottom nibble as an index
         // into the lookup table.
         let bitset = bitmap.swizzle_dyn(input & 0x0f);
@@ -3146,7 +3147,7 @@ mod simd {
         lut: &LookupTable,
         bytes: &[u8],
         ix: usize,
-        callback: F,
+        mut callback: F,
     ) -> (usize, Option<T>)
     where
         F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
@@ -3163,7 +3164,7 @@ mod simd {
                 if let Some(neon) = level.as_neon() {
                     return neon.vectorize(
                         #[inline(always)]
-                        || simd_iterate_special_bytes(neon, &lut.simd, bytes, ix, callback),
+                        || simd_iterate_special_bytes(neon, &lut.simd, bytes, ix, &mut callback),
                     );
                 }
                 // Note that SSE2 has no byte shuffle, so it is not worth it there.
@@ -3171,14 +3172,14 @@ mod simd {
                 if let Some(sse4_2) = level.as_sse4_2() {
                     return sse4_2.vectorize(
                         #[inline(always)]
-                        || simd_iterate_special_bytes(sse4_2, &lut.simd, bytes, ix, callback),
+                        || simd_iterate_special_bytes(sse4_2, &lut.simd, bytes, ix, &mut callback),
                     );
                 }
                 #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
                 if let Some(wasm) = level.as_wasm_simd128() {
                     return wasm.vectorize(
                         #[inline(always)]
-                        || simd_iterate_special_bytes(wasm, &lut.simd, bytes, ix, callback),
+                        || simd_iterate_special_bytes(wasm, &lut.simd, bytes, ix, &mut callback),
                     );
                 }
                 let _ = level;

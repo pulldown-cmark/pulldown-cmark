@@ -54,8 +54,8 @@ pub(crate) const LINK_MAX_NESTED_PARENS: usize = 32;
 
 #[derive(Debug, Default, Clone)]
 pub(crate) struct Item {
-    pub start: usize,
-    pub end: usize,
+    pub start: u32,
+    pub end: u32,
     pub body: ItemBody,
 }
 
@@ -306,6 +306,10 @@ impl<'input, CB: ParserCallbacks<'input>> Parser<'input, CB> {
     /// ```
     ///
     /// See the [`ParserCallbacks`] trait for a list of callbacks that can be overridden.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `text` is larger than 4 GiB (`u32::MAX` bytes).
     pub fn new_with_callbacks(text: &'input str, options: Options, callbacks: CB) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
@@ -456,14 +460,14 @@ impl<'input> ParserInner<'input> {
         let mut prev = None;
 
         let block_end = self.tree[self.tree.peek_up().unwrap()].item.end;
-        let block_text = &self.text[..block_end];
+        let block_text = &self.text[..block_end as usize];
 
         while let Some(mut cur_ix) = cur {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeHtml => {
                     let next = self.tree[cur_ix].next;
                     let autolink = if let Some(next_ix) = next {
-                        scan_autolink(block_text, self.tree[next_ix].item.start)
+                        scan_autolink(block_text, (self.tree[next_ix].item.start) as usize)
                     } else {
                         None
                     };
@@ -472,7 +476,7 @@ impl<'input> ParserInner<'input> {
                         let node = scan_nodes_to_ix(&self.tree, next, ix);
                         let text_node = self.tree.create_node(Item {
                             start: self.tree[cur_ix].item.start + 1,
-                            end: ix - 1,
+                            end: (ix - 1) as u32,
                             body: ItemBody::Text {
                                 backslash_escaped: false,
                             },
@@ -481,20 +485,21 @@ impl<'input> ParserInner<'input> {
                             self.allocs
                                 .allocate_link(link_type, uri, "".into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
-                        self.tree[cur_ix].item.end = ix;
+                        self.tree[cur_ix].item.end = ix as u32;
                         self.tree[cur_ix].next = node;
                         self.tree[cur_ix].child = Some(text_node);
                         prev = cur;
                         cur = node;
                         if let Some(node_ix) = cur {
-                            self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
+                            self.tree[node_ix].item.start =
+                                max(self.tree[node_ix].item.start, ix as u32);
                         }
                         continue;
                     } else {
                         let inline_html = next.and_then(|next_ix| {
                             self.scan_inline_html(
                                 block_text.as_bytes(),
-                                self.tree[next_ix].item.start,
+                                (self.tree[next_ix].item.start) as usize,
                             )
                         });
                         if let Some((span, ix)) = inline_html {
@@ -509,13 +514,13 @@ impl<'input> ParserInner<'input> {
                             } else {
                                 ItemBody::InlineHtml
                             };
-                            self.tree[cur_ix].item.end = ix;
+                            self.tree[cur_ix].item.end = ix as u32;
                             self.tree[cur_ix].next = node;
                             prev = cur;
                             cur = node;
                             if let Some(node_ix) = cur {
                                 self.tree[node_ix].item.start =
-                                    max(self.tree[node_ix].item.start, ix);
+                                    max(self.tree[node_ix].item.start, ix as u32);
                             }
                             continue;
                         }
@@ -728,9 +733,11 @@ impl<'input> ParserInner<'input> {
                             continue;
                         }
                         let next = self.tree[cur_ix].next;
-                        if let Some((next_ix, url, title)) =
-                            self.scan_inline_link(block_text, self.tree[cur_ix].item.end, next)
-                        {
+                        if let Some((next_ix, url, title)) = self.scan_inline_link(
+                            block_text,
+                            (self.tree[cur_ix].item.end) as usize,
+                            next,
+                        ) {
                             let next_node = scan_nodes_to_ix(&self.tree, next, next_ix);
                             if let Some(prev_ix) = prev {
                                 self.tree[prev_ix].next = None;
@@ -747,10 +754,10 @@ impl<'input> ParserInner<'input> {
                             };
                             self.tree[cur_ix].child = self.tree[cur_ix].next;
                             self.tree[cur_ix].next = next_node;
-                            self.tree[cur_ix].item.end = next_ix;
+                            self.tree[cur_ix].item.end = next_ix as u32;
                             if let Some(next_node_ix) = next_node {
                                 self.tree[next_node_ix].item.start =
-                                    max(self.tree[next_node_ix].item.start, next_ix);
+                                    max(self.tree[next_node_ix].item.start, next_ix as u32);
                             }
 
                             if tos.ty == LinkStackTy::Link {
@@ -823,8 +830,8 @@ impl<'input> ParserInner<'input> {
                                 | RefScan::Failed
                                 | RefScan::UnexpectedFootnote => {
                                     // No label? maybe it is a shortcut reference
-                                    let label_start = self.tree[tos.node].item.end - 1;
-                                    let label_end = self.tree[cur_ix].item.end;
+                                    let label_start = self.tree[tos.node].item.end as usize - 1;
+                                    let label_end = self.tree[cur_ix].item.end as usize;
                                     scan_link_label(
                                         &self.tree,
                                         &self.text[label_start..label_end],
@@ -877,7 +884,7 @@ impl<'input> ParserInner<'input> {
                                     self.tree[footnote_ix].child = None;
                                     self.tree[footnote_ix].item.body =
                                         ItemBody::FootnoteReference(footref);
-                                    self.tree[footnote_ix].item.end = end;
+                                    self.tree[footnote_ix].item.end = end as u32;
                                     prev = Some(footnote_ix);
                                     cur = next;
                                     self.link_stack.clear();
@@ -887,7 +894,7 @@ impl<'input> ParserInner<'input> {
                                 if let Some((def_link_type, url, title)) = self
                                     .fetch_link_type_url_title(
                                         link_label,
-                                        (self.tree[tos.node].item.start)
+                                        (self.tree[tos.node].item.start) as usize
                                             ..collapsed_end.unwrap_or(end),
                                         link_type,
                                         callbacks,
@@ -917,7 +924,8 @@ impl<'input> ParserInner<'input> {
                                         }
                                     }
 
-                                    self.tree[tos.node].item.end = collapsed_end.unwrap_or(end);
+                                    self.tree[tos.node].item.end =
+                                        (collapsed_end.unwrap_or(end)) as u32;
 
                                     // set up cur so next node will be node_after_link
                                     cur = Some(tos.node);
@@ -975,8 +983,8 @@ impl<'input> ParserInner<'input> {
             }
             let wikilink = match scan_wikilink_pipe(
                 block_text,
-                start_ix, // bounded by closing tag
-                end_ix - start_ix,
+                start_ix as usize, // bounded by closing tag
+                (end_ix - start_ix) as usize,
             ) {
                 Some((rest, wikitext)) => {
                     // bail early if the wikiname would be empty
@@ -984,14 +992,14 @@ impl<'input> ParserInner<'input> {
                         return None;
                     }
                     // [[WikiName|rest]]
-                    if rest >= end_ix {
+                    if rest >= end_ix as usize {
                         // Empty display text: the `|` is immediately followed
                         // by `]]`. Create a zero-length synthetic node so the
                         // anchor has no content, rather than accidentally
                         // capturing the closing `]` delimiter.
                         let body_node = self.tree.create_node(Item {
-                            start: rest,
-                            end: rest,
+                            start: rest as u32,
+                            end: rest as u32,
                             body: ItemBody::Text {
                                 backslash_escaped: false,
                             },
@@ -1002,7 +1010,7 @@ impl<'input> ParserInner<'input> {
                         if let Some(body_node) = body_node {
                             // break node so passes can actually format
                             // the display text
-                            self.tree[body_node].item.start = rest;
+                            self.tree[body_node].item.start = rest as u32;
 
                             Some((true, body_node, wikitext))
                         } else {
@@ -1011,7 +1019,7 @@ impl<'input> ParserInner<'input> {
                     }
                 }
                 None => {
-                    let wikitext = &block_text[start_ix..end_ix];
+                    let wikitext = &block_text[start_ix as usize..end_ix as usize];
                     // bail early if the wikiname would be empty
                     if wikitext.is_empty() {
                         return None;
@@ -1071,7 +1079,7 @@ impl<'input> ParserInner<'input> {
             match self.tree[cur_ix].item.body {
                 ItemBody::MaybeEmphasis(mut count, can_open, can_close) => {
                     let run_length = count;
-                    let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
+                    let c = self.text.as_bytes()[(self.tree[cur_ix].item.start) as usize];
                     let both = can_open && can_close;
                     if can_close {
                         'outer: while let Some(el) =
@@ -1329,10 +1337,10 @@ impl<'input> ParserInner<'input> {
 
             if c == b'\n' || c == b'\r' {
                 if let Some(node_ix) = scan_nodes_to_ix(&self.tree, node, i + 1) {
-                    if self.tree[node_ix].item.start > i {
+                    if self.tree[node_ix].item.start > i as u32 {
                         title.push_str(&text[mark..i]);
                         title.push('\n');
-                        i = self.tree[node_ix].item.start;
+                        i = (self.tree[node_ix].item.start) as usize;
                         mark = i;
                         continue;
                     }
@@ -1405,7 +1413,7 @@ impl<'input> ParserInner<'input> {
         let span_start = self.tree[open].item.end;
         let span_end = self.tree[close].item.start;
 
-        let spanned_text = &self.text[span_start..span_end];
+        let spanned_text = &self.text[span_start as usize..span_end as usize];
         let spanned_bytes = spanned_text.as_bytes();
         let mut buf: Option<String> = None;
 
@@ -1453,7 +1461,7 @@ impl<'input> ParserInner<'input> {
         let span_end = self.tree[close].item.start;
         let mut buf: Option<String> = None;
 
-        let spanned_text = &self.text[span_start..span_end];
+        let spanned_text = &self.text[span_start as usize..span_end as usize];
         let spanned_bytes = spanned_text.as_bytes();
         let mut start_ix = 0;
         let mut ix = 0;
@@ -1642,15 +1650,16 @@ impl Tree<Item> {
     pub(crate) fn append_text(&mut self, start: usize, end: usize, backslash_escaped: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start
+                if matches!(self[ix].item.body, ItemBody::Text { .. })
+                    && self[ix].item.end == start as u32
                 {
-                    self[ix].item.end = end;
+                    self[ix].item.end = end as u32;
                     return;
                 }
             }
             self.append(Item {
-                start,
-                end,
+                start: start as u32,
+                end: end as u32,
                 body: ItemBody::Text { backslash_escaped },
             });
         }
@@ -1858,7 +1867,7 @@ fn scan_nodes_to_ix(
     ix: usize,
 ) -> Option<TreeIndex> {
     while let Some(node_ix) = node {
-        if tree[node_ix].item.end <= ix {
+        if tree[node_ix].item.end <= ix as u32 {
             node = tree[node_ix].next;
         } else {
             break;
@@ -1905,7 +1914,7 @@ fn scan_reference<'b>(
     cur_ix: TreeIndex,
     options: Options,
 ) -> RefScan<'b> {
-    let start = tree[cur_ix].item.end;
+    let start = tree[cur_ix].item.end as usize;
     let tail = &text.as_bytes()[start..];
 
     if tail.starts_with(b"[]") {
@@ -1915,7 +1924,10 @@ fn scan_reference<'b>(
         };
         // TODO: this unwrap is sus and should be looked at closer
         let closing_node = tree[next_ix].next.unwrap();
-        RefScan::Collapsed(tree[closing_node].next, tree[closing_node].item.end)
+        RefScan::Collapsed(
+            tree[closing_node].next,
+            (tree[closing_node].item.end) as usize,
+        )
     } else {
         let label = scan_link_label(tree, &text[start..], options);
         match label {
@@ -2385,7 +2397,7 @@ impl<'input> ParserInner<'input> {
                 };
                 let tag_end = body_to_tag_end(&self.tree[ix].item.body);
                 self.tree.next_sibling(ix);
-                let span = self.tree[ix].item.start..self.tree[ix].item.end;
+                let span = self.tree[ix].item.start as usize..self.tree[ix].item.end as usize;
                 debug_assert!(span.start <= span.end);
                 Some((Event::End(tag_end), span))
             }
@@ -2409,7 +2421,7 @@ impl<'input> ParserInner<'input> {
                     self.tree.next_sibling(cur_ix);
                 }
                 debug_assert!(item.start <= item.end);
-                Some((event, item.start..item.end))
+                Some((event, item.start as usize..item.end as usize))
             }
         }
     }
@@ -2451,7 +2463,9 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
 
 fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
-        ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
+        ItemBody::Text { .. } => {
+            return Event::Text(text[item.start as usize..item.end as usize].into())
+        }
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
         ItemBody::SynthesizeText(cow_ix) => {
             return Event::Text(allocs.take_cow(cow_ix));
@@ -2459,10 +2473,14 @@ fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &mut Allocations<'a>) -
         ItemBody::SynthesizeChar(c) => return Event::Text(c.into()),
         ItemBody::HtmlBlock => Tag::HtmlBlock,
         ItemBody::Html => {
-            return Event::Html(CowStr::from_replace_nuls(&text[item.start..item.end]));
+            return Event::Html(CowStr::from_replace_nuls(
+                &text[item.start as usize..item.end as usize],
+            ));
         }
         ItemBody::InlineHtml => {
-            return Event::InlineHtml(CowStr::from_replace_nuls(&text[item.start..item.end]));
+            return Event::InlineHtml(CowStr::from_replace_nuls(
+                &text[item.start as usize..item.end as usize],
+            ));
         }
         ItemBody::OwnedInlineHtml(cow_ix) => return Event::InlineHtml(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
@@ -2573,7 +2591,7 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     fn node_size() {
         let node_size = core::mem::size_of::<Node<Item>>();
-        assert_eq!(48, node_size);
+        assert_eq!(32, node_size);
     }
 
     #[test]

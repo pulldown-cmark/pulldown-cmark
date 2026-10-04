@@ -8,22 +8,25 @@
 
 use alloc::vec::Vec;
 use core::{
-    num::NonZeroUsize,
+    num::NonZeroU32,
     ops::{Add, Sub},
 };
 
 use crate::parse::{Item, ItemBody};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd)]
-pub(crate) struct TreeIndex(NonZeroUsize);
+pub(crate) struct TreeIndex(NonZeroU32);
 
 impl TreeIndex {
+    /// 32-bit indices keep tree nodes small; a document would need billions
+    /// of nodes to overflow them.
     fn new(i: usize) -> Self {
-        TreeIndex(NonZeroUsize::new(i).unwrap())
+        let i = u32::try_from(i).expect("too many tree nodes");
+        TreeIndex(NonZeroU32::new(i).unwrap())
     }
 
     pub fn get(self) -> usize {
-        self.0.get()
+        self.0.get() as usize
     }
 }
 
@@ -31,7 +34,7 @@ impl Add<usize> for TreeIndex {
     type Output = TreeIndex;
 
     fn add(self, rhs: usize) -> Self {
-        let inner = self.0.get() + rhs;
+        let inner = self.get() + rhs;
         TreeIndex::new(inner)
     }
 }
@@ -40,7 +43,7 @@ impl Sub<usize> for TreeIndex {
     type Output = TreeIndex;
 
     fn sub(self, rhs: usize) -> Self {
-        let inner = self.0.get().checked_sub(rhs).unwrap();
+        let inner = self.get().checked_sub(rhs).unwrap();
         TreeIndex::new(inner)
     }
 }
@@ -204,17 +207,17 @@ impl Tree<Item> {
         // drop or truncate children based on its range
         while let Some(child_ix) = next_child_ix {
             let child_end = self[child_ix].item.end;
-            if child_end < end_byte_ix {
+            if child_end < end_byte_ix as u32 {
                 // preserve this node, and go to the next
                 prev_child_ix = Some(child_ix);
                 next_child_ix = self[child_ix].next;
                 continue;
-            } else if child_end == end_byte_ix {
+            } else if child_end == end_byte_ix as u32 {
                 // this will be the last node
                 self[child_ix].next = None;
                 // focus to the new last child (this node)
                 self.cur = Some(child_ix);
-            } else if self[child_ix].item.start == end_byte_ix {
+            } else if self[child_ix].item.start == end_byte_ix as u32 {
                 // check whether the previous character is a backslash
                 let is_previous_char_backslash_escape = match self[child_ix].item.body {
                     ItemBody::Text { backslash_escaped } => backslash_escaped,
@@ -223,8 +226,8 @@ impl Tree<Item> {
                 if is_previous_char_backslash_escape {
                     // rescue the backslash as a plain text content
                     let last_byte_ix = end_byte_ix - 1;
-                    self[child_ix].item.start = last_byte_ix;
-                    self[child_ix].item.end = end_byte_ix;
+                    self[child_ix].item.start = last_byte_ix as u32;
+                    self[child_ix].item.end = end_byte_ix as u32;
                     self.cur = Some(child_ix);
                 } else if let Some(prev_child_ix) = prev_child_ix {
                     // the node will become empty. drop the node
@@ -237,10 +240,10 @@ impl Tree<Item> {
                     self.cur = None;
                 }
             } else {
-                debug_assert!(self[child_ix].item.start < end_byte_ix);
-                debug_assert!(end_byte_ix < child_end);
+                debug_assert!(self[child_ix].item.start < end_byte_ix as u32);
+                debug_assert!(end_byte_ix < child_end as usize);
                 // truncate the node
-                self[child_ix].item.end = end_byte_ix;
+                self[child_ix].item.end = end_byte_ix as u32;
                 self[child_ix].next = None;
                 // focus to the new last child
                 self.cur = Some(child_ix);
@@ -278,7 +281,7 @@ where
         }
 
         if self.nodes.len() > 1 {
-            let cur = TreeIndex(NonZeroUsize::new(1).unwrap());
+            let cur = TreeIndex::new(1);
             debug_tree(self, cur, 0, f)
         } else {
             write!(f, "Empty tree")

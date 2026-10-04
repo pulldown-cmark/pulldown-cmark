@@ -25,6 +25,11 @@ use crate::{
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
 pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Allocations<'_>) {
+    // Tree items store offsets as `u32` to keep nodes small.
+    assert!(
+        u32::try_from(text.len()).is_ok(),
+        "markdown input larger than 4 GiB is not supported"
+    );
     // This is a very naive heuristic for the number of nodes
     // we'll need.
     let start_capacity = max(128, text.len() / 32);
@@ -136,8 +141,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let item_start = start_ix + save.bytes_scanned();
                 self.continue_list(item_start, ch, index);
                 self.tree.append(Item {
-                    start: item_start,
-                    end: after_marker_index, // will get updated later if item not empty
+                    start: item_start as u32,
+                    end: after_marker_index as u32, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
                 self.tree.push();
@@ -148,13 +153,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
                     let task_list_marker =
                         line_start.scan_task_list_marker().map(|is_checked| Item {
-                            start: after_marker_index,
-                            end: start_ix + line_start.bytes_scanned(),
+                            start: after_marker_index as u32,
+                            end: (start_ix + line_start.bytes_scanned()) as u32,
                             body: ItemBody::TaskListMarker(is_checked),
                         });
                     if let Some(task_list_marker) = task_list_marker {
-                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
-                            let end = task_list_marker.end;
+                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end as usize..]) {
+                            let end = task_list_marker.end as usize;
                             self.tree.append(task_list_marker);
                             self.begin_list_item = Some(end + n);
                             return end + n;
@@ -219,8 +224,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 // `outer_indent` is columns, not bytes. Subtracting it from a
                 // source offset can land inside a multibyte character (issue 1142).
                 self.tree.append(Item {
-                    start: start_ix + save.bytes_scanned(),
-                    end: after_marker_index, // will get updated later if item not empty
+                    start: (start_ix + save.bytes_scanned()) as u32,
+                    end: after_marker_index as u32, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
                 if let Some(ItemBody::DefinitionList(ref list_flags)) =
@@ -244,7 +249,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 };
                 self.finish_list(start_ix);
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start as u32,
                     end: 0, // will get set later
                     body: ItemBody::BlockQuote(kind),
                 });
@@ -315,7 +320,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             );
                             let summary_cow_ix = self.allocs.allocate_cow(summary);
                             self.tree.append(Item {
-                                start: container_start,
+                                start: container_start as u32,
                                 end: 0,
                                 body: ItemBody::Container(
                                     fence_length as u8,
@@ -326,7 +331,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         } else {
                             let kind_cow_ix = self.allocs.allocate_cow(kind);
                             self.tree.append(Item {
-                                start: container_start,
+                                start: container_start as u32,
                                 end: 0,
                                 body: ItemBody::Container(
                                     fence_length as u8,
@@ -578,7 +583,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let old_cur = self.tree.cur();
         let row_ix = self.tree.append(Item {
-            start: ix,
+            start: ix as u32,
             end: 0, // set at end of this function
             body: ItemBody::TableRow,
         });
@@ -595,14 +600,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let cell_ix = self.tree.append(Item {
-                start: start_ix,
-                end: ix,
+                start: start_ix as u32,
+                end: ix as u32,
                 body: ItemBody::TableCell,
             });
             self.tree.push();
             let (next_ix, _brk) = self.parse_line(ix, None, TableParseMode::Active);
 
-            self.tree[cell_ix].item.end = next_ix;
+            self.tree[cell_ix].item.end = next_ix as u32;
             self.tree.pop();
 
             ix = next_ix;
@@ -628,8 +633,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             *missing_empty_cells += 1;
             self.tree.append(Item {
-                start: ix,
-                end: ix,
+                start: ix as u32,
+                end: ix as u32,
                 body: ItemBody::TableCell,
             });
         }
@@ -699,7 +704,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ItemBody::Paragraph
         };
         let node_ix = self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: body.clone(),
         });
@@ -750,7 +755,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     start,
                     body: ItemBody::HardBreak(true),
                     ..
-                }) if bytes[start] == b'\\' => Some(start),
+                }) if bytes[start as usize] == b'\\' => Some(start),
                 _ => None,
             };
             if !line_start.scan_space(4) {
@@ -760,7 +765,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.parse_setext_heading(ix_new, node_ix, trailing_backslash_pos.is_some())
                     {
                         if let Some(pos) = trailing_backslash_pos {
-                            self.tree.append_text(pos, pos + 1, false);
+                            self.tree
+                                .append_text(pos as usize, (pos + 1) as usize, false);
                         }
                         self.pop(ix_setext);
                         if body == ItemBody::MaybeDefinitionListTitle {
@@ -773,7 +779,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let suffix = &self.text[ix_new..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position) {
                     if let Some(pos) = trailing_backslash_pos {
-                        self.tree.append_text(pos, pos + 1, false);
+                        self.tree
+                            .append_text(pos as usize, (pos + 1) as usize, false);
                     }
                     break;
                 }
@@ -781,7 +788,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 {
                     if line_start.scan_closing_container_extensions_fence(3) {
                         if let Some(pos) = trailing_backslash_pos {
-                            self.tree.append_text(pos, pos + 1, false);
+                            self.tree
+                                .append_text(pos as usize, (pos + 1) as usize, false);
                         }
                         break;
                     }
@@ -790,7 +798,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             line_start.scan_all_space();
             if line_start.is_at_eol() {
                 if let Some(pos) = trailing_backslash_pos {
-                    self.tree.append_text(pos, pos + 1, false);
+                    self.tree
+                        .append_text(pos as usize, (pos + 1) as usize, false);
                 }
                 break;
             }
@@ -813,7 +822,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                 if closes {
                     if let Some(pos) = trailing_backslash_pos {
-                        self.tree.append_text(pos, pos + 1, false);
+                        self.tree
+                            .append_text(pos as usize, (pos + 1) as usize, false);
                     }
                     break;
                 }
@@ -842,11 +852,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if let Some(cur_ix) = self.tree.cur() {
             let parent_ix = self.tree.peek_up().unwrap();
-            let header_start = self.tree[parent_ix].item.start;
+            let header_start = self.tree[parent_ix].item.start as usize;
             // Note that `self.tree[parent_ix].item.end` might be zero at this point.
             // Use the end position of the current node (i.e. the last known child
             // of the parent) instead.
-            let header_end = self.tree[cur_ix].item.end;
+            let header_end = self.tree[cur_ix].item.end as usize;
 
             // extract the trailing attribute block
             let (content_end, attrs_) =
@@ -887,7 +897,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             if let Some(cur_ix) = self.tree.cur() {
-                self.tree[cur_ix].item.end = new_end;
+                self.tree[cur_ix].item.end = new_end as u32;
             }
         }
 
@@ -938,8 +948,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
-                                start: i,
-                                end: end_ix,
+                                start: i as u32,
+                                end: end_ix as u32,
                                 body: ItemBody::HardBreak(true),
                             }),
                         );
@@ -968,8 +978,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                     return LoopInstruction::BreakAtWith(
                                         end_ix,
                                         Some(Item {
-                                            start: i,
-                                            end: end_ix, // must update later
+                                            start: i as u32,
+                                            end: end_ix as u32, // must update later
                                             body: ItemBody::Table(alignment_ix),
                                         }),
                                     );
@@ -987,8 +997,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
-                                start: i,
-                                end: end_ix,
+                                start: i as u32,
+                                end: end_ix as u32,
                                 body: ItemBody::HardBreak(false),
                             }),
                         );
@@ -1001,8 +1011,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::BreakAtWith(
                         end_ix,
                         Some(Item {
-                            start: i,
-                            end: end_ix,
+                            start: i as u32,
+                            end: end_ix as u32,
                             body: ItemBody::SoftBreak,
                         }),
                     )
@@ -1017,8 +1027,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     if bytes[ix + 1] == b'`' {
                         let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
                         self.tree.append(Item {
-                            start: ix + 1,
-                            end: ix + count + 1,
+                            start: (ix + 1) as u32,
+                            end: (ix + count + 1) as u32,
                             body: ItemBody::MaybeCode(count, true),
                         });
                         begin_text = ix + 1 + count;
@@ -1079,8 +1089,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         backslash_escaped = false;
                         for i in 0..count {
                             self.tree.append(Item {
-                                start: ix + i,
-                                end: ix + i + 1,
+                                start: (ix + i) as u32,
+                                end: (ix + i + 1) as u32,
                                 body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
                             });
                         }
@@ -1121,8 +1131,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeMath(can_open, can_close, brace_context),
                     });
                     begin_text = ix + 1;
@@ -1179,8 +1189,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     backslash_escaped = false;
                     let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + count,
+                        start: ix as u32,
+                        end: (ix + count) as u32,
                         body: ItemBody::MaybeCode(count, false),
                     });
                     begin_text = ix + count;
@@ -1192,8 +1202,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeHtml,
                     });
                     begin_text = ix + 1;
@@ -1203,8 +1213,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 2,
+                        start: ix as u32,
+                        end: (ix + 2) as u32,
                         body: ItemBody::MaybeImage,
                     });
                     begin_text = ix + 2;
@@ -1214,8 +1224,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeLinkOpen,
                     });
                     begin_text = ix + 1;
@@ -1225,8 +1235,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeLinkClose(true),
                     });
                     begin_text = ix + 1;
@@ -1237,8 +1247,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
-                            start: ix,
-                            end: ix + n,
+                            start: ix as u32,
+                            end: (ix + n) as u32,
                             body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
                         });
                         begin_text = ix + n;
@@ -1261,8 +1271,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 3,
+                        start: ix as u32,
+                        end: (ix + 3) as u32,
                         body: ItemBody::SynthesizeChar('…'),
                     });
                     begin_text = ix + 3;
@@ -1298,8 +1308,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
-                            start: ix,
-                            end: ix + count,
+                            start: ix as u32,
+                            end: (ix + count) as u32,
                             body: itembody,
                         });
                         begin_text = ix + count;
@@ -1328,8 +1338,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeSmartQuote(c, can_open, can_close),
                     });
                     begin_text = ix + 1;
@@ -1342,8 +1352,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::SynthesizeChar('\u{fffd}'),
                     });
                     begin_text = ix + 1;
@@ -1379,7 +1389,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // set later
             body: ItemBody::HtmlBlock,
         });
@@ -1428,7 +1438,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // set later
             body: ItemBody::HtmlBlock,
         });
@@ -1465,7 +1475,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     fn parse_indented_code_block(&mut self, start_ix: usize, mut remaining_space: usize) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::IndentCodeBlock,
         });
@@ -1507,7 +1517,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // Trim trailing blank lines.
         if let Some(child) = last_nonblank_child {
             self.tree[child].next = None;
-            self.tree[child].item.end = last_nonblank_ix;
+            self.tree[child].item.end = last_nonblank_ix as u32;
         }
         self.pop(end_ix);
         ix
@@ -1529,7 +1539,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
         let info_string = unescape(&self.text[info_start..info_end], self.tree.is_in_table());
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
@@ -1573,7 +1583,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // 3 delimiter characters
         let mut ix = start_ix + 3 + scan_nextline(&bytes[start_ix + 3..]);
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::MetadataBlock(metadata_block_kind),
         });
@@ -1607,16 +1617,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if remaining_space > 0 {
             let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
-                start,
-                end: start,
+                start: start as u32,
+                end: start as u32,
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
         while let Some(ix) = memchr::memchr(0, &self.text.as_bytes()[start..end]) {
             self.tree.append_text(start, start + ix, false);
             self.tree.append(Item {
-                start: start + ix,
-                end: start + ix + 1,
+                start: (start + ix) as u32,
+                end: (start + ix + 1) as u32,
                 body: ItemBody::SynthesizeChar('\u{fffd}'),
             });
             start += ix + 1;
@@ -1633,8 +1643,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if synthesize_lf {
             self.tree.append(Item {
-                start: end - trim,
-                end,
+                start: (end - trim) as u32,
+                end: end as u32,
                 body: ItemBody::SynthesizeChar('\n'),
             });
         }
@@ -1645,8 +1655,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if remaining_space > 0 {
             let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
-                start,
-                end: start,
+                start: start as u32,
+                end: start as u32,
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
@@ -1659,15 +1669,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         };
 
         self.tree.append(Item {
-            start,
-            end: end - trim,
+            start: start as u32,
+            end: (end - trim) as u32,
             body: ItemBody::Html,
         });
 
         if synthesize_lf {
             self.tree.append(Item {
-                start: end - trim,
-                end,
+                start: (end - trim) as u32,
+                end: end as u32,
                 body: ItemBody::SynthesizeChar('\n'),
             });
         }
@@ -1676,7 +1686,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Pop a container, setting its end.
     fn pop(&mut self, ix: usize) {
         let cur_ix = self.tree.pop().unwrap();
-        self.tree[cur_ix].item.end = ix;
+        self.tree[cur_ix].item.end = ix as u32;
         if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
@@ -1718,7 +1728,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         if self.tree[ix].item.end > end {
                             if self.tree[ix].item.start <= end {
                                 self.tree[ix].item.start =
-                                    if self.text.as_bytes()[end].is_ascii_whitespace() {
+                                    if self.text.as_bytes()[end as usize].is_ascii_whitespace() {
                                         end + 1
                                     } else {
                                         end
@@ -1795,7 +1805,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.finish_list(start);
         }
         self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0, // will get set later
             body: ItemBody::List(Cell::new(ListFlags::IS_TIGHT), ch, index),
         });
@@ -1808,8 +1818,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns index of start of next line.
     fn parse_hrule(&mut self, hrule_size: usize, ix: usize) -> usize {
         self.tree.append(Item {
-            start: ix,
-            end: ix + hrule_size,
+            start: ix as u32,
+            end: (ix + hrule_size) as u32,
             body: ItemBody::Rule,
         });
         ix + hrule_size
@@ -1821,7 +1831,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_atx_heading(&mut self, start: usize, atx_level: HeadingLevel) -> usize {
         let mut ix = start;
         let heading_ix = self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0,                    // set later
             body: ItemBody::default(), // set later
         });
@@ -1829,7 +1839,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // next char is space or eol (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
-            self.tree[heading_ix].item.end = ix + eol_bytes;
+            self.tree[heading_ix].item.end = (ix + eol_bytes) as u32;
             self.tree[heading_ix].item.body = ItemBody::Heading(atx_level, None);
             return ix + eol_bytes;
         }
@@ -1861,11 +1871,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::HardBreak(true),
             }) = line_brk
             {
-                self.tree.append_text(start, end, false);
+                self.tree.append_text(start as usize, end as usize, false);
             }
             (ix, ix, None)
         };
-        self.tree[header_node_idx].item.end = end;
+        self.tree[header_node_idx].item.end = end as u32;
 
         // remove trailing matter from header text
         let mut empty_text_node = false;
@@ -1889,7 +1899,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
             }
             // if text is only spaces, then remove them
-            self.tree[cur_ix].item.end = limit + header_start;
+            self.tree[cur_ix].item.end = (limit + header_start) as u32;
 
             // limit = 0 when text is empty after removing spaces
             if limit == 0 {
@@ -1949,7 +1959,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             .0
             .insert(UniCase::new(label.clone()), FootnoteDef { use_count: 0 });
         self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0, // will get set later
             // TODO: check whether the label here is strictly necessary
             body: ItemBody::FootnoteDefinition(self.allocs.allocate_cow(label)),

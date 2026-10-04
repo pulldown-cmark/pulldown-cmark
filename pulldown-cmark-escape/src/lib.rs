@@ -26,6 +26,7 @@
     clippy::std_instead_of_core
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![forbid(unsafe_code)]
 extern crate alloc;
 
 #[cfg(feature = "std")]

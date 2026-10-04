@@ -77,7 +77,6 @@
 // an unstable crate.
 #![cfg_attr(rustbuild, feature(staged_api, rustc_private))]
 #![cfg_attr(rustbuild, unstable(feature = "rustc_private", issue = "27812"))]
-// Forbid unsafe code unless the SIMD feature is enabled.
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations)]
 #![cfg_attr(not(feature = "std"), no_std)]

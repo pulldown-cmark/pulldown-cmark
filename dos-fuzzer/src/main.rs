@@ -94,6 +94,7 @@ struct Pattern {
     prefix: String,
     repeating_pattern: String,
     suffix: String,
+    repeating_pattern_after_suffix: String,
 }
 
 impl<'a> Into<Pattern> for &'a str {
@@ -101,6 +102,7 @@ impl<'a> Into<Pattern> for &'a str {
         Pattern {
             prefix: String::new(),
             repeating_pattern: self.to_owned(),
+            repeating_pattern_after_suffix: String::new(),
             suffix: String::new(),
         }
     }
@@ -135,6 +137,7 @@ impl<'a> Distribution<Pattern> for UniformPatterns<'a> {
             prefix: random_seq(&mut random_words),
             suffix: random_seq(&mut random_words),
             repeating_pattern: random_seq(&mut random_words),
+            repeating_pattern_after_suffix: String::new(),
         }
     }
 }
@@ -193,6 +196,7 @@ fn regression_test() -> i32 {
         prefix: "".into(),
         repeating_pattern: "* ".into(),
         suffix: "a".into(),
+        repeating_pattern_after_suffix: String::new(),
     });
     // https://github.com/raphlinus/pulldown-cmark/issues/251
     check_pattern("[ (](".into());
@@ -218,6 +222,7 @@ fn regression_test() -> i32 {
         prefix: "".into(),
         repeating_pattern: "`a`".into(),
         suffix: "`".into(),
+        repeating_pattern_after_suffix: String::new(),
     });
     check_pattern("\\``".into());
     check_pattern("a***b~~".into());
@@ -231,6 +236,21 @@ fn regression_test() -> i32 {
     check_pattern("!-- <".into());
     // https://github.com/pulldown-cmark/pulldown-cmark/issues/1076
     check_pattern("[^x]\n".into());
+    // https://github.com/pulldown-cmark/pulldown-cmark/pull/1145
+    check_pattern(Pattern {
+        prefix: "".into(),
+        repeating_pattern: "- ".into(),
+        suffix: "a\n".into(),
+        repeating_pattern_after_suffix: "\n".into(),
+    });
+    check_pattern(Pattern {
+        prefix: "> ".into(),
+        repeating_pattern: "- ".into(),
+        suffix: "a\n".into(),
+        repeating_pattern_after_suffix: ">\n".into(),
+    });
+    // https://github.com/pulldown-cmark/pulldown-cmark/issues/1154
+    check_pattern("*_ ".into());
     exit_code
 }
 
@@ -466,10 +486,12 @@ fn sample_pattern(
 ) -> usize {
     let target_byte_count = sample_size * NUM_BYTES / sample_count;
     let target_repeat_bytes = target_byte_count - buf.len() - pattern.suffix.len();
-    let num_repeats = target_repeat_bytes / pattern.repeating_pattern.len();
+    let num_repeats = target_repeat_bytes
+        / (pattern.repeating_pattern.len() + pattern.repeating_pattern_after_suffix.len());
 
     buf.extend(std::iter::repeat(&pattern.repeating_pattern[..]).take(num_repeats));
     buf.push_str(&pattern.suffix);
+    buf.extend(std::iter::repeat(&pattern.repeating_pattern_after_suffix[..]).take(num_repeats));
     num_repeats
 }
 

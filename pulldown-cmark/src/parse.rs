@@ -22,6 +22,7 @@
 
 use alloc::{borrow::ToOwned, boxed::Box, collections::VecDeque, string::String, vec::Vec};
 use core::{
+    cell::Cell,
     cmp::{max, min},
     iter::FusedIterator,
     num::NonZeroUsize,
@@ -51,14 +52,14 @@ use crate::{
 // https://spec.commonmark.org/0.29/#link-destination
 pub(crate) const LINK_MAX_NESTED_PARENS: usize = 32;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct Item {
     pub start: usize,
     pub end: usize,
     pub body: ItemBody,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub(crate) enum ItemBody {
     // These are possible inline items, need to be resolved in second pass.
 
@@ -116,13 +117,14 @@ pub(crate) enum ItemBody {
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
     Container(u8, ContainerKind, CowIndex), // (fence length, specific renderer, descriptor used in renderer)
-    List(bool, u8, u64),                    // is_tight, list character, list start index
-    ListItem(usize),                        // indent level
+    // is_tight|last_line_empty, list character, list start index
+    List(Cell<ListFlags>, u8, u64),
+    ListItem(usize), // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
     // Definition lists
-    DefinitionList(bool), // is_tight
+    DefinitionList(Cell<ListFlags>),
     // gets turned into either a paragraph or a definition list title,
     // depending on whether there's a definition after it
     MaybeDefinitionListTitle,
@@ -182,6 +184,16 @@ impl ItemBody {
                 | SoftBreak
                 | HardBreak(..)
         )
+    }
+}
+
+bitflags::bitflags! {
+    /// Option struct containing flags for enabling extra features
+    /// that are not part of the CommonMark spec.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub(crate) struct ListFlags: u8 {
+        const IS_TIGHT = 1;
+        const LAST_LINE_EMPTY = 1 << 1;
     }
 }
 
@@ -1451,8 +1463,10 @@ impl<'input> ParserInner<'input> {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
                 buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push(' ');
-                ix += 1;
+                ix += scan_eol(&spanned_bytes[ix..]).unwrap_or(1);
                 ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
+                // A paragraph continuation line has its leading spaces and tabs stripped.
+                ix += scan_while(&spanned_bytes[ix..], |c| c == b' ' || c == b'\t');
                 start_ix = ix;
             } else if c == b'\\'
                 && spanned_bytes.get(ix + 1) == Some(&b'|')
@@ -1544,10 +1558,37 @@ pub(crate) fn scan_containers(
     tree: &Tree<Item>,
     line_start: &mut LineStart<'_>,
     options: Options,
+    update_flags: bool,
 ) -> usize {
     let mut i = 0;
-    for &node_ix in tree.walk_spine() {
+    let mut spine_iter = tree.walk_spine();
+    for &node_ix in &mut spine_iter {
         match tree[node_ix].item.body {
+            // This fix is lifted, almost verbatim,
+            // from https://github.com/commonmark/cmark/pull/520/changes
+            ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags)
+                if update_flags =>
+            {
+                // Avoid quadratic behavior caused by deeply nested lists
+                // for each blank line.
+                if line_start.is_at_eol() {
+                    if list_flags.get().contains(ListFlags::LAST_LINE_EMPTY)
+                        && line_start.remaining_space() == 0
+                    {
+                        // Finish early if we encounter multiple blank lines.
+                        // If the previous line was blank, then we know that this
+                        // container has no children unless those children
+                        // use indented lines to nest (in other words, blockquote
+                        // and blockquote-like children aren't nested in here).
+                        // Therefore, every child of this list will pass.
+                        return tree.spine_len();
+                    } else {
+                        list_flags.set(list_flags.get() | ListFlags::LAST_LINE_EMPTY);
+                    }
+                } else {
+                    list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+                }
+            }
             ItemBody::BlockQuote(..) => {
                 let save = line_start.clone();
                 let _ = line_start.scan_space(3);
@@ -1581,12 +1622,19 @@ pub(crate) fn scan_containers(
         }
         i += 1;
     }
+    for &node_ix in &mut spine_iter {
+        if let ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags) =
+            tree[node_ix].item.body
+        {
+            list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+        }
+    }
     i
 }
 
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
-    let _ = scan_containers(tree, &mut line_start, options);
+    let _ = scan_containers(tree, &mut line_start, options, false);
     line_start.bytes_scanned()
 }
 
@@ -1710,9 +1758,8 @@ impl InlineStack {
 
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
-            if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
-            } else {
+            self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
+            if !both {
                 self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
             }
         } else if c == b'*' {
@@ -2354,9 +2401,8 @@ impl<'input> ParserInner<'input> {
                     self.handle_inline(callbacks);
                 }
 
-                let node = self.tree[cur_ix];
-                let item = node.item;
-                let event = item_to_event(item, self.text, &mut self.allocs);
+                let item = self.tree[cur_ix].item.clone();
+                let event = item_to_event(&item, self.text, &mut self.allocs);
                 if let Event::Start(..) = event {
                     self.tree.push();
                 } else {
@@ -2403,7 +2449,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
@@ -2667,6 +2713,51 @@ mod test {
     }
 
     #[test]
+    fn issue_983_tab_indented_list_offsets() {
+        // A nested list indented with a TAB could start on the previous line:
+        // inside the code block in the issue's input, or inside `漢` in the
+        // definition list below. With spaces it starts on its own line.
+        for (doc, expected_starts) in [
+            (
+                "*     indented code block\n\t+ nested list\n",
+                [0, 0, 27, 27],
+            ),
+            (
+                "*     indented code block\n  + nested list\n",
+                [0, 0, 28, 28],
+            ),
+            ("- a\r\n\t1. b\r\n", [0, 0, 6, 6]),
+            ("> - a\n>\t- b\n", [2, 2, 8, 8]),
+        ] {
+            let starts: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(Tag::List(_) | Tag::Item) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+
+        for (doc, expected_starts) in [("a\n:\n\t漢\n\t- o\n", [0, 0, 2, 10, 10])] {
+            let starts: Vec<_> = Parser::new_ext(doc, Options::ENABLE_DEFINITION_LIST)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(
+                        Tag::List(_)
+                        | Tag::Item
+                        | Tag::DefinitionList
+                        | Tag::DefinitionListTitle
+                        | Tag::DefinitionListDefinition,
+                    ) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+    }
+
+    #[test]
     fn reference_link_offsets() {
         let range =
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
@@ -2705,6 +2796,28 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(0..7, range);
+    }
+
+    #[test]
+    fn issue_1131_code_span_strips_continuation_indent() {
+        // The leading spaces and tabs of a paragraph continuation line are not
+        // part of the code span content, and CRLF is a single line ending. The
+        // span's range still covers the source from backtick to backtick.
+        for (doc, code, range) in [
+            ("`` a\n  `b`\n  ``", "a `b`", 0..15),
+            ("`a\n\t b`", "a b", 0..7),
+            ("`a\r\n   b`", "a b", 0..9),
+            ("> `a\r\n>   b`", "a b", 2..12),
+        ] {
+            let spans: Vec<_> = Parser::new(doc)
+                .into_offset_iter()
+                .filter_map(|(ev, range)| match ev {
+                    Event::Code(code) => Some((code.to_string(), range)),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(vec![(code.to_string(), range)], spans, "{doc:?}");
+        }
     }
 
     #[test]
@@ -3060,5 +3173,32 @@ text
              got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
             n8 / n1.max(1)
         );
+    }
+
+    #[test]
+    fn issue_1154() {
+        // If a `_` that can only close finds no opener, a `_` of the same length
+        // that can also open won't find one either, so its bound can go up too.
+        let mut tree = Tree::with_capacity(4);
+        let mut stack = InlineStack::default();
+        for _ in 0..3 {
+            let start = tree.append(Item {
+                start: 0,
+                end: 1,
+                body: ItemBody::Text {
+                    backslash_escaped: false,
+                },
+            });
+            stack.push(InlineEl {
+                start,
+                count: 1,
+                run_length: 1,
+                c: b'*',
+                both: false,
+            });
+        }
+        assert!(stack.find_match(&mut tree, b'_', 1, false).is_none());
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, false));
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, true));
     }
 }

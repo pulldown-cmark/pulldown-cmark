@@ -259,10 +259,13 @@ fn html_test_broken_callback() {
 
 #[test]
 fn newline_in_code() {
-    let originals = ["`\n `x", "` \n`x"];
-    let expected = "<p><code>  </code>x</p>\n";
+    // The leading space of a continuation line is stripped; a trailing one is kept.
+    let cases = [
+        ("`\n `x", "<p><code> </code>x</p>\n"),
+        ("` \n`x", "<p><code>  </code>x</p>\n"),
+    ];
 
-    for original in originals {
+    for (original, expected) in cases {
         let mut s = String::new();
         html::push_html(&mut s, Parser::new(original));
         assert_eq!(expected, s);
@@ -293,7 +296,7 @@ fn trim_space_and_tab_at_end_of_paragraph() {
 
 #[test]
 fn newline_within_code() {
-    let originals = ["`\nx \ny\n`x", "`x \ny`x", "`x\n y`x"];
+    let originals = ["`\nx \ny\n`x", "`x \ny`x"];
     let expected = "<p><code>x  y</code>x</p>\n";
 
     for original in originals {
@@ -301,6 +304,11 @@ fn newline_within_code() {
         html::push_html(&mut s, Parser::new(original));
         assert_eq!(expected, s);
     }
+
+    // The leading space of a continuation line is stripped.
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new("`x\n y`x"));
+    assert_eq!("<p><code>x y</code>x</p>\n", s);
 }
 
 #[test]
@@ -369,6 +377,18 @@ fn issue_819() {
 fn issue_1056() {
     let original = "```\rcode\rblock\r\n```\n";
     let expected = "<pre><code>code\nblock\n</code></pre>\n";
+
+    let mut s = String::new();
+    html::push_html(&mut s, Parser::new(original));
+
+    assert_eq!(expected, s);
+}
+
+// Can't easily use regression.txt due to newline normalization.
+#[test]
+fn issue_1131_crlf() {
+    let original = "` tag\r\n    *   x\r\n    *   `\r\n";
+    let expected = "<p><code>tag *   x *  </code></p>\n";
 
     let mut s = String::new();
     html::push_html(&mut s, Parser::new(original));

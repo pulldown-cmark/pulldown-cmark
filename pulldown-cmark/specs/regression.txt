@@ -3200,3 +3200,113 @@ Definition lists cancel task lists, just like headers do:
 </li>
 </ul>
 ````````````````````````````````
+
+ISSUE #1149
+
+A closing code fence may be followed by spaces or tabs.
+
+```````````````````````````````` example
+~~~
+code
+~~~	
+<b>x</b>
+.
+<pre><code>code
+</code></pre>
+<p><b>x</b></p>
+````````````````````````````````
+
+```````````````````````````````` example
+```
+code
+```	 	
+<b>x</b>
+.
+<pre><code>code
+</code></pre>
+<p><b>x</b></p>
+````````````````````````````````
+
+```````````````````````````````` example
+```
+code
+```	x
+```
+.
+<pre><code>code
+```	x
+</code></pre>
+````````````````````````````````
+
+```````````````````````````````` example
+- ~~~
+  code
+  ~~~	
+- b
+.
+<ul>
+<li>
+<pre><code>code
+</code></pre>
+</li>
+<li>b</li>
+</ul>
+````````````````````````````````
+
+ISSUE #1131
+
+The leading spaces and tabs of a paragraph continuation line are stripped
+before a code span turns the line ending into a space.
+
+```````````````````````````````` example
+` tag
+    *   Fake user prompt (style + content)
+    *   `
+.
+<p><code>tag *   Fake user prompt (style + content) *  </code></p>
+````````````````````````````````
+
+```````````````````````````````` example
+> `a
+>   b`
+.
+<blockquote>
+<p><code>a b</code></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+- `a
+    b`
+.
+<ul>
+<li><code>a b</code></li>
+</ul>
+````````````````````````````````
+
+Trailing spaces before the line ending are kept.
+
+```````````````````````````````` example
+`a  
+	 b`
+.
+<p><code>a   b</code></p>
+````````````````````````````````
+
+```````````````````````````````` example
+Foo
+  `a
+  b`
+---
+.
+<h2>Foo
+<code>a b</code></h2>
+````````````````````````````````
+
+```````````````````````````````` example
+para
+::: note
+.
+<p>para
+::: note</p>
+````````````````````````````````

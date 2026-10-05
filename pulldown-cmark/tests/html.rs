@@ -406,6 +406,7 @@ fn issue_1156() {
             "<p><a href=\"/url\">a</a></p>\n",
         ),
         ("a\u{feff}b\n", "<p>a\u{feff}b</p>\n"),
+        ("a\n\n\u{feff}b\n", "<p>a</p>\n<p>\u{feff}b</p>\n"),
     ];
     for (original, expected) in cases {
         let mut s = String::new();

@@ -194,6 +194,11 @@ pub enum Tag<'a> {
         id: Option<CowStr<'a>>,
         classes: Vec<CowStr<'a>>,
         /// The first item of the tuple is the attr and second one the value.
+        ///
+        /// Attribute names are not restricted: `# x {onclick=alert(1)}` gives
+        /// `onclick`, which [`html::push_html`] writes to
+        /// the output. These attributes don't arrive as [`Event::Html`] or
+        /// [`Event::InlineHtml`], so dropping those events does not remove them.
         attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
     },
 
@@ -725,6 +730,11 @@ bitflags::bitflags! {
         /// custom attributes `myattr` (without value) and
         /// `other_attr` with value `myvalue`.
         /// Note that ID, classes, and custom attributes should be space-separated.
+        ///
+        /// Custom attribute names are not restricted and include event handlers
+        /// such as `onclick`. If you render untrusted Markdown with this option,
+        /// filtering out [`Event::Html`] and [`Event::InlineHtml`] is not enough to
+        /// keep scripts out of the HTML; sanitize the output instead.
         const ENABLE_HEADING_ATTRIBUTES = 1 << 6;
         /// Metadata blocks in YAML style, i.e.:
         /// - starting with a `---` line

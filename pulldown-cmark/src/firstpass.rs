@@ -1411,8 +1411,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let next_line_ix = ix + line_start.bytes_scanned();
-            if next_line_ix == self.text.len() {
-                end_ix = next_line_ix;
+            // A last line without a line ending is a line of the block even when nothing is
+            // left of it after the container prefixes; only the end of the input itself ends
+            // the block without one.
+            if ix == self.text.len() {
+                end_ix = ix;
                 break;
             }
             ix = next_line_ix;

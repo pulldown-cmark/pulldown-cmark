@@ -312,6 +312,25 @@ fn unclosed_fence_keeps_last_blank_line() {
     }
 }
 
+// Can't use regression.txt either, for the same reason: no final line ending.
+#[test]
+fn unclosed_html_block_keeps_last_blank_line() {
+    // The same for an HTML block that ends at an end tag, `-->`, `?>` etc. (types 1-5): a
+    // last line that is empty after its container prefixes is still a line of the block.
+    let cases = [
+        ("> <!-- x\n>", "<blockquote>\n<!-- x\n\n</blockquote>\n"),
+        ("- <pre\n  ", "<ul>\n<li><pre\n\n</li>\n</ul>\n"),
+        // unchanged: the end of the input
+        ("> <!-- x\n", "<blockquote>\n<!-- x\n</blockquote>\n"),
+    ];
+
+    for (original, expected) in cases {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original));
+        assert_eq!(expected, s, "input {original:?}");
+    }
+}
+
 // https://github.com/raphlinus/pulldown-cmark/issues/715
 
 #[test]

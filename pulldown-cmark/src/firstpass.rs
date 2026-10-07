@@ -2405,16 +2405,18 @@ const HTML_BLOCK_TYPE_1_END_TAGS: [&str; 4] = ["</pre>", "</style>", "</script>"
 /// their four end tags ends the block, case-insensitively: it "need not match the start tag".
 /// The other end conditions (`-->`, `?>`, `]]>`, `>`) have no letters.
 fn ends_html_block(line: &[u8], html_end_tag: &str) -> bool {
-    let contains = |needle: &[u8]| {
-        line.windows(needle.len())
-            .any(|window| window.eq_ignore_ascii_case(needle))
-    };
     if HTML_BLOCK_TYPE_1_END_TAGS.contains(&html_end_tag) {
-        HTML_BLOCK_TYPE_1_END_TAGS
-            .iter()
-            .any(|tag| contains(tag.as_bytes()))
+        // Every type 1 end tag starts with `<`: try all four at each `<` in one pass.
+        memchr::memchr_iter(b'<', line).any(|i| {
+            HTML_BLOCK_TYPE_1_END_TAGS.iter().any(|tag| {
+                line.get(i..i + tag.len()).map_or(false, |candidate| {
+                    candidate.eq_ignore_ascii_case(tag.as_bytes())
+                })
+            })
+        })
     } else {
-        contains(html_end_tag.as_bytes())
+        let needle = html_end_tag.as_bytes();
+        line.windows(needle.len()).any(|window| window == needle)
     }
 }
 

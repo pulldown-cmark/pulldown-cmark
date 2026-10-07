@@ -1405,7 +1405,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if self.text[line_start_ix..ix].contains(html_end_tag) {
+            if contains_ignore_ascii_case(&bytes[line_start_ix..ix], html_end_tag.as_bytes()) {
                 end_ix = ix;
                 break;
             }
@@ -2396,6 +2396,15 @@ fn scan_paragraph_interrupt_no_table(
             && text.starts_with("[^")
             && scan_link_label_rest(&text[2..], &|_| None, tree.is_in_table())
                 .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
+}
+
+/// Whether `haystack` contains `needle`, ignoring ASCII case. HTML block end conditions are
+/// case-insensitive (`</pre>`, `</script>`, `</style>`, `</textarea>`, spec 4.6); the others
+/// (`-->`, `?>`, `]]>`, `>`) have no letters.
+fn contains_ignore_ascii_case(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack
+        .windows(needle.len())
+        .any(|window| window.eq_ignore_ascii_case(needle))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

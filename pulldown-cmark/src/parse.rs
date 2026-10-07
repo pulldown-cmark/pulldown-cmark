@@ -1560,8 +1560,15 @@ impl<'input> ParserInner<'input> {
         let mut last = 0;
         let mut i = 0;
         while let Some(n) = memchr::memchr2(b'\n', b'\r', &span[i..]) {
-            i += n + scan_eol(&span[i + n..]).unwrap_or(1);
-            let skipped = skip_container_prefixes(&self.tree, &span[i..], self.options);
+            i += n;
+            let skipped = if let Some(eol) = scan_eol(&span[i..]) {
+                i += eol;
+                skip_container_prefixes(&self.tree, &span[i..], self.options)
+            } else {
+                // not a line break
+                i += 1;
+                0
+            };
             if skipped > 0 {
                 buffer.extend(&span[last..i]);
                 i += skipped;

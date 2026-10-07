@@ -1570,8 +1570,13 @@ pub(crate) fn scan_inline_html_comment(
                 if bytes[ix] == b'>' {
                     return Some(ix + 1);
                 }
-                ix += scan_eol(&bytes[ix..]).unwrap_or(1);
-                ix += skip_prefixes(&bytes[ix..]);
+                if let Some(eol) = scan_eol(&bytes[ix..]) {
+                    ix += eol;
+                    ix += skip_prefixes(&bytes[ix..]);
+                } else {
+                    // not a line break
+                    ix += 1;
+                }
             }
             scan_guard.declaration = bytes.len();
             None

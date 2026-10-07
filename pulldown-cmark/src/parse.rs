@@ -1533,15 +1533,15 @@ impl<'input> ParserInner<'input> {
     fn scan_inline_html(&mut self, bytes: &[u8], ix: usize) -> Option<(Vec<u8>, usize)> {
         let c = *bytes.get(ix)?;
         if c == b'!' {
-            Some((
-                vec![],
-                scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard)?,
-            ))
+            let tree = &self.tree;
+            let options = self.options;
+            let end = scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard, &|b| {
+                skip_container_prefixes(tree, b, options)
+            })?;
+            Some((self.strip_container_prefixes(&bytes[ix - 1..end]), end))
         } else if c == b'?' {
-            Some((
-                vec![],
-                scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?,
-            ))
+            let end = scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?;
+            Some((self.strip_container_prefixes(&bytes[ix - 1..end]), end))
         } else {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
@@ -1550,6 +1550,28 @@ impl<'input> ParserInner<'input> {
             )?;
             Some((span, i + ix - 1))
         }
+    }
+
+    /// The bytes of an inline HTML span that runs over several lines, without the container
+    /// prefixes (`>`, list indentation) at the start of its continuation lines. Empty if there
+    /// are none, as for `scan_html_block_inner`.
+    fn strip_container_prefixes(&self, span: &[u8]) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        let mut last = 0;
+        let mut i = 0;
+        while let Some(n) = memchr::memchr2(b'\n', b'\r', &span[i..]) {
+            i += n + scan_eol(&span[i + n..]).unwrap_or(1);
+            let skipped = skip_container_prefixes(&self.tree, &span[i..], self.options);
+            if skipped > 0 {
+                buffer.extend(&span[last..i]);
+                i += skipped;
+                last = i;
+            }
+        }
+        if !buffer.is_empty() {
+            buffer.extend(&span[last..]);
+        }
+        buffer
     }
 }
 

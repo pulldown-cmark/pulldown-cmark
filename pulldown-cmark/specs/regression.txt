@@ -3310,3 +3310,31 @@ para
 <p>para
 ::: note</p>
 ````````````````````````````````
+
+Bug reported in <https://github.com/pulldown-cmark/pulldown-cmark/pull/1166>, but the fix is different
+
+```````````````````````````````` example
+> a
+→> b
+.
+<blockquote>
+<p>a
+&gt; b</p>
+</blockquote>
+````````````````````````````````
+
+
+```````````````````````````````` example
+> *
+→> b
+.
+<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<pre><code>&gt; b
+</code></pre>
+````````````````````````````````
+
+

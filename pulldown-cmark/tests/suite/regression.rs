@@ -3934,3 +3934,34 @@ fn regression_test_247() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_248() {
+    let original = r##"> a
+	> b
+"##;
+    let expected = r##"<blockquote>
+<p>a
+&gt; b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_249() {
+    let original = r##"> *
+	> b
+"##;
+    let expected = r##"<blockquote>
+<ul>
+<li></li>
+</ul>
+</blockquote>
+<pre><code>&gt; b
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

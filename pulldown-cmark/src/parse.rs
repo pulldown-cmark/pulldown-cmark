@@ -1591,8 +1591,8 @@ pub(crate) fn scan_containers(
             }
             ItemBody::BlockQuote(..) => {
                 let save = line_start.clone();
-                let _ = line_start.scan_space(3);
-                if !line_start.scan_blockquote_marker() {
+                let indent = line_start.scan_space_upto(4);
+                if indent >= 4 || !line_start.scan_blockquote_marker() {
                     *line_start = save;
                     break;
                 }

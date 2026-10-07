@@ -1540,6 +1540,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         });
         self.tree.push();
         loop {
+            // The end of the input closes the block. A last line of only spaces or tabs, with
+            // no line ending, is not the end of the input: it is a line of code.
+            if ix == bytes.len() {
+                self.pop(ix);
+                return ix;
+            }
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len() {

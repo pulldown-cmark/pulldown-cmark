@@ -282,6 +282,36 @@ fn newline_start_end_of_code() {
     assert_eq!(expected, s);
 }
 
+// Can't use regression.txt: the bug needs input without a final line ending, and every
+// regression.txt example ends with one (with it, these already pass on main).
+#[test]
+fn unclosed_fence_keeps_last_blank_line() {
+    // A last line of only spaces or tabs, with no line ending, is a line of the unclosed code
+    // block like any other: it isn't the end of the input.
+    let cases = [
+        ("```\na\n ", "<pre><code>a\n \n</code></pre>\n"),
+        ("```\n  ", "<pre><code>  \n</code></pre>\n"),
+        ("```\na\n \t ", "<pre><code>a\n \t \n</code></pre>\n"),
+        (
+            "> ```\n> a\n>",
+            "<blockquote>\n<pre><code>a\n\n</code></pre>\n</blockquote>\n",
+        ),
+        (
+            "- ```\n  a\n   ",
+            "<ul>\n<li>\n<pre><code>a\n \n</code></pre>\n</li>\n</ul>\n",
+        ),
+        // unchanged: the end of the input, and a closing fence
+        ("```\na\n", "<pre><code>a\n</code></pre>\n"),
+        ("```\na\n ```", "<pre><code>a\n</code></pre>\n"),
+    ];
+
+    for (original, expected) in cases {
+        let mut s = String::new();
+        html::push_html(&mut s, Parser::new(original));
+        assert_eq!(expected, s, "input {original:?}");
+    }
+}
+
 // https://github.com/raphlinus/pulldown-cmark/issues/715
 
 #[test]

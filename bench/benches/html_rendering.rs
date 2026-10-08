@@ -101,6 +101,74 @@ This is a [link](example.com). **Cool!**
 
         b.iter(|| Parser::new_ext(input, Options::empty()).count());
     });
+
+    c.bench_function("html_block_type_1", |b| {
+        let input = concat!(
+            "<script>",
+            include_str!("../../pulldown-cmark/third_party/commonmark.js/commonmark.min.js"),
+            "</script>",
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_2", |b| {
+        let input = concat!(
+            "<!--",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+            "-->",
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_3", |b| {
+        let input = concat!(
+            "<?",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+            "?>",
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_4", |b| {
+        let input = concat!(
+            "<!x",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+            ">",
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_5", |b| {
+        let input = concat!(
+            "<![CDATA[",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+            "]]>",
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_6", |b| {
+        let input = concat!(
+            "<DIV",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
+
+    c.bench_function("html_block_type_7", |b| {
+        let input = concat!(
+            "<SPAN>\n",
+            include_str!("../third_party/markdown-it/lorem1.md"),
+        );
+
+        b.iter(|| Parser::new_ext(input, Options::empty()).count());
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

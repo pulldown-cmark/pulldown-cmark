@@ -12,6 +12,7 @@ env:
 jobs:
   pulldown-cmark:
     strategy:
+      fail-fast: false
       matrix:
         rust-version: ['1.71.1', 'stable', 'nightly']
     runs-on: ubuntu-latest
@@ -35,12 +36,35 @@ jobs:
     - name: Cargo test the workspace
       if: ${{ matrix.rust-version != '1.71.1' }}
       run: cargo test --verbose --workspace
-    - name: Cargo test with simd feature enabled
-      run: cargo test --features=simd,gen-tests
     - name: Cargo test with serde feature enabled
       run: cargo test --features=serde
     - name: Cargo test in no_std environment
       run: cargo test --no-default-features --features hashbrown
+  simd:
+    # fearless_simd (used by the simd feature) requires Rust 1.89
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: rustup default stable
+    - name: Cargo test with simd feature enabled
+      run: cargo test --features=simd,gen-tests
+    - name: Cargo test with simd feature in no_std environment
+      run: |
+        cargo test -p pulldown-cmark --no-default-features --features simd,hashbrown
+        cargo test -p pulldown-cmark-escape --no-default-features --features simd
+    - name: Build WASM target with simd128
+      env:
+        RUSTFLAGS: -D warnings -C target-feature=+simd128
+      run: |
+        rustup target add wasm32-unknown-unknown
+        cargo build --package pulldown-cmark --features simd --target wasm32-unknown-unknown
+    - name: Build WASM target without simd128
+      run: cargo build --package pulldown-cmark --features simd --target wasm32-unknown-unknown
   regression:
     runs-on: ubuntu-latest
     steps:

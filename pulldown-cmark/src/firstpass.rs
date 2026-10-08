@@ -25,6 +25,11 @@ use crate::{
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
 pub(crate) fn run_first_pass(text: &str, options: Options) -> (Tree<Item>, Allocations<'_>) {
+    // Tree items store offsets as `u32` to keep nodes small.
+    assert!(
+        u32::try_from(text.len()).is_ok(),
+        "markdown input larger than 4 GiB is not supported"
+    );
     // This is a very naive heuristic for the number of nodes
     // we'll need.
     let start_capacity = max(128, text.len() / 32);
@@ -141,8 +146,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let item_start = start_ix + save.bytes_scanned();
                 self.continue_list(item_start, ch, index);
                 self.tree.append(Item {
-                    start: item_start,
-                    end: after_marker_index, // will get updated later if item not empty
+                    start: item_start as u32,
+                    end: after_marker_index as u32, // will get updated later if item not empty
                     body: ItemBody::ListItem(indent),
                 });
                 self.tree.push();
@@ -153,13 +158,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if self.options.contains(Options::ENABLE_TASKLISTS) {
                     let task_list_marker =
                         line_start.scan_task_list_marker().map(|is_checked| Item {
-                            start: after_marker_index,
-                            end: start_ix + line_start.bytes_scanned(),
+                            start: after_marker_index as u32,
+                            end: (start_ix + line_start.bytes_scanned()) as u32,
                             body: ItemBody::TaskListMarker(is_checked),
                         });
                     if let Some(task_list_marker) = task_list_marker {
-                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
-                            let end = task_list_marker.end;
+                        if let Some(n) = scan_blank_line(&bytes[task_list_marker.end as usize..]) {
+                            let end = task_list_marker.end as usize;
                             self.tree.append(task_list_marker);
                             self.begin_list_item = Some(end + n);
                             return end + n;
@@ -224,8 +229,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 // `outer_indent` is columns, not bytes. Subtracting it from a
                 // source offset can land inside a multibyte character (issue 1142).
                 self.tree.append(Item {
-                    start: start_ix + save.bytes_scanned(),
-                    end: after_marker_index, // will get updated later if item not empty
+                    start: (start_ix + save.bytes_scanned()) as u32,
+                    end: after_marker_index as u32, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
                 if let Some(ItemBody::DefinitionList(ref list_flags)) =
@@ -249,7 +254,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 };
                 self.finish_list(start_ix);
                 self.tree.append(Item {
-                    start: container_start,
+                    start: container_start as u32,
                     end: 0, // will get set later
                     body: ItemBody::BlockQuote(kind),
                 });
@@ -320,7 +325,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             );
                             let summary_cow_ix = self.allocs.allocate_cow(summary);
                             self.tree.append(Item {
-                                start: container_start,
+                                start: container_start as u32,
                                 end: 0,
                                 body: ItemBody::Container(
                                     fence_length as u8,
@@ -331,7 +336,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         } else {
                             let kind_cow_ix = self.allocs.allocate_cow(kind);
                             self.tree.append(Item {
-                                start: container_start,
+                                start: container_start as u32,
                                 end: 0,
                                 body: ItemBody::Container(
                                     fence_length as u8,
@@ -583,7 +588,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let old_cur = self.tree.cur();
         let row_ix = self.tree.append(Item {
-            start: ix,
+            start: ix as u32,
             end: 0, // set at end of this function
             body: ItemBody::TableRow,
         });
@@ -600,14 +605,14 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let cell_ix = self.tree.append(Item {
-                start: start_ix,
-                end: ix,
+                start: start_ix as u32,
+                end: ix as u32,
                 body: ItemBody::TableCell,
             });
             self.tree.push();
             let (next_ix, _brk) = self.parse_line(ix, None, TableParseMode::Active);
 
-            self.tree[cell_ix].item.end = next_ix;
+            self.tree[cell_ix].item.end = next_ix as u32;
             self.tree.pop();
 
             ix = next_ix;
@@ -633,8 +638,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             *missing_empty_cells += 1;
             self.tree.append(Item {
-                start: ix,
-                end: ix,
+                start: ix as u32,
+                end: ix as u32,
                 body: ItemBody::TableCell,
             });
         }
@@ -704,7 +709,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             ItemBody::Paragraph
         };
         let node_ix = self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: body.clone(),
         });
@@ -755,7 +760,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     start,
                     body: ItemBody::HardBreak(true),
                     ..
-                }) if bytes[start] == b'\\' => Some(start),
+                }) if bytes[start as usize] == b'\\' => Some(start),
                 _ => None,
             };
             if !line_start.scan_space(4) {
@@ -765,7 +770,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.parse_setext_heading(ix_new, node_ix, trailing_backslash_pos.is_some())
                     {
                         if let Some(pos) = trailing_backslash_pos {
-                            self.tree.append_text(pos, pos + 1, false);
+                            self.tree
+                                .append_text(pos as usize, (pos + 1) as usize, false);
                         }
                         self.pop(ix_setext);
                         if body == ItemBody::MaybeDefinitionListTitle {
@@ -778,7 +784,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 let suffix = &self.text[ix_new..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position) {
                     if let Some(pos) = trailing_backslash_pos {
-                        self.tree.append_text(pos, pos + 1, false);
+                        self.tree
+                            .append_text(pos as usize, (pos + 1) as usize, false);
                     }
                     break;
                 }
@@ -786,7 +793,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 {
                     if line_start.scan_closing_container_extensions_fence(3) {
                         if let Some(pos) = trailing_backslash_pos {
-                            self.tree.append_text(pos, pos + 1, false);
+                            self.tree
+                                .append_text(pos as usize, (pos + 1) as usize, false);
                         }
                         break;
                     }
@@ -795,7 +803,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             line_start.scan_all_space();
             if line_start.is_at_eol() {
                 if let Some(pos) = trailing_backslash_pos {
-                    self.tree.append_text(pos, pos + 1, false);
+                    self.tree
+                        .append_text(pos as usize, (pos + 1) as usize, false);
                 }
                 break;
             }
@@ -818,7 +827,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                 if closes {
                     if let Some(pos) = trailing_backslash_pos {
-                        self.tree.append_text(pos, pos + 1, false);
+                        self.tree
+                            .append_text(pos as usize, (pos + 1) as usize, false);
                     }
                     break;
                 }
@@ -847,11 +857,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if let Some(cur_ix) = self.tree.cur() {
             let parent_ix = self.tree.peek_up().unwrap();
-            let header_start = self.tree[parent_ix].item.start;
+            let header_start = self.tree[parent_ix].item.start as usize;
             // Note that `self.tree[parent_ix].item.end` might be zero at this point.
             // Use the end position of the current node (i.e. the last known child
             // of the parent) instead.
-            let header_end = self.tree[cur_ix].item.end;
+            let header_end = self.tree[cur_ix].item.end as usize;
 
             // extract the trailing attribute block
             let (content_end, attrs_) =
@@ -892,7 +902,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             if let Some(cur_ix) = self.tree.cur() {
-                self.tree[cur_ix].item.end = new_end;
+                self.tree[cur_ix].item.end = new_end as u32;
             }
         }
 
@@ -943,8 +953,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
-                                start: i,
-                                end: end_ix,
+                                start: i as u32,
+                                end: end_ix as u32,
                                 body: ItemBody::HardBreak(true),
                             }),
                         );
@@ -973,8 +983,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                                     return LoopInstruction::BreakAtWith(
                                         end_ix,
                                         Some(Item {
-                                            start: i,
-                                            end: end_ix, // must update later
+                                            start: i as u32,
+                                            end: end_ix as u32, // must update later
                                             body: ItemBody::Table(alignment_ix),
                                         }),
                                     );
@@ -992,8 +1002,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         return LoopInstruction::BreakAtWith(
                             end_ix,
                             Some(Item {
-                                start: i,
-                                end: end_ix,
+                                start: i as u32,
+                                end: end_ix as u32,
                                 body: ItemBody::HardBreak(false),
                             }),
                         );
@@ -1006,8 +1016,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     LoopInstruction::BreakAtWith(
                         end_ix,
                         Some(Item {
-                            start: i,
-                            end: end_ix,
+                            start: i as u32,
+                            end: end_ix as u32,
                             body: ItemBody::SoftBreak,
                         }),
                     )
@@ -1022,8 +1032,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     if bytes[ix + 1] == b'`' {
                         let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
                         self.tree.append(Item {
-                            start: ix + 1,
-                            end: ix + count + 1,
+                            start: (ix + 1) as u32,
+                            end: (ix + count + 1) as u32,
                             body: ItemBody::MaybeCode(count, true),
                         });
                         begin_text = ix + 1 + count;
@@ -1084,8 +1094,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         backslash_escaped = false;
                         for i in 0..count {
                             self.tree.append(Item {
-                                start: ix + i,
-                                end: ix + i + 1,
+                                start: (ix + i) as u32,
+                                end: (ix + i + 1) as u32,
                                 body: ItemBody::MaybeEmphasis(count - i, can_open, can_close),
                             });
                         }
@@ -1126,8 +1136,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeMath(can_open, can_close, brace_context),
                     });
                     begin_text = ix + 1;
@@ -1184,8 +1194,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     backslash_escaped = false;
                     let count = 1 + scan_ch_repeat(&bytes[(ix + 1)..], b'`');
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + count,
+                        start: ix as u32,
+                        end: (ix + count) as u32,
                         body: ItemBody::MaybeCode(count, false),
                     });
                     begin_text = ix + count;
@@ -1197,8 +1207,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeHtml,
                     });
                     begin_text = ix + 1;
@@ -1208,8 +1218,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 2,
+                        start: ix as u32,
+                        end: (ix + 2) as u32,
                         body: ItemBody::MaybeImage,
                     });
                     begin_text = ix + 2;
@@ -1219,8 +1229,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeLinkOpen,
                     });
                     begin_text = ix + 1;
@@ -1230,8 +1240,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeLinkClose(true),
                     });
                     begin_text = ix + 1;
@@ -1242,8 +1252,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
-                            start: ix,
-                            end: ix + n,
+                            start: ix as u32,
+                            end: (ix + n) as u32,
                             body: ItemBody::SynthesizeText(self.allocs.allocate_cow(value)),
                         });
                         begin_text = ix + n;
@@ -1266,8 +1276,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 3,
+                        start: ix as u32,
+                        end: (ix + 3) as u32,
                         body: ItemBody::SynthesizeChar('…'),
                     });
                     begin_text = ix + 3;
@@ -1303,8 +1313,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
                         backslash_escaped = false;
                         self.tree.append(Item {
-                            start: ix,
-                            end: ix + count,
+                            start: ix as u32,
+                            end: (ix + count) as u32,
                             body: itembody,
                         });
                         begin_text = ix + count;
@@ -1333,8 +1343,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::MaybeSmartQuote(c, can_open, can_close),
                     });
                     begin_text = ix + 1;
@@ -1347,8 +1357,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     backslash_escaped = false;
                     self.tree.append(Item {
-                        start: ix,
-                        end: ix + 1,
+                        start: ix as u32,
+                        end: (ix + 1) as u32,
                         body: ItemBody::SynthesizeChar('\u{fffd}'),
                     });
                     begin_text = ix + 1;
@@ -1384,7 +1394,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // set later
             body: ItemBody::HtmlBlock,
         });
@@ -1436,7 +1446,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         mut indent: usize,
     ) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // set later
             body: ItemBody::HtmlBlock,
         });
@@ -1473,7 +1483,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
     fn parse_indented_code_block(&mut self, start_ix: usize, mut remaining_space: usize) -> usize {
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::IndentCodeBlock,
         });
@@ -1515,7 +1525,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // Trim trailing blank lines.
         if let Some(child) = last_nonblank_child {
             self.tree[child].next = None;
-            self.tree[child].item.end = last_nonblank_ix;
+            self.tree[child].item.end = last_nonblank_ix as u32;
         }
         self.pop(end_ix);
         ix
@@ -1537,7 +1547,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let info_end = ix - scan_rev_while(&bytes[info_start..ix], is_ascii_whitespace);
         let info_string = unescape(&self.text[info_start..info_end], self.tree.is_in_table());
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::FencedCodeBlock(self.allocs.allocate_cow(info_string)),
         });
@@ -1587,7 +1597,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // 3 delimiter characters
         let mut ix = start_ix + 3 + scan_nextline(&bytes[start_ix + 3..]);
         self.tree.append(Item {
-            start: start_ix,
+            start: start_ix as u32,
             end: 0, // will get set later
             body: ItemBody::MetadataBlock(metadata_block_kind),
         });
@@ -1621,16 +1631,16 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if remaining_space > 0 {
             let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
-                start,
-                end: start,
+                start: start as u32,
+                end: start as u32,
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
-        while let Some(ix) = self.text[start..end].find('\0') {
+        while let Some(ix) = memchr::memchr(0, &self.text.as_bytes()[start..end]) {
             self.tree.append_text(start, start + ix, false);
             self.tree.append(Item {
-                start: start + ix,
-                end: start + ix + 1,
+                start: (start + ix) as u32,
+                end: (start + ix + 1) as u32,
                 body: ItemBody::SynthesizeChar('\u{fffd}'),
             });
             start += ix + 1;
@@ -1647,8 +1657,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         if synthesize_lf {
             self.tree.append(Item {
-                start: end - trim,
-                end,
+                start: (end - trim) as u32,
+                end: end as u32,
                 body: ItemBody::SynthesizeChar('\n'),
             });
         }
@@ -1659,8 +1669,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if remaining_space > 0 {
             let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
             self.tree.append(Item {
-                start,
-                end: start,
+                start: start as u32,
+                end: start as u32,
                 body: ItemBody::SynthesizeText(cow_ix),
             });
         }
@@ -1673,15 +1683,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         };
 
         self.tree.append(Item {
-            start,
-            end: end - trim,
+            start: start as u32,
+            end: (end - trim) as u32,
             body: ItemBody::Html,
         });
 
         if synthesize_lf {
             self.tree.append(Item {
-                start: end - trim,
-                end,
+                start: (end - trim) as u32,
+                end: end as u32,
                 body: ItemBody::SynthesizeChar('\n'),
             });
         }
@@ -1690,7 +1700,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Pop a container, setting its end.
     fn pop(&mut self, ix: usize) {
         let cur_ix = self.tree.pop().unwrap();
-        self.tree[cur_ix].item.end = ix;
+        self.tree[cur_ix].item.end = ix as u32;
         if let ItemBody::DefinitionList(_) = self.tree[cur_ix].item.body {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
@@ -1732,7 +1742,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         if self.tree[ix].item.end > end {
                             if self.tree[ix].item.start <= end {
                                 self.tree[ix].item.start =
-                                    if self.text.as_bytes()[end].is_ascii_whitespace() {
+                                    if self.text.as_bytes()[end as usize].is_ascii_whitespace() {
                                         end + 1
                                     } else {
                                         end
@@ -1809,7 +1819,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.finish_list(start);
         }
         self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0, // will get set later
             body: ItemBody::List(Cell::new(ListFlags::IS_TIGHT), ch, index),
         });
@@ -1822,8 +1832,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns index of start of next line.
     fn parse_hrule(&mut self, hrule_size: usize, ix: usize) -> usize {
         self.tree.append(Item {
-            start: ix,
-            end: ix + hrule_size,
+            start: ix as u32,
+            end: (ix + hrule_size) as u32,
             body: ItemBody::Rule,
         });
         ix + hrule_size
@@ -1835,7 +1845,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_atx_heading(&mut self, start: usize, atx_level: HeadingLevel) -> usize {
         let mut ix = start;
         let heading_ix = self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0,                    // set later
             body: ItemBody::default(), // set later
         });
@@ -1843,7 +1853,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         // next char is space or eol (guaranteed by scan_atx_heading)
         let bytes = self.text.as_bytes();
         if let Some(eol_bytes) = scan_eol(&bytes[ix..]) {
-            self.tree[heading_ix].item.end = ix + eol_bytes;
+            self.tree[heading_ix].item.end = (ix + eol_bytes) as u32;
             self.tree[heading_ix].item.body = ItemBody::Heading(atx_level, None);
             return ix + eol_bytes;
         }
@@ -1875,11 +1885,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 body: ItemBody::HardBreak(true),
             }) = line_brk
             {
-                self.tree.append_text(start, end, false);
+                self.tree.append_text(start as usize, end as usize, false);
             }
             (ix, ix, None)
         };
-        self.tree[header_node_idx].item.end = end;
+        self.tree[header_node_idx].item.end = end as u32;
 
         // remove trailing matter from header text
         let mut empty_text_node = false;
@@ -1903,7 +1913,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 }
             }
             // if text is only spaces, then remove them
-            self.tree[cur_ix].item.end = limit + header_start;
+            self.tree[cur_ix].item.end = (limit + header_start) as u32;
 
             // limit = 0 when text is empty after removing spaces
             if limit == 0 {
@@ -1963,7 +1973,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             .0
             .insert(UniCase::new(label.clone()), FootnoteDef { use_count: 0 });
         self.tree.append(Item {
-            start,
+            start: start as u32,
             end: 0, // will get set later
             // TODO: check whether the label here is strictly necessary
             body: ItemBody::FootnoteDefinition(self.allocs.allocate_cow(label)),
@@ -2713,14 +2723,30 @@ fn cjk_friendly_underscore_delim_run_flanking(
 }
 
 fn create_lut(options: &Options) -> LookupTable {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         LookupTable {
             simd: simd::compute_lookup(options),
             scalar: special_bytes(options),
         }
     }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         special_bytes(options)
     }
@@ -2770,13 +2796,29 @@ enum LoopInstruction<T> {
     BreakAtWith(usize, T),
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+#[cfg(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+))]
 struct LookupTable {
     simd: [u8; 16],
     scalar: [bool; 256],
 }
 
-#[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+#[cfg(not(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+)))]
 type LookupTable = [bool; 256];
 
 /// This function walks the byte slices from the given index and
@@ -2792,8 +2834,8 @@ type LookupTable = [bool; 256];
 /// will not be called with an index that is less than `ix + n + 1`.
 /// When the callback returns a `BreakAtWith(end_ix, opt+val)`, no more callbacks will be
 /// called and the function returns immediately with the return value `(end_ix, opt_val)`.
-/// If `BreakAtWith(..)` is never returned, this function will return the first
-/// index that is outside the byteslice bound and a `None` value.
+/// If `BreakAtWith(..)` is never returned, this function will return
+/// `bytes.len()` and a `None` value.
 fn iterate_special_bytes<F, T>(
     lut: &LookupTable,
     bytes: &[u8],
@@ -2803,11 +2845,27 @@ fn iterate_special_bytes<F, T>(
 where
     F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
 {
-    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    #[cfg(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    ))]
     {
         simd::iterate_special_bytes(lut, bytes, ix, callback)
     }
-    #[cfg(not(all(target_arch = "x86_64", feature = "simd")))]
+    #[cfg(not(all(
+        feature = "simd",
+        any(
+            target_arch = "x86",
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            all(target_arch = "wasm32", target_feature = "simd128")
+        )
+    )))]
     {
         scalar_iterate_special_bytes(lut, bytes, ix, callback)
     }
@@ -2837,7 +2895,9 @@ where
         ix += 1;
     }
 
-    (ix, None)
+    // Clamp like the SIMD implementation does in case a skip overshoots the end
+    // (no current callback does that).
+    (core::cmp::min(ix, bytes.len()), None)
 }
 
 /// Split the usual heading content range and the content inside the trailing attribute block.
@@ -2952,7 +3012,15 @@ fn parse_inside_attribute_block(inside_attr_block: &str) -> Option<HeadingAttrib
     Some(HeadingAttributes { id, classes, attrs })
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd"))]
+#[cfg(all(
+    feature = "simd",
+    any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        all(target_arch = "wasm32", target_feature = "simd128")
+    )
+))]
 mod simd {
     //! SIMD byte scanning logic.
     //!
@@ -2970,14 +3038,56 @@ mod simd {
     //! bytes we're interested in are ASCII, we don't quite need the full generality of
     //! the universal algorithm and are hence able to skip a few instructions.
     //!
+    //! The vector code is written once against `fearless_simd` and runs on SSE4.2
+    //! (x86/x86_64), NEON (aarch64) and SIMD128 (wasm32). Other targets and CPUs
+    //! fall back to the scalar implementation; this module is only compiled for
+    //! targets with a vector backend.
+    //!
     //! [great overview]: http://0x80.pl/articles/simd-byte-lookup.html
 
-    use core::arch::x86_64::*;
+    use fearless_simd::{mask8x16, prelude::*, u8x16, Level};
 
     use super::{LookupTable, LoopInstruction};
     use crate::Options;
 
-    const VECTOR_SIZE: usize = core::mem::size_of::<__m128i>();
+    const VECTOR_SIZE: usize = 16;
+
+    /// Number of bits per byte lane in the masks returned by [`movemask`].
+    #[cfg(target_arch = "aarch64")]
+    const LANE_BITS: usize = 4;
+    #[cfg(not(target_arch = "aarch64"))]
+    const LANE_BITS: usize = 1;
+
+    /// Packs a byte mask into a scalar, where a set lane `i` sets bit
+    /// `i * LANE_BITS` and all other bits are zero.
+    #[inline(always)]
+    fn movemask<S: Simd>(simd: S, mask: mask8x16<S>) -> u64 {
+        #[cfg(target_arch = "aarch64")]
+        {
+            // NEON has no movemask instruction and the generic `to_bitmask` needs a
+            // horizontal add. Shifting right by four and narrowing (SHRN) packs every
+            // lane into a nibble instead, which is a lot cheaper.
+            use fearless_simd::{u16x8, u64x2};
+
+            let bytes: u8x16<S> = mask.select(u8x16::splat(simd, 0xff), u8x16::splat(simd, 0));
+            let wide: u16x8<S> = bytes.bitcast();
+            let narrowed = simd.narrow_u16x8(wide >> 4, wide >> 4);
+            let packed: u64x2<S> = narrowed.bitcast();
+            packed[0] & 0x1111_1111_1111_1111
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            let _ = simd;
+            mask.to_bitmask()
+        }
+    }
+
+    /// Small lookup table to compute single bit bitshifts for 16 bytes at once,
+    /// indexed by the high nibble. Bytes with their most significant bit set are
+    /// mapped to 0xff (all ones).
+    const BITMASK_LOOKUP: [u8; 16] = [
+        1, 2, 4, 8, 16, 32, 64, 128, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    ];
 
     /// Generates a lookup table containing the bitmaps for our
     /// special marker bytes. This is effectively a 128 element 2d bitvector,
@@ -3025,46 +3135,32 @@ mod simd {
     }
 
     /// Computes a bit mask for the given byteslice starting from the given index,
-    /// where the 16 least significant bits indicate (by value of 1) whether or not
-    /// there is a special character at that byte position. The least significant bit
-    /// corresponds to `bytes[ix]` and the most significant bit corresponds to
-    /// `bytes[ix + 15]`.
-    /// It is only safe to call this function when `bytes.len() >= ix + VECTOR_SIZE`.
-    #[target_feature(enable = "ssse3")]
-    #[inline]
-    unsafe fn compute_mask(lut: &[u8; 16], bytes: &[u8], ix: usize) -> i32 {
-        debug_assert!(bytes.len() >= ix + VECTOR_SIZE);
-
-        let bitmap = _mm_loadu_si128(lut.as_ptr() as *const __m128i);
-        // Small lookup table to compute single bit bitshifts
-        // for 16 bytes at once.
-        let bitmask_lookup =
-            _mm_setr_epi8(1, 2, 4, 8, 16, 32, 64, -128, -1, -1, -1, -1, -1, -1, -1, -1);
+    /// where bit `i * LANE_BITS` indicates (by value of 1) whether or not there is
+    /// a special character at `bytes[ix + i]`.
+    /// Panics when `bytes.len() < ix + VECTOR_SIZE`.
+    #[inline(always)]
+    fn compute_mask<S: Simd>(simd: S, lut: &[u8; 16], bytes: &[u8], ix: usize) -> u64 {
+        let bitmap = u8x16::from_slice(simd, lut);
+        let bitmask_lookup = u8x16::from_slice(simd, &BITMASK_LOOKUP);
 
         // Load input from memory.
-        let raw_ptr = bytes.as_ptr().add(ix) as *const __m128i;
-        let input = _mm_loadu_si128(raw_ptr);
+        // Slicing the tail first lets the compiler reuse the loop bounds check.
+        let input = u8x16::from_slice(simd, &bytes[ix..][..VECTOR_SIZE]);
         // Compute the bitmap using the bottom nibble as an index
-        // into the lookup table. Note that non-ascii bytes will have
-        // their most significant bit set and will map to lookup[0].
-        let bitset = _mm_shuffle_epi8(bitmap, input);
-        // Compute the high nibbles of the input using a 16-bit rightshift of four
-        // and a mask to prevent most-significant bit issues.
-        let higher_nibbles = _mm_and_si128(_mm_srli_epi16(input, 4), _mm_set1_epi8(0x0f));
+        // into the lookup table.
+        let bitset = bitmap.swizzle_dyn(input & 0x0f);
+        // Compute the high nibbles of the input.
+        let higher_nibbles = input >> 4;
         // Create a bitmask for the bitmap by perform a left shift of the value
         // of the higher nibble. Bytes with their most significant set are mapped
-        // to -1 (all ones).
-        let bitmask = _mm_shuffle_epi8(bitmask_lookup, higher_nibbles);
+        // to 0xff (all ones).
+        let bitmask = bitmask_lookup.swizzle_dyn(higher_nibbles);
         // Test the bit of the bitmap by AND'ing the bitmap and the mask together.
-        let tmp = _mm_and_si128(bitset, bitmask);
-        // Check whether the result was not null. NEQ is not a SIMD intrinsic,
-        // but comparing to the bitmask is logically equivalent. This also prevents us
-        // from matching any non-ASCII bytes since none of the bitmaps were all ones
-        // (-1).
-        let result = _mm_cmpeq_epi8(tmp, bitmask);
-
-        // Return the resulting bitmask.
-        _mm_movemask_epi8(result)
+        let tmp = bitset & bitmask;
+        // Check whether the result was not null. Comparing to the bitmask is
+        // logically equivalent. This also prevents us from matching any non-ASCII
+        // bytes since none of the bitmaps were all ones (0xff).
+        movemask(simd, tmp.simd_eq(bitmask))
     }
 
     /// Calls callback on byte indices and their value.
@@ -3075,24 +3171,54 @@ mod simd {
         lut: &LookupTable,
         bytes: &[u8],
         ix: usize,
-        callback: F,
+        mut callback: F,
     ) -> (usize, Option<T>)
     where
         F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
     {
-        if is_x86_feature_detected!("ssse3") && bytes.len() >= VECTOR_SIZE {
-            unsafe { simd_iterate_special_bytes(&lut.simd, bytes, ix, callback) }
-        } else {
-            super::scalar_iterate_special_bytes(&lut.scalar, bytes, ix, callback)
+        // We can only use the vector code if the buffer is at least one VECTOR_SIZE
+        // in length. A single 128-bit level is enough here, so only one copy of the
+        // vector loop is generated per target.
+        if bytes.len() >= VECTOR_SIZE {
+            // Without std there is no runtime detection, but the statically enabled
+            // level (e.g. NEON on aarch64) can still be used.
+            {
+                let level = Level::try_detect().unwrap_or(Level::baseline());
+                #[cfg(target_arch = "aarch64")]
+                if let Some(neon) = level.as_neon() {
+                    return neon.vectorize(
+                        #[inline(always)]
+                        || simd_iterate_special_bytes(neon, &lut.simd, bytes, ix, &mut callback),
+                    );
+                }
+                // Note that SSE2 has no byte shuffle, so it is not worth it there.
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                if let Some(sse4_2) = level.as_sse4_2() {
+                    return sse4_2.vectorize(
+                        #[inline(always)]
+                        || simd_iterate_special_bytes(sse4_2, &lut.simd, bytes, ix, &mut callback),
+                    );
+                }
+                #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+                if let Some(wasm) = level.as_wasm_simd128() {
+                    return wasm.vectorize(
+                        #[inline(always)]
+                        || simd_iterate_special_bytes(wasm, &lut.simd, bytes, ix, &mut callback),
+                    );
+                }
+                let _ = level;
+            }
         }
+        super::scalar_iterate_special_bytes(&lut.scalar, bytes, ix, callback)
     }
 
     /// Calls the callback function for every 1 in the given bitmask with
     /// the index `offset + ix`, where `ix` is the position of the 1 in the mask.
     /// Returns `Ok(ix)` to continue from index `ix`, `Err((end_ix, opt_val)` to break with
     /// final index `end_ix` and optional value `opt_val`.
-    unsafe fn process_mask<F, T>(
-        mut mask: i32,
+    #[inline(always)]
+    fn process_mask<F, T>(
+        mut mask: u64,
         bytes: &[u8],
         mut offset: usize,
         callback: &mut F,
@@ -3101,16 +3227,16 @@ mod simd {
         F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
     {
         while mask != 0 {
-            let mask_ix = mask.trailing_zeros() as usize;
+            let mask_ix = mask.trailing_zeros() as usize / LANE_BITS;
             offset += mask_ix;
-            match callback(offset, *bytes.get_unchecked(offset)) {
+            match callback(offset, bytes[offset]) {
                 LoopInstruction::ContinueAndSkip(skip) => {
                     offset += skip + 1;
                     let shift = skip + 1 + mask_ix;
-                    if shift >= 32 {
+                    if shift >= VECTOR_SIZE {
                         break;
                     }
-                    mask >>= shift;
+                    mask >>= shift * LANE_BITS;
                 }
                 LoopInstruction::BreakAtWith(ix, val) => return Err((ix, val)),
             }
@@ -3118,10 +3244,10 @@ mod simd {
         Ok(offset)
     }
 
-    #[target_feature(enable = "ssse3")]
-    /// Important: only call this function when `bytes.len() >= 16`. Doing
-    /// so otherwise may exhibit undefined behaviour.
-    unsafe fn simd_iterate_special_bytes<F, T>(
+    /// Panics when `bytes.len() < VECTOR_SIZE`.
+    #[inline(always)]
+    fn simd_iterate_special_bytes<S: Simd, F, T>(
+        simd: S,
         lut: &[u8; 16],
         bytes: &[u8],
         mut ix: usize,
@@ -3130,11 +3256,10 @@ mod simd {
     where
         F: FnMut(usize, u8) -> LoopInstruction<Option<T>>,
     {
-        debug_assert!(bytes.len() >= VECTOR_SIZE);
         let upperbound = bytes.len() - VECTOR_SIZE;
 
         while ix < upperbound {
-            let mask = compute_mask(lut, bytes, ix);
+            let mask = compute_mask(simd, lut, bytes, ix);
             let block_start = ix;
             ix = match process_mask(mask, bytes, ix, &mut callback) {
                 Ok(ix) => core::cmp::max(ix, VECTOR_SIZE + block_start),
@@ -3144,7 +3269,8 @@ mod simd {
 
         if bytes.len() > ix {
             // shift off the bytes at start we have already scanned
-            let mask = compute_mask(lut, bytes, upperbound) >> ix - upperbound;
+            let mask =
+                compute_mask(simd, lut, bytes, upperbound) >> ((ix - upperbound) * LANE_BITS);
             if let Err((end_ix, val)) = process_mask(mask, bytes, ix, &mut callback) {
                 return (end_ix, val);
             }
@@ -3157,6 +3283,7 @@ mod simd {
     mod simd_test {
         use super::{super::create_lut, iterate_special_bytes, LoopInstruction};
         use crate::Options;
+        use alloc::vec::Vec;
 
         fn check_expected_indices(bytes: &[u8], expected: &[usize], skip: usize) {
             let mut opts = Options::empty();
@@ -3201,6 +3328,67 @@ mod simd {
         #[test]
         fn border_skip() {
             check_expected_indices("0123456789abcde~~~~d&f0".as_bytes(), &[15, 20], 3);
+        }
+
+        /// Compares the SIMD implementation to the scalar one on pseudo random
+        /// inputs, skips and breaks, for several option sets.
+        #[test]
+        fn matches_scalar() {
+            let alphabet = b"ab \n\r*_&\\[]<!`|~^=${}.-\"'\0\x7f\xc3\xa4\xe2";
+            let option_sets = [
+                Options::empty(),
+                Options::all(),
+                Options::ENABLE_TABLES | Options::ENABLE_MATH,
+                Options::ENABLE_SMART_PUNCTUATION | Options::ENABLE_HIGHLIGHT,
+            ];
+            let mut state = 0x9e37_79b9_7f4a_7c15u64;
+            let mut next = move || {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                state
+            };
+            for opts in option_sets {
+                let lut = create_lut(&opts);
+                for len in 0..80 {
+                    for _ in 0..32 {
+                        let bytes: Vec<u8> = (0..len)
+                            .map(|_| alphabet[(next() % alphabet.len() as u64) as usize])
+                            .collect();
+                        let start = if len == 0 {
+                            0
+                        } else {
+                            (next() % (len as u64 + 2)) as usize
+                        };
+                        let seed = next();
+                        let run = |simd: bool| {
+                            let mut calls = vec![];
+                            let mut rng = seed;
+                            let callback = |ix: usize, byte: u8| {
+                                calls.push((ix, byte));
+                                rng = rng.rotate_left(7) ^ (ix as u64).wrapping_mul(0x9e37_79b9);
+                                match rng % 16 {
+                                    0 => LoopInstruction::BreakAtWith(ix, Some(byte)),
+                                    1..=5 => LoopInstruction::ContinueAndSkip((rng % 24) as usize),
+                                    _ => LoopInstruction::ContinueAndSkip(0),
+                                }
+                            };
+                            let ret = if simd {
+                                iterate_special_bytes(&lut, &bytes, start, callback)
+                            } else {
+                                super::super::scalar_iterate_special_bytes(
+                                    &lut.scalar,
+                                    &bytes,
+                                    start,
+                                    callback,
+                                )
+                            };
+                            (ret, calls)
+                        };
+                        assert_eq!(run(true), run(false), "bytes: {:?} start: {}", bytes, start);
+                    }
+                }
+            }
         }
 
         #[test]

@@ -14,6 +14,9 @@ edition = "2021"
 rust-version = "1.70" # Update README.md and GitHub action when changing this
 readme = "./README.md"
 
+[dependencies]
+fearless_simd = { version = "1.0", optional = true, default-features = false }
+
 [features]
-simd = []
-std = []
+simd = ["dep:fearless_simd", "fearless_simd/libm"]
+std = ["fearless_simd?/std"]

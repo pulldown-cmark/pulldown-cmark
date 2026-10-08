@@ -14,7 +14,7 @@ a library.
 It is designed to be:
 
 - Fast; a bare minimum of allocation and copying
-- Safe; written in pure Rust with no unsafe blocks (except in the opt-in SIMD feature)
+- Safe; written in pure Rust with no unsafe blocks, including the opt-in SIMD feature
 - Versatile; in particular source-maps are supported
 - Correct; the goal is 100% compliance with the [CommonMark spec](http://spec.commonmark.org/)
 
@@ -165,8 +165,9 @@ Or add this package as dependency of your project using `cargo add`:
 > cargo add pulldown-cmark --no-default-features
 ```
 
-SIMD accelerated scanners are available for the x64 platform from version 0.5 onwards. To
-enable them, build with simd feature:
+SIMD accelerated scanners are available for x86/x86_64 (SSE4.2), aarch64 (NEON) and
+wasm32 (`simd128` target feature), built on [fearless_simd](https://crates.io/crates/fearless_simd).
+The simd feature requires Rust 1.89 or newer. To enable them, build with simd feature:
 
 ```bash
 > cargo build --release --features simd
@@ -185,6 +186,13 @@ lto = true
 codegen-units = 1
 panic = "abort"
 ```
+
+Profile-guided optimization (PGO) helps considerably more: training on a
+markdown corpus and benchmarking on unrelated real-world READMEs made parsing
+about 16% and parsing plus HTML rendering about 14% faster (Apple M-series).
+See the [rustc PGO guide](https://doc.rust-lang.org/rustc/profile-guided-optimization.html)
+or [cargo-pgo](https://github.com/Kobzol/cargo-pgo); train with documents
+similar to your own.
 
 ### `no_std` support
 

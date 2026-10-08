@@ -571,9 +571,6 @@ pub(crate) fn scan_closing_code_fence(
     fence_char: u8,
     n_fence_char: usize,
 ) -> Option<usize> {
-    if bytes.is_empty() {
-        return Some(0);
-    }
     let mut i = 0;
     let num_fence_chars_found = scan_ch_repeat(&bytes[i..], fence_char);
     if num_fence_chars_found < n_fence_char {

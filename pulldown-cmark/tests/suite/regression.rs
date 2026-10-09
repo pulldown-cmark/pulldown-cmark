@@ -4079,3 +4079,25 @@ fn regression_test_257() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_258() {
+    let original = r##"<script>
+alert(1)
+</SCRIPT>
+
+# Title
+
+<PrE>text</pRe>
+*emphasis*
+"##;
+    let expected = r##"<script>
+alert(1)
+</SCRIPT>
+<h1>Title</h1>
+<PrE>text</pRe>
+<p><em>emphasis</em></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

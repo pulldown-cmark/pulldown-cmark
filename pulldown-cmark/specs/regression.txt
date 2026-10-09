@@ -3426,3 +3426,24 @@ y--> b</p>
 </blockquote>
 </blockquote>
 ````````````````````````````````
+
+The end condition of an HTML block that starts with `<pre`, `<script`, `<style` or
+`<textarea` is case-insensitive (spec 4.6, start condition 1).
+
+```````````````````````````````` example
+<script>
+alert(1)
+</SCRIPT>
+
+# Title
+
+<PrE>text</pRe>
+*emphasis*
+.
+<script>
+alert(1)
+</SCRIPT>
+<h1>Title</h1>
+<PrE>text</pRe>
+<p><em>emphasis</em></p>
+````````````````````````````````

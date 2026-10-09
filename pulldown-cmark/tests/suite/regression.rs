@@ -3965,3 +3965,117 @@ fn regression_test_249() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_250() {
+    let original = r##"> a <!--x
+> y--> b
+"##;
+    let expected = r##"<blockquote>
+<p>a <!--x
+y--> b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_251() {
+    let original = r##"> a <?x
+> y?> b
+"##;
+    let expected = r##"<blockquote>
+<p>a <?x
+y?> b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_252() {
+    let original = r##"> a <!X
+> y> b
+"##;
+    let expected = r##"<blockquote>
+<p>a <!X
+y> b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_253() {
+    let original = r##"> a <![CDATA[x
+> y]]> b
+"##;
+    let expected = r##"<blockquote>
+<p>a <![CDATA[x
+y]]> b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_254() {
+    let original = r##"- a <!--x
+  y--> b
+"##;
+    let expected = r##"<ul>
+<li>a <!--x
+y--> b</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_255() {
+    let original = r##"- a <!X
+  y> b
+"##;
+    let expected = r##"<ul>
+<li>a <!X
+y> b</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_256() {
+    let original = r##"> a <!--x
+y--> b
+"##;
+    let expected = r##"<blockquote>
+<p>a <!--x
+y--> b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_257() {
+    let original = r##"> a <!X
+> > y
+"##;
+    let expected = r##"<blockquote>
+<p>a &lt;!X</p>
+<blockquote>
+<p>y</p>
+</blockquote>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

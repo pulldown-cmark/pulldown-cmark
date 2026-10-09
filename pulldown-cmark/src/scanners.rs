@@ -23,7 +23,7 @@
 use alloc::{string::String, vec::Vec};
 use core::char;
 
-use memchr::{memchr, memchr2};
+use memchr::{memchr, memchr2, memchr3};
 
 pub(crate) use crate::puncttable::{is_ascii_punctuation, is_punctuation};
 use crate::{
@@ -1507,11 +1507,14 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 }
 
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
-/// Returns byte offset on match.
+/// Returns byte offset on match. `skip_prefixes` gives the length of the container prefixes
+/// (`>`, indentation) at the start of a continuation line; a declaration must not end at the `>`
+/// of a block quote marker.
 pub(crate) fn scan_inline_html_comment(
     bytes: &[u8],
     mut ix: usize,
     scan_guard: &mut HtmlScanGuard,
+    skip_prefixes: &dyn Fn(&[u8]) -> usize,
 ) -> Option<usize> {
     let c = *bytes.get(ix)?;
     ix += 1;
@@ -1559,13 +1562,21 @@ pub(crate) fn scan_inline_html_comment(
         // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
         // including the character >, and the character >.
         _ if c.is_ascii_alphabetic() && ix > scan_guard.declaration => {
-            ix = memchr(b'>', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-            if bytes.get(ix) != Some(&b'>') {
-                scan_guard.declaration = ix;
-                None
-            } else {
-                Some(ix + 1)
+            while let Some(x) = memchr3(b'>', b'\n', b'\r', &bytes[ix..]) {
+                ix += x;
+                if bytes[ix] == b'>' {
+                    return Some(ix + 1);
+                }
+                if let Some(eol) = scan_eol(&bytes[ix..]) {
+                    ix += eol;
+                    ix += skip_prefixes(&bytes[ix..]);
+                } else {
+                    // not a line break
+                    ix += 1;
+                }
             }
+            scan_guard.declaration = bytes.len();
+            None
         }
         _ => None,
     }

@@ -1405,7 +1405,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if contains_ignore_ascii_case(&bytes[line_start_ix..ix], html_end_tag.as_bytes()) {
+            if ends_html_block(&bytes[line_start_ix..ix], html_end_tag) {
                 end_ix = ix;
                 break;
             }
@@ -2407,13 +2407,24 @@ fn scan_paragraph_interrupt_no_table(
                 .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
-/// Whether `haystack` contains `needle`, ignoring ASCII case. HTML block end conditions are
-/// case-insensitive (`</pre>`, `</script>`, `</style>`, `</textarea>`, spec 4.6); the others
-/// (`-->`, `?>`, `]]>`, `>`) have no letters.
-fn contains_ignore_ascii_case(haystack: &[u8], needle: &[u8]) -> bool {
-    haystack
-        .windows(needle.len())
-        .any(|window| window.eq_ignore_ascii_case(needle))
+const HTML_BLOCK_TYPE_1_END_TAGS: [&str; 4] = ["</pre>", "</style>", "</script>", "</textarea>"];
+
+/// Whether `line` meets the end condition of an HTML block whose start gave `html_end_tag`.
+/// For blocks started by `<pre`, `<script`, `<style` or `<textarea` (spec 4.6, type 1) any of
+/// their four end tags ends the block, case-insensitively: it "need not match the start tag".
+/// The other end conditions (`-->`, `?>`, `]]>`, `>`) have no letters.
+fn ends_html_block(line: &[u8], html_end_tag: &str) -> bool {
+    let contains = |needle: &[u8]| {
+        line.windows(needle.len())
+            .any(|window| window.eq_ignore_ascii_case(needle))
+    };
+    if HTML_BLOCK_TYPE_1_END_TAGS.contains(&html_end_tag) {
+        HTML_BLOCK_TYPE_1_END_TAGS
+            .iter()
+            .any(|tag| contains(tag.as_bytes()))
+    } else {
+        contains(html_end_tag.as_bytes())
+    }
 }
 
 /// Assumes `text_bytes` is preceded by `<`.
@@ -2421,10 +2432,7 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
     static BEGIN_TAGS: &[&[u8]; 4] = &[b"pre", b"style", b"script", b"textarea"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-    for (beg_tag, end_tag) in BEGIN_TAGS
-        .iter()
-        .zip(["</pre>", "</style>", "</script>", "</textarea>"].iter())
-    {
+    for (beg_tag, end_tag) in BEGIN_TAGS.iter().zip(HTML_BLOCK_TYPE_1_END_TAGS.iter()) {
         let tag_len = beg_tag.len();
 
         if text_bytes.len() < tag_len {

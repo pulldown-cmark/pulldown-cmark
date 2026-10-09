@@ -432,12 +432,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // pattern
             if let Some(block_type) = get_html_block_type_1_through_5(&bytes[(ix + 1)..]) {
                 self.finish_list(start_ix);
-                return self.parse_html_block_type_1_to_5(
-                    ix,
-                    block_type,
-                    remaining_space,
-                    indent,
-                );
+                return self.parse_html_block_type_1_to_5(ix, block_type, remaining_space, indent);
             }
 
             // Detect type 6
@@ -2386,7 +2381,8 @@ fn scan_paragraph_interrupt_no_table(
                 && (scan_blank_line(&bytes[ix..]).is_none())
         })
         || bytes.starts_with(b"<")
-            && (get_html_block_type_1_through_5(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
+            && (get_html_block_type_1_through_5(&bytes[1..]).is_some()
+                || starts_html_block_type_6(&bytes[1..]))
         || definition_list
             && ((current_container
                 && tree.peek_up().map_or(false, |cur| {
@@ -2430,9 +2426,7 @@ fn ends_html_block(line: &[u8], block_type: HtmlBlockType1Through5) -> bool {
         HtmlBlockType1Through5::Type4 => b"",
         HtmlBlockType1Through5::Type5 => b"]]",
     };
-    memchr::memchr_iter(b'>', line).any(|i| {
-        line[..i].ends_with(end_condition_without_gt)
-    })
+    memchr::memchr_iter(b'>', line).any(|i| line[..i].ends_with(end_condition_without_gt))
 }
 
 /// <https://spec.commonmark.org/0.31.2/#html-blocks>

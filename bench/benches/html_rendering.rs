@@ -153,10 +153,7 @@ This is a [link](example.com). **Cool!**
     });
 
     c.bench_function("html_block_type_6", |b| {
-        let input = concat!(
-            "<DIV",
-            include_str!("../third_party/markdown-it/lorem1.md"),
-        );
+        let input = concat!("<DIV", include_str!("../third_party/markdown-it/lorem1.md"),);
 
         b.iter(|| Parser::new_ext(input, Options::empty()).count());
     });

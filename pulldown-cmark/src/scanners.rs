@@ -461,10 +461,11 @@ fn is_digit(c: u8) -> bool {
     c.is_ascii_digit()
 }
 
+/// Not spaces, tabs, line endings, `"`, `'`, `=`, `<`, `>`, or `` ` `` (spec 6.6).
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
     !matches!(
         c,
-        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
+        b'\'' | b'"' | b' ' | b'\t' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
     )
 }
 
@@ -1208,7 +1209,7 @@ fn scan_attribute_value(
             }
             return None;
         }
-        b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => {
+        b' ' | b'\t' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => {
             return None;
         }
         _ => {
@@ -1394,6 +1395,17 @@ pub(crate) fn scan_html_block_inner(
 
     if close_tag_bytes == 0 {
         i += scan_ch(&data[i..], b'/');
+    } else if let Some(eol_bytes @ 1..) = scan_eol(&data[i..]) {
+        // A closing tag may have spaces, tabs and up to one line ending before its `>`.
+        let handler = newline_handler?;
+        i += eol_bytes;
+        let skipped_bytes = handler(&data[i..]);
+        if skipped_bytes > 0 {
+            buffer.extend(&data[last_buf_index..i]);
+            i += skipped_bytes;
+            last_buf_index = i;
+        }
+        i += scan_whitespace_no_nl(&data[i..]);
     }
 
     if data.get(i) != Some(&b'>') {
@@ -1548,16 +1560,15 @@ pub(crate) fn scan_inline_html_comment(
         // including the string `]]>`, and the string `]]>`.
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata => {
             ix += b"CDATA[".len();
-            ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-            let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
-            ix += close_brackets;
-
-            if close_brackets == 0 || bytes.get(ix) != Some(&b'>') {
-                scan_guard.cdata = ix;
-                None
-            } else {
-                Some(ix + 1)
+            while let Some(x) = memchr(b']', &bytes[ix..]) {
+                ix += x + 1;
+                if bytes[ix..].starts_with(b"]>") {
+                    return Some(ix + 2);
+                }
             }
+            // No `]]>` anywhere after this point.
+            scan_guard.cdata = bytes.len();
+            None
         }
         // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
         // including the character >, and the character >.

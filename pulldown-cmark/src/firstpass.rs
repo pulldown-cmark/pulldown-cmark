@@ -341,7 +341,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                         }
                         self.tree.push();
-                        return summary_end + 1;
+                        // the next block starts after the opening fence's line (and its line
+                        // ending, if any)
+                        return line_end;
                     }
                 }
             } else {

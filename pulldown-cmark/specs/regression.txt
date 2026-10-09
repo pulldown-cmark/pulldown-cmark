@@ -3477,3 +3477,32 @@ b
 <p>a<br />
 b</p>
 ````````````````````````````````
+
+A backslash before a line ending at the end of a link's text is a hard break: the end of
+the link text is not the end of the block.
+
+```````````````````````````````` example
+[*a\
+]()
+.
+<p><a href="">*a<br />
+</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[a*\
+](b) c
+.
+<p><a href="b">a*<br />
+</a> c</p>
+````````````````````````````````
+
+Unchanged: without an unmatched delimiter.
+
+```````````````````````````````` example
+[a\
+]()
+.
+<p><a href="">a<br />
+</a></p>
+````````````````````````````````

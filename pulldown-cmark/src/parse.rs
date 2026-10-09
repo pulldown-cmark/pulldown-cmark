@@ -1213,7 +1213,14 @@ impl<'input> ParserInner<'input> {
                     cur = self.tree[cur_ix].next;
                 }
                 ItemBody::HardBreak(true) => {
-                    if self.tree[cur_ix].next.is_none() {
+                    // A backslash at the end of a block is not a hard break. The last item of
+                    // an inline container's children (a link's text) is not the end of the
+                    // block: this pass also runs on those children.
+                    let in_inline = self
+                        .tree
+                        .peek_up()
+                        .is_some_and(|up| self.tree[up].item.body.is_inline());
+                    if self.tree[cur_ix].next.is_none() && !in_inline {
                         self.tree[cur_ix].item.body = ItemBody::SynthesizeChar('\\');
                     }
                     prev = cur;

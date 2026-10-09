@@ -3460,3 +3460,39 @@ a <![CDATA[]]> b
 .
 <p>a <![CDATA[]]> b</p>
 ````````````````````````````````
+
+An unquoted attribute value doesn't include tabs: after `x` the tag needs another
+attribute or its end, and `)` is neither.
+
+```````````````````````````````` example
+<a h=x→)>
+.
+<p>&lt;a h=x→)&gt;</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a <a h=x→)> b
+.
+<p>a &lt;a h=x→)&gt; b</p>
+````````````````````````````````
+
+Unchanged: an attribute with no value before the tab, a tab between attributes, and a tab
+inside a quoted value.
+
+```````````````````````````````` example
+a <b c=→>
+.
+<p>a &lt;b c=→&gt;</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a <b c=d→e> f
+.
+<p>a <b c=d→e> f</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a <b c='d→e'> f
+.
+<p>a <b c='d→e'> f</p>
+````````````````````````````````

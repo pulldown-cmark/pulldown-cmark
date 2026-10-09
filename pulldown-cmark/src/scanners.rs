@@ -461,10 +461,11 @@ fn is_digit(c: u8) -> bool {
     c.is_ascii_digit()
 }
 
+/// Not spaces, tabs, line endings, `"`, `'`, `=`, `<`, `>`, or `` ` `` (spec 6.6).
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
     !matches!(
         c,
-        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
+        b'\'' | b'"' | b' ' | b'\t' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
     )
 }
 
@@ -1208,7 +1209,7 @@ fn scan_attribute_value(
             }
             return None;
         }
-        b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => {
+        b' ' | b'\t' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r' => {
             return None;
         }
         _ => {

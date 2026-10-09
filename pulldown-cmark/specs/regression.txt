@@ -3426,3 +3426,73 @@ y--> b</p>
 </blockquote>
 </blockquote>
 ````````````````````````````````
+
+The end condition of an HTML block that starts with `<pre`, `<script`, `<style` or
+`<textarea` is case-insensitive (spec 4.6, start condition 1).
+
+```````````````````````````````` example
+<script>
+alert(1)
+</SCRIPT>
+
+# Title
+
+<PrE>text</pRe>
+*emphasis*
+.
+<script>
+alert(1)
+</SCRIPT>
+<h1>Title</h1>
+<PrE>text</pRe>
+<p><em>emphasis</em></p>
+````````````````````````````````
+
+The end tag need not match the start tag: any of `</pre>`, `</script>`, `</style>`,
+`</textarea>` ends a block started by any of the four.
+
+```````````````````````````````` example
+<script>
+x
+</TEXTAREA>
+*y*
+.
+<script>
+x
+</TEXTAREA>
+<p><em>y</em></p>
+````````````````````````````````
+
+```````````````````````````````` example
+<style>a</script>
+*b*
+.
+<style>a</script>
+<p><em>b</em></p>
+````````````````````````````````
+
+```````````````````````````````` example
+<textarea
+</pRe>
++
+.
+<textarea
+</pRe>
+<ul>
+<li></li>
+</ul>
+````````````````````````````````
+
+A comment (type 2) does not end at `</pre>`.
+
+```````````````````````````````` example
+<!-- a
+</pre>
+*d*
+-->
+.
+<!-- a
+</pre>
+*d*
+-->
+````````````````````````````````

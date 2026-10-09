@@ -1395,6 +1395,17 @@ pub(crate) fn scan_html_block_inner(
 
     if close_tag_bytes == 0 {
         i += scan_ch(&data[i..], b'/');
+    } else if let Some(eol_bytes @ 1..) = scan_eol(&data[i..]) {
+        // A closing tag may have spaces, tabs and up to one line ending before its `>`.
+        let handler = newline_handler?;
+        i += eol_bytes;
+        let skipped_bytes = handler(&data[i..]);
+        if skipped_bytes > 0 {
+            buffer.extend(&data[last_buf_index..i]);
+            i += skipped_bytes;
+            last_buf_index = i;
+        }
+        i += scan_whitespace_no_nl(&data[i..]);
     }
 
     if data.get(i) != Some(&b'>') {

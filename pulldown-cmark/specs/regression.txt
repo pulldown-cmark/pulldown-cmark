@@ -3496,3 +3496,45 @@ a <b c='d→e'> f
 .
 <p>a <b c='d→e'> f</p>
 ````````````````````````````````
+
+A closing tag may have spaces, tabs and up to one line ending before its `>`. (With fewer
+than four columns of indentation the `>` starts a block quote instead.)
+
+```````````````````````````````` example
+a </t
+→> b
+.
+<p>a </t
+→> b</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a </t
+    > b
+.
+<p>a </t
+    > b</p>
+````````````````````````````````
+
+Unchanged: a blank line, or a block quote marker.
+
+```````````````````````````````` example
+a </t
+
+> b
+.
+<p>a &lt;/t</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+a </t
+> b
+.
+<p>a &lt;/t</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+````````````````````````````````

@@ -4181,3 +4181,56 @@ fn regression_test_267() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_268() {
+    let original = r##"a </t
+	> b
+"##;
+    let expected = r##"<p>a </t
+	> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_269() {
+    let original = r##"a </t
+    > b
+"##;
+    let expected = r##"<p>a </t
+    > b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_270() {
+    let original = r##"a </t
+
+> b
+"##;
+    let expected = r##"<p>a &lt;/t</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_271() {
+    let original = r##"a </t
+> b
+"##;
+    let expected = r##"<p>a &lt;/t</p>
+<blockquote>
+<p>b</p>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

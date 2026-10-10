@@ -3338,6 +3338,95 @@ Bug reported in <https://github.com/pulldown-cmark/pulldown-cmark/pull/1166>, bu
 ````````````````````````````````
 
 
+
+Comments, processing instructions, declarations and CDATA sections that continue on the
+next line of a block quote or list item: the container prefix is not part of the HTML,
+and a block quote's `>` does not end a declaration.
+
+```````````````````````````````` example
+> a <!--x
+> y--> b
+.
+<blockquote>
+<p>a <!--x
+y--> b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> a <?x
+> y?> b
+.
+<blockquote>
+<p>a <?x
+y?> b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> a <!X
+> y> b
+.
+<blockquote>
+<p>a <!X
+y> b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> a <![CDATA[x
+> y]]> b
+.
+<blockquote>
+<p>a <![CDATA[x
+y]]> b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+- a <!--x
+  y--> b
+.
+<ul>
+<li>a <!--x
+y--> b</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+- a <!X
+  y> b
+.
+<ul>
+<li>a <!X
+y> b</li>
+</ul>
+````````````````````````````````
+
+Unchanged: a lazy continuation line, and a line that leaves the block quote.
+
+```````````````````````````````` example
+> a <!--x
+y--> b
+.
+<blockquote>
+<p>a <!--x
+y--> b</p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+> a <!X
+> > y
+.
+<blockquote>
+<p>a &lt;!X</p>
+<blockquote>
+<p>y</p>
+</blockquote>
+</blockquote>
+````````````````````````````````
+
 The language class stops at a tab in the info string, like it does at a space
 
 ```````````````````````````````` example

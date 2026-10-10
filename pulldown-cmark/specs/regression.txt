@@ -3426,3 +3426,14 @@ y--> b</p>
 </blockquote>
 </blockquote>
 ````````````````````````````````
+
+The language class stops at a tab in the info string, like it does at a space
+
+```````````````````````````````` example
+```rust→ignore
+fn main() {}
+```
+.
+<pre><code class="language-rust">fn main() {}
+</code></pre>
+````````````````````````````````

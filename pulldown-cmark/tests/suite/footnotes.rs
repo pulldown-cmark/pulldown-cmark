@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn footnotes_test_1() {
+fn footnotes_test_0001_l14() {
     let original = r##"Lorem ipsum.[^a] [^missing]
 
 [^a]: Cool.
@@ -15,11 +15,11 @@ fn footnotes_test_1() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_2() {
+fn footnotes_test_0002_l28() {
     let original = r##"> This is the song that never ends.\
 > Yes it goes on and on my friends.[^lambchops]
 >
@@ -34,11 +34,11 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_3() {
+fn footnotes_test_0003_l48() {
     let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]:
@@ -55,11 +55,11 @@ fn footnotes_test_3() {
 </ul>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_4() {
+fn footnotes_test_0004_l68() {
     let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]:
@@ -77,11 +77,11 @@ fn footnotes_test_4() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_5() {
+fn footnotes_test_0005_l89() {
     let original = r##"[^not-code] [^code] [^quote] [^not-quote] [^indented-quote]
 
 [^not-code]:         not code
@@ -114,11 +114,11 @@ fn footnotes_test_5() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_6() {
+fn footnotes_test_0006_l126() {
     let original = r##"[^ab] [^cd]
 
 [^ab]: a
@@ -138,11 +138,11 @@ d</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_7() {
+fn footnotes_test_0007_l149() {
     let original = r##"[^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
 
 I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
@@ -161,11 +161,11 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_8() {
+fn footnotes_test_0008_l172() {
     let original = r##"[^ipsum]: How much wood would a woodchuck chuck.
 
 If a woodchuck could chuck wood.
@@ -180,11 +180,11 @@ If a woodchuck could chuck wood.
 <h1>Forms of entertainment that aren't childish</h1>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_9() {
+fn footnotes_test_0009_l192() {
     let original = r##"Footnotes [^one] [^many].
 
 [^one]:
@@ -213,11 +213,11 @@ fn footnotes_test_9() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_10() {
+fn footnotes_test_0010_l224() {
     let original = r##"> He's also really stupid. [^why]
 >
 > [^why]: Because your mamma!
@@ -233,11 +233,11 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 <p>As such, we can guarantee that the non-childish forms of entertainment are probably more entertaining to adults, since, having had a whole childhood doing the childish ones, the non-childish ones are merely the ones that haven't gotten boring yet.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_11() {
+fn footnotes_test_0011_l244() {
     let original = r##"Nested footnotes are considered poor style. [^a] [^xkcd] [^indent1] [^indent2]
 
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
@@ -277,11 +277,11 @@ fn footnotes_test_11() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_12() {
+fn footnotes_test_0012_l284() {
     let original = r##"[^foo] [^bar]
 
 [^foo]: [^bar]: 1
@@ -293,11 +293,11 @@ fn footnotes_test_12() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_13() {
+fn footnotes_test_0013_l298() {
     let original = r##"[^Doh] Ray Me Fa So La Te Do! [^1]
 
 [^Doh]: I know. Wrong Doe. And it won't render right.
@@ -312,11 +312,11 @@ fn footnotes_test_13() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_14() {
+fn footnotes_test_0014_l315() {
     let original = r##"Lorem ipsum.[^a]
 
 An unordered list before the footnotes:
@@ -336,11 +336,11 @@ An unordered list before the footnotes:
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_15() {
+fn footnotes_test_0015_l342() {
     let original = r##"Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]: * [The song that never ends](https://www.youtube.com/watch?v=0U2zJOryHKQ)
@@ -393,11 +393,11 @@ Songs that simply loop are a popular way to annoy people. [^examples3]
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_16() {
+fn footnotes_test_0016_l404() {
     let original = r##"My [cmark-gfm][^c].
 
 My [cmark-gfm][cmark-gfm][^c].
@@ -431,11 +431,11 @@ test suite into pulldown-cmark should be fine.</p>
 <p>[otherlink<sup class="footnote-reference"><a href="#c">1</a></sup>]: https://github.com/github/cmark-gfm/blob/1e230827a584ebc9938c3eadc5059c55ef3c9abf/test/extensions.txt#L702</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_17() {
+fn footnotes_test_0017_l441() {
     let original = r##"[^1]: footnote definition text
 
 <!-- -->
@@ -456,11 +456,11 @@ fn main() {
 </code></pre>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_18() {
+fn footnotes_test_0018_l465() {
     let original = r##"[^1]: footnote definition text
 [^1]\: this is a reference, rather than a definition
 "##;
@@ -470,11 +470,11 @@ fn footnotes_test_18() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_19() {
+fn footnotes_test_0019_l480() {
     let original = r##"[^1]:
 
     | column1 | column2 |
@@ -494,11 +494,11 @@ fn footnotes_test_19() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES | ENABLE_TABLES");
 }
 
 #[test]
-fn footnotes_test_20() {
+fn footnotes_test_0020_l509() {
     let original = r##"* First
   [^1]: test
 * Second [^1] test
@@ -556,11 +556,11 @@ Second <sup class="footnote-reference"><a href="#2">2</a></sup> test</p>
 </blockquote>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES | ENABLE_TABLES");
 }
 
 #[test]
-fn footnotes_test_21() {
+fn footnotes_test_0021_l569() {
     let original = r##"Test [^] link
 
 [^]: https://rust-lang.org
@@ -568,11 +568,11 @@ fn footnotes_test_21() {
     let expected = r##"<p>Test <a href="https://rust-lang.org">^</a> link</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_22() {
+fn footnotes_test_0022_l579() {
     let original = r##"[^foo\
 bar]: not a footnote definition
 
@@ -608,11 +608,11 @@ second</a>
 fourth]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_23() {
+fn footnotes_test_0023_l618() {
     let original = r##"[^foo
 ]: https://rust-lang.org
 
@@ -623,11 +623,11 @@ fn footnotes_test_23() {
 </a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_24() {
+fn footnotes_test_0024_l632() {
     let original = r##"footnote [^baz]
 footnote [^quux]
 
@@ -644,11 +644,11 @@ footnote [^quux]</p>
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_25() {
+fn footnotes_test_0025_l651() {
     let original = r##"Lorem ipsum.[^a][^b]
 
 [^a]: Foo
@@ -663,11 +663,11 @@ fn footnotes_test_25() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }
 
 #[test]
-fn footnotes_test_26() {
+fn footnotes_test_0026_l668() {
     let original = r##"Lorem ipsum.[^a] [^b]
 
 [^a]: Foo
@@ -682,5 +682,5 @@ fn footnotes_test_26() {
 </div>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_FOOTNOTES");
 }

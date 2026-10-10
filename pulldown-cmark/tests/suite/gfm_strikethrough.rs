@@ -4,17 +4,17 @@
 use super::test_markdown_html;
 
 #[test]
-fn gfm_strikethrough_test_1() {
+fn gfm_strikethrough_test_0001_l11() {
     let original = r##"~~Hi~~ Hello, ~there~ world!
 "##;
     let expected = r##"<p><del>Hi</del> Hello, <del>there</del> world!</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn gfm_strikethrough_test_2() {
+fn gfm_strikethrough_test_0002_l20() {
     let original = r##"This ~~has a
 
 new paragraph~~.
@@ -23,15 +23,15 @@ new paragraph~~.
 <p>new paragraph~~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn gfm_strikethrough_test_3() {
+fn gfm_strikethrough_test_0003_l31() {
     let original = r##"This will ~~~not~~~ strike.
 "##;
     let expected = r##"<p>This will ~~~not~~~ strike.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }

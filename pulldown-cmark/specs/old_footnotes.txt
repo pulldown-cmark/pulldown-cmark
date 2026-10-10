@@ -1,8 +1,10 @@
+Parser options: `ENABLE_OLD_FOOTNOTES`
+
 Run this with `cargo test --features gen-tests suite::old_footnotes`.
 
 This is how footnotes are basically used.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 Lorem ipsum.[^a]
 
 [^a]: Cool.
@@ -16,7 +18,7 @@ Lorem ipsum.[^a]
 
 Footnotes can be used inside blockquotes:
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 > This is the song that never ends.\
 > Yes it goes on and on my friends.[^lambchops]
 >
@@ -34,7 +36,7 @@ Yes it goes on and on my friends.<sup class="footnote-reference"><a href="#lambc
 
 Footnotes can be complex block structures:
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 Songs that simply loop are a popular way to annoy people. [^examples]
 
 [^examples]:
@@ -55,7 +57,7 @@ Songs that simply loop are a popular way to annoy people. [^examples]
 
 Footnotes can even have multiple paragraphs. They also don't need to be referenced to show up.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 [^lorem]: If heaven ever wishes to grant me a boon, it will be a total effacing of the results of a mere chance which fixed my eye on a certain stray piece of shelf-paper. It was nothing on which I would naturally have stumbled in the course of my daily round, for it was an old number of an Australian journal, the Sydney Bulletin for April 18, 1925. It had escaped even the cutting bureau which had at the time of its issuance been avidly collecting material for my uncle's research.
 
 I had largely given over my inquiries into what Professor Angell called the "Cthulhu Cult", and was visiting a learned friend in Paterson, New Jersey; the curator of a local museum and a mineralogist of note. Examining one day the reserve specimens roughly set on the storage shelves in a rear room of the museum, my eye was caught by an odd picture in one of the old papers spread beneath the stones. It was the Sydney Bulletin I have mentioned, for my friend had wide affiliations in all conceivable foreign parts; and the picture was a half-tone cut of a hideous stone image almost identical with that which Legrasse had found in the swamp.
@@ -70,7 +72,7 @@ I had largely given over my inquiries into what Professor Angell called the "Cth
 A footnote will end on a single line break. Note that this behavior changed in version
 0.1.0, to become more like hoedown. See issue #21.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 [^ipsum]: How much wood would a woodchuck chuck.
 
 If a woodchuck could chuck wood.
@@ -88,7 +90,7 @@ If a woodchuck could chuck wood.
 
 A footnote will also break if it's inside another container.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 > He's also really stupid. [^why]
 >
 > [^why]: Because your mamma!
@@ -107,7 +109,7 @@ As such, we can guarantee that the non-childish forms of entertainment are proba
 
 As a special exception, footnotes cannot be nested directly inside each other.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 Nested footnotes are considered poor style. [^a] [^xkcd]
 
 [^a]: This does not mean that footnotes cannot reference each other. [^b]
@@ -139,7 +141,7 @@ Nested footnotes are considered poor style. [^a] [^xkcd]
 
 They do need one line between each other.
 
-```````````````````````````````` example_old_footnotes
+```````````````````````````````` example
 [^Doh] Ray Me Fa So La Te Do! [^1]
 
 [^Doh]: I know. Wrong Doe. And it will render right.

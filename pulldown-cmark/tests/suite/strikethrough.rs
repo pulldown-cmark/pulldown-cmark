@@ -4,151 +4,161 @@
 use super::test_markdown_html;
 
 #[test]
-fn strikethrough_test_1() {
+fn strikethrough_test_0001_l9() {
     let original = r##"~~This is *stricken out*~~
 "##;
     let expected = r##"<p><del>This is <em>stricken out</em></del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_2() {
+fn strikethrough_test_0002_l17() {
     let original = r##"~~This is \~\~stricken~~
 "##;
     let expected = r##"<p><del>This is ~~stricken</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_3() {
+fn strikethrough_test_0003_l25() {
     let original = r##"This~~is~~stricken
 "##;
     let expected = r##"<p>This<del>is</del>stricken</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_4() {
+fn strikethrough_test_0004_l31() {
     let original = r##"~~This~~is~~stricken~~
 "##;
     let expected = r##"<p><del>This</del>is<del>stricken</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_5() {
+fn strikethrough_test_0005_l40() {
     let original = r##"Here I strike out an exclamation point~~!~~.
 "##;
     let expected = r##"<p>Here I strike out an exclamation point<del>!</del>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_6() {
+fn strikethrough_test_0006_l50() {
     let original = r##"~This is stricken out~
 "##;
     let expected = r##"<p><del>This is stricken out</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_7() {
+fn strikethrough_test_0007_l58() {
     let original = r##"~This is \~stricken~
 "##;
     let expected = r##"<p><del>This is ~stricken</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_8() {
+fn strikethrough_test_0008_l66() {
     let original = r##"This~is~nothing
 "##;
     let expected = r##"<p>This~is~nothing</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_9() {
+fn strikethrough_test_0009_l72() {
     let original = r##"~This~is~nothing~
 "##;
     let expected = r##"<p><del>This~is~nothing</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_10() {
+fn strikethrough_test_0010_l81() {
     let original = r##"Here I fail to strike out an exclamation point~!~.
 "##;
     let expected = r##"<p>Here I fail to strike out an exclamation point~!~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_11() {
+fn strikethrough_test_0011_l89() {
     let original = r##"Here I fail to strike out a tilde ~~~.
 "##;
     let expected = r##"<p>Here I fail to strike out a tilde ~~~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_12() {
+fn strikethrough_test_0012_l95() {
     let original = r##"Here I fail to match up ~~tildes~.
 "##;
     let expected = r##"<p>Here I fail to match up ~~tildes~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_13() {
+fn strikethrough_test_0013_l101() {
     let original = r##"Here I fail to match up ~tildes~~.
 "##;
     let expected = r##"<p>Here I fail to match up ~tildes~~.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_14() {
+fn strikethrough_test_0014_l109() {
     let original = r##"~~This ~is stricken.~~
 "##;
     let expected = r##"<p><del>This ~is stricken.</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn strikethrough_test_15() {
+fn strikethrough_test_0015_l115() {
     let original = r##"~This ~~is stricken.~
 "##;
     let expected = r##"<p><del>This ~~is stricken.</del></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
+}
+
+#[test]
+fn strikethrough_test_0016_l123() {
+    let original = r##"~This ~~is stricken~ but this is not~~
+"##;
+    let expected = r##"<p><del>This ~~is stricken</del> but this is not~~</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_STRIKETHROUGH");
 }

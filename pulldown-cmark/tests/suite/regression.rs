@@ -4161,3 +4161,16 @@ fn regression_test_262() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_263() {
+    let original = r##"```rust	ignore
+fn main() {}
+```
+"##;
+    let expected = r##"<pre><code class="language-rust">fn main() {}
+</code></pre>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

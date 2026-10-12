@@ -267,7 +267,7 @@ where
                 }
                 match info {
                     CodeBlockKind::Fenced(info) => {
-                        let lang = info.split(' ').next().unwrap();
+                        let lang = info.split([' ', '\t']).next().unwrap();
                         if lang.is_empty() {
                             self.write("<pre><code>")
                         } else {

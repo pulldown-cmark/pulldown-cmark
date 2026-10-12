@@ -3507,3 +3507,14 @@ fn main() {}
 <pre><code class="language-rust">fn main() {}
 </code></pre>
 ````````````````````````````````
+
+Trailing spaces followed by a tab do not make a hard line break, since a tab is
+not a space
+
+```````````````````````````````` example
+foo  →
+bar
+.
+<p>foo
+bar</p>
+````````````````````````````````

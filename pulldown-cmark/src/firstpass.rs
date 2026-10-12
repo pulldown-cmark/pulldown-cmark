@@ -430,14 +430,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         if bytes[ix] == b'<' {
             // Types 1-5 are all detected by one function and all end with the same
             // pattern
-            if let Some(html_end_tag) = get_html_end_tag(&bytes[(ix + 1)..]) {
+            if let Some(block_type) = get_html_block_type_1_through_5(&bytes[(ix + 1)..]) {
                 self.finish_list(start_ix);
-                return self.parse_html_block_type_1_to_5(
-                    ix,
-                    html_end_tag,
-                    remaining_space,
-                    indent,
-                );
+                return self.parse_html_block_type_1_to_5(ix, block_type, remaining_space, indent);
             }
 
             // Detect type 6
@@ -1379,7 +1374,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn parse_html_block_type_1_to_5(
         &mut self,
         start_ix: usize,
-        html_end_tag: &str,
+        block_type: HtmlBlockType1Through5,
         mut remaining_space: usize,
         mut indent: usize,
     ) -> usize {
@@ -1405,7 +1400,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
 
-            if self.text[line_start_ix..ix].contains(html_end_tag) {
+            if ends_html_block(&bytes[line_start_ix..ix], block_type) {
                 end_ix = ix;
                 break;
             }
@@ -2386,7 +2381,8 @@ fn scan_paragraph_interrupt_no_table(
                 && (scan_blank_line(&bytes[ix..]).is_none())
         })
         || bytes.starts_with(b"<")
-            && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
+            && (get_html_block_type_1_through_5(&bytes[1..]).is_some()
+                || starts_html_block_type_6(&bytes[1..]))
         || definition_list
             && ((current_container
                 && tree.peek_up().map_or(false, |cur| {
@@ -2407,15 +2403,66 @@ fn scan_paragraph_interrupt_no_table(
                 .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
+const HTML_BLOCK_TYPE_1_END_TAGS: [&str; 4] = ["</pre>", "</style>", "</script>", "</textarea>"];
+
+/// Whether `line` meets the end condition of an HTML block whose start gave `html_end_tag`.
+/// For blocks started by `<pre`, `<script`, `<style` or `<textarea` (spec 4.6, type 1) any of
+/// their four end tags ends the block, case-insensitively: it "need not match the start tag".
+/// The other end conditions (`-->`, `?>`, `]]>`, `>`) have no letters.
+fn ends_html_block(line: &[u8], block_type: HtmlBlockType1Through5) -> bool {
+    let end_condition_without_gt: &[u8] = match block_type {
+        HtmlBlockType1Through5::Type1 => {
+            // Every type 1 end tag starts with `<`: try all four at each `<` in one pass.
+            return memchr::memchr_iter(b'<', line).any(|i| {
+                HTML_BLOCK_TYPE_1_END_TAGS.iter().any(|tag| {
+                    line.get(i..i + tag.len()).map_or(false, |candidate| {
+                        candidate.eq_ignore_ascii_case(tag.as_bytes())
+                    })
+                })
+            });
+        }
+        HtmlBlockType1Through5::Type2 => b"--",
+        HtmlBlockType1Through5::Type3 => b"?",
+        HtmlBlockType1Through5::Type4 => b"",
+        HtmlBlockType1Through5::Type5 => b"]]",
+    };
+    memchr::memchr_iter(b'>', line).any(|i| line[..i].ends_with(end_condition_without_gt))
+}
+
+/// <https://spec.commonmark.org/0.31.2/#html-blocks>
+#[derive(Clone, Copy)]
+pub(crate) enum HtmlBlockType1Through5 {
+    /// Start condition: line begins with the string <pre, <script, <style, or <textarea
+    /// (case-insensitive), followed by a space, a tab, the string >, or the end of the line.
+    ///
+    /// End condition: line contains an end tag </pre>, </script>, </style>, or </textarea>
+    /// (case-insensitive; it need not match the start tag).
+    Type1,
+    /// Start condition: line begins with the string <!--.
+    ///
+    /// End condition: line contains the string -->.
+    Type2,
+    /// Start condition: line begins with the string <?.
+    ///
+    /// End condition: line contains the string ?>.
+    Type3,
+    /// Start condition: line begins with the string <! followed by an ASCII letter.
+    ///
+    /// End condition: line contains the character >.
+    Type4,
+    /// Start condition: line begins with the string <![CDATA[.
+    ///
+    /// End condition: line contains the string ]]>.
+    Type5,
+}
+
 /// Assumes `text_bytes` is preceded by `<`.
-fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
+fn get_html_block_type_1_through_5(text_bytes: &[u8]) -> Option<HtmlBlockType1Through5> {
+    use HtmlBlockType1Through5::*;
     static BEGIN_TAGS: &[&[u8]; 4] = &[b"pre", b"style", b"script", b"textarea"];
     static ST_BEGIN_TAGS: &[&[u8]; 3] = &[b"!--", b"?", b"![CDATA["];
 
-    for (beg_tag, end_tag) in BEGIN_TAGS
-        .iter()
-        .zip(["</pre>", "</style>", "</script>", "</textarea>"].iter())
-    {
+    for beg_tag in BEGIN_TAGS {
         let tag_len = beg_tag.len();
 
         if text_bytes.len() < tag_len {
@@ -2429,24 +2476,24 @@ fn get_html_end_tag(text_bytes: &[u8]) -> Option<&'static str> {
 
         // Must either be the end of the line...
         if text_bytes.len() == tag_len {
-            return Some(end_tag);
+            return Some(Type1);
         }
 
         // ...or be followed by whitespace, newline, or '>'.
         let s = text_bytes[tag_len];
         if is_ascii_whitespace(s) || s == b'>' {
-            return Some(end_tag);
+            return Some(Type1);
         }
     }
 
-    for (beg_tag, end_tag) in ST_BEGIN_TAGS.iter().zip(["-->", "?>", "]]>"].iter()) {
+    for (beg_tag, block_type) in ST_BEGIN_TAGS.iter().zip([Type2, Type3, Type5].iter()) {
         if text_bytes.starts_with(beg_tag) {
-            return Some(end_tag);
+            return Some(*block_type);
         }
     }
 
     if text_bytes.len() > 1 && text_bytes[0] == b'!' && text_bytes[1].is_ascii_alphabetic() {
-        Some(">")
+        Some(Type4)
     } else {
         None
     }

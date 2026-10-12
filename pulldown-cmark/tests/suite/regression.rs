@@ -4174,3 +4174,15 @@ fn main() {}
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_264() {
+    let original = r##"foo  	
+bar
+"##;
+    let expected = r##"<p>foo
+bar</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

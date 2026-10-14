@@ -20,54 +20,54 @@ Using one of these tags adds a class with the same name but in lowercase
 
 ```````````````````````````````` example
 > [!NOTE]
-> Note blockquote
+> Note admonition
 .
-<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>Note admonition</p></div>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!TIP]
-> Tip blockquote
+> Tip admonition
 .
-<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
+<div role="note" class="markdown-alert-tip"><p>Tip admonition</p></div>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!IMPORTANT]
-> Important blockquote
+> Important admonition
 .
-<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
+<div role="note" class="markdown-alert-important"><p>Important admonition</p></div>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!WARNING]
-> Warning blockquote
+> Warning admonition
 .
-<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
+<div role="note" class="markdown-alert-warning"><p>Warning admonition</p></div>
 ````````````````````````````````
 
 ```````````````````````````````` example
 > [!CAUTION]
-> Caution blockquote
+> Caution admonition
 .
-<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
+<div role="note" class="markdown-alert-caution"><p>Caution admonition</p></div>
 ````````````````````````````````
 
 A blockquote with tag can be empty:
 ```````````````````````````````` example
 > [!CAUTION]
 .
-<blockquote class="markdown-alert-caution"></blockquote>
+<div role="note" class="markdown-alert-caution"></div>
 ````````````````````````````````
 
-An a blockquote can have several lines:
+An admonition can have several lines:
 ```````````````````````````````` example
 > [!CAUTION]
 > Line 1.
 > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.
-Line 2.</p></blockquote>
+<div role="note" class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></div>
 ````````````````````````````````
 
 Tags are ignored in subsequent lines, literally written:
@@ -77,9 +77,9 @@ Tags are ignored in subsequent lines, literally written:
 > [!CAUTION]
 > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.
+<div role="note" class="markdown-alert-caution"><p>Line 1.
 [!CAUTION]
-Line 2.</p></blockquote>
+Line 2.</p></div>
 ````````````````````````````````
 
 But nested blockquotes can have their own tag:
@@ -89,7 +89,7 @@ But nested blockquotes can have their own tag:
 > > [!TIP]
 > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
+<div role="note" class="markdown-alert-caution"><p>Line 1.</p><div role="note" class="markdown-alert-tip"><p>Line 2.</p></div></div>
 ````````````````````````````````
 
 And consecutive blockquotes too:
@@ -101,7 +101,7 @@ And consecutive blockquotes too:
 > [!TIP]
 > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
+<div role="note" class="markdown-alert-caution"><p>Line 1.</p></div><div role="note" class="markdown-alert-tip"><p>Line 2.</p></div>
 ````````````````````````````````
 
 Tags also work in inner blockquotes:
@@ -110,8 +110,8 @@ Tags also work in inner blockquotes:
 > > Line 1.
 > Line 2.
 .
-<blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
-Line 2.</p></blockquote></blockquote>
+<blockquote><div role="note" class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></div></blockquote>
 ````````````````````````````````
 
 Tags can be followed by spaces (works in most implementations):
@@ -121,9 +121,9 @@ Tags can be followed by spaces (works in most implementations):
 > > [!NOTE]      
 > > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.</p>
-<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
-</blockquote>
+<div role="note" class="markdown-alert-caution"><p>Line 1.</p>
+<div role="note" class="markdown-alert-note"><p>Line 2.</p></div>
+</div>
 ````````````````````````````````
 
 Tags are case-insensitive (works in most implementations):
@@ -133,9 +133,9 @@ Tags are case-insensitive (works in most implementations):
 > > [!note]      
 > > Line 2.
 .
-<blockquote class="markdown-alert-caution"><p>Line 1.</p>
-<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
-</blockquote>
+<div role="note" class="markdown-alert-caution"><p>Line 1.</p>
+<div role="note" class="markdown-alert-note"><p>Line 2.</p></div>
+</div>
 ````````````````````````````````
 
 Tags work inside lists (doesn't work in GitHub, but works elsewhere):
@@ -146,7 +146,7 @@ Tags work inside lists (doesn't work in GitHub, but works elsewhere):
     > sink ships
 .
 <ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 </li></ul>
 ````````````````````````````````
 
@@ -166,11 +166,11 @@ sink ships
     > [!NOTE]
     > sink ships
 .
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 <ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 </li></ul>
 ````````````````````````````````
 
@@ -185,10 +185,10 @@ Like lazy continuations, the blockquote marker is still needed to make nested bl
     > - sink ships
 .
 <ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"></blockquote>
+<div role="note" class="markdown-alert-note"></div>
 <ul><li>sink ships</li></ul>
-<blockquote class="markdown-alert-note">
-<ul><li>sink ships</li></ul></blockquote>
+<div role="note" class="markdown-alert-note">
+<ul><li>sink ships</li></ul></div>
 </li></ul>
 ````````````````````````````````
 

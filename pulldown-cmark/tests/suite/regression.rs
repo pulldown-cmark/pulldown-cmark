@@ -4226,3 +4226,53 @@ fn regression_test_268() {
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_269() {
+    let original = r##"<a h=x	)>
+"##;
+    let expected = r##"<p>&lt;a h=x	)&gt;</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_270() {
+    let original = r##"a <a h=x	)> b
+"##;
+    let expected = r##"<p>a &lt;a h=x	)&gt; b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_271() {
+    let original = r##"a <b c=	>
+"##;
+    let expected = r##"<p>a &lt;b c=	&gt;</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_272() {
+    let original = r##"a <b c=d	e> f
+"##;
+    let expected = r##"<p>a <b c=d	e> f</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_273() {
+    let original = r##"a <b c='d	e'> f
+"##;
+    let expected = r##"<p>a <b c='d	e'> f</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

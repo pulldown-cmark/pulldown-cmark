@@ -1548,16 +1548,15 @@ pub(crate) fn scan_inline_html_comment(
         // including the string `]]>`, and the string `]]>`.
         b'[' if bytes[ix..].starts_with(b"CDATA[") && ix > scan_guard.cdata => {
             ix += b"CDATA[".len();
-            ix = memchr(b']', &bytes[ix..]).map_or(bytes.len(), |x| ix + x);
-            let close_brackets = scan_ch_repeat(&bytes[ix..], b']');
-            ix += close_brackets;
-
-            if close_brackets == 0 || bytes.get(ix) != Some(&b'>') {
-                scan_guard.cdata = ix;
-                None
-            } else {
-                Some(ix + 1)
+            while let Some(x) = memchr(b']', &bytes[ix..]) {
+                ix += x + 1;
+                if bytes[ix..].starts_with(b"]>") {
+                    return Some(ix + 2);
+                }
             }
+            // No `]]>` anywhere after this point.
+            scan_guard.cdata = bytes.len();
+            None
         }
         // A declaration consists of the string `<!`, an ASCII letter, zero or more characters not
         // including the character >, and the character >.

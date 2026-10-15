@@ -4174,3 +4174,55 @@ fn main() {}
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn regression_test_264() {
+    let original = r##"a <![CDATA[x]y]]> b
+"##;
+    let expected = r##"<p>a <![CDATA[x]y]]> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_265() {
+    let original = r##"a <![CDATA[x]] y]]> b
+"##;
+    let expected = r##"<p>a <![CDATA[x]] y]]> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_266() {
+    let original = r##"a <![CDATA[x]
+y]]> b
+"##;
+    let expected = r##"<p>a <![CDATA[x]
+y]]> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_267() {
+    let original = r##"a <![CDATA[x]> b
+"##;
+    let expected = r##"<p>a &lt;![CDATA[x]&gt; b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_268() {
+    let original = r##"a <![CDATA[]]> b
+"##;
+    let expected = r##"<p>a <![CDATA[]]> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

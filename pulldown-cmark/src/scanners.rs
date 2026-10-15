@@ -1549,11 +1549,12 @@ pub(crate) fn scan_inline_html_comment(
 
             while let Some(x) = memchr(b'-', &bytes[ix..]) {
                 ix += x + 1;
-                scan_guard.comment = ix;
                 if bytes.get(ix) == Some(&b'-') && bytes.get(ix + 1) == Some(&b'>') {
                     return Some(ix + 2);
                 }
             }
+            // No `-->` up to the end of the input: a later `<!--` can't close either.
+            scan_guard.comment = bytes.len();
             None
         }
         // A CDATA section consists of the string `<![CDATA[`, a string of characters not
@@ -1566,7 +1567,7 @@ pub(crate) fn scan_inline_html_comment(
                     return Some(ix + 2);
                 }
             }
-            // No `]]>` anywhere after this point.
+            // No `]]>` up to the end of the input: a later `<![CDATA[` can't close either.
             scan_guard.cdata = bytes.len();
             None
         }

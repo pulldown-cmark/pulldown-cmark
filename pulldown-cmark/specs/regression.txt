@@ -3557,7 +3557,7 @@ a <a h=x→)> b
 <p>a &lt;a h=x→)&gt; b</p>
 ````````````````````````````````
 
-Unchanged: an attribute with no value before the tab, a tab between attributes, and a tab
+A tab may not stand in for an attribute's value, but it may separate attributes and appear
 inside a quoted value.
 
 ```````````````````````````````` example
@@ -3597,7 +3597,7 @@ a </t
     > b</p>
 ````````````````````````````````
 
-Unchanged: a blank line, or a block quote marker.
+A blank line or a block quote marker between a closing tag's name and its `>` ends the tag.
 
 ```````````````````````````````` example
 a </t
@@ -3617,5 +3617,18 @@ a </t
 <p>a &lt;/t</p>
 <blockquote>
 <p>b</p>
+</blockquote>
+````````````````````````````````
+
+Inside a block quote, the line ending before the `>` comes with the next line's `>` marker,
+which is not part of the tag.
+
+```````````````````````````````` example
+> a </t
+>     > b
+.
+<blockquote>
+<p>a </t
+    > b</p>
 </blockquote>
 ````````````````````````````````

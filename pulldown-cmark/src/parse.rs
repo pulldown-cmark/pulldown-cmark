@@ -1331,7 +1331,10 @@ impl<'input> ParserInner<'input> {
                         // The next node may start after a backslash escape (the first pass
                         // drops the backslash from the text): the escaped character is part of
                         // the title, so it can't close it.
-                        if i > 0 && bytes[i - 1] == b'\\' && is_ascii_punctuation(bytes[i]) {
+                        if let ItemBody::Text {
+                            backslash_escaped: true,
+                        } = self.tree[node_ix].item.body
+                        {
                             i += 1;
                         }
                         continue;

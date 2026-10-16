@@ -3403,7 +3403,8 @@ y> b</li>
 </ul>
 ````````````````````````````````
 
-Unchanged: a lazy continuation line, and a line that leaves the block quote.
+Because this is an inline HTML comment, it can span a lazy continuation,
+but it can't span a nested block quote.
 
 ```````````````````````````````` example
 > a <!--x

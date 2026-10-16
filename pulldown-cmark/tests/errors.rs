@@ -148,3 +148,19 @@ fn test_simd_wrapping_shr_issue_651() {
 fn issue_1112() {
     parse("<!S\r:");
 }
+
+#[test]
+fn container_fence_at_end_of_input_ranges() {
+    // An opening container fence on the last line, without a line ending: every event's range
+    // must lie within the input (it used to end one byte past it).
+    for md in [":::T", "1) :::r", "_\n::::_", ":::T  "] {
+        let parser = Parser::new_ext(
+            md,
+            Options::ENABLE_CONTAINER_EXTENSIONS | Options::ENABLE_DEFINITION_LIST,
+        );
+        for (event, range) in parser.into_offset_iter() {
+            assert!(range.end <= md.len(), "{event:?} range {range:?} in {md:?}");
+            let _ = &md[range];
+        }
+    }
+}

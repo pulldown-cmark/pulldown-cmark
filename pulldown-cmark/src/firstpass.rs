@@ -401,6 +401,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         // Save `remaining_space` here to avoid needing to backtrack `line_start` for HTML blocks
         let remaining_space = line_start.remaining_space();
+        let indent_start_ix = start_ix + line_start.bytes_scanned();
 
         let indent = line_start.scan_space_upto(4);
         if indent == 4 {
@@ -432,19 +433,24 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             // pattern
             if let Some(block_type) = get_html_block_type_1_through_5(&bytes[(ix + 1)..]) {
                 self.finish_list(start_ix);
-                return self.parse_html_block_type_1_to_5(ix, block_type, remaining_space, indent);
+                return self.parse_html_block_type_1_to_5(
+                    ix,
+                    block_type,
+                    remaining_space,
+                    indent_start_ix,
+                );
             }
 
             // Detect type 6
             if starts_html_block_type_6(&bytes[(ix + 1)..]) {
                 self.finish_list(start_ix);
-                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent_start_ix);
             }
 
             // Detect type 7
             if let Some(_html_bytes) = scan_html_type_7(&bytes[ix..]) {
                 self.finish_list(start_ix);
-                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent);
+                return self.parse_html_block_type_6_or_7(ix, remaining_space, indent_start_ix);
             }
         }
 
@@ -1376,7 +1382,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         start_ix: usize,
         block_type: HtmlBlockType1Through5,
         mut remaining_space: usize,
-        mut indent: usize,
+        mut indent_start_ix: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -1391,7 +1397,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
+            self.append_html_line(remaining_space, indent_start_ix, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
@@ -1415,7 +1421,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
-            indent = 0;
+            indent_start_ix = ix;
         }
         self.pop(end_ix);
         ix
@@ -1428,7 +1434,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         &mut self,
         start_ix: usize,
         mut remaining_space: usize,
-        mut indent: usize,
+        mut indent_start_ix: usize,
     ) -> usize {
         self.tree.append(Item {
             start: start_ix,
@@ -1443,7 +1449,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         loop {
             let line_start_ix = ix;
             ix += scan_nextline(&bytes[ix..]);
-            self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
+            self.append_html_line(remaining_space, indent_start_ix, line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
             let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
@@ -1460,7 +1466,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
             ix = next_line_ix;
             remaining_space = line_start.remaining_space();
-            indent = 0;
+            indent_start_ix = ix;
         }
         self.pop(end_ix);
         ix
@@ -1650,9 +1656,28 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     }
 
     /// Appends a line of HTML to the tree.
-    fn append_html_line(&mut self, remaining_space: usize, start: usize, end: usize) {
-        if remaining_space > 0 {
-            let cow_ix = self.allocs.allocate_cow("   "[..remaining_space].into());
+    ///
+    /// `remaining_space` is the part of a tab left over from the container prefix, and
+    /// `indent_start..start` is the line's own indentation, which is kept as written.
+    fn append_html_line(
+        &mut self,
+        remaining_space: usize,
+        indent_start: usize,
+        start: usize,
+        end: usize,
+    ) {
+        let indent = &self.text[indent_start..start];
+        if remaining_space > 0 || !indent.is_empty() {
+            let prefix: CowStr<'a> = if indent.is_empty() {
+                "   "[..remaining_space].into()
+            } else if remaining_space == 0 {
+                indent.into()
+            } else {
+                let mut prefix = String::from(&"   "[..remaining_space]);
+                prefix.push_str(indent);
+                prefix.into()
+            };
+            let cow_ix = self.allocs.allocate_cow(prefix);
             self.tree.append(Item {
                 start,
                 end: start,

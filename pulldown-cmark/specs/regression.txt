@@ -3632,3 +3632,47 @@ which is not part of the tag.
     > b</p>
 </blockquote>
 ````````````````````````````````
+
+When a tab after a container's marker is not split, an HTML block that starts on that line
+keeps the tab.
+
+```````````````````````````````` example
+> →<div>
+> a
+.
+<blockquote>
+→<div>
+a
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+>  →<!-- a -->
+.
+<blockquote>
+ →<!-- a -->
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+- a
+
+  →<div>
+.
+<ul>
+<li>
+<p>a</p>
+→<div>
+</li>
+</ul>
+````````````````````````````````
+
+The part of a tab that is left after the block quote's optional space is still written as spaces.
+
+```````````````````````````````` example
+>→<div>
+.
+<blockquote>
+  <div>
+</blockquote>
+````````````````````````````````

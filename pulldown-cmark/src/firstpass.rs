@@ -982,7 +982,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         scan_rev_while(&bytes[..ix], is_ascii_whitespace_no_nl);
                     // A hard line break needs two or more spaces before the line ending; other
                     // whitespace (tabs) doesn't count.
-                    if scan_rev_while(&bytes[..ix], |b| b == b' ') >= 2 {
+                    if bytes[..ix].ends_with(b"  ") {
                         i -= trailing_whitespace;
                         self.tree.append_text(begin_text, i, backslash_escaped);
                         backslash_escaped = false;

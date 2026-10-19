@@ -341,7 +341,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                         }
                         self.tree.push();
-                        return summary_end + 1;
+                        return line_end;
                     }
                 }
             } else {

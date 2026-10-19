@@ -3460,9 +3460,9 @@ d ~~x ~[x](https://x)~ x~~
 
 #[test]
 fn regression_test_217() {
-    let original = r##" 
-   
-hello world
+    let original = r##"�
+���
+hello�world
 "##;
     let expected = r##"<p>�
 ���
@@ -3474,10 +3474,10 @@ hello�world</p>
 
 #[test]
 fn regression_test_218() {
-    let original = r##"`first second`
-`start `
-` end`
-` `
+    let original = r##"`first�second`
+`start�`
+`�end`
+`�`
 "##;
     let expected = r##"<p><code>first�second</code>
 <code>start�</code>
@@ -3490,10 +3490,10 @@ fn regression_test_218() {
 
 #[test]
 fn regression_test_219() {
-    let original = r##"$$first second$$
-$$start $$
-$$ end$$
-$$ $$
+    let original = r##"$$first�second$$
+$$start�$$
+$$�end$$
+$$�$$
 "##;
     let expected = r##"<p><span class="math math-display">first�second</span>
 <span class="math math-display">start�</span>
@@ -3506,10 +3506,10 @@ $$ $$
 
 #[test]
 fn regression_test_220() {
-    let original = r##"[x](x "first second")
-[x](x "start ")
-[x](x " end")
-[x](x " ")
+    let original = r##"[x](x "first�second")
+[x](x "start�")
+[x](x "�end")
+[x](x "�")
 "##;
     let expected = r##"<p><a href="x" title="first�second">x</a>
 <a href="x" title="start�">x</a>
@@ -3522,10 +3522,10 @@ fn regression_test_220() {
 
 #[test]
 fn regression_test_221() {
-    let original = r##"[x](<first second>)
-[x](<start >)
-[x](< end>)
-[x](< >)
+    let original = r##"[x](<first�second>)
+[x](<start�>)
+[x](<�end>)
+[x](<�>)
 "##;
     let expected = r##"<p><a href="first%EF%BF%BDsecond">x</a>
 <a href="start%EF%BF%BD">x</a>
@@ -3538,10 +3538,10 @@ fn regression_test_221() {
 
 #[test]
 fn regression_test_222() {
-    let original = r##"[first second]: https://example.com/a
-[start ]: https://example.com/b
-[ end]: https://example.com/c
-[ ]: https://example.com/d
+    let original = r##"[first�second]: https://example.com/a
+[start�]: https://example.com/b
+[�end]: https://example.com/c
+[�]: https://example.com/d
 
 [first�second][]
 [start�][]
@@ -3564,10 +3564,10 @@ fn regression_test_223() {
 [�end]: https://example.com/c
 [�]: https://example.com/d
 
-[first second][]
-[start ][]
-[ end][]
-[ ][]
+[first�second][]
+[start�][]
+[�end][]
+[�][]
 "##;
     let expected = r##"<p><a href="https://example.com/a">first�second</a>
 <a href="https://example.com/b">start�</a>
@@ -3585,10 +3585,10 @@ fn regression_test_224() {
 [�end]: https://example.com/c
 [�]: https://example.com/d
 
-[a][first second]
-[b][start ]
-[c][ end]
-[d][ ]
+[a][first�second]
+[b][start�]
+[c][�end]
+[d][�]
 "##;
     let expected = r##"<p><a href="https://example.com/a">a</a>
 <a href="https://example.com/b">b</a>
@@ -3601,7 +3601,7 @@ fn regression_test_224() {
 
 #[test]
 fn regression_test_225() {
-    let original = r##"First <span title=" ">Second</span>
+    let original = r##"First <span title="�">Second</span>
 "##;
     let expected = r##"<p>First <span title="�">Second</span></p>
 "##;
@@ -3611,7 +3611,7 @@ fn regression_test_225() {
 
 #[test]
 fn regression_test_226() {
-    let original = r##"<div title=" ">Second</div>
+    let original = r##"<div title="�">Second</div>
 "##;
     let expected = r##"<div title="�">Second</div>
 "##;
@@ -3622,7 +3622,7 @@ fn regression_test_226() {
 #[test]
 fn regression_test_227() {
     let original = r##"```
- 
+�
 ```
 "##;
     let expected = r##"<pre><code>�
@@ -3634,9 +3634,9 @@ fn regression_test_227() {
 
 #[test]
 fn regression_test_228() {
-    let original = r##"# H1 {.f  #b }
-# H1 {f =b }
-# H1 {f }
+    let original = r##"# H1 {.f� #b�}
+# H1 {f�=b�}
+# H1 {f�}
 "##;
     let expected = r##"<h1 id="b�" class="f�">H1</h1>
 <h1 f�="b�">H1</h1>
@@ -3648,11 +3648,11 @@ fn regression_test_228() {
 
 #[test]
 fn regression_test_229() {
-    let original = r##"[a]: https://example.com/a " "
+    let original = r##"[a]: https://example.com/a "�"
 
 [a][]
 
-[b](https://example.com/b " ")
+[b](https://example.com/b "�")
 "##;
     let expected = r##"<p><a href="https://example.com/a" title="�">a</a></p>
 <p><a href="https://example.com/b" title="�">b</a></p>
@@ -3663,8 +3663,8 @@ fn regression_test_229() {
 
 #[test]
 fn regression_test_230() {
-    let original = r##"[[Z ]]
-[[Z |Z ]]
+    let original = r##"[[Z�]]
+[[Z�|Z�]]
 "##;
     let expected = r##"<p><a href="Z%EF%BF%BD">Z�</a>
 <a href="Z%EF%BF%BD">Z�</a></p>
@@ -4393,6 +4393,7 @@ fn regression_test_282() {
 "##;
     let expected = r##"<blockquote>
   <div>
+</blockquote>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);

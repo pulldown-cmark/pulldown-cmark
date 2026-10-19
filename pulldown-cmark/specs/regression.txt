@@ -3634,6 +3634,49 @@ which is not part of the tag.
 </blockquote>
 ````````````````````````````````
 
+When a tab after a container's marker is not split, an HTML block that starts on that line
+keeps the tab.
+
+```````````````````````````````` example
+> →<div>
+> a
+.
+<blockquote>
+→<div>
+a
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+>  →<!-- a -->
+.
+<blockquote>
+ →<!-- a -->
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+- a
+
+  →<div>
+.
+<ul>
+<li>
+<p>a</p>
+→<div>
+</li>
+</ul>
+````````````````````````````````
+
+The part of a tab that is left after the block quote's optional space is still written as spaces.
+
+```````````````````````````````` example
+>→<div>
+.
+<blockquote>
+  <div>
+</blockquote>
+````````````````````````````````
 A backslash-escaped closing delimiter at the start of a link title's continuation line is
 part of the title; it does not close it.
 

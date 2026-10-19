@@ -336,8 +336,6 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             });
                         }
                         self.tree.push();
-                        // the next block starts after the opening fence's line (and its line
-                        // ending, if any)
                         return line_end;
                     }
                 }

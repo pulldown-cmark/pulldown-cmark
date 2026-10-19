@@ -3403,7 +3403,8 @@ y> b</li>
 </ul>
 ````````````````````````````````
 
-Unchanged: a lazy continuation line, and a line that leaves the block quote.
+Because this is an inline HTML comment, it can span a lazy continuation,
+but it can't span a nested block quote.
 
 ```````````````````````````````` example
 > a <!--x
@@ -3675,4 +3676,58 @@ The part of a tab that is left after the block quote's optional space is still w
 <blockquote>
   <div>
 </blockquote>
+````````````````````````````````
+A backslash-escaped closing delimiter at the start of a link title's continuation line is
+part of the title; it does not close it.
+
+```````````````````````````````` example
+[a](b (
+\)))
+.
+<p><a href="b" title="
+)">a</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[a](b "
+\"")
+.
+<p><a href="b" title="
+&quot;">a</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[a](b (
+\))
+.
+<p>[a](b (
+))</p>
+````````````````````````````````
+
+```````````````````````````````` example
+[a](b '
+\')
+.
+<p>[a](b '
+')</p>
+````````````````````````````````
+
+```````````````````````````````` example
+> [a](b (
+> \)))
+.
+<blockquote>
+<p><a href="b" title="
+)">a</a></p>
+</blockquote>
+````````````````````````````````
+
+```````````````````````````````` example
+[a](b (c
+\)
+d))
+.
+<p><a href="b" title="c
+)
+d">a</a></p>
 ````````````````````````````````

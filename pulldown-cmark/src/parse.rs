@@ -1328,6 +1328,15 @@ impl<'input> ParserInner<'input> {
                         title.push('\n');
                         i = self.tree[node_ix].item.start;
                         mark = i;
+                        // The next node may start after a backslash escape (the first pass
+                        // drops the backslash from the text): the escaped character is part of
+                        // the title, so it can't close it.
+                        if let ItemBody::Text {
+                            backslash_escaped: true,
+                        } = self.tree[node_ix].item.body
+                        {
+                            i += 1;
+                        }
                         continue;
                     }
                 }

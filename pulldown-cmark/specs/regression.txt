@@ -3731,3 +3731,41 @@ d))
 )
 d">a</a></p>
 ````````````````````````````````
+
+A hard line break needs two spaces right before the line ending; a tab among the trailing
+whitespace doesn't count as one.
+
+```````````````````````````````` example
+a →
+b
+.
+<p>a
+b</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a → 
+b
+.
+<p>a
+b</p>
+````````````````````````````````
+
+A backslash before a line ending at the end of a link's text is a hard break: the end of
+the link text is not the end of the block.
+
+```````````````````````````````` example
+[*a\
+]()
+.
+<p><a href="">*a<br />
+</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[a*\
+](b) c
+.
+<p><a href="b">a*<br />
+</a> c</p>
+````````````````````````````````

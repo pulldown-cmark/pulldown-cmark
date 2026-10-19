@@ -4476,7 +4476,7 @@ d">a</a></p>
 }
 
 #[test]
-fn regression_test_285() {
+fn regression_test_289() {
     let original = r##"a 	
 b
 "##;
@@ -4488,7 +4488,7 @@ b</p>
 }
 
 #[test]
-fn regression_test_286() {
+fn regression_test_290() {
     let original = r##"a 	 
 b
 "##;
@@ -4500,7 +4500,7 @@ b</p>
 }
 
 #[test]
-fn regression_test_287() {
+fn regression_test_291() {
     let original = r##"[*a\
 ]()
 "##;
@@ -4512,7 +4512,7 @@ fn regression_test_287() {
 }
 
 #[test]
-fn regression_test_288() {
+fn regression_test_292() {
     let original = r##"[a*\
 ](b) c
 "##;

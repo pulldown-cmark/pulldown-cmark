@@ -229,6 +229,8 @@ fn regression_test() -> i32 {
     check_pattern("[a](<".into());
     // https://github.com/pulldown-cmark/pulldown-cmark/issues/934
     check_pattern("!-- <".into());
+    // https://github.com/pulldown-cmark/pulldown-cmark/issues/1076
+    check_pattern("[^x]\n".into());
     exit_code
 }
 

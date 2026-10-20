@@ -421,12 +421,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let mut line_start = LineStart::new(bytes);
         let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
         let current_container = tree_position == self.tree.spine_len();
-        if !line_start.scan_space(4)
+        if (!line_start.scan_space(4)
             && self.scan_paragraph_interrupt(
                 &bytes[line_start.bytes_scanned()..],
                 current_container,
                 tree_position,
-            )
+            ))
+            || scan_blank_line(&bytes[line_start.bytes_scanned()..]).is_some()
         {
             None
         } else {

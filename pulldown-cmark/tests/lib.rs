@@ -14,6 +14,7 @@ pub fn test_markdown_html(
     old_footnotes: bool,
     subscript: bool,
     wikilinks: bool,
+    deflists: bool,
 ) {
     let mut s = String::new();
 
@@ -43,7 +44,9 @@ pub fn test_markdown_html(
         opts.insert(Options::ENABLE_SMART_PUNCTUATION);
     }
     opts.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-    opts.insert(Options::ENABLE_DEFINITION_LIST);
+    if deflists {
+        opts.insert(Options::ENABLE_DEFINITION_LIST);
+    }
 
     let p = Parser::new_ext(input, opts);
     pulldown_cmark::html::push_html(&mut s, p);

@@ -2824,3 +2824,14 @@ https://github.com/pulldown-cmark/pulldown-cmark/issues/999
 </blockquote></li>
 </ul>
 ````````````````````````````````
+
+https://github.com/pulldown-cmark/pulldown-cmark/issues/1108
+
+A malformed image-wrapped wikilink must not underflow when the link body
+starts at or after the closing delimiter.
+
+```````````````````````````````` example_wikilinks
+![[] ]()]]
+.
+<p><img src="" alt="[] " />]]</p>
+````````````````````````````````

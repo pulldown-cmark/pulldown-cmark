@@ -887,6 +887,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             };
             let start_ix = self.tree[body_node].item.start;
             let end_ix = self.tree[cur_ix].item.start;
+            // bail early in case the link is malformed: on some inputs the
+            // body can begin at or after the closing delimiter, which would
+            // otherwise underflow the length below and invert the slice.
+            if end_ix <= start_ix {
+                return None;
+            }
             let wikilink = match scan_wikilink_pipe(
                 block_text,
                 start_ix, // bounded by closing tag

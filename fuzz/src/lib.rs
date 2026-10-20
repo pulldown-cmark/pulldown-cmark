@@ -112,7 +112,7 @@ pub fn commonmark_js(text: &str) -> anyhow::Result<String> {
 }
 
 /// Parse commonmark.js XML and return Markdown events.
-pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event>> {
+pub fn xml_to_events(xml: &str) -> anyhow::Result<Vec<Event<'_>>> {
     let mut block_container_stack = Vec::new();
     let mut heading_stack = Vec::new();
 

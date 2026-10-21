@@ -20,6 +20,7 @@
 
 //! Tree-based two pass parser.
 
+use core::cell::Cell;
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::iter::FusedIterator;
@@ -45,14 +46,14 @@ use crate::{
 // https://spec.commonmark.org/0.29/#link-destination
 pub(crate) const LINK_MAX_NESTED_PARENS: usize = 32;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct Item {
     pub start: usize,
     pub end: usize,
     pub body: ItemBody,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub(crate) enum ItemBody {
     // These are possible inline items, need to be resolved in second pass.
 
@@ -108,13 +109,14 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
-    List(bool, u8, u64), // is_tight, list character, list start index
-    ListItem(usize),     // indent level
+    // is_tight|last_line empty, list character, list start index
+    List(Cell<ListFlags>, u8, u64),
+    ListItem(usize), // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
     // Definition lists
-    DefinitionList(bool), // is_tight
+    DefinitionList(Cell<ListFlags>),
     // gets turned into either a paragraph or a definition list title,
     // depending on whether there's a definition after it
     MaybeDefinitionListTitle,
@@ -173,6 +175,16 @@ impl ItemBody {
                 | SoftBreak
                 | HardBreak(..)
         )
+    }
+}
+
+bitflags::bitflags! {
+    /// Option struct containing flags for enabling extra features
+    /// that are not part of the CommonMark spec.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub(crate) struct ListFlags: u8 {
+        const IS_TIGHT = 1;
+        const LAST_LINE_EMPTY = 1 << 1;
     }
 }
 
@@ -1464,10 +1476,37 @@ pub(crate) fn scan_containers(
     tree: &Tree<Item>,
     line_start: &mut LineStart<'_>,
     options: Options,
+    update_flags: bool,
 ) -> usize {
     let mut i = 0;
-    for &node_ix in tree.walk_spine() {
+    let mut spine_iter = tree.walk_spine();
+    for &node_ix in &mut spine_iter {
         match tree[node_ix].item.body {
+            // This fix is lifted, almost verbatim,
+            // from https://github.com/commonmark/cmark/pull/520/changes
+            ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags)
+                if update_flags =>
+            {
+                // Avoid quadratic behavior caused by deeply nested lists
+                // for each blank line.
+                if line_start.is_at_eol() {
+                    if list_flags.get().contains(ListFlags::LAST_LINE_EMPTY)
+                        && line_start.remaining_space() == 0
+                    {
+                        // Finish early if we encounter multiple blank lines.
+                        // If the previous line was blank, then we know that this
+                        // container has no children unless those children
+                        // use indented lines to nest (in other words, blockquote
+                        // and blockquote-like children aren't nested in here).
+                        // Therefore, every child of this list will pass.
+                        return tree.spine_len();
+                    } else {
+                        list_flags.set(list_flags.get() | ListFlags::LAST_LINE_EMPTY);
+                    }
+                } else {
+                    list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+                }
+            }
             ItemBody::BlockQuote(..) => {
                 let save = line_start.clone();
                 let _ = line_start.scan_space(3);
@@ -1501,11 +1540,18 @@ pub(crate) fn scan_containers(
         }
         i += 1;
     }
+    for &node_ix in &mut spine_iter {
+        if let ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags) =
+            tree[node_ix].item.body
+        {
+            list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+        }
+    }
     i
 }
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
-    let _ = scan_containers(tree, &mut line_start, options);
+    let _ = scan_containers(tree, &mut line_start, options, false);
     line_start.bytes_scanned()
 }
 
@@ -2226,9 +2272,8 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                     self.inner.handle_inline();
                 }
 
-                let node = self.inner.tree[cur_ix];
-                let item = node.item;
-                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
+                let item = self.inner.tree[cur_ix].item.clone();
+                let event = item_to_event(&item, self.inner.text, &mut self.inner.allocs);
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
@@ -2273,7 +2318,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
@@ -2396,9 +2441,8 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
                         self.handle_inline();
                     }
 
-                    let node = self.tree[cur_ix];
-                    let item = node.item;
-                    let event = item_to_event(item, self.text, &mut self.allocs);
+                    let item = self.tree[cur_ix].item.clone();
+                    let event = item_to_event(&item, self.text, &mut self.allocs);
                     if let Event::Start(ref _tag) = event {
                         self.tree.push();
                     } else {

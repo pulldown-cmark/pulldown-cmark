@@ -16,8 +16,11 @@ use crate::{
     HeadingLevel,
 };
 use crate::{scanners::*, MetadataBlockKind};
+use core::cell::Cell;
 
 use unicase::UniCase;
+
+use crate::parse::ListFlags;
 
 /// Runs the first pass, which resolves the block structure of the document,
 /// and returns the resulting tree.
@@ -86,7 +89,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.brace_context_stack.clear();
         self.brace_context_next = 0;
 
-        let i = scan_containers(&self.tree, &mut line_start, self.options);
+        let i = scan_containers(&self.tree, &mut line_start, self.options, true);
         for _ in i..self.tree.spine_len() {
             self.pop(start_ix);
         }
@@ -148,9 +151,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         });
                     if let Some(task_list_marker) = task_list_marker {
                         if let Some(n) = scan_blank_line(&bytes[task_list_marker.end..]) {
+                            let end = task_list_marker.end;
                             self.tree.append(task_list_marker);
-                            self.begin_list_item = Some(task_list_marker.end + n);
-                            return task_list_marker.end + n;
+                            self.begin_list_item = Some(end + n);
+                            return end + n;
                         } else {
                             line_start.scan_all_space();
                             let ix = start_ix + line_start.bytes_scanned();
@@ -190,7 +194,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             {
                 match item.body {
                     ItemBody::Paragraph | ItemBody::TightParagraph => {
-                        item.body = ItemBody::DefinitionList(true);
+                        item.body = ItemBody::DefinitionList(Cell::new(ListFlags::IS_TIGHT));
                         let Item { start, end, .. } = *item;
                         let list_idx = self.tree.cur().unwrap();
                         let title_idx = self.tree.create_node(Item {
@@ -209,16 +213,18 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     _ => unreachable!(),
                 }
                 let after_marker_index = start_ix + line_start.bytes_scanned();
+                // `outer_indent` is columns, not bytes. Subtracting it from a
+                // source offset can land inside a multibyte character (issue 1142).
                 self.tree.append(Item {
-                    start: container_start - outer_indent,
+                    start: start_ix + save.bytes_scanned(),
                     end: after_marker_index, // will get updated later if item not empty
                     body: ItemBody::DefinitionListDefinition(indent),
                 });
-                if let Some(ItemBody::DefinitionList(ref mut is_tight)) =
+                if let Some(ItemBody::DefinitionList(ref list_flags)) =
                     self.tree.peek_up().map(|cur| &mut self.tree[cur].item.body)
                 {
                     if self.last_line_blank {
-                        *is_tight = false;
+                        list_flags.set(list_flags.get() & !ListFlags::IS_TIGHT);
                         self.last_line_blank = false;
                     }
                 }
@@ -247,11 +253,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let ix = start_ix + line_start.bytes_scanned();
                     let mut lazy_line_start = LineStart::new(&bytes[ix..]);
                     let tree_position =
-                        scan_containers(&self.tree, &mut lazy_line_start, self.options);
+                        scan_containers(&self.tree, &mut lazy_line_start, self.options, false);
                     let current_container = tree_position == self.tree.spine_len();
                     if !lazy_line_start.scan_space(4)
                         && self.scan_paragraph_interrupt(
-                            &bytes[ix + lazy_line_start.bytes_scanned()..],
+                            &self.text[ix + lazy_line_start.bytes_scanned()..],
                             current_container,
                             tree_position,
                         )
@@ -419,14 +425,15 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         bytes: &'input [u8],
     ) -> Option<LineStart<'input>> {
         let mut line_start = LineStart::new(bytes);
-        let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+        let tree_position = scan_containers(&self.tree, &mut line_start, self.options, false);
         let current_container = tree_position == self.tree.spine_len();
-        if !line_start.scan_space(4)
+        if (!line_start.scan_space(4)
             && self.scan_paragraph_interrupt(
-                &bytes[line_start.bytes_scanned()..],
+                &self.text[self.text.len() - bytes.len() + line_start.bytes_scanned()..],
                 current_container,
                 tree_position,
-            )
+            ))
+            || scan_blank_line(&bytes[line_start.bytes_scanned()..]).is_some()
         {
             None
         } else {
@@ -556,7 +563,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     ) -> Option<(usize, TreeIndex)> {
         let bytes = self.text.as_bytes();
         let mut line_start = LineStart::new(&bytes[ix..]);
-        let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+        let tree_position = scan_containers(&self.tree, &mut line_start, self.options, false);
         let current_container = tree_position == self.tree.spine_len();
         if !current_container {
             return None;
@@ -564,7 +571,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         line_start.scan_all_space();
         ix += line_start.bytes_scanned();
         if scan_paragraph_interrupt_no_table(
-            &bytes[ix..],
+            &self.text[ix..],
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
@@ -581,7 +588,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns offset of line start after paragraph.
     fn parse_paragraph(&mut self, start_ix: usize, tasklist_marker: Option<Item>) -> usize {
         let body = if let Some(ItemBody::DefinitionList(_)) =
-            self.tree.peek_up().map(|idx| self.tree[idx].item.body)
+            self.tree.peek_up().map(|idx| &self.tree[idx].item.body)
         {
             if self.tree.cur().map_or(true, |idx| {
                 matches!(
@@ -603,7 +610,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let node_ix = self.tree.append(Item {
             start: start_ix,
             end: 0, // will get set later
-            body,
+            body: body.clone(),
         });
         self.tree.push();
 
@@ -644,7 +651,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
             ix = next_ix;
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+            let tree_position = scan_containers(&self.tree, &mut line_start, self.options, false);
             let current_container = tree_position == self.tree.spine_len();
             let trailing_backslash_pos = match brk {
                 Some(Item {
@@ -671,7 +678,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                 }
                 // first check for non-empty lists, then for other interrupts
-                let suffix = &bytes[ix_new..];
+                let suffix = &self.text[ix_new..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position) {
                     if let Some(pos) = trailing_backslash_pos {
                         self.tree.append_text(pos, pos + 1, false);
@@ -733,7 +740,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                             break;
                         }
                         let mut line_start = LineStart::new(&bytes[next_line_start..content_end]);
-                        if scan_containers(&self.tree, &mut line_start, self.options)
+                        if scan_containers(&self.tree, &mut line_start, self.options, false)
                             != self.tree.spine_len()
                         {
                             break;
@@ -816,7 +823,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         // check if we may be parsing a table
                         let next_line_ix = ix + eol_bytes;
                         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-                        if scan_containers(&self.tree, &mut line_start, self.options)
+                        if scan_containers(&self.tree, &mut line_start, self.options, false)
                             == self.tree.spine_len()
                         {
                             let table_head_ix = next_line_ix + line_start.bytes_scanned();
@@ -1241,7 +1248,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len() {
                 end_ix = ix;
                 break;
@@ -1290,7 +1297,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             self.append_html_line(remaining_space.max(indent), line_start_ix, ix);
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len() || line_start.is_at_eol() {
                 end_ix = ix;
                 break;
@@ -1337,7 +1344,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             }
 
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len()
                 || !(line_start.scan_space(4) || line_start.is_at_eol())
             {
@@ -1384,7 +1391,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len() {
                 // this line will get parsed again as not being part of the code
                 // if it's blank, it should be parsed as a blank line
@@ -1428,7 +1435,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.push();
         loop {
             let mut line_start = LineStart::new(&bytes[ix..]);
-            let n_containers = scan_containers(&self.tree, &mut line_start, self.options);
+            let n_containers = scan_containers(&self.tree, &mut line_start, self.options, false);
             if n_containers < self.tree.spine_len() {
                 break;
             }
@@ -1508,11 +1515,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             fixup_end_of_definition_list(&mut self.tree, cur_ix);
             self.begin_list_item = None;
         }
-        if let ItemBody::List(true, _, _) | ItemBody::DefinitionList(true) =
+        if let ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags) =
             self.tree[cur_ix].item.body
         {
-            surgerize_tight_list(&mut self.tree, cur_ix);
-            self.begin_list_item = None;
+            if list_flags.get().contains(ListFlags::IS_TIGHT) {
+                surgerize_tight_list(&mut self.tree, cur_ix);
+                self.begin_list_item = None;
+            }
         }
     }
 
@@ -1529,10 +1538,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         }
         if self.last_line_blank {
             if let Some(node_ix) = self.tree.peek_grandparent() {
-                if let ItemBody::List(ref mut is_tight, _, _)
-                | ItemBody::DefinitionList(ref mut is_tight) = self.tree[node_ix].item.body
+                if let ItemBody::List(ref list_flags, _, _)
+                | ItemBody::DefinitionList(ref list_flags) = self.tree[node_ix].item.body
                 {
-                    *is_tight = false;
+                    list_flags.set(list_flags.get() & !ListFlags::IS_TIGHT);
                 }
             }
             self.last_line_blank = false;
@@ -1560,10 +1569,10 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     fn continue_list(&mut self, start: usize, ch: u8, index: u64) {
         self.finish_empty_list_item();
         if let Some(node_ix) = self.tree.peek_up() {
-            if let ItemBody::List(ref mut is_tight, existing_ch, _) = self.tree[node_ix].item.body {
+            if let ItemBody::List(ref list_flags, existing_ch, _) = self.tree[node_ix].item.body {
                 if existing_ch == ch {
                     if self.last_line_blank {
-                        *is_tight = false;
+                        list_flags.set(list_flags.get() & !ListFlags::IS_TIGHT);
                         self.last_line_blank = false;
                     }
                     return;
@@ -1575,7 +1584,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         self.tree.append(Item {
             start,
             end: 0, // will get set later
-            body: ItemBody::List(true, ch, index),
+            body: ItemBody::List(Cell::new(ListFlags::IS_TIGHT), ch, index),
         });
         self.tree.push();
         self.last_line_blank = false;
@@ -1743,15 +1752,17 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             &self.text[start..],
             &|bytes| {
                 let mut line_start = LineStart::new(bytes);
-                let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+                let tree_position =
+                    scan_containers(&self.tree, &mut line_start, self.options, false);
                 let current_container = tree_position == self.tree.spine_len();
                 if line_start.scan_space(4) {
                     return Some(line_start.bytes_scanned());
                 }
                 let bytes_scanned = line_start.bytes_scanned();
-                let suffix = &bytes[bytes_scanned..];
+                let off = self.text.len() - bytes.len() + bytes_scanned;
+                let suffix = &self.text[off..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                    || (current_container && scan_setext_heading(suffix).is_some())
+                    || (current_container && scan_setext_heading(suffix.as_bytes()).is_some())
                 {
                     None
                 } else {
@@ -1794,12 +1805,12 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 break;
             }
             let mut line_start = LineStart::new(&bytes[i..]);
-            let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+            let tree_position = scan_containers(&self.tree, &mut line_start, self.options, false);
             let current_container = tree_position == self.tree.spine_len();
             if !line_start.scan_space(4) {
-                let suffix = &bytes[i + line_start.bytes_scanned()..];
+                let suffix = &self.text[i + line_start.bytes_scanned()..];
                 if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                    || scan_setext_heading(suffix).is_some()
+                    || scan_setext_heading(suffix.as_bytes()).is_some()
                 {
                     return None;
                 }
@@ -1853,12 +1864,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         bytecount += 1;
                     }
                     let mut line_start = LineStart::new(&bytes[bytecount..]);
-                    let tree_position = scan_containers(&self.tree, &mut line_start, self.options);
+                    let tree_position =
+                        scan_containers(&self.tree, &mut line_start, self.options, false);
                     let current_container = tree_position == self.tree.spine_len();
                     if !line_start.scan_space(4) {
-                        let suffix = &bytes[bytecount + line_start.bytes_scanned()..];
+                        let suffix = &text[bytecount + line_start.bytes_scanned()..];
                         if self.scan_paragraph_interrupt(suffix, current_container, tree_position)
-                            || scan_setext_heading(suffix).is_some()
+                            || scan_setext_heading(suffix.as_bytes()).is_some()
                         {
                             return None;
                         }
@@ -1960,12 +1972,13 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Checks whether we should break a paragraph on the given input.
     fn scan_paragraph_interrupt(
         &self,
-        bytes: &[u8],
+        text: &str,
         current_container: bool,
         tree_position: usize,
     ) -> bool {
+        let bytes = text.as_bytes();
         if scan_paragraph_interrupt_no_table(
-            bytes,
+            text,
             current_container,
             self.options.contains(Options::ENABLE_FOOTNOTES),
             self.options.contains(Options::ENABLE_DEFINITION_LIST),
@@ -2035,7 +2048,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         //     ^
         //     | need to skip over the `>` when checking for the table
         let mut line_start = LineStart::new(&bytes[next_line_ix..]);
-        if scan_containers(&self.tree, &mut line_start, self.options) != self.tree.spine_len() {
+        if scan_containers(&self.tree, &mut line_start, self.options, false)
+            != self.tree.spine_len()
+        {
             return false;
         }
         let table_head_ix = next_line_ix + line_start.bytes_scanned();
@@ -2119,13 +2134,14 @@ fn count_header_cols(
 /// Use `FirstPass::scan_paragraph_interrupt` in any context that allows
 /// tables to interrupt the paragraph.
 fn scan_paragraph_interrupt_no_table(
-    bytes: &[u8],
+    text: &str,
     current_container: bool,
     has_footnote: bool,
     definition_list: bool,
     tree: &Tree<Item>,
     tree_position: usize,
 ) -> bool {
+    let bytes = text.as_bytes();
     scan_eol(bytes).is_some()
         || scan_hrule(bytes).is_ok()
         || scan_atx_heading(bytes).is_some()
@@ -2156,13 +2172,9 @@ fn scan_paragraph_interrupt_no_table(
                 }))
             && bytes.starts_with(b":")
         || (has_footnote
-            && bytes.starts_with(b"[^")
-            && scan_link_label_rest(
-                std::str::from_utf8(&bytes[2..]).unwrap(),
-                &|_| None,
-                tree.is_in_table(),
-            )
-            .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
+            && text.starts_with("[^")
+            && scan_link_label_rest(&text[2..], &|_| None, tree.is_in_table())
+                .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.

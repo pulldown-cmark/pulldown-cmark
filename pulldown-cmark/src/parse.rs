@@ -20,6 +20,7 @@
 
 //! Tree-based two pass parser.
 
+use core::cell::Cell;
 use std::cmp::{max, min};
 use std::collections::{HashMap, VecDeque};
 use std::iter::FusedIterator;
@@ -45,14 +46,14 @@ use crate::{
 // https://spec.commonmark.org/0.29/#link-destination
 pub(crate) const LINK_MAX_NESTED_PARENS: usize = 32;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct Item {
     pub start: usize,
     pub end: usize,
     pub body: ItemBody,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub(crate) enum ItemBody {
     // These are possible inline items, need to be resolved in second pass.
 
@@ -108,13 +109,14 @@ pub(crate) enum ItemBody {
     IndentCodeBlock,
     HtmlBlock,
     BlockQuote(Option<BlockQuoteKind>),
-    List(bool, u8, u64), // is_tight, list character, list start index
-    ListItem(usize),     // indent level
+    // is_tight|last_line empty, list character, list start index
+    List(Cell<ListFlags>, u8, u64),
+    ListItem(usize), // indent level
     FootnoteDefinition(CowIndex),
     MetadataBlock(MetadataBlockKind),
 
     // Definition lists
-    DefinitionList(bool), // is_tight
+    DefinitionList(Cell<ListFlags>),
     // gets turned into either a paragraph or a definition list title,
     // depending on whether there's a definition after it
     MaybeDefinitionListTitle,
@@ -173,6 +175,16 @@ impl ItemBody {
                 | SoftBreak
                 | HardBreak(..)
         )
+    }
+}
+
+bitflags::bitflags! {
+    /// Option struct containing flags for enabling extra features
+    /// that are not part of the CommonMark spec.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub(crate) struct ListFlags: u8 {
+        const IS_TIGHT = 1;
+        const LAST_LINE_EMPTY = 1 << 1;
     }
 }
 
@@ -640,6 +652,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             .unwrap_or(false)
                     {
                         if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
+                            prev = Some(node);
                             cur = self.tree[node].next;
                             continue;
                         }
@@ -886,6 +899,12 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             };
             let start_ix = self.tree[body_node].item.start;
             let end_ix = self.tree[cur_ix].item.start;
+            // bail early in case the link is malformed: on some inputs the
+            // body can begin at or after the closing delimiter, which would
+            // otherwise underflow the length below and invert the slice.
+            if end_ix <= start_ix {
+                return None;
+            }
             let wikilink = match scan_wikilink_pipe(
                 block_text,
                 start_ix, // bounded by closing tag
@@ -897,14 +916,30 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         return None;
                     }
                     // [[WikiName|rest]]
-                    let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
-                    if let Some(body_node) = body_node {
-                        // break node so passes can actually format
-                        // the display text
-                        self.tree[body_node].item.start = rest;
+                    if rest >= end_ix {
+                        // Empty display text: the `|` is immediately followed
+                        // by `]]`. Create a zero-length synthetic node so the
+                        // anchor has no content, rather than accidentally
+                        // capturing the closing `]` delimiter.
+                        let body_node = self.tree.create_node(Item {
+                            start: rest,
+                            end: rest,
+                            body: ItemBody::Text {
+                                backslash_escaped: false,
+                            },
+                        });
                         Some((true, body_node, wikitext))
                     } else {
-                        None
+                        let body_node = scan_nodes_to_ix(&self.tree, Some(body_node), rest);
+                        if let Some(body_node) = body_node {
+                            // break node so passes can actually format
+                            // the display text
+                            self.tree[body_node].item.start = rest;
+
+                            Some((true, body_node, wikitext))
+                        } else {
+                            None
+                        }
                     }
                 }
                 None => {
@@ -1441,10 +1476,37 @@ pub(crate) fn scan_containers(
     tree: &Tree<Item>,
     line_start: &mut LineStart<'_>,
     options: Options,
+    update_flags: bool,
 ) -> usize {
     let mut i = 0;
-    for &node_ix in tree.walk_spine() {
+    let mut spine_iter = tree.walk_spine();
+    for &node_ix in &mut spine_iter {
         match tree[node_ix].item.body {
+            // This fix is lifted, almost verbatim,
+            // from https://github.com/commonmark/cmark/pull/520/changes
+            ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags)
+                if update_flags =>
+            {
+                // Avoid quadratic behavior caused by deeply nested lists
+                // for each blank line.
+                if line_start.is_at_eol() {
+                    if list_flags.get().contains(ListFlags::LAST_LINE_EMPTY)
+                        && line_start.remaining_space() == 0
+                    {
+                        // Finish early if we encounter multiple blank lines.
+                        // If the previous line was blank, then we know that this
+                        // container has no children unless those children
+                        // use indented lines to nest (in other words, blockquote
+                        // and blockquote-like children aren't nested in here).
+                        // Therefore, every child of this list will pass.
+                        return tree.spine_len();
+                    } else {
+                        list_flags.set(list_flags.get() | ListFlags::LAST_LINE_EMPTY);
+                    }
+                } else {
+                    list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+                }
+            }
             ItemBody::BlockQuote(..) => {
                 let save = line_start.clone();
                 let _ = line_start.scan_space(3);
@@ -1478,11 +1540,18 @@ pub(crate) fn scan_containers(
         }
         i += 1;
     }
+    for &node_ix in &mut spine_iter {
+        if let ItemBody::List(ref list_flags, _, _) | ItemBody::DefinitionList(ref list_flags) =
+            tree[node_ix].item.body
+        {
+            list_flags.set(list_flags.get() & !ListFlags::LAST_LINE_EMPTY);
+        }
+    }
     i
 }
 pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
     let mut line_start = LineStart::new(bytes);
-    let _ = scan_containers(tree, &mut line_start, options);
+    let _ = scan_containers(tree, &mut line_start, options, false);
     line_start.bytes_scanned()
 }
 
@@ -1600,9 +1669,8 @@ impl InlineStack {
 
     fn set_lowerbound(&mut self, c: u8, count: usize, both: bool, new_bound: usize) {
         if c == b'_' {
-            if both {
-                self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
-            } else {
+            self.lower_bounds[InlineStack::UNDERSCORE_BASE + count % 3] = new_bound;
+            if !both {
                 self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH] = new_bound;
             }
         } else if c == b'*' {
@@ -2204,9 +2272,8 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                     self.inner.handle_inline();
                 }
 
-                let node = self.inner.tree[cur_ix];
-                let item = node.item;
-                let event = item_to_event(item, self.inner.text, &mut self.inner.allocs);
+                let item = self.inner.tree[cur_ix].item.clone();
+                let event = item_to_event(&item, self.inner.text, &mut self.inner.allocs);
                 if let Event::Start(..) = event {
                     self.inner.tree.push();
                 } else {
@@ -2251,7 +2318,7 @@ fn body_to_tag_end(body: &ItemBody) -> TagEnd {
     }
 }
 
-fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
+fn item_to_event<'a>(item: &Item, text: &'a str, allocs: &mut Allocations<'a>) -> Event<'a> {
     let tag = match item.body {
         ItemBody::Text { .. } => return Event::Text(text[item.start..item.end].into()),
         ItemBody::Code(cow_ix) => return Event::Code(allocs.take_cow(cow_ix)),
@@ -2374,9 +2441,8 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for Parser<'a, F> {
                         self.handle_inline();
                     }
 
-                    let node = self.tree[cur_ix];
-                    let item = node.item;
-                    let event = item_to_event(item, self.text, &mut self.allocs);
+                    let item = self.tree[cur_ix].item.clone();
+                    let event = item_to_event(&item, self.text, &mut self.allocs);
                     if let Event::Start(ref _tag) = event {
                         self.tree.push();
                     } else {
@@ -2559,6 +2625,19 @@ mod test {
             .collect();
         let expected_offsets = vec![(0..13), (0..7), (1..6), (0..7), (7..13), (0..13)];
         assert_eq!(expected_offsets, event_offsets);
+    }
+
+    #[test]
+    fn issue_1142_deflist_offset_is_char_boundary() {
+        // Title `%`, definition whose text is combining acute U+0301, then a
+        // TAB-indented second definition. The second definition's start used
+        // to land inside the combining character.
+        let doc = "%\n:\u{301}\n\t:";
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_DEFINITION_LIST);
+        for (_event, range) in Parser::new_ext(doc, opts).into_offset_iter() {
+            let _ = &doc[range];
+        }
     }
 
     #[test]
@@ -2911,5 +2990,55 @@ text
             Event::End(TagEnd::Paragraph),
         ];
         assert_eq!(&events, &expected);
+    }
+
+    #[test]
+    fn wikilink_no_event_blowup() {
+        // Regression: handle_wikilink reused an existing tree node as
+        // the wikilink's child without terminating that node's `next`
+        // chain.  The `next` chain threaded through the closing `]]`
+        // into the content after the wikilink, so the EventIter
+        // visited that tail content both as children (via child ptr)
+        // and as siblings (via next ptr). Adversarial repeated
+        // `[[|]]` patterns compounded exponentially.
+        let one = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(1);
+        let eight = "[[[[^(\n|]]]]=]]]]]]]]\n".repeat(8);
+
+        let n1 = Parser::new_ext(&one, Options::ENABLE_WIKILINKS).count();
+        let n8 = Parser::new_ext(&eight, Options::ENABLE_WIKILINKS).count();
+
+        assert!(
+            n8 <= n1 * 20,
+            "Event count should scale linearly with input length; \
+             got {n1} events for 1× and {n8} events for 8× ({}× ratio, expected ≤20×)",
+            n8 / n1.max(1)
+        );
+    }
+
+    #[test]
+    fn issue_1154() {
+        // If a `_` that can only close finds no opener, a `_` of the same length
+        // that can also open won't find one either, so its bound can go up too.
+        let mut tree = Tree::with_capacity(4);
+        let mut stack = InlineStack::default();
+        for _ in 0..3 {
+            let start = tree.append(Item {
+                start: 0,
+                end: 1,
+                body: ItemBody::Text {
+                    backslash_escaped: false,
+                },
+            });
+            stack.push(InlineEl {
+                start,
+                count: 1,
+                run_length: 1,
+                c: b'*',
+                both: false,
+            });
+        }
+        assert!(stack.find_match(&mut tree, b'_', 1, false).is_none());
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, false));
+        assert_eq!(3, stack.get_lowerbound(b'_', 1, true));
     }
 }

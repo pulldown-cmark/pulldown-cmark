@@ -179,3 +179,38 @@ fn metadata_blocks_test_12() {
 
     test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn metadata_blocks_test_13() {
+    let original = r##"-
+  ---
+-
+
+---
+"##;
+    let expected = r##"<ul>
+<li>
+<hr>
+</li>
+<li></li>
+</ul>
+<hr>
+"##;
+
+    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn metadata_blocks_test_14() {
+    let original = r##">---
+title: Basic
+---
+"##;
+    let expected = r##"<blockquote>
+<hr>
+</blockquote>
+<h2>title: Basic</h2>
+"##;
+
+    test_markdown_html(original, expected, false, true, false, false, false, false, false, false, false);
+}

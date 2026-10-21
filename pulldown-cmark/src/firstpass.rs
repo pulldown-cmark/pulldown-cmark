@@ -413,8 +413,8 @@ impl<'a, 'b> FirstPass<'a, 'b> {
 
         let ix = start_ix + line_start.bytes_scanned();
 
-        // metadata blocks cannot be indented
-        if indent == 0 {
+        // metadata blocks cannot be indented or nested in other blocks
+        if indent == 0 && self.tree.spine_len() == 0 {
             if let Some((_n, metadata_block_ch)) = scan_metadata_block(
                 &bytes[ix..],
                 self.options

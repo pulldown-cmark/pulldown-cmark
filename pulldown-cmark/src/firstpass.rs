@@ -2303,7 +2303,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// If `header_end` is less than or equal to `header_start`, the given
     /// input is considered as empty.
     fn extract_and_parse_heading_attribute_block(
-        &mut self,
+        &self,
         header_start: usize,
         header_end: usize,
     ) -> (usize, Option<HeadingAttributes<'a>>) {

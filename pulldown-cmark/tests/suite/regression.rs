@@ -3276,27 +3276,22 @@ fn regression_test_206() {
 >	{.class}
 >	===
 "##;
-    let expected = r##"<h1 class="class">foo
-</h1>
+    let expected = r##"<h1 class="class">foo</h1>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 </blockquote>
 <ul>
 <li>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 </li>
 </ul>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 "##;
 
@@ -4521,4 +4516,91 @@ fn regression_test_292() {
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_293() {
+    let original = r##"x  2
+:x
+  {}
+ -
+"##;
+    let expected = r##"<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x</h2>
+</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn regression_test_294() {
+    let original = r##"x  2
+- x
+   {}
+  -
+"##;
+    let expected = r##"<p>x  2</p>
+<ul>
+<li>
+<h2>x</h2>
+</li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_295() {
+    let original = r##"x  2
+> x
+>  {}
+> -
+"##;
+    let expected = r##"<p>x  2</p>
+<blockquote>
+<h2>x</h2>
+</blockquote>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_296() {
+    let original = r##"x  2
+:x\
+  {}
+ -
+"##;
+    let expected = r##"<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x\</h2>
+</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn regression_test_297() {
+    let original = r##"x  2
+:x\
+ -
+"##;
+    let expected = r##"<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x\</h2>
+</dd>
+</dl>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
 }

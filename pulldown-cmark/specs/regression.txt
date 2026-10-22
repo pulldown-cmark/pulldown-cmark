@@ -2750,27 +2750,22 @@ foo
 >→{.class}
 >→===
 .
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 </blockquote>
 <ul>
 <li>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 </li>
 </ul>
 <blockquote>
-<h1 class="class">foo
-</h1>
+<h1 class="class">foo</h1>
 </blockquote>
 ````````````````````````````````
 
@@ -3768,4 +3763,75 @@ the link text is not the end of the block.
 .
 <p><a href="b">a*<br />
 </a> c</p>
+````````````````````````````````
+
+ISSUE #1110
+
+```````````````````````````````` example_deflists
+x  2
+:x
+  {}
+ -
+.
+<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x</h2>
+</dd>
+</dl>
+````````````````````````````````
+
+```````````````````````````````` example
+x  2
+- x
+   {}
+  -
+.
+<p>x  2</p>
+<ul>
+<li>
+<h2>x</h2>
+</li>
+</ul>
+````````````````````````````````
+
+```````````````````````````````` example
+x  2
+> x
+>  {}
+> -
+.
+<p>x  2</p>
+<blockquote>
+<h2>x</h2>
+</blockquote>
+````````````````````````````````
+
+This test case shouldn't have `<br />`
+
+```````````````````````````````` example_deflists
+x  2
+:x\
+  {}
+ -
+.
+<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x\</h2>
+</dd>
+</dl>
+````````````````````````````````
+
+```````````````````````````````` example_deflists
+x  2
+:x\
+ -
+.
+<dl>
+<dt>x  2</dt>
+<dd>
+<h2>x\</h2>
+</dd>
+</dl>
 ````````````````````````````````

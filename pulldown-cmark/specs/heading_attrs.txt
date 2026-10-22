@@ -123,8 +123,7 @@ cont
 ==
 .
 <h1 id="myid">H1
-cont
-</h1>
+cont</h1>
 ````````````````````````````````
 
 However, an attribute block itself cannot have newline characters.

@@ -677,3 +677,27 @@ Lorem ipsum.[^a] [^b]
 <p>Bar</p>
 </div>
 ````````````````````````````````
+
+A footnote reference inside a link or image label does not stop the link or image from forming. GitHub and cmark-gfm form both.
+
+```````````````````````````````` example
+[link[^1]](https://example.com)
+
+[^1]: note
+.
+<p><a href="https://example.com">link<sup class="footnote-reference"><a href="#1">1</a></sup></a></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>note</p>
+</div>
+````````````````````````````````
+
+```````````````````````````````` example
+![image[^1]](https://example.com/a.png)
+
+[^1]: note
+.
+<p><img src="https://example.com/a.png" alt="image[1]" /></p>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>note</p>
+</div>
+````````````````````````````````

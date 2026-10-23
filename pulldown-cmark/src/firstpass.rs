@@ -862,33 +862,48 @@ impl<'a, 'b> FirstPass<'a, 'b> {
             let new_end = if has_trailing_content {
                 content_end
             } else {
-                let mut last_line_start = header_start;
-                if attrs.is_some() {
+                let mut new_end = if attrs.is_some() {
+                    let mut last_line_start = header_start;
                     loop {
                         let next_line_start =
                             last_line_start + scan_nextline(&bytes[last_line_start..content_end]);
                         if next_line_start >= content_end {
-                            break;
+                            break content_end;
                         }
                         let mut line_start = LineStart::new(&bytes[next_line_start..content_end]);
                         if scan_containers(&self.tree, &mut line_start, self.options, false)
                             != self.tree.spine_len()
                         {
-                            break;
+                            break next_line_start;
                         }
                         last_line_start = next_line_start + line_start.bytes_scanned();
+                        if bytes[last_line_start..content_end]
+                            .iter()
+                            .copied()
+                            .all(is_ascii_whitespace_no_nl)
+                        {
+                            break next_line_start;
+                        }
                     }
+                } else {
+                    content_end
+                };
+                if let Some(nl) = LineEnding::at_end(&bytes[header_start..new_end]) {
+                    new_end -= nl.len();
                 }
-                let trailing_ws = scan_rev_while(
-                    &bytes[last_line_start..content_end],
-                    is_ascii_whitespace_no_nl,
-                );
-                content_end - trailing_ws
+                new_end -= scan_rev_while(&bytes[header_start..new_end], is_ascii_whitespace_no_nl);
+                new_end
             };
 
             if attrs.is_some() {
                 // remove trailing block attributes
                 self.tree.truncate_siblings(new_end);
+                // trailing backslash at the end of the header isn't a hard line break
+                if let Some(cur_ix) = self.tree.cur() {
+                    if let ItemBody::HardBreak(true) = self.tree[cur_ix].item.body {
+                        self.tree[cur_ix].item.body = ItemBody::SynthesizeChar('\\');
+                    }
+                }
             }
 
             if let Some(cur_ix) = self.tree.cur() {

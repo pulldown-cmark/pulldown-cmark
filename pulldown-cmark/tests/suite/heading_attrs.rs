@@ -110,8 +110,7 @@ cont
 ==
 "##;
     let expected = r##"<h1 id="myid">H1
-cont
-</h1>
+cont</h1>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);

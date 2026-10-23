@@ -4,7 +4,7 @@
 use super::test_markdown_html;
 
 #[test]
-fn smart_punct_test_1() {
+fn smart_punct_test_0001_l7() {
     let original = r##""Hello," said the spider.
 "'Shelob' is my name."
 "##;
@@ -12,21 +12,21 @@ fn smart_punct_test_1() {
 “‘Shelob’ is my name.”</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_2() {
+fn smart_punct_test_0002_l15() {
     let original = r##"'A', 'B', and 'C' are letters.
 "##;
     let expected = r##"<p>‘A’, ‘B’, and ‘C’ are letters.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_3() {
+fn smart_punct_test_0003_l21() {
     let original = r##"'Oak,' 'elm,' and 'beech' are names of trees.
 So is 'pine.'
 "##;
@@ -34,61 +34,61 @@ So is 'pine.'
 So is ‘pine.’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_4() {
+fn smart_punct_test_0004_l29() {
     let original = r##"'He said, "I want to go."'
 "##;
     let expected = r##"<p>‘He said, “I want to go.”’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_5() {
+fn smart_punct_test_0005_l39() {
     let original = r##"Were you alive in the 70's?
 "##;
     let expected = r##"<p>Were you alive in the 70’s?</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_6() {
+fn smart_punct_test_0006_l45() {
     let original = r##"Here is some quoted '`code`' and a "[quoted link](url)".
 "##;
     let expected = r##"<p>Here is some quoted ‘<code>code</code>’ and a “<a href="url">quoted link</a>”.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_7() {
+fn smart_punct_test_0007_l55() {
     let original = r##"'tis the season to be 'jolly'
 "##;
     let expected = r##"<p>’tis the season to be ‘jolly’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_8() {
+fn smart_punct_test_0008_l63() {
     let original = r##"'We'll use Jane's boat and John's truck,' Jenna said.
 "##;
     let expected = r##"<p>‘We’ll use Jane’s boat and John’s truck,’ Jenna said.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_9() {
+fn smart_punct_test_0009_l72() {
     let original = r##""A paragraph with no closing quote.
 
 "Second paragraph by same speaker, in fiction."
@@ -97,21 +97,21 @@ fn smart_punct_test_9() {
 <p>“Second paragraph by same speaker, in fiction.”</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_10() {
+fn smart_punct_test_0010_l84() {
     let original = r##"[a]'s b'
 "##;
     let expected = r##"<p>[a]’s b’</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_11() {
+fn smart_punct_test_0011_l93() {
     let original = r##"\"This is not smart.\"
 This isn\'t either.
 5\'8\"
@@ -121,11 +121,11 @@ This isn't either.
 5'8"</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_12() {
+fn smart_punct_test_0012_l105() {
     let original = r##"Some dashes:  em---em
 en--en
 em --- em
@@ -139,11 +139,11 @@ en – en
 2–3</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_13() {
+fn smart_punct_test_0013_l130() {
     let original = r##"one-
 two--
 three---
@@ -167,35 +167,35 @@ nine———
 thirteen———––.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_14() {
+fn smart_punct_test_0014_l156() {
     let original = r##"Escaped hyphens: \-- \-\-\-.
 "##;
     let expected = r##"<p>Escaped hyphens: -- ---.</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_15() {
+fn smart_punct_test_0015_l164() {
     let original = r##"Ellipses...and...and....
 "##;
     let expected = r##"<p>Ellipses…and…and….</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }
 
 #[test]
-fn smart_punct_test_16() {
+fn smart_punct_test_0016_l173() {
     let original = r##"No ellipses\.\.\.
 "##;
     let expected = r##"<p>No ellipses...</p>
 "##;
 
-    test_markdown_html(original, expected, true, false, false, false, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SMART_PUNCTUATION");
 }

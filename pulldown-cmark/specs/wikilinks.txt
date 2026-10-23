@@ -1,3 +1,5 @@
+Parser options: `ENABLE_WIKILINKS`
+
 Run this with `cargo test --features gen-tests suite::wikilinks`
 
 # Wikilinks
@@ -9,13 +11,13 @@ choices inspired heavily by
 A wikilink is defined within double brackets. The destination url of the
 resulting anchor is the text in the link.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is a [[WikiLink]].
 .
 <p>This is a <a href="WikiLink">WikiLink</a>.</p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is a [[Main/WikiLink]].
 .
 <p>This is a <a href="Main/WikiLink">Main/WikiLink</a>.</p>
@@ -23,7 +25,7 @@ This is a [[Main/WikiLink]].
 
 Wikilinks take precedence over reference links:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is [[Ambiguous]].
 
 [Ambiguous]: https://example.com/
@@ -33,7 +35,7 @@ This is [[Ambiguous]].
 
 However, they should not otherwise interfere with normal Markdown links:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[squid] calamari is considered a delicacy](https://en.wikipedia.org/wiki/Squid)
 
 [calamari [squid]](https://en.wikipedia.org/wiki/Squid)
@@ -48,7 +50,7 @@ However, they should not otherwise interfere with normal Markdown links:
 
 They also take precedence over inline links:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is [also [[Ambiguous]]](https://example.com/).
 .
 <p>This is [also <a href="Ambiguous">Ambiguous</a>](https://example.com/).</p>
@@ -57,7 +59,7 @@ This is [also [[Ambiguous]]](https://example.com/).
 Wikilinks, when enabled, may be used as an alternative to the autolink syntax;
 \<https://example.org/\>:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 <https://example.org/>
 
 [[https://example.org/]]
@@ -68,13 +70,13 @@ Wikilinks, when enabled, may be used as an alternative to the autolink syntax;
 
 Wikilinks can have different display text through a utility called piping:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is [[WikiLink|a pothole]].
 .
 <p>This is <a href="WikiLink">a pothole</a>.</p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is a [[WikiLink/In/A/Directory|WikiLink]].
 .
 <p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
@@ -82,7 +84,7 @@ This is a [[WikiLink/In/A/Directory|WikiLink]].
 
 Using this syntax, it is possible to show more Markdown in the text:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is [[WikiLink|a **strong** pothole]].
 .
 <p>This is <a href="WikiLink">a <strong>strong</strong> pothole</a>.</p>
@@ -90,7 +92,7 @@ This is [[WikiLink|a **strong** pothole]].
 
 Or images:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is a cute dog, linked to the page "WikiLink"
 
 [[WikiLink|![dog](dog.png)]]
@@ -103,7 +105,7 @@ This is a cute dog, linked to the page "WikiLink"
 
 With nested wikilinks, the deepest one takes precedence:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[WikiLink|[[Fish]]]]
 .
 <p>[[WikiLink|<a href="Fish">Fish</a>]]</p>
@@ -111,7 +113,7 @@ With nested wikilinks, the deepest one takes precedence:
 
 Links inside wikilinks will take precedence:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[WikiLink|[cat](cat.html)]]
 .
 <p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
@@ -119,7 +121,7 @@ Links inside wikilinks will take precedence:
 
 A similar looking syntax can be used to embed images:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 This is a cute dog.
 
 ![[dog.png]]
@@ -132,7 +134,7 @@ This is a cute dog.
 
 In this syntax, the pipe operator serves as a way to define alt text.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 ![[dog.png|a cute dog]]
 .
 <p><img src="dog.png" alt="a cute dog" /></p>
@@ -140,7 +142,7 @@ In this syntax, the pipe operator serves as a way to define alt text.
 
 Wikilinks cannot be empty. They will render as-is.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 ]] [[]] [[|]] [[|Symbol]] [[
 .
 <p>]] [[]] [[|]] [[|Symbol]] [[</p>
@@ -148,7 +150,7 @@ Wikilinks cannot be empty. They will render as-is.
 
 If the display text is empty then we omit it from the output anchor.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[link|]]
 .
 <p><a href="link"></a></p>
@@ -157,7 +159,7 @@ If the display text is empty then we omit it from the output anchor.
 When a wikilink with a pipe separator is nested inside extra brackets, the
 trailing `]]` after the wikilink must appear exactly once.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[[[link|display]]]]
 .
 <p>[[<a href="link">display</a>]]</p>
@@ -165,25 +167,25 @@ trailing `]]` after the wikilink must appear exactly once.
 
 Other interactions wikilinks have with other Markdown syntax:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [inline link]([[url]])
 .
 <p><a href="%5B%5Burl%5D%5D">inline link</a></p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [inline link]([[url)]]
 .
 <p><a href="%5B%5Burl">inline link</a>]]</p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 `[[code]]`
 .
 <p><code>[[code]]</code></p>
 ````````````````````````````````
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 emphasis **cross [[over** here]]
 .
 <p>emphasis **cross <a href="over**%20here">over** here</a></p>
@@ -194,7 +196,7 @@ A pipe symbol can not be included in the href of a wikilink. That is to say the
 pipe symbol cannot be escaped, and backslashes will be treated as part of the
 URL.
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[first\|second]]
 .
 <p><a href="first%5C">second</a></p>
@@ -203,7 +205,7 @@ URL.
 Also, because the content within is taken as-is, HTML entities cannot be used
 to get around this:
 
-```````````````````````````````` example_wikilinks
+```````````````````````````````` example
 [[first&#33;second]]
 .
 <p><a href="first&amp;#33;second">first&amp;#33;second</a></p>

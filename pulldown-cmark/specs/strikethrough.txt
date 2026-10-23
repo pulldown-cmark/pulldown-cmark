@@ -1,10 +1,12 @@
+Parser options: `ENABLE_STRIKETHROUGH`
+
 This is an extension of gfm_strikethrough.txt. Some of these tests are also pulled from commonmark-hs.
 
 # Two tildes
 
 Basic strikethrough is between two tildes:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~~This is *stricken out*~~
 .
 <p><del>This is <em>stricken out</em></del></p>
@@ -12,7 +14,7 @@ Basic strikethrough is between two tildes:
 
 Backslash escapes:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~~This is \~\~stricken~~
 .
 <p><del>This is ~~stricken</del></p>
@@ -20,13 +22,13 @@ Backslash escapes:
 
 Intraword strikeout:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 This~~is~~stricken
 .
 <p>This<del>is</del>stricken</p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~~This~~is~~stricken~~
 .
 <p><del>This</del>is<del>stricken</del></p>
@@ -35,7 +37,7 @@ This~~is~~stricken
 Punctuation is ignored for purposes of determining
 flankingness on two tildes:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 Here I strike out an exclamation point~~!~~.
 .
 <p>Here I strike out an exclamation point<del>!</del>.</p>
@@ -45,7 +47,7 @@ Here I strike out an exclamation point~~!~~.
 
 One tilde—and this is where we differ from commonmark-hs—is allowed in certain situations:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~This is stricken out~
 .
 <p><del>This is stricken out</del></p>
@@ -53,7 +55,7 @@ One tilde—and this is where we differ from commonmark-hs—is allowed in certa
 
 Backslash escapes:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~This is \~stricken~
 .
 <p><del>This is ~stricken</del></p>
@@ -61,13 +63,13 @@ Backslash escapes:
 
 Intraword strikeout requires two tildes:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 This~is~nothing
 .
 <p>This~is~nothing</p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~This~is~nothing~
 .
 <p><del>This~is~nothing</del></p>
@@ -76,7 +78,7 @@ This~is~nothing
 Punctuation is used for purposes of determining
 flankingness:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 Here I fail to strike out an exclamation point~!~.
 .
 <p>Here I fail to strike out an exclamation point~!~.</p>
@@ -84,19 +86,19 @@ Here I fail to strike out an exclamation point~!~.
 
 Tilde runs can't mix.
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 Here I fail to strike out a tilde ~~~.
 .
 <p>Here I fail to strike out a tilde ~~~.</p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 Here I fail to match up ~~tildes~.
 .
 <p>Here I fail to match up ~~tildes~.</p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 Here I fail to match up ~tildes~~.
 .
 <p>Here I fail to match up ~tildes~~.</p>
@@ -104,13 +106,13 @@ Here I fail to match up ~tildes~~.
 
 Double tildes are allowed to contain single tildes, and the other way around:
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~~This ~is stricken.~~
 .
 <p><del>This ~is stricken.</del></p>
 ````````````````````````````````
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~This ~~is stricken.~
 .
 <p><del>This ~~is stricken.</del></p>
@@ -118,7 +120,7 @@ Double tildes are allowed to contain single tildes, and the other way around:
 
 The first one wins.
 
-```````````````````````````````` example_strikethrough
+```````````````````````````````` example
 ~This ~~is stricken~ but this is not~~
 .
 <p><del>This ~~is stricken</del> but this is not~~</p>

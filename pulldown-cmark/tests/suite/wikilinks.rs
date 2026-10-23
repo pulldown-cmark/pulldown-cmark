@@ -4,27 +4,27 @@
 use super::test_markdown_html;
 
 #[test]
-fn wikilinks_test_1() {
+fn wikilinks_test_0001_l14() {
     let original = r##"This is a [[WikiLink]].
 "##;
     let expected = r##"<p>This is a <a href="WikiLink">WikiLink</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_2() {
+fn wikilinks_test_0002_l20() {
     let original = r##"This is a [[Main/WikiLink]].
 "##;
     let expected = r##"<p>This is a <a href="Main/WikiLink">Main/WikiLink</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_3() {
+fn wikilinks_test_0003_l28() {
     let original = r##"This is [[Ambiguous]].
 
 [Ambiguous]: https://example.com/
@@ -32,11 +32,11 @@ fn wikilinks_test_3() {
     let expected = r##"<p>This is <a href="Ambiguous">Ambiguous</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_4() {
+fn wikilinks_test_0004_l38() {
     let original = r##"[[squid] calamari is considered a delicacy](https://en.wikipedia.org/wiki/Squid)
 
 [calamari [squid]](https://en.wikipedia.org/wiki/Squid)
@@ -49,21 +49,21 @@ fn wikilinks_test_4() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_5() {
+fn wikilinks_test_0005_l53() {
     let original = r##"This is [also [[Ambiguous]]](https://example.com/).
 "##;
     let expected = r##"<p>This is [also <a href="Ambiguous">Ambiguous</a>](https://example.com/).</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_6() {
+fn wikilinks_test_0006_l62() {
     let original = r##"<https://example.org/>
 
 [[https://example.org/]]
@@ -72,41 +72,41 @@ fn wikilinks_test_6() {
 <p><a href="https://example.org/">https://example.org/</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_7() {
+fn wikilinks_test_0007_l73() {
     let original = r##"This is [[WikiLink|a pothole]].
 "##;
     let expected = r##"<p>This is <a href="WikiLink">a pothole</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_8() {
+fn wikilinks_test_0008_l79() {
     let original = r##"This is a [[WikiLink/In/A/Directory|WikiLink]].
 "##;
     let expected = r##"<p>This is a <a href="WikiLink/In/A/Directory">WikiLink</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_9() {
+fn wikilinks_test_0009_l87() {
     let original = r##"This is [[WikiLink|a **strong** pothole]].
 "##;
     let expected = r##"<p>This is <a href="WikiLink">a <strong>strong</strong> pothole</a>.</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_10() {
+fn wikilinks_test_0010_l95() {
     let original = r##"This is a cute dog, linked to the page "WikiLink"
 
 [[WikiLink|![dog](dog.png)]]
@@ -117,31 +117,31 @@ fn wikilinks_test_10() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_11() {
+fn wikilinks_test_0011_l108() {
     let original = r##"[[WikiLink|[[Fish]]]]
 "##;
     let expected = r##"<p>[[WikiLink|<a href="Fish">Fish</a>]]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_12() {
+fn wikilinks_test_0012_l116() {
     let original = r##"[[WikiLink|[cat](cat.html)]]
 "##;
     let expected = r##"<p>[[WikiLink|<a href="cat.html">cat</a>]]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_13() {
+fn wikilinks_test_0013_l124() {
     let original = r##"This is a cute dog.
 
 ![[dog.png]]
@@ -152,105 +152,105 @@ fn wikilinks_test_13() {
 </p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_14() {
+fn wikilinks_test_0014_l137() {
     let original = r##"![[dog.png|a cute dog]]
 "##;
     let expected = r##"<p><img src="dog.png" alt="a cute dog" /></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_15() {
+fn wikilinks_test_0015_l145() {
     let original = r##"]] [[]] [[|]] [[|Symbol]] [[
 "##;
     let expected = r##"<p>]] [[]] [[|]] [[|Symbol]] [[</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_16() {
+fn wikilinks_test_0016_l153() {
     let original = r##"[[link|]]
 "##;
     let expected = r##"<p><a href="link"></a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_17() {
+fn wikilinks_test_0017_l162() {
     let original = r##"[[[[link|display]]]]
 "##;
     let expected = r##"<p>[[<a href="link">display</a>]]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_18() {
+fn wikilinks_test_0018_l170() {
     let original = r##"[inline link]([[url]])
 "##;
     let expected = r##"<p><a href="%5B%5Burl%5D%5D">inline link</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_19() {
+fn wikilinks_test_0019_l176() {
     let original = r##"[inline link]([[url)]]
 "##;
     let expected = r##"<p><a href="%5B%5Burl">inline link</a>]]</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_20() {
+fn wikilinks_test_0020_l182() {
     let original = r##"`[[code]]`
 "##;
     let expected = r##"<p><code>[[code]]</code></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_21() {
+fn wikilinks_test_0021_l188() {
     let original = r##"emphasis **cross [[over** here]]
 "##;
     let expected = r##"<p>emphasis **cross <a href="over**%20here">over** here</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_22() {
+fn wikilinks_test_0022_l199() {
     let original = r##"[[first\|second]]
 "##;
     let expected = r##"<p><a href="first%5C">second</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }
 
 #[test]
-fn wikilinks_test_23() {
+fn wikilinks_test_0023_l208() {
     let original = r##"[[first&#33;second]]
 "##;
     let expected = r##"<p><a href="first&amp;#33;second">first&amp;#33;second</a></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, false, true, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_WIKILINKS");
 }

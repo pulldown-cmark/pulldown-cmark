@@ -1,14 +1,16 @@
+Parser options: `ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT`
+
 # Superscript and subscript
 
 Basic strikethrough is between two tildes:
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ^This is super^ ~This is sub~
 .
 <p><sup>This is super</sup> <sub>This is sub</sub></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~This is stricken out~
 .
 <p><sub>This is stricken out</sub></p>
@@ -16,37 +18,37 @@ Basic strikethrough is between two tildes:
 
 Backslash escapes:
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~This is \~stricken~
 .
 <p><sub>This is ~stricken</sub></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~This~is~nothing~
 .
 <p><sub>This</sub>is<sub>nothing</sub></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~This ~~is not stricken.~
 .
 <p><sub>This ~~is not stricken.</sub></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~This ~~is not stricken.~
 .
 <p><sub>This ~~is not stricken.</sub></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub_strikethrough
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~~This ~is~~ stricken.~
 .
 <p><del>This ~is</del> stricken.~</p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~~This ~is~~ stricken.~
 .
 <p>~~This ~is~~ stricken.~</p>
@@ -54,7 +56,7 @@ Backslash escapes:
 
 The first one wins.
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example ENABLE_STRIKETHROUGH
 ~This ~~is stricken~ but this is not~~
 .
 <p><sub>This ~~is stricken</sub> but this is not~~</p>
@@ -63,7 +65,7 @@ The first one wins.
 Though strikethrough requires left and right flanking, subscript does not.
 Neither does superscript.
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 H~2~O
 
 y=x^2^a+xb+c
@@ -74,7 +76,7 @@ y=x^2^a+xb+c
 
 Superscript and subscript cannot group with a different delimiter count.
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~foo~~
 
 ^bar^^
@@ -86,7 +88,7 @@ Superscript and subscript cannot group with a different delimiter count.
 The lower bound of superscript and subscript are separate.
 Emphasis example included for analogy.
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ~foo^~^bar~
 
 *foo_*_bar*
@@ -99,19 +101,19 @@ Superscript with punctuation content (chemical ions, math).
 When preceded by an alphanumeric character, superscript opens
 even if the content is punctuation like `+` or `-`.
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 H^+^ + OH^-^
 .
 <p>H<sup>+</sup> + OH<sup>-</sup></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 Ca^2+^ + CO~3~^2-^
 .
 <p>Ca<sup>2+</sup> + CO<sub>3</sub><sup>2-</sup></p>
 ````````````````````````````````
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 NH~4~^+^
 .
 <p>NH<sub>4</sub><sup>+</sup></p>
@@ -120,7 +122,7 @@ NH~4~^+^
 Standalone punctuation-only superscript without a preceding
 alphanumeric does not open (avoids false positives).
 
-```````````````````````````````` example_super_sub
+```````````````````````````````` example
 ^+^ not superscript
 .
 <p>^+^ not superscript</p>

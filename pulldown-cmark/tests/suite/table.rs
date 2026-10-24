@@ -630,3 +630,29 @@ moo | moo
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }
+
+#[test]
+fn table_test_29() {
+    let original = r##"a|b
+-|:
+"##;
+    let expected = r##"<p>a|b
+-|:</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn table_test_30() {
+    let original = r##"| a | b |
+| --- | :
+| 1 | 2 |
+"##;
+    let expected = r##"<p>| a | b |
+| --- | :
+| 1 | 2 |</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}

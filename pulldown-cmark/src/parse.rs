@@ -41,7 +41,7 @@ use crate::{
     scanners::*,
     strings::CowStr,
     tree::{Tree, TreeIndex},
-    Alignment, BlockQuoteKind, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
+    AdmonitionKind, Alignment, CodeBlockKind, ContainerKind, Event, HeadingLevel, LinkType,
     MetadataBlockKind, Options, Tag, TagEnd,
 };
 
@@ -115,7 +115,7 @@ pub(crate) enum ItemBody {
     FencedCodeBlock(CowIndex),
     IndentCodeBlock,
     HtmlBlock,
-    BlockQuote(Option<BlockQuoteKind>),
+    BlockQuote(Option<AdmonitionKind>),
     Container(u8, ContainerKind, CowIndex), // (fence length, specific renderer, descriptor used in renderer)
     // is_tight|last_line_empty, list character, list start index
     List(Cell<ListFlags>, u8, u64),

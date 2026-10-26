@@ -2811,6 +2811,27 @@ mod test {
     }
 
     #[test]
+    fn empty_task_list_item_offsets() {
+        // The first item of a list used to start after its own task list
+        // marker when nothing followed the marker, so the TaskListMarker
+        // range lay outside the Item range. Later items were already right.
+        for (doc, expected_starts) in [
+            ("- [ ] \n  foo\n", vec![0]),
+            ("- [ ] \n- [ ] \n", vec![0, 7]),
+            ("- a\n  - [x] \n", vec![0, 6]),
+        ] {
+            let starts: Vec<_> = Parser::new_ext(doc, Options::ENABLE_TASKLISTS)
+                .into_offset_iter()
+                .filter_map(|(event, range)| match event {
+                    Event::Start(Tag::Item) => Some(range.start),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(starts, expected_starts, "{doc:?}");
+        }
+    }
+
+    #[test]
     fn reference_link_offsets() {
         let range =
             Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")

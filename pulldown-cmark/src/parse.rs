@@ -978,6 +978,10 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 self.tree[tos.node].next = self.tree[next_ix].next;
                 self.tree[tos.node].item.end = end_ix + 2;
                 self.disable_all_links();
+                // The deepest wikilink takes precedence. `disable_all_links`
+                // leaves image openers alone, so drop the enclosing `![[` too,
+                // or each of them would rescan this body as its own target.
+                self.wikilink_stack.clear();
                 return Some(tos.node);
             }
         }

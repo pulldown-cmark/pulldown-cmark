@@ -759,6 +759,10 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     }
 
     if !start_col {
+        if !found_hyphen_in_col {
+            // It isn't a table head if the last column has no hyphen.
+            return (0, vec![]);
+        }
         cols.push(active_col);
     }
     if !found_pipe || !found_hyphen {

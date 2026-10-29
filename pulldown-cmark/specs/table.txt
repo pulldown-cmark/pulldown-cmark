@@ -766,3 +766,24 @@ moo | moo
 <li></li>
 </ol>
 ````````````````````````````````
+
+A delimiter row cell needs at least one hyphen, also in the last column
+when the row has no trailing pipe.
+
+```````````````````````````````` example
+a|b
+-|:
+.
+<p>a|b
+-|:</p>
+````````````````````````````````
+
+```````````````````````````````` example
+| a | b |
+| --- | :
+| 1 | 2 |
+.
+<p>| a | b |
+| --- | :
+| 1 | 2 |</p>
+````````````````````````````````

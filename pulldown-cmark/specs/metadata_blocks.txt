@@ -161,3 +161,33 @@ Metadata blocks may contain lists:
 ---
 .
 ````````````````````````````````
+
+Metadata blocks cannot be nested in other blocks, so a `---` line inside a
+list item or block quote is a thematic break:
+
+```````````````````````````````` example_metadata_blocks
+-
+  ---
+-
+
+---
+.
+<ul>
+<li>
+<hr>
+</li>
+<li></li>
+</ul>
+<hr>
+````````````````````````````````
+
+```````````````````````````````` example_metadata_blocks
+>---
+title: Basic
+---
+.
+<blockquote>
+<hr>
+</blockquote>
+<h2>title: Basic</h2>
+````````````````````````````````

@@ -225,3 +225,6 @@ This software is under the MIT license. See details in [license file](./LICENSE)
 
 We gladly accept contributions via GitHub pull requests. Please see
 [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+Please observe the LLM contribution policy written there. In particular,
+contributors should disclose LLM-generated content ahead of time.

@@ -422,7 +422,7 @@ ISSUE #336
  "hi"> 
 .
 <p><foo bar =
- "hi"></p>
+"hi"></p>
 ````````````````````````````````
 
 EMPHASIS ACROSS PARAGRAPHS
@@ -3582,7 +3582,7 @@ a </t
 →> b
 .
 <p>a </t
-→> b</p>
+> b</p>
 ````````````````````````````````
 
 ```````````````````````````````` example
@@ -3590,7 +3590,7 @@ a </t
     > b
 .
 <p>a </t
-    > b</p>
+> b</p>
 ````````````````````````````````
 
 A blank line or a block quote marker between a closing tag's name and its `>` ends the tag.
@@ -3625,7 +3625,7 @@ which is not part of the tag.
 .
 <blockquote>
 <p>a </t
-    > b</p>
+> b</p>
 </blockquote>
 ````````````````````````````````
 
@@ -3834,4 +3834,51 @@ x  2
 <h2>x\</h2>
 </dd>
 </dl>
+````````````````````````````````
+
+Inline HTML that continues on an indented line of a paragraph: the line's leading spaces
+or tabs are not part of the paragraph's raw content, so they are not part of the HTML either.
+
+```````````````````````````````` example
+a <!--x
+    y--> b
+.
+<p>a <!--x
+y--> b</p>
+````````````````````````````````
+
+```````````````````````````````` example
+a <span
+    title="x">b</span>
+.
+<p>a <span
+title="x">b</span></p>
+````````````````````````````````
+
+```````````````````````````````` example
+a <?x
+→y?> <!X
+  y> <![CDATA[x
+   y]]>
+.
+<p>a <?x
+y?> <!X
+y> <![CDATA[x
+y]]></p>
+````````````````````````````````
+
+```````````````````````````````` example
+> a <!--x
+>    y-->
+- b <span
+     title="x">c</span>
+.
+<blockquote>
+<p>a <!--x
+y--></p>
+</blockquote>
+<ul>
+<li>b <span
+title="x">c</span></li>
+</ul>
 ````````````````````````````````

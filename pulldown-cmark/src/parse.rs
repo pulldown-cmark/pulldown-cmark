@@ -1541,7 +1541,8 @@ impl<'input> ParserInner<'input> {
     }
 
     /// On success, returns the inline html and the byte offset after it. The html is borrowed
-    /// from `text` unless container prefixes had to be removed from its continuation lines.
+    /// from `text` unless container prefixes or indentation had to be removed from its
+    /// continuation lines.
     fn scan_inline_html(
         &mut self,
         text: &'input str,
@@ -1553,17 +1554,17 @@ impl<'input> ParserInner<'input> {
             let tree = &self.tree;
             let options = self.options;
             let end = scan_inline_html_comment(bytes, ix + 1, &mut self.html_scan_guard, &|b| {
-                skip_container_prefixes(tree, b, options)
+                skip_line_prefix(tree, b, options)
             })?;
-            Some((self.strip_container_prefixes(&text[ix - 1..end]), end))
+            Some((self.strip_line_prefixes(&text[ix - 1..end]), end))
         } else if c == b'?' {
             let end = scan_inline_html_processing(bytes, ix + 1, &mut self.html_scan_guard)?;
-            Some((self.strip_container_prefixes(&text[ix - 1..end]), end))
+            Some((self.strip_line_prefixes(&text[ix - 1..end]), end))
         } else {
             let (span, i) = scan_html_block_inner(
                 // Subtract 1 to include the < character
                 &bytes[(ix - 1)..],
-                Some(&|bytes| skip_container_prefixes(&self.tree, bytes, self.options)),
+                Some(&|bytes| skip_line_prefix(&self.tree, bytes, self.options)),
             )?;
             let end = i + ix - 1;
             // `scan_html_block_inner` leaves its buffer empty when nothing was skipped.
@@ -1577,10 +1578,10 @@ impl<'input> ParserInner<'input> {
     }
 
     /// An inline HTML span that runs over several lines, without the container prefixes (`>`,
-    /// list indentation) at the start of its continuation lines. Borrowed if there are none.
-    /// Every cut is next to an ASCII byte (a line ending, or a prefix's space or `>`), so the
-    /// pieces stay on char boundaries.
-    fn strip_container_prefixes(&self, span: &'input str) -> CowStr<'input> {
+    /// list indentation) and the leading spaces or tabs at the start of its continuation lines.
+    /// Borrowed if there are none. Every cut is next to an ASCII byte (a line ending, or a
+    /// prefix's space, tab or `>`), so the pieces stay on char boundaries.
+    fn strip_line_prefixes(&self, span: &'input str) -> CowStr<'input> {
         let bytes = span.as_bytes();
         let mut buffer = String::new();
         let mut last = 0;
@@ -1589,7 +1590,7 @@ impl<'input> ParserInner<'input> {
             i += n;
             let skipped = if let Some(eol) = scan_eol(&bytes[i..]) {
                 i += eol;
-                skip_container_prefixes(&self.tree, &bytes[i..], self.options)
+                skip_line_prefix(&self.tree, &bytes[i..], self.options)
             } else {
                 // not a line break
                 i += 1;
@@ -1693,6 +1694,16 @@ pub(crate) fn skip_container_prefixes(tree: &Tree<Item>, bytes: &[u8], options: 
     let mut line_start = LineStart::new(bytes);
     let _ = scan_containers(tree, &mut line_start, options, false);
     line_start.bytes_scanned()
+}
+
+/// Skips the container prefixes of a paragraph continuation line, and then the spaces or tabs
+/// that start it: the paragraph's raw content does not include a line's initial whitespace.
+fn skip_line_prefix(tree: &Tree<Item>, bytes: &[u8], options: Options) -> usize {
+    let ix = skip_container_prefixes(tree, bytes, options);
+    ix + bytes[ix..]
+        .iter()
+        .take_while(|&&b| b == b' ' || b == b'\t')
+        .count()
 }
 
 impl Tree<Item> {

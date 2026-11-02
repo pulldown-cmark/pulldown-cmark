@@ -498,7 +498,7 @@ fn regression_test_37() {
  "hi"> 
 "##;
     let expected = r##"<p><foo bar =
- "hi"></p>
+"hi"></p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
@@ -4278,7 +4278,7 @@ fn regression_test_274() {
 	> b
 "##;
     let expected = r##"<p>a </t
-	> b</p>
+> b</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
@@ -4290,7 +4290,7 @@ fn regression_test_275() {
     > b
 "##;
     let expected = r##"<p>a </t
-    > b</p>
+> b</p>
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
@@ -4332,7 +4332,7 @@ fn regression_test_278() {
 "##;
     let expected = r##"<blockquote>
 <p>a </t
-    > b</p>
+> b</p>
 </blockquote>
 "##;
 
@@ -4603,4 +4603,64 @@ fn regression_test_297() {
 "##;
 
     test_markdown_html(original, expected, false, false, false, false, false, true, false, false, false);
+}
+
+#[test]
+fn regression_test_298() {
+    let original = r##"a <!--x
+    y--> b
+"##;
+    let expected = r##"<p>a <!--x
+y--> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_299() {
+    let original = r##"a <span
+    title="x">b</span>
+"##;
+    let expected = r##"<p>a <span
+title="x">b</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_300() {
+    let original = r##"a <?x
+	y?> <!X
+  y> <![CDATA[x
+   y]]>
+"##;
+    let expected = r##"<p>a <?x
+y?> <!X
+y> <![CDATA[x
+y]]></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_301() {
+    let original = r##"> a <!--x
+>    y-->
+- b <span
+     title="x">c</span>
+"##;
+    let expected = r##"<blockquote>
+<p>a <!--x
+y--></p>
+</blockquote>
+<ul>
+<li>b <span
+title="x">c</span></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }

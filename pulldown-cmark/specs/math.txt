@@ -1,3 +1,5 @@
+Parser options: `ENABLE_MATH`
+
 Run this with `cargo test --features gen-tests suite::math`.
 
 # `$`-delimited LaTeX Math in pulldown-cmark
@@ -523,7 +525,7 @@ $$a<b$$
 
 Math in footnotes
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_FOOTNOTES
 [^a]
 
 [^a]: Lorem $a$
@@ -667,7 +669,7 @@ $\pi$
 
 As a block element, tables parsing is stronger than math.
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 | first $|$ second |
 |--------|---------|
 | a ${   | }$ b    |
@@ -690,7 +692,7 @@ of the table cell in a separate pass that only looked for the
 strings `|` and `\|`, treating pipes as boundaries and removing the
 escaping backslash before passing the string to the inline parser.
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 | first $\|$ second |
 |-------------------|
 | a ${   \| }$ b    |
@@ -702,7 +704,7 @@ escaping backslash before passing the string to the inline parser.
 </tbody></table>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 | Description | Test case |
 |-------------|-----------|
 | Single      | $\$       |

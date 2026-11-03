@@ -4,97 +4,97 @@
 use super::test_markdown_html;
 
 #[test]
-fn super_sub_test_1() {
+fn super_sub_test_0001_l7() {
     let original = r##"^This is super^ ~This is sub~
 "##;
     let expected = r##"<p><sup>This is super</sup> <sub>This is sub</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_2() {
+fn super_sub_test_0002_l13() {
     let original = r##"~This is stricken out~
 "##;
     let expected = r##"<p><sub>This is stricken out</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_3() {
+fn super_sub_test_0003_l21() {
     let original = r##"~This is \~stricken~
 "##;
     let expected = r##"<p><sub>This is ~stricken</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_4() {
+fn super_sub_test_0004_l27() {
     let original = r##"~This~is~nothing~
 "##;
     let expected = r##"<p><sub>This</sub>is<sub>nothing</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_5() {
+fn super_sub_test_0005_l33() {
     let original = r##"~This ~~is not stricken.~
 "##;
     let expected = r##"<p><sub>This ~~is not stricken.</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn super_sub_test_6() {
+fn super_sub_test_0006_l39() {
     let original = r##"~This ~~is not stricken.~
 "##;
     let expected = r##"<p><sub>This ~~is not stricken.</sub></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_7() {
+fn super_sub_test_0007_l45() {
     let original = r##"~~This ~is~~ stricken.~
 "##;
     let expected = r##"<p><del>This ~is</del> stricken.~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, true);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn super_sub_test_8() {
+fn super_sub_test_0008_l51() {
     let original = r##"~~This ~is~~ stricken.~
 "##;
     let expected = r##"<p>~~This ~is~~ stricken.~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_9() {
+fn super_sub_test_0009_l59() {
     let original = r##"~This ~~is stricken~ but this is not~~
 "##;
     let expected = r##"<p><sub>This ~~is stricken</sub> but this is not~~</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT | ENABLE_STRIKETHROUGH");
 }
 
 #[test]
-fn super_sub_test_10() {
+fn super_sub_test_0010_l68() {
     let original = r##"H~2~O
 
 y=x^2^a+xb+c
@@ -103,11 +103,11 @@ y=x^2^a+xb+c
 <p>y=x<sup>2</sup>a+xb+c</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_11() {
+fn super_sub_test_0011_l79() {
     let original = r##"~foo~~
 
 ^bar^^
@@ -116,11 +116,11 @@ fn super_sub_test_11() {
 <p>^bar^^</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_12() {
+fn super_sub_test_0012_l91() {
     let original = r##"~foo^~^bar~
 
 *foo_*_bar*
@@ -129,45 +129,45 @@ fn super_sub_test_12() {
 <p><em>foo_</em>_bar*</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_13() {
+fn super_sub_test_0013_l104() {
     let original = r##"H^+^ + OH^-^
 "##;
     let expected = r##"<p>H<sup>+</sup> + OH<sup>-</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_14() {
+fn super_sub_test_0014_l110() {
     let original = r##"Ca^2+^ + CO~3~^2-^
 "##;
     let expected = r##"<p>Ca<sup>2+</sup> + CO<sub>3</sub><sup>2-</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_15() {
+fn super_sub_test_0015_l116() {
     let original = r##"NH~4~^+^
 "##;
     let expected = r##"<p>NH<sub>4</sub><sup>+</sup></p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }
 
 #[test]
-fn super_sub_test_16() {
+fn super_sub_test_0016_l125() {
     let original = r##"^+^ not superscript
 "##;
     let expected = r##"<p>^+^ not superscript</p>
 "##;
 
-    test_markdown_html(original, expected, false, false, false, true, false, false, false, false, false);
+    test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
 }

@@ -1,3 +1,5 @@
+Parser options: `ENABLE_FOOTNOTES`
+
 Run this with `cargo test --features gen-tests suite::footnotes`.
 
 Parts of this test case are based on
@@ -475,7 +477,7 @@ If a footnote definition is immediately followed by a list, block quote, or tabl
 
 When migrating to the new Edition, a table within a footnote can be written like this (under the old Edition, the table is treated as source code):
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 [^1]:
 
     | column1 | column2 |
@@ -504,7 +506,7 @@ start of a line, or just not be parsed if the table has a pipe at the start of t
 [Markdown Guide]: https://www.markdownguide.org/extended-syntax/#footnotes
 [nesttest]: https://gist.github.com/notriddle/169e8735d79639cdf6b5c4b5ba643861
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 * First
   [^1]: test
 * Second [^1] test

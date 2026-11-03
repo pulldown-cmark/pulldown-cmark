@@ -1,3 +1,5 @@
+Parser options: `ENABLE_DEFINITION_LIST`
+
 ## Definition lists
 
 Based on https://github.com/jgm/commonmark-hs/blob/e3747fd282c806cd2f8e83226e85f1b83ee889c3/commonmark-extensions/test/definition_lists.md
@@ -14,7 +16,7 @@ We can't do that, because we already use `~` for strikethrough.
 The list is tight if there is no blank line between
 the term and the first definition, otherwise loose.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 :   red fruit
 
@@ -31,7 +33,7 @@ orange
 
 Loose:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 
 :   red fruit
@@ -54,7 +56,7 @@ orange
 
 Also loose:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 
 :   red fruit
@@ -69,7 +71,7 @@ apple
 
 Indented marker:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
   : red fruit
 
@@ -84,7 +86,7 @@ orange
 </dl>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 
  : red fruit
@@ -107,7 +109,7 @@ orange
 
 Multiple blocks in a definition:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 *apple*
 
 :   red fruit
@@ -144,7 +146,7 @@ crisp, pleasant to taste</p>
 
 Nested lists:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 term
 
 :   1. Para one
@@ -164,7 +166,7 @@ term
 
 Multiple definitions, tight:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 :   red fruit
 :   computer company
@@ -185,7 +187,7 @@ orange
 
 Multiple definitions, loose:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 
 :   red fruit
@@ -217,7 +219,7 @@ orange
 
 Lazy line continuations:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
 
 :   red fruit
@@ -253,7 +255,7 @@ fruit</p>
 
 A lazy continuation may start with a `:`, if it has enough indent.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 apple
    : > computer company
      : red fruit
@@ -290,7 +292,7 @@ chili's
 
 It may not, however, lazily act as a definition in a list.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 > cherry
 > : keyboard company
 > pomegranate
@@ -308,7 +310,7 @@ pomegranate
 
 Definition terms may span multiple lines:
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 a
 b\
 c
@@ -328,7 +330,7 @@ c</dt>
 Definition list with preceding paragraph
 (<https://github.com/jgm/commonmark-hs/issues/35>):
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 Foo
 
 bar
@@ -348,7 +350,7 @@ bim
 
 Definition list followed by paragraph.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 bar
 :   baz
 
@@ -369,7 +371,7 @@ Bloze
 The total indentation for a definition list cannot exceed four.
 This means you can't have one start with four spaces.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 bar
     :baz
 
@@ -383,7 +385,7 @@ Bloze
 You can follow one with four spaces,
 because it'll "eat" the three spaces after it.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 bar
 :    baz
 
@@ -399,7 +401,7 @@ Bloze
 To use an indented code block inside of a definition,
 you need to have five spaces of indentation after the colon.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 bar
 :       baz
 
@@ -443,7 +445,7 @@ Because of the way it eats indentation after the colon, the number of
 spaces you need for indented code blocks on subsequent lines depends on
 the indentation of the earlier block.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 *orange*
 
 :   orange fruit
@@ -487,7 +489,7 @@ the indentation of the earlier block.
 
 Definition titles can't be tables.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_TABLES
 Test|Table
 ----|-----
 : first
@@ -498,7 +500,7 @@ Test|Table
 </table>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example ENABLE_TABLES
 first
 : second
 
@@ -519,7 +521,7 @@ Test|Table
 
 Definition titles can't be headers
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 My section
 ==========
 : first
@@ -528,7 +530,7 @@ My section
 <p>: first</p>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 first
 : second
 
@@ -544,7 +546,7 @@ My section
 <p>: fourth</p>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 ## My subsection
 : first
 .
@@ -552,7 +554,7 @@ My section
 <p>: first</p>
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 first
 : second
 
@@ -570,7 +572,7 @@ first
 
 Definition list titles can't be block quotes
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 > first
 : second
 .
@@ -583,7 +585,7 @@ Definition list titles can't be block quotes
 
 Definition titles can't end with hard line breaks.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 first\
 : second
 
@@ -601,7 +603,7 @@ third
 
 Definition titles can't be HTML blocks, but inline's fine.
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 <div>first</div>
 : second
 
@@ -620,7 +622,7 @@ first
 : fourth
 ````````````````````````````````
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 <span>first</span>
 : second
 
@@ -643,7 +645,7 @@ third
 Nested definition lists:
 (<https://github.com/pulldown-cmark/pulldown-cmark/issues/973>):
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 level one
 : l1
     level two
@@ -678,7 +680,7 @@ https://github.com/pulldown-cmark/pulldown-cmark/issues/997
 
 Definition lists combined with link refdef
 
-```````````````````````````````` example_deflists
+```````````````````````````````` example
 [a]: /url
     
 :

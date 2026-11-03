@@ -320,7 +320,7 @@ A | B
 foo | bar</p>
 "##;
 
-    test_markdown_html(original, expected, "");
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
@@ -2555,7 +2555,7 @@ fn regression_test_0158_l2164() {
 -|- *</p>
 "##;
 
-    test_markdown_html(original, expected, "");
+    test_markdown_html(original, expected, "ENABLE_TABLES");
 }
 
 #[test]
@@ -3762,7 +3762,7 @@ fn regression_test_0236_l3163() {
 | one | two | three</li></ul>
 "##;
 
-    test_markdown_html(original, expected, "ENABLE_TASKLISTS");
+    test_markdown_html(original, expected, "ENABLE_TASKLISTS | ENABLE_TABLES");
 }
 
 #[test]
@@ -3919,7 +3919,7 @@ fn regression_test_0246_l3291() {
 }
 
 #[test]
-fn regression_test_0247_l3301() {
+fn regression_test_0247_l3303() {
     let original = r##"para
 ::: note
 "##;
@@ -3931,7 +3931,7 @@ fn regression_test_0247_l3301() {
 }
 
 #[test]
-fn regression_test_0248_l3311() {
+fn regression_test_0248_l3313() {
     let original = r##"> a
 	> b
 "##;
@@ -3945,7 +3945,7 @@ fn regression_test_0248_l3311() {
 }
 
 #[test]
-fn regression_test_0249_l3322() {
+fn regression_test_0249_l3324() {
     let original = r##"> *
 	> b
 "##;
@@ -3962,7 +3962,7 @@ fn regression_test_0249_l3322() {
 }
 
 #[test]
-fn regression_test_0250_l3341() {
+fn regression_test_0250_l3343() {
     let original = r##"> a <!--x
 > y--> b
 "##;
@@ -3976,7 +3976,7 @@ y--> b</p>
 }
 
 #[test]
-fn regression_test_0251_l3351() {
+fn regression_test_0251_l3353() {
     let original = r##"> a <?x
 > y?> b
 "##;
@@ -3990,7 +3990,7 @@ y?> b</p>
 }
 
 #[test]
-fn regression_test_0252_l3361() {
+fn regression_test_0252_l3363() {
     let original = r##"> a <!X
 > y> b
 "##;
@@ -4004,7 +4004,7 @@ y> b</p>
 }
 
 #[test]
-fn regression_test_0253_l3371() {
+fn regression_test_0253_l3373() {
     let original = r##"> a <![CDATA[x
 > y]]> b
 "##;
@@ -4018,7 +4018,7 @@ y]]> b</p>
 }
 
 #[test]
-fn regression_test_0254_l3381() {
+fn regression_test_0254_l3383() {
     let original = r##"- a <!--x
   y--> b
 "##;
@@ -4032,7 +4032,7 @@ y--> b</li>
 }
 
 #[test]
-fn regression_test_0255_l3391() {
+fn regression_test_0255_l3393() {
     let original = r##"- a <!X
   y> b
 "##;
@@ -4046,7 +4046,7 @@ y> b</li>
 }
 
 #[test]
-fn regression_test_0256_l3404() {
+fn regression_test_0256_l3406() {
     let original = r##"> a <!--x
 y--> b
 "##;
@@ -4060,7 +4060,7 @@ y--> b</p>
 }
 
 #[test]
-fn regression_test_0257_l3414() {
+fn regression_test_0257_l3416() {
     let original = r##"> a <!X
 > > y
 "##;
@@ -4076,7 +4076,7 @@ fn regression_test_0257_l3414() {
 }
 
 #[test]
-fn regression_test_0258_l3429() {
+fn regression_test_0258_l3431() {
     let original = r##"<script>
 alert(1)
 </SCRIPT>
@@ -4098,7 +4098,7 @@ alert(1)
 }
 
 #[test]
-fn regression_test_0259_l3450() {
+fn regression_test_0259_l3452() {
     let original = r##"<script>
 x
 </TEXTAREA>
@@ -4114,7 +4114,7 @@ x
 }
 
 #[test]
-fn regression_test_0260_l3462() {
+fn regression_test_0260_l3464() {
     let original = r##"<style>a</script>
 *b*
 "##;
@@ -4126,7 +4126,7 @@ fn regression_test_0260_l3462() {
 }
 
 #[test]
-fn regression_test_0261_l3470() {
+fn regression_test_0261_l3472() {
     let original = r##"<textarea
 </pRe>
 +
@@ -4142,7 +4142,7 @@ fn regression_test_0261_l3470() {
 }
 
 #[test]
-fn regression_test_0262_l3484() {
+fn regression_test_0262_l3486() {
     let original = r##"<!-- a
 </pre>
 *d*
@@ -4158,7 +4158,7 @@ fn regression_test_0262_l3484() {
 }
 
 #[test]
-fn regression_test_0263_l3498() {
+fn regression_test_0263_l3500() {
     let original = r##"```rust	ignore
 fn main() {}
 ```
@@ -4171,7 +4171,7 @@ fn main() {}
 }
 
 #[test]
-fn regression_test_0264_l3509() {
+fn regression_test_0264_l3511() {
     let original = r##"a <![CDATA[x]y]]> b
 "##;
     let expected = r##"<p>a <![CDATA[x]y]]> b</p>
@@ -4181,7 +4181,7 @@ fn regression_test_0264_l3509() {
 }
 
 #[test]
-fn regression_test_0265_l3515() {
+fn regression_test_0265_l3517() {
     let original = r##"a <![CDATA[x]] y]]> b
 "##;
     let expected = r##"<p>a <![CDATA[x]] y]]> b</p>
@@ -4191,7 +4191,7 @@ fn regression_test_0265_l3515() {
 }
 
 #[test]
-fn regression_test_0266_l3521() {
+fn regression_test_0266_l3523() {
     let original = r##"a <![CDATA[x]
 y]]> b
 "##;
@@ -4203,7 +4203,7 @@ y]]> b</p>
 }
 
 #[test]
-fn regression_test_0267_l3529() {
+fn regression_test_0267_l3531() {
     let original = r##"a <![CDATA[x]> b
 "##;
     let expected = r##"<p>a &lt;![CDATA[x]&gt; b</p>
@@ -4213,7 +4213,7 @@ fn regression_test_0267_l3529() {
 }
 
 #[test]
-fn regression_test_0268_l3535() {
+fn regression_test_0268_l3537() {
     let original = r##"a <![CDATA[]]> b
 "##;
     let expected = r##"<p>a <![CDATA[]]> b</p>
@@ -4223,7 +4223,7 @@ fn regression_test_0268_l3535() {
 }
 
 #[test]
-fn regression_test_0269_l3544() {
+fn regression_test_0269_l3546() {
     let original = r##"<a h=x	)>
 "##;
     let expected = r##"<p>&lt;a h=x	)&gt;</p>
@@ -4233,7 +4233,7 @@ fn regression_test_0269_l3544() {
 }
 
 #[test]
-fn regression_test_0270_l3550() {
+fn regression_test_0270_l3552() {
     let original = r##"a <a h=x	)> b
 "##;
     let expected = r##"<p>a &lt;a h=x	)&gt; b</p>
@@ -4243,7 +4243,7 @@ fn regression_test_0270_l3550() {
 }
 
 #[test]
-fn regression_test_0271_l3559() {
+fn regression_test_0271_l3561() {
     let original = r##"a <b c=	>
 "##;
     let expected = r##"<p>a &lt;b c=	&gt;</p>
@@ -4253,7 +4253,7 @@ fn regression_test_0271_l3559() {
 }
 
 #[test]
-fn regression_test_0272_l3565() {
+fn regression_test_0272_l3567() {
     let original = r##"a <b c=d	e> f
 "##;
     let expected = r##"<p>a <b c=d	e> f</p>
@@ -4263,7 +4263,7 @@ fn regression_test_0272_l3565() {
 }
 
 #[test]
-fn regression_test_0273_l3571() {
+fn regression_test_0273_l3573() {
     let original = r##"a <b c='d	e'> f
 "##;
     let expected = r##"<p>a <b c='d	e'> f</p>
@@ -4273,7 +4273,7 @@ fn regression_test_0273_l3571() {
 }
 
 #[test]
-fn regression_test_0274_l3580() {
+fn regression_test_0274_l3582() {
     let original = r##"a </t
 	> b
 "##;
@@ -4285,7 +4285,7 @@ fn regression_test_0274_l3580() {
 }
 
 #[test]
-fn regression_test_0275_l3588() {
+fn regression_test_0275_l3590() {
     let original = r##"a </t
     > b
 "##;
@@ -4297,7 +4297,7 @@ fn regression_test_0275_l3588() {
 }
 
 #[test]
-fn regression_test_0276_l3598() {
+fn regression_test_0276_l3600() {
     let original = r##"a </t
 
 > b
@@ -4312,7 +4312,7 @@ fn regression_test_0276_l3598() {
 }
 
 #[test]
-fn regression_test_0277_l3609() {
+fn regression_test_0277_l3611() {
     let original = r##"a </t
 > b
 "##;
@@ -4326,7 +4326,7 @@ fn regression_test_0277_l3609() {
 }
 
 #[test]
-fn regression_test_0278_l3622() {
+fn regression_test_0278_l3624() {
     let original = r##"> a </t
 >     > b
 "##;
@@ -4340,7 +4340,7 @@ fn regression_test_0278_l3622() {
 }
 
 #[test]
-fn regression_test_0279_l3635() {
+fn regression_test_0279_l3637() {
     let original = r##"> 	<div>
 > a
 "##;
@@ -4354,7 +4354,7 @@ a
 }
 
 #[test]
-fn regression_test_0280_l3645() {
+fn regression_test_0280_l3647() {
     let original = r##">  	<!-- a -->
 "##;
     let expected = r##"<blockquote>
@@ -4366,7 +4366,7 @@ fn regression_test_0280_l3645() {
 }
 
 #[test]
-fn regression_test_0281_l3653() {
+fn regression_test_0281_l3655() {
     let original = r##"- a
 
   	<div>
@@ -4383,7 +4383,7 @@ fn regression_test_0281_l3653() {
 }
 
 #[test]
-fn regression_test_0282_l3668() {
+fn regression_test_0282_l3670() {
     let original = r##">	<div>
 "##;
     let expected = r##"<blockquote>
@@ -4395,7 +4395,7 @@ fn regression_test_0282_l3668() {
 }
 
 #[test]
-fn regression_test_0283_l3678() {
+fn regression_test_0283_l3680() {
     let original = r##"[a](b (
 \)))
 "##;
@@ -4407,7 +4407,7 @@ fn regression_test_0283_l3678() {
 }
 
 #[test]
-fn regression_test_0284_l3686() {
+fn regression_test_0284_l3688() {
     let original = r##"[a](b "
 \"")
 "##;
@@ -4419,7 +4419,7 @@ fn regression_test_0284_l3686() {
 }
 
 #[test]
-fn regression_test_0285_l3694() {
+fn regression_test_0285_l3696() {
     let original = r##"[a](b (
 \))
 "##;
@@ -4431,7 +4431,7 @@ fn regression_test_0285_l3694() {
 }
 
 #[test]
-fn regression_test_0286_l3702() {
+fn regression_test_0286_l3704() {
     let original = r##"[a](b '
 \')
 "##;
@@ -4443,7 +4443,7 @@ fn regression_test_0286_l3702() {
 }
 
 #[test]
-fn regression_test_0287_l3710() {
+fn regression_test_0287_l3712() {
     let original = r##"> [a](b (
 > \)))
 "##;
@@ -4457,7 +4457,7 @@ fn regression_test_0287_l3710() {
 }
 
 #[test]
-fn regression_test_0288_l3720() {
+fn regression_test_0288_l3722() {
     let original = r##"[a](b (c
 \)
 d))
@@ -4471,7 +4471,7 @@ d">a</a></p>
 }
 
 #[test]
-fn regression_test_0289_l3733() {
+fn regression_test_0289_l3735() {
     let original = r##"a 	
 b
 "##;
@@ -4483,7 +4483,7 @@ b</p>
 }
 
 #[test]
-fn regression_test_0290_l3741() {
+fn regression_test_0290_l3743() {
     let original = r##"a 	 
 b
 "##;
@@ -4495,7 +4495,7 @@ b</p>
 }
 
 #[test]
-fn regression_test_0291_l3752() {
+fn regression_test_0291_l3754() {
     let original = r##"[*a\
 ]()
 "##;
@@ -4507,7 +4507,7 @@ fn regression_test_0291_l3752() {
 }
 
 #[test]
-fn regression_test_0292_l3760() {
+fn regression_test_0292_l3762() {
     let original = r##"[a*\
 ](b) c
 "##;
@@ -4519,7 +4519,7 @@ fn regression_test_0292_l3760() {
 }
 
 #[test]
-fn regression_test_0293_l3770() {
+fn regression_test_0293_l3772() {
     let original = r##"x  2
 :x
   {}
@@ -4537,7 +4537,7 @@ fn regression_test_0293_l3770() {
 }
 
 #[test]
-fn regression_test_0294_l3784() {
+fn regression_test_0294_l3786() {
     let original = r##"x  2
 - x
    {}
@@ -4555,7 +4555,7 @@ fn regression_test_0294_l3784() {
 }
 
 #[test]
-fn regression_test_0295_l3798() {
+fn regression_test_0295_l3800() {
     let original = r##"x  2
 > x
 >  {}
@@ -4571,7 +4571,7 @@ fn regression_test_0295_l3798() {
 }
 
 #[test]
-fn regression_test_0296_l3812() {
+fn regression_test_0296_l3814() {
     let original = r##"x  2
 :x\
   {}
@@ -4589,7 +4589,7 @@ fn regression_test_0296_l3812() {
 }
 
 #[test]
-fn regression_test_0297_l3826() {
+fn regression_test_0297_l3828() {
     let original = r##"x  2
 :x\
  -

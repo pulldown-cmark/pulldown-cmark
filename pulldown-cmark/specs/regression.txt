@@ -260,7 +260,7 @@ YOLO
 
 ISSUE #293
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 lorem ipsum
 A | B
 ---|---
@@ -2161,7 +2161,7 @@ ISSUE 716
 
 ISSUE 813
 
-```````````````````````````````` example
+```````````````````````````````` example ENABLE_TABLES
 |
 -|- *
 .
@@ -3160,7 +3160,7 @@ resolves `[x]` as a link, matching GitHub's postprocessing order (#1124).
 
 Task list canceling in tables.
 
-```````````````````````````````` example ENABLE_TASKLISTS
+```````````````````````````````` example ENABLE_TASKLISTS | ENABLE_TABLES
 - [x] | one | two | three
   |-----|-----|-------
   | one | two | three
@@ -3297,6 +3297,8 @@ Foo
 <h2>Foo
 <code>a b</code></h2>
 ````````````````````````````````
+
+PR #1144 (contaioner extensions intentionally disabled)
 
 ```````````````````````````````` example
 para

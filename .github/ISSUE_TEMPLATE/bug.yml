@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a bug in pulldown-cmark
+labels: bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting a bug report, remember to check for duplicates in the issue tracker.
+
+        You may also want to check whether the behavior you are seeing is actually intended in the [CommonMark specification](https://spec.commonmark.org/).
+
+        ## LLM Policy
+
+        Please review our LLM ("AI") policy in [CONTRIBUTING.md](https://github.com/pulldown-cmark/pulldown-cmark/blob/main/CONTRIBUTING.md#llm-contribution-policy) and at <https://linebender.org/wiki/llm-policy/>.
+
+  - type: input
+    attributes:
+      label: LLM Contributions
+      description: |
+        Report how you used LLM tools in finding this bug or writing the report. If you did not use any LLM tools for this bug report, you can write "None".
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Bug description
+
+

@@ -7,6 +7,17 @@ us first through the issue tracker with your idea so that we can help out and
 possibly guide you. Coordinating up front makes it much easier to avoid
 frustration later on.
 
+### LLM contribution policy
+
+We follow the Linebender LLM policy. In short:
+
+- Contributors should disclose LLM-generated content ahead of time.
+- A human should review every aspect of their contribution before posting it. Fully AI (agent) authored contributions are not welcome.
+- PR descriptions must be written by a human. A good description is often not too long anyway.
+- Remember to check for existing issues or PRs before making a duplicate.
+
+See the [LLM contribution policy for Linebender projects](https://linebender.org/wiki/llm-policy/) for details.
+
 ### Getting familiar with the project
 
 **The architecture** is somewhat unique; it was originally inspired by [XML pull parsers](http://www.xmlpull.org), but ended up going in somewhat of its own direction. To get familiar with it,

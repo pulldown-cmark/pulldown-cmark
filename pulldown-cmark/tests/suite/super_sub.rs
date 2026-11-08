@@ -15,9 +15,9 @@ fn super_sub_test_0001_l7() {
 
 #[test]
 fn super_sub_test_0002_l13() {
-    let original = r##"~This is stricken out~
+    let original = r##"~This is subscript~
 "##;
-    let expected = r##"<p><sub>This is stricken out</sub></p>
+    let expected = r##"<p><sub>This is subscript</sub></p>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");
@@ -25,9 +25,9 @@ fn super_sub_test_0002_l13() {
 
 #[test]
 fn super_sub_test_0003_l21() {
-    let original = r##"~This is \~stricken~
+    let original = r##"~This is \~sub~
 "##;
-    let expected = r##"<p><sub>This is ~stricken</sub></p>
+    let expected = r##"<p><sub>This is ~sub</sub></p>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT");

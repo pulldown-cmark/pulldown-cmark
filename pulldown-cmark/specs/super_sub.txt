@@ -2,7 +2,7 @@ Parser options: `ENABLE_SUPERSCRIPT | ENABLE_SUBSCRIPT`
 
 # Superscript and subscript
 
-Basic strikethrough is between two tildes:
+Superscript is between two carets and subscript is between two tildes:
 
 ```````````````````````````````` example
 ^This is super^ ~This is sub~
@@ -11,17 +11,17 @@ Basic strikethrough is between two tildes:
 ````````````````````````````````
 
 ```````````````````````````````` example
-~This is stricken out~
+~This is subscript~
 .
-<p><sub>This is stricken out</sub></p>
+<p><sub>This is subscript</sub></p>
 ````````````````````````````````
 
 Backslash escapes:
 
 ```````````````````````````````` example
-~This is \~stricken~
+~This is \~sub~
 .
-<p><sub>This is ~stricken</sub></p>
+<p><sub>This is ~sub</sub></p>
 ````````````````````````````````
 
 ```````````````````````````````` example

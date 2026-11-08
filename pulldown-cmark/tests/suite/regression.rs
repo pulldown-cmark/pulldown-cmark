@@ -498,7 +498,7 @@ fn regression_test_0037_l420() {
  "hi"> 
 "##;
     let expected = r##"<p><foo bar =
- "hi"></p>
+"hi"></p>
 "##;
 
     test_markdown_html(original, expected, "");
@@ -4278,7 +4278,7 @@ fn regression_test_0274_l3582() {
 	> b
 "##;
     let expected = r##"<p>a </t
-	> b</p>
+> b</p>
 "##;
 
     test_markdown_html(original, expected, "");
@@ -4290,7 +4290,7 @@ fn regression_test_0275_l3590() {
     > b
 "##;
     let expected = r##"<p>a </t
-    > b</p>
+> b</p>
 "##;
 
     test_markdown_html(original, expected, "");
@@ -4332,7 +4332,7 @@ fn regression_test_0278_l3624() {
 "##;
     let expected = r##"<blockquote>
 <p>a </t
-    > b</p>
+> b</p>
 </blockquote>
 "##;
 
@@ -4603,4 +4603,64 @@ fn regression_test_0297_l3828() {
 "##;
 
     test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES | ENABLE_DEFINITION_LIST");
+}
+
+#[test]
+fn regression_test_298() {
+    let original = r##"a <!--x
+    y--> b
+"##;
+    let expected = r##"<p>a <!--x
+y--> b</p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_299() {
+    let original = r##"a <span
+    title="x">b</span>
+"##;
+    let expected = r##"<p>a <span
+title="x">b</span></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_300() {
+    let original = r##"a <?x
+	y?> <!X
+  y> <![CDATA[x
+   y]]>
+"##;
+    let expected = r##"<p>a <?x
+y?> <!X
+y> <![CDATA[x
+y]]></p>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
+}
+
+#[test]
+fn regression_test_301() {
+    let original = r##"> a <!--x
+>    y-->
+- b <span
+     title="x">c</span>
+"##;
+    let expected = r##"<blockquote>
+<p>a <!--x
+y--></p>
+</blockquote>
+<ul>
+<li>b <span
+title="x">c</span></li>
+</ul>
+"##;
+
+    test_markdown_html(original, expected, false, false, false, false, false, false, false, false, false);
 }

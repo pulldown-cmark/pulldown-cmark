@@ -1,7 +1,66 @@
 // Tests for HTML spec.
 #![cfg(feature = "html")]
 
-use pulldown_cmark::{html, BrokenLink, Options, Parser};
+use pulldown_cmark::{html, BrokenLink, Event, LinkType, Options, Parser, Tag, TagEnd};
+
+#[test]
+fn footnote_labels_are_case_insensitive() {
+    let cases = [
+        (
+            "[^A]\n\n[^a]: note\n",
+            concat!(
+                "<p><sup class=\"footnote-reference\"><a href=\"#A\">1</a></sup></p>\n",
+                "<div class=\"footnote-definition\" id=\"A\"><sup class=\"footnote-definition-label\">1</sup>\n",
+                "<p>note</p>\n</div>\n",
+            ),
+        ),
+        (
+            "[^a]: note\n\n[^A]\n",
+            concat!(
+                "<div class=\"footnote-definition\" id=\"a\"><sup class=\"footnote-definition-label\">1</sup>\n",
+                "<p>note</p>\n</div>\n",
+                "<p><sup class=\"footnote-reference\"><a href=\"#a\">1</a></sup></p>\n",
+            ),
+        ),
+        (
+            "[^ß] [^SS]\n\n[^ss]: note\n",
+            concat!(
+                "<p><sup class=\"footnote-reference\"><a href=\"#ß\">1</a></sup> ",
+                "<sup class=\"footnote-reference\"><a href=\"#ß\">1</a></sup></p>\n",
+                "<div class=\"footnote-definition\" id=\"ß\"><sup class=\"footnote-definition-label\">1</sup>\n",
+                "<p>note</p>\n</div>\n",
+            ),
+        ),
+    ];
+    for (original, expected) in cases {
+        for opts in [Options::ENABLE_FOOTNOTES, Options::ENABLE_OLD_FOOTNOTES] {
+            let mut s = String::new();
+            html::push_html(&mut s, Parser::new_ext(original, opts));
+            assert_eq!(expected, s);
+        }
+    }
+
+    let events = [
+        Event::Start(Tag::Image {
+            link_type: LinkType::Inline,
+            dest_url: "/img".into(),
+            title: "".into(),
+            id: "".into(),
+        }),
+        Event::FootnoteReference("A".into()),
+        Event::End(TagEnd::Image),
+        Event::FootnoteReference("a".into()),
+        Event::Start(Tag::FootnoteDefinition("a".into())),
+        Event::End(TagEnd::FootnoteDefinition),
+    ];
+    let expected = concat!(
+        "<img src=\"/img\" alt=\"[1]\" /><sup class=\"footnote-reference\"><a href=\"#A\">1</a></sup>\n",
+        "<div class=\"footnote-definition\" id=\"A\"><sup class=\"footnote-definition-label\">1</sup></div>\n",
+    );
+    let mut s = String::new();
+    html::push_html(&mut s, events.into_iter());
+    assert_eq!(expected, s);
+}
 
 #[test]
 fn html_test_1() {

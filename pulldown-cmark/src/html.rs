@@ -22,13 +22,14 @@
 
 use alloc::{string::String, vec::Vec};
 #[cfg(all(feature = "std", not(feature = "hashbrown")))]
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 #[cfg(feature = "hashbrown")]
-use hashbrown::HashMap;
+use hashbrown::{hash_map::Entry, HashMap};
 #[cfg(feature = "std")]
 use pulldown_cmark_escape::IoWriter;
 use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
+use unicase::UniCase;
 
 use crate::{
     strings::CowStr,
@@ -59,7 +60,7 @@ struct HtmlWriter<'a, I, W> {
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<CowStr<'a>, usize>,
+    numbers: HashMap<UniCase<CowStr<'a>>, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>
@@ -96,6 +97,19 @@ where
             self.end_newline = s.ends_with('\n');
         }
         Ok(())
+    }
+
+    /// Returns the spelling and number from the first occurrence of a footnote label.
+    fn footnote(&mut self, name: CowStr<'a>) -> (CowStr<'a>, usize) {
+        let len = self.numbers.len() + 1;
+        match self.numbers.entry(UniCase::new(name)) {
+            Entry::Occupied(entry) => (entry.key().clone().into_inner(), *entry.get()),
+            Entry::Vacant(entry) => {
+                let name = entry.key().clone().into_inner();
+                entry.insert(len);
+                (name, len)
+            }
+        }
     }
 
     fn run(mut self) -> Result<(), W::Error> {
@@ -145,11 +159,10 @@ where
                     }
                 }
                 FootnoteReference(name) => {
-                    let len = self.numbers.len() + 1;
+                    let (name, number) = self.footnote(name);
                     self.write("<sup class=\"footnote-reference\"><a href=\"#")?;
                     escape_html(&mut self.writer, &name)?;
                     self.write("\">")?;
-                    let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "{}", number)?;
                     self.write("</a></sup>")?;
                 }
@@ -401,6 +414,7 @@ where
                 self.write("\" />")
             }
             Tag::FootnoteDefinition(name) => {
+                let (name, number) = self.footnote(name);
                 if self.end_newline {
                     self.write("<div class=\"footnote-definition\" id=\"")?;
                 } else {
@@ -408,8 +422,6 @@ where
                 }
                 escape_html(&mut self.writer, &name)?;
                 self.write("\"><sup class=\"footnote-definition-label\">")?;
-                let len = self.numbers.len() + 1;
-                let number = *self.numbers.entry(name).or_insert(len);
                 write!(&mut self.writer, "{}", number)?;
                 self.write("</sup>")
             }
@@ -547,8 +559,7 @@ where
                     self.write(" ")?;
                 }
                 FootnoteReference(name) => {
-                    let len = self.numbers.len() + 1;
-                    let number = *self.numbers.entry(name).or_insert(len);
+                    let (_, number) = self.footnote(name);
                     write!(&mut self.writer, "[{}]", number)?;
                 }
                 TaskListMarker(true) => self.write("[x]")?,

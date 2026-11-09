@@ -726,15 +726,45 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
         match *c {
             b' ' => (),
             b':' => {
-                active_col = match (start_col, active_col) {
-                    (true, Alignment::None) => Alignment::Left,
-                    (false, Alignment::Left) => Alignment::Center,
-                    (false, Alignment::None) => Alignment::Right,
-                    _ => active_col,
+                active_col = match (found_hyphen_in_col, active_col) {
+                    (false, Alignment::None) => {
+                        // Start of the cell. We'll either stay left aligned, transition to center
+                        // alignment, or determine that this isn't a table header.
+                        // Seen `:` so far.
+                        Alignment::Left
+                    }
+                    (true, Alignment::None) => {
+                        // Middle of the cell. This is the first `:` we've seen so we're either
+                        // right aligned or this isn't a table header.
+                        // Seen `-:` so far.
+                        Alignment::Right
+                    }
+                    (true, Alignment::Left) => {
+                        // Middle of the cell. Since we've already got an opening `:` we're now
+                        // center aligned or this isn't a table header
+                        // Seen `:-:` so far.
+                        Alignment::Center
+                    }
+                    (false, Alignment::Left) => {
+                        // It isn't a table header if we got `::`
+                        return (0, vec![]);
+                    }
+                    (true, Alignment::Right | Alignment::Center) => {
+                        // It isn't a table header if we got `-::` or `:-::`
+                        return (0, vec![]);
+                    }
+                    (false, Alignment::Right | Alignment::Center) => {
+                        unreachable!("In order to be right or center aligned we must have already found a `-`")
+                    }
                 };
                 start_col = false;
             }
             b'-' => {
+                if matches!(active_col, Alignment::Right | Alignment::Center) {
+                    // It's not a table if we're already right or center aligned and we find another `-`
+                    // for example: `-:-` or `:-:-`
+                    return (0, vec![]);
+                }
                 start_col = false;
                 found_hyphen = true;
                 found_hyphen_in_col = true;
@@ -764,6 +794,16 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     if !found_pipe || !found_hyphen {
         // It isn't a table head if it doesn't have a least one pipe or hyphen.
         // It's a list, a header, or a thematic break.
+        return (0, vec![]);
+    }
+
+    if matches!(active_col, Alignment::Left) && !found_hyphen_in_col {
+        // The last cell only contained `:`, maybe some whitespace, and didn't have a `-`
+        // For example:
+        // ```markdown
+        // a|b
+        // -|:
+        // ```
         return (0, vec![]);
     }
 

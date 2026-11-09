@@ -3840,7 +3840,7 @@ x  2
 
 ISSUE #1190
 
-A cell with a sinlge `:` should not be treated as a table haeder.
+A cell with a single `:` should not be treated as a table header.
 
 ```````````````````````````````` example ENABLE_TABLES
 a|b
@@ -3865,7 +3865,7 @@ e|f|
 |-|:|</p>
 ````````````````````````````````
 
-`::` is not valid center aligmnet syntax. At a minimum it should be `:-:`.
+`::` is not valid center alignment syntax. At a minimum it should be `:-:`.
 
 ```````````````````````````````` example ENABLE_TABLES
 a|b
@@ -3890,7 +3890,7 @@ a|b
 :|-</p>
 ````````````````````````````````
 
-Singel cell example. There shouldn't be a `:` after the right aligment `:`.
+Single cell example. There shouldn't be a `:` after the right alignment `:`.
 
 ```````````````````````````````` example ENABLE_TABLES
 |a
@@ -3910,7 +3910,7 @@ b|
 |-::|</p>
 ````````````````````````````````
 
-Singel cell example. There shouldn't be a `:` after center aligment `:`.
+Single cell example. There shouldn't be a `:` after center alignment `:`.
 
 ```````````````````````````````` example ENABLE_TABLES
 |a
@@ -3930,7 +3930,7 @@ b|
 |:-::|</p>
 ````````````````````````````````
 
-Single cell example. The shouldn't be a `-` after the right aligment `:`
+Single cell example. The shouldn't be a `-` after the right alignment `:`
 
 ```````````````````````````````` example ENABLE_TABLES
 |a
@@ -3950,7 +3950,7 @@ b|
 |-:-|</p>
 ````````````````````````````````
 
-Single cell example. The shouldn't be a `-` after the center aligment `:`
+Single cell example. The shouldn't be a `-` after the center alignment `:`
 
 ```````````````````````````````` example ENABLE_TABLES
 |a
@@ -3970,7 +3970,7 @@ b|
 |:-:-|</p>
 ````````````````````````````````
 
-Single cell example. There shouldn't be any `-` or `:` after the right aligment `:`
+Single cell example. There shouldn't be any `-` or `:` after the right alignment `:`
 
 ```````````````````````````````` example ENABLE_TABLES
 |a
@@ -3990,7 +3990,7 @@ b|
 |-:-:-:|</p>
 ````````````````````````````````
 
-Single cell example. There shouldn't be any `-` or `:` after the center aligment `:`
+Single cell example. There shouldn't be any `-` or `:` after the center alignment `:`
 
 ```````````````````````````````` example ENABLE_TABLES
 |a

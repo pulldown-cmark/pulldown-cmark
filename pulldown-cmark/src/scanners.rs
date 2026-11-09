@@ -741,28 +741,30 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
                     }
                     (true, Alignment::Left) => {
                         // Middle of the cell. Since we've already got an opening `:` we're now
-                        // center aligned or this isn't a table header
+                        // center aligned or this isn't a table header.
                         // Seen `:-:` so far.
                         Alignment::Center
                     }
                     (false, Alignment::Left) => {
-                        // It isn't a table header if we got `::`
+                        // It isn't a table head if we see `::`.
                         return (0, vec![]);
                     }
                     (true, Alignment::Right | Alignment::Center) => {
-                        // It isn't a table header if we got `-::` or `:-::`
+                        // It isn't a table head if we see `-::` or `:-::`.
                         return (0, vec![]);
                     }
                     (false, Alignment::Right | Alignment::Center) => {
-                        unreachable!("In order to be right or center aligned we must have already found a `-`")
+                        unreachable!(
+                            "Can't be right or center aligned if we haven't seen a `-` yet"
+                        )
                     }
                 };
                 start_col = false;
             }
             b'-' => {
                 if matches!(active_col, Alignment::Right | Alignment::Center) {
-                    // It's not a table if we're already right or center aligned and we find another `-`
-                    // for example: `-:-` or `:-:-`
+                    // It's not a table head if we're already right or center aligned and we
+                    // see another `-`. For example, `-:-` or `:-:-`.
                     return (0, vec![]);
                 }
                 start_col = false;
@@ -798,7 +800,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     }
 
     if matches!(active_col, Alignment::Left) && !found_hyphen_in_col {
-        // The last cell only contained `:`, maybe some whitespace, and didn't have a `-`
+        // The last cell only contained `:`, maybe some whitespace, and didn't have a `-`.
         // For example:
         // ```markdown
         // a|b

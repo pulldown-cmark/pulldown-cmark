@@ -630,3 +630,444 @@ moo | moo
 
     test_markdown_html(original, expected, "ENABLE_TABLES");
 }
+
+#[test]
+fn table_test_0029_l774() {
+    let original = r##"Left | alignemnt
+:----|----------
+A    | A
+
+|Left | alignemnt
+|:----|----------
+|B    | B
+
+Left | alignemnt|
+:----|----------|
+C    | C        |
+
+|Left | alignemnt|
+|:----|----------|
+|D    | D        |
+
+Left | alignemnt
+:--- | ---------
+E    | E
+
+| Left | alignemnt
+| :--- | ---------
+| F    | F
+
+Left | alignemnt |
+:--- | --------- |
+G    | G         |
+
+| Left | alignemnt |
+| :--- | --------- |
+| H    | H         |
+
+Left|alignemnt
+:-|-
+I|I
+
+|Left|alignemnt
+|:-|-
+|J|J
+
+Left|alignemnt|
+:-|-|
+K|K|
+
+|Left|alignemnt|
+|:-|-|
+|L|L|
+
+Left | alignemnt
+:- | -
+M | M
+
+| Left | alignemnt
+| :- | -
+| N | N
+
+Left | alignemnt |
+:- | - |
+O | O |
+
+| Left | alignemnt |
+| :- | - |
+| P | P |
+
+Left    |   alignemnt
+:-   | -
+Q       | Q
+
+|    Left    |   alignemnt
+|  :-   | -
+|      R       | R
+
+Left    |   alignemnt     |
+:-   | -      |
+S       | S          |
+
+|    Left    |   alignemnt     |
+|  :-   | -      |
+|      T       | T          |
+"##;
+    let expected = r##"<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">A</td><td>A</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">B</td><td>B</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">C</td><td>C</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">D</td><td>D</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">E</td><td>E</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">F</td><td>F</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">G</td><td>G</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">H</td><td>H</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">I</td><td>I</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">J</td><td>J</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">K</td><td>K</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">L</td><td>L</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">M</td><td>M</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">N</td><td>N</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">O</td><td>O</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">P</td><td>P</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">Q</td><td>Q</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">R</td><td>R</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">S</td><td>S</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">Left</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: left">T</td><td>T</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn table_test_0030_l919() {
+    let original = r##"Right | alignemnt
+-----:|----------
+A    | A
+
+|Right | alignemnt
+|----:|----------
+|B    | B
+
+Right | alignemnt|
+----:|----------|
+C    | C        |
+
+|Right | alignemnt|
+|----:|----------|
+|D    | D        |
+
+Right | alignemnt
+---: | ---------
+E    | E
+
+| Right | alignemnt
+| ---: | ---------
+| F    | F
+
+Right | alignemnt |
+---: | --------- |
+G    | G         |
+
+| Right | alignemnt |
+| ---: | --------- |
+| H    | H         |
+
+Right|alignemnt
+-:|-
+I|I
+
+|Right|alignemnt
+|-:|-
+|J|J
+
+Right|alignemnt|
+-:|-|
+K|K|
+
+|Right|alignemnt|
+|-:|-|
+|L|L|
+
+Right | alignemnt
+-: | -
+M | M
+
+| Right | alignemnt
+| -: | -
+| N | N
+
+Right | alignemnt |
+-: | - |
+O | O |
+
+| Right | alignemnt |
+| -: | - |
+| P | P |
+
+Right    |   alignemnt
+-:   | -
+Q       | Q
+
+|    Right    |   alignemnt
+|  -:   | -
+|      R       | R
+
+Right    |   alignemnt     |
+-:   | -      |
+S       | S          |
+
+|    Right    |   alignemnt     |
+|  -:   | -      |
+|      T       | T          |
+"##;
+    let expected = r##"<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">A</td><td>A</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">B</td><td>B</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">C</td><td>C</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">D</td><td>D</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">E</td><td>E</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">F</td><td>F</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">G</td><td>G</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">H</td><td>H</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">I</td><td>I</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">J</td><td>J</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">K</td><td>K</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">L</td><td>L</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">M</td><td>M</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">N</td><td>N</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">O</td><td>O</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">P</td><td>P</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">Q</td><td>Q</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">R</td><td>R</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">S</td><td>S</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Right</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">T</td><td>T</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn table_test_0031_l1064() {
+    let original = r##"Center | alignemnt
+:-----:|----------
+A    | A
+
+|Center | alignemnt
+|:-----:|----------
+|B      | B
+
+Center | alignemnt|
+:-----:|----------|
+C      | C        |
+
+|Center | alignemnt|
+|------:|----------|
+|D      | D        |
+
+Center | alignemnt
+:----: | ---------
+E      | E
+
+| Center | alignemnt
+| :----: | ---------
+| F      | F
+
+Center | alignemnt |
+:----: | --------- |
+G      | G         |
+
+| Center | alignemnt |
+| :----: | --------- |
+| H      | H         |
+
+Center|alignemnt
+:-:|-
+I|I
+
+|Center|alignemnt
+|:-:|-
+|J|J
+
+Center|alignemnt|
+:-:|-|
+K|K|
+
+|Center|alignemnt|
+|:-:|-|
+|L|L|
+
+Center | alignemnt
+:-: | -
+M | M
+
+| Center | alignemnt
+| :-: | -
+| N | N
+
+Center | alignemnt |
+:-: | - |
+O | O |
+
+| Center | alignemnt |
+| :-: | - |
+| P | P |
+
+Center    |   alignemnt
+:-:   | -
+Q       | Q
+
+|    Center    |   alignemnt
+|  :-:   | -
+|      R       | R
+
+Center    |   alignemnt     |
+:-:   | -      |
+S       | S          |
+
+|    Center    |   alignemnt     |
+|  :-:   | -      |
+|      T       | T          |
+"##;
+    let expected = r##"<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">A</td><td>A</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">B</td><td>B</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">C</td><td>C</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: right">D</td><td>D</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">E</td><td>E</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">F</td><td>F</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">G</td><td>G</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">H</td><td>H</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">I</td><td>I</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">J</td><td>J</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">K</td><td>K</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">L</td><td>L</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">M</td><td>M</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">N</td><td>N</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">O</td><td>O</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">P</td><td>P</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">Q</td><td>Q</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">R</td><td>R</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">S</td><td>S</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">Center</th><th>alignemnt</th></tr></thead><tbody>
+<tr><td style="text-align: center">T</td><td>T</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}

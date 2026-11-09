@@ -4604,3 +4604,341 @@ fn regression_test_0297_l3828() {
 
     test_markdown_html(original, expected, "ENABLE_HEADING_ATTRIBUTES | ENABLE_DEFINITION_LIST");
 }
+
+#[test]
+fn regression_test_0298_l3845() {
+    let original = r##"a|b
+-|:
+
+|c|d
+|-|:
+
+e|f|
+-|:|
+
+|g|h|
+|-|:|
+"##;
+    let expected = r##"<p>a|b
+-|:</p>
+<p>|c|d
+|-|:</p>
+<p>e|f|
+-|:|</p>
+<p>|g|h|
+|-|:|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0299_l3870() {
+    let original = r##"a|b
+-|::
+
+c|d
+-|:::::::::::::::::::
+"##;
+    let expected = r##"<p>a|b
+-|::</p>
+<p>c|d
+-|:::::::::::::::::::</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0300_l3885() {
+    let original = r##"a|b
+:|-
+"##;
+    let expected = r##"<p>a|b
+:|-</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0301_l3895() {
+    let original = r##"|a
+|-::
+
+b|
+-::|
+
+|c|
+|-::|
+"##;
+    let expected = r##"<p>|a
+|-::</p>
+<p>b|
+-::|</p>
+<p>|c|
+|-::|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0302_l3915() {
+    let original = r##"|a
+|:-::
+
+b|
+:-::|
+
+|c|
+|:-::|
+"##;
+    let expected = r##"<p>|a
+|:-::</p>
+<p>b|
+:-::|</p>
+<p>|c|
+|:-::|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0303_l3935() {
+    let original = r##"|a
+|-:-
+
+b|
+-:-|
+
+|c|
+|-:-|
+"##;
+    let expected = r##"<p>|a
+|-:-</p>
+<p>b|
+-:-|</p>
+<p>|c|
+|-:-|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0304_l3955() {
+    let original = r##"|a
+|:-:-
+
+b|
+:-:-|
+
+|c|
+|:-:-|
+"##;
+    let expected = r##"<p>|a
+|:-:-</p>
+<p>b|
+:-:-|</p>
+<p>|c|
+|:-:-|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0305_l3975() {
+    let original = r##"|a
+|-:-:-:
+
+b|
+-:-:-:|
+
+|c|
+|-:-:-:|
+"##;
+    let expected = r##"<p>|a
+|-:-:-:</p>
+<p>b|
+-:-:-:|</p>
+<p>|c|
+|-:-:-:|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0306_l3995() {
+    let original = r##"|a
+|:-:-:-:
+
+b|
+:-:-:-:|
+
+|c|
+|:-:-:-:|
+"##;
+    let expected = r##"<p>|a
+|:-:-:-:</p>
+<p>b|
+:-:-:-:|</p>
+<p>|c|
+|:-:-:-:|</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}
+
+#[test]
+fn regression_test_0307_l4015() {
+    let original = r##"a
+-
+a
+a
+
+b
+:-
+b
+b
+
+c
+-:
+c
+c
+
+d
+:-:
+d
+d
+
+e
+|-
+e
+e
+
+f
+|:-
+f
+f
+
+f
+|-:
+f
+f
+
+g
+|:-:
+g
+g
+
+h
+-|
+h
+h
+
+i
+:-|
+i
+i
+
+j
+-:|
+j
+j
+
+k
+:-:|
+k
+k
+
+l
+|-|
+l
+l
+
+l
+|:-|
+l
+l
+
+m
+|-:|
+m
+m
+
+n
+|:-:|
+n
+n
+"##;
+    let expected = r##"<h2>a</h2>
+<p>a
+a</p>
+<p>b
+:-
+b
+b</p>
+<p>c
+-:
+c
+c</p>
+<p>d
+:-:
+d
+d</p>
+<p>e
+|-
+e
+e</p>
+<p>f
+|:-
+f
+f</p>
+<p>f
+|-:
+f
+f</p>
+<p>g
+|:-:
+g
+g</p>
+<p>h
+-|
+h
+h</p>
+<p>i
+:-|
+i
+i</p>
+<p>j
+-:|
+j
+j</p>
+<p>k
+:-:|
+k
+k</p>
+<p>l
+|-|
+l
+l</p>
+<p>l
+|:-|
+l
+l</p>
+<p>m
+|-:|
+m
+m</p>
+<p>n
+|:-:|
+n
+n</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}

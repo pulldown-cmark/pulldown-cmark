@@ -876,6 +876,15 @@ impl<'input> ParserInner<'input> {
                                     cur = next;
                                     continue;
                                 }
+                                // A footnote reference without a matching definition is
+                                // rendered as literal text, but it is still a broken reference,
+                                // so report it to the callback.
+                                let broken_link = BrokenLink {
+                                    span: self.tree[tos.node].item.start..end,
+                                    link_type: LinkType::Shortcut,
+                                    reference: self.allocs.cows[footref.0].clone(),
+                                };
+                                callbacks.handle_broken_link(broken_link);
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
                                 if let Some((def_link_type, url, title)) = self
                                     .fetch_link_type_url_title(
@@ -2341,6 +2350,9 @@ pub trait ParserCallbacks<'input> {
     /// this callback will be called with information about the reference,
     /// and the returned pair will be used as the link URL and title if it is not
     /// `None`.
+    ///
+    /// Footnote references without a matching definition are also reported,
+    /// but since they are not links, the returned pair is ignored.
     fn handle_broken_link(
         &mut self,
         #[allow(unused_variables)] link: BrokenLink<'input>,
@@ -3072,6 +3084,29 @@ mod test {
             assert_eq!(id.as_ref(), "world");
         }
         assert!(link_tag_count > 0);
+    }
+
+    #[test]
+    fn broken_footnote_reference_callback() {
+        let test_str = "See [^missing].\n\n[^defined]: def\n\nSee [^defined].";
+        let mut broken_links = Vec::new();
+        {
+            let callback = |link: BrokenLink| {
+                broken_links.push((link.reference.to_string(), link.span, link.link_type));
+                None
+            };
+            let parser = Parser::new_with_broken_link_callback(
+                test_str,
+                Options::ENABLE_FOOTNOTES,
+                Some(callback),
+            );
+            for _ in parser {}
+        }
+        assert_eq!(broken_links.len(), 1);
+        let (reference, span, link_type) = &broken_links[0];
+        assert_eq!(reference, "missing");
+        assert_eq!(&test_str[span.clone()], "[^missing]");
+        assert_eq!(*link_type, LinkType::Shortcut);
     }
 
     #[test]

@@ -701,6 +701,33 @@ pub(crate) fn scan_setext_heading(data: &[u8]) -> Option<(usize, HeadingLevel)> 
     Some((i, level))
 }
 
+/// Significant tokens when scanning for a table
+enum DelimiterRowToken {
+    /// Some whitespace ` ` or `\t`
+    Whitespace,
+    /// A `|`
+    Pipe,
+    /// A `-`
+    Hyphen,
+    /// A `:`
+    Colon,
+}
+
+impl ::core::convert::TryFrom<u8> for DelimiterRowToken {
+    type Error = TableDelimiterError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        let token = match value {
+            b' ' | b'\t' => DelimiterRowToken::Whitespace,
+            b'|' => DelimiterRowToken::Pipe,
+            b'-' => DelimiterRowToken::Hyphen,
+            b':' => DelimiterRowToken::Colon,
+            _ => return Err(TableDelimiterError::UnexpectedCharacter),
+        };
+        Ok(token)
+    }
+}
+
 /// Errors that could occur when scanning for a table
 enum TableDelimiterError {
     /// The cell didn't contain any hyphens.
@@ -770,43 +797,38 @@ impl TableDelimiterCellState {
     /// retruns Err(TableDelimiterError) to signal that this is not a table delimiter row.
     fn feed_byte(&mut self, byte: u8) -> Result<bool, TableDelimiterError> {
         use AlignmentState as AS;
-        let alignment = match (byte, self.alignment) {
+        use DelimiterRowToken as RowToken;
+
+        let token = RowToken::try_from(byte)?;
+        let alignment = match (token, self.alignment) {
             // Whitespace doesn't change alignment
-            (b' ', _) => self.alignment,
-            // Seen `-`
-            (b'-', None) => Some(AS::None),
-            // Seen `--`
-            (b'-', Some(AS::None)) => Some(AS::None),
-            // Seen `:-`
-            (b'-', Some(AS::LeftNoHyphen)) => Some(AS::Left),
-            // Seen `:--`
-            (b'-', Some(AS::Left)) => Some(AS::Left),
-            (b'-', Some(AS::Right | AS::Center)) => {
+            (RowToken::Whitespace, _) => self.alignment,
+            // Seen `-`, or `--`
+            (RowToken::Hyphen, None | Some(AS::None)) => Some(AS::None),
+            // Seen `:-` or `:--`
+            (RowToken::Hyphen, Some(AS::LeftNoHyphen | AS::Left)) => Some(AS::Left),
+            (RowToken::Hyphen, Some(AS::Right | AS::Center)) => {
                 // Not a table if we've seen `-:-` or `:-:-`
                 return Err(TableDelimiterError::UnexpectedHyphen);
             }
             // Seen `:`
-            (b':', None) => Some(AS::LeftNoHyphen),
+            (RowToken::Colon, None) => Some(AS::LeftNoHyphen),
             // Seen `:-:`
-            (b':', Some(AS::Left)) => Some(AS::Center),
+            (RowToken::Colon, Some(AS::Left)) => Some(AS::Center),
             // Seen `-:`
-            (b':', Some(AS::None)) => Some(AS::Right),
-            (b':', Some(AS::LeftNoHyphen | AS::Right | AS::Center)) => {
+            (RowToken::Colon, Some(AS::None)) => Some(AS::Right),
+            (RowToken::Colon, Some(AS::LeftNoHyphen | AS::Right | AS::Center)) => {
                 // Not a table if we've seen `::`, `-::`, or `:-::`
                 return Err(TableDelimiterError::UnexpectedColon);
             }
-            (b'|', Some(AS::LeftNoHyphen)) => {
-                // Not a table if we've seen `:|`
+            (RowToken::Pipe, None | Some(AS::LeftNoHyphen)) => {
+                // Not a table if we've seen `|` (an delimiter cell) or `:|`
                 return Err(TableDelimiterError::UnexpectedPipe);
             }
-            (b'|', Some(AS::None | AS::Left | AS::Right | AS::Center)) => {
+            (RowToken::Pipe, Some(AS::None | AS::Left | AS::Right | AS::Center)) => {
                 // Seen `-`, `:-`, `-:` or `:-:`. This `|` signals that we've fully parsed the cell.
                 self.found_pipe = true;
                 return Ok(true);
-            }
-            _ => {
-                // It isn't a table head if it has characters outside the allowed set.
-                return Err(TableDelimiterError::UnexpectedCharacter);
             }
         };
         self.alignment = alignment;

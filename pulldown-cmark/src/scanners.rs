@@ -800,36 +800,43 @@ impl TableDelimiterCellState {
         use DelimiterRowToken as RowToken;
 
         let token = RowToken::try_from(byte)?;
-        let alignment = match (token, self.alignment) {
+        let alignment = match token {
             // Whitespace doesn't change alignment
-            (RowToken::Whitespace, _) => self.alignment,
-            // Seen `-`, or `--`
-            (RowToken::Hyphen, None | Some(AS::None)) => Some(AS::None),
-            // Seen `:-` or `:--`
-            (RowToken::Hyphen, Some(AS::LeftNoHyphen | AS::Left)) => Some(AS::Left),
-            (RowToken::Hyphen, Some(AS::Right | AS::Center)) => {
-                // Not a table if we've seen `-:-` or `:-:-`
-                return Err(TableDelimiterError::UnexpectedHyphen);
-            }
-            // Seen `:`
-            (RowToken::Colon, None) => Some(AS::LeftNoHyphen),
-            // Seen `:-:`
-            (RowToken::Colon, Some(AS::Left)) => Some(AS::Center),
-            // Seen `-:`
-            (RowToken::Colon, Some(AS::None)) => Some(AS::Right),
-            (RowToken::Colon, Some(AS::LeftNoHyphen | AS::Right | AS::Center)) => {
-                // Not a table if we've seen `::`, `-::`, or `:-::`
-                return Err(TableDelimiterError::UnexpectedColon);
-            }
-            (RowToken::Pipe, None | Some(AS::LeftNoHyphen)) => {
-                // Not a table if we've seen `|` (an delimiter cell) or `:|`
-                return Err(TableDelimiterError::UnexpectedPipe);
-            }
-            (RowToken::Pipe, Some(AS::None | AS::Left | AS::Right | AS::Center)) => {
-                // Seen `-`, `:-`, `-:` or `:-:`. This `|` signals that we've fully parsed the cell.
-                self.found_pipe = true;
-                return Ok(true);
-            }
+            RowToken::Whitespace => self.alignment,
+            RowToken::Hyphen => match self.alignment {
+                // Seen `-`, or `--`
+                None | Some(AS::None) => Some(AS::None),
+                // Seen `:-` or `:--`
+                Some(AS::LeftNoHyphen | AS::Left) => Some(AS::Left),
+                Some(AS::Right | AS::Center) => {
+                    // Not a table if we've seen `-:-` or `:-:-`
+                    return Err(TableDelimiterError::UnexpectedHyphen);
+                }
+            },
+            RowToken::Colon => match self.alignment {
+                // Seen `:`
+                None => Some(AS::LeftNoHyphen),
+                // Seen `:-:`
+                Some(AS::Left) => Some(AS::Center),
+                // Seen `-:`
+                Some(AS::None) => Some(AS::Right),
+                Some(AS::LeftNoHyphen | AS::Right | AS::Center) => {
+                    // Not a table if we've seen `::`, `-::`, or `:-::`
+                    return Err(TableDelimiterError::UnexpectedColon);
+                }
+            },
+            RowToken::Pipe => match self.alignment {
+                None | Some(AS::LeftNoHyphen) => {
+                    // Not a table if we've seen `|` (an empty delimiter cell) or `:|`
+                    return Err(TableDelimiterError::UnexpectedPipe);
+                }
+                // This `|` signals that we've fully parsed the cell.
+                Some(AS::None | AS::Left | AS::Right | AS::Center) => {
+                    // Seen `-|`, `:-|`, `-:|` or `:-:|`.
+                    self.found_pipe = true;
+                    return Ok(true);
+                }
+            },
         };
         self.alignment = alignment;
         Ok(false)

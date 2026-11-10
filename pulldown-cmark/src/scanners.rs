@@ -775,7 +775,12 @@ impl TableDelimiterCellState {
         }
     }
 
-    /// Return the alignment if this is actually a delimiter row.
+    /// Determine the alignment of the delimiter cell.
+    ///
+    /// Returns `Ok(None)` if the state machine never advanced from it's initial state.
+    /// Returns [`Ok(Some(Alignment))`][crate::Alignment] if this is an aligned cell.
+    /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
+    /// not a table delimiter row.
     fn finish(self) -> Result<Option<Alignment>, TableDelimiterError> {
         if !self.found_pipe {
             return Err(TableDelimiterError::NoPipe);
@@ -792,9 +797,12 @@ impl TableDelimiterCellState {
 
     /// Advance the table delimiter cell state machine.
     ///
-    /// returns Ok(true) to signal that this cell is complete and we should now call `finish`.
-    /// returns Ok(false) to signal that another byte should be provided.
-    /// retruns Err(TableDelimiterError) to signal that this is not a table delimiter row.
+    /// Returns `Ok(true)` to signal that this cell is complete and we should now call [`finish`].
+    /// Returns `Ok(false)` to signal that another byte should be provided.
+    /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
+    /// not a table delimiter row.
+    ///
+    /// [`finish`]: TableDelimiterCellState::finish
     fn feed_byte(&mut self, byte: u8) -> Result<bool, TableDelimiterError> {
         use AlignmentState as AS;
         use DelimiterRowToken as RowToken;

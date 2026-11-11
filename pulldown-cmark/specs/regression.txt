@@ -3837,3 +3837,175 @@ x  2
 </dd>
 </dl>
 ````````````````````````````````
+
+ISSUE #1190
+
+A cell with a single `:` should not be treated as a table header.
+
+```````````````````````````````` example ENABLE_TABLES
+a|b
+-|:
+
+|c|d
+|-|:
+
+e|f|
+-|:|
+
+|g|h|
+|-|:|
+.
+<p>a|b
+-|:</p>
+<p>|c|d
+|-|:</p>
+<p>e|f|
+-|:|</p>
+<p>|g|h|
+|-|:|</p>
+````````````````````````````````
+
+`::` is not valid center alignment syntax. At a minimum it should be `:-:`.
+
+```````````````````````````````` example ENABLE_TABLES
+a|b
+-|::
+
+c|d
+-|:::::::::::::::::::
+.
+<p>a|b
+-|::</p>
+<p>c|d
+-|:::::::::::::::::::</p>
+````````````````````````````````
+
+This was already a case that was handled correctly, but adding it as a regression test.
+
+```````````````````````````````` example ENABLE_TABLES
+a|b
+:|-
+.
+<p>a|b
+:|-</p>
+````````````````````````````````
+
+Single cell example. There shouldn't be a `:` after the right alignment `:`.
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|-::
+
+b|
+-::|
+
+|c|
+|-::|
+.
+<p>|a
+|-::</p>
+<p>b|
+-::|</p>
+<p>|c|
+|-::|</p>
+````````````````````````````````
+
+Single cell example. There shouldn't be a `:` after center alignment `:`.
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|:-::
+
+b|
+:-::|
+
+|c|
+|:-::|
+.
+<p>|a
+|:-::</p>
+<p>b|
+:-::|</p>
+<p>|c|
+|:-::|</p>
+````````````````````````````````
+
+Single cell example. The shouldn't be a `-` after the right alignment `:`
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|-:-
+
+b|
+-:-|
+
+|c|
+|-:-|
+.
+<p>|a
+|-:-</p>
+<p>b|
+-:-|</p>
+<p>|c|
+|-:-|</p>
+````````````````````````````````
+
+Single cell example. The shouldn't be a `-` after the center alignment `:`
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|:-:-
+
+b|
+:-:-|
+
+|c|
+|:-:-|
+.
+<p>|a
+|:-:-</p>
+<p>b|
+:-:-|</p>
+<p>|c|
+|:-:-|</p>
+````````````````````````````````
+
+Single cell example. There shouldn't be any `-` or `:` after the right alignment `:`
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|-:-:-:
+
+b|
+-:-:-:|
+
+|c|
+|-:-:-:|
+.
+<p>|a
+|-:-:-:</p>
+<p>b|
+-:-:-:|</p>
+<p>|c|
+|-:-:-:|</p>
+````````````````````````````````
+
+Single cell example. There shouldn't be any `-` or `:` after the center alignment `:`
+
+```````````````````````````````` example ENABLE_TABLES
+|a
+|:-:-:-:
+
+b|
+:-:-:-:|
+
+|c|
+|:-:-:-:|
+.
+<p>|a
+|:-:-:-:</p>
+<p>b|
+:-:-:-:|</p>
+<p>|c|
+|:-:-:-:|</p>
+````````````````````````````````

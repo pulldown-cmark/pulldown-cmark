@@ -735,18 +735,20 @@ enum TableDelimiterError {
     UnexpectedHyphen,
     /// Found some character other than `:`, `-`, `|`, or whitespace.
     UnexpectedCharacter,
+    /// There isn't a leading or trailing `|`.
+    NoPipe,
 }
 
 #[derive(Clone, Copy)]
 enum AlignmentState {
     /// No meaningful tokens have been found.
-    Empty,
+    Empty { leading_pipe: bool },
     /// Leading `:`, but we haven't seen a `-` yet.
     LeftNoHyphen,
     /// Found `:-`
     Left,
     /// Found `-`
-    None,
+    None { leading_pipe: bool },
     /// Found `-:`
     Right,
     /// Found `:-:`
@@ -761,9 +763,9 @@ struct TableDelimiterCellState {
 
 impl TableDelimiterCellState {
     /// Construct a new  TableDelimiterCellState
-    fn new() -> Self {
+    fn new(leading_pipe: bool) -> Self {
         Self {
-            alignment: AlignmentState::Empty,
+            alignment: AlignmentState::Empty { leading_pipe },
         }
     }
 
@@ -773,13 +775,19 @@ impl TableDelimiterCellState {
     /// Returns [`Ok(Some(Alignment))`][crate::Alignment] if this is an aligned cell.
     /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
     /// not a table delimiter row.
-    fn finish(self) -> Result<Option<Alignment>, TableDelimiterError> {
+    fn finish(self, trailing_pipe: bool) -> Result<Option<Alignment>, TableDelimiterError> {
         match self.alignment {
-            AlignmentState::Empty => Ok(None),
+            AlignmentState::Empty { .. } => Ok(None),
             AlignmentState::Left => Ok(Some(Alignment::Left)),
             AlignmentState::Right => Ok(Some(Alignment::Right)),
             AlignmentState::Center => Ok(Some(Alignment::Center)),
-            AlignmentState::None => Ok(Some(Alignment::None)),
+            AlignmentState::None { leading_pipe } => {
+                if leading_pipe | trailing_pipe {
+                    Ok(Some(Alignment::None))
+                } else {
+                    Err(TableDelimiterError::NoPipe)
+                }
+            }
             AlignmentState::LeftNoHyphen => Err(TableDelimiterError::NoHyphen),
         }
     }
@@ -802,7 +810,9 @@ impl TableDelimiterCellState {
             CellToken::Whitespace => self.alignment,
             CellToken::Hyphen => match self.alignment {
                 // Seen `-`, or `--`
-                State::Empty | State::None => State::None,
+                State::Empty { leading_pipe } | State::None { leading_pipe } => {
+                    State::None { leading_pipe }
+                }
                 // Seen `:-` or `:--`
                 State::LeftNoHyphen | State::Left => State::Left,
                 State::Right | State::Center => {
@@ -812,11 +822,11 @@ impl TableDelimiterCellState {
             },
             CellToken::Colon => match self.alignment {
                 // Seen `:`
-                State::Empty => State::LeftNoHyphen,
+                State::Empty { .. } => State::LeftNoHyphen,
                 // Seen `:-:`
                 State::Left => State::Center,
                 // Seen `-:`
-                State::None => State::Right,
+                State::None { .. } => State::Right,
                 State::LeftNoHyphen | State::Right | State::Center => {
                     // Not a table if we've seen `::`, `-::`, or `:-::`
                     return Err(TableDelimiterError::UnexpectedColon);
@@ -842,7 +852,7 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
         i += 1;
     }
 
-    let mut delimiter_cell_state = TableDelimiterCellState::new();
+    let mut delimiter_cell_state = TableDelimiterCellState::new(leading_pipe);
 
     for c in &data[i..] {
         if let Some(n) = scan_eol(&data[i..]) {
@@ -851,9 +861,9 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
         }
 
         if *c == b'|' {
-            let new_cell = TableDelimiterCellState::new();
+            let new_cell = TableDelimiterCellState::new(true);
             let cell = ::core::mem::replace(&mut delimiter_cell_state, new_cell);
-            match cell.finish() {
+            match cell.finish(true) {
                 Ok(Some(alignment)) => {
                     cols.push(alignment);
                     i += 1;
@@ -876,27 +886,8 @@ pub(crate) fn scan_table_head(data: &[u8]) -> (usize, Vec<Alignment>) {
     }
 
     // We've reached the end. Let's see if the trailing cell is complete.
-    match delimiter_cell_state.finish() {
-        Ok(Some(alignment)) => {
-            if !leading_pipe && cols.is_empty() && alignment == Alignment::None {
-                // If `cols` is empty at this point, then we never called `finish` in the loop.
-                // Whether or not this is a delimiter cell or not depends on the leading `|`.
-                // For example:
-                // ```
-                // | setext-h2
-                // -
-                // .
-                // <h2>| setext-h2</h2>
-                // ```
-                // vs
-                // ```
-                // |one-col-table
-                // |-
-                // ```
-                return (0, vec![]);
-            }
-            cols.push(alignment)
-        }
+    match delimiter_cell_state.finish(false) {
+        Ok(Some(alignment)) => cols.push(alignment),
         Ok(None) => {
             if cols.is_empty() {
                 // No columns were parsed. This isn't a table.

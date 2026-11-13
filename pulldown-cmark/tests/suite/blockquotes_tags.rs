@@ -16,9 +16,9 @@ fn blockquotes_tags_test_0001_l17() {
 #[test]
 fn blockquotes_tags_test_0002_l23() {
     let original = r##"> [!NOTE]
-> Note blockquote
+> Note admonition
 "##;
-    let expected = r##"<blockquote class="markdown-alert-note"><p>Note blockquote</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-note"><p>Note admonition</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -27,9 +27,9 @@ fn blockquotes_tags_test_0002_l23() {
 #[test]
 fn blockquotes_tags_test_0003_l30() {
     let original = r##"> [!TIP]
-> Tip blockquote
+> Tip admonition
 "##;
-    let expected = r##"<blockquote class="markdown-alert-tip"><p>Tip blockquote</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-tip"><p>Tip admonition</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -38,9 +38,9 @@ fn blockquotes_tags_test_0003_l30() {
 #[test]
 fn blockquotes_tags_test_0004_l37() {
     let original = r##"> [!IMPORTANT]
-> Important blockquote
+> Important admonition
 "##;
-    let expected = r##"<blockquote class="markdown-alert-important"><p>Important blockquote</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-important"><p>Important admonition</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -49,9 +49,9 @@ fn blockquotes_tags_test_0004_l37() {
 #[test]
 fn blockquotes_tags_test_0005_l44() {
     let original = r##"> [!WARNING]
-> Warning blockquote
+> Warning admonition
 "##;
-    let expected = r##"<blockquote class="markdown-alert-warning"><p>Warning blockquote</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-warning"><p>Warning admonition</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -60,9 +60,9 @@ fn blockquotes_tags_test_0005_l44() {
 #[test]
 fn blockquotes_tags_test_0006_l51() {
     let original = r##"> [!CAUTION]
-> Caution blockquote
+> Caution admonition
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Caution blockquote</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Caution admonition</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -72,7 +72,7 @@ fn blockquotes_tags_test_0006_l51() {
 fn blockquotes_tags_test_0007_l59() {
     let original = r##"> [!CAUTION]
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -84,8 +84,8 @@ fn blockquotes_tags_test_0008_l66() {
 > Line 1.
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.
-Line 2.</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -98,9 +98,9 @@ fn blockquotes_tags_test_0009_l76() {
 > [!CAUTION]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.
 [!CAUTION]
-Line 2.</p></blockquote>
+Line 2.</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -113,7 +113,7 @@ fn blockquotes_tags_test_0010_l88() {
 > > [!TIP]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.</p><div role="note" class="markdown-alert-tip"><p>Line 2.</p></div></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -128,7 +128,7 @@ fn blockquotes_tags_test_0011_l98() {
 > [!TIP]
 > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p></blockquote><blockquote class="markdown-alert-tip"><p>Line 2.</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.</p></div><div role="note" class="markdown-alert-tip"><p>Line 2.</p></div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -140,8 +140,8 @@ fn blockquotes_tags_test_0012_l110() {
 > > Line 1.
 > Line 2.
 "##;
-    let expected = r##"<blockquote><blockquote class="markdown-alert-caution"><p>Line 1.
-Line 2.</p></blockquote></blockquote>
+    let expected = r##"<blockquote><div role="note" class="markdown-alert-caution"><p>Line 1.
+Line 2.</p></div></blockquote>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -154,9 +154,9 @@ fn blockquotes_tags_test_0013_l120() {
 > > [!NOTE]      
 > > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p>
-<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
-</blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.</p>
+<div role="note" class="markdown-alert-note"><p>Line 2.</p></div>
+</div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -169,9 +169,9 @@ fn blockquotes_tags_test_0014_l132() {
 > > [!note]      
 > > Line 2.
 "##;
-    let expected = r##"<blockquote class="markdown-alert-caution"><p>Line 1.</p>
-<blockquote class="markdown-alert-note"><p>Line 2.</p></blockquote>
-</blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-caution"><p>Line 1.</p>
+<div role="note" class="markdown-alert-note"><p>Line 2.</p></div>
+</div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");
@@ -185,7 +185,7 @@ fn blockquotes_tags_test_0015_l144() {
     > sink ships
 "##;
     let expected = r##"<ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 </li></ul>
 "##;
 
@@ -208,11 +208,11 @@ sink ships
     > [!NOTE]
     > sink ships
 "##;
-    let expected = r##"<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+    let expected = r##"<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 <ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
-<blockquote class="markdown-alert-note"><p>sink ships</p></blockquote>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
+<div role="note" class="markdown-alert-note"><p>sink ships</p></div>
 </li></ul>
 "##;
 
@@ -230,10 +230,10 @@ fn blockquotes_tags_test_0017_l180() {
     > - sink ships
 "##;
     let expected = r##"<ul><li><p>loose lists</p>
-<blockquote class="markdown-alert-note"></blockquote>
+<div role="note" class="markdown-alert-note"></div>
 <ul><li>sink ships</li></ul>
-<blockquote class="markdown-alert-note">
-<ul><li>sink ships</li></ul></blockquote>
+<div role="note" class="markdown-alert-note">
+<ul><li>sink ships</li></ul></div>
 </li></ul>
 "##;
 

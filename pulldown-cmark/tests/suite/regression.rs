@@ -4942,3 +4942,35 @@ n</p>
 
     test_markdown_html(original, expected, "ENABLE_TABLES");
 }
+
+#[test]
+fn regression_test_0308_l4165() {
+    let original = r##"|a    | a |
+| - - | - |
+
+|b    | b |
+| : - | - |
+
+|c    | c |
+| - : | - |
+
+|d     | d |
+| : -: | - |
+
+|e     | e |
+| :- : | - |
+"##;
+    let expected = r##"<p>|a    | a |
+| - - | - |</p>
+<p>|b    | b |
+| : - | - |</p>
+<p>|c    | c |
+| - : | - |</p>
+<p>|d     | d |
+| : -: | - |</p>
+<p>|e     | e |
+| :- : | - |</p>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}

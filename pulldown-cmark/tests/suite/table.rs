@@ -1071,3 +1071,121 @@ S       | S          |
 
     test_markdown_html(original, expected, "ENABLE_TABLES");
 }
+
+#[test]
+fn table_test_0032_l1209() {
+    let original = r##"|a|
+-
+|a|
+
+|b|
+:-
+|b|
+
+|c|
+-:
+|c|
+
+|d|
+:-:
+|d|
+
+|e|
+|-
+|e|
+
+|f|
+|:-
+|f|
+
+|g|
+|-:
+|g|
+
+|h|
+|:-:
+|h|
+
+|i|
+-|
+|i|
+
+|j|
+:-|
+|j|
+
+|k|
+-:|
+|k|
+
+|l|
+:-:|
+|l|
+
+|m|
+|-|
+|m|
+
+|n|
+|:-|
+|n|
+
+|o|
+|-:|
+|o|
+
+|p|
+|:-:|
+|p|
+"##;
+    let expected = r##"<h2>|a|</h2>
+<p>|a|</p>
+<p>|b|
+:-
+|b|</p>
+<p>|c|
+-:
+|c|</p>
+<p>|d|
+:-:
+|d|</p>
+<table><thead><tr><th>e</th></tr></thead><tbody>
+<tr><td>e</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">f</th></tr></thead><tbody>
+<tr><td style="text-align: left">f</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">g</th></tr></thead><tbody>
+<tr><td style="text-align: right">g</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">h</th></tr></thead><tbody>
+<tr><td style="text-align: center">h</td></tr>
+</tbody></table>
+<table><thead><tr><th>i</th></tr></thead><tbody>
+<tr><td>i</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">j</th></tr></thead><tbody>
+<tr><td style="text-align: left">j</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">k</th></tr></thead><tbody>
+<tr><td style="text-align: right">k</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">l</th></tr></thead><tbody>
+<tr><td style="text-align: center">l</td></tr>
+</tbody></table>
+<table><thead><tr><th>m</th></tr></thead><tbody>
+<tr><td>m</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: left">n</th></tr></thead><tbody>
+<tr><td style="text-align: left">n</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: right">o</th></tr></thead><tbody>
+<tr><td style="text-align: right">o</td></tr>
+</tbody></table>
+<table><thead><tr><th style="text-align: center">p</th></tr></thead><tbody>
+<tr><td style="text-align: center">p</td></tr>
+</tbody></table>
+"##;
+
+    test_markdown_html(original, expected, "ENABLE_TABLES");
+}

@@ -1742,7 +1742,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                 if child_is_paragraph_or_item && grandchild_is_task_list_marker {
                     // exclude the task list marker from the paragraph text
                     let end = self.tree[grandchild_ix].item.end;
-                    self.tree[child_ix].item.start = end;
+                    if !matches!(self.tree[child_ix].item.body, ItemBody::ListItem(..)) {
+                        self.tree[child_ix].item.start = end;
+                    }
                     let mut next_ix = self.tree[grandchild_ix].next;
                     while let Some(ix) = next_ix {
                         if self.tree[ix].item.end > end {

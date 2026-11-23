@@ -256,15 +256,42 @@ pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error>
     }
 }
 
+const fn splat(b: u8) -> u64 {
+    u64::from_ne_bytes([b; 8])
+}
+
+/// Nonzero if any byte of `x` is zero.
+#[inline(always)]
+fn zero_byte_mask(x: u64) -> u64 {
+    x.wrapping_sub(splat(0x01)) & !x & splat(0x80)
+}
+
 fn escape_html_scalar<W: StrWrite>(
     mut w: W,
     s: &str,
     table: &'static [u8; 256],
 ) -> Result<(), W::Error> {
     let bytes = s.as_bytes();
+    let attr = table[b'"' as usize] != 0;
     let mut mark = 0;
     let mut i = 0;
     while i < s.len() {
+        while let Some(chunk) = bytes.get(i..i + 8) {
+            let v = u64::from_le_bytes(chunk.try_into().unwrap());
+            // `<` and `>` both become 0x3e when bit 1 is set; nothing else does.
+            let mut m = zero_byte_mask((v | splat(0x02)) ^ splat(b'>'));
+            if attr {
+                // `&` and `'` both become 0x27 when bit 0 is set.
+                m |= zero_byte_mask((v | splat(0x01)) ^ splat(b'\''));
+                m |= zero_byte_mask(v ^ splat(b'"'));
+            } else {
+                m |= zero_byte_mask(v ^ splat(b'&'));
+            }
+            if m != 0 {
+                break;
+            }
+            i += 8;
+        }
         match bytes[i..].iter().position(|&c| table[c as usize] != 0) {
             Some(pos) => {
                 i += pos;

@@ -780,7 +780,7 @@ impl TableDelimiterCellState {
     /// Returns `Ok(None)` if the state machine never advanced from it's initial state.
     /// Returns [`Ok(Some(Alignment))`][crate::Alignment] if this is an aligned cell.
     /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
-    /// not a table delimiter row.
+    /// not a table delimiter cell, and therefore the surrounding markdown is not a table.
     fn finish(self) -> Result<Option<Alignment>, TableDelimiterError> {
         match self.alignment {
             AlignmentState::Empty => Ok(None),
@@ -796,10 +796,11 @@ impl TableDelimiterCellState {
 
     /// Advance the table delimiter cell state machine.
     ///
-    /// Returns `Ok(true)` to signal that this cell is complete and we should now call [`finish`].
-    /// Returns `Ok(false)` to signal that another byte should be provided.
+    /// Returns `Ok(())` to signal that another byte should be provided. Callers should
+    /// keep providing bytes until `b'|'` is found, at which point they should call [`finish`]
+    /// to get the final state.
     /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
-    /// not a table delimiter row.
+    /// not a table delimiter cell, and therefore the surrounding markdown is not a table.
     ///
     /// [`finish`]: TableDelimiterCellState::finish
     fn feed_byte(&mut self, byte: u8) -> Result<(), TableDelimiterError> {

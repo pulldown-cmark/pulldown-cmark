@@ -3077,11 +3077,11 @@ fn regression_test_0195_l2576() {
     let original = r##"> [!Note]
 > - Foo
 "##;
-    let expected = r##"<blockquote class="markdown-alert-note">
+    let expected = r##"<div role="note" class="markdown-alert-note">
 <ul>
 <li>Foo</li>
 </ul>
-</blockquote>
+</div>
 "##;
 
     test_markdown_html(original, expected, "ENABLE_GFM");

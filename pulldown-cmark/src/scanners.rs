@@ -735,6 +735,8 @@ enum TableDelimiterError {
     UnexpectedHyphen,
     /// Found some character other than `:`, `-`, `|`, or whitespace.
     UnexpectedCharacter,
+    /// Found a whitespace character where one wasn't expected.
+    UnexpectedWhitespace,
 }
 
 #[derive(Clone, Copy)]
@@ -743,10 +745,16 @@ enum AlignmentState {
     Empty,
     /// Leading `:`, but we haven't seen a `-` yet.
     LeftNoHyphen,
+    /// Found `:- `. Keep track of the whitespace. This can only be `Alignment::Left` if
+    /// we don't find another `:` or `-` while parsing the current delimiter cell.
+    LeftTrailingWhitespace,
     /// Found `:-`
     Left,
     /// Found `-`
     None,
+    /// Found `- `. Keep track of the whitespace. This can only be `Alignment::None` if
+    /// we don't find another `:` or `-` while parsing the current delimiter cell.
+    NoneTrailingWhitespace,
     /// Found `-:`
     Right,
     /// Found `:-:`
@@ -772,24 +780,27 @@ impl TableDelimiterCellState {
     /// Returns `Ok(None)` if the state machine never advanced from it's initial state.
     /// Returns [`Ok(Some(Alignment))`][crate::Alignment] if this is an aligned cell.
     /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
-    /// not a table delimiter row.
+    /// not a table delimiter cell, and therefore the surrounding markdown is not a table.
     fn finish(self) -> Result<Option<Alignment>, TableDelimiterError> {
         match self.alignment {
             AlignmentState::Empty => Ok(None),
             AlignmentState::Left => Ok(Some(Alignment::Left)),
+            AlignmentState::LeftTrailingWhitespace => Ok(Some(Alignment::Left)),
             AlignmentState::Right => Ok(Some(Alignment::Right)),
             AlignmentState::Center => Ok(Some(Alignment::Center)),
             AlignmentState::None => Ok(Some(Alignment::None)),
+            AlignmentState::NoneTrailingWhitespace => Ok(Some(Alignment::None)),
             AlignmentState::LeftNoHyphen => Err(TableDelimiterError::NoHyphen),
         }
     }
 
     /// Advance the table delimiter cell state machine.
     ///
-    /// Returns `Ok(true)` to signal that this cell is complete and we should now call [`finish`].
-    /// Returns `Ok(false)` to signal that another byte should be provided.
+    /// Returns `Ok(())` to signal that another byte should be provided. Callers should
+    /// keep providing bytes until `b'|'` is found, at which point they should call [`finish`]
+    /// to get the final state.
     /// Returns [`Err(TableDelimiterError)`][TableDelimiterError] to signal that this is
-    /// not a table delimiter row.
+    /// not a table delimiter cell, and therefore the surrounding markdown is not a table.
     ///
     /// [`finish`]: TableDelimiterCellState::finish
     fn feed_byte(&mut self, byte: u8) -> Result<(), TableDelimiterError> {
@@ -797,15 +808,28 @@ impl TableDelimiterCellState {
 
         let token = DelimiterCellToken::try_from(byte)?;
         let alignment = match token {
-            // Whitespace doesn't change alignment
-            DelimiterCellToken::Whitespace => self.alignment,
+            DelimiterCellToken::Whitespace => match self.alignment {
+                // Seen ` `, `-: `, `:-: `
+                State::Empty | State::Right | State::Center => self.alignment,
+                // Seen `:- ` or `:-  `
+                State::Left | State::LeftTrailingWhitespace => State::LeftTrailingWhitespace,
+                // Seen `- ` or `-  `
+                State::None | State::NoneTrailingWhitespace => State::NoneTrailingWhitespace,
+                State::LeftNoHyphen => {
+                    // Not a table if we've seen `: `
+                    return Err(TableDelimiterError::UnexpectedWhitespace);
+                }
+            },
             DelimiterCellToken::Hyphen => match self.alignment {
                 // Seen `-`, or `--`
                 State::Empty | State::None => State::None,
                 // Seen `:-` or `:--`
                 State::LeftNoHyphen | State::Left => State::Left,
-                State::Right | State::Center => {
-                    // Not a table if we've seen `-:-` or `:-:-`
+                State::LeftTrailingWhitespace
+                | State::NoneTrailingWhitespace
+                | State::Right
+                | State::Center => {
+                    // Not a table if we've seen `:- -`, `- -`, `-:-`, or `:-:-`
                     return Err(TableDelimiterError::UnexpectedHyphen);
                 }
             },
@@ -816,8 +840,12 @@ impl TableDelimiterCellState {
                 State::Left => State::Center,
                 // Seen `-:`
                 State::None => State::Right,
-                State::LeftNoHyphen | State::Right | State::Center => {
-                    // Not a table if we've seen `::`, `-::`, or `:-::`
+                State::LeftTrailingWhitespace
+                | State::NoneTrailingWhitespace
+                | State::LeftNoHyphen
+                | State::Right
+                | State::Center => {
+                    // Not a table if we've seen `:- :`, `- :`, `::`, `-::`, or `:-::`
                     return Err(TableDelimiterError::UnexpectedColon);
                 }
             },
